@@ -139,7 +139,7 @@ class QuestCallbackProfiles(unittest.TestCase):
     def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
         from questpc3_item_admission import apply_admissions
         key = 'oteryn:item.tibia.i3272'
-        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953)}
+        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953, 25975, 25976, 25977)}
         canonical_items = [row['definition']
                            for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
                            for row in json.loads(path.read_bytes())['records']

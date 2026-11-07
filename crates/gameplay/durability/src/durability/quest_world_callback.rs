@@ -8,7 +8,18 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CarriedUseContext {
+    pub source: [u8; 16],
+    pub actor_position: Position,
+    /// Recorded server input fact, never client-provided.
+    pub recorded_utc_ms: u64,
+    pub intent: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QuestWorldContext {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried: Option<CarriedUseContext>,
     pub map_revision: String,
     pub content_revision: String,
     pub placement_context: Vec<u8>,
@@ -178,6 +189,24 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
+    if let Some(rule) = &callback.carried_use {
+        let Some(carried) = &context.carried else {
+            return Ok(false);
+        };
+        let Some(minute) = crate::foundation::world_time::tibian_minute(0, carried.recorded_utc_ms)
+        else {
+            return Ok(false);
+        };
+        if carried.intent.is_empty()
+            || carried.intent.len() > 32
+            || !rule.actor_region.contains(carried.actor_position)
+            || !rule.time_window.contains(minute)
+        {
+            return Ok(false);
+        }
+    } else if context.carried.is_some() {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \
@@ -260,12 +289,19 @@ async fn consume_inputs(
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=$3 \
-             AND i.quantity > 0 ORDER BY i.item_instance_id LIMIT $4 FOR UPDATE OF i",
+             AND i.quantity > 0 AND ($5::uuid IS NULL OR i.item_instance_id=$5::uuid) \
+             ORDER BY i.item_instance_id LIMIT $4 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(&required.item)
         .bind(i64::from(required.count))
+        .bind(
+            context
+                .carried
+                .as_ref()
+                .map(|carried| sqlx::types::Uuid::from_bytes(carried.source)),
+        )
         .fetch_all(&mut **tx)
         .await?;
         // Every candidate contributes at least one unit, so at most `count`
@@ -494,4 +530,47 @@ async fn apply_input(
         }
     }
     Ok(())
+}
+
+impl super::DurabilityRoot {
+    /// Receipt-first replay for a carried selection, including after its source
+    /// has transformed. A different selection under that command conflicts.
+    pub async fn replay_carried_quest_use(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        fence: super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+        intent: Vec<u8>,
+    ) -> Result<Option<bool>, DurabilityError> {
+        if command.game_session_id() != fence.game_session_id
+            || intent.is_empty()
+            || intent.len() > 32
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let record = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run_with_context(&mut (), move |holder, deadline, _| Box::pin(async move {
+            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+            super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
+            let rows: Vec<Option<Vec<u8>>> = sqlx::query_scalar(
+                "SELECT c.proof FROM game_character_quest_receipts r \
+                 LEFT JOIN game_quest_callback_consumptions c USING(character_id,cause_id,cause_ordinal,transition_key) \
+                 WHERE r.character_id=encode($1,'hex')::uuid AND r.cause_id=encode($2,'hex')::uuid \
+                 AND r.cause_ordinal=$3::text::numeric AND r.cause_kind='use' \
+                 ORDER BY r.transition_key,c.item_instance_id LIMIT 2")
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
+            let outcome = if rows.is_empty() { None } else if rows.len() != 1 { Some(false) } else if let Some(raw) = &rows[0] {
+                let proof: serde_json::Value = serde_json::from_slice(raw).map_err(|_| DurabilityError::InvalidStoredState)?;
+                let recorded = proof.pointer("/context/carried/intent").cloned()
+                    .and_then(|value| serde_json::from_value::<Vec<u8>>(value).ok());
+                Some(recorded.as_ref() == Some(&intent))
+            } else { Some(false) };
+            super::db::commit_semantic_transaction(tx, deadline).await?;
+            Ok(outcome)
+        })).await
+    }
 }

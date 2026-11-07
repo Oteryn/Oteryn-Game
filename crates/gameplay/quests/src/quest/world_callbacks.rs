@@ -1,9 +1,12 @@
 //! QUESTCB2: bounded, declarative world callbacks. Coordinates use native negative floors.
 pub use super::native_rules::NativeRule;
+mod carried;
 use super::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
+pub use carried::{ActorRegion, CarriedUse, TimeWindow};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
@@ -24,6 +27,7 @@ pub struct Position {
 pub enum Trigger {
     Use,
     StepIn,
+    UseCarried,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -120,6 +124,8 @@ pub struct Callback {
     pub success_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_rule: Option<NativeRule>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_use: Option<CarriedUse>,
     pub sources: Vec<String>,
 }
 
@@ -140,6 +146,34 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+fn valid_carried(callback: &Callback) -> bool {
+    let Some(rule) = &callback.carried_use else {
+        return callback.trigger != Trigger::UseCarried;
+    };
+    callback.trigger == Trigger::UseCarried
+        && rule.actor_region.valid()
+        && rule.time_window.valid()
+        && callback.selector.position.is_none()
+        && callback.selector.unique.is_none()
+        && callback.selector.action.is_none()
+        && callback.selector.appearance.is_none()
+        && callback.lever.is_none()
+        && !callback.reversible
+        && callback.passages.is_empty()
+        && callback.offerings.is_empty()
+        && callback.teleport.is_none()
+        && callback.native_rule.is_none()
+        && !callback.storage.is_empty()
+        && callback.item_on_target.as_ref().is_some_and(|item| {
+            item.count == 1
+                && item.target_replacement.is_none()
+                && item
+                    .replacement
+                    .as_ref()
+                    .is_some_and(|replacement| replacement != &item.item)
+        })
+}
+
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
@@ -155,9 +189,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
-            || (selector.position.is_none()
+            || (callback.trigger != Trigger::UseCarried
+                && selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none())
+            || !valid_carried(callback)
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
             || unique_offerings.len() != callback.offerings.len()
@@ -199,7 +235,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
                     || callback.storage.is_empty()
-                    || callback.trigger != Trigger::Use
+                    || !matches!(callback.trigger, Trigger::Use | Trigger::UseCarried)
                     || item.count == 0
                     || item.count > 100
                     || !super::valid_quest_key(&item.item)
@@ -252,6 +288,22 @@ fn extend_callbacks(
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
+        let carried_binding: Option<[u8; 32]> = callback
+            .carried_use
+            .as_ref()
+            .map(|_| {
+                let bytes = serde_json::to_vec(&(
+                    &callback.key,
+                    &callback.quest,
+                    callback.trigger,
+                    &callback.storage,
+                    &callback.item_on_target,
+                    &callback.carried_use,
+                ))
+                .map_err(|error| error.to_string())?;
+                Ok::<[u8; 32], String>(Sha256::digest(bytes).into())
+            })
+            .transpose()?;
         for storage in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
                 if callback.native_rule.is_none() && !storage.preserve {
@@ -289,7 +341,13 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
-                        None => QuestEffectKind::Set(s.set),
+                        None => match carried_binding {
+                            Some(binding) => QuestEffectKind::SetWithBinding {
+                                value: s.set,
+                                binding,
+                            },
+                            None => QuestEffectKind::Set(s.set),
+                        },
                     },
                 })
                 .collect(),

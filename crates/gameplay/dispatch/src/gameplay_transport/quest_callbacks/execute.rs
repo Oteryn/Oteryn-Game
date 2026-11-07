@@ -172,6 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let context = QuestWorldContext {
+                carried: None,
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
                     "sha256:{}",

@@ -9133,6 +9133,363 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13"
       ],
       "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/moon-cosmetic",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25729",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25975",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "The moon is not shining. Wait for the night.",
+      "success_message": "The mirror is shining with the moonlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33518,
+            "y": 32209,
+            "floor": -7
+          },
+          "maximum": {
+            "x": 33527,
+            "y": 32215,
+            "floor": -7
+          }
+        },
+        "time_window": {
+          "from_minute": 1080,
+          "to_minute": 360
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_moon_mirror.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_moon_mirror.lua:1-73 git-blob=2fc2948aa828ec28639b56d2cca937cd6ff42dc6 sha256=4540401bfc7184a84983e687627e2a8576a9ddef02901d20932d461f684af11a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/moon-gather",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25729",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25730",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "The moon is not shining. Wait for the night.",
+      "success_message": "The mirror is shining with the moonlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33518,
+            "y": 32209,
+            "floor": -7
+          },
+          "maximum": {
+            "x": 33527,
+            "y": 32215,
+            "floor": -7
+          }
+        },
+        "time_window": {
+          "from_minute": 1080,
+          "to_minute": 360
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_moon_mirror.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_moon_mirror.lua:1-73 git-blob=2fc2948aa828ec28639b56d2cca937cd6ff42dc6 sha256=4540401bfc7184a84983e687627e2a8576a9ddef02901d20932d461f684af11a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/star-cosmetic",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25731",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25976",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "You are rubbing the opaque glass of the vial but nothing happens.",
+      "success_message": "The vial is glittering with starlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33526,
+            "y": 32298,
+            "floor": -4
+          },
+          "maximum": {
+            "x": 33532,
+            "y": 32303,
+            "floor": -4
+          }
+        },
+        "time_window": {
+          "from_minute": 1080,
+          "to_minute": 360
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_starlight_vial.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_starlight_vial.lua:1-73 git-blob=f92134285a8f9d8a852ee57eb513eed16aa335e7 sha256=dfe4a91db453b7ef4e3a82510876ec62eb478943ef448f08e429f6f96f51fd96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/star-gather",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25731",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25732",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "You are rubbing the opaque glass of the vial but nothing happens.",
+      "success_message": "The vial is glittering with starlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33526,
+            "y": 32298,
+            "floor": -4
+          },
+          "maximum": {
+            "x": 33532,
+            "y": 32303,
+            "floor": -4
+          }
+        },
+        "time_window": {
+          "from_minute": 1080,
+          "to_minute": 360
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_starlight_vial.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_starlight_vial.lua:1-73 git-blob=f92134285a8f9d8a852ee57eb513eed16aa335e7 sha256=dfe4a91db453b7ef4e3a82510876ec62eb478943ef448f08e429f6f96f51fd96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/sun-cosmetic",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25733",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25977",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "You are rubbing the gem in the sun catcher's centre but nothing happens.",
+      "success_message": "The sun catcher is shining with sunlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33508,
+            "y": 32163,
+            "floor": -7
+          },
+          "maximum": {
+            "x": 33522,
+            "y": 32173,
+            "floor": -7
+          }
+        },
+        "time_window": {
+          "from_minute": 360,
+          "to_minute": 1080
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_sun_catcher.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_sun_catcher.lua:1-73 git-blob=775604d784190930c0102184baccaf901cff4053 sha256=385386841c340af0924721e645f64dc56929e5663f12131bda9e8b642768f3b4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-light/sun-gather",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use_carried",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i25733",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i25734",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": "You are rubbing the gem in the sun catcher's centre but nothing happens.",
+      "success_message": "The sun catcher is shining with sunlight now.",
+      "carried_use": {
+        "actor_region": {
+          "minimum": {
+            "x": 33508,
+            "y": 32163,
+            "floor": -7
+          },
+          "maximum": {
+            "x": 33522,
+            "y": 32173,
+            "floor": -7
+          }
+        },
+        "time_window": {
+          "from_minute": 360,
+          "to_minute": 1080
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/action_sun_catcher.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json data-global/scripts/quests/threatened_dreams_quest/action_sun_catcher.lua:1-73 git-blob=775604d784190930c0102184baccaf901cff4053 sha256=385386841c340af0924721e645f64dc56929e5663f12131bda9e8b642768f3b4"
+      ]
     }
   ]
 }

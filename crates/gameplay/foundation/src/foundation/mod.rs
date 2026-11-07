@@ -2,6 +2,7 @@
 
 pub mod ability_data;
 pub mod actor_ref;
+pub mod world_time;
 pub use actor_ref::{ActorLocalGeneration, ActorLocalId, ActorRef, ExactActorRef};
 
 mod admission {

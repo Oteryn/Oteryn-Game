@@ -44,6 +44,9 @@ struct Pending {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    pub(in crate::gameplay_transport) carried: std::sync::Mutex<
+        std::collections::HashMap<GameSessionId, super::item_use::carried::Pending>,
+    >,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
@@ -55,7 +58,7 @@ pub(super) struct PendingCallbacks {
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
 }
 
-fn callbacks() -> &'static [Callback] {
+pub(super) fn callbacks() -> &'static [Callback] {
     static DATA: OnceLock<Vec<Callback>> = OnceLock::new();
     DATA.get_or_init(|| world_callbacks::load().unwrap_or_default())
 }
@@ -144,6 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
+        if !super::item_use::carried::reconcile(self, session).await {
+            return false;
+        }
         if !self.reconcile_soul_war_reward_receipts(session).await {
             return false;
         }
@@ -204,6 +210,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
+        if self
+            .states
+            .quest_callbacks
+            .carried
+            .lock()
+            .map_or(true, |records| records.contains_key(&session))
+        {
+            return true;
+        }
         if self.states.grizzly_boss.has_pending(session) {
             return true;
         }
