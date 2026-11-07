@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.santiago",
+      "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
+      "farewell": "Take care, |PLAYERNAME|.",
+      "walkaway": "Enjoy your stay on Rookgaard."
+    }
+  ]
+}

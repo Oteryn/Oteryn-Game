@@ -49,6 +49,7 @@ mod liquid_black;
 mod monk;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 pub(super) mod rookgaard_exchanges;
 mod service_context;
 mod session_transfer;
@@ -728,6 +729,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = beginning::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

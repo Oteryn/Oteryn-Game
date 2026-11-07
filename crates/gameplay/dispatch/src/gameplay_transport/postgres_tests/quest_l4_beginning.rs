@@ -48,7 +48,7 @@ pub(super) async fn exercise(
     talk(owner, admitted, santiago, 9301, "bye").await?;
     talk(owner, admitted, santiago, 9302, "hi").await?;
     assert_eq!(progress(owner, admitted, authority, LOG).await?, 1);
-    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key = 'oteryn:quest-transition/quest/u8_2/the_beginning_quest/santiago_quest_log/npc_1'")
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key = 'oteryn:quest-reward/questpc3/beginning/greet'")
         .fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     Ok(())

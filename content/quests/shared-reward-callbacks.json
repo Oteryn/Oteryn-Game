@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/greet",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Welcome to Rookgaard, |PLAYERNAME|. Could you help me? Say yes if you can."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/house-confirm",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your quest log records your progress. Visit the chest upstairs in my house and return wearing its coat."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L139"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/level-explained",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Advancing improves your health, carrying capacity and speed. Did the cockroaches hurt you?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L177"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/hurt-explained",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "There are more dangerous monsters beyond this tutorial. May I demonstrate why you should watch your health?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L183"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/food-explained",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 8,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You can find food on creatures in the forest. Have you seen Zirella nearby?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L210"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/refer-zirella",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Zirella lives east of here, down the mountain. Please visit her and ask whether she needs help."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L216"
+      ]
+    }
+  ]
+}

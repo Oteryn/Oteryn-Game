@@ -72,6 +72,7 @@ impl DurabilityRoot {
             &super::grizzly::NoGrizzlyPremium,
             None,
             None,
+            None,
             Some(death),
         )
         .await
