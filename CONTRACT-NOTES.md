@@ -720,3 +720,22 @@ Real PostgreSQL 18.6 validation: production boss chain
 PASS 47.285 s; original rat/native replay chain PASS 52.636 s. No numbers
 allocated. Separate Instance corpse cases are currently red: drain returns
 Deferred; this row does not conceal or bypass that W02 integration failure.
+
+## SRVENC W02: accepted Instance Ground cause (2026-11-07)
+
+Allocated forward migration `1101_instance_creature_ground_proof.sql`.
+Native Instance tests exposed the exact remaining SQL red point at COMMIT:
+`game_item_ground_insertion_guard()` rejected the creature corpse because
+its Instance whitelist only admitted the previously registered owners.
+The new arm proves the full frozen reservation/receipt cause, exact current
+transaction audit bytes, actual Instance/world/generation, Item definition
+and exclusive custody; the existing mandatory mint consistency trigger and
+all other insertion proof arms remain unchanged. Donor: Crystal
+`src/creatures/creature.cpp:711-721,777-782` at the pinned revision above.
+
+Real PostgreSQL 18.6 validation applied the migration to an isolated failed
+native-case schema, committed its decoded frozen Instance corpse reservation,
+audit and receipt with all deferred constraints, and observed one exact corpse.
+Foreign Instance, missing audit and substituted audit each raised23514.
+Combined executable proof duration115ms; no timing sleeps. Native dispatch
+cases will be rerun after the owned Instance-map compilation step.
