@@ -727,3 +727,14 @@ Canary `imports/canary/items-xml/items.xml:35704-35725`,SHA256
 independently confirms these identities. Item17679 is the cracked stone target.
 The programme is intentionally unwired while the corrected native test establishes
 a real mechanic RED; its pure source/recipe/price validation already passes.
+
+- Goblin source locations: `https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277`
+  retained text SHA256 `f3e823bef7d74e3ee33fa1fd0e40886cabc776b570a90e91770da3c0c494166a`.
+  Sign sites33055,32091,z7;33026,32091,z7;33032,32083,z7 contain native17679
+  under the world palette. Codec item operands are palette indexes, not Tibia
+  appearances: resolve through the retained placement index before binding.
+  Rafzan's agreeing donor cell33052,32095,z6 contains ground17518, is outside
+  a house, and is now admitted using the existing NPC converter. No source
+  text or binary map was copied into this lane. The selected finite programme
+  still charges for its explicit tool bundle; it does not claim source free
+  mission tools, daily repetition, original per-task rewards or500-task award.

@@ -998,6 +998,21 @@
       "runtime_hook": "enabled",
       "whole_quest": "ACTIVE",
       "next": "verify native Rafzan world placement, then bind non-capture physical jobs; consume qengine2 live-capture engine when delivered"
+    },
+    "placement_progress": {
+      "state": "SOURCE_PLACEMENT_ADMITTED",
+      "npc": "oteryn:npc.rafzan",
+      "cell": {
+        "x": 33052,
+        "y": 32095,
+        "floor": 6
+      },
+      "sources": [
+        "canary:npc/rafzan:sha256:9f1a480e77c5c63f9daf16a7f01a8959324ae4d4715642650ccd2e2132e4dd4b",
+        "crystal:npc/rafzan:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ],
+      "tests": "test_questpc7_rafzan_placement.py: absent-placement RED; both source attestations and native non-house cell GREEN",
+      "whole_quest": "ACTIVE"
     }
   },
   {

@@ -1,3 +1,29 @@
+# Rafzan live placement slice — 2026-11-07 20:48 UTC
+
+Added only owned Goblin contact Rafzan to the existing NPC placement scope.
+Retained Canary and Crystal agree at33052,32095,z6 facing north. Two focused
+checks verify both source attestations and the real native non-house cell,
+flags0/house0/ground17518 (palette index12010). Placement was absent (RED0.315s); source placement
+and native-cell tests GREEN0.296s; all12 converter tests GREEN0.394s.
+No invented NPC cell, donor copy, migration or generic engine. Published tool
+programme remains unchanged. Whole Goblin remains ACTIVE; live capture still
+requested from qengine2. Final pins regenerated; compile workspace all targets and fmt passed;
+then push this placement slice immediately under the owner's30minute rule.
+Workspace all-target check PASS3m03s and fmt PASS. Optional PG rebuild was
+stopped before execution so it cannot delay publication; no new PG claim.
+Unchanged intro/paid mechanics retain pushed GREEN68.51049825s PG18.6 proof.
+Next: source-bind non-capture jobs, retaining exact personal input proofs.
+Task:Rafzan oldid401277 was recovered through the existing wiki API query;
+contract citations record its SHA256. Three source sign sites already contain
+native17679. Decode B3 operands through index.palette (not as appearanceIDs).
+Native trunk candidates are cached only in/tmp/questpc7-goblin-native-targets.json;
+45 sign/trunk cells total. Wiki trunk coordinates are approximate approaches,
+so bind verified native trunk cells instead of inventing props. New qengine2
+head a1ea4e48d was inspected; it adds catalogue-scoped authored stage bindings
+and Premium reward predicates. No whole-branch merge attempted: inspect its
+migration ranges and reuse only clean delivered mechanisms through main.
+Main remote now1138720b; integrate at the next slice after this immediate push.
+
 # Goblin introduction/shop slice — 2026-11-07 20:42 UTC
 
 Native RED65.835904231s(NoConversation before the NPC binding) -> GREEN
