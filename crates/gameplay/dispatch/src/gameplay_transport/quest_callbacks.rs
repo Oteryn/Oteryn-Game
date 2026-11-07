@@ -57,6 +57,8 @@ pub(super) struct PendingCallbacks {
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
 }
 
 impl PendingCallbacks {
@@ -99,6 +101,31 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
         return false;
     };
+    if oteryn_gameplay_quests::quest::shared_switches::native::bindings(&callback.key)
+        .iter()
+        .any(|binding| {
+            tile(binding.position) == pos
+                && ordinal == binding.ordinal
+                && map
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .and_then(|base| {
+                        base.ids()
+                            .iter()
+                            .zip(base.depths())
+                            .filter(|(_, depth)| **depth == 0)
+                            .nth(usize::from(ordinal))
+                            .map(|(id, _)| *id)
+                    })
+                    .is_some_and(|id| {
+                        map.facts
+                            .quest_callback_native_object(key, id, binding.appearance)
+                    })
+        })
+    {
+        return true;
+    }
     if let Some(binding) =
         oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key)
         && tile(binding.position) == pos

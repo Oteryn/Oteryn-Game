@@ -186,18 +186,30 @@ impl DurabilityRoot {
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
-        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        if reward_callbacks.iter().any(|c| c.participants.iter().enumerate().any(|(i,_)|
-            oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key,i) == request.transition_key)) {
+        let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
+        if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let reward_callback = reward_callbacks.into_iter()
+        let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        if reward_callbacks.iter().any(|c| {
+            c.participants.iter().enumerate().any(|(i, _)| {
+                oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&c.key, i)
+                    == request.transition_key
+            })
+        }) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let reward_callback = reward_callbacks
+            .into_iter()
             .find(|c| c.key == request.transition_key);
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate(transition,context.is_some())
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            oteryn_gameplay_quests::quest::admission_binding::validate(
+                transition,
+                context.is_some(),
+            )
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
@@ -244,11 +256,15 @@ impl DurabilityRoot {
         } else {
             None
         };
-        let world_reward = callback.as_ref().and_then(|c| c.effects.item_reward.as_ref());
+        let world_reward = callback
+            .as_ref()
+            .and_then(|c| c.effects.item_reward.as_ref());
         if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
-        { return Err(CharacterProgressionError::InvalidInput); }
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let lionheart = super::hero_of_bounac::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
@@ -413,6 +429,10 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(recipe) = timer_recipe
+                        && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
@@ -670,6 +690,14 @@ impl DurabilityRoot {
                         }) {
                         Ok(changes) => changes,
                         Err(refusal) => {
+                            if let Some(recipe) = timer_recipe
+                                && refusal == QuestRefusal::StageMismatch
+                                && stored.get(recipe.track).copied().unwrap_or(-1) > recipe.maximum_before {
+                                server_timer::record(&mut tx,fence,&request,recipe,stored.get(recipe.track).copied().unwrap_or(-1),None).await?;
+                                server_timer::audit(&mut tx,&request).await?;
+                                commit_semantic_transaction(tx,deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                            }
                             if grizzly_action.is_some() {
                                 grizzly::record_refusal(&mut tx, character, &request, &binding, refusal).await?;
                                 commit_semantic_transaction(tx, deadline).await?;
@@ -757,6 +785,9 @@ impl DurabilityRoot {
                         .revision
                         .checked_add(1)
                         .ok_or(DurabilityError::InvalidStoredState)?;
+                    if let Some(recipe) = timer_recipe {
+                        server_timer::record(&mut tx,fence,&request,recipe,changes.first().ok_or(DurabilityError::InvalidStoredState)?.before,Some(committed_revision)).await?;
+                    }
                     let (original, committed) =
                         (root.revision.to_string(), committed_revision.to_string());
                     for successor in [
@@ -930,6 +961,7 @@ impl DurabilityRoot {
                     if let Some((_, context)) = grizzly_boss.as_ref() {
                         grizzly_boss::earn(&mut tx, fence, &request, context).await?;
                     }
+                    if timer_recipe.is_some() { server_timer::audit(&mut tx,&request).await?; }
                     let committed = CommittedQuestTransition {
                         character_id: character,
                         cause: request.cause,

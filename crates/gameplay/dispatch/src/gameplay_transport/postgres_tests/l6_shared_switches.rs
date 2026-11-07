@@ -105,12 +105,12 @@ pub(super) async fn exercise(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("shared replay native")?;
-    let request = crate::durability::quest_world_callback::shared_switch::Request {
-        recipe: recipe.clone(),
+    let request = crate::durability::quest_world_callback::shared_switch::Request::new(
+        recipe.clone(),
         placement,
-        object_revision: revision.parse()?,
-        context: serde_json::from_value(context)?,
-    };
+        revision.parse()?,
+        serde_json::from_value(context)?,
+    );
     let durable = owner
         .root
         .activate_shared_switch(

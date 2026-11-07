@@ -17,6 +17,8 @@ struct DynamicPortal {
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
+    /// Restore exactly this revision at an original source deadline.
+    TimedTransform { due: u64, restore: EntryFacts },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
@@ -65,6 +67,23 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedTransform { due, restore } => {
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(r, _)| *r)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.movement_decays.insert(
+                    (*due, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                    },
+                );
+            }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
                     if endpoints
@@ -552,6 +571,35 @@ impl BundleFacts {
                 placement
                     .is_some_and(|p| self.palette[p.palette as usize].facts.appearance_id == id)
             })
+    }
+
+    /// Match an exact authored counterpart only while the retained base object is bare.
+    /// Sparse placements and plain palette entries share the same original appearance proof.
+    pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) || self.base_hidden(key) {
+            return false;
+        }
+        let index = match self.placements.binary_search_by_key(&key, |(k, _)| *k) {
+            Ok(at) => {
+                let placement = &self.placements[at].1;
+                if placement.attrs != Attrs::default() || placement.dropped {
+                    return false;
+                }
+                placement.palette
+            }
+            Err(_) => {
+                let Some(index) = self.unique_index(id) else {
+                    return false;
+                };
+                index
+            }
+        };
+        self.palette
+            .get(index as usize)
+            .is_some_and(|p| p.facts.appearance_id == appearance)
     }
 
     /// Match a source-selected native portal against its original bound attributes.

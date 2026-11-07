@@ -30,9 +30,12 @@ fn scenario_case(
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
-    let native_crop = small_ruby || mead || spirit || tomb_native || native_tower;
+    let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_crop = small_ruby || mead || spirit || tomb_native || native_tower || native_switch;
     let start = if native_tower {
         super::super::l6_paradox_native::start(name)
+    } else if native_switch {
+        super::super::l6_shared_switch_native::start(name)?
     } else if tomb_native {
         Position {
             x: trigger.x,
@@ -264,6 +267,13 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native tower policies")?,
+                name,
+            )?
+        } else if native_switch {
+            super::super::l6_shared_switch_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native switch policies")?,
                 name,
             )?
         } else if tomb_native {
@@ -595,6 +605,34 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if native_switch {
+            super::super::l6_shared_switch_native::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if shared_switch && name.contains("-treasure-") {
+            super::super::l6_shared_switch_treasure::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+                deps.actor,
+            )
+            .await?;
+        } else if shared_switch && name.contains("-timer-") {
+            super::super::l6_shared_switch_timers::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
                 trigger,
                 name,
             )

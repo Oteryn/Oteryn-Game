@@ -169,6 +169,7 @@ pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
+mod quest_timer_cycle;
 mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;

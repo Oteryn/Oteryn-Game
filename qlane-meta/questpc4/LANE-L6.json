@@ -574,7 +574,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms.",
+        "missing_piece": "Native tomb assembly/gate counterparts, full native route composition and remaining conditional room/NPC/finale behavior are active obligations; do not redo qualified generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry or exact native shared-switch USE counterparts.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",
@@ -605,7 +605,8 @@
         ],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "historical_missing_piece": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms."
       },
       "sources": [
         {
