@@ -697,3 +697,21 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
   `[5840,5283,5871,5314,5,8]`; Crystal Primal's source arena is
   `[33547,32749,33570,32769,15,15]` (same donor file:15-17).
   Publishing rejected candidates cannot repair that missing map admission.
+
+### Publication checkpoint validation
+
+At `89af353ae`, catalogue equality/replay PostgreSQL scenario
+`qualified_activity_catalogue_postgres_equals_boot_qualified_set` passed in
+67.03 seconds. The current qualified set is empty; this proves exclusion and
+replay, not positive room publication. The unchanged Primal assertion
+`primal_ordeal_postgres_qualified_production_room_is_reachable` failed in
+66.66 seconds, with source diagnostic `OutsideQualifiedMap`.
+Changed content/durability/dispatch/server crates passed clippy with warnings
+ denied (6m35s); the publisher/server check passed (30.81s), and fmt passed.
+
+The pinned Crystal `data-global/world/world.otbm` contains 504 Primal arena
+cells and the source boss, entry, lever and exit positions. The current loader
+`project/native_spell_world.rs` admits only the pinned Canary Thalom document,
+including exact source bounds, frame, tile count (2833), digest and closure.
+A separate provenance-qualified Crystal region must be admitted; replacing
+those checks with permissive bounds would invalidate the existing source proof.
