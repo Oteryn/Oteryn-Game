@@ -1,0 +1,31 @@
+{
+  "status": "RED executed; ownership guard and native item bindings implemented; GREEN routes running; subjects ACTIVE",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "log": "/tmp/questpc7-outfit-items-red-counter-fixed.log",
+    "seconds": 73.227148735,
+    "assertion": "Second Fiend Slayer token incorrectly returned Ok before the first token was consumed/earned; expected Rejected."
+  },
+  "authoring": {
+    "tests": 16,
+    "result": "PASS",
+    "seconds": 7.958,
+    "log": "/tmp/questpc7-outfit-items-authoring.log"
+  },
+  "fixture_boundary": "Only completed parent quests are arranged through the fenced quest writer. Subject programmes, token MINT, consumption and appearance grants start fresh. Native initial level250 uses the active published XP threshold; Current Premium uses the existing coordinator fixture.",
+  "fixture_repair": "Initial77.735s run failed with Unavailable(Database(Database(None))). New fixture reused command IDs because the shared direct NPC helper does not advance session continuity. Assigning a fresh ID to every NPC operation produces the genuine73.227s ownership RED. Temporary SQLSTATE diagnostic was cancelled and removed; no raw database payload or diagnostic change is retained.",
+  "implementation": [
+    "fresh semantic cosmetic prerequisites under Character/account locks",
+    "explicit consumptive grant compatibility for selected admitted look pairs",
+    "Formal Dress explicit non-store quest promotion supported by retained Lord Retro grant",
+    "reuse six already materializable accessory items; preserve canonical physical facts",
+    "source placements/greetings for existing The Forgemaster and Henricus",
+    "personal once-only token callbacks using existing native MINT and item USE owners"
+  ],
+  "green_log": "/tmp/questpc7-outfit-items-green.log",
+  "remaining_checks": [
+    "GREEN full native Fiend/Hand routes",
+    "normal final appearance selection",
+    "strict changed-crate checks/content/world/pins/fmt"
+  ]
+}

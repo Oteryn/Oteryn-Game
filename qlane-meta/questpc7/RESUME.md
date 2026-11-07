@@ -1,3 +1,24 @@
+# Native consumptive outfit checkpoint — 2026-11-07
+
+Last full green product slice136d3e35a is pushed. The next batch has actual
+PG18.6 ownership RED73.227s: second Fiend token incorrectly granted before
+the first addon was earned. The guard is now implemented and both Fiend/Hand
+full native routes are running in /tmp/questpc7-outfit-items-green.log.
+OUTFIT-ITEMS-PG-PROOF.json records the exact boundaries and fixture repair.
+19 ACTIVE remain; neither subject is relabelled before GREEN/final checks.
+
+16 authoring tests pass. Explicit source grant mappings bridge the existing
+consumptive owner to the selected native outfits; physical items were already
+admitted, so the redundant qualifier addition was removed without altering
+canonical facts. Formal Dress's explicit selected promotion is generated.
+Existing The Forgemaster/Henricus source placements and greetings are generated.
+No new command, capability, migration or raw reference file is added.
+
+Finish Fiend/Hand native consumption, achievements, ordinary appearance selection
+and final checks, then push the product slice immediately. Complete Formal
+Dress's selected exhibition using the existing world outfit owner and these
+shared ownership guards. Scope/placement choices remain in CONTRACT-NOTES.md.
+
 # World wardrobe mechanism fully GREEN — 2026-11-07
 
 World outfit grants now join the existing fenced quest receipt and Character

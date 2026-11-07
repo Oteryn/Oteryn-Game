@@ -308,6 +308,10 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "outfit_item_progress": {
+      "state": "Ownership RED executed; native route GREEN test running; full entry remains ACTIVE",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
     }
   },
   {
@@ -1125,6 +1129,10 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "outfit_item_progress": {
+      "state": "Ownership RED executed; native route GREEN test running; full entry remains ACTIVE",
+      "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
     }
   },
   {
