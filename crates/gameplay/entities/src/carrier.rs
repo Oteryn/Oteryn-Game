@@ -59,6 +59,8 @@ mod channel_actor_position_tests;
 mod continuity;
 
 mod corpse_views;
+mod credited_kill_proof;
+pub use credited_kill_proof::NativeCreditedKillProof;
 
 mod creature_heal;
 
@@ -80,6 +82,8 @@ pub mod house_custody;
 
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
+#[path = "carrier/native_actor_batch.rs"]
+pub mod native_actor_batch;
 
 mod equipment_reflection;
 
@@ -831,6 +835,8 @@ pub enum Slot {
     NpcOccupied {
         generation: u64,
         key: Arc<str>,
+        /// Authored source cell; ordinary NPC movement never changes admission provenance.
+        home: LocalPosition,
         position: VersionedPosition,
         /// E12: House custody is attached to the existing NPC slot, never a parallel actor map.
         hireling: Option<Box<npc_actor::HouseHirelingBinding>>,
@@ -925,6 +931,8 @@ pub struct ChannelActorCarrier {
     /// ascending source order, so a source is found by binary search (`spawn_index`) and
     /// the iteration order is the canonical (source, point ordinal) order.
     spawns: Vec<SpawnRealization>,
+    /// Dormant sources and exact distinct kill dependencies, owned by spawn realization.
+    spawn_kill_gates: Vec<spawn_realization::SpawnKillGate>,
     native_summons: NativeSummonLinks,
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
     native_summon_death_cursor: usize,
@@ -1406,6 +1414,7 @@ impl ChannelRuntimeV1 {
                 // the free list itself, so other owner work between windows is never undone.
                 // One pass over the occupied index for all of them (Codex 4242270322).
                 let spawns = std::mem::take(&mut self.carrier.spawns);
+                self.carrier.spawn_kill_gates.clear();
                 self.carrier.remove_all(
                     &self.continuity,
                     spawns
@@ -1673,6 +1682,7 @@ impl ChannelActorCarrier {
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
+            spawn_kill_gates: Vec::new(),
             native_summons: NativeSummonLinks::default(),
             native_summon_deaths: [None; 64],
             native_summon_death_cursor: 0,

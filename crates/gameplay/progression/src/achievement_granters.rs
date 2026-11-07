@@ -34,6 +34,10 @@ pub const POLISHER: Counted = Counted {
     key: "oteryn:achievement/polisher",
     total: 1000,
 };
+pub const DESERT_FISHER: Counted = Counted {
+    key: "oteryn:achievement/desert_fisher",
+    total: 1,
+};
 
 /// Classify a successful, owner-validated gathering outcome. The existing gathering
 /// rules own the permitted tool/target pairs and their yield; this is not a second
@@ -41,6 +45,7 @@ pub const POLISHER: Counted = Counted {
 /// have no inventory yield and therefore advance no Achievement.
 pub fn gathering(tool_key: &str, yield_item: Option<u16>) -> Option<Counted> {
     match (tool_key, yield_item?) {
+        ("oteryn:item.tibia.i3483", 13992) => Some(DESERT_FISHER),
         ("oteryn:item.tibia.i3483" | "oteryn:item.tibia.i9306", 3578) => Some(HERE_FISHY_FISHY),
         ("oteryn:item.tibia.i3483" | "oteryn:item.tibia.i9306", 7158 | 3580 | 7159) => {
             Some(EXQUISITE_TASTE)

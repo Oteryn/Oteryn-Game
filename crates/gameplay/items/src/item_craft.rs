@@ -58,6 +58,10 @@ pub fn fishing_conversion(
     if tool.production_key != FISHING_ROD
         || bait.production_key != WORM
         || !is_water(&water.production_key)
+        || matches!(
+            water.production_key.as_str(),
+            "oteryn:item.tibia.i13988" | "oteryn:item.tibia.i13989"
+        )
     {
         return None;
     }

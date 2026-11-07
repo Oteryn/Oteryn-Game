@@ -10,6 +10,7 @@ include!("runtime_assignment.rs");
 include!("spawn_activation.rs");
 include!("spawn_backlog.rs");
 include!("spawn_event_rate.rs");
+include!("spawn_kill_gates.rs");
 include!("spawn_limits.rs");
 include!("spawn_mixed_sources.rs");
 include!("spawn_owner_windows.rs");

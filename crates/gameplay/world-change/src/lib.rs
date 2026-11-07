@@ -4,3 +4,4 @@ pub mod counter;
 pub mod daily;
 pub mod owner;
 pub mod scheduled;
+pub mod variants;

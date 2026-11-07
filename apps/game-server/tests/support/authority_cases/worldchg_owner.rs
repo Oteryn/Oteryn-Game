@@ -244,8 +244,8 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
     // The immutable daily fields persist; current counter stages are a separate,
     // fenced projection and are intentionally omitted from the decision JSON.
     let mut immutable_next = next;
-    immutable_next.counter_stages = [0; 8];
-    immutable_next.counter_generations = [0; 8];
+    immutable_next.counter_stages = [0; 9];
+    immutable_next.counter_generations = [0; 9];
     assert_eq!(
         serde_json::from_value::<oteryn_gameplay_world_change::daily::DailyWorldChanges>(day)?,
         immutable_next

@@ -17,6 +17,7 @@ pub(super) fn training_world(
         "oteryn:item.tibia.i28558",
     ];
     let manifest = Manifest {
+        world_changes: None,
         subareas: Default::default(),
         format: FORMAT.into(),
         min_reader_version: VERSION,

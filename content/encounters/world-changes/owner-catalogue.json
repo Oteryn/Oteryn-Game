@@ -7,7 +7,7 @@
       "key": "awash",
       "title": "Awash World Change",
       "quest": "oteryn:quest.awash_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -20,6 +20,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "awash; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -40,10 +44,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=54770&oldid=1149364"
         }
       ],
-      "reason": "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound.",
-      "missing_facts": [
-        "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound."
-      ]
+      "reason": "Existing reset owner selects flooded/drained from previous-epoch atomic pump contributions; three exact donor pumps accept coal12600, threshold202 community total is an explicit conservative assumption. Twelve exact Scouts and bounded adjacent-floor entry use admitted WVAR recipes.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "awash"
+      }
     },
     {
       "key": "bank_robbery",
@@ -91,7 +98,7 @@
       "key": "bored",
       "title": "Bored Mini World Change",
       "quest": "oteryn:quest.bored_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -108,6 +115,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "bored; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -128,21 +139,23 @@
           "url": "https://tibia.fandom.com/index.php?curid=76211&oldid=1135336"
         }
       ],
-      "reason": "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding.",
-      "missing_facts": [
-        "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding."
-      ],
+      "reason": "82‰ illusion membership uses exact20HP giant_spider_wyda, three documented conservative adjacent pads and existing top-damage native kill proof. RealPG proves Someone's Bored, exact once-only illusion MonsterSay across duplicate/settled recapture, ordinary Giant Spider exclusion and stale fences (WVAR_SPIDER_BORED marker). Crystal death callback and source roster citations remain in variants.json; no observational reward probability is presented as a sourced rule.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 82,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "bored"
       }
     },
     {
       "key": "chakoya_iceberg",
       "title": "Chakoya Iceberg Mini World Change",
       "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -155,6 +168,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "chakoya_iceberg; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -175,10 +192,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76213&oldid=887139"
         }
       ],
-      "reason": "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg.",
-      "missing_facts": [
-        "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg."
-      ]
+      "reason": "Exact63 pinned donor homes and2118 snow/ice tiles compose the selected iceberg; the alternative removes owned upper terrain and replaces floor7 with open water622. Equal alternatives are the documented conservative selection rule. Source/cell witnesses and the distinction between no event reward and incidental existing loot remain explicit in variants.json and CONTRACT-NOTES.md. Existing World reset, native Creature/Item and physical map owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "chakoya_iceberg"
+      }
     },
     {
       "key": "chyllfroest",
@@ -376,7 +395,7 @@
       "key": "down_the_drain",
       "title": "Down the Drain Mini World Change",
       "quest": "oteryn:quest.authored.down_the_drain_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -393,6 +412,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "down_the_drain; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -413,14 +436,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=76219&oldid=887142"
         }
       ],
-      "reason": "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent.",
-      "missing_facts": [
-        "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent."
-      ],
+      "reason": "307permille per-reset flooded cave with eleven Water Elementals and inactive dry pads; seven exact donor placements, four offsets and entrance/return anchors are explicit conservative assumptions. Credited native dungeon kills use existing bounded Quest counter and receipts.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 307,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "down_the_drain"
       }
     },
     {
@@ -507,7 +533,7 @@
       "key": "fury_gates",
       "title": "Fury Gates Mini World Change",
       "quest": "oteryn:quest.fury_gates_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -528,6 +554,10 @@
         {
           "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
           "locator": "W6:Furyosa requires_world_change=fury_gates; existing raid:furyfate.furyosa"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "fury_gates: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -548,11 +578,8 @@
           "url": "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
         }
       ],
-      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented.",
-      "missing_facts": [
-        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented."
-      ],
-      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates",
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Exact donor entry/return pairings and restored return marker; eligibility is checked by the existing Character and Premium owners.",
+      "missing_facts": [],
       "binding": {
         "kind": "raid",
         "raid_key": "raid:furyfate.furyosa"
@@ -666,7 +693,7 @@
       "key": "hive_outpost",
       "title": "Hive Outpost Mini World Change",
       "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -679,6 +706,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "hive_outpost; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -699,10 +730,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
         }
       ],
-      "reason": "Native invasion variant membership, activation rule and optional-boss selection are absent.",
-      "missing_facts": [
-        "Native invasion variant membership, activation rule and optional-boss selection are absent."
-      ]
+      "reason": "Six common hive-born members retain all six pinned donor pads; the rare alternative adds a seventh adjacent Overseer pad while preserving Kollos. Daily500‰ and49:1 ordinary/Overseer selection are documented conservative assumptions. Native policies and actual reward rows are admitted by the shared42-creature proof; source/geometry and no invented event reward are explicit in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "hive_outpost"
+      }
     },
     {
       "key": "horse_station",
@@ -792,7 +825,7 @@
       "key": "jungle_camp",
       "title": "Jungle Camp Mini World Change",
       "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -805,6 +838,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "jungle_camp; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -825,10 +862,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
         }
       ],
-      "reason": "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound.",
-      "missing_facts": [
-        "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound."
-      ]
+      "reason": "500‰ daily admission; Hunter/Arthom/Dworc weights49/1/50 and exact camp pads through the existing variant owner. Source and bounded geometry assumptions are recorded in variants.json and CONTRACT-NOTES.md. Native actor policy/health admission is covered by the real42-creature PostgreSQL case, including actual native reward rows; stored decisions and map projection cover every variant.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "jungle_camp"
+      }
     },
     {
       "key": "kingsday",
@@ -885,7 +924,7 @@
       "key": "lumberjack",
       "title": "Lumberjack Mini World Change",
       "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -902,6 +941,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "lumberjack; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -922,21 +965,23 @@
           "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
         }
       ],
-      "reason": "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent.",
-      "missing_facts": [
-        "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent."
-      ],
+      "reason": "90‰ felled-tree/Chip variant, current exact NPC identity/generation/authored home checks, Chip→Queen report after the change ends and once-only Whistle Blower through existing Quest/account achievement owners. Existing NPC trade debits one5901wood and credits50gold independently of the report. NativePG marker WVAR_LUMBERJACK proves home after wandering, source/alias/current-fence refusals, trade, report and replay; source and conservative Chip pad are documented in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 90,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "lumberjack"
       }
     },
     {
       "key": "nightmare_isles",
       "title": "Nightmare Isles Mini World Change",
       "quest": "oteryn:quest.nightmare_isles_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -953,6 +998,10 @@
         {
           "path": "content/encounters/world-changes/portal-bindings-candidate.json",
           "locator": "nightmare_isles:source pairings and native startup-marker omission; native_admission=false"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "nightmare_isles: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -973,17 +1022,14 @@
           "url": "https://tibia.fandom.com/index.php?curid=76249&oldid=887167"
         }
       ],
-      "reason": "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented.",
-      "missing_facts": [
-        "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented."
-      ],
-      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Exact donor entry/return pairings and restored return marker; eligibility is checked by the existing Character and Premium owners.",
+      "missing_facts": []
     },
     {
       "key": "nomads",
       "title": "Nomads Mini World Change",
       "quest": "oteryn:quest.authored.nomads_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1000,6 +1046,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "nomads: generic WVAR recipe; sources and assumptions are explicit"
         }
       ],
       "source_refs": [
@@ -1020,10 +1070,8 @@
           "url": "https://tibia.fandom.com/index.php?curid=76252&oldid=1128611"
         }
       ],
-      "reason": "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants.",
-      "missing_facts": [
-        "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants."
-      ],
+      "reason": "WVAR admitted variant recipes, one persisted reset selection, generic layer/spawn composition and current-fenced passage consumer. Nomad donor camp-to-variant assignments and missing spawn offsets use the owner-authorized conservative rule recorded in variants.json.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 799,
@@ -1196,7 +1244,7 @@
       "key": "poacher_caves",
       "title": "Poacher Caves Mini World Change",
       "quest": "oteryn:quest.authored.poacher_caves_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1209,6 +1257,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "poacher_caves; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -1229,10 +1281,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76258&oldid=1175805"
         }
       ],
-      "reason": "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent.",
-      "missing_facts": [
-        "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent."
-      ]
+      "reason": "Three mutually exclusive Game/Poacher/Gloomy populations use the exact12 donor homes and60-second intervals. Equal daily selection is the explicit conservative substitute for an unavailable executable threshold/order; no credited-kill threshold is invented. Source locators and assumptions remain in variants.json and CONTRACT-NOTES.md; existing World reset, spawn and native reward owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "poacher_caves"
+      }
     },
     {
       "key": "rathleton",
@@ -1330,7 +1384,7 @@
       "key": "river_runs_deep",
       "title": "River Runs Deep Mini World Change",
       "quest": "oteryn:quest.authored.river_runs_deep_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1347,6 +1401,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "river_runs_deep; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -1367,21 +1425,24 @@
           "url": "https://tibia.fandom.com/index.php?curid=76260&oldid=887153"
         }
       ],
-      "reason": "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound.",
-      "missing_facts": [
-        "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound."
-      ],
+      "reason": "269permille per-reset river layer includes exact102 fishing objects13989, reverting to bounded dry sand footprint when inactive. Native fishing validates current stored membership, consumes bait atomically, spends13989 to13988 for20minutes, and uses the sourced1percent Sandfish chance.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 269,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "owner": "world_event::changes",
+        "recipe": "river_runs_deep"
       }
     },
     {
       "key": "spider_nest",
       "title": "Spider Nest Mini World Change",
       "quest": "oteryn:quest.authored.spider_nest_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1394,6 +1455,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "spider_nest; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -1414,16 +1479,18 @@
           "url": "https://tibia.fandom.com/index.php?curid=76262&oldid=887154"
         }
       ],
-      "reason": "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound.",
-      "missing_facts": [
-        "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound."
-      ]
+      "reason": "Stored open/sealed selection, explicit web collision barrier, native1800HP Mamma Longlegs and separate safe permanent return. Existing credited-kill Quest owner grants Nestling after three actual deaths and refuses further entries while preserving escape after closure. RealPG proved3×1800HP deaths,6600neutralXP, achievement, entry limit, closed-day return and stale fences (WVAR_SPIDER_BORED marker). Source and conservative safe pads are cited in variants.json and CONTRACT-NOTES.md.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "spider_nest"
+      }
     },
     {
       "key": "spirit_grounds",
       "title": "Spirit Grounds Mini World Change",
       "quest": "oteryn:quest.authored.spirit_grounds_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1436,6 +1503,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "spirit_grounds; exact source and declared conservative assumption fields"
         }
       ],
       "source_refs": [
@@ -1456,10 +1527,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=76264&oldid=887160"
         }
       ],
-      "reason": "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent.",
-      "missing_facts": [
-        "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent."
-      ]
+      "reason": "Three exact entrances and four independent populations form12 equal variants. Exact shared arrival, connected49-cell cleared landing room and three adjacent maintained surface return pads preserve escape after closure. No unknown objective or achievement is invented. Source rules and conservative geometry are explicit in variants.json and CONTRACT-NOTES.md; existing World reset and current-fenced passage owners are reused.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "spirit_grounds"
+      }
     },
     {
       "key": "spring_into_life",
@@ -1888,7 +1961,7 @@
       "key": "thornfire",
       "title": "Thornfire World Change",
       "quest": "oteryn:quest.thornfire_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1901,6 +1974,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "thornfire; exact source, counter-stage selection and conservative placement assumptions"
         }
       ],
       "source_refs": [
@@ -1921,10 +1998,12 @@
           "url": "https://tibia.fandom.com/index.php?curid=54126&oldid=1020842"
         }
       ],
-      "reason": "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent.",
-      "missing_facts": [
-        "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent."
-      ]
+      "reason": "Existing World/reset owner stores restored54-Elf/burning24-Firestarter selection. Every one of54 unique source homes and all three Overseer releases are required before the next-save transition; one burning save epoch then restores the normal roster. Exact610 flame and56 bog stations reuse atomic craft/terrain/Item owners:11466+2873→empty12819, bog refill→filled12722, fire use→empty, filled decay1h and save-relative8h/16h restoration. The500-action Firefighter achievement grants only in the sourced10% two-wolf branch while progress counts extinguishing actions; no guaranteed mount is invented. Exact source citations and conservative phase/placement rules remain in variants.json and CONTRACT-NOTES.md. Qualification requires the actual native-home and station PostgreSQL proofs recorded below.",
+      "missing_facts": [],
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "thornfire"
+      }
     },
     {
       "key": "twisted_waters",
@@ -1972,7 +2051,7 @@
       "key": "warpath",
       "title": "Warpath Mini World Change",
       "quest": "oteryn:quest.authored.warpath_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1989,6 +2068,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/variants.json",
+          "locator": "warpath; source and assumption fields"
         }
       ],
       "source_refs": [
@@ -2009,14 +2092,16 @@
           "url": "https://tibia.fandom.com/index.php?curid=76270&oldid=944151"
         }
       ],
-      "reason": "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent.",
-      "missing_facts": [
-        "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent."
-      ],
+      "reason": "373‰ camp admission; six distinct guard homes (two Berserkers, three Warlords, one Leader) unlock Bibby through the existing spawn prerequisite owner. Existing Quest receipts implement24-hour entry and early-revisit clock reset, with independent safe return. Native Bibby death grants Bibby's Bloodbath. Conservative Femor-only location and bounded palisade are explicit in CONTRACT-NOTES.md; source wiki revision944151 and donor XML citations are retained in variants.json. Focused realPG verifies native step admission/current fences and actual Bibby progression.",
+      "missing_facts": [],
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 373,
         "duration": "until_next_reset"
+      },
+      "binding": {
+        "kind": "world_change_variant",
+        "definition": "warpath"
       }
     }
   ]

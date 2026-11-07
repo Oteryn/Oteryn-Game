@@ -197,6 +197,8 @@ mod tutorial_session;
 mod vip_presence;
 mod vocation_choice;
 pub mod weapon_proficiency;
+mod world_change_kills;
+mod world_change_variants;
 mod world_event;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).

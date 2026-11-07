@@ -158,6 +158,8 @@ fn run_compile(
 /// here. The root `Cargo.toml` and `Cargo.lock` enter the `inputs_digest` in
 /// the World-scoped form of `cargo_inputs`; the lane still runs on any change to them.
 const INPUT_PATHS: &[&str] = &[
+    "content/encounters/world-changes/",
+    "crates/gameplay/world-change/",
     "content/world/",
     "content/cyclopedia/",
     "content/encounters/world-changes/layers.json",
@@ -249,7 +251,7 @@ fn derive_identity(root: &Path, slug: &str) -> Result<Identity, Error> {
             .collect()
     };
     let sorted_unique = |list: &[String]| list.windows(2).all(|pair| pair[0] < pair[1]);
-    let required_capabilities = strings(&manifest, "required_features", "manifest.json")?;
+    let mut required_capabilities = strings(&manifest, "required_features", "manifest.json")?;
     if !sorted_unique(&required_capabilities) {
         return Err(Error::Format(
             "manifest.json required_features is not sorted and unique".into(),
@@ -262,6 +264,14 @@ fn derive_identity(root: &Path, slug: &str) -> Result<Identity, Error> {
         return Err(Error::Format(format!(
             "manifest.json requires `{unsupported}`, which the node does not implement"
         )));
+    }
+    if !oteryn_gameplay_world_change::variants::definitions()
+        .map_err(|error| Error::Format(error.into()))?
+        .is_empty()
+    {
+        required_capabilities.push(oteryn_world_bundle::world_changes::CAPABILITY.into());
+        required_capabilities.sort();
+        required_capabilities.dedup();
     }
     let ruleset_compatibility = strings(&ruleset, "ruleset_compatibility", "ruleset file")?;
     if ruleset_compatibility.len() != 1 {

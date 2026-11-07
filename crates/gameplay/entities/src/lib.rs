@@ -125,6 +125,7 @@ pub use runtime_actor_carrier::MovementPositionSnapshot;
 pub use runtime_actor_carrier::NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX;
+pub use runtime_actor_carrier::NativeCreditedKillProof;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::NativeEncounterSpawnSpec;
 #[allow(unused_imports)]

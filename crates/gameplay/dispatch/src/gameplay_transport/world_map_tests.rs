@@ -212,6 +212,7 @@ fn bundle_bytes(
         })
         .collect();
     let manifest = Manifest {
+        world_changes: None,
         subareas: Default::default(),
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,

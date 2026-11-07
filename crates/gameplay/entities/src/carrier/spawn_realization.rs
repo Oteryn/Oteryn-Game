@@ -24,6 +24,8 @@ pub struct SpawnDefinition {
     points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
+    /// Exact home cells/creatures whose distinct committed deaths unlock this source.
+    kill_prerequisites: Vec<((i32, i32, i16), String)>,
 }
 
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
@@ -50,6 +52,26 @@ struct SpawnPointDefinition {
 type SpawnPointBuild = ((i32, i32, i16), SpawnPointDefinition);
 
 impl SpawnDefinition {
+    /// Keep this source dormant until every named home spawn cell has one committed
+    /// death. Repeated deaths of one respawning cell never replace another prerequisite.
+    /// Activation resolves the identities before admitting anything; an unknown,
+    /// ambiguous or itself gated prerequisite refuses the complete activation.
+    pub fn with_kill_prerequisites(
+        mut self,
+        prerequisites: Vec<((i32, i32, i16), String)>,
+    ) -> Result<Self, CarrierError> {
+        let mut cells = BTreeSet::new();
+        if prerequisites.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX
+            || prerequisites
+                .iter()
+                .any(|(cell, creature)| creature.is_empty() || !cells.insert(*cell))
+        {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        self.kill_prerequisites = prerequisites;
+        Ok(self)
+    }
+
     /// A source whose every point spawns the same creature with the same respawn delay.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -117,6 +139,7 @@ impl SpawnDefinition {
             population,
             points: definitions,
             occupancy_retry_interval_micros,
+            kill_prerequisites: Vec::new(),
         })
     }
 
@@ -139,9 +162,7 @@ impl SpawnDefinition {
 
     /// SPAWN-1b: one activated source of mixed points as a definition, in its authored point
     /// order; nothing is defaulted here.
-    pub(super) fn from_activation_source(
-        facts: ActivationSpawnSourceFacts,
-    ) -> Result<Self, CarrierError> {
+    pub fn from_activation_source(facts: ActivationSpawnSourceFacts) -> Result<Self, CarrierError> {
         let (points, occupancy_retry_interval_ms) = facts;
         if points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
             return Err(CarrierError::InvalidSpawnDefinition);
@@ -264,6 +285,7 @@ pub struct SpawnDriveReport {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct SpawnCellState {
     /// The live creature currently occupying this cell, if any.
+    /// A dormant kill-gated cell has none before its first admission.
     pub(super) live: Option<ExactActorRef>,
     /// This cell's current respawn chain's attempt index (1-3), 0 before any attempt.
     pub(super) attempt: u8,
@@ -272,7 +294,7 @@ pub(super) struct SpawnCellState {
     pub(super) successor: u32,
 }
 
-/// One realized spawn source and its per-cell state, for this carrier's ownership
+/// One registered spawn source and its per-cell state, for this carrier's ownership
 /// generation (§4.3: `EphemeralScopeReset` -- a restart/scope-move realizes it again; nothing
 /// here is durable).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -281,6 +303,103 @@ pub(super) struct SpawnRealization {
     pub(super) definition: SpawnDefinition,
     /// Same order/length as `definition.placement_cells`.
     pub(super) cells: Vec<SpawnCellState>,
+}
+
+/// A bounded part of the existing spawn owner's state, not a firing scheduler.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SpawnKillGate {
+    source: SpawnSourceId,
+    dependencies: Vec<SpawnKillDependency>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SpawnKillDependency {
+    point: spawn::SpawnPoint,
+    credited: bool,
+}
+
+impl SpawnKillGate {
+    fn open(&self) -> bool {
+        self.dependencies
+            .iter()
+            .all(|dependency| dependency.credited)
+    }
+}
+
+fn prepare_spawn_kill_gates(
+    definitions: &[SpawnDefinition],
+) -> Result<Vec<SpawnKillGate>, CarrierError> {
+    if definitions.iter().all(|d| d.kill_prerequisites.is_empty()) {
+        return Ok(Vec::new());
+    }
+    let dependency_count = definitions.iter().try_fold(0usize, |total, d| {
+        total
+            .checked_add(d.kill_prerequisites.len())
+            .ok_or(CarrierError::CapacityArithmeticOverflow)
+    })?;
+    if dependency_count > CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX {
+        return Err(CarrierError::CapacityExceeded);
+    }
+    let mut homes = std::collections::BTreeMap::new();
+    for (source, definition) in definitions.iter().enumerate() {
+        let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
+        for (ordinal, (cell, point)) in definition
+            .placement_cells
+            .iter()
+            .zip(&definition.points)
+            .enumerate()
+        {
+            let ordinal = u8::try_from(ordinal).map_err(|_| CarrierError::CapacityExceeded)?;
+            homes
+                .entry((
+                    (cell.x, cell.y, cell.floor),
+                    point.creature_target_identity.as_str(),
+                ))
+                .and_modify(|found| *found = None)
+                .or_insert(Some(spawn::SpawnPoint { source, ordinal }));
+        }
+    }
+    let mut gates = Vec::new();
+    gates
+        .try_reserve_exact(
+            definitions
+                .iter()
+                .filter(|d| !d.kill_prerequisites.is_empty())
+                .count(),
+        )
+        .map_err(|_| CarrierError::AllocationFailed)?;
+    for (source, definition) in definitions.iter().enumerate() {
+        if definition.kill_prerequisites.is_empty() {
+            continue;
+        }
+        let mut dependencies = Vec::new();
+        dependencies
+            .try_reserve_exact(definition.kill_prerequisites.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (cell, creature) in &definition.kill_prerequisites {
+            let point = homes
+                .get(&(*cell, creature.as_str()))
+                .copied()
+                .flatten()
+                .filter(|p| {
+                    definitions[usize::from(p.source)]
+                        .kill_prerequisites
+                        .is_empty()
+                })
+                .ok_or(CarrierError::InvalidSpawnDefinition)?;
+            dependencies.push(SpawnKillDependency {
+                point,
+                credited: false,
+            });
+        }
+        gates.push(SpawnKillGate {
+            source: SpawnSourceId(
+                u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?,
+            ),
+            dependencies,
+        });
+    }
+    Ok(gates)
 }
 
 /// AI-RL for respawn timers (§4.2's table; no separate `RESOURCE_LIMITS_REGISTRY.json` row is
@@ -401,11 +520,11 @@ impl SpawnActivation {
 /// SPAWN-CEILINGS-1: what one activation window call did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpawnActivationProgress {
-    /// Creatures this call realized: 0 when its owner window had already realized one.
+    /// Points this call visited, including dormant cells: 0 for an already visited window.
     pub realized: usize,
-    /// Creatures the activation has realized so far.
+    /// Activation points visited so far; dormant cells remain actorless until unlocked.
     pub realized_total: usize,
-    /// Points still to realize; 0 means the activation is complete.
+    /// Points still to visit; 0 means the activation is complete.
     pub remaining: usize,
 }
 
@@ -457,6 +576,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<usize, CarrierError> {
         if total_points > spawn::REALIZATIONS_PER_WINDOW_MAX {
             self.spawn_activation = None;
+            self.carrier.spawn_kill_gates.clear();
             return Err(CarrierError::CapacityExceeded);
         }
         let slots_before = self.carrier.slots.clone();
@@ -473,16 +593,22 @@ impl ChannelRuntimeV1 {
                 self.carrier.free_head = free_before;
                 self.carrier.occupied = occupied_before;
                 self.carrier.spawns.clear();
+                self.carrier.spawn_kill_gates.clear();
                 Err(error)
             }
         }
     }
-    pub(super) fn begin_spawn_definitions(
+    /// Begin the ordinary checked activation with definitions optionally carrying
+    /// exact kill prerequisites. All resolution precedes any actor admission.
+    pub fn begin_spawn_definitions(
         &mut self,
         definitions: Vec<SpawnDefinition>,
     ) -> Result<usize, CarrierError> {
         let total_points = self.check_spawn_activation(&definitions)?;
-        self.spawn_activation = Some(Box::new(SpawnActivation::new(definitions, total_points)?));
+        let gates = prepare_spawn_kill_gates(&definitions)?;
+        let activation = SpawnActivation::new(definitions, total_points)?;
+        self.carrier.spawn_kill_gates = gates;
+        self.spawn_activation = Some(Box::new(activation));
         Ok(total_points)
     }
     /// The checks every activation passes before anything is kept or admitted: the owner
@@ -684,8 +810,10 @@ impl ChannelRuntimeV1 {
                 source: spawn.source.0,
                 ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
             };
+            let gate = self.carrier.spawn_kill_gate(spawn.source);
             if gone
                 && spawn.definition.points[cell].enabled
+                && gate.is_none_or(SpawnKillGate::open)
                 && self.spawn_schedule.pending(point).is_none()
             {
                 // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
@@ -696,6 +824,11 @@ impl ChannelRuntimeV1 {
                         timing.respawn_delay_micros,
                         oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
                     );
+                // An unlocked dormant source has never had an actor: it enters the
+                // existing warning/occupancy path now, not one boss respawn delay later.
+                if gate.is_some() && spawn.cells[cell].live.is_none() {
+                    timing.respawn_delay_micros = 0;
+                }
                 let due_micros = self
                     .spawn_schedule
                     .creature_gone(point, timing, now_micros)
@@ -871,6 +1004,36 @@ impl ChannelRuntimeV1 {
 impl ChannelActorCarrier {
     // AI-2 (§4.3, §4.9, D116): spawn realization and respawn.
 
+    fn spawn_kill_gate(&self, source: SpawnSourceId) -> Option<&SpawnKillGate> {
+        self.spawn_kill_gates
+            .binary_search_by_key(&source.0, |gate| gate.source.0)
+            .ok()
+            .map(|index| &self.spawn_kill_gates[index])
+    }
+
+    /// Called only after the ordinary lethal owner validates and retains its
+    /// committed death projection. Home point identity survives creature movement;
+    /// the exact actor comparison excludes slot reuse, foreign actors and despawns.
+    /// Only registered dependency cells are read, never a Channel-wide actor scan.
+    pub(super) fn record_spawn_dependency_death(&mut self, actor: ExactActorRef) {
+        for gate in 0..self.spawn_kill_gates.len() {
+            for dependency in 0..self.spawn_kill_gates[gate].dependencies.len() {
+                let expected = &self.spawn_kill_gates[gate].dependencies[dependency];
+                if expected.credited {
+                    continue;
+                }
+                let point = expected.point;
+                let matches = self
+                    .spawn_index(SpawnSourceId(point.source))
+                    .and_then(|index| self.spawns[index].cells.get(usize::from(point.ordinal)))
+                    .is_some_and(|cell| cell.live == Some(actor));
+                if matches {
+                    self.spawn_kill_gates[gate].dependencies[dependency].credited = true;
+                }
+            }
+        }
+    }
+
     /// The index of `source` in `self.spawns`, which is kept in strictly ascending source
     /// order: a binary search, not a scan of every realized source.
     fn spawn_index(&self, source: SpawnSourceId) -> Option<usize> {
@@ -908,6 +1071,11 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         self.validate_current_continuity(continuity)?;
         self.validate_position_context(position_context)?;
+        // Prerequisite resolution is an activation-wide check, so a direct
+        // single-source realization cannot bypass the dormant activation path.
+        if !definition.kill_prerequisites.is_empty() {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
         if self.spawn_index(source).is_some() {
             return Err(CarrierError::DuplicateSpawnSource);
         }
@@ -1042,6 +1210,14 @@ impl ChannelActorCarrier {
         if realization.cells.len() != ordinal {
             return Err(CarrierError::PlanConflict);
         }
+        if !self.spawn_kill_gate(source).is_none_or(SpawnKillGate::open) {
+            self.spawns[index].cells.push(SpawnCellState {
+                live: None,
+                attempt: 0,
+                successor: 0,
+            });
+            return Ok(());
+        }
         let cell = *realization
             .definition
             .placement_cells
@@ -1171,6 +1347,9 @@ impl ChannelActorCarrier {
         let spawn_index = self
             .spawn_index(source)
             .ok_or(CarrierError::UnknownSpawnSource)?;
+        if !self.spawn_kill_gate(source).is_none_or(SpawnKillGate::open) {
+            return Err(CarrierError::PlanConflict);
+        }
         let cell = *self.spawns[spawn_index]
             .definition
             .placement_cells
@@ -1251,6 +1430,9 @@ impl ChannelActorCarrier {
         let spawn_index = self
             .spawn_index(source)
             .ok_or(CarrierError::UnknownSpawnSource)?;
+        if !self.spawn_kill_gate(source).is_none_or(SpawnKillGate::open) {
+            return Err(CarrierError::PlanConflict);
+        }
         let realization = &self.spawns[spawn_index];
         let cell = *realization
             .definition

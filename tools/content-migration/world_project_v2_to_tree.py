@@ -191,6 +191,13 @@ def main() -> int:
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
+    spec = importlib.util.spec_from_file_location(
+        "wvar_corpse_items", ROOT / "tools/content-schema/native-gameplay/wvar_corpse_items.py")
+    wvar_corpses = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wvar_corpses)
+    wvar_corpses.apply_admissions(item_records, ROOT)
+    import wvar_item_profiles
+    wvar_item_profiles.apply_canonical_admissions(item_records, ROOT)
     from amber_item_semantics import apply_container_fact
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions

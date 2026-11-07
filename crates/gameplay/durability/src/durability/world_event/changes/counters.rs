@@ -7,7 +7,8 @@ pub(super) mod shared_objects;
 pub(crate) mod shared_progress;
 
 use super::*;
-use crate::durability::character_progression::assert_runtime_scope_fence;
+use crate::durability::character_progression::{assert_item_only_fence, assert_runtime_scope_fence};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{CharacterId, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 pub use oteryn_gameplay_world_change::counter::{Bindings, CounterKind, CounterState, Credit};
@@ -39,12 +40,13 @@ pub struct CreditEvent {
     pub source_kind: u8,
     pub occurrence: Vec<u8>,
     pub credits: Vec<(CounterKind, Credit)>,
-    pub counter_generations: [u64; 8],
+    pub counter_generations: [u64; 9],
     pub occurred_at_ms: u64,
     pub character: Option<CharacterId>,
 }
 pub struct CreditAuthority {
     transaction: String,
+    native_character: Option<CurrentCharacterItemFence>,
     recovery: CharacterRecoveryFenceV1,
     node: NodeIncarnationProof,
     scope: RuntimeScopeRefV1,
@@ -78,6 +80,7 @@ pub async fn authorize(
         .await?;
     Ok(Some(CreditAuthority {
         transaction,
+        native_character: None,
         recovery: recovery.clone(),
         node: node.clone(),
         scope,
@@ -95,6 +98,14 @@ impl CreditAuthority {
         }
         assert_recovery_fence(tx, &self.recovery).await?;
         lock_admission_relations(tx).await?;
+        if let Some(fence) = &self.native_character
+            && assert_item_only_fence(tx, fence, &self.node)
+                .await?
+                .is_err()
+        {
+            return Ok(false);
+        }
+
         Ok(
             assert_runtime_scope_fence(tx, self.scope, self.generation, &self.node).await?
                 && super::load(tx, self.scope.world_id(), self.epoch)
@@ -107,21 +118,21 @@ async fn states(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     lock: bool,
-) -> Result<[CounterState; 8], DurabilityError> {
+) -> Result<[CounterState; 9], DurabilityError> {
     let statement = if lock {
-        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 9 FOR UPDATE"
+        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 10 FOR UPDATE"
     } else {
-        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 9"
+        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 10"
     };
     let rows = sqlx::query(statement)
         .bind(world.as_bytes().as_slice())
         .fetch_all(&mut **tx)
         .await?;
-    if rows.len() != 8 {
+    if rows.len() != CounterKind::ALL.len() {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let mut values = [CounterState::new(CounterKind::Deeplings, 0, false); 8];
-    let mut seen = [false; 8];
+    let mut values = [CounterState::new(CounterKind::Deeplings, 0, false); 9];
+    let mut seen = [false; 9];
     for row in rows {
         let key: String = row.try_get("change_key")?;
         let kind = CounterKind::from_key(&key).ok_or(DurabilityError::InvalidStoredState)?;
@@ -220,7 +231,7 @@ pub async fn credit(
     if !(1..=5).contains(&event.source_kind)
         || !(16..=128).contains(&event.occurrence.len())
         || event.credits.is_empty()
-        || event.credits.len() > 8
+        || event.credits.len() > CounterKind::ALL.len()
         || !authority.current(tx).await?
     {
         return Ok(CreditOutcome::Refused);
@@ -242,6 +253,17 @@ pub async fn credit(
                 | (4, Credit::MissionComplete)
         )
     });
+    if event
+        .credits
+        .iter()
+        .any(|(kind, _)| *kind == CounterKind::Thornfire)
+        && (!matches!(authority.scope, RuntimeScopeRefV1::Channel { .. })
+            || !super::load(tx, authority.scope.world_id(), authority.epoch)
+                .await?
+                .is_some_and(|day| day.variant("thornfire").is_some()))
+    {
+        return Ok(CreditOutcome::Refused);
+    }
     if !source_matches || event.character.is_none() {
         return Ok(CreditOutcome::Refused);
     }
@@ -314,7 +336,7 @@ pub async fn credit(
             .fetch_one(&mut **tx)
             .await?;
     let current_ms = u64::try_from(current_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let mut seen = [false; 8];
+    let mut seen = [false; 9];
     let mut changed = false;
     for &(kind, credit) in &event.credits {
         let index = kind.index();
@@ -484,4 +506,51 @@ pub async fn voice_eligible(
     sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_change_personal_counters p JOIN game_world_change_counters c USING(world_id,change_key) WHERE p.world_id=encode($1,'hex')::uuid AND p.change_key='their_masters_voice' AND p.character_id=encode($2,'hex')::uuid AND c.reset_epoch=$3::text::numeric AND p.counter>=25 AND p.period_deadline_ms=(c.state->>'deadline_ms')::bigint AND p.period_deadline_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint LIMIT 1)")
         .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(epoch.to_string())
         .fetch_one(&mut **tx).await.map_err(Into::into)
+}
+
+impl DurabilityRoot {
+    /// Native kill writes recheck Character/session/lease interpretation under the SAME transaction.
+    pub async fn credit_world_change_native_event(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        epoch: u64,
+        event: CreditEvent,
+    ) -> Result<CreditOutcome, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    if event.character.as_ref().map(|id| id.as_bytes())
+                        != Some(fence.character_id.as_bytes())
+                    {
+                        return Ok(CreditOutcome::Refused);
+                    }
+                    let Some(mut current) = authorize(
+                        &mut tx,
+                        &recovery,
+                        &node,
+                        fence.runtime_scope,
+                        fence.scope_ownership_generation,
+                        epoch,
+                    )
+                    .await?
+                    else {
+                        return Ok(CreditOutcome::Refused);
+                    };
+                    current.native_character = Some(fence);
+                    let result = credit(&mut tx, &current, &event).await?;
+                    if result != CreditOutcome::Refused {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })
+            })
+            .await
+    }
 }

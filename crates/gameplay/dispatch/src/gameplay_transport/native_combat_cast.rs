@@ -202,6 +202,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    WorldStation(Box<super::super::item_craft::world_changes::PendingWorldStation>),
     Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
@@ -351,6 +352,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::WorldStation(pending) => {
+                drop(states);
+                self.resolve_world_station(&mut permit, *pending).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Enchanting(pending) => {
                 drop(states);
                 self.resolve_enchanting(&mut permit, *pending).await;

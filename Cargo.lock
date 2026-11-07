@@ -2469,6 +2469,7 @@ dependencies = [
  "oteryn-gameplay-spell-rules",
  "oteryn-gameplay-weather",
  "oteryn-gameplay-world",
+ "oteryn-gameplay-world-change",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2811,6 +2812,7 @@ dependencies = [
  "oteryn-gameplay-housing",
  "oteryn-gameplay-items",
  "oteryn-gameplay-node-files",
+ "oteryn-gameplay-world-change",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
@@ -2825,8 +2827,10 @@ dependencies = [
 name = "oteryn-gameplay-world-change"
 version = "0.1.0"
 dependencies = [
+ "oteryn-world-bundle",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
 ]
 
 [[package]]
@@ -3018,6 +3022,7 @@ name = "oteryn-world-bundle-compiler"
 version = "0.1.0"
 dependencies = [
  "lzma-rs",
+ "oteryn-gameplay-world-change",
  "oteryn-world-bundle",
  "serde",
  "serde_json",

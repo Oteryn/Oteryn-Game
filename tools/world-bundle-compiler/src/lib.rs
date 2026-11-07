@@ -8,5 +8,6 @@ pub mod compile;
 pub mod project;
 pub mod resolve;
 pub mod source;
+pub mod world_changes;
 
 pub use oteryn_world_bundle::{Error, npc, sector, spawn};

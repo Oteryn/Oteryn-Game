@@ -32,7 +32,8 @@ impl CallbackStates {
         })
     }
     fn has_capacity(&self, additional: usize) -> bool {
-        let used = self.changed.len()
+        let used = self.passable.len()
+            + self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()
             + self.movement_effects.len()
@@ -43,6 +44,32 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// Seed the existing collision overrides from a committed variant's closed gates.
+    pub(in crate::map) fn seed_variant_barriers(&self, barriers: &BTreeSet<TilePos>) -> bool {
+        let Some(keys) = barriers
+            .iter()
+            .map(|position| {
+                (!self.house_tile(*position))
+                    .then(|| placement_key(*position, 0))
+                    .flatten()
+            })
+            .collect::<Option<Vec<_>>>()
+        else {
+            return false;
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if !states.has_capacity(keys.len()) {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        for key in keys {
+            states.passable.insert(key, false);
+        }
+        true
+    }
+
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {

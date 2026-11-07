@@ -79,7 +79,7 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
-            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(generated.get(path, (root / path).read_bytes())).hexdigest(),
         }
     cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
     if (root / cosmetics).is_file():
@@ -346,6 +346,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     soulpit_echo_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import gathering_item_profiles
     gathering_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import wvar_item_profiles
+    wvar_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import harvest_item_profiles
     harvest_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles
@@ -422,6 +424,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
+    import wvar_creature_profiles
+    wvar_creature_profiles.admit(root, generated)
     pin_repository_inputs(root, generated)
     # Refresh only the three admitted World-change input sources after repository pins.
     # Probabilities/quantities stay byte-semantically pinned; Item policies own admission.

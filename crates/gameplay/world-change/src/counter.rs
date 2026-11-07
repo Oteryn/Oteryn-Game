@@ -13,9 +13,10 @@ pub enum CounterKind {
     FireFeathered,
     MagesTower,
     TheirMastersVoice,
+    Thornfire,
 }
 impl CounterKind {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::Deeplings,
         Self::DemonWars,
         Self::FireEarth,
@@ -24,6 +25,7 @@ impl CounterKind {
         Self::FireFeathered,
         Self::MagesTower,
         Self::TheirMastersVoice,
+        Self::Thornfire,
     ];
     pub const fn key(self) -> &'static str {
         match self {
@@ -35,6 +37,7 @@ impl CounterKind {
             Self::FireFeathered => "the_fire_feathered_serpent",
             Self::MagesTower => "the_mage_s_tower",
             Self::TheirMastersVoice => "their_masters_voice",
+            Self::Thornfire => "thornfire",
         }
     }
     pub fn from_key(key: &str) -> Option<Self> {
@@ -131,11 +134,13 @@ impl CounterState {
                         }
                     }
             }
-            CounterKind::Overhunting => (1..=2).contains(&self.stage),
+            CounterKind::Overhunting | CounterKind::Thornfire => (1..=2).contains(&self.stage),
             CounterKind::FireEarth => self.stage <= 1,
             _ => (1..=3).contains(&self.stage),
         };
         if !valid
+            || (kind == CounterKind::Thornfire
+                && (self.counts[0] >> 54 != 0 || self.counts[1] > 7 || self.counts[2] != 0))
             || self.entered_epoch > self.epoch
             || self.phase_version == 0
             || self.credit_generation == 0
@@ -150,6 +155,7 @@ impl CounterState {
     }
     pub const fn is_active(self, kind: CounterKind) -> bool {
         match kind {
+            CounterKind::Thornfire => self.stage == 2,
             CounterKind::FireEarth => self.stage == 1,
             CounterKind::FireFeathered => self.stage == 3,
             CounterKind::MagesTower => self.stage < 4,
@@ -229,6 +235,16 @@ impl CounterState {
             (CounterKind::TheirMastersVoice, Credit::VoiceMage) if next.stage == 3 => {
                 next.stage = 4;
             }
+            (CounterKind::Thornfire, Credit::Kill(home @ 0..=53)) if next.stage == 1 => {
+                // One bit per authored home; farming a respawn cannot replace another Elf.
+                next.counts[0] |= 1_u64 << home;
+                if home >= 51 {
+                    // Conservative source rule: an Overseer's death releases its prison.
+                    next.counts[1] |= 1_u64 << (home - 51);
+                }
+            }
+            (CounterKind::Thornfire, Credit::Kill(0..=53)) => {}
+
             (CounterKind::DemonWars, Credit::Kill(side @ 0..=1)) => {
                 add(&mut next.counts[usize::from(side)], 1)?
             }
@@ -369,6 +385,17 @@ impl CounterState {
         let mut next = self.tick(kind, now_ms)?;
         next.epoch = epoch;
         match kind {
+            CounterKind::Thornfire => {
+                next.stage = if self.stage == 1
+                    && self.counts[0] == (1_u64 << 54) - 1
+                    && self.counts[1] == 7
+                {
+                    2
+                } else {
+                    1
+                };
+                next.counts = [0; 3];
+            }
             CounterKind::DemonWars => {
                 let difference = i128::from(next.counts[0]) - i128::from(next.counts[1]);
                 let step = if difference >= 100 {
@@ -476,7 +503,7 @@ pub struct KillSource {
 impl Bindings {
     pub fn validate(&self) -> Result<(), CounterError> {
         if self.schema != "OTERYN_WORLD_CREDIT_COUNTERS/v1"
-            || self.definitions.len() != 8
+            || self.definitions.len() != CounterKind::ALL.len()
             || self.parameters.deepling_points == 0
             || self.parameters.deer_kills == 0
             || self.parameters.wolf_recovery == 0
@@ -530,9 +557,42 @@ impl Bindings {
             {
                 return Err(CounterError::InvalidState);
             }
+            if definition.kind == CounterKind::Thornfire {
+                let mut homes = std::collections::BTreeSet::new();
+                if definition.sources.len() != 54
+                    || definition
+                        .sources
+                        .iter()
+                        .enumerate()
+                        .any(|(index, source)| {
+                            let [x0, x1, y0, y1, z0, z1] = source.area;
+                            source.lane as usize != index
+                                || x0 != x1
+                                || y0 != y1
+                                || z0 != z1
+                                || !homes.insert((x0, y0, z0))
+                                || (source.creature == "oteryn:creature.elf_overseer")
+                                    != (index >= 51)
+                                || !matches!(
+                                    source.creature.as_str(),
+                                    "oteryn:creature.elf"
+                                        | "oteryn:creature.elf_scout"
+                                        | "oteryn:creature.elf_arcanist"
+                                        | "oteryn:creature.elf_overseer"
+                                )
+                        })
+                {
+                    return Err(CounterError::InvalidState);
+                }
+            }
             for source in &definition.sources {
                 let [x0, x1, y0, y1, z0, z1] = source.area;
-                if source.lane > 2
+                if source.lane
+                    > if definition.kind == CounterKind::Thornfire {
+                        53
+                    } else {
+                        2
+                    }
                     || source.creature.len() > 128
                     || !source.creature.starts_with("oteryn:creature.")
                     || !(0..=65535).contains(&x0)
@@ -587,7 +647,7 @@ impl Bindings {
         &'a self,
         creature: &str,
         position: (i32, i32, i16),
-        stages: [u8; 8],
+        stages: [u8; 9],
     ) -> Option<Option<&'a str>> {
         self.spawn_rules
             .iter()

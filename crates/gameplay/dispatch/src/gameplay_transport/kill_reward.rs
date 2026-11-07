@@ -124,6 +124,8 @@ pub struct PendingKillSettlement {
     /// Nonreward Instance death metadata captured before releasing the lethal turn.
     pub(super) activity_death: Option<CapturedActivityDeath>,
     pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
+    pub(super) world_change_kill:
+        Option<crate::durability::quest_state::world_change_kills::NativeWorldChangeKill>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -212,6 +214,7 @@ impl PendingKillSettlement {
             boss_reward: None,
             activity_death: None,
             grizzly: None,
+            world_change_kill: None,
             no_progression_logged: false,
         }
     }
@@ -380,6 +383,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    pub(super) Arc<Mutex<Option<super::world_change_kills::CaptureBinding>>>,
 );
 
 #[derive(Debug, Clone)]
@@ -1164,6 +1168,20 @@ impl TakenKillSettlement {
 
     /// The settle reached a final result: the entry leaves the queue.
     pub fn finish(mut self) {
+        if let Some(entry) = &self.entry {
+            let receipts = self
+                .queue
+                .state()
+                .analyser
+                .iter()
+                .find(|(actor, _)| *actor == entry.target)
+                .map(|(_, receipts)| Arc::clone(receipts));
+            if let Some(receipts) = receipts
+                && let Ok(mut receipts) = receipts.lock()
+            {
+                receipts.settled = true;
+            }
+        }
         self.entry = None;
     }
 
@@ -1294,6 +1312,13 @@ pub fn record_creature_kill(
     {
         return;
     }
+    // This advisory receipt lives only as long as this exact sealed native
+    // corpse. A finally settled death must not reconstruct new XP/loot plans
+    // when its original callback replays; partial queue retries stay live.
+    let receipts = sink.queue.analyser_receipts(runtime, target);
+    if receipts.lock().is_ok_and(|receipts| receipts.settled) {
+        return;
+    }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;
@@ -1369,6 +1394,19 @@ pub fn record_creature_kill(
             let mut credits = world_change_credits(&creature, facts.corpse);
             let cohort = runtime.world_spawn_cohort(target);
             use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+            // World-wide Elf completion belongs to exact authored homes, not lure/death tiles.
+            credits.retain(|(kind, _)| *kind != CounterKind::Thornfire);
+            if matches!(
+                runtime.binding().runtime_scope(),
+                crate::foundation::RuntimeScopeRefV1::Channel { .. }
+            ) && let Some(home) = runtime.authored_spawn_home(target)
+            {
+                credits.extend(
+                    world_change_credits(&creature, home)
+                        .into_iter()
+                        .filter(|(kind, _)| *kind == CounterKind::Thornfire),
+                );
+            }
             if let Some((key, _, home)) = cohort {
                 if let Some(wave) = key
                     .strip_prefix("their_masters_voice.wave.")
@@ -1390,7 +1428,7 @@ pub fn record_creature_kill(
             if credits.is_empty() {
                 return None;
             }
-            let mut generations = [0; 8];
+            let mut generations = [0; 9];
             for kind in crate::durability::world_event::changes::counters::CounterKind::ALL {
                 generations[kind.index()] = *cycles.get(kind.key())?;
             }
@@ -1467,7 +1505,9 @@ pub fn record_creature_kill(
             // invents an XP amount, loot table, corpse Item or Bestiary race.
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
-                && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
+                && (top.present().is_none()
+                    || !(super::grizzly_kills::tracks_creature(&creature)
+                        || super::world_change_kills::tracks_creature(&creature)))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the
@@ -1499,6 +1539,7 @@ pub fn record_creature_kill(
                             boss_reward: None,
                             activity_death: None,
                             grizzly: None,
+                            world_change_kill: None,
                             no_progression_logged: false,
                         },
                     );
@@ -1822,6 +1863,7 @@ pub fn record_creature_kill(
         task_board_recipients: Arc::default(),
         talisman: Arc::default(),
         grizzly: None,
+        world_change_kill: None,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1848,6 +1890,7 @@ fn accept_kill(
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     super::grizzly_kills::capture(runtime, queue, &mut entry);
+    super::world_change_kills::capture(runtime, queue, &mut entry);
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -2419,6 +2462,12 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        if !self.admission.credit_world_change_death(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
@@ -2533,7 +2582,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             };
-            match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
+            match if event.credits.iter().any(|(kind, _)| *kind == crate::durability::world_event::changes::counters::CounterKind::Thornfire) {
+                let fence = admission.current_quest_fence(entry.facts.principal.session).await.ok().flatten();
+                if let Some(fence) = fence.filter(|f| f.character_id.as_bytes() == entry.facts.principal.character.as_bytes()
+                    && f.character_lease_generation == entry.facts.principal.lease_generation
+                    && f.runtime_scope == scope && f.scope_ownership_generation == generation) {
+                    admission.root.credit_world_change_native_event(admission.character, admission.holder, fence.item_fence(), *epoch, event.clone()).await
+                } else { Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) }
+            } else { admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await } {
                 Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
                    crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
                 Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
