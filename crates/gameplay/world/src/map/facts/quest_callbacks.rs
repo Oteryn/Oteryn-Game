@@ -262,30 +262,149 @@ impl BundleFacts {
 
     /// W05b (Crystal thawing.lua:21-27): a daily world change's volatile Item, placed at
     /// Channel boot; no magic effect. Lives until the Channel ends, like other callback items.
-    pub fn create_world_change_item(&self, pos: TilePos, appearance: u16) -> bool {
-        let Some(facts) = self.movement_item_facts(appearance) else {
+    /// Author a server-owned shared callback object through the existing Added
+    /// source identity. A portable catalogue appearance is never pickup custody.
+    pub fn create_world_change_callback_item(&self, pos: TilePos, appearance: u16) -> bool {
+        if !self.create_world_change_item(pos, appearance) {
+            return false;
+        }
+        let Some(id) = super::super::overlay::EntryId::world_change(pos, appearance) else {
             return false;
         };
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+        let states = Arc::make_mut(&mut states);
+        let Some(entry) = states.movement_items.get_mut(&pos).and_then(|entries| {
+            entries
+                .iter_mut()
+                .find(|entry| entry.source == view::EntrySource::Added(id))
+        }) else {
             return false;
         };
-        let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+        entry.facts.pickupable = false;
+        entry.facts.bound = true;
+        true
+    }
+
+    /// Remove a committed shared world source while retaining its revision fence.
+    pub fn remove_world_change_callback_item(&self, key: u64, revision: u64) -> bool {
+        let Some((_, x, y, z)) =
+            oteryn_gameplay_items::event_planting::world_change_item_source(key)
+        else {
             return false;
         };
+        let pos = TilePos {
+            x,
+            y,
+            floor: -(z as i8),
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.changed.get(&key).map_or(0, |(r, _)| *r) != revision {
+            return false;
+        }
+        let Some(entries) = Arc::make_mut(&mut states).movement_items.get_mut(&pos) else {
+            return false;
+        };
+        let before = entries.len();
+        entries
+            .retain(|entry| !matches!(entry.source,view::EntrySource::Added(id) if id.get()==key));
+        before == entries.len() + 1
+    }
+
+    pub fn create_world_change_item(&self, pos: TilePos, appearance: u16) -> bool {
+        let Some(facts) = self.movement_item_facts(appearance) else {
+            return false;
+        };
+        let Some(id) = super::super::overlay::EntryId::world_change(pos, appearance) else {
+            return false;
+        };
+        if self.house_tile(pos) {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        // A repeated projection cannot undo a harvest or create a second source.
+        if states.movement_items.get(&pos).is_some_and(|entries| {
+            entries
+                .iter()
+                .any(|entry| entry.source == view::EntrySource::Added(id))
+        }) {
+            return true;
+        }
         if !states.has_capacity(1) {
             return false;
         }
-        let entry = view::ComposedEntry {
-            source: view::EntrySource::Added(id),
-            facts,
-        };
-        let states = Arc::make_mut(&mut states);
-        states.movement_sequence = sequence;
-        states.movement_items.entry(pos).or_default().push(entry);
+        Arc::make_mut(&mut states)
+            .movement_items
+            .entry(pos)
+            .or_default()
+            .push(view::ComposedEntry {
+                source: view::EntrySource::Added(id),
+                facts,
+            });
         true
+    }
+
+    /// Install the existing durable harvest CAS on its stable Added object, including restart
+    /// and regrowth. None delegates ordinary base/volatile/player-grown objects to their owner.
+    pub fn install_world_change_harvest_state(
+        &self,
+        key: u64,
+        revision: u64,
+        appearance: u16,
+    ) -> Option<bool> {
+        let (source, x, y, z) =
+            oteryn_gameplay_items::event_planting::world_change_item_source(key)?;
+        let pos = TilePos {
+            x,
+            y,
+            floor: -(z as i8),
+        };
+        if source != 13842
+            || !matches!(appearance, 13842 | 13843)
+            || revision == 0
+            || self.house_tile(pos)
+        {
+            return Some(false);
+        }
+        let Some(after) = self.movement_item_facts(appearance) else {
+            return Some(false);
+        };
+        let Ok(mut states) = self.callbacks.lock() else {
+            return Some(false);
+        };
+        let Some((actual, _)) = states.movement_item(key) else {
+            return Some(false);
+        };
+        if actual != pos {
+            return Some(false);
+        }
+        if let Some((current, facts)) = states.changed.get(&key) {
+            if *current > revision {
+                return Some(true);
+            }
+            if *current == revision {
+                return Some(*facts == after);
+            }
+        }
+        if !states.has_capacity(1) {
+            return Some(false);
+        }
+        let states = Arc::make_mut(&mut states);
+        let Some(entry) = states.movement_items.get_mut(&pos).and_then(|entries| {
+            entries.iter_mut().find(
+                |entry| matches!(entry.source, view::EntrySource::Added(id) if id.get() == key),
+            )
+        }) else {
+            return Some(false);
+        };
+        entry.facts = after;
+        states.changed.insert(key, (revision, after));
+        Some(true)
     }
 
     /// Bounded observation; cursors are per observer so nearby sessions see the same effect.
@@ -340,6 +459,19 @@ impl BundleFacts {
 
     /// A bridge replacement must already have unambiguous facts in the bundle palette.
     pub fn quest_callback_replacement(&self, key: u64, appearance: u16) -> Option<EntryFacts> {
+        if let Some((_, x, y, z)) =
+            oteryn_gameplay_items::event_planting::world_change_item_source(key)
+        {
+            let pos = TilePos {
+                x,
+                y,
+                floor: -(z as i8),
+            };
+            if self.house_tile(pos) || self.callbacks.lock().ok()?.movement_item(key)?.0 != pos {
+                return None;
+            }
+            return self.movement_item_facts(appearance);
+        }
         let (pos, _) = view::placement_of(key)?;
         if self.house_tile(pos) {
             return None;

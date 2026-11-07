@@ -32,6 +32,7 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
+pub mod yeo;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -74,13 +75,16 @@ type Result<T> = std::result::Result<T, NpcTradeError>;
 const REQUEST_BINDING_VERSION: u8 = 1;
 mod hireling;
 pub(super) mod sell_hireling;
-pub use hireling::{HirelingTradeSelection,HirelingPackageSelection};
+pub use hireling::{HirelingPackageSelection, HirelingTradeSelection};
 
 #[derive(Default)]
 struct TradeCommitOptions<'a> {
     sell_all: bool,
     hireling: Option<hireling::Extra>,
     weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
+    /// Source coordinates captured from the exact live NPC by the normal trade caller.
+    yasir_position: Option<(u16, u16, i8)>,
+    yeo_position: Option<(u16, u16, i8)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -330,10 +334,14 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 /// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`. A sell-all names one
 /// unit of a count-1 SELL offer; its total and units come from the plan (`None` here).
 fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
-    validate_sell_bound(request,sell_all,rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
+    validate_sell_bound(request, sell_all, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX)
 }
 
-fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Result<Option<(u64,u32)>> {
+fn validate_sell_bound(
+    request: &NpcTradeRequest,
+    sell_all: bool,
+    sell_max: u64,
+) -> Result<Option<(u64, u32)>> {
     let cause = &request.cause;
     let priced = if sell_all {
         if cause.side != NpcTradeSide::Sell
@@ -345,11 +353,17 @@ fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Res
         }
         None
     } else {
-        Some(if cause.side==NpcTradeSide::Buy {
-            rules::trade_total(true,request.quantity,request.unit_price)?
+        Some(if cause.side == NpcTradeSide::Buy {
+            rules::trade_total(true, request.quantity, request.unit_price)?
         } else {
-            let total=request.unit_price.checked_mul(u64::from(request.quantity)).ok_or(NpcTradeError::InvalidInput)?;
-            if !(1..=rules::NPC_TRADE_QUANTITY_MAX).contains(&request.quantity) || total>sell_max {return Err(NpcTradeError::InvalidInput)}
+            let total = request
+                .unit_price
+                .checked_mul(u64::from(request.quantity))
+                .ok_or(NpcTradeError::InvalidInput)?;
+            if !(1..=rules::NPC_TRADE_QUANTITY_MAX).contains(&request.quantity) || total > sell_max
+            {
+                return Err(NpcTradeError::InvalidInput);
+            }
             total
         })
     };
@@ -430,6 +444,60 @@ fn request_binding(
         digest.update([1]);
     }
     digest.finalize().to_vec()
+}
+
+const YASIR: &str = "oteryn:npc.yasir";
+
+fn bind_yasir_position(binding: Vec<u8>, position: Option<(u16, u16, i8)>) -> Vec<u8> {
+    let Some((x, y, z)) = position else {
+        return binding;
+    };
+    Sha256::new()
+        .chain_update(b"oteryn:npc-trade-yasir-position:v1\0")
+        .chain_update(binding)
+        .chain_update(x.to_be_bytes())
+        .chain_update(y.to_be_bytes())
+        .chain_update(z.to_be_bytes())
+        .finalize()
+        .to_vec()
+}
+
+fn selected_yasir_position(
+    day: &oteryn_gameplay_world_change::daily::DailyWorldChanges,
+    position: (u16, u16, i8),
+) -> bool {
+    oteryn_gameplay_world_change::owner::is_active(day, "oriental_trader")
+        && day
+            .oriental_trader
+            .is_some_and(|town| town.yasir_position() == position)
+}
+
+/// Existing physical NPC placement and the committed reset owner must agree. A cached
+/// conversation or retained callback cannot authorize an inactive or different ship.
+async fn yasir_permitted(
+    tx: &mut Type2Transaction<'_>,
+    world: WorldId,
+    npc: &str,
+    position: Option<(u16, u16, i8)>,
+) -> std::result::Result<bool, DurabilityError> {
+    if npc != YASIR {
+        return Ok(true);
+    }
+    let Some(position) = position else {
+        return Ok(false);
+    };
+    let epoch: Option<String> = sqlx::query_scalar(
+        "SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid"
+    ).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let Some(epoch) = epoch else {
+        return Ok(false);
+    };
+    let epoch = epoch
+        .parse()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(super::world_event::changes::load(tx, world, epoch)
+        .await?
+        .is_some_and(|day| selected_yasir_position(&day, position)))
 }
 
 /// The trade materialized from the locked before-state.
@@ -611,8 +679,43 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
     ) -> Result<NpcTradeOutcome> {
-        self.commit_trade(authority, node, fence, request, TradeCommitOptions::default())
-            .await
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions::default(),
+        )
+        .await
+    }
+
+    /// The normal NPC caller supplies Yasir's actual source-coordinate placement.
+    /// All current Character/node/scope fences and the daily prerequisite are checked
+    /// inside the same item transaction; historical receipts precede the live gate.
+    pub async fn commit_yasir_trade(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+        source_position: (u16, u16, i8),
+        sell_all: bool,
+    ) -> Result<NpcTradeOutcome> {
+        if request.cause.npc_key != YASIR || !(0..=15).contains(&source_position.2) {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                sell_all,
+                yasir_position: Some(source_position),
+                ..TradeCommitOptions::default()
+            },
+        )
+        .await
     }
 
     /// Commit one sell-all (NPC-TRADE-SELLALL-1, see the module documentation) of a count-1 SELL
@@ -625,8 +728,17 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
     ) -> Result<NpcTradeOutcome> {
-        self.commit_trade(authority, node, fence, request, TradeCommitOptions { sell_all: true, ..TradeCommitOptions::default() })
-            .await
+        self.commit_trade(
+            authority,
+            node,
+            fence,
+            request,
+            TradeCommitOptions {
+                sell_all: true,
+                ..TradeCommitOptions::default()
+            },
+        )
+        .await
     }
 
     async fn commit_trade(
@@ -637,21 +749,39 @@ impl DurabilityRoot {
         request: NpcTradeRequest,
         options: TradeCommitOptions<'_>,
     ) -> Result<NpcTradeOutcome> {
-        let TradeCommitOptions { sell_all, hireling, weights } = options;
-        let (world_id, channel_id) = if let Some(source)=&hireling {
-            source.validate(&request,sell_all)?;
-            (fence.runtime_scope.world_id(),source.channel())
-        } else {scope_of(&fence).map_err(|_|NpcTradeError::AuthorityRejected)?};
-        let hireling_sell=sell_hireling::selected(hireling.as_ref(),&request);
-        let priced = if hireling_sell {sell_hireling::validate(&request,sell_all)?} else {validate(&request, sell_all)?};
-        let mut binding = request_binding(&fence, world_id, &request, sell_all);
-        if let Some(source)=&hireling {binding=source.bind(binding);}
+        let TradeCommitOptions {
+            sell_all,
+            hireling,
+            weights,
+            yasir_position,
+            yeo_position,
+        } = options;
+        let (world_id, channel_id) = if let Some(source) = &hireling {
+            source.validate(&request, sell_all)?;
+            (fence.runtime_scope.world_id(), source.channel())
+        } else {
+            scope_of(&fence).map_err(|_| NpcTradeError::AuthorityRejected)?
+        };
+        let hireling_sell = sell_hireling::selected(hireling.as_ref(), &request);
+        let priced = if hireling_sell {
+            sell_hireling::validate(&request, sell_all)?
+        } else {
+            validate(&request, sell_all)?
+        };
+        let mut binding = bind_yasir_position(
+            request_binding(&fence, world_id, &request, sell_all),
+            yasir_position,
+        );
+        binding = yeo::bind(binding, yeo_position);
+        if let Some(source) = &hireling {
+            binding = source.bind(binding);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| NpcTradeError::AuthorityRejected)?;
         let node = node.clone();
 
-        let mut weight_context=weights;
+        let mut weight_context = weights;
         self.try_issue_semantic_pass()?
             .run_with_context(&mut weight_context,move |holder, deadline, weights| {
                 Box::pin(async move {
@@ -703,6 +833,9 @@ impl DurabilityRoot {
                     if !current {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
+                    if !yasir_permitted(&mut tx, world_id, &request.cause.npc_key, yasir_position).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)} else {None};
 
                     if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
@@ -751,11 +884,15 @@ impl DurabilityRoot {
                         .unwrap_or(0);
                     if let Some(source)=&hireling
                         && let Err(error)=source.package_preflight(&mut tx,&fence,&request,*weights).await {return Ok(Err(error));}
+                    if request.cause.npc_key == yeo::NPC
+                        && (yeo_position != Some(yeo::POSITION) || !yeo::matches(&request)) {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let entries = lock_entries(&mut tx, &backpack, world_id).await?;
                     if matches!(hireling,Some(hireling::Extra::Package(_))) && entries.len()>=capacity {
                         return Ok(Err(NpcTradeError::DoesNotFit));
                     }
-                    let plan = if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
+                    let plan = if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
                         (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
                             .map(|plan| (plan, total, units)),
@@ -912,10 +1049,7 @@ fn trade_message(
     (quantity, total, sell_all): (u32, u64, bool),
     plan: &Plan,
 ) -> OneItemNpcTradeV1 {
-    let definition = |line: &NpcTradeLine| match line.coin {
-        Some(coin) => request.coins.of(coin),
-        None => &request.item.definition,
-    };
+    let definition = |line: &NpcTradeLine| yeo::definition(request, line);
     let state = |line: &NpcTradeLine, quantity: u32| OneItemStateV1 {
         item_instance_id: line.item_instance_id.to_vec(),
         world_id: world_id.as_bytes().to_vec(),
@@ -988,7 +1122,7 @@ async fn apply_trade(
     plan: &Plan,
     envelope: &[u8],
     tuple: Type2EventTuple,
-    house_key:Option<&str>,
+    house_key: Option<&str>,
 ) -> std::result::Result<(), DurabilityError> {
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
     let cause = &request.cause;
@@ -1045,10 +1179,7 @@ async fn apply_trade(
     .await?;
 
     for (ordinal, line) in (1_i16..).zip(&plan.lines) {
-        let definition = match line.coin {
-            Some(coin) => request.coins.of(coin),
-            None => item,
-        };
+        let definition = yeo::definition(request, line);
         if line_is_burn(line.kind) {
             let changed = sqlx::query(
                 "UPDATE game_item_instances \

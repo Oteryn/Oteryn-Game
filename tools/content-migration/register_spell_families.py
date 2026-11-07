@@ -413,6 +413,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import itemhold_q
     itemhold_q.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import world_change_profiles
+    world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
@@ -421,6 +423,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
     pin_repository_inputs(root, generated)
+    # Refresh only the three admitted World-change input sources after repository pins.
+    # Probabilities/quantities stay byte-semantically pinned; Item policies own admission.
+    import world_change_loot_inputs
+    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]

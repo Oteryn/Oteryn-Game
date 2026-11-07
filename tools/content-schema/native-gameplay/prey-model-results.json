@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "697756c430a35414e19654b0f535fa45017e35b56a898f8fd38af6580e3e0744",
+  "input_sha256": "a19c25b9d6ff9b85c9273ef18becffc421e5ca99ec2a674f720963f0d969a4b5",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2048,7 +2048,6 @@
     "oteryn:creature.defiler",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",
@@ -2648,7 +2647,6 @@
     "oteryn:creature.zombie"
   ],
   "unsettleable_creatures": [
-    "oteryn:creature.abyssal_calamary",
     "oteryn:creature.acid_blob",
     "oteryn:creature.acolyte_of_darkness",
     "oteryn:creature.acolyte_of_the_cult",
@@ -2821,7 +2819,6 @@
     "oteryn:creature.defiler",
     "oteryn:creature.demon_outcast",
     "oteryn:creature.demon_parrot",
-    "oteryn:creature.demon_skeleton",
     "oteryn:creature.destroyer",
     "oteryn:creature.devoted_radiant_acolyte",
     "oteryn:creature.devoted_radiant_inquisitor",

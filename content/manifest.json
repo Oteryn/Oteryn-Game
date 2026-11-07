@@ -38,10 +38,6 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
-    "Encounter.Raid": {
-      "index": "content/encounters/raids/index.json",
-      "records": 239
-    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6126
@@ -371,15 +367,6 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
-    },
-    {
-      "path": "content/encounters/raids/catalogue.json"
-    },
-    {
-      "path": "content/encounters/raids/evidence-00000-00121.json"
-    },
-    {
-      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/index.json"
@@ -848,6 +835,9 @@
     },
     {
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/loot-tables.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1004,7 +994,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3572,
+          "record_count": 3612,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1012,7 +1002,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "d514a4ef90927b3b5b8b08bb797e28a3d93e04ba2ac7308c9906dcc594560d8e"
+          "sha256": "4650aa172cd5e9ecf5d4b96f7acee3aebaadf3d3b6a4b7036a7ccedbe55db5b1"
         },
         {
           "creates_canonical_identities": false,

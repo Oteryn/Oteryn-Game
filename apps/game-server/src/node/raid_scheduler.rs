@@ -1,5 +1,6 @@
 //! World raid scheduling from the verified generated catalogue. Channel effects
 //! are consumed by the existing dispatch/monster owner after durable admission.
+pub(super) mod world_changes;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
@@ -21,6 +22,7 @@ pub(super) struct RaidScheduler<'a, 'f, 's> {
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub node: &'a NodeIncarnationProof,
     pub runtime: &'a Mutex<ChannelRuntimeV1>,
+    pub map: Option<&'a crate::map::boot::BundleMap>,
     pub world: WorldId,
     pub channel: ChannelId,
     pub generation: u64,
@@ -180,6 +182,7 @@ pub(super) async fn run(scheduler: RaidScheduler<'_, '_, '_>, stop: &Cancellatio
     let mut next_check = 0_i64;
     loop {
         let now_ms = i64::try_from(oteryn_error_codes::unix_ms()).unwrap_or(i64::MAX);
+        world_changes::observe(&scheduler, generation).await;
         if now_ms >= next_check {
             {
                 let runtime = scheduler.runtime.lock().await;
@@ -417,6 +420,7 @@ mod tests {
             character: &authority,
             node: &h.node,
             runtime: &runtime,
+            map: None,
             world,
             channel,
             generation: 1,
