@@ -34,7 +34,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
-        lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None, outfit_reward: None,
+        lever: None, reversible: false, passages: Vec::new(), teleport: None, remote_teleport: None,
         item_reward: None,
         reward_bundle: false,
         achievements: vec![],
@@ -45,7 +45,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
             replacement: None, target_replacement: None }),
         return_on_failure: false,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),
-        success_message: None, native_rule: None,
+        success_message: None, native_rule: None, effects: Default::default(),
         sources: vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/rotten_blood_quest/actions_sacrifice.lua:4-33".into()],
     }
 }

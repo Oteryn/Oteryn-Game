@@ -70,7 +70,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             .any(|reference| reference.starts_with(source))
         && !callback.completes
         && callback.requirements.is_none()
-        && callback.outfit_reward.is_none()
+        && callback.effects.outfit_reward.is_none()
         && callback.lever.is_none()
         && !callback.reversible
         && callback.passages.is_empty()
@@ -83,6 +83,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && !callback.return_on_failure
         && callback.failure_message.is_none()
         && callback.success_message.is_none()
+        && callback.effects == Default::default()
 }
 
 impl Callback {

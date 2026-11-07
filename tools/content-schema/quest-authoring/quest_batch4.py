@@ -323,7 +323,7 @@ def validate_callback(callback, directory):
     require(valid_key(key) and key.startswith('oteryn:quest-callback/'), context + ': foreign or invalid key')
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
-    require(callback['trigger'] in ('use', 'step_in'), key + ': invalid trigger')
+    require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -409,8 +409,9 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
-    provenance(callback['sources'], key)
+    provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
     validate_native(callback, key)
+    validate_effects(callback, key)
 
 
 def source_only(value, context):

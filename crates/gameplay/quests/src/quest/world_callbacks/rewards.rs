@@ -18,7 +18,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (callback.reward_bundle
             && (!callback.completes
                 || callback.item_reward.is_none()
-                || callback.outfit_reward.is_none()))
+                || callback.effects.outfit_reward.is_none()))
         || callback.achievements.len() > 8
     {
         return false;

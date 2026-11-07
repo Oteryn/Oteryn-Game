@@ -222,6 +222,8 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),

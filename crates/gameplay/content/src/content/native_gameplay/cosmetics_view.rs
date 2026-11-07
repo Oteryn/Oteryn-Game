@@ -16,10 +16,7 @@ impl NativeCosmeticsView {
         self.source_digest
     }
     pub fn outfit_keys(&self) -> impl Iterator<Item = &str> {
-        self.outfit_keys
-            .iter()
-            .map(String::as_str)
-            .filter(|key| !self.content.is_outfit_alias(key))
+        self.outfit_keys.iter().map(String::as_str)
     }
     pub fn mount_keys(&self) -> impl Iterator<Item = &str> {
         self.mount_keys.iter().map(String::as_str)
@@ -67,6 +64,20 @@ impl AppearanceContent<String> for NativeCosmeticsView {
             };
         }
         self.content.earned_unlock(grant_key, provenance, target)
+    }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        sex: crate::domain::appearance::Sex,
+    ) -> UnlockFact {
+        if provenance == DROME_PROVENANCE {
+            self.earned_unlock(grant_key, provenance, target)
+        } else {
+            self.content
+                .earned_unlock_for_sex(grant_key, provenance, target, sex)
+        }
     }
     fn palette_size(&self) -> u16 {
         self.content.palette_size()

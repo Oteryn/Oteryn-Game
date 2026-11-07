@@ -51,14 +51,28 @@ pub(super) fn prepare(
             let text = intent.text.trim().to_ascii_lowercase();
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
-                    (s.minimum..=s.maximum).contains(&tracks.get(&s.track).copied().unwrap_or(-1))
+                    tracks
+                        .get(&s.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&s.track).map(|track| track.initial))
+                        .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
             let mut selected = callbacks.iter().filter(|c| {
-                c.npc == context.2
+                c.carried_item.is_none()
+                    && c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
+                    && c.state_ops
+                        .iter()
+                        .all(|op| op.advisory_holds(catalogue, tracks))
+                    && c.participants.iter().all(|p| {
+                        eligible(&p.storage)
+                            && p.state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(catalogue, tracks))
+                    })
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
@@ -71,17 +85,36 @@ pub(super) fn prepare(
                     reply: callback.reply.clone(),
                 });
             }
-            let offer = offers.offers.iter().find(|c| {
+            if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-            })?;
+            }) {
+                return Some(Choice {
+                    transition: None,
+                    next_topic: Some(Topic::from(offer.next_topic)),
+                    reply: offer.reply.clone(),
+                });
+            }
+            // A unique exchange owns its exact keyword even before eligibility.
+            // Let the locked writer return the stage refusal, rather than falling
+            // through to an unrelated legacy dialogue with the same text.
+            let mut matching = callbacks.iter().filter(|c| {
+                c.carried_item.is_none()
+                    && c.npc == context.2
+                    && c.topic == topic.number
+                    && c.keywords.contains(&text)
+            });
+            let callback = matching.next()?;
+            if matching.next().is_some() {
+                return None;
+            }
             Some(Choice {
-                transition: None,
-                next_topic: Some(Topic::from(offer.next_topic)),
-                reply: offer.reply.clone(),
+                transition: Some(callback.key.clone()),
+                next_topic: Some(Topic::from(callback.next_topic)),
+                reply: callback.reply.clone(),
             })
         },
     )

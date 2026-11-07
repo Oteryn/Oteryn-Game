@@ -55,5 +55,16 @@
     "cargo tree -i oteryn-world-bundle-compiler -e normal --workspace --prefix none | awk '{print $1}' | sort -u"
   ],
   "normal_workspace_reverse_dependencies": true,
-  "pg_required": true
+  "pg_required": true,
+  "rule": "OWNER_SPEED_FIRST_SUPERSEDES_FULL_REVERSE_DEPENDENCY_NEXTEST",
+  "required_checks": [
+    "own mechanic RED\u2192GREEN including actual PG cases",
+    "cargo check --workspace --all-targets",
+    "strict Clippy changed crates",
+    "cargo fmt",
+    "duplicate migrations",
+    "repository-tool pin/generated-file regeneration"
+  ],
+  "full_suites": "CI; owner provides grouped failures",
+  "full_reverse_nextest_required_before_push": false
 }

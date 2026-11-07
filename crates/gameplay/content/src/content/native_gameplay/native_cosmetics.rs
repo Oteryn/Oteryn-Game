@@ -230,9 +230,6 @@ fn promotion_paths(document: &Value) -> Result<BTreeSet<String>, ContentError> {
     if document.get("grant_mappings").is_some() {
         paths.insert("/grant_mappings".to_owned());
     }
-    if document.get("outfit_aliases").is_some() {
-        paths.insert("/outfit_aliases".to_owned());
-    }
     for (family, fields) in [
         (
             "outfits",

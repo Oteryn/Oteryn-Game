@@ -1,14 +1,17 @@
 -- Counted services reuse the same MINT once-owner with an exact command-scoped claim.
 -- Earlier quest rewards retain their original claim identity and every old proof.
-DO $migration$ DECLARE body TEXT; BEGIN
- SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure) INTO STRICT body;
- IF position('m.claim_production_key=NEW.transition_key' IN body)=0 THEN
-  RAISE EXCEPTION 'repeatable quest exchange requires exact original MINT proof anchor';
+DO $migration$ DECLARE body TEXT; original TEXT; replacement TEXT; BEGIN
+ -- Extend the adopted main helper; its paid-exchange hash and fixed claims remain exact.
+ SELECT pg_get_functiondef('game_quest_reward_mint_claim_key(uuid,uuid,numeric,text,jsonb)'::regprocedure) INTO STRICT body;
+ original:=$old$SELECT CASE WHEN jsonb_array_length(v_plan->'storage')=0$old$;
+ replacement:=$new$SELECT CASE WHEN v_plan ? 'counter' THEN
+     v_transition || '/occurrence/' || replace(v_cause::text,'-','') || '/' || v_ordinal::text
+     WHEN jsonb_array_length(v_plan->'storage')=0$new$;
+ IF (length(body)-length(replace(body,original,'')))/length(original)<>1 THEN
+  RAISE EXCEPTION 'repeatable quest exchange requires the exact main claim-key helper';
  END IF;
- body:=replace(body,'m.claim_production_key=NEW.transition_key',
-  'm.claim_production_key=CASE WHEN NEW.plan ? ''counter'' THEN '
-  ||'NEW.transition_key || ''/occurrence/'' || replace(NEW.cause_id::text,''-'','''') || ''/'' || NEW.cause_ordinal::text '
-  ||'ELSE NEW.transition_key END');
+ EXECUTE replace(body,original,replacement);
+ SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure) INTO STRICT body;
  EXECUTE replace(body,'RETURN NULL;', $proof$
   IF NEW.plan ? 'counter' AND NOT EXISTS(
    SELECT 1 FROM game_character_quest_receipts r

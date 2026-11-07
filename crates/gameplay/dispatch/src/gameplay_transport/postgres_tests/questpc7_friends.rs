@@ -89,7 +89,7 @@ pub(super) async fn exercise(
             .await?;
     let source = std::fs::read(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../apps/game-server/migrations/1282_quest_repeatable_exchanges.sql"
+        "/../../../apps/game-server/migrations/1286_quest_repeatable_exchanges.sql"
     ))?;
     let expected = Sha384::digest(source);
     assert_eq!(

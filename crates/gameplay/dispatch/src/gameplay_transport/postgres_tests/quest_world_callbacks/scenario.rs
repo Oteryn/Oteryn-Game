@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
+    let outfit_world=name.starts_with("l1-") && name.ends_with("-wardrobe");
     let shared_rewards = name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
@@ -45,7 +46,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "qengine-rewards-feaster-prefix" { "questpc7-feaster-entry" } else if name == "qengine-rewards-forgotten-story" { "questpc7-forgotten-energy-entry" } else if name == "qengine-rewards-heart-story" { "questpc7-heart-entry" } else if name == "qengine-rewards-grimvale-story" { "questpc7-grimvale-entry" } else if name == "questpc7-grave" { "questpc7-grave-entry" } else if name == "questpc7-ferumbras" { "questpc7-ferumbras-entry" } else if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "qengine-rewards-feaster-prefix" { "questpc7-feaster-entry" } else if name == "qengine-rewards-forgotten-story" { "questpc7-forgotten-energy-entry" } else if name == "qengine-rewards-heart-story" { "questpc7-heart-entry" } else if name == "qengine-rewards-grimvale-story" { "questpc7-grimvale-entry" } else if name == "questpc7-grave" { "questpc7-grave-entry" } else if name == "questpc7-ferumbras" { "questpc7-ferumbras-entry" } else if name == "questpc7-hero" { "questpc7-hero-entry" } else if name == "questpc7-hydra" { "questpc7-hydra-entry" } else if name == "questpc7-hoist-story" { "questpc7-hoist-entry" } else if name.starts_with("questpc7-hidden-") { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if outfit_world { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -54,8 +55,16 @@ fn scenario_case(
     } else if target_swap {
         "fish-napping-key"
     } else {
-        name
+        name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if name.ends_with("-expiry") {
+        callback
+            .effects
+            .portals
+            .as_mut()
+            .ok_or("portal pair")?
+            .lifetime_us = Some(60_000_000);
+    }
     if target_swap {
         callback
             .item_on_target
@@ -113,7 +122,7 @@ fn scenario_case(
         world(&physical, trigger)?
     } else { world(&callback, trigger)? };
     run(async |admin| {
-        let h = if shared_rewards {
+        let h = if shared_rewards || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await?
         } else {
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
@@ -125,7 +134,7 @@ fn scenario_case(
             .root
             .open_character_authority(&seal)
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
         let (controller, activated) =
             super::super::death_ml_loss_composed::production_generation_with_pin(
@@ -204,7 +213,7 @@ fn scenario_case(
             1,
             "runtime-scope-assignment:1",
             // These two cases keep five source NPCs and one player alive.
-            if name == "qengine-rewards-grimvale-story" {
+            if name.starts_with("qengine-rewards-l12-") {128} else if name == "qengine-rewards-grimvale-story" {
                 // Player, two retained afflicted guardians, two contacts, one active hunt.
                 6
             } else if name == "questpc7-friends" {
@@ -216,6 +225,8 @@ fn scenario_case(
                 5
             } else if monk {
                 4
+            } else if callback.effects.encounter.is_some() {
+                16
             } else {
                 2
             },
@@ -234,6 +245,36 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if name.contains("l6-beggar-")
+            || name.contains("l7-knight-")
+            || name.contains("l8-")
+            || name.contains("l9-")
+            || name.contains("l10-documents-")
+            || name.contains("l11-")
+            || name.contains("l12-")
+        {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) =
+                purchase_fixture::current(super::super::fixture::id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
         let eligibility_premium =
             if name == "qengine-rewards-feaster-prefix" || name == "qengine-rewards-forgotten-story" || name == "qengine-rewards-heart-story" || name == "qengine-rewards-grimvale-story" || name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
                 use crate::gameplay_transport::spell_premium_coordinator::{
@@ -251,6 +292,7 @@ fn scenario_case(
             };
         let hydra_reset_drain=crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         if let Some(premium) = &eligibility_premium {
             owner.premium_coordinator = Some(premium);
             owner.admit_premium(id(40), deps.admitted.game_session_id);
@@ -270,7 +312,7 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap {
+        if lever_fixture || target_swap || name.ends_with("-expiry") {
             assert!(
                 owner
                     .states
@@ -303,7 +345,7 @@ fn scenario_case(
                 fresh.operation(),
             )
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback admission equipment: {e:?}"))?;
         let native = generation.native_gameplay().ok_or("native")?;
         let template = crate::durability::starter_grant::StarterTemplate {
             definition: crate::durability::item_mint::TypedDefinitionRef {
@@ -322,7 +364,7 @@ fn scenario_case(
                 &template,
             )
             .await
-            .map_err(debug)?;
+            .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
@@ -390,6 +432,17 @@ fn scenario_case(
             .await?;
         } else if name.starts_with("formogar-hoist-") {
             super::super::questpc7_hoist::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
+        } else if outfit_world || callback.effects != Default::default() {
+            super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -878,7 +931,8 @@ fn scenario_case(
                         request.clone(),
                         catalogue.clone(),
                         &permit,
-                        context.clone()
+                        context.clone(),
+                        None,
                     )
                     .await
                     .map_err(debug)?,
@@ -898,7 +952,9 @@ fn scenario_case(
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, &permit, context).await,
+                    stale, fresh_request, catalogue, &permit, context,
+                    None,
+                ).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
                 drop(permit);
@@ -987,32 +1043,35 @@ fn scenario_case(
                     // Source lever.lua:7-12: the two discordant states do nothing.
                     // Alter only the remote rock through the existing map owner.
                     assert!(world.facts().apply_quest_callback(
-                        rock,
-                        0,
-                        rock_facts,
-                        &[rock],
-                        &[],
-                        false
-                    ));
+rock,
+0,
+rock_facts,
+&[rock],
+&[],
+false,
+None,
+));
                     assert!(world.facts().base_hidden(rock));
                     for (command, revision, appearance) in [(3, 2, 2772), (4, 3, 2773)] {
                         if command == 4 {
                             assert!(world.facts().apply_quest_callback(
-                                rock,
-                                1,
-                                rock_facts,
-                                &[rock],
-                                &[],
-                                true
-                            ));
+rock,
+1,
+rock_facts,
+&[rock],
+&[],
+true,
+None,
+));
                             assert!(world.facts().apply_quest_callback(
-                                key,
-                                2,
-                                lever_facts(2773)?,
-                                &[],
-                                &[],
-                                false
-                            ));
+key,
+2,
+lever_facts(2773)?,
+&[],
+&[],
+false,
+None,
+));
                         }
                         owner.clock_origin = owner
                             .clock_origin
@@ -1039,13 +1098,14 @@ fn scenario_case(
                         assert_eq!(world.facts().base_hidden(rock), appearance == 2772);
                     }
                     assert!(world.facts().apply_quest_callback(
-                        rock,
-                        2,
-                        rock_facts,
-                        &[rock],
-                        &[],
-                        false
-                    ));
+rock,
+2,
+rock_facts,
+&[rock],
+&[],
+false,
+None,
+));
                     owner.clock_origin = owner
                         .clock_origin
                         .checked_sub(std::time::Duration::from_secs(2))

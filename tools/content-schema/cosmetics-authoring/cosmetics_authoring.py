@@ -62,8 +62,6 @@ def promotion_paths(document):
               "/fallbacks/female", "/fallbacks/male"}
     if "grant_mappings" in document:
         result.add("/grant_mappings")
-    if "outfit_aliases" in document:
-        result.add("/outfit_aliases")
     for family, fields in [
         ("outfits", ["key", "revision", "female", "male", "addon_count", "starter_female", "starter_male",
                      "starter_addons_female", "starter_addons_male", "premium", "unlock_sources",
@@ -127,16 +125,6 @@ def validate(authoring):
         allowed = (1 << row["addon_count"]) - 1
         if (row["starter_addons_female"] | row["starter_addons_male"]) & ~allowed:
             raise ValueError("starter addon mask exceeds authored addon count")
-    aliases = document.get('outfit_aliases', {})
-    for alias, target in aliases.items():
-        if alias not in outfits or target not in outfits or target in aliases:
-            raise ValueError('outfit alias must name one canonical outfit')
-        old, canonical_row = outfits[alias], outfits[target]
-        fields = ('female', 'male', 'addon_count', 'starter_female', 'starter_male',
-                  'starter_addons_female', 'starter_addons_male')
-        if (any(old[field] != canonical_row[field] for field in fields)
-                or old['premium'] and not canonical_row['premium']):
-            raise ValueError('outfit alias changes known appearance or eligibility')
     for row in document["mounts"]:
         if row["key"] in keys:
             raise ValueError("duplicate cosmetics key")
@@ -156,7 +144,17 @@ def validate(authoring):
             outfit = outfits.get(target["outfit_key"])
             valid = outfit is not None and (target["kind"] == "Outfit"
                     or target["addon"] <= outfit["addon_count"])
-        if not valid:
+        aliases = mapping.get("outfit_aliases", [])
+        if aliases and target["kind"] == "Mount":
+            raise ValueError("mount grant cannot have outfit aliases")
+        for key in aliases:
+            alias = outfits.get(key)
+            original = outfits.get(target.get("outfit_key"))
+            if (alias is None or original is None or key == original["key"]
+                    or any(alias[sex] != original[sex] for sex in ("female", "male"))
+                    or (target["kind"] == "Addon" and target["addon"] > alias["addon_count"])):
+                raise ValueError("cosmetics alias must retain exact source looks and addon")
+        if not valid or (mapping.get("sex") is not None and target["kind"] == "Mount"):
             raise ValueError("unknown cosmetics grant target")
     for sex in ["female", "male"]:
         fallback = document["fallbacks"][sex]
@@ -265,9 +263,9 @@ def build(authoring, manifest_path: Path) -> bytes:
     return result
 
 
-def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path):
+def provisioning_input(authoring_path: Path, manifest_path: Path, output_path: Path, *, authoring_bytes=None):
     """Pin maintained source inputs; derive the large validated section only in memory."""
-    authoring = read(authoring_path)
+    authoring = read(authoring_path) if authoring_bytes is None else authoring_bytes
     section = build(parse(authoring), manifest_path)
     relative = lambda path: Path(os.path.relpath(path, output_path.parent)).as_posix()
     return canonical({

@@ -8,39 +8,19 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class ProductionCatalogue(unittest.TestCase):
     def test_every_global_item_grant_has_a_canonical_target(self):
-        author = json.loads((ROOT / 'content/cosmetics/outfits/authoring.json').read_bytes())
+        author = json.loads((ROOT / 'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())
         actions = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
         ordinary = [r for r in actions['rules'] if r['mode'] not in ('random_outfit', 'random_mount')]
         expected = {key for rule in ordinary for choice in rule['choices']
                     for field in ('grants', 'required', 'complete_grants') for key in choice.get(field, [])}
-        all_mappings = author['document']['grant_mappings']
-        baseline = expected | {
+        mappings = author['document']['grant_mappings']
+        self.assertEqual({m['grant_key'] for m in mappings}, expected | {
             'oteryn:appearance-grant/quest/soul-war/revenant-base',
             'oteryn:appearance-grant/quest/rotten-blood/decaying-defender-base',
-        }
-        mappings = [m for m in all_mappings if m['grant_key'] in baseline]
-        self.assertEqual({m['grant_key'] for m in mappings}, baseline)
+        })
         self.assertEqual(len(ordinary), 46)
         self.assertEqual(len(mappings), 49)
-        canonical = [o for o in author['document']['outfits']
-                     if o['key'].startswith('oteryn:content.outfit.')]
-        legacy = [o for o in author['document']['outfits']
-                  if o['key'].startswith('oteryn:outfit.')]
-        self.assertEqual(len(canonical), 14)
-        self.assertEqual(len(legacy), 63)
-        self.assertEqual(len(author['document']['outfits']),77)
-        quest_keys = {f"{o['key']}/quest-grant/{addon}" for o in legacy
-                      for addon in range(o['addon_count']+1)}
-        self.assertEqual({m['grant_key'] for m in all_mappings}, baseline | quest_keys)
-        self.assertEqual(len(all_mappings),len(baseline)+len(quest_keys))
-        aliases = author['document']['outfit_aliases']
-        self.assertEqual(len(aliases),14)
-        self.assertEqual(set(aliases.values()),{o['key'] for o in canonical})
-        rows={o['key']:o for o in canonical+legacy}
-        for old,target in aliases.items():
-            for field in ('female','male','addon_count','starter_female','starter_male'):
-                self.assertEqual(rows[old][field],rows[target][field])
-            self.assertFalse(rows[old]['premium'] and not rows[target]['premium'])
+        self.assertEqual(len(author['document']['outfits']), 14)
         self.assertEqual(len(author['document']['mounts']), 8)
         # Mount targets retain the identities already declared by content.
         for family in ('mounts',):
@@ -51,10 +31,36 @@ class ProductionCatalogue(unittest.TestCase):
                     declared.add(row['declaration']['identity']['key'])
             self.assertTrue({row['key'] for row in author['document'][family]} <= declared)
         self.assertEqual(len(set(map(tuple, author['document']['palette']['colours']))), 133)
-        for row in canonical:
+        for row in author['document']['outfits']:
             self.assertEqual(row['starter_male'], row['key'].endswith('.citizen_outfits'))
             self.assertEqual(row['starter_female'], row['starter_male'])
             self.assertEqual(row['starter_addons_male'] | row['starter_addons_female'], 0)
+
+
+    def test_combined_catalogue_preserves_nx5_identities_and_grant_effects(self):
+        source = json.loads((ROOT / 'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
+        combined = json.loads((ROOT / 'content/cosmetics/outfits/authoring.json').read_bytes())['document']
+        self.assertEqual(combined['palette']['colours'], source['palette']['colours'])
+        for family in ('outfits', 'mounts'):
+            by_key = {row['key']: row for row in combined[family]}
+            for row in source[family]:
+                self.assertEqual(by_key[row['key']], row)
+        outfits = {row['key']: row for row in combined['outfits']}
+        grants = {row['grant_key']: row for row in combined['grant_mappings']}
+        for row in source['grant_mappings']:
+            actual = grants[row['grant_key']]
+            self.assertEqual(actual['compatible_provenance'], row['compatible_provenance'])
+            self.assertEqual(actual['target']['kind'], row['target']['kind'])
+            if row['target']['kind'] == 'Mount':
+                self.assertEqual(actual['target'], row['target'])
+            else:
+                if actual['target'] != row['target']:
+                    self.assertIn(row['target']['outfit_key'], actual['outfit_aliases'])
+                expected_outfit = outfits[row['target']['outfit_key']]
+                actual_outfit = outfits[actual['target']['outfit_key']]
+                for sex in ('female', 'male'):
+                    self.assertEqual(actual_outfit[sex], expected_outfit[sex])
+                self.assertEqual(actual['target'].get('addon'), row['target'].get('addon'))
 
 
 class BoundedRuntimeInput(unittest.TestCase):

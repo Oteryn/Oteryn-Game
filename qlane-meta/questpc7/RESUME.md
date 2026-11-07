@@ -1,3 +1,67 @@
+# Current integration repair — 2026-11-07 18:39 UTC
+
+Pending merge of origin/main1ae39c7fb; no unresolved index conflicts.
+Own PG run1:30 cases reached PG and failed the1286 helper anchor; fixed by
+extending main1004 helper rather than replacing its MINT proof.
+Run2: schema works; duplicate reward extension detected and removed.
+Run3: native-kill transitions need reward-declared tracks first; restored
+main order (reward extension once, then native kills). Current run3 is the
+pre-order-fix executable; queued loader/workspace checks compile the repair.
+Repo generation resumed from exact failing validator step after full producer
+pass: authored prop files now belong to the exact hash-checked family
+inventory; unpinned/escaped/symlinked/hash-mismatched files remain rejected
+(5 focused Python regression tests PASS). Regenerated NPC placement shards
+with their owner converter to remove one old unindexed shard.
+No full reverse-dependency suite; no push until own focused checks are green.
+
+# OWNER SPEED-FIRST CHECK RULE — supersedes full reverse-dependency rule
+
+Before each push: own mechanic RED→GREEN tests with own actual PG markers and
+nonzero durations; cargo check --workspace --all-targets; strict Clippy changed
+crates; cargo fmt; duplicate migrations; repository-tool generation/pins.
+Full reverse-dependency suites belong to CI now. No full suite is running.
+Owner will deliver one grouped CI failure list; fix all together and push once.
+
+Main1ae39c7fb merge resolved;0999-1008 byte-exact main;1200-1205 absent.
+Lane-only objects absent from main are forward-only1280-1288, audited in
+POST-3020-MIGRATION-OBJECT-AUDIT.json. Father11-track exception remains atomic.
+Q2 common engines taken from main; optional lane requirements/counters/world
+MINT remain small additions, not second copies. Main grant-scoped cosmetic
+aliases replace the discarded provisional document-level alias variant.
+
+Workspace all-target check PASS2m19s;22 retained lane author tests PASS72.100s;
+service-counter regression PASS. Source prop pin refresh compared all6prop and
+6arrival cells byte-for-byte to d58add72d before adopting main region hashes.
+Regeneration, strict Clippy and own PG regression selection are active:
+/tmp/questpc7-pr3020-regeneration.log
+/tmp/questpc7-pr3020-clippy2.log
+/tmp/questpc7-pr3020-own-pg1.log (questpc7 or father; PG env loaded,2threads).
+No push before those required focused gates pass. Four ACTIVE still unchanged.
+
+# PR3020 conflict resolution complete — 2026-11-07
+
+Current origin/main1ae39c7fb is in the pending merge; all34 textual conflicts
+resolved and staged. cargo check dispatch+game-server PASS32.70s after adopting
+main shared engines once and retaining lane-only native-kill, world MINT,
+repeatable-counter and prerequisite hooks. Main0999-1008 SQL byte-exact. All
+1200-1205 paths removed. Independently required lane-only schema objects have
+zero mentions in the complete main migration tree (object audit recorded),
+and are forward changes in1280-1288; dependent lane migrations were renumbered
+with git mv and include_str paths updated. Duplicate migration check PASS.
+No duplicate shared participant, fee, value-only or carried-use implementations.
+Main cosmetic compiler/producer, grant-scoped aliases, sex matching and bounded
+authoring loader replace the provisional lane document-level alias variant.
+Regression tests were adapted to main's actual API without dropping them.
+
+Current next step: dry qengine producer, complete repository regeneration,
+then focused missing-behavior RED→GREEN plus full changed-crate/reverse-normal
+PG nextest, fmt and strict Clippy. Do not push before full required set passes.
+Previous full run intentionally superseded by explicit owner main update,
+1315/8417 diagnostics; all23 failures were stale placement pins or old200KB
+cosmetics input bound. No final qualification evidence from that run.
+Latest local compiling checkpoint bbc844156; latest pushed d58add72d. Four
+ACTIVE remain (Feaster, Goblin Merchant, Hot Cuisine, Illuminated Warrior).
+
 # Owner-required PR3020 integration — 2026-11-07 17:10 UTC
 
 Fetched origin/main1ae39c7fb9bef09c3cd50d16410374f4134b1676 (PR3020,

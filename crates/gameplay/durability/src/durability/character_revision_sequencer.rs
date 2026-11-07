@@ -33,6 +33,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
+mod native_kills;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
@@ -454,22 +455,7 @@ impl RevisionSlot {
         clippy::too_many_arguments,
         reason = "the revision slot forwards the complete existing Quest and reward admission context"
     )]
-    pub async fn commit_quest_reward(
-        &mut self,
-        root: &DurabilityRoot,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterGameplayFence,
-        request: QuestTransitionRequest,
-        catalogue: std::sync::Arc<QuestStateCatalogue>,
-        admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
-    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
-        self.commit_quest_reward_with_gate(root, authority, node, fence, request, catalogue, admission, &super::quest_state::grizzly::NoGrizzlyPremium).await
-    }
-
-    /// The native Premium owner participates in the same fenced reward transaction.
-    #[allow(clippy::too_many_arguments)]
-    pub async fn commit_quest_reward_with_gate<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_quest_reward<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -498,6 +484,9 @@ impl RevisionSlot {
         )
         .await
     }
+
+
+
 
     /// Generated Task Board state and its quest receipts share this revision slot.
     #[allow(clippy::too_many_arguments)]
@@ -571,8 +560,9 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
-        self.commit_world_callback_with_native(root, authority, node, fence, request, catalogue, permit, context, None).await
+        self.commit_world_callback_with_native(root, authority, node, fence, request, catalogue, permit, context, native).await
     }
 
     /// World callback storage and altar inputs share one revision slot and transaction.
@@ -628,6 +618,7 @@ impl RevisionSlot {
         .await
     }
 
+
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_world_callback_with_reward_and_gate<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
         &mut self,
@@ -662,6 +653,7 @@ impl RevisionSlot {
         )
         .await
     }
+
 
     /// The XP award of one pending quest XP obligation at the cursor (QUEST-GATE-0 §5.5), under
     /// the active progression `policy` (its `reward_revision`, never the quest content

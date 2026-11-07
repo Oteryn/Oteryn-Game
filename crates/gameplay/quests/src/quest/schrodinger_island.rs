@@ -29,9 +29,10 @@ pub(crate) fn callback() -> Callback {
         failure_message:Some("You need level 999 to enter here.".into()),
         success_message:Some("Congratulations!".into()),
         native_rule:None,
-        remote_teleport:None, outfit_reward:None, item_reward:None,
+        remote_teleport:None, item_reward:None,
         reward_bundle:false, achievements:Vec::new(), activation:None,
         completes:false, requirements:None,
+        effects: Default::default(),
         sources:vec!["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/schrodingers_island_teleport_lvl_999.lua:3-27".into()],
     }
 }

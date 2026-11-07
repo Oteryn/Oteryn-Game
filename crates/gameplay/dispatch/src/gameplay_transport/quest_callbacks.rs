@@ -6,6 +6,8 @@ use super::{
 };
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod effects;
+mod encounter;
 mod execute;
 mod rewards;
 mod soul_war_reward;
@@ -209,6 +211,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         native,
                         weights: &weights,
                         fee_payment: None,
+                        actor_conditions: None,
+                        carried_use: None,
                     },
                     &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
                         self.premium_coordinator,
@@ -557,10 +561,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
+        let entered = if origin.position() != entered.position() {
+            self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepOut)
+                .await
+        } else {
+            entered
+        };
+        let entered = self
+            .step_dynamic_quest_portal(permit, actor, session, entered)
+            .await;
+        self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
+    async fn step_quest_trigger(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        trigger: Trigger,
+    ) -> MovementPositionSnapshot {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
-        let Some(at) = native(entered.position()) else {
+        let selected_position = if trigger == Trigger::StepOut {
+            origin.position()
+        } else {
+            entered.position()
+        };
+        let Some(at) = native(selected_position) else {
             return entered;
         };
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
@@ -575,7 +610,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == Trigger::StepIn && matches(map, c, key))
+                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
                         .map(move |c| (c, key)),
                 )
             })
@@ -583,7 +618,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() {
+            if selected.is_empty() && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
@@ -752,7 +787,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
     fn refuse_quest_step(
         &self,
         optional_pvp: Option<bool>,

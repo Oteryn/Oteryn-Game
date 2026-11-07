@@ -168,15 +168,16 @@ pub(super) async fn exercise(
     );
     let denied = slot
         .commit_world_callback(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            request,
-            owner.quest_catalogue.clone().ok_or("catalogue")?,
-            &permit,
-            context,
-        )
+owner.root,
+owner.character,
+owner.holder,
+fence,
+request,
+owner.quest_catalogue.clone().ok_or("catalogue")?,
+&permit,
+context,
+None,
+)
         .await
         .map_err(debug)?;
     assert!(

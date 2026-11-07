@@ -429,7 +429,7 @@ fn scenario_in_world(
                 reversible: false,
                 passages: vec![],
                 teleport: Some(position(destination)),
-                remote_teleport: None, outfit_reward: None,
+                remote_teleport: None,
         item_reward: None, reward_bundle: false, achievements: vec![],
         activation: None, completes: false, requirements: None,
                 storage: if refused {
@@ -454,6 +454,7 @@ fn scenario_in_world(
                 failure_message: None,
                 success_message: None,
                 native_rule: None,
+                effects: Default::default(),
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;

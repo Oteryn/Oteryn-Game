@@ -31,6 +31,7 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         observed_revision: revision,
         objective_keys: Vec::new(),
         active_tasks: active.to_vec(),
+        native_counters: vec![],
     }
 }
 

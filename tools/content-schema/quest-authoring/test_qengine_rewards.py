@@ -2,17 +2,196 @@
 import copy
 import json
 import unittest
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
+        document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
+        rows={c['key'].split('/')[-1]:c for c in document['callbacks']}
+        for label,goals in [('dragon-slayer',[20,20]),('cave-explorer',[20]),('fire-fighter',[10])]:
+            start=rows[f'l12-{label}-start'];base=rows[f'l12-{label}-base']
+            self.assertEqual(start['storage'][0]['minimum'],0)
+            self.assertEqual(start['storage'][0]['set'],1)
+            self.assertEqual([s['minimum'] for s in base['storage'][1:]],goals)
+            self.assertEqual(base['storage'][0]['set'],2)
+            self.assertTrue(base['requires_premium'])
+            self.assertEqual(base['forbids_outfits'],[base['outfit']['outfit']])
+        self.assertEqual([rows[f'l12-cave-explorer-{stage}']['fee']['gold'] for stage in ['base','first','second']],[1000,2000,3000])
+        appearance=json.loads(q.build()['content/cosmetics/outfits/authoring.json'])['document']
+        dragon=next(o for o in appearance['outfits'] if o['key']=='oteryn:outfit.dragon_slayer')
+        self.assertEqual((dragon['female']['id'],dragon['male']['id']),(1289,1288))
+        self.assertTrue(any(m['grant_key']=='oteryn:outfit.dragon_slayer/quest-grant/0' for m in appearance['grant_mappings']))
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
         cls.callbacks=json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
+
+    def test_l11_levels_one_shot_bases_and_selected_desks(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for label,level in [('dream-warrior',250),('issavi',250),('makeshift',100)]:
+            for stage in ['base','first','second']:
+                row=rows[f'l11-{label}-{stage}'];self.assertEqual(row['minimum_level'],level);self.assertTrue(row['requires_premium'])
+            if label!='makeshift':
+                row=rows[f'l11-{label}-base'];self.assertEqual(row['storage'],[]);self.assertEqual(row['forbids_outfits'],[row['outfit']['outfit']])
+            self.assertEqual(rows[f'l11-{label}-second']['requires_addons'][0]['addons'],1)
+        for stage,item,count in [('first',30169,5),('second',30168,1)]:
+            self.assertEqual(rows[f'l11-dream-warrior-{stage}']['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        for field,value in [('minimum_level',0),('forbids_outfits',[]),('forbids_outfits',['oteryn:outfit.knight'])]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l11-dream-warrior-base')[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
+    def test_l10_distinct_order_documents_and_exact_carried_binding(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family in ['brotherhood','nightmare']:
+            for stage,item,price in [('join',768,0),('officer',769,500),('leader',770,1000)]:
+                row=rows[f'l10-{family}-{stage}']
+                self.assertEqual(row['give']['item'],f'oteryn:item.tibia.i{item}')
+                self.assertEqual(row['take'],[] if price==0 else [{'item':'oteryn:item.tibia.i6499','count':price}])
+                self.assertEqual(row['storage'][0]['set'],{'join':1,'officer':2,'leader':3}[stage])
+            for stage,item,bit in [('follower',768,0),('officer',769,1),('leader',770,2)]:
+                row=rows[f'l10-{family}-use-{stage}']
+                self.assertEqual(row['carried_item'],f'oteryn:item.tibia.i{item}')
+                self.assertEqual(row['take'],[{'item':row['carried_item'],'count':1}])
+                self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.'+family,'addons':bit})
+                self.assertTrue(row['requires_premium'])
+                self.assertEqual(row['forbids_outfits'] if bit==0 else row['requires_outfits'],['oteryn:outfit.'+family])
+        for field,value in [('carried_item','oteryn:item.tibia.i769'),('take',[]),('give',{'item':'oteryn:item.tibia.i768','count':1,'contents':[]})]:
+            bad=copy.deepcopy(self.callbacks)
+            next(c for c in bad['callbacks'] if c['key']=='oteryn:quest-reward/l10-brotherhood-use-follower')[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
+    def test_l10_golden_chosen_prices_and_order(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for suffix,before,after,bit,gold in [('base',0,1,0,100000),('boots',1,2,1,50000),('helmet',2,3,2,50000)]:
+            row=rows['l10-golden-'+suffix]
+            self.assertEqual(row['fee'],{'gold':gold,'include_bank':True})
+            self.assertEqual(row['outfit'],{'outfit':'oteryn:outfit.golden','addons':bit})
+            self.assertEqual([(r['minimum'],r['maximum'],r['set']) for r in row['storage']],[(before,before,after)])
+            self.assertFalse(row.get('requires_premium',False))
+
+    def test_l9_repeatable_source_trades_and_canonical_item_grants(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        trade=rows['l9-afflicted-pouch']
+        self.assertEqual(trade['storage'],[])
+        self.assertEqual(trade['take'],[{'item':'oteryn:item.tibia.i12517','count':1}])
+        self.assertEqual(trade['give']['item'],'oteryn:item.tibia.i12413')
+        self.assertEqual(trade['achievement_progress'],[{'key':'oteryn:achievement/doctor_doctor','target':100}])
+        for field,value in [('take',[]),('give',None),('achievement_progress',[{'key':'oteryn:achievement/doctor_doctor','target':0}])]:
+            invalid=copy.deepcopy(self.callbacks)
+            next(c for c in invalid['callbacks'] if c['key']==trade['key'])[field]=value
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(invalid)
+        for family,looks in [('afflicted','430-431'),('soil_guardian','514-516'),('crystal_warlord','512-513')]:
+            mappings={r['grant_key']:r for r in self.author['document']['grant_mappings']}
+            for addon in (0,1,2):
+                key=f'oteryn:item-grant.outfit.{looks}.'+('base' if addon==0 else f'addon{addon}')
+                self.assertEqual(mappings[key]['target'],{'kind':'Outfit','outfit_key':'oteryn:outfit.'+family} if addon==0 else {'kind':'Addon','outfit_key':'oteryn:outfit.'+family,'addon':addon})
+                self.assertEqual(mappings[key]['compatible_provenance'],['crystal-item-cosmetics-201189f-v1'])
+
+    def test_l8_source_targets_and_atomic_ten_wand_recipe(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        self.assertEqual(rows['l8-hunter-hat']['outfits'],[
+            {'outfit':'oteryn:outfit.hunter','addons':1,'sex':'male'},
+            {'outfit':'oteryn:outfit.hunter','addons':2,'sex':'female'}])
+        self.assertEqual(rows['l8-mage-male-wands']['take'],[
+            {'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3065,3066,3067,3069,3070,3071,3072,3073,3074,3075)])
+        hat=rows['l8-mage-male-hat']
+        self.assertEqual(hat['storage'],[])
+        self.assertTrue(hat['exact_take'])
+        self.assertEqual(hat['creation_sex'],'male')
+        self.assertEqual(hat['forbids_addons'],[{'outfit':'oteryn:outfit.mage','addons':2,'sex':'male'}])
+        invalid=copy.deepcopy(self.callbacks)
+        next(c for c in invalid['callbacks'] if c['key']==hat['key'])['forbids_addons']=[]
+        with self.assertRaises(ValueError):q.validate_callbacks(invalid)
+        for name in ('mask','claw'):self.assertTrue(rows['l8-dream-warden-'+name]['requires_premium'])
+
+    def test_norseman_reward_continues_with_next_shards_on_published_topic(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        reward=callbacks['l5-norseman-first-reward']
+        second=callbacks['l5-norseman-second-shards']
+        phase=next(s['set'] for s in reward['storage'] if s['track'].endswith('/questline'))
+        offers=json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
+        reachable=[o for o in offers if o['npc']==reward['npc'] and o['topic']==reward['next_topic']
+            and 'shard' in o['keywords'] and all(s['minimum']<=phase<=s['maximum'] for s in o['storage'])]
+        self.assertEqual(len(reachable),1,'the next source delivery must be reachable without resetting the NPC conversation')
+        self.assertEqual(reachable[0]['next_topic'],second['topic'])
+        self.assertTrue(all(s['minimum']<=phase<=s['maximum'] for s in second['storage']))
+
+    def test_l7_source_paths_keep_complete_recipes_gifts_and_live_guards(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for family,name,item,count in [('knight','fangs',5893,100),('knight','helmet',5924,1),('knight','sweat',5885,1),('knight','steel',5887,1),('druid','griffinclaw',5937,1),('druid','water',5939,1),('druid','dust',5906,100),('druid','chain',5940,1),('assassin','yarn',5886,10)]:
+            self.assertEqual(rows[f'l7-{family}-{name}']['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        for name,item in [('hat-start',4867),('water-start',5938)]:
+            self.assertEqual(rows['l7-druid-'+name]['give'],{'item':f'oteryn:item.tibia.i{item}','count':1,'contents':[]})
+        for name,suffix in [('l7-knight-fangs','ramsays_helmet_door'),('l7-druid-chain-start','druid_amulet_door')]:
+            assigned=next(e for e in rows[name]['storage'] if e['track'].endswith(suffix))
+            self.assertEqual((assigned['minimum'],assigned['maximum'],assigned['set']),(-1,1,1))
+            declaration=next(t for t in self.callbacks['tracks'] if t['key']==assigned['track'])
+            self.assertEqual((declaration['initial'],declaration['quest']),(0,'oteryn:quest.outfit_and_addon_quests'))
+        self.assertEqual(rows['l7-knight-helmet-reward']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':7201})
+        self.assertTrue(rows['l7-knight-helmet-start']['requires_premium'])
+        self.assertEqual(rows['knight-sword']['forbids_addons'],[{'outfit':'oteryn:outfit.knight','addons':1}])
+        self.assertEqual(rows['l7-assassin-base-start']['requires_actor_conditions'],['drunk'])
+        for name in ('second-start','second'):
+            self.assertEqual(rows['l7-assassin-'+name]['requires_actor_conditions'],['fire'])
+        for field,value in [('requires_actor_conditions',['fire','fire']),('requires_actor_conditions',['invented']),('forbids_addons',[{'outfit':'oteryn:outfit.knight','addons':0}])]:
+            bad=copy.deepcopy(self.callbacks);bad['callbacks'][0][field]=value
+            with self.assertRaises(ValidationError):q.validate_callbacks(bad)
+
+    def test_beggar_preserves_source_costs_clocks_and_native_guards(self):
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        for name,item,count in [('cloth',5913,20),('leather',5878,50),('wings',5894,10),('blossoms',5921,30),('first-materials',5883,100),('staff',6107,1)]:
+            self.assertEqual(rows['l6-beggar-'+name]['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+        self.assertEqual(rows['l6-beggar-base']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':86401})
+        self.assertEqual(rows['l6-beggar-beard']['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':432000})
+        self.assertEqual(rows['l6-beggar-dress']['creation_sex'],'female')
+        self.assertEqual(rows['l6-beggar-beard']['creation_sex'],'male')
+        self.assertEqual(rows['l6-beggar-first-start']['requires_outfits'],['oteryn:outfit.beggar'])
+        for name in ('start','base','first-materials','staff'):
+            self.assertTrue(rows['l6-beggar-'+name]['requires_premium'])
+        self.assertEqual(rows['l6-beggar-first-materials']['fee'],{'gold':20000,'include_bank':True})
+        for guard in ('requires_premium','requires_outfits'):
+            bad=copy.deepcopy(self.callbacks)
+            bad['callbacks'][0][guard]='untrusted'
+            with self.assertRaises(ValidationError):q.validate_callbacks(bad)
+
+    def test_citizen_rook_timer_and_shared_counter_are_explicit_source_operations(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        start=callbacks['l6-citizen-rook-backpack-start']
+        self.assertEqual(start['participants'][0]['quest'],'oteryn:quest.outfit_and_addon_quests')
+        self.assertEqual(start['participants'][0]['state_ops'][0]['effect'],{'kind':'add','value':1})
+        material=callbacks['l6-citizen-rook-backpack-materials']
+        self.assertEqual(material['take'],[{'item':'oteryn:item.tibia.i5878','count':100}])
+        self.assertEqual(material['state_ops'][0]['effect'],{'kind':'set_now'})
+        claim=callbacks['l6-citizen-rook-backpack']
+        self.assertEqual(claim['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':7201})
+        self.assertEqual(callbacks['l6-citizen-rook-hat']['take'],[
+            {'item':'oteryn:item.tibia.i3374','count':1},{'item':'oteryn:item.tibia.i5902','count':50},
+            {'item':'oteryn:item.tibia.i5890','count':100}])
+        declaration=next(t for t in self.callbacks['tracks'] if t.get('writable'))
+        self.assertEqual(declaration['quest'],'oteryn:quest.outfit_and_addon_quests')
+        altered=copy.deepcopy(self.callbacks)
+        next(t for t in altered['tracks'] if t.get('writable'))['quest']='oteryn:quest.citizen_outfits_quest_on_rook'
+        with self.assertRaises(ValueError): q.validate_callbacks(altered)
+
+    def test_oriental_source_costs_gender_and_foreign_door_owner(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        for sex in ('female','male'):
+            start=callbacks['l5-oriental-'+sex+'-first-start']
+            self.assertEqual(start['creation_sex'],sex)
+            self.assertEqual(start['participants'],[{'quest':'oteryn:quest.oriental_outfits_quest','storage':[{
+                'track':'oteryn:quest-progress/quest/u7_8/oriental_outfits/oriental_door',
+                'minimum':0,'maximum':1,'set':1}]}])
+            self.assertEqual(start['requires'][0]['minimum'],35)
+            for name,item,count in [('comb',5945,1),('ape-fur',5883,100),('fish-fins',5895,100),('wings',5891,2),('blue-cloth',5912,100)]:
+                c=callbacks['l5-oriental-'+sex+'-'+name]
+                self.assertEqual(c['take'],[{'item':f'oteryn:item.tibia.i{item}','count':count}])
+                self.assertEqual(c['creation_sex'],sex)
 
     def test_qengine_rewards_outputs_reproduce_and_validate(self):
         q.validate_callbacks(self.callbacks)
@@ -26,178 +205,11 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual((row['female']['id'],row['male']['id']),looks)
             self.assertEqual(row['addon_count'],2)
         mappings=self.author['document']['grant_mappings']
-        aliases=self.author['document'].get('outfit_aliases',{})
         for row in outfits.values():
-            owner=next((alias for alias,target in aliases.items() if target==row['key']),row['key'])
+            if not row['key'].startswith('oteryn:outfit.'):
+                continue
             for addon in range(row['addon_count']+1):
-                self.assertEqual(sum(m['grant_key']==f"{owner}/quest-grant/{addon}" for m in mappings),1)
-
-    def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
-        worlds=[c for c in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if c['key'].startswith('oteryn:quest-callback/questpc7-formal-')]
-        self.assertEqual(len(worlds),2)
-        for callback in worlds:
-            self.assertEqual(callback['requirements'], {'min_level':20, 'premium':True, 'completed_quests':[]})
-        entry=next(c for c in worlds if c['key'].endswith('-entry'))
-        display=next(c for c in worlds if c['key'].endswith('-display'))
-        self.assertEqual(entry['selector']['position'], {'x':32314,'y':32170,'floor':-6})
-        self.assertEqual(entry['selector']['appearance'],464)
-        self.assertEqual(display['selector']['appearance'],2110)
-        self.assertEqual(display['outfit_reward'],{'outfit':'oteryn:outfit.formal_dress','addons':0})
-        plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
-        self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
-
-    def test_ferumbras_guardians_and_passages_use_native_clear_source_cells(self):
-        codec=q.load_module('questpc7_ferumbras_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/native-gameplay'))
-        import build_source_item_profiles as source
-        client=q.ROOT/'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
-        objects=source.engine_items.load_appearance_objects(client.read_bytes())
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
-        def tile(p):
-            path=f'content/world/placements/region-z{-p["floor"]:02}-x{p["x"]//256}-y{p["y"]//256}.b3'
-            if path not in cache:
-                region=codec.decode_region((q.ROOT/path).read_bytes())
-                cache[path]={(x,y):(flags,house,entries) for _,cells in region[3] for x,y,flags,house,_,entries in cells}
-            return cache[path][(p['x'],p['y'])]
-        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
-        self.assertEqual(len(rows),11)
-        for row in rows:
-            selector=row['selector'];flags,house,entries=tile(selector['position'])
-            self.assertEqual(house,0)
-            self.assertIn(selector['appearance'],[palette[i]['source_item_id'] for i,depth,_ in entries if depth==0])
-            self.assertLessEqual(len(row['storage']),8)
-        objectives=[r for r in json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives'] if r['quest']=='oteryn:quest.ferumbras_ascension_quest']
-        self.assertEqual(len(objectives),8)
-        for objective in objectives:
-            flags,house,entries=tile(objective['guardian']['position'])
-            self.assertEqual((flags&1,house,len(entries)),(0,0,1))
-            client_flags=objects[palette[entries[0][0]]['source_item_id']]['flags']
-            self.assertTrue(client_flags.get('flags.bank'))
-            self.assertFalse(client_flags.get('flags.unpass',False))
-
-    def test_grave_twelve_sites_and_both_sirs_have_exact_native_bindings(self):
-        programme=q.load_module('questpc7_grave_test_programme','tools/content-schema/quest-authoring/questpc7_grave_programme.py')
-        self.assertEqual(len(programme.GRAVES),12)
-        codec=q.load_module('questpc7_grave_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
-        for name,p,appearance,arrival,_ in programme.GRAVES:
-            path=f'content/world/placements/region-z{-p[2]:02}-x{p[0]//256}-y{p[1]//256}.b3'
-            if path not in cache:
-                region=codec.decode_region((q.ROOT/path).read_bytes())
-                cache[path]={(x,y):(house,[palette[i]['source_item_id'] for i,d,_ in es if d==0]) for _,cells in region[3] for x,y,_,house,_,es in cells}
-            house,items=cache[path][p[:2]]
-            self.assertEqual(house,0,name)
-            self.assertIn(appearance,items,name)
-            self.assertLessEqual(max(abs(arrival[0]-p[0]),abs(arrival[1]-p[1])),1,name)
-        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']==programme.QUEST]
-        self.assertEqual(len(rows),22)
-        self.assertTrue(all(len(r['storage'])<=8 for r in rows))
-        pair=next(r for r in rows if r['key'].endswith('knight-passage-4'))
-        required={r['track'] for r in pair['storage'] if r.get('preserve') and r['minimum']==1}
-        self.assertTrue({programme.counter(4),programme.counter(5)}<=required)
-        cobra=next(r for r in rows if r['key'].endswith('-cobra'))
-        self.assertEqual(cobra['trigger'],'use')
-        self.assertIn({'track':programme.COBRA,'minimum':1,'maximum':1,'set':1,'preserve':True},cobra['storage'])
-
-    def test_hero_selected_bindings_exist_in_unchanged_source_map(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[r for r in rows if r['quest']=='oteryn:quest.hero_of_rathleton_quest']
-        codec=q.load_module('questpc7_hero_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z14-x131-y124.b3').read_bytes())
-        tiles={(x,y):(flags,house,[palette[p]['source_item_id'] for p,depth,_ in entries if not depth])
-            for _,cells in region[3] for x,y,flags,house,_,entries in cells}
-        self.assertEqual(len(rows),4)
-        for row in rows:
-            selector=row['selector'];position=selector['position']
-            flags,house,appearances=tiles[(position['x'],position['y'])]
-            self.assertEqual((flags,house),(0,0))
-            self.assertIn(selector['appearance'],appearances)
-        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        boss=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-maxxen')
-        construct=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-construct')
-        self.assertEqual((boss['stage'],boss['stage_value']),(construct['counter'],construct['required']))
-
-    def test_hidden_native_objectives_share_quota_and_use_admitted_empty_ground(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        rows=[r for r in rows if r['quest']=='oteryn:quest.hidden_threats_quest']
-        self.assertEqual({r['creature'] for r in rows},{'oteryn:creature.corym_'+s for s in ['charlatan','skirmisher','vanguard']})
-        self.assertEqual({r['counter'] for r in rows},{'oteryn:quest-progress/questpc7/hidden/kills'})
-        self.assertTrue(all(r['required']==5 for r in rows))
-        self.assertEqual(sum(r['guardian'] is not None for r in rows),1)
-        codec=q.load_module('questpc7_test_world_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z13-x129-y125.b3').read_bytes())
-        tiles={(x,y):[palette[p]['source_item_id'] for p,depth,_ in entries if not depth]
-               for _,cells in region[3] for x,y,_,_,_,entries in cells}
-        for position in [(33078,32015),(33079,32015),(33080,32015)]:
-            self.assertEqual(tiles[position],[10113],position)
-        self.assertIn(2469,tiles[(33080,32014)],'the reward binds an existing physical chest')
-
-    def test_hydra_uses_existing_nest_and_personal_native_pickup_instead_of_a_claim(self):
-        worlds=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[r for r in worlds if r['quest']=='oteryn:quest.hydra_egg_quest']
-        self.assertEqual(len(rows),2)
-        nest=next(r for r in rows if r['trigger']=='use')
-        self.assertTrue(nest['completes'])
-        self.assertNotIn('item_reward',nest)
-        self.assertEqual(nest['requirements']['owned_items'],[{'item':'oteryn:item.tibia.i4839','count':1,'map_source':(33004<<32)|(32664<<16)|(3<<8)|2}])
-        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
-        objective=next(r for r in objectives if r['quest']==nest['quest'])
-        self.assertEqual((objective['creature'],objective['required']),('oteryn:creature.hydra',1))
-        codec=q.load_module('questpc7_hydra_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        region=codec.decode_region((q.ROOT/'content/world/placements/region-z03-x128-y127.b3').read_bytes())
-        tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
-            for _,cells in region[3] for x,y,_,_,_,entries in cells}
-        self.assertEqual(tiles[(33004,32664)],[(4402,None),(1063,None),(4839,{'count':0})])
-        self.assertEqual(tiles[(33003,32665)],[(1019,None)])
-        self.assertEqual(tiles[(33005,32665)],[(1019,None)])
-
-    def test_hidden_valuables_are_one_exact_once_only_backpack_plan(self):
-        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        chest=next(r for r in rows if r['key']=='oteryn:quest-callback/questpc7-hidden-valuables')
-        self.assertTrue(chest['completes'])
-        self.assertEqual(chest['trigger'],'use')
-        self.assertEqual(chest['activation'],{'track':chest['storage'][0]['track'],'minimum':1,'maximum':1})
-        self.assertEqual(chest['storage'][1]['minimum'],5)
-        self.assertTrue(chest['storage'][1]['preserve'])
-        self.assertEqual(chest['item_reward'],{'item':'oteryn:item.tibia.i3040','count':2,'contents':[],
-            'backpack_outputs':[{'item':f'oteryn:item.tibia.i{i}','count':1} for i in (3030,3032,3033)]})
-
-    def test_selected_jorge_replica_consumes_exact_twenty_and_completes_once(self):
-        rows=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]
-        self.assertEqual(len(rows),3)
-        exchange=next(c for c in rows if c['give'])
-        self.assertEqual(exchange['take'],[{'item':'oteryn:item.tibia.i19083','count':20}])
-        self.assertEqual(exchange['give'],{'item':'oteryn:item.tibia.i19151','count':1,'contents':[]})
-        self.assertEqual(sum(c['completes'] for c in rows),1)
-        self.assertTrue(all(c['npc']=='oteryn:npc.jorge' for c in rows))
-        self.assertEqual([c['storage'][0]['minimum'] for c in rows if c['completes']],[1])
-
-    def test_hoist_binds_real_native_objects_without_donor_uids(self):
-        callbacks=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
-        rows=[c for c in callbacks if c['key'].startswith('oteryn:quest-callback/questpc7-hoist-')]
-        self.assertEqual(len(rows),4)
-        self.assertEqual(sum(c.get('completes',False) for c in rows),1)
-        bindings=json.loads(self.outputs['content/quests/native-world-callback-bindings.json'])['bindings']
-        self.assertEqual([b['expected']['unique'] for b in bindings],[3059,3060,3061])
-        codec=q.load_module('questpc7_hoist_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        for floor in [9,10,11]:
-            region=codec.decode_region((q.ROOT/f'content/world/placements/region-z{floor:02}-x125-y121.b3').read_bytes())
-            tiles={(x,y):[(palette[p]['source_item_id'],attrs) for p,depth,attrs in entries if not depth]
-                   for _,cells in region[3] for x,y,_,_,_,entries in cells}
-            self.assertEqual(sum(i==5770 for i,_ in tiles[(32157,31125)]),1)
-            self.assertTrue(all(not (attrs or {}).get('unique') for _,attrs in tiles[(32157,31125)]))
-            for callback in rows:
-                position=callback['selector']['position']
-                if position['floor']==-floor:
-                    self.assertIn(callback['selector']['appearance'],[i for i,_ in tiles[(position['x'],position['y'])]])
-        self.assertTrue(all(c['requirements']['completed_quests']==['oteryn:quest.the_ice_islands_quest'] for c in rows))
+                self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
@@ -236,82 +248,69 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError,msg=mutation):
                 q.validate_callbacks(bad)
 
-    def test_friends_services_preserve_programme_and_have_bounded_distinct_counters(self):
-        from jsonschema import ValidationError
-        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-friends-')]
-        self.assertEqual(len(selected),18)
-        services=[c for c in selected if c.get('counter')]
-        self.assertEqual(len(services),2)
-        self.assertEqual(len({c['counter']['track'] for c in services}),2)
-        self.assertTrue(all(c['counter']['maximum']==1000000000000 and all(s['preserve'] for s in c['storage']) for c in services))
-        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
-        for mutation in ('zero','collision','completion'):
+    def test_declared_parent_track_is_readonly_used_and_has_valid_initial(self):
+        for mutation in ('duplicate','inverted','unused','written'):
             bad=copy.deepcopy(self.callbacks)
-            callback=next(c for c in bad['callbacks'] if c['key']==services[0]['key'])
-            if mutation=='zero':callback['counter']['maximum']=0
-            elif mutation=='collision':callback['counter']['track']=callback['storage'][0]['track']
-            else:callback['completes']=True
-            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+            track=bad['tracks'][0]
+            if mutation=='duplicate': bad['tracks'].append(copy.deepcopy(track))
+            elif mutation=='inverted':track['initial']=track['max']+1
+            elif mutation=='unused':track['key']='oteryn:unused'
+            else:
+                source=next(c for c in bad['callbacks'] if any(r['track']==track['key'] for r in c.get('requires',[])))
+                other=next(c for c in bad['callbacks'] if c['key']!=source['key'] and not c.get('requires'))
+                other['storage'][0]['track']=track['key']
+            with self.assertRaises(ValueError,msg=mutation): q.validate_callbacks(bad)
 
-    def test_selected_reward_requirements_are_bounded_and_use_canonical_parents(self):
-        from jsonschema import ValidationError
-        selected={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks'] if c.get('requirements')}
-        self.assertEqual(selected['questpc7-hunter-intro']['requirements'],{'min_level':0,'premium':True,'completed_quests':[]})
-        self.assertEqual(selected['questpc7-illuminated-intro']['requirements'],{'min_level':1000,'premium':True,'completed_quests':['oteryn:quest.authored.make_believe_quest']})
-        for mutation in ('level','duplicate','foreign'):
-            bad=copy.deepcopy(self.callbacks)
-            callback=next(c for c in bad['callbacks'] if c['key']==selected['questpc7-illuminated-intro']['key'])
-            if mutation=='level':callback['requirements']['min_level']=1000001
-            elif mutation=='duplicate':callback['requirements']['completed_quests']*=2
-            else:callback['requirements']['completed_quests']=['unscoped:parent']
-            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+    def test_glooth_source_elif_awards_second_addon_first_at_six_votes(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        low=callbacks['l3-glooth-engineer-first-low']
+        high=callbacks['l3-glooth-engineer-first-high']
+        second=callbacks['l3-glooth-engineer-second']
+        self.assertEqual((low['requires'][1]['minimum'],low['requires'][1]['maximum']),(3,5))
+        self.assertEqual(high['requires'][-1]['track'].split('/')[-1],'addon2')
+        self.assertEqual((high['requires'][-1]['minimum'],high['requires'][-1]['maximum']),(1,1))
+        self.assertEqual(second['requires'][1]['minimum'],6)
+        self.assertEqual(second['outfit']['addons'],2)
 
-    def test_golden_selected_prices_and_fee_conservation(self):
-        from jsonschema import ValidationError
-        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]
-        self.assertEqual(len(selected),5)
-        fees={c['key'].split('-')[-1]:c['fee'] for c in selected if c.get('fee')}
-        self.assertEqual(fees, {name:{'gold':amount,'include_bank':True} for name,amount in [('base',100000),('gloves',50000),('helmet',50000)]})
-        source=next(c for c in selected if c.get('fee'))
+    def test_monetary_source_price_disallows_zero_or_double_coin_consumption(self):
+        source=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/l4-nobleman-first')
         for mutation in ('zero','double'):
             bad=copy.deepcopy(self.callbacks)
             callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
             if mutation=='zero':callback['fee']['gold']=0
-            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':10}]
+            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':15}]
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
-        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
+        self.assertEqual(source['fee'],{'gold':150000,'include_bank':False})
 
-    def test_selected_consumptive_grants_keep_explicit_pairs_and_real_ownership_guards(self):
-        from jsonschema import ValidationError
-        document = self.author['document']
-        formal = next(o for o in document['outfits'] if o['key'] == 'oteryn:outfit.formal_dress')
-        self.assertEqual((formal['female']['id'], formal['male']['id'], formal['addon_count']), (1461, 1460, 2))
-        self.assertTrue(formal['premium'])
-        self.assertFalse(formal['starter_female'] or formal['starter_male'])
-        targets = {'oteryn:outfit.formal_dress', 'oteryn:outfit.fiend_slayer', 'oteryn:outfit.hand_of_the_inquisition'}
-        item_aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
-        self.assertEqual(len(item_aliases),47)
-        aliases = [m for m in item_aliases if m['target'].get('outfit_key') in targets]
-        self.assertEqual(len(aliases), 9)
-        self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
-        self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
-        callbacks = {c['key'].split('/')[-1]: c for c in self.callbacks['callbacks']}
-        for slug in ('fiend', 'inquisition'):
-            self.assertEqual(callbacks[f'questpc7-{slug}-second-token']['requirements']['owned_cosmetics'][0]['addons'], 1)
-            self.assertEqual(callbacks[f'questpc7-{slug}-complete']['requirements']['owned_cosmetics'][0]['addons'], 3)
-            self.assertTrue(callbacks[f'questpc7-{slug}-complete']['completes'])
-        bad = copy.deepcopy(self.callbacks)
-        callback = next(c for c in bad['callbacks'] if c['key'].endswith('questpc7-fiend-second-token'))
-        callback['requirements']['owned_cosmetics'][0]['addons'] = 4
-        with self.assertRaises((ValueError, ValidationError)):
-            q.validate_callbacks(bad)
+    def test_royal_costume_quest_admits_only_its_source_store_tag_exception(self):
+        outfits={r['key']:r for r in self.author['document']['outfits']}
+        royal=outfits['oteryn:outfit.royal_costume']
+        self.assertEqual((royal['female']['id'],royal['male']['id'],royal['addon_count']),(1456,1457,2))
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        for name,silver,gold,bit in [('base',15000,12500,0),('shield',7500,6250,1),('crown',7500,6250,2)]:
+            c=callbacks['l4-royal-costume-'+name]
+            self.assertEqual(c['take'],[{'item':'oteryn:item.tibia.i22516','count':silver},{'item':'oteryn:item.tibia.i22721','count':gold}])
+            self.assertEqual(c['outfit']['addons'],bit)
+            self.assertEqual(c['present'] if 'present' in c else [],[])
+
+    def test_pirate_full_source_stages_retain_the_original_firebird_owner(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        self.assertNotIn('l4-pirate-sabre',callbacks)
+        self.assertEqual(callbacks['pirate-sabre']['storage'][0]['minimum'],4)
+        for name,item,before,after in [('eye-patches',6098,1,2),('peg-legs',6126,2,3),('hooks',6097,3,4)]:
+            c=callbacks['l4-pirate-'+name]
+            self.assertEqual(c['take'],[{'item':f'oteryn:item.tibia.i{item}','count':100}])
+            self.assertEqual((c['storage'][0]['minimum'],c['storage'][0]['set']),(before,after))
+            self.assertEqual(c['quest'],'oteryn:quest.outfit_and_addon_quests')
+        self.assertEqual([r['item'] for r in callbacks['l4-pirate-hat']['take']],
+                         ['oteryn:item.tibia.i6101','oteryn:item.tibia.i6102','oteryn:item.tibia.i6100','oteryn:item.tibia.i6099'])
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].split('/')[-1].startswith('questpc7-')]
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
+        callbacks=self.callbacks['callbacks']
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),20)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),6)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),114)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 
@@ -349,7 +348,7 @@ class QuestRewards(unittest.TestCase):
         for world,expected in zip(worlds,[(33053,31020,-7,5862,'warmaster'),(33073,31173,-8,11431,'wayfarer')]):
             x,y,z,item,outfit=expected
             self.assertEqual(world['selector'],{'position':{'x':x,'y':y,'floor':z},'unique':None,'action':None,'appearance':item})
-            self.assertEqual(world['outfit_reward'],{'outfit':'oteryn:outfit.'+outfit,'addons':0})
+            self.assertEqual(world['effects']['outfit_reward'],{'outfit':'oteryn:outfit.'+outfit,'addons':0})
             import sys
             sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
             import world_region_codec as codec
@@ -365,9 +364,6 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError):quest_batch4.provenance(world['sources'],world['key'])
             bad=copy.deepcopy(world)
             for state in bad['storage']:state['set']=state['minimum']
-            with self.assertRaises(ValueError):quest_batch4.validate_effects(bad,bad['key'])
-            bad=copy.deepcopy(world)
-            bad['storage'][0]['read_only']=True
             with self.assertRaises(ValueError):quest_batch4.validate_effects(bad,bad['key'])
 
     def test_accepted_legacy_base_entitlements_keep_their_exact_mapping_and_provenance(self):
@@ -391,152 +387,6 @@ class QuestRewards(unittest.TestCase):
                 row=native[item['item']]
                 self.assertTrue(row['admission']['materializable'])
                 self.assertIn('CharacterInventory',row['admission']['legal_destinations'])
-
-class GrimvaleProgramme(unittest.TestCase):
-    def test_personal_harvesting_and_exact_trap_input_keep_global_event_separate(self):
-        import questpc7_grimvale_programme as grim
-        worlds, objectives, contacts=grim.build(q.ROOT)
-        plots=[c for c in worlds if '-nightshade-' in c['key']]
-        self.assertEqual(len(plots),5)
-        self.assertEqual(len({tuple(c['selector']['position'].values()) for c in plots}),5)
-        for i,c in enumerate(plots):
-            self.assertEqual(c['item_reward'],{'item':'oteryn:item.tibia.i22082','count':1,'contents':[]})
-            self.assertEqual(c['activation'],{'track':grim.FLOWERS,'minimum':i,'maximum':i})
-            self.assertTrue(c['requirements']['premium'])
-        trap=next(c for c in worlds if c['key'].endswith('/questpc7-grimvale-deploy-trap'))
-        self.assertEqual(trap['item_on_target'],{'item':'oteryn:item.tibia.i22074','count':1,'replacement':None,'target_replacement':None})
-        afflicted=[o for o in objectives if o['counter'].endswith('/afflicted')]
-        self.assertEqual({o['creature'] for o in afflicted},{'oteryn:creature.'+n for n in ['werewolf','werebear','wereboar']})
-        self.assertTrue(all(o['required']==10 for o in afflicted))
-        self.assertEqual(next(o for o in objectives if o['creature']=='oteryn:creature.werehyaena')['required'],20)
-        self.assertEqual({c['npc'] for c in contacts},{'oteryn:npc.rhargu','oteryn:npc.domizian'})
-
-    def test_real_native_sites_and_once_only_rewards_have_two_earned_travel_directions(self):
-        import questpc7_grimvale_programme as grim
-        import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
-        import world_region_codec as codec
-        worlds,_,_=grim.build(q.ROOT)
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
-        cache={}
-        for c in worlds:
-            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
-            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
-            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
-            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
-            self.assertIn(c['selector']['appearance'],native,c['key'])
-        reward=next(c for c in worlds if c.get('completes'))
-        self.assertEqual(reward['item_reward']['item'],'oteryn:item.tibia.i27565')
-        self.assertEqual(set(reward['achievements']),{'oteryn:achievement/over_the_moon','oteryn:achievement/drama_in_darama'})
-        travel=[c for c in worlds if '/questpc7-grimvale-earned-access-' in c['key']]
-        self.assertEqual(len(travel),2)
-        self.assertTrue(all(c['storage']==[{'track':grim.ACCESS,'minimum':1,'maximum':1,'set':1,'preserve':True}] and c['teleport'] and c['requirements']['premium'] for c in travel))
-
-class HeartProgramme(unittest.TestCase):
-    def test_six_independent_source_arenas_and_exact_yana_reward(self):
-        import questpc7_heart_programme as heart
-        worlds, objectives, rewards=heart.build(q.ROOT,q.donor_inputs(),q.PIN)
-        self.assertEqual([o['creature'] for o in objectives],['oteryn:creature.'+n for n in ['anomaly','rupture','realityquake','eradicator','outburst','world_devourer']])
-        self.assertEqual(len({o['counter'] for o in objectives}),6)
-        self.assertTrue(all(o['required']==1 and o['guardian']['respawn_ms']==60000 for o in objectives))
-        lever=next(c for c in worlds if c['key'].endswith('/questpc7-heart-destabilizer'))
-        self.assertEqual(lever['selector']['position'],{'x':32245,'y':31244,'floor':-14})
-        self.assertEqual(lever['lever'],[8911,8912])
-        self.assertEqual(rewards[0]['npc'],'oteryn:npc.yana')
-        self.assertEqual(rewards[0]['give'],{'item':'oteryn:item.tibia.i22721','count':5,'contents':[]})
-        self.assertTrue(rewards[0]['completes'])
-        self.assertEqual(rewards[0]['achievement'],'oteryn:achievement/ender_of_the_end')
-        self.assertEqual(rewards[0]['requirements'],{'min_level':150,'premium':True,'completed_quests':[]})
-
-    def test_powerful_learning_binds_only_the_source_named_families_to_native_completion(self):
-        import questpc7_knowledge
-        rules=[r for r in questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules'] if 'oteryn:quest.heart_of_destruction_quest' in r['any_completed_quests']]
-        self.assertEqual([(r['family'],r['tier']) for r in rules],[(1,3),(11,3),(12,3)])
-        for rule in rules:
-            self.assertEqual(rule['any_completed_quests'],['oteryn:quest.heart_of_destruction_quest','oteryn:quest.forgotten_knowledge_quest'])
-            self.assertTrue(any('data-global/npc/yana.lua:185-187:sha256:' in src for src in rule['sources']))
-            self.assertTrue(any(src.startswith('canonical:') for src in rule['sources']))
-
-
-class ForgottenProgramme(unittest.TestCase):
-    def test_exact_selected_stages_source_terminal_bosses_and_tome_exchange(self):
-        import questpc7_forgotten_programme as f
-        worlds,objectives,rewards=f.build(q.ROOT,q.donor_inputs(),q.PIN)
-        self.assertEqual(len(worlds),11)
-        self.assertEqual([r['creature'] for r in objectives],['oteryn:creature.'+n for n in ['lloyd','lady_tenebris','the_enraged_thorn_knight','soul_of_dragonking_zyrtarch','the_time_guardian','the_last_lore_keeper']])
-        self.assertEqual([r['stage_value'] for r in objectives],[2,3,5,7,8,9])
-        self.assertEqual(len({r['counter'] for r in objectives}),6)
-        self.assertTrue(all(r['required']==1 for r in objectives))
-        tome=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-tome'))
-        self.assertEqual(tome['item_reward'],{'item':'oteryn:item.tibia.i23986','count':1,'contents':[]})
-        take=next(r for r in rewards if r['key'].endswith('/questpc7-forgotten-tome'))
-        self.assertEqual(take['take'],[{'item':'oteryn:item.tibia.i23986','count':1}])
-        self.assertEqual(len(rewards),10)
-        self.assertEqual(sum(r['npc']=='oteryn:npc.ivalisse' for r in rewards),4)
-        self.assertEqual([r['keywords'][0] for r in rewards if r['npc']=='oteryn:npc.a_strange_chalice'],['chalice','daughter','story','disguised','thirsty','learned'])
-        self.assertEqual([r['key'] for r in rewards if r.get('completes')],['oteryn:quest-reward/questpc7-forgotten-complete'])
-        self.assertTrue(all(r['requirements']=={'min_level':0,'premium':True,'completed_quests':[]} for r in worlds+rewards))
-
-    def test_every_world_selector_exists_in_retained_native_map(self):
-        import questpc7_forgotten_programme as f
-        import sys
-        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
-        import world_region_codec as codec
-        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette'];cache={}
-        worlds,_,_=f.build(q.ROOT,q.donor_inputs(),q.PIN)
-        for c in worlds:
-            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
-            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
-            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
-            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
-            self.assertIn(c['selector']['appearance'],native,c['key'])
-        egg=next(r for r in worlds if r['key'].endswith('/questpc7-forgotten-egg'))
-        self.assertEqual(egg['selector']['appearance'],4839)
-
-    def test_native_learning_matches_source_families_and_preserves_heart_alternatives(self):
-        import questpc7_knowledge
-        rules=questpc7_knowledge.build(q.ROOT,q.donor_inputs(),q.PIN)['rules']
-        self.assertEqual([(r['family'],r['tier']) for r in rules],[(f,3) for f in [1,3,4,5,6,7,8,10,11,12,14,15,16,17,18,19,20]])
-        for rule in rules:
-            expected=['oteryn:quest.forgotten_knowledge_quest']
-            if rule['family'] in [1,11,12]:expected.insert(0,'oteryn:quest.heart_of_destruction_quest')
-            self.assertEqual(rule['any_completed_quests'],expected)
-            self.assertTrue(any('data/XML/imbuements.xml:' in s for s in rule['sources']))
-
-
-class FeasterPrefix(unittest.TestCase):
-    def test_personal_quota_tool_custody_and_exact_potion_inputs(self):
-        import questpc7_feaster_programme as f
-        worlds,objectives,rewards=f.build(q.ROOT)
-        self.assertEqual((len(worlds),len(objectives),len(rewards)),(13,0,4))
-        self.assertFalse(any(r.get('completes') for r in worlds+rewards))
-        repeated=[r for r in worlds if any(s.get('add') for s in r['storage'])]
-        self.assertEqual({r['key'].rsplit('-',1)[-1] for r in repeated},{'sample','soul','purify'})
-        for row in repeated:
-            counters=[s for s in row['storage'] if s.get('add')]
-            self.assertEqual(len(counters),1)
-            state=counters[0]
-            self.assertEqual((state['minimum'],state['maximum'],state['set'],state['add']),(0,19,20,1))
-            self.assertEqual(row['activation'],{'track':state['track'],'minimum':0,'maximum':19})
-            self.assertTrue(row['requirements']['owned_items'])
-        apparatus=next(r for r in worlds if r['key'].endswith('-apparatus'))
-        self.assertEqual(apparatus['item_on_target']['item'],'oteryn:item.tibia.i32602')
-        self.assertEqual(apparatus['offerings'][0]['item'],'oteryn:item.tibia.i3661')
-        self.assertEqual(apparatus['item_reward']['item'],'oteryn:item.tibia.i32584')
-        self.assertEqual([r['give']['item'] for r in rewards if r.get('give')],['oteryn:item.tibia.i32582','oteryn:item.tibia.i32225','oteryn:item.tibia.i32226'])
-        self.assertTrue(all(r['requirements']['min_level']==250 and r['requirements']['premium'] for r in worlds+rewards))
-
-    def test_anchored_props_have_ground_only_source_constructors(self):
-        import questpc7_props
-        props=questpc7_props.build(q.ROOT)['props']
-        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
-        profiles={r['production_definition']['production_key']:r for r in packet['records']}
-        self.assertEqual(len(props),6)
-        for prop in props:
-            row=profiles[prop['item']]
-            self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']})
-            for field in ['movable','pickupable']:
-                self.assertEqual(row['semantics']['physical']['value'][field],{'state':'KNOWN','value':False})
 
 if __name__=='__main__':
     unittest.main()

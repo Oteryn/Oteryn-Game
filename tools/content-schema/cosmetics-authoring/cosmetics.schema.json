@@ -353,20 +353,6 @@
           "items": {
             "$ref": "#/$defs/grantMapping"
           }
-        },
-        "outfit_aliases": {
-          "type": "object",
-          "maxProperties": 512,
-          "propertyNames": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 512
-          },
-          "additionalProperties": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 512
-          }
         }
       }
     },
@@ -502,6 +488,22 @@
             "minLength": 1,
             "maxLength": 128,
             "pattern": "^[ -~]+$"
+          }
+        },
+        "sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "outfit_aliases": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
           }
         }
       }

@@ -178,13 +178,14 @@ pub(super) async fn exercise(
                     .ok_or("remote facts")?;
                 after.appearance_id = if n == 5 { 2773 } else { remote.appearance };
                 assert!(map.facts.apply_quest_callback(
-                    remote_key,
-                    map.facts.object_revision(remote_key),
-                    after,
-                    &[remote_key],
-                    &[],
-                    n != 7
-                ));
+remote_key,
+map.facts.object_revision(remote_key),
+after,
+&[remote_key],
+&[],
+n != 7,
+None,
+));
             }
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             if expected.position() != origin {

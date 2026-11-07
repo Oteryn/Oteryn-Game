@@ -86,9 +86,11 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf"
       ],
-      "outfit_reward": {
-        "outfit": "oteryn:outfit.formal_dress",
-        "addons": 0
+      "effects": {
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.formal_dress",
+          "addons": 0
+        }
       }
     },
     {
@@ -942,7 +944,7 @@
       "sources": [
         "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/35/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua:1:sha256:b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8",
-        "content/world/placements/region-z13-x129-y123.b3:1:sha256:492e30364df41f2e39749c360722c83a18044315b013447ad9971cb1b5b2d61c"
+        "content/world/placements/region-z13-x129-y123.b3:1:sha256:718d9825424eb18b97b9f593601e27eb918f7b112f42452b8604db641ecd3939"
       ]
     },
     {
@@ -1485,14 +1487,16 @@
       "achievements": [
         "oteryn:achievement/hat_hunter"
       ],
-      "outfit_reward": {
-        "outfit": "oteryn:outfit.rift_warrior",
-        "addons": 3
-      },
       "item_reward": {
         "item": "oteryn:item.tibia.i22516",
         "count": 5,
         "contents": []
+      },
+      "effects": {
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.rift_warrior",
+          "addons": 3
+        }
       }
     },
     {
@@ -2886,10 +2890,6 @@
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ],
       "completes": true,
-      "outfit_reward": {
-        "outfit": "oteryn:outfit.hand_of_the_inquisition",
-        "addons": 0
-      },
       "achievements": [
         "oteryn:achievement/inquisition_s_hand"
       ],
@@ -2897,6 +2897,12 @@
         "track": "oteryn:quest-progress/questpc7/grave/programme",
         "minimum": 3,
         "maximum": 3
+      },
+      "effects": {
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.hand_of_the_inquisition",
+          "addons": 0
+        }
       }
     },
     {

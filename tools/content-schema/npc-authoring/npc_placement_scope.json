@@ -58,7 +58,28 @@
     "oteryn:npc.yana",
     "oteryn:npc.yberius",
     "oteryn:npc.zethra",
-    "oteryn:npc.zirella"
+    "oteryn:npc.zirella",
+    "oteryn:npc.ariella",
+    "oteryn:npc.avar_tar",
+    "oteryn:npc.broken_servant_sentry",
+    "oteryn:npc.cael",
+    "oteryn:npc.cranky_lizard_crone",
+    "oteryn:npc.dedoras",
+    "oteryn:npc.duncan",
+    "oteryn:npc.ezebeth",
+    "oteryn:npc.habdel",
+    "oteryn:npc.hjaern",
+    "oteryn:npc.irmana",
+    "oteryn:npc.ishina",
+    "oteryn:npc.miraia",
+    "oteryn:npc.morgan",
+    "oteryn:npc.muriel",
+    "oteryn:npc.palimuth",
+    "oteryn:npc.percybald",
+    "oteryn:npc.raymond_striker",
+    "oteryn:npc.razan",
+    "oteryn:npc.the_first_dragon",
+    "oteryn:npc.yalahari"
   ],
   "position_conflicts": [],
   "authored_placements": {
@@ -110,5 +131,21 @@
         }
       ]
     }
+  },
+  "placement_cells": {
+    "oteryn:npc.palimuth": [
+      {
+        "x": 32801,
+        "y": 31223,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.yalahari": [
+      {
+        "x": 32801,
+        "y": 31188,
+        "z": 7
+      }
+    ]
   }
 }
