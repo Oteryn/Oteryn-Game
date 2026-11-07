@@ -175,9 +175,69 @@ async fn save(
     Ok(())
 }
 
+/// The normal source is PostgreSQL wall time. Only isolated test roots can
+/// supply an override; no caller or transport field carries a date policy.
+pub(crate) async fn event_now_ms(
+    tx: &mut Transaction<'_, Postgres>,
+    clock: Option<i64>,
+) -> Result<i64, DurabilityError> {
+    if let Some(now) = clock {
+        return Ok(now);
+    }
+    Ok(
+        sqlx::query_scalar("SELECT (extract(epoch FROM statement_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?,
+    )
+}
+
+async fn expire_windows(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    kind: EventKind,
+    now: i64,
+) -> Result<(), DurabilityError> {
+    let cycles:Vec<i64>=sqlx::query_scalar("SELECT cycle_id FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND state->>'phase' IN('Active','Dormant') AND (state->>'end_ms')::bigint<=$3 ORDER BY (state->>'end_ms')::bigint,cycle_id LIMIT 8")
+        .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(now).fetch_all(&mut **tx).await?;
+    for cycle in cycles {
+        lock_cycle(tx, world, kind, cycle).await?;
+        let raw=sqlx::query_scalar("SELECT state FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 FOR UPDATE")
+            .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(cycle).fetch_one(&mut **tx).await?;
+        let mut state: EventState =
+            serde_json::from_value(raw).map_err(|_| DurabilityError::InvalidStoredState)?;
+        state
+            .lifecycle
+            .validate()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if state.end_ms <= now {
+            state
+                .advance(kind, now.max(state.observed_ms), Input::Tick, 0)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            save(tx, world, kind, &state, cycle).await?;
+        }
+    }
+    Ok(())
+}
+
 /// Scheduler/boot projection. One World row, independent of Channel and restart.
 /// No missed-wave backlog is spawned; the current synchronized slot is projected.
 pub async fn poll(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    kind: EventKind,
+    now: i64,
+) -> Result<Option<EventState>, DurabilityError> {
+    if now < 0 || !qualified(kind) || super::load(tx, world, epoch).await?.is_none() {
+        return Ok(None);
+    }
+    expire_windows(tx, world, kind, now).await?;
+    poll_current(tx, world, epoch, kind, now).await
+}
+
+// A Character interaction already owns its current cycle. It must not take
+// older-cycle locks after that; only the scheduler performs expiry paging.
+async fn poll_current(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
@@ -386,6 +446,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let clock = self.world_event_clock_override_ms();
         let mut hash = Sha256::new();
         hash.update(b"oteryn:wevents:use:v1\0");
         hash.update(command.game_session_id().as_bytes());
@@ -396,11 +457,7 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let now_ms: i64 = sqlx::query_scalar(
-                        "SELECT (extract(epoch FROM statement_timestamp())*1000)::bigint",
-                    )
-                    .fetch_one(&mut *tx)
-                    .await?;
+                    let now_ms = event_now_ms(&mut tx, clock).await?;
                     let request = TimedRequest {
                         world: fence.runtime_scope.world_id(),
                         epoch,
@@ -423,7 +480,7 @@ impl DurabilityRoot {
                         return Ok(None);
                     };
                     let Some(state) =
-                        poll(&mut tx, request.world, epoch, request.kind, now_ms).await?
+                        poll_current(&mut tx, request.world, epoch, request.kind, now_ms).await?
                     else {
                         return Ok(None);
                     };
@@ -441,9 +498,10 @@ impl DurabilityRoot {
         epoch: u64,
         kind: EventKind,
     ) -> Result<Option<EventState>, DurabilityError> {
+        let clock = self.world_event_clock_override_ms();
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let now_ms:i64=sqlx::query_scalar("SELECT (extract(epoch FROM statement_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
+            let now_ms=event_now_ms(&mut tx,clock).await?;
             let state=if let Some(bounds)=window(&mut tx,world,epoch,kind,now_ms).await? {
                 let cycle=cycle(kind,epoch,bounds.0)?;
                 let stored:Option<serde_json::Value>=sqlx::query_scalar("SELECT state FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3")
@@ -503,6 +561,7 @@ pub(crate) async fn apply_binding(
     epoch: Option<u64>,
     level: i64,
     request: &crate::durability::quest_state::QuestTransitionRequest,
+    clock: Option<i64>,
 ) -> Result<bool, DurabilityError> {
     use crate::durability::quest_state::QuestCause;
     if !binding.valid() || !u32::try_from(level).is_ok_and(|level| binding.level_admitted(level)) {
@@ -524,10 +583,7 @@ pub(crate) async fn apply_binding(
             .parse()
             .map_err(|_| DurabilityError::InvalidStoredState)?
     };
-    let now_ms: i64 =
-        sqlx::query_scalar("SELECT (extract(epoch FROM statement_timestamp())*1000)::bigint")
-            .fetch_one(&mut **tx)
-            .await?;
+    let now_ms = event_now_ms(tx, clock).await?;
     let mut hash = Sha256::new();
     hash.update(b"oteryn:wevents:quest:v1\0");
     hash.update(namespace.as_bytes());

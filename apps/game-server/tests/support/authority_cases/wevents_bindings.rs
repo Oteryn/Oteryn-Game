@@ -147,7 +147,40 @@ async fn chyllfroest(h: &fixture::Harness) -> fixture::TestResult {
             .await?
             .is_none()
     );
+    // A server returning in another year must close the retained old cycle,
+    // not merely create a fresh active row and leave history active forever.
+    let years:Vec<i64>=sqlx::query_scalar("SELECT (extract(epoch FROM d)*1000)::bigint FROM unnest(ARRAY['2032-04-01T00:00Z','2033-04-01T00:00Z']::timestamptz[]) d").fetch_all(&h.pool).await?;
+    for at in &years {
+        timed::poll(&mut tx, world, 1, EventKind::Chyllfroest, *at)
+            .await?
+            .ok_or("later annual cycle")?;
+    }
+    let old_phase:String=sqlx::query_scalar("SELECT state->>'phase' FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key='chyllfroest' AND cycle_id=$2")
+        .bind(world.as_bytes().as_slice()).bind(years[0]).fetch_one(&mut *tx).await?;
+    if old_phase != "Failure" {
+        tx.rollback().await?;
+        return Err("expired annual cycle remained active".into());
+    }
     tx.commit().await?;
+    let actual = h
+        .root
+        .timed_world_event(world, 1, EventKind::Chyllfroest)
+        .await?;
+    h.root.set_world_event_clock_for_test(Some(years[1]))?;
+    let observed = h
+        .root
+        .timed_world_event(world, 1, EventKind::Chyllfroest)
+        .await?
+        .ok_or("fixture calendar observation")?;
+    assert_eq!(observed.start_ms, years[1]);
+    assert_eq!(observed.phase, Phase::Active);
+    h.root.set_world_event_clock_for_test(None)?;
+    assert_eq!(
+        h.root
+            .timed_world_event(world, 1, EventKind::Chyllfroest)
+            .await?,
+        actual
+    );
     Ok(())
 }
 
@@ -686,5 +719,41 @@ async fn mummy(h: &fixture::Harness) -> fixture::TestResult {
         None
     );
     tx.commit().await?;
+    let expired = oteryn_gameplay_world_change::timed::EventState::for_kind(
+        EventKind::MummysCurse,
+        now - 120_000,
+        now - 60_000,
+    )
+    .map_err(fixture::debug)?;
+    sqlx::query(
+        "INSERT INTO game_world_timed_events VALUES(encode($1,'hex')::uuid,'mummys_curse',0,$2)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(serde_json::to_value(expired)?)
+    .execute(&h.pool)
+    .await?;
+    let mut old_cycle = h.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:world-timed:'||encode($1,'hex')||':mummys_curse:0',0))")
+        .bind(world.as_bytes().as_slice()).execute(&mut *old_cycle).await?;
+    let next = command_for(world, 2, &mut cursor, true)?;
+    let fence = fixture::fence(1)?;
+    let use_current = h
+        .root
+        .use_mummy_jar(&authority, &h.node, fence, 2, next, 50007);
+    let mut use_current = std::pin::pin!(use_current);
+    let independent =
+        tokio::time::timeout(std::time::Duration::from_secs(1), use_current.as_mut()).await;
+    old_cycle.rollback().await?;
+    let result = match independent {
+        Ok(result) => result?,
+        Err(_) => {
+            let _ = use_current.await;
+            return Err("current jar use waited on expired-cycle housekeeping".into());
+        }
+    };
+    assert!(
+        result.is_some(),
+        "the current cycle remains independently usable"
+    );
     Ok(())
 }

@@ -274,3 +274,17 @@ and test target, and the crate's `fmt --check` passed. Logs are
 `/tmp/wevents-price-{clippy,test,fmt}.log`. The price policy publishes no new
 event selector; its payment and encounter path receives separate title-level
 PostgreSQL verification. No qualification status changes in this slice.
+
+## Seasonal expiry and clock proof
+
+The PostgreSQL regression first failed because an old annual cycle remained
+active (`/tmp/wevents-expiry-red.log`). The frozen focused run then passed
+1 test in **20.29 s**, with `WEVENTS PG EXECUTED` markers for Chyllfroest
+**6.979974967 s**, Flower **6.706093949 s**, and Mummy **6.600754529 s**
+(`/tmp/wevents-calendar-pg-frozen.log`). It exercises annual expiry, isolated
+Root test time, and a held old-cycle lock that must not block a current jar.
+Four-crate cargo check and strict library clippy passed in **30.41 s** and
+**44.38 s** respectively. Workspace fmt, explicit mounted-source rustfmt,
+diff whitespace checks, and tooling pin refresh/check passed; content pins
+remain unchanged. Migration 1124 adds the bounded expiry index. This shared
+slice changes no title qualification rows.

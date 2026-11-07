@@ -89,3 +89,11 @@ https://tibia.fandom.com/index.php?curid=76217&oldid=944253
 (body SHA256 `0e5d9ea11a467ee2aed7b1baf384992f9f76253729affa594d07973372388cd0`).
 The engine's five incarnation slots use those counts and that item. Spring's
 independently authored merchant price remains one crystal coin.
+
+## Seasonal expiry and isolated test time
+
+Expired active/dormant cycles transition to failure when the qualified event's
+scheduler next runs; a bounded indexed page prevents an unbounded catch-up
+transaction. Victory remains final. Current-cycle jar actions do not acquire
+locks for older annual cycles. Fixture-only time overrides are scoped to a
+Root and its clones, reject production Roots, and never change PostgreSQL time.

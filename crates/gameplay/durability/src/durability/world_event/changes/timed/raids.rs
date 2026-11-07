@@ -102,7 +102,9 @@ async fn credit(
     generation: ScopeOwnershipGeneration,
     epoch: u64,
     event: &NativeKillRequest,
+    clock: Option<i64>,
 ) -> Result<NativeKillOutcome, DurabilityError> {
+    let occurred = clock.unwrap_or(event.occurred_at_ms);
     let RuntimeScopeRefV1::Channel {
         world_id: world,
         channel_id: channel,
@@ -119,6 +121,7 @@ async fn credit(
         || people.len() > 17
         || people.len() != event.participants.len()
         || event.occurred_at_ms < 0
+        || occurred < 0
         || event.occurrence.len() != 52
         || event.occurrence[..16] != world.as_bytes()[..]
         || event.occurrence[16..32] != channel.as_bytes()[..]
@@ -150,10 +153,10 @@ async fn credit(
     let Some(origin) = raid_origin(tx, source.firing_id).await? else {
         return Ok(NativeKillOutcome::Refused);
     };
-    let Some(bounds) = window(tx, world, epoch, origin.kind, event.occurred_at_ms).await? else {
+    let Some(bounds) = window(tx, world, epoch, origin.kind, occurred).await? else {
         return Ok(NativeKillOutcome::Refused);
     };
-    if event.occurred_at_ms >= bounds.1 || cycle(origin.kind, epoch, bounds.0)? != origin.cycle {
+    if occurred >= bounds.1 || cycle(origin.kind, epoch, bounds.0)? != origin.cycle {
         return Ok(NativeKillOutcome::Refused);
     }
     // Quest transactions own the Character root before the World cycle. Taking
@@ -162,15 +165,7 @@ async fn credit(
         if sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR KEY SHARE")
             .bind(person.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.is_none() {return Ok(NativeKillOutcome::Refused);}
     }
-    let mut state = state(
-        tx,
-        world,
-        origin.kind,
-        bounds,
-        origin.cycle,
-        event.occurred_at_ms,
-    )
-    .await?;
+    let mut state = state(tx, world, origin.kind, bounds, origin.cycle, occurred).await?;
     let mut hash = Sha256::new();
     hash.update(b"oteryn:wevents:native-credit:v1\0");
     hash.update(source.firing_id);
@@ -203,7 +198,7 @@ async fn credit(
         return Ok(NativeKillOutcome::Refused);
     }
     if origin.kind == EventKind::RiseOfDevovorga {
-        let now = event.occurred_at_ms.max(state.observed_ms);
+        let now = occurred.max(state.observed_ms);
         state
             .advance(origin.kind, now, Input::Tick, 0)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -223,7 +218,7 @@ async fn credit(
         origin.kind,
         EventKind::RiseOfDevovorga | EventKind::Kingsday
     ) {
-        let now = event.occurred_at_ms.max(state.observed_ms);
+        let now = occurred.max(state.observed_ms);
         state
             .advance(
                 origin.kind,
@@ -263,6 +258,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let clock = self.world_event_clock_override_ms();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -275,7 +271,7 @@ impl DurabilityRoot {
                     {
                         return Ok(NativeKillOutcome::Refused);
                     }
-                    let result = credit(&mut tx, scope, generation, epoch, &event).await?;
+                    let result = credit(&mut tx, scope, generation, epoch, &event, clock).await?;
                     // Calendar/attempt expiry is World state even when this
                     // independently current native source no longer earns credit.
                     commit_semantic_transaction(tx, deadline).await?;

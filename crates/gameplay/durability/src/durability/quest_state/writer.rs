@@ -338,6 +338,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let world_event_clock = self.world_event_clock_override_ms();
         let mut context = (
             context,
             grizzly_gate,
@@ -350,7 +351,8 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let character = fence.character_id;
                     let mut reward_tuple=None;
-                    let mut tx = if reward_admission.is_some() {
+                    let event_payment=callback.as_ref().and_then(|c|c.effects.world_event.as_ref()).is_some_and(|binding|binding.cost().is_some());
+                    let mut tx = if reward_admission.is_some() || event_payment {
                         let typed=begin_type2_transaction(holder,deadline).await?;
                         reward_tuple=Some(typed.tuple());
                         typed.into_inner()
@@ -698,7 +700,7 @@ impl DurabilityRoot {
                     if let Some(binding) = event_binding
                         && !super::super::world_event::changes::timed::apply_binding(
                             &mut tx, super::super::world_event::changes::timed::TimedActor { recovery: &recovery, node: &node, fence },
-                            binding, context.as_ref().map(|(_,ctx,_)|ctx.reset_epoch), state.try_get("level")?, &request).await?
+                            binding, context.as_ref().map(|(_,ctx,_)|ctx.reset_epoch), state.try_get("level")?, &request, world_event_clock).await?
                     { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref()).await?
