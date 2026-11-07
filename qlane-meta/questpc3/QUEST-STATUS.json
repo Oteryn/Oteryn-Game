@@ -1929,6 +1929,182 @@
             "result": "PASS"
           }
         }
+      },
+      {
+        "batch": "threatened_treasure_14",
+        "phase": "QUALIFIED: six source entries and second earned cycle proven through native wire and real PostgreSQL",
+        "previous_published": "6146ee945",
+        "entries": [
+          "agaric25385 -> fourth map24946",
+          "compose selected24943",
+          "compose selected24944",
+          "compose selected24945",
+          "compose selected24946",
+          "treasure25380 exact position -> ring1/quartz5/coins5"
+        ],
+        "source_facts": {
+          "agaric": "action_big_fly_agaric.lua:3-14 blobce19427af8dc6dbdb9e8c72037c78d829cf1dc05 SHA256f84f18c4c333b7cbd534f47fe0d6836d7bc5db09b2ffff932f52cafaef069289",
+          "composition": "action_map.lua:3-23 blobd7302f806c60734dcd84642e80f756d7b7404094 SHA2564814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca",
+          "treasure": "action_treasure.lua:3-20 blob413f3b76363117d7b37a135551b5447d6d7d41d3 SHA256438fcbc59629440d277241d5a08653a5d28600940c477f71b600b04ae85f18a8"
+        },
+        "reuse_heads": {
+          "qengine2": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
+          "questl2": "352325ea9a2c242a11b0a38170e22630d7e72463"
+        },
+        "candidate_reuse": [
+          "97cb9db79 / d668338be selected carried USE proof",
+          "96d03398f complete loose backpack reward outputs",
+          "a0100244c per-occurrence repeatable native exchanges",
+          "c9cdfd5ae positive appearance-only world USE (not yet ported here)"
+        ],
+        "tests": "One real native-world/carried-USE PG scenario, six entry counters, actual four-input consumption/mapMINT, complete treasure counts, exact replay, wrong-stage/position, global revision0. Only prior flags1/2 and treasure input4 plus backpack/input fragments are fixtures. No complete maps, treasure assets, stage5 or successful receipts seeded. Results are captured per entry before any later independent fixture setup.",
+        "log": "/tmp/questpc3-treasure-red.log",
+        "last_completed_red": {
+          "duration_ms": 61702,
+          "exact_error": "Blocked",
+          "cause": "wrong-mosaic approach stood on actual treasure tile; corrected local WRONG to32363/32417/-7",
+          "qualification": "fixture failure, not accepted as full six-entry mechanism RED"
+        },
+        "helper_compile_proof": "Completed dispatch test build3m26s and actual PG61.702s reached all4 map attempts before blocked movement. Only backpack helper parameter and world-use helper visibility are published; revised test/mount remains local.",
+        "push_interval_minutes": 15,
+        "postgres_red": {
+          "duration_ms": 57010,
+          "evidence": "entries0/agaricfalse/maps0/repeated_mapfalse/ring0/quartz0/coins0/stage4",
+          "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
+          "server": "PostgreSQL18.6",
+          "negative_paths": "wrong stage, wrong mosaic position, exact native replay all reached; fixture movement fixed"
+        },
+        "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded.",
+        "bulk_reuse": {
+          "commit": "96d03398ff4fa6a4b4600bce114209738e072d5f",
+          "files": 19,
+          "adaptation": "Retained local no-fluid/no-charge-plan schema, added only backpack mode fields/SQL. Empty mode preserves existing intent binding. Complete existing MINT/audit owner with atomic peer outputs; no new value writer. Other caller changes only modefalse compatibility.",
+          "check": "cargo check durability/quests/dispatch/social/game-server PASS51.12s",
+          "pg_log": "/tmp/questpc3-treasure-bulk-pg.log",
+          "clippy_log": "/tmp/questpc3-treasure-bulk-clippy.log",
+          "next_push_deadline": "15minutes after9293e3d9b; publish compiled WIP if still qualifying"
+        },
+        "source_reuse": {
+          "carried_use": "questl2 d668338bede78c8966d5e2a6f732cf55178df197",
+          "canonical_migrations": "QENGINE2 e71a5d916: 1004 and 1005 consumed unchanged",
+          "lane_extensions": [
+            "1226_quest_carried_exchange_inputs.sql",
+            "1227_quest_earned_repeat_occurrences.sql"
+          ]
+        },
+        "latest_checks": {
+          "check": "PASS 40.48s",
+          "clippy": "PASS --lib -D warnings 3m28s, three changed crates",
+          "domain": "14 existing + 2 new boundary tests PASS",
+          "native": "repo tooling PASS 41 import files; 3596 existing profiles unchanged, 2 added",
+          "pins": "repo tooling PASS, unchanged world digest 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+          "postgres": "Focused native six-entry journey compiling; no GREEN claimed yet"
+        },
+        "fixture_compile_corrections": [
+          "soul_war.rs Callback literal repeatable_reward=false",
+          "underwater_drowning.rs Callback literal repeatable_reward=false"
+        ],
+        "profile_tool_verification": {
+          "initial": "16/17 passed; Rapier fixture lacked earlier qualified25295/3452",
+          "retest": "Rapier fixture complete, same equality and drift guards PASS0.979s",
+          "new_case": "Three peer reward profiles rebuilt EXACT with canonical weights PASS6.774s",
+          "logs": [
+            "/tmp/questpc3-treasure-profile-test.log",
+            "/tmp/questpc3-treasure-profile-retest.log"
+          ]
+        },
+        "latest_postgresql": {
+          "result": "RED 5/6, repeat cycle missing",
+          "duration_ms": 62710,
+          "log": "/tmp/questpc3-treasure-green-retry.log",
+          "sha256": "60461c59434082b1f51f0aadfa80dbaff08cce7a243333ffab76d4fa9f077ea1",
+          "evidence": "entries5 agarictrue maps4 repeated_mapfalse ring1 quartz5 coins5 stage5",
+          "compile": "dispatch test binary PASS8m01s after two explicit false fixture defaults"
+        },
+        "repeat_diagnosis": {
+          "retained_run": "Existing binary reproduced all inputs live and no second quest/MINT receipt; diagnostic DB cleanup intentionally refused to retain evidence, not a qualification run",
+          "cleanup": "Diagnostic DB template flag restored and exact created DB dropped",
+          "assumption": "World execute.rs schedules quest refresh asynchronously; synchronize the carried follow-up and value cache before retest",
+          "check": "PASS1m00s",
+          "pg_log": "/tmp/questpc3-treasure-refresh-pg.log"
+        },
+        "capacity_fixture_correction": {
+          "diagnostic_pg_ms": 66160,
+          "exact_refusal": "QUEST_REWARD_REFUSED command=11 callback=compose-1 boundary=mint-admit reason=MainBackpackFull",
+          "source": "content/items/definitions/spell-native-profiles.json:1 @b3e2434ba (2853 cap8;2854 cap20)",
+          "assertions": "unchanged full six-entry and earned repeat expectations; added exact native cap20 assertion",
+          "check": "PASS34.63s",
+          "pg_log": "/tmp/questpc3-treasure-backpack-pg.log"
+        },
+        "result": "GREEN",
+        "pg_green_ms": 72115,
+        "proofs": {
+          "green": {
+            "log": "/tmp/questpc3-treasure-backpack-pg.log",
+            "sha256": "ca9a31ecb48122a09e68fb092f4cba30a18118d16760b74174d37bf9c775ada6",
+            "result": "PASS"
+          },
+          "red": {
+            "log": "/tmp/questpc3-treasure-red.log",
+            "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
+            "result": "expected RED"
+          },
+          "final-check": {
+            "log": "/tmp/questpc3-treasure-backpack-check.log",
+            "sha256": "8914bd4e02f7759039246aa75b0b38239c27d2163ea63a5cb2879e18714a12f9",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-treasure-final-clippy.log",
+            "sha256": "94ab8164e4045f50b5a905744b950db717ec9b4e9d91fbc190ffc95c8da56851",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-treasure-final-fmt-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-treasure-domain.log",
+            "sha256": "5a523cd21f8c5fa07910723a70987a660fd58d892440bdc36a235b6635f567f0",
+            "result": "PASS"
+          },
+          "boundaries": {
+            "log": "/tmp/questpc3-treasure-boundaries.log",
+            "sha256": "3f9eebdef2a7174845d1c93a55bba446445dbdc0e147a19853ddca320430faa3",
+            "result": "PASS"
+          },
+          "profile-retest": {
+            "log": "/tmp/questpc3-treasure-profile-retest.log",
+            "sha256": "50ca834a61fc3fd99e77e70f12906809ca8c1f3d9be0690c0bf6da8272c817b2",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-treasure-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-treasure-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 6,
+          "selected_variants": 4,
+          "repeated_map": true,
+          "ring": 2,
+          "quartz": 10,
+          "ancient_coins": 10,
+          "stage": 5,
+          "source_object_revisions": 0,
+          "fixture": "only prior stages and physical inputs; actual canonical20-slot backpack2854; no maps/rewards/completion seeded",
+          "negative_paths": "wrong stage, wrong mosaic position, exact immutable replay, fresh attempts outside reward gate",
+          "checks": "fmt, cargo check34.63s, strict three-crate all-features lib Clippy4m18s,16 domain/boundary tests, native41/pin-refresh and profile closure tests",
+          "capacity_correction": "8-slot bag2853 correctly refused ninth item; source-correct20-slot backpack2854 asserted; no guard or expected output weakened"
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -4013,6 +4189,182 @@
         "review": "Read all seven changed files, source pinnedCarlos114-123/205-218 and existing callback owner. Source-only no-value progress callbacks/returnoffer plus tests; no new authority, persistence mechanism, public protocol or native World input. Deterministic self-review sufficient under bound default; no speculative paid review selected.",
         "resolved_build_failure": "Content build first failedtempdirNoSpace; pruned onlyobsoleteunlocked/inactive build snapshots, retained current cache, reran same123content target successfully3.18s. Failed log preserved /tmp/questpc3-carlos-report-content-disk-full.log; no gate waived.",
         "next": "Implement source bridge completion, lost-coat replacement and five ground wood/cart deliveries; reuse existing gate/world owners and latest lane engines. Fourwholequests remain."
+      },
+      "threatened_treasure_14": {
+        "batch": "threatened_treasure_14",
+        "phase": "QUALIFIED: six source entries and second earned cycle proven through native wire and real PostgreSQL",
+        "previous_published": "6146ee945",
+        "entries": [
+          "agaric25385 -> fourth map24946",
+          "compose selected24943",
+          "compose selected24944",
+          "compose selected24945",
+          "compose selected24946",
+          "treasure25380 exact position -> ring1/quartz5/coins5"
+        ],
+        "source_facts": {
+          "agaric": "action_big_fly_agaric.lua:3-14 blobce19427af8dc6dbdb9e8c72037c78d829cf1dc05 SHA256f84f18c4c333b7cbd534f47fe0d6836d7bc5db09b2ffff932f52cafaef069289",
+          "composition": "action_map.lua:3-23 blobd7302f806c60734dcd84642e80f756d7b7404094 SHA2564814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca",
+          "treasure": "action_treasure.lua:3-20 blob413f3b76363117d7b37a135551b5447d6d7d41d3 SHA256438fcbc59629440d277241d5a08653a5d28600940c477f71b600b04ae85f18a8"
+        },
+        "reuse_heads": {
+          "qengine2": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
+          "questl2": "352325ea9a2c242a11b0a38170e22630d7e72463"
+        },
+        "candidate_reuse": [
+          "97cb9db79 / d668338be selected carried USE proof",
+          "96d03398f complete loose backpack reward outputs",
+          "a0100244c per-occurrence repeatable native exchanges",
+          "c9cdfd5ae positive appearance-only world USE (not yet ported here)"
+        ],
+        "tests": "One real native-world/carried-USE PG scenario, six entry counters, actual four-input consumption/mapMINT, complete treasure counts, exact replay, wrong-stage/position, global revision0. Only prior flags1/2 and treasure input4 plus backpack/input fragments are fixtures. No complete maps, treasure assets, stage5 or successful receipts seeded. Results are captured per entry before any later independent fixture setup.",
+        "log": "/tmp/questpc3-treasure-red.log",
+        "last_completed_red": {
+          "duration_ms": 61702,
+          "exact_error": "Blocked",
+          "cause": "wrong-mosaic approach stood on actual treasure tile; corrected local WRONG to32363/32417/-7",
+          "qualification": "fixture failure, not accepted as full six-entry mechanism RED"
+        },
+        "helper_compile_proof": "Completed dispatch test build3m26s and actual PG61.702s reached all4 map attempts before blocked movement. Only backpack helper parameter and world-use helper visibility are published; revised test/mount remains local.",
+        "push_interval_minutes": 15,
+        "postgres_red": {
+          "duration_ms": 57010,
+          "evidence": "entries0/agaricfalse/maps0/repeated_mapfalse/ring0/quartz0/coins0/stage4",
+          "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
+          "server": "PostgreSQL18.6",
+          "negative_paths": "wrong stage, wrong mosaic position, exact native replay all reached; fixture movement fixed"
+        },
+        "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded.",
+        "bulk_reuse": {
+          "commit": "96d03398ff4fa6a4b4600bce114209738e072d5f",
+          "files": 19,
+          "adaptation": "Retained local no-fluid/no-charge-plan schema, added only backpack mode fields/SQL. Empty mode preserves existing intent binding. Complete existing MINT/audit owner with atomic peer outputs; no new value writer. Other caller changes only modefalse compatibility.",
+          "check": "cargo check durability/quests/dispatch/social/game-server PASS51.12s",
+          "pg_log": "/tmp/questpc3-treasure-bulk-pg.log",
+          "clippy_log": "/tmp/questpc3-treasure-bulk-clippy.log",
+          "next_push_deadline": "15minutes after9293e3d9b; publish compiled WIP if still qualifying"
+        },
+        "source_reuse": {
+          "carried_use": "questl2 d668338bede78c8966d5e2a6f732cf55178df197",
+          "canonical_migrations": "QENGINE2 e71a5d916: 1004 and 1005 consumed unchanged",
+          "lane_extensions": [
+            "1226_quest_carried_exchange_inputs.sql",
+            "1227_quest_earned_repeat_occurrences.sql"
+          ]
+        },
+        "latest_checks": {
+          "check": "PASS 40.48s",
+          "clippy": "PASS --lib -D warnings 3m28s, three changed crates",
+          "domain": "14 existing + 2 new boundary tests PASS",
+          "native": "repo tooling PASS 41 import files; 3596 existing profiles unchanged, 2 added",
+          "pins": "repo tooling PASS, unchanged world digest 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+          "postgres": "Focused native six-entry journey compiling; no GREEN claimed yet"
+        },
+        "fixture_compile_corrections": [
+          "soul_war.rs Callback literal repeatable_reward=false",
+          "underwater_drowning.rs Callback literal repeatable_reward=false"
+        ],
+        "profile_tool_verification": {
+          "initial": "16/17 passed; Rapier fixture lacked earlier qualified25295/3452",
+          "retest": "Rapier fixture complete, same equality and drift guards PASS0.979s",
+          "new_case": "Three peer reward profiles rebuilt EXACT with canonical weights PASS6.774s",
+          "logs": [
+            "/tmp/questpc3-treasure-profile-test.log",
+            "/tmp/questpc3-treasure-profile-retest.log"
+          ]
+        },
+        "latest_postgresql": {
+          "result": "RED 5/6, repeat cycle missing",
+          "duration_ms": 62710,
+          "log": "/tmp/questpc3-treasure-green-retry.log",
+          "sha256": "60461c59434082b1f51f0aadfa80dbaff08cce7a243333ffab76d4fa9f077ea1",
+          "evidence": "entries5 agarictrue maps4 repeated_mapfalse ring1 quartz5 coins5 stage5",
+          "compile": "dispatch test binary PASS8m01s after two explicit false fixture defaults"
+        },
+        "repeat_diagnosis": {
+          "retained_run": "Existing binary reproduced all inputs live and no second quest/MINT receipt; diagnostic DB cleanup intentionally refused to retain evidence, not a qualification run",
+          "cleanup": "Diagnostic DB template flag restored and exact created DB dropped",
+          "assumption": "World execute.rs schedules quest refresh asynchronously; synchronize the carried follow-up and value cache before retest",
+          "check": "PASS1m00s",
+          "pg_log": "/tmp/questpc3-treasure-refresh-pg.log"
+        },
+        "capacity_fixture_correction": {
+          "diagnostic_pg_ms": 66160,
+          "exact_refusal": "QUEST_REWARD_REFUSED command=11 callback=compose-1 boundary=mint-admit reason=MainBackpackFull",
+          "source": "content/items/definitions/spell-native-profiles.json:1 @b3e2434ba (2853 cap8;2854 cap20)",
+          "assertions": "unchanged full six-entry and earned repeat expectations; added exact native cap20 assertion",
+          "check": "PASS34.63s",
+          "pg_log": "/tmp/questpc3-treasure-backpack-pg.log"
+        },
+        "result": "GREEN",
+        "pg_green_ms": 72115,
+        "proofs": {
+          "green": {
+            "log": "/tmp/questpc3-treasure-backpack-pg.log",
+            "sha256": "ca9a31ecb48122a09e68fb092f4cba30a18118d16760b74174d37bf9c775ada6",
+            "result": "PASS"
+          },
+          "red": {
+            "log": "/tmp/questpc3-treasure-red.log",
+            "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
+            "result": "expected RED"
+          },
+          "final-check": {
+            "log": "/tmp/questpc3-treasure-backpack-check.log",
+            "sha256": "8914bd4e02f7759039246aa75b0b38239c27d2163ea63a5cb2879e18714a12f9",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-treasure-final-clippy.log",
+            "sha256": "94ab8164e4045f50b5a905744b950db717ec9b4e9d91fbc190ffc95c8da56851",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-treasure-final-fmt-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-treasure-domain.log",
+            "sha256": "5a523cd21f8c5fa07910723a70987a660fd58d892440bdc36a235b6635f567f0",
+            "result": "PASS"
+          },
+          "boundaries": {
+            "log": "/tmp/questpc3-treasure-boundaries.log",
+            "sha256": "3f9eebdef2a7174845d1c93a55bba446445dbdc0e147a19853ddca320430faa3",
+            "result": "PASS"
+          },
+          "profile-retest": {
+            "log": "/tmp/questpc3-treasure-profile-retest.log",
+            "sha256": "50ca834a61fc3fd99e77e70f12906809ca8c1f3d9be0690c0bf6da8272c817b2",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-treasure-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-treasure-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 6,
+          "selected_variants": 4,
+          "repeated_map": true,
+          "ring": 2,
+          "quartz": 10,
+          "ancient_coins": 10,
+          "stage": 5,
+          "source_object_revisions": 0,
+          "fixture": "only prior stages and physical inputs; actual canonical20-slot backpack2854; no maps/rewards/completion seeded",
+          "negative_paths": "wrong stage, wrong mosaic position, exact immutable replay, fresh attempts outside reward gate",
+          "checks": "fmt, cargo check34.63s, strict three-crate all-features lib Clippy4m18s,16 domain/boundary tests, native41/pin-refresh and profile closure tests",
+          "capacity_correction": "8-slot bag2853 correctly refused ninth item; source-correct20-slot backpack2854 asserted; no guard or expected output weakened"
+        }
       }
     },
     "counts": {
@@ -4021,111 +4373,19 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "threatened_treasure_14",
-      "phase": "Exact refusal proven: MainBackpackFull in eight-slot bag2853; fixture incorrectly expected room for nine retained entries. Corrected to canonical twenty-slot backpack2854 with native capacity assertion; all reward/replay/custody assertions retained. Speculative synchronous refresh removed; value-cache invalidation retained. Current two-crate check PASS34.63s; final focused PG rebuild running.",
-      "previous_published": "6146ee945",
+      "batch": "threatened_fairies_15",
+      "phase": "Active: author focused five-entry PG RED before implementing reusable timed transform/counter effects",
       "entries": [
-        "agaric25385 -> fourth map24946",
-        "compose selected24943",
-        "compose selected24944",
-        "compose selected24945",
-        "compose selected24946",
-        "treasure25380 exact position -> ring1/quartz5/coins5"
+        "AID40016 Fairy01",
+        "AID40017 Fairy02",
+        "AID40018 Fairy03",
+        "AID40019 Fairy04",
+        "AID40020 Fairy05"
       ],
-      "source_facts": {
-        "agaric": "action_big_fly_agaric.lua:3-14 blobce19427af8dc6dbdb9e8c72037c78d829cf1dc05 SHA256f84f18c4c333b7cbd534f47fe0d6836d7bc5db09b2ffff932f52cafaef069289",
-        "composition": "action_map.lua:3-23 blobd7302f806c60734dcd84642e80f756d7b7404094 SHA2564814b16c6fcd3e6e755495fd130a81740865723d8f14b655eb4c0c9ad0c655ca",
-        "treasure": "action_treasure.lua:3-20 blob413f3b76363117d7b37a135551b5447d6d7d41d3 SHA256438fcbc59629440d277241d5a08653a5d28600940c477f71b600b04ae85f18a8"
-      },
-      "reuse_heads": {
-        "qengine2": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
-        "questl2": "352325ea9a2c242a11b0a38170e22630d7e72463"
-      },
-      "candidate_reuse": [
-        "97cb9db79 / d668338be selected carried USE proof",
-        "96d03398f complete loose backpack reward outputs",
-        "a0100244c per-occurrence repeatable native exchanges",
-        "c9cdfd5ae positive appearance-only world USE (not yet ported here)"
-      ],
-      "tests": "One real native-world/carried-USE PG scenario, six entry counters, actual four-input consumption/mapMINT, complete treasure counts, exact replay, wrong-stage/position, global revision0. Only prior flags1/2 and treasure input4 plus backpack/input fragments are fixtures. No complete maps, treasure assets, stage5 or successful receipts seeded. Results are captured per entry before any later independent fixture setup.",
-      "log": "/tmp/questpc3-treasure-red.log",
-      "last_completed_red": {
-        "duration_ms": 61702,
-        "exact_error": "Blocked",
-        "cause": "wrong-mosaic approach stood on actual treasure tile; corrected local WRONG to32363/32417/-7",
-        "qualification": "fixture failure, not accepted as full six-entry mechanism RED"
-      },
-      "helper_compile_proof": "Completed dispatch test build3m26s and actual PG61.702s reached all4 map attempts before blocked movement. Only backpack helper parameter and world-use helper visibility are published; revised test/mount remains local.",
-      "push_interval_minutes": 15,
-      "postgres_red": {
-        "duration_ms": 57010,
-        "evidence": "entries0/agaricfalse/maps0/repeated_mapfalse/ring0/quartz0/coins0/stage4",
-        "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
-        "server": "PostgreSQL18.6",
-        "negative_paths": "wrong stage, wrong mosaic position, exact native replay all reached; fixture movement fixed"
-      },
-      "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded.",
-      "bulk_reuse": {
-        "commit": "96d03398ff4fa6a4b4600bce114209738e072d5f",
-        "files": 19,
-        "adaptation": "Retained local no-fluid/no-charge-plan schema, added only backpack mode fields/SQL. Empty mode preserves existing intent binding. Complete existing MINT/audit owner with atomic peer outputs; no new value writer. Other caller changes only modefalse compatibility.",
-        "check": "cargo check durability/quests/dispatch/social/game-server PASS51.12s",
-        "pg_log": "/tmp/questpc3-treasure-bulk-pg.log",
-        "clippy_log": "/tmp/questpc3-treasure-bulk-clippy.log",
-        "next_push_deadline": "15minutes after9293e3d9b; publish compiled WIP if still qualifying"
-      },
-      "source_reuse": {
-        "carried_use": "questl2 d668338bede78c8966d5e2a6f732cf55178df197",
-        "canonical_migrations": "QENGINE2 e71a5d916: 1004 and 1005 consumed unchanged",
-        "lane_extensions": [
-          "1226_quest_carried_exchange_inputs.sql",
-          "1227_quest_earned_repeat_occurrences.sql"
-        ]
-      },
-      "latest_checks": {
-        "check": "PASS 40.48s",
-        "clippy": "PASS --lib -D warnings 3m28s, three changed crates",
-        "domain": "14 existing + 2 new boundary tests PASS",
-        "native": "repo tooling PASS 41 import files; 3596 existing profiles unchanged, 2 added",
-        "pins": "repo tooling PASS, unchanged world digest 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
-        "postgres": "Focused native six-entry journey compiling; no GREEN claimed yet"
-      },
-      "fixture_compile_corrections": [
-        "soul_war.rs Callback literal repeatable_reward=false",
-        "underwater_drowning.rs Callback literal repeatable_reward=false"
-      ],
-      "profile_tool_verification": {
-        "initial": "16/17 passed; Rapier fixture lacked earlier qualified25295/3452",
-        "retest": "Rapier fixture complete, same equality and drift guards PASS0.979s",
-        "new_case": "Three peer reward profiles rebuilt EXACT with canonical weights PASS6.774s",
-        "logs": [
-          "/tmp/questpc3-treasure-profile-test.log",
-          "/tmp/questpc3-treasure-profile-retest.log"
-        ]
-      },
-      "latest_postgresql": {
-        "result": "RED 5/6, repeat cycle missing",
-        "duration_ms": 62710,
-        "log": "/tmp/questpc3-treasure-green-retry.log",
-        "sha256": "60461c59434082b1f51f0aadfa80dbaff08cce7a243333ffab76d4fa9f077ea1",
-        "evidence": "entries5 agarictrue maps4 repeated_mapfalse ring1 quartz5 coins5 stage5",
-        "compile": "dispatch test binary PASS8m01s after two explicit false fixture defaults"
-      },
-      "repeat_diagnosis": {
-        "retained_run": "Existing binary reproduced all inputs live and no second quest/MINT receipt; diagnostic DB cleanup intentionally refused to retain evidence, not a qualification run",
-        "cleanup": "Diagnostic DB template flag restored and exact created DB dropped",
-        "assumption": "World execute.rs schedules quest refresh asynchronously; synchronize the carried follow-up and value cache before retest",
-        "check": "PASS1m00s",
-        "pg_log": "/tmp/questpc3-treasure-refresh-pg.log"
-      },
-      "capacity_fixture_correction": {
-        "diagnostic_pg_ms": 66160,
-        "exact_refusal": "QUEST_REWARD_REFUSED command=11 callback=compose-1 boundary=mint-admit reason=MainBackpackFull",
-        "source": "content/items/definitions/spell-native-profiles.json:1 @b3e2434ba (2853 cap8;2854 cap20)",
-        "assertions": "unchanged full six-entry and earned repeat expectations; added exact native cap20 assertion",
-        "check": "PASS34.63s",
-        "pg_log": "/tmp/questpc3-treasure-backpack-pg.log"
-      }
+      "source": "/tmp/questpc3-donor/action_fairies_release.lua; retained archive index and exact blob/SHA to cite in next authoring batch",
+      "requirements": "NightmareIntruders3; distinct once flags; counter capped5 with absent/-1->1; transform25796->25797, restore after30s",
+      "reuse": "qualified questl2 0c74b25cc temporary world objects; implement missing reusable pieces here",
+      "previous_qualified": "threatened_treasure_14"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -9309,7 +9569,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified counters/reports, exchanges/maps/final reward contracts, six light transforms, fifteen barriers, three animal/stone exchanges, five rake scratches and book/fur target deliveries with existing tent steps. Finish remaining source encounters, animal/object/timed harvest and full journey; do not redo completed components."
+      "next_actions": "Retain all prior qualified mechanisms and native six-entry treasure72.115s (four selected variants plus second earned cycle). Next five FairyRelease entries, timed objects/harvest/encounters and whole journey; no shared-feature deferral."
     },
     {
       "canonical": "oteryn:quest.pilgrimage_of_ashes",
@@ -9547,8 +9807,8 @@
       "1226_quest_carried_exchange_inputs.sql",
       "1227_quest_earned_repeat_occurrences.sql"
     ],
-    "status": "QUALIFIED: renames preserve SQL, post-rename PostgreSQL proof, repository pin refresh, duplicate check, fmt, five-crate check and strict Clippy all passed",
-    "red_point": "Treasure six-entry qualification remains RED pending native producers; registry and peer-output mechanism are qualified. Supplemental focused integration-test Clippy still running; not part of claimed pass.",
+    "status": "QUALIFIED: lane1220\u20131227, canonical shared files unchanged; focused PostgreSQL18.6 six-entry journey PASS72.115s",
+    "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
       "duration_seconds": 20.228471197,
@@ -9564,9 +9824,14 @@
       "duplicates": "repository dup-migrations.sh HEAD: no output; staged tree also no output",
       "pins": "repository world-bundle-compiler pin-refresh . PASS; world digest unchanged 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
     },
-    "new_migration_verification_pending": [
-      "1226_quest_carried_exchange_inputs.sql",
-      "1227_quest_earned_repeat_occurrences.sql"
-    ]
+    "latest_pg": {
+      "duration_ms": 72115,
+      "marker": "THREATENED_TREASURE POSTGRES_CASE_COMPLETED success=true",
+      "log": {
+        "log": "/tmp/questpc3-treasure-backpack-pg.log",
+        "sha256": "ca9a31ecb48122a09e68fb092f4cba30a18118d16760b74174d37bf9c775ada6",
+        "result": "PASS"
+      }
+    }
   }
 }
