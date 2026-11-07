@@ -197,8 +197,22 @@ pub(super) async fn read_current_equipment(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<character_equipment::EquipmentSnapshot> {
-    let current = FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(game_session_id)
+    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
+    use crate::durability::DurabilityError;
+    let retry = super::AdmissionRetryBudget::for_command(admission.root);
+    let store = FreshAdmissionStore::from_root(admission.root.clone());
+    // Join snapshots interleave these reads for multiple admitted players.
+    // A busy holder proves neither an absent equipment view nor stale control.
+    let current = retry
+        .retry_unavailable(async || {
+            store
+                .current_session_at(game_session_id)
+                .await
+                .map_err(|error| match error {
+                    DurabilityError::RootUnavailable => Unavailable,
+                    _ => Rejected,
+                })
+        })
         .await
         .ok()?
         .0;
@@ -225,9 +239,19 @@ pub(super) async fn read_current_equipment(
         }
         digest
     };
-    let read = admission
-        .root
-        .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+    let read = retry
+        .retry_unavailable(async || {
+            admission
+                .root
+                .read_movement_equipment(admission.character, admission.holder, &fence, digest)
+                .await
+                .map_err(|error| match error {
+                    character_equipment::EquipmentError::Durability(
+                        DurabilityError::RootUnavailable,
+                    ) => Unavailable,
+                    _ => Rejected,
+                })
+        })
         .await
         .ok()?;
     if read.fence() != &fence || read.equipment().content_digest != digest {

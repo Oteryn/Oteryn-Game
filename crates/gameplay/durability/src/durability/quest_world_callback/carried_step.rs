@@ -117,7 +117,7 @@ impl DurabilityRoot {
                 .bind(&intent).bind(input.as_ref().map(|i|&i.before)).bind(input.as_ref().map(|i|&i.location))
                 .bind(input.as_ref().map(|i|&i.kind)).bind(occurred).bind(envelope.as_deref()).execute(&mut **tx).await?;
             if let Some(input)=&input {
-                super::apply_input(&mut tx,input,&transaction).await?;
+                super::apply_input(&mut tx,permit,fence,input,&transaction).await?;
                 let envelope=envelope.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
                 sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,$5::uuid,$6,$6+$7,$8,sha256($8),1)")
                     .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id())
