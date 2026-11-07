@@ -1,6 +1,22 @@
 {
   "schema": 1,
   "baseline_commit": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+  "baseline_native_count": 3664,
+  "baseline_overlay_sources": [
+    {
+      "path": "content/items/definitions/starting-loadout-profiles.json",
+      "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
+    },
+    {
+      "path": "content/items/definitions/srx1-item-updates.json",
+      "sha256": "7310a284418f1228b81e1ae2b955805c22409cfae7416c3c9842d0c7a95de3af"
+    }
+  ],
+  "baseline_overlay_keys": [
+    "oteryn:item.tibia.i3571",
+    "oteryn:item.tibia.i3572",
+    "oteryn:item.tibia.i7991"
+  ],
   "baseline_sha256": "0460b8a17656a13c9148b6518c821f079f0f10560cbc614edddb16cf8a485204",
   "baseline_count": 3626,
   "profile_sha256": "5b277c2186736e8062d9670cdb43ff0a6873508b9ef5b55edf021d6c231a3c7c",

@@ -22,6 +22,22 @@
     "Father native bounds: use canonical main narrow0..1 domain; legacy sentinel stays reader-only",
     "native greetings: remove additive-merge duplicate generic branch which shadowed exact pipe defaults"
   ],
-  "rerun": "/tmp/questpc5-final-crate-units3.log",
-  "state": "all failures collected; all root causes fixed; full changed-crate rerun queued"
+  "rerun": "/tmp/questpc5-final-crate-units4.log",
+  "state": "full2537-case rerun active; only inventory total failure observed so far, corrected with exact baseline overlay union; final rerun pending",
+  "inventory_followup": {
+    "baseline": "f641d8d6c",
+    "base_added_profiles": 136,
+    "existing_overlay_profiles_moved_to_base": [
+      "oteryn:item.tibia.i3571",
+      "oteryn:item.tibia.i3572",
+      "oteryn:item.tibia.i7991"
+    ],
+    "new_native_union_profiles": 133,
+    "red": {
+      "log": "/tmp/questpc5-equipment-inventory-failure4.log",
+      "actual": 3797,
+      "previous_expected": 3800
+    },
+    "fix": "Repository generator now records baseline native union and overlay hashes; test still validates all136 exact keys and original raw/unknown-speed assertions, plus exact disjoint3-key existing-overlay partition."
+  }
 }

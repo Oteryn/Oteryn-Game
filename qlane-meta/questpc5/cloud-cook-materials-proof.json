@@ -1,0 +1,26 @@
+{
+  "scope": "Three exact Cook material physical-custody cases only, not whole quest",
+  "state": "PG_RED_CONFIRMED",
+  "source_facts": "imports/tibiawiki/facts/items-stats.json:11596,11615,11634; client appearance2dfa943b independent IDs/name/take flags",
+  "red": {
+    "log": "/tmp/questpc5-cook-materials-red.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "cases": [
+      {
+        "item": 44525,
+        "seconds": 138.428207515
+      },
+      {
+        "item": 44527,
+        "seconds": 138.758801007
+      },
+      {
+        "item": 44528,
+        "seconds": 138.683992581
+      }
+    ],
+    "error": "DefinitionNotFound",
+    "all_executed": true
+  },
+  "green": null
+}

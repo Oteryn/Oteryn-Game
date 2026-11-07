@@ -1,0 +1,32 @@
+{
+  "scope": "Oramond exact source21291 physical backpack custody only, not daily quest qualification",
+  "state": "PG_RED_CONFIRMED_PROPOSED_PROFILE_SAVED_OUTSIDE_CHECKPOINT",
+  "source": {
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua#L14",
+    "sha256": "d0dc431a875ab44870e1758a949fe761b8fe3cfa3b950e11dbc37a309120b8ea",
+    "item": 21291,
+    "xml": "imports/canary/items-xml/items.xml:42189",
+    "weight": 200
+  },
+  "red": {
+    "log": "/tmp/questpc5-oramond-root-red.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "duration_seconds": 43.444505809,
+    "error": "DefinitionNotFound",
+    "markers": [
+      "POSTGRES_CASE_STARTED oramond_root_custody",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-oramond-roots"
+    ]
+  },
+  "authoring_units": {
+    "passed": 3,
+    "duration_seconds": 13.309,
+    "log": "/tmp/questpc5-oramond-root-profile-units.log",
+    "proposal_files": [
+      "/tmp/questpc5-root-pending-qengine_reward_item_profiles.py",
+      "/tmp/questpc5-root-pending-test_qengine_reward_item_profiles.py"
+    ]
+  },
+  "green": null,
+  "integration_prerequisite": "Owner-authorized local uncommitted QUESTPC8 migration1300 is test-only and never shipped."
+}

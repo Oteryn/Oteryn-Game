@@ -1,5 +1,5 @@
 {
-  "state": "WHOLE_ROUTE_PG_GREEN_SHIPPING_CHECKS_PENDING",
+  "state": "QUALIFIED_WHOLE_SELECTED_RECIPE",
   "quest": "The Queen of the Banshees Quest",
   "scope": "Whole selected free level60 once seven-seal personal trial, Queen pact, final chamber, two existing source claims and exit. Source lethal pact/puzzle fidelity and charged amulet hold are not claimed.",
   "postgres": "18.6",
@@ -42,5 +42,30 @@
     "full changed-crate rerun after seven collected unit failures",
     "current-head shipping check/Clippy",
     "registry PG without local foreign migration file"
-  ]
+  ],
+  "post3032_green": {
+    "log": "/tmp/questpc5-banshees-post3032-green.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "positive_seconds": 290.506391182,
+    "positive_body_seconds": 104.050636701,
+    "level59_seconds": 178.887973902,
+    "level59_body_seconds": 0.557350577,
+    "tests_passed": 2,
+    "suite_seconds": 290.51,
+    "binary": "oteryn_gameplay_dispatch-4605cb23df6cdf7b",
+    "command": "source /workspace/oteryn-env/env.sh; target/debug/deps/oteryn_gameplay_dispatch-4605cb23df6cdf7b questpc5_banshees --nocapture --test-threads=2",
+    "source_basis": "Fresh unit4 binary built after canonical main47db34f09 and grouped NPC/durability/quest fixes; runtime content unchanged."
+  },
+  "shipping_unit_exception": "Full changed-crate unit rerun remains pending; inventory union count correction awaits fresh compiled targeted rerun. Own whole mechanic and level guard PG cases passed on canonical main3032.",
+  "shipping_checks": {
+    "workspace_all_targets": "PASS9m58s /tmp/questpc5-banshees-final-workspace.log",
+    "fmt_all_check": "PASS /tmp/questpc5-banshees-final-fmt.log",
+    "generated_files": "repo native/central/quest binding/item audit/completion matrix tooling, runtime content unchanged",
+    "item_mount_equivalence": "PASS34111Items252Mounts /tmp/questpc5-banshees-final-equivalence.log",
+    "world_metadata": "PASS unchanged0/4",
+    "pins": "pin-refresh and pin-check PASS",
+    "duplicate_migrations": "PASS staged Git tree",
+    "crate_units": "pending, full2537-case run active; generated exact native-union count fix awaits fresh targeted rerun",
+    "latest_strict_clippy": "pending /tmp/questpc5-post3032-clippy.log"
+  }
 }

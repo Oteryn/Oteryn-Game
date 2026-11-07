@@ -766,6 +766,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-cook-") {
+        return Box::pin(super::questpc5_oramond_roots::exercise_cook(owner, admitted, h, name)).await;
+    }
+    if name == "qengine-rewards-oramond-roots" {
+        return Box::pin(super::questpc5_oramond_roots::exercise(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-banshees") {
         return Box::pin(super::questpc5_banshees::exercise(owner, admitted, h, name.ends_with("low-level"))).await;
     }

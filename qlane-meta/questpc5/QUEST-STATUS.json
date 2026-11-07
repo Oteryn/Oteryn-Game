@@ -14,7 +14,29 @@
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/84/definition"
     },
-    "donor_resolution": "Existing canonical NPC is oteryn:npc.the_draccoon_npc. Verified public donor dakotaotserver-glitch/dakbugs@c74bf2380718b4f659a6a19a5f42bf76e7abe63f:data-otservbr-global/npc/The Draccoon.lua SHA25632154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073:14 look1703,85–86 base outfits1722/1723. This partial donor does not implement Ratha/Fryclops chain; retain source scope and author selected route separately. No unrelated fighting-spirit Item5884 substitution inferred."
+    "donor_resolution": "Existing canonical NPC is oteryn:npc.the_draccoon_npc. Verified public donor dakotaotserver-glitch/dakbugs@c74bf2380718b4f659a6a19a5f42bf76e7abe63f:data-otservbr-global/npc/The Draccoon.lua SHA25632154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073:14 look1703,85–86 base outfits1722/1723. This partial donor does not implement Ratha/Fryclops chain; retain source scope and author selected route separately. No unrelated fighting-spirit Item5884 substitution inferred.",
+    "item_identity_resolution": {
+      "fryclops_axe": 44525,
+      "ratha_empty": 44527,
+      "ratha_full": 44528,
+      "source": "imports/tibiawiki/facts/items-stats.json:11596,11615,11634; served appearances2dfa943b names/portable flags independently match",
+      "wiki_revisions": [
+        1047591,
+        1047595,
+        1046764
+      ],
+      "weights": [
+        1800,
+        600,
+        600
+      ],
+      "scope": "Exact item identities resolved; canonical/native custody and custom-use bindings not yet implemented. Item5884 remains unrelated."
+    },
+    "physical_material_red": {
+      "proof": "cloud-cook-materials-proof.json",
+      "postgres": "18.6",
+      "state": "all3 exact native-custody cases RED DefinitionNotFound; canonical/native item data to author next"
+    }
   },
   {
     "canonical": "oteryn:quest.tutorial",
@@ -338,7 +360,13 @@
       "pointer": "/records/79/definition"
     },
     "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
-    "fact_resolution": "Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14,34 SHA256d0dc431a875ab44870e1758a949fe761b8fe3cfa3b950e11dbc37a309120b8ea grants exact Item21291; chavis.lua:84 consumes five. No same-name33938 substitution."
+    "fact_resolution": "Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14,34 SHA256d0dc431a875ab44870e1758a949fe761b8fe3cfa3b950e11dbc37a309120b8ea grants exact Item21291; chavis.lua:84 consumes five. No same-name33938 substitution.",
+    "active_batch": {
+      "scope": "Exact donor21291 physical backpack custody only; no whole-route qualification",
+      "postgres_red_log": "/tmp/questpc5-oramond-root-red.log",
+      "state": "PG RED43.444505809s; proposed native profile and3unit tests saved under /tmp/questpc5-root-pending-* until current stable-tree crate tests finish; not yet admitted.",
+      "proof": "cloud-oramond-root-proof.json"
+    }
   },
   {
     "canonical": "oteryn:quest.ornamented_shield_quest",
@@ -495,7 +523,7 @@
     "title": "The Explorer Society Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "The timed icicle delivery and rune/music Item semantics remain unqualified; the batch-four runtime exclusions explicitly retain those native Item gaps.",
+    "blocker": "Selected recipe explicitly removes specimen decay and excludes legacy rune/music missions; remaining work is binding its six field-course stages and exact physical specimens.",
     "from_lanes": [
       "questpc4"
     ],
@@ -504,18 +532,25 @@
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/22/definition"
+    },
+    "recipe_scope_correction": "Existing selected recipe adaptations remove specimen-decay timers. Its seven stages contain no rune/music task, so those old whole-source gaps do not block this selected programme. Donor Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b actions_icicle.lua grants4837 on4872->4994; actions_botanist.lua transforms4867->4868 at3874. Preserve original source semantics; selected timerless specimen policy must be explicit, never silently change4837 decay.",
+    "engine_request": {
+      "feature": "recipe-scoped nondecaying specimen binding preserving original timed Item",
+      "source_item": 4837,
+      "source_duration_ms": 600000,
+      "checked_qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+      "state": "requested; continue other own entries"
     }
   },
   {
     "canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
     "title": "The Queen of the Banshees Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Selected seven-seal binding implemented; stable-main PG positive/under-level/Serpentine regression and crate checks still pending.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc4"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole chosen free level60 once programme: six source-map seals, Queen pact, final chamber, boots3079/platinum100 through two existing source claims, escape after both claims and no repeated reward. Original source holds including charged amulet stay unchanged.",
     "evidence": [
       {
         "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
@@ -542,13 +577,23 @@
       "Original RED and green2 positive/level59 proof used UPDATE on absent progression row. Neither is counted as qualified mechanic/level proof. Serpentine regression passed independently135.685266054s."
     ],
     "whole_route_batch": {
-      "state": "PG_GREEN_SHIPPING_CHECKS_PENDING",
+      "state": "QUALIFIED_OWN_POSTGRES_GREEN",
       "proof": "qlane-meta/questpc5/cloud-banshees-whole-proof.json",
       "postgres": "18.6",
       "green_seconds": 383.527553955,
       "low_level_seconds": 350.277026026,
-      "local_test_prerequisite": "Owner-approved uncommitted QUESTPC8 migration1300; never shipped."
-    }
+      "local_test_prerequisite": "Owner-approved uncommitted QUESTPC8 migration1300; never shipped.",
+      "post3032_green": {
+        "cases": 2,
+        "log": "/tmp/questpc5-banshees-post3032-green.log",
+        "positive_seconds": 290.506391182,
+        "level59_seconds": 178.887973902,
+        "postgres": "18.6"
+      }
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-banshees-whole-proof.json",
+    "integration_note": "Owner-authorized uncommitted QUESTPC8 migration1300 remains a local test prerequisite; collector must compose canonical PC8 PR from main before deployment. No foreign migration is shipped."
   },
   {
     "canonical": "oteryn:quest.demon_helmet_quest",
