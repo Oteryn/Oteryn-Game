@@ -38,6 +38,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         (DRAGON_FLOOR, Position {x:32588, y:31642, floor:-5},
             vec![storage(rules::PHASE,1,2,false),storage(POISON,1,1,true)]),
     ].into_iter().map(|(key, position, storage)| Callback {
+        world_change: None,
         key:key.into(), quest:rules::QUEST.into(), trigger:Trigger::StepIn,
         selector:Selector { position_aliases:Vec::new(),position:Some(position),unique:None,action:None,appearance:None},
         lever:None,reversible:false,passages:Vec::new(),teleport:None,storage,

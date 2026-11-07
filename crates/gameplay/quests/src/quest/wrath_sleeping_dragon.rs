@@ -128,6 +128,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     transitions.push(QuestTransition {
+        world_change: None,
         key: COMPLETE.into(),
         quest: QUEST.into(),
         effects: [

@@ -1,3 +1,28 @@
+# GREEN21:17: publishing main1138720b1 merge
+
+Lastpush3af2d830b70fd900407387ff921c78d6a3f544a0, completed31SoulWarcanonical
+Itemadmissions with13canonical+44nativephysical records frozen;43/44scope,
+protected49271 preserved. RealPreymodel15cases/776creatures,source testGREEN,
+fullregisteredgeneration andpinsfinished;check/fmtGREEN. WIPc65 resolvedby3af.
+
+Main1138720b1 nowmergedlocallyuncommitted, two conflicts resolved promptly:
+SoulWarfixture+Rottenaltar constructor keep ownedaliases/effects andincoming
+world_change=None. Sixadditionalowned constructors givenNonefornew optionalfield.
+Allassertions/behaviors retained. FinalworkspacealltargetsPASS2m09s;fmtPASS.
+Disk-onlyretryerrors recoveredbyretiringinactiveowncaches/stalelinkartifacts;
+noOOM/sourceerrorsleft. Proof BATCH-main-qworld-2026-11-07.json. Commitmergewith
+owneridentity+trailers,fetchownbranch,merge movement,pushimmediately. Latesthard
+speedrule compile+fmt, noextra/full local suites. Conflictsfinishedunder15min.
+
+Newmain includesQWORLD3026/calendar/migrations1320–1322, CATALOG3025, CLCAST3028.
+Own1240–1244 unchanged; QENGINE main0999–1008 unchanged;no1200copies. NoPR:
+wpkgcollectsbranch. Source status3qualified2inprogress24notstarted6excluded.
+Asyncownershipquestionpending; don'tstartpotentiallyreassignedquests. Remaining
+Soul/Rotten bigenginehooks/privatebossloot/native-source-lootbridge requested
+qengine2; do notimplementbiggenericengine. Aftermergepushcontinueownedsource
+content work or consumeqengine updates; branchhasbeenpushedregularly (238,c0,c8,
+c65WIP,3af). No force/rebase/mainpush/credentialreads/testweakening.
+
 # GREEN21:05: Soul War Item admission slice complete; publish immediately
 
 Lastpushc65d715e9 WIP at20:45. Source subset nowcomplete:44sourceItems,

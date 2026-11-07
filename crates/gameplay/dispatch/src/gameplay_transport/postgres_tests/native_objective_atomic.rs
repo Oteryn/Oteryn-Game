@@ -67,6 +67,7 @@ pub(super) async fn scenario(
     transitions.push(native_transition.clone());
     const PRECONDITION: &str = "oteryn:quest-transition/elvenbane/fixture-prior-route";
     transitions.push(QuestTransition {
+        world_change: None,
         key: PRECONDITION.into(),
         quest: rules::QUEST.into(),
         effects: vec![
@@ -88,6 +89,7 @@ pub(super) async fn scenario(
     // Isolated seam precondition: an earlier captured kill can finish these
     // tracks while this retained death is waiting for its XP turn.
     transitions.push(QuestTransition {
+        world_change: None,
         key: ADVANCED.into(),
         quest: rules::QUEST.into(),
         effects: vec![

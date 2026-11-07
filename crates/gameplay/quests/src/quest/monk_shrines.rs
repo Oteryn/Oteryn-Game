@@ -88,6 +88,7 @@ pub(super) fn extend(
         ),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,

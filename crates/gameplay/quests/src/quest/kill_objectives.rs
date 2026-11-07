@@ -170,6 +170,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             });
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: rule.transition.into(),
             quest: rule.quest.into(),
             effects: rule.effects(),

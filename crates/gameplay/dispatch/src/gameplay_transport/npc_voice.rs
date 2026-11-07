@@ -417,6 +417,7 @@ mod tests {
             state: ProjectV2State {
                 declarations: vec![
                     ProjectV2Declaration::Npc {
+                        visibility: Default::default(),
                         identity: identity("oteryn:npc.alice"),
                         presentation: None,
                         behavior: None,
@@ -437,6 +438,7 @@ mod tests {
                         },
                     },
                     ProjectV2Declaration::Npc {
+                        visibility: Default::default(),
                         identity: identity("oteryn:npc.mute"),
                         presentation: None,
                         behavior: None,

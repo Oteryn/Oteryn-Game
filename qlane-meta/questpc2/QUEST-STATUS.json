@@ -1757,10 +1757,10 @@
     }
   },
   "current_batch": {
-    "id": "soul-loot-admissions-2026-11-07",
+    "id": "main-qworld-2026-11-07",
     "state": "GREEN_READY_TO_PUBLISH",
-    "record": "BATCH-soul-loot-admissions-2026-11-07.json",
-    "previous_pushed_head": "c65d715e9acd7f39a319d5929ff99b14a7df9cfa"
+    "record": "BATCH-main-qworld-2026-11-07.json",
+    "previous_pushed_head": "3af2d830b70fd900407387ff921c78d6a3f544a0"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1787,7 +1787,8 @@
     "BATCH-empty-source-corpse-capacity-2026-11-07.json",
     "BATCH-soul-entry-source-facts-2026-11-07.json",
     "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json",
-    "BATCH-soul-loot-admissions-2026-11-07.json"
+    "BATCH-soul-loot-admissions-2026-11-07.json",
+    "BATCH-main-qworld-2026-11-07.json"
   ],
   "next_batch": {
     "quests": [
@@ -2214,12 +2215,13 @@
   },
   "current_validation": {
     "state": "ALL_REQUIRED_CHECKS_GREEN_READY_TO_PUBLISH",
-    "source_test": "PASS0.481s; frozen canonical13/native physical44 and all43 selected admissions.",
-    "generation": "PASS registered generation plus real Prey15cases/776creatures.",
-    "fmt": "PASS",
-    "workspace_all_targets": "PASS exit0,2m36s",
-    "policy": "Latest owner hard compile+fmt push rule; no full local suites.",
-    "pins": "PASS refreshed with repository compiler"
+    "main_sha": "1138720b1",
+    "conflicts_resolved": 2,
+    "constructor_repairs": "New optional world_change=None in owned constructors; no behavior or assertion changes.",
+    "workspace_all_targets": "PASS exit0,2m09s",
+    "fmt": "PASS exit0",
+    "policy": "Latest owner compile+fmt hard push rule.",
+    "last_pushed_head": "3af2d830b70fd900407387ff921c78d6a3f544a0"
   },
   "engine_requests": [
     {
