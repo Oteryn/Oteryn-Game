@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "scope": "Exact source expertise gates for Demon and Devil Helmet; whole quest routes remain active.",
+  "red": {
+    "test_seconds": 52.2,
+    "postgres_server_version": "18.6",
+    "error": "ItemReference at missing source5102 door"
+  },
+  "green": {
+    "filter": "questpc5_helmet_source_expertise_boundaries_and_departure",
+    "test_seconds": 68.87,
+    "postgres_server_version": "18.6",
+    "cases": [
+      {
+        "position": [
+          33211,
+          31638,
+          -13
+        ],
+        "required_level": 100,
+        "levels": [
+          99,
+          100
+        ]
+      },
+      {
+        "position": [
+          32479,
+          32174,
+          -15
+        ],
+        "required_level": 30,
+        "levels": [
+          29,
+          30
+        ]
+      }
+    ],
+    "assertions": [
+      "exact lower-bound Locked refusal",
+      "exact boundary Committed open",
+      "native STEP onto gate then away restores closed gate"
+    ]
+  },
+  "checks": {
+    "binding_unit_tests": 2,
+    "native_profile_python_tests": 2,
+    "native_profiles": "Previous eight unchanged; exact four closed/open expertise appearances added via pinned repo importer.",
+    "cargo_fmt": "PASS",
+    "cargo_check_content_world_dispatch": "PASS (4m04s)",
+    "strict_clippy_all_targets_all_features_content_world_dispatch": "PASS (2m03s)",
+    "source_reproduction": "PASS",
+    "repository_pin_refresh": "PASS; World digest unchanged",
+    "repository_pin_check": "PASS"
+  },
+  "fixture_note": "Initial invalid SQL progression fixture failed existing DB guard and is not RED evidence; guard preserved. Native character snapshot supplies the authoritative admission level."
+}

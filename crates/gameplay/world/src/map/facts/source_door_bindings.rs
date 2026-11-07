@@ -17,7 +17,11 @@ struct Binding {
 
 pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut Attrs) {
     static CAPTURE: OnceLock<Option<Capture>> = OnceLock::new();
-    let Some(capture)=CAPTURE.get_or_init(||serde_json::from_str(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json")).ok()) else {return;};
+    let Some(capture)=CAPTURE.get_or_init(|| {
+        let mut key:Capture=serde_json::from_str(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json")).ok()?;
+        let levels:Capture=serde_json::from_str(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-level-door-bindings.json")).ok()?;
+        key.bindings.extend(levels.bindings);Some(key)
+    }) else {return;};
     if house != 0 {
         return;
     }
@@ -74,6 +78,38 @@ mod tests {
             };
             apply(pos, appearance, 0, &mut conflicting);
             assert_eq!(conflicting.action, Some(42));
+        }
+    }
+}
+
+#[cfg(test)]
+mod expertise_tests {
+    use super::*;
+    #[test]
+    fn exact_expertise_source_predicates_preserve_conflicts_and_houses() {
+        for (x, y, floor, item, action) in [
+            (33211, 31638, -13, 5102, 1100),
+            (32479, 32174, -15, 5111, 1030),
+        ] {
+            let pos = TilePos { x, y, floor };
+            let mut attrs = Attrs::default();
+            apply(pos, item, 0, &mut attrs);
+            assert_eq!(attrs.action, Some(action));
+            for (p, i, h) in [
+                (TilePos { x: x + 1, ..pos }, item, 0),
+                (pos, item + 1, 0),
+                (pos, item, 1),
+            ] {
+                let mut attrs = Attrs::default();
+                apply(p, i, h, &mut attrs);
+                assert_eq!(attrs.action, None);
+            }
+            let mut attrs = Attrs {
+                action: Some(42),
+                ..Default::default()
+            };
+            apply(pos, item, 0, &mut attrs);
+            assert_eq!(attrs.action, Some(42));
         }
     }
 }

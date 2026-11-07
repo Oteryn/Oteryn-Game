@@ -16,7 +16,7 @@ fn m06_carried_keys_use_wire_lock_wrong_key_replay_and_relog() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(None, None).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, None, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06 wire panic")??;
     Ok(())
@@ -32,7 +32,26 @@ pub(super) fn source_key_doors(cases: &[(u16, u16, i8, u16)]) -> TestResult {
         let activation =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
         for source in cases {
-            scenario(Some(source), Some(&activation))?;
+            scenario(Some(source), Some(&activation), None)?;
+        }
+        Ok(())
+    })
+}
+pub(super) fn source_level_doors() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("helmet-level-doors", || {
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let activation =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        for (source, level) in [
+            ((33211, 31638, -13, 1100), 99),
+            ((33211, 31638, -13, 1100), 100),
+            ((32479, 32174, -15, 1030), 29),
+            ((32479, 32174, -15, 1030), 30),
+        ] {
+            scenario(Some(source), Some(&activation), Some(level))?;
         }
         Ok(())
     })
@@ -40,6 +59,7 @@ pub(super) fn source_key_doors(cases: &[(u16, u16, i8, u16)]) -> TestResult {
 fn scenario(
     source: Option<(u16, u16, i8, u16)>,
     activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
+    level_case: Option<u32>,
 ) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "m06_keys", true, false).await?;
@@ -72,10 +92,18 @@ fn scenario(
         let index = native.item_index().ok_or("index")?;
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
         let door_appearance = if source.is_some() {
-            let doc: serde_json::Value = serde_json::from_str(include_str!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
-            )))?;
+            let raw = if level_case.is_some() {
+                include_str!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../tools/content-schema/world-authoring/samples/quest-level-door-bindings.json"
+                ))
+            } else {
+                include_str!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
+                ))
+            };
+            let doc: serde_json::Value = serde_json::from_str(raw)?;
             u16::try_from(
                 doc["bindings"]
                     .as_array()
@@ -121,6 +149,21 @@ fn scenario(
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if level_case.is_some() {
+            let doc: serde_json::Value = serde_json::from_str(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/world-authoring/samples/quest-level-door-bindings.json"
+            )))?;
+            let ground = doc["bindings"]
+                .as_array()
+                .ok_or("level source")?
+                .iter()
+                .find(|b| b["position"] == serde_json::json!([door_x, door_y, -door_floor]))
+                .ok_or("level ground")?["ground"]
+                .as_u64()
+                .ok_or("ground")?;
+            data.manifest.palette[0].key = format!("oteryn:terrain.tibia.i{ground}");
+        }
         let entry = data
             .sectors
             .iter_mut()
@@ -260,6 +303,96 @@ fn scenario(
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        if let Some(level) = level_case {
+            super::item_look::seed_main_backpack(&harness, &[]).await?;
+            {
+                let runtime = owner.runtime.lock().await;
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get_mut(&runtime, deps.actor, deps.admitted.game_session_id)
+                    .ok_or("level actor facts")?
+                    .facts
+                    .level = level;
+            }
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.item_fence = Some(fence);
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+                    .ok_or("level capabilities")?;
+            let mut placement = map.base().digest().to_vec();
+            placement.extend_from_slice(&placement_key.to_be_bytes());
+            let target = WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            };
+            let payload =
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
+            let (mut next, result, _) =
+                super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
+            let required = u32::from(key_action) - 1000;
+            assert_eq!(
+                result,
+                if level < required {
+                    UseDisposition::Locked
+                } else {
+                    UseDisposition::Committed
+                }
+            );
+            if level < required {
+                assert!(!map.enterable(station_pos));
+                assert_eq!(map.facts().object_revision(placement_key), 0);
+            } else {
+                assert!(map.enterable(station_pos));
+                assert_eq!(map.facts().object_revision(placement_key), 1);
+                tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+                super::qengine_access::step(
+                    &owner,
+                    &mut next,
+                    2,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::West,
+                )
+                .await?;
+                assert_eq!(
+                    owner
+                        .runtime
+                        .lock()
+                        .await
+                        .read_actor_position(deps.actor)
+                        .map_err(debug)?
+                        .position(),
+                    MovementLocalPosition {
+                        x: i32::from(door_x),
+                        y: i32::from(door_y),
+                        floor: -i16::from(door_floor)
+                    }
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+                super::qengine_access::step(
+                    &owner,
+                    &mut next,
+                    3,
+                    oteryn_protocol_oteryn::world_spatial::StepDirection::East,
+                )
+                .await?;
+                assert!(
+                    !map.enterable(station_pos),
+                    "expertise gate must restore on departure"
+                );
+            }
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED source_level_door level={level} required={required} source=({door_x},{door_y},{door_floor}) duration={:?}",
+                started.elapsed()
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         super::item_look::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)]).await?;
         // Fixture-only immutable key custody rows; production reads run as runtime role.
         let mut tx = harness.pool.begin().await?;
