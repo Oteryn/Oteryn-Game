@@ -961,3 +961,25 @@ pin refresh/check and content/world/fmt are still running. Keep Hero ACTIVE;
 this checkpoint publishes metadata only, with staged product retained locally.
 Do not stop or repeat the finished investigations. Finish remaining gates,
 mark QUALIFIED and push source immediately, then continue the other9 entries.
+
+
+## Hero of Rathleton whole selected programme QUALIFIED
+
+Actual PostgreSQL18.6 RED41.471928342s, expanded missing-blueprint admission
+RED50.474679451s, full corrected GREEN52.375250585s. All13 nonempty focused
+gates GREEN: loader9/world-callback21/author23/item3; both generators;
+cargo check and strict all-target/all-feature clippy; repository pin refresh/
+check (94fd3d3c unchanged); content123/world5; cargo fmt. Exact callback count
+10→14 accounts for the four additions without weakening refusal assertions.
+Blueprint21897 admission reuses the source-pinned physical qualifier; original
+instance/use owners unchanged. Final atomic reward earns real same-quest
+native dungeon-door entitlement, blueprint1, Glooth Bag4 and platinum5.
+No quest-state seeds, premature rewards or repeat grants. Frozen native lethal
+principal credited once; ten constructs precede Professor Maxxen admission.
+Commit/push source immediately. Nine ACTIVE entries remain; continue now.
+Next: Ferumbras Ascension. Bounded donor lookup is ready under
+/tmp/questpc7-ferumbras-source-facts.json, with eight actual native species
+already admitted. Implement reusable world achievement grants first (reuse
+existing account-achievement writer/NPC grant proof, preserve those callers),
+then the selected ritual/seal/boss/reward route. Current peer qengine2e7867e061
+has not QUALIFIED this overlap. No ownership questions or engine deferrals.

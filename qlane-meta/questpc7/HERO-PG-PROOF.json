@@ -44,8 +44,8 @@
     }
   ],
   "validation": {
-    "state": "remaining pin/content/world/fmt gates running; not QUALIFIED yet",
-    "completed_gates": [
+    "state": "GREEN",
+    "gates": [
       {
         "check": "loader-units",
         "command": [
@@ -164,10 +164,96 @@
         "seconds": 199.9,
         "exit_code": 0,
         "log": "/tmp/questpc7-hero-clippy.log"
+      },
+      {
+        "check": "pin-refresh",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "seconds": 122.525,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-pin-refresh.log"
+      },
+      {
+        "check": "pin-check",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-check",
+          ".",
+          "/tmp/questpc7-hero-pin-check"
+        ],
+        "seconds": 135.176,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-pin-check.log"
+      },
+      {
+        "check": "content",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "integration_rest",
+          "content_"
+        ],
+        "seconds": 164.453,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-content.log"
+      },
+      {
+        "check": "world",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "seconds": 48.312,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-world.log"
+      },
+      {
+        "check": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "seconds": 10.831,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hero-fmt.log"
       }
-    ]
+    ],
+    "test_counts": {
+      "loader": 9,
+      "world_callbacks": 21,
+      "quest_authoring": 23,
+      "item_authoring": 3,
+      "content": 123,
+      "world": 5
+    },
+    "pins": "94fd3d3c36f1d68c1558113a6cba0e8a42e58ea3748b662d18d2c4e829084df6 unchanged; regenerated and checked using repository compiler"
   },
-  "review": "Preserve source callbacks/gates and native item facts; four new callback count accounted exactly. Added actual door entitlement after review; refreshed PG and gates required.",
+  "review": "Reviewed all authored source and generated policy delta: original source callbacks/global state and item instance semantics retained; typed door access earned atomically; exact count updated for four new callbacks; no blocking findings.",
   "initial_green": {
     "seconds": 52.154554112,
     "log": "/tmp/questpc7-hero-green2.log",

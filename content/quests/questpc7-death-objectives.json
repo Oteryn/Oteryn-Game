@@ -113,6 +113,68 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/62/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
         "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hero-construct",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "creature": "oteryn:creature.glooth_golem",
+      "stage": "oteryn:quest-progress/questpc7/hero/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/hero/constructs",
+      "required": 10,
+      "minimum": {
+        "x": 33564,
+        "y": 31949,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33571,
+        "y": 31953,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33566,
+          "y": 31950,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-hero-maxxen",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "creature": "oteryn:creature.professor_maxxen",
+      "stage": "oteryn:quest-progress/questpc7/hero/constructs",
+      "stage_value": 10,
+      "counter": "oteryn:quest-progress/questpc7/hero/maxxen",
+      "required": 1,
+      "minimum": {
+        "x": 33564,
+        "y": 31949,
+        "floor": -14
+      },
+      "maximum": {
+        "x": 33571,
+        "y": 31953,
+        "floor": -14
+      },
+      "guardian": {
+        "position": {
+          "x": 33570,
+          "y": 31951,
+          "floor": -14
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
     }
   ]
 }

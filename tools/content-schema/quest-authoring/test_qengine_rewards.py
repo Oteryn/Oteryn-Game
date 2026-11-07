@@ -44,6 +44,25 @@ class QuestRewards(unittest.TestCase):
         plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
         self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
 
+    def test_hero_selected_bindings_exist_in_unchanged_source_map(self):
+        rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        rows=[r for r in rows if r['quest']=='oteryn:quest.hero_of_rathleton_quest']
+        codec=q.load_module('questpc7_hero_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        region=codec.decode_region((q.ROOT/'content/world/placements/region-z14-x131-y124.b3').read_bytes())
+        tiles={(x,y):(flags,house,[palette[p]['source_item_id'] for p,depth,_ in entries if not depth])
+            for _,cells in region[3] for x,y,flags,house,_,entries in cells}
+        self.assertEqual(len(rows),4)
+        for row in rows:
+            selector=row['selector'];position=selector['position']
+            flags,house,appearances=tiles[(position['x'],position['y'])]
+            self.assertEqual((flags,house),(0,0))
+            self.assertIn(selector['appearance'],appearances)
+        objectives=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
+        boss=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-maxxen')
+        construct=next(o for o in objectives if o['key']=='oteryn:quest-death/questpc7-hero-construct')
+        self.assertEqual((boss['stage'],boss['stage_value']),(construct['counter'],construct['required']))
+
     def test_hidden_native_objectives_share_quota_and_use_admitted_empty_ground(self):
         rows=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
         rows=[r for r in rows if r['quest']=='oteryn:quest.hidden_threats_quest']

@@ -523,6 +523,242 @@
         "content/world/placements/region-z03-x128-y127.b3:1#(33004,32664,-3)/2:sha256:4143a9190fa20ae867b2cc015dcc6e974fdfbd786c6eb91f750cb5d832ba9072"
       ],
       "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hero-entry",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33564,
+          "y": 31951,
+          "floor": -14
+        },
+        "appearance": 20536,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/constructs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/maxxen",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "A voice beneath Rathleton leads you toward the workshop. Examine the machinery for evidence.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hero-evidence",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33567,
+          "y": 31950,
+          "floor": -14
+        },
+        "appearance": 20476,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The workshop evidence exposes the plot. Follow the passage east into the dungeon.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hero-dungeon",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33568,
+          "y": 31951,
+          "floor": -14
+        },
+        "appearance": 20545,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have earned access to this investigation route. Defeat ten hostile Glooth Golems, then Professor Maxxen.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hero-reward",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33571,
+          "y": 31952,
+          "floor": -14
+        },
+        "appearance": 1855,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/constructs",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hero/maxxen",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/hero_rathleton/access_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The conspiracy is ended. You recover the blueprint, four Glooth Bags and five platinum coins.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/58/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z14-x131-y124.b3:1#selected-physical-dungeon:sha256:b6ae40fc1bfe9a88169aa022cbffcdd04104b301d3b8d64aa6363b2a3547bd8a"
+      ],
+      "completes": true,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i21897",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i21203",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i21203",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i21203",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i21203",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 5
+          }
+        ]
+      }
     }
   ]
 }

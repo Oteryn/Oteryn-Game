@@ -1157,45 +1157,30 @@
     "title": "Hero of Rathleton Quest",
     "canonical": "oteryn:quest.hero_of_rathleton_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Investigate the voice in the darkness beneath Rathleton.",
-      "targets": [
-        "Rathleton underground voice"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the selected route through the shared encounter/party admission and frozen-participant death settlement owner; earn access and rewards only from real encounter settlement, then prove repeat/reset/recovery behavior.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
-        "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:1",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
-      ],
-      "attempts": [
-        "Read the full selected item/combat/dungeon stages and the held world callback packet; distinguished its literal callbacks and retained greeting proof from the shared encounter admission operation."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": {
-      "state": "PostgreSQL full route GREEN; focused checks running",
+    "qualification": {
+      "kind": "whole selected native Hero of Rathleton programme",
       "test": "questpc7_hero_full_native_investigation",
-      "red_seconds": 41.471928342,
-      "expanded_red_seconds": 50.474679451,
-      "green_seconds": 52.375250585,
       "proof": "qlane-meta/questpc7/HERO-PG-PROOF.json",
-      "mechanisms": "Reused native objective dependencies and atomic backpack rewards; exact source item qualifier admits missing blueprint21897.",
-      "scope_review": "Final reward includes existing typed native dungeon-door access entitlement; original callbacks and global state unchanged."
+      "postgres": "18.6",
+      "red_seconds": 41.471928342,
+      "green_seconds": 52.375250585,
+      "scope": [
+        "fresh subject, no quest-state seeds",
+        "actual movement voice/evidence/dungeon stage order",
+        "fresh Premium refusal at evidence and reward, zero MINT on refusal",
+        "ten native Glooth Golem lethals, duplicate notification/drain once and bounded respawn",
+        "Professor Maxxen admitted only after ten construct credits",
+        "native Maxxen lethal credit required for final USE",
+        "blueprint21897x1, Glooth Bag21203x4, platinum3035x5 in one atomic reward plan",
+        "once-only programme completion and repeat without additional inventory",
+        "already typed native dungeon-door entitlement is absent initially and granted with final completion"
+      ],
+      "boundary": "Selected finite Oteryn recipe. Original source global machines/FastWay and optional ordinary corpse loot remain outside this programme proof. No new party entitlement is inferred.",
+      "validation": "13 focused gates GREEN; check, strict clippy, repository generators/pins, content123/world5, fmt"
     }
   },
   {
