@@ -343,6 +343,7 @@ async fn mint(
         format!("oteryn:quest-exchange/{}",digest.iter().map(|b|format!("{b:02x}")).collect::<String>())
     } else {callback.key.clone()};
     let request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

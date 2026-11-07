@@ -853,3 +853,14 @@ Required final content integration123passed3.58s and world repository5passed
 full disk; removed only inactive older finalized Rust incremental sessions,
 retaining working/newest caches, recovered7.1GB, exact retry passed. All source
 acquisition step gates now complete. Continue W15b additional-root claim MINT.
+
+W15b compiling WIP: optional additional_items on the existing claim owner;
+empty legacy plans preserve prior intent bytes. Complete frozen additional
+plan/independent IDs, exact source ordering, total slot/weight checks and same
+physical transaction. Shared contents writer retains keys/text/audit/metadata.
+Migration1007 adds bounded immutable additional plans and full-plan deferred
+proofs while retaining all prior owner arms. Canonical linker/native binder
+accept1..20items; both real chest routes resolve complete item vectors.
+Four changed crates checkGREEN1m25s; fmtcheckGREEN. Actual PG RED65.609s retained;
+focused multi-root/legacy rerun compiling. No qualification claimed yet.
+Fresh peer fetch14:29found no additional QUALIFIED matches; counts44/66.

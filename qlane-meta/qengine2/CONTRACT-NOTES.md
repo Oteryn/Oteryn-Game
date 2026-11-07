@@ -344,3 +344,14 @@ unchanged; 8 explicit lowering decisions carry original/native keys and sources.
 New Jungle Explorer starts locked for both sexes and is Premium to wear, an
 explicit conservative owner admission decision because its acquisition script
 does not state wearing Premium. Its source item keeps its original Premium rule.
+
+W15b additional roots: preserve the original primary reward and optional filled
+container. Additional items are independent fresh backpack entries, never an
+invented wrapping bag. Bound at most19additional entries by the existing20-slot
+ceiling, with current occupied slots and all incoming weight checked together.
+Every item has a domain-separated frozen transaction/event/instance identity;
+keys, source text and one-item audit use the common existing mint participant.
+The complete additional vector joins the semantic intent only when nonempty,
+so old empty intents remain byte-identical. Receipt/reservation additional plans
+must match, and deferred guards prove every item, custody, audit and metadata
+before any commit. New guard arms preserve all installed owner arms.

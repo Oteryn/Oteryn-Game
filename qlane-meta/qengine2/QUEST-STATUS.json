@@ -3045,7 +3045,9 @@
           "marker": "POSTGRES_CASE_COMPLETED W15B_MULTIPLE_ROOTS",
           "point": "Two reward items refuse before all claim, quest, item and XP outputs; expected complete atomic bundle.",
           "log": "/tmp/qengine2-w15b-multi-red.log"
-        }
+        },
+        "progress": "Generic additional top-level reward plan implemented across canonical/native chest routes and fenced claim MINT; independent frozen IDs, complete intent, shared item/metadata writer, fresh slot/weight checks and complete SQL proof. Legacy requests initialize empty additional plans. Fourcrate checkGREEN1m25; focused PG rerun compiling.",
+        "check_log": "/tmp/qengine2-w15b-check1.log"
       }
     ]
   }
