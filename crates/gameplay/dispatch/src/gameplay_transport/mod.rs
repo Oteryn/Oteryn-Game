@@ -28,6 +28,7 @@ mod boss_activity;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
+mod bundle_ladder;
 mod bundle_map_position;
 mod capabilities;
 mod channel_states;

@@ -236,7 +236,7 @@ pub(super) async fn walk_to(
     Ok(walked)
 }
 
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     direction: StepDirection,

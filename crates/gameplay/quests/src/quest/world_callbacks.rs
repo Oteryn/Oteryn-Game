@@ -148,11 +148,15 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
-    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
+    let mut native_callbacks = vec![
+        super::rotten_blood::altar_callback(),
+        super::schrodinger_island::callback(),
+    ];
+    native_callbacks.extend(super::elvenbane::callbacks());
+    if callbacks.len() > MAX_CALLBACKS.saturating_sub(native_callbacks.len()) {
         return Err("callback bounds including native source callbacks".into());
     }
-    callbacks.push(super::rotten_blood::altar_callback());
-    callbacks.push(super::schrodinger_island::callback());
+    callbacks.extend(native_callbacks);
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());

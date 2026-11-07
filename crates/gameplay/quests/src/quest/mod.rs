@@ -24,6 +24,7 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
+pub mod elvenbane;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;

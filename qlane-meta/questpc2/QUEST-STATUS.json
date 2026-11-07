@@ -384,7 +384,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Native six-origin defender prerequisite goals and ordinary corpse/loot closure now pass PostgreSQL. Whole qualification still requires physical approach, poison floor, actual wire combat, four source treasure claims and exit.",
+      "blocker": "Basement/poison/Dragon-floor source exploration and generic ladder USE are PG GREEN88.74s. Exact native defender goal and ordinary loot kernel are also verified. Whole real-wire six-defender combat and atomic seven-item treasure/exit composition are active next work.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -1961,9 +1961,9 @@
     "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward."
   },
   "elvenbane_exploration_authoring_checkpoint": {
-    "state": "AUTHORING",
+    "state": "GREEN_SOURCE_SLICE_FINAL_REGRESSION_PENDING",
     "last_runtime_publication": "d4b4ebe77",
-    "published_scope": "Verified source/proof/resume checkpoint only. Runtime/data remains staged locally pending complete exploration GREEN.",
+    "published_scope": "Three earned exploration callbacks, generic fixed-ladder USE, six source-qualified static traversal profiles; not whole Elvenbane qualification.",
     "postgres_reds": [
       {
         "version": 180006,
@@ -1986,7 +1986,7 @@
     "source_profile_review": "Exactly one1948 native profile added; every preexisting native profile byte-value unchanged.",
     "current_case": "/tmp/questpc2-elvenbane-exploration-ladder-pg.log",
     "registration": "Final traversal registration write+check PASS43 each.",
-    "next": "Run OTERYN_STEP_WAIT_RECEIPTS=1 exact source exploration PG; final fmt/check/clippy+guard regression; commit/fetch/merge/push runtime. Then actual six earned native kills and atomic seven-item reward, whole Elvenbane qualification, remaining owned entries.",
+    "next": "Finish running Annihilator and merged pin checks, push proof. Continue full Elvenbane combat/rewards; all27 unfinished remain active work.",
     "source_profiles": "Exactly six additions1626/1627/1634/1635/1948/21935; all preexisting native profiles unchanged. Exact pinned flags establish walkable, static, non-pickup Ground custody.",
     "pins": {
       "refresh": "PASS",
@@ -1998,6 +1998,12 @@
       "seconds": 76.98,
       "log": "/tmp/questpc2-elvenbane-complete-exploration-pg.log",
       "finding": "Basement, native ladder ascent/stale refusal/full-position replay passed. Courtyard diagonal step requires OTERY\u039d_STEP_WAIT_RECEIPTS=1 (ASCII env name documented RESUME); invocation omitted receipt flag used by original Desert driver. Assertion unchanged; rerun with flag."
+    },
+    "batch": "BATCH-elvenbane-exploration-ladder-2026-11-07.json",
+    "postgres_green": {
+      "version": 180006,
+      "seconds": 88.74,
+      "marker_ms": 10498
     }
   }
 }

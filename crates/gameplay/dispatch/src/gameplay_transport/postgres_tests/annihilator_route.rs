@@ -28,10 +28,15 @@ enum Route {
     Combat,
     Complete,
     ObjectiveAtomicity,
+    ElvenbaneExploration,
 }
 
 pub(super) fn native_objective_atomicity() -> TestResult {
     run(Route::ObjectiveAtomicity)
+}
+
+pub(super) fn elvenbane_source_exploration() -> TestResult {
+    run(Route::ElvenbaneExploration)
 }
 
 fn run(route: Route) -> TestResult {
@@ -41,6 +46,12 @@ fn run(route: Route) -> TestResult {
             x: 32591,
             y: 31645,
             floor: -5,
+        }
+    } else if route == Route::ElvenbaneExploration {
+        Position {
+            x: 32599,
+            y: 31652,
+            floor: -7,
         }
     } else {
         Position {
@@ -202,6 +213,10 @@ fn run(route: Route) -> TestResult {
         if combat {
             pending.push(oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1);
         }
+        if route == Route::ElvenbaneExploration {
+            pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+            pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1);
+        }
         let mut supported = std::collections::BTreeSet::new();
         while let Some(id) = pending.pop() {
             if supported.insert(id)
@@ -347,6 +362,10 @@ fn run(route: Route) -> TestResult {
         if route == Route::ObjectiveAtomicity {
             super::native_objective_atomic::scenario(&mut owner, &mut admitted[0], map, &h.pool)
                 .await?;
+            return Ok(());
+        }
+        if route == Route::ElvenbaneExploration {
+            super::elvenbane_route::exploration(&mut owner, &mut admitted[0], &h.pool).await?;
             return Ok(());
         }
         // Fresh admissions share the same source approach tile, as normal login
