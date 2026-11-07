@@ -1,3 +1,117 @@
+# OWNER REQUESTED COMPILING WIP CHECKPOINT; full46 test execution continues
+
+Latest owner push-now instruction explicitly requests WIP if it compiles. All46
+crate test targets compiled successfully7m17s after fixing all5 diagonal match
+errors in qualification helpers (20exhaustive matcharms; existingcardinal paths
+unchanged). cargo fmt and staged/worktree diffchecks pass. This checkpoint isNOT
+full green. No qualification/count claims changed. Full10722test run (142binaries,
+44existingignored) remains active session77616, nextestPID425032,1testthread.
+Log /tmp/questpc2-main-dependent-nextest-full.log; report/run.json stillpending.
+Snapshot PG baseline DBnames /tmp/questpc2-full-run-initial-databases.txt captured
+before PG execution, PostgreSQL180006 verified; actual guild PG cases nowrunning.
+
+Exact currentRED points: default capabilities end383,384,371 (mergeorderbug),
+strict protocol rejects invalid capabilityset across client/session; map placement
+index digest no longer matches pin; corpse bounded-container rejection fixture
+receives admitted row. Six authoring failures listed below remain. Collect ALL
+runtime failures, fixrootcauses together, rerunfull46set before next greenpush.
+No tests weakened/skipped/deleted. Canonical pipeline24checks:22pass, validator
+was killed during earlierOOM; test_world_project repeats variants34vs36failure.
+Repository-content5tests PASS53.02s. Worldpins alreadyregenerated/staged byrepo.
+
+Capacity: NativewarmREADY is retained in/tmp symlink. Routinehelper
+/tmp/questpc2-retire-completed-incremental.py retires inactive completed incremental
+caches only (preserves testbinaries and active compiler). Root2.6GBfree/tmp4.8GB
+used; serial testprocesses small so far. Keep all142testbinaries until runends.
+
+# LIVE CORRECTION 16:39UTC: remote observed f304dda7c (ancestor); local7b009e1ee is NOT current remote
+
+Latest actual fetch confirms remote f304dda7cae995b1ef564e6997ea20fbeeb4d53e,
+ancestor of HEAD. Earlier resume claims that7b009 was pushed are not current remote
+state. Keep all local commits; eventual fast-forward push after full green remains
+required. No remote commits need merging as of16:31 fetch. Mainmerge in progress.
+
+Full46 attempt1 OOM at239.638s (dispatch libtest + character_authority_postgres),
+logs /tmp/questpc2-main-dependent-nextest-attempt1-oom.log/json. NOT code blocker.
+Full same46 retry active session49192 using1buildjob/1testthread, PG enabled;
+/tmp/questpc2-main-dependent-nextest-full.log /run.json. Dispatch native testbinary
+compiled successfully (~6min), warmREADY retained via symlink target incremental/
+oteryn_gameplay_dispatch-1xzydsvq6pzum -> /tmp/questpc2-main-dispatch-native-incremental.
+Nativeexe hashfb0ad6bf75de749d ~1GB. Do not restore old pre-main caches.
+Root space recovered by retiring completed inactive incremental build caches;
+all testbinaries preserved. tmp4.8GB/rootfree7.1GB at16:39. BaselineOOM now30/13.
+
+All29changed authoring scripts finished23PASS6FAIL; JSON results
+/tmp/questpc2-main-authoring-test-results.json. Failures: callback childcount139vs133;
+qengine effect validator lacks quest_completion; qengine cosmetics reproduction
+(mainnx5 catalogue vs quest source aliases); ledger disposition totals; native
+container derive71vs70; rejected variants34vs36. Need group with all Rust fullrun
+failures then fix together. Do not weaken tests; precise counts derive real output.
+Remaining canonical pipeline checks reached cargo content_world_project_repository
+(waiting buildlock), session82572. Independent world pinrefresh alreadyPASS.
+
+# LIVE: full46dependent nextest RUNNING with PG; do not push until grouped fixes/full rerun green
+
+/tmp/questpc2-main-dependent-nextest-full.log, run.json; runner session7352.
+World pin-refresh finished successfully, stage51524 done. Canonical tree PASS
+34111items,27616profiles,1282NPCs. Remaining repo checks session82572; changed
+authoring29scripts session42087 collect all failures. No code edits during full run.
+MainABI pre15:45 incremental caches retired (168dirs7.1GB) to free9GBroot;
+old archives moved /tmp/questpc2-pre-main-cache-archives preserving symlinks.
+No newOOM (21events/10kills baseline). Cargo fmt corrected mergedfixture.
+
+# CURRENT: origin/main bbb3e06d0 merge in progress; full46dependent nextest required before push
+
+Owner new standing rule overrides old no-full-suite rule: derive every touched
+crate's normal reverse dependencies with cargo tree, run cargo nextest forALL
+withPG, collectALL failures (--no-fail-fast), fixrootcauses together, rerunfullset,
+thenONEpush. Automatic push-now reminder was explicitly retracted whilefullrun
+pending. Merge origin/main atleasteveryfewhours; do not push incomplete fulltestset.
+
+HEAD/remote7b009e1ee; git merge --no-commit --no-ff origin/main has MERGE_HEAD
+bbb3e06d0 and unresolvedgeneratedfile stages. ManualRust/Python conflicts resolved
+combining bothbranches (CreationFixture + starter-awarefixtures, cosmeticrebind+
+newtry_activate_input, party/encounterhandlers, both Nativeadmission overlays).
+World materializer completed. Canonical tree continuation active, prey simulation completed;
+log /tmp/questpc2-main-merge-tree-resume.log. Continue remaining repo authoring/check/pin
+stages via /tmp/questpc2-resume-merge-regeneration.py after tree generator succeeds.
+Full46 runner still pending coherent content. Cosmetics conflict currently incoming:
+main nx5 keys and lane quest source keys both need preservation, collect full failures
+then fix reusable qengine_rewards overlay rather than discard either catalogue.
+SourceUID pre-step needed temporary identity-merged RewardClaimvariants preserving
+bothlanes beforeauthoringregeneration; stagedthatfile. Coverage mergedbyidentity
+actualcounts336total=28qualified+283supported-unqualified+25notplayable; ledger283.
+Pending regeneratedcounter tests mayneedexactunioncounts (variants71, source
+containerderive70) checkedagainstactualoutputs, neverweaken/skips.
+Conditionpotionpacket has only shared canonical_inputhash conflict; aftercanonical
+Itemregeneration requalifyselecteddefs unchanged before repinning. Main'sitemhold_q
+and ourencounterlootoverlay bothretained. Qengine rewarditem overlay also retained.
+
+Latest focusedfullroutePG133.72s actually proves zero andpartial3claim refusals,
+all4source treasures+atomiccontents/replay, ownphase4/canonicalexit. Last exacterror
+journalunavailable: ComposedTestOwner.quest_log_content=None. Productionloader
+apps/game-server/src/node/quest_log_content.rs uses
+quest::log::loader::load_embedded_quest_log(&lowered), QuestLogLines::new.
+NeedfixfixtureandrealvisibleElvenbanejournal AFTERcollectingfullfailures; existing
+logloaderonlysourcequests+Monkjournal, own authoredElvenbane likelyneedscodebuilt
+journal (reuse Monkpattern), then actual QUEST_LOG list/line projection assertion.
+Do not qualifywhole beforethatproof/fulltests. Currentcounts2qualified27unfinished.
+
+Fulltestset/tmp/questpc2-main-dependent-test-set.json =30touched46dependents;
+/tmp/questpc2-run-dependent-tests.py prepared (sourceenvbeforelaunch), logs/report
+/tmp/questpc2-main-dependent-nextest-full.log and run.json. Notstarteduntilmerge
+contentcoherent. FullrunmustincludePGenv, usesCARGO_BUILD_JOBS=2/testthreads2.
+
+Diskfull duringmaterializer solved byretiring133superseded/failedcache entries,
+keepnewestREADY percrate. Recovered6.3GBroot7.3GBtmp. No fullclean/testsweakened.
+CurrentnormalMainlibraries rebuilt underchangedTokio/CargoLock, oldtestABI obsolete.
+Allpre-main retained-cache-archives/questpc2-* retired; oldcache-latest.json points
+atretiredarchives, DONOTrestore. Nativepre-main libtestcache archivedthenretired;
+latest fullroutepreMain exe retained/tmp/questpc2-pre-main-full-route-executable.gz.
+Audits/tmp/questpc2-main-merge-cache-retention.json and
+/tmp/questpc2-main-merge-capacity-recovery.json. Exactfull-disks builderrors were
+No space left on device, fixedresourcesandcontinued. No blockers/stop/final.
+
 # WIP zero-claim guard proven, corrected safe landing compiles: push/rerunPG
 
 Actual PG180006109.45s /tmp/questpc2-completion-full-green-pg.log: Native6

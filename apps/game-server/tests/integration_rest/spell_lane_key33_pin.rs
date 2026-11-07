@@ -36,11 +36,13 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/consume_transform.rs", "consume_count"),
     ("crates/gameplay/durability/src/durability/consume_transform.rs", "persist_action"),
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
+    ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
@@ -69,7 +71,9 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
+    ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
 ];

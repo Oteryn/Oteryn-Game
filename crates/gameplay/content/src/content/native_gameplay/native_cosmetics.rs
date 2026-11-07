@@ -7,6 +7,9 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+mod provisioning;
+pub(super) use provisioning::materialize;
+
 pub(super) const MAX_BYTES: usize = 16 * 1024 * 1024;
 const SCHEMA: &str = "OTERYN_NATIVE_COSMETICS/v1";
 const UNAVAILABLE: &[u8] =

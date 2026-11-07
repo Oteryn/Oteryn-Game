@@ -1,0 +1,17 @@
+syntax = "proto3";
+package oteryn.events.v1;
+// Type 12; DURABLE_AUDIT, SECURITY_SENSITIVE, SPECTATE_AUDIT_RETENTION_V1 (P30D).
+// Kind: 1 start, 2 stop, 3 join, 4 leave, 5 mute, 6 unmute, 7 kick,
+// 8 consent, 9 access rotation, 10 settings, 11 overload, 12 account ban.
+// No passwords, tickets, chat text, positions, private UI or media.
+message CastAuditRecord {
+  uint64 ordinal = 1;
+  uint32 kind = 2;
+  bytes target_session = 3;
+  bytes cast_id = 4;
+  uint64 revision = 5;
+  uint64 epoch = 6;
+  optional bytes subject_account = 7;
+  optional bytes subject_character = 8;
+  optional bool consent = 9;
+}

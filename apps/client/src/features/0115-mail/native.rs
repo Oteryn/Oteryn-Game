@@ -96,7 +96,7 @@ unsafe fn control(
 }
 unsafe fn text(hwnd: HWND) -> String {
     unsafe {
-        let count = GetWindowTextLengthW(hwnd).clamp(0, 7996) as usize;
+        let count = GetWindowTextLengthW(hwnd).clamp(0, 8192) as usize;
         let mut buffer = vec![0u16; count + 1];
         let length = GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32).max(0) as usize;
         String::from_utf16_lossy(&buffer[..length])
@@ -131,8 +131,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
             for (index, label) in form.labels.iter().enumerate() {
                 control(hwnd, "STATIC", label, 0, [12, y, 640, 20], 0);
                 y += 22;
-                let multiline = (form.title == "Mail" && index == 2)
-                    || (form.title == "Player reports" && index == 4);
+                let multiline = (form.title == "Writing and mail" && index == 2)
+                    || (form.title == "Player reports" && index == 4)
+                    || (form.title == "Staff authorized actions" && index > 0);
                 let height = if multiline { 125 } else { 26 };
                 let edit = control(
                     hwnd,
@@ -151,7 +152,18 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
                             ES_AUTOHSCROLL as u32
                         },
                 );
-                SendMessageW(edit, EM_SETLIMITTEXT, if multiline { 7996 } else { 256 }, 0);
+                SendMessageW(
+                    edit,
+                    EM_SETLIMITTEXT,
+                    if form.title == "Staff authorized actions" {
+                        8192
+                    } else if multiline {
+                        7996
+                    } else {
+                        256
+                    },
+                    0,
+                );
                 edits.push(edit);
                 y += height + 8;
             }

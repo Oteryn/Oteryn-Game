@@ -272,6 +272,7 @@ pub async fn commit_in_transaction<const N: usize>(
         .bind(&input.creature).bind(input.base_xp).bind(i64::try_from(input.death_at_ms).map_err(|_|CharacterProgressionError::InvalidInput)?).bind(input.death_at_us.to_string()).bind(i16::try_from(input.members.len()).map_err(|_|CharacterProgressionError::InvalidInput)?).bind(input.shared)
         .bind(input.party_id.as_ref().map(|id|id.as_slice())).bind(input.party_revision.map(|r|r.to_string()))
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
+    super::world_event_outcomes::capture_kill(tx, &input).await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let forge_dust = if let Some(amount) = member.forge_dust {

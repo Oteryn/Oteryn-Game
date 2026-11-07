@@ -31,12 +31,12 @@ class CanonicalVariantTests(unittest.TestCase):
                         self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                         self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
 
-    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
+    def test_plain_231_definition_records_remain_exact_and_readiness_221_10(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 220)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 11)
+        self.assertEqual(index['readiness']['ready'], 221)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 10)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -62,7 +62,11 @@ class CanonicalVariantTests(unittest.TestCase):
                     self.assertEqual(p['reward'][charge['reward_field']][charge['reward_index']]['count'], 1)
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
-                    self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                    if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
+                        self.assertFalse(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        self.assertTrue(d['native_contents']['placements'])
+                    else:
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
 
@@ -129,7 +133,7 @@ class CanonicalVariantTests(unittest.TestCase):
         # The immutable dispositions of all105 original variants remain unchanged.
         admitted = {r['definition']['identity']['key']: r['definition']['native_contents']
                     for r in self.records if 'native_contents' in r['definition']}
-        self.assertEqual(len(admitted), 69)
+        self.assertEqual(len(admitted), 71)
         for key, uid, root, items in (
                 ('desert2', 6158, 2857, [3084, 3098, 3046, 3077]),
                 ('draconia1', 6023, 2853, [3284, 3297])):

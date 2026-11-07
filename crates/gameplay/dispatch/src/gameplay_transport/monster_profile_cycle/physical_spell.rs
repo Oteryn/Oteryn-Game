@@ -178,6 +178,7 @@ pub(super) async fn execute(
     proposals: &[ProfileAbilityProposal],
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
@@ -187,6 +188,7 @@ pub(super) async fn execute(
             if let Some(source) = composed::source_for(runtime, native, proposal) {
                 composed::execute(
                     runtime, states, attack, room, native, map, &source, proposal, parties, now,
+                    charms,
                 )
                 .await;
             }
@@ -262,7 +264,12 @@ pub(super) async fn execute(
                 &mut spells,
                 runtime,
                 stamp,
-                states,
+                &mut super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+                    states,
+                    attack,
+                    catalogue: charms,
+                    root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+                },
                 &parent_source,
                 proposal,
                 &mut reader,
@@ -303,7 +310,10 @@ pub(super) async fn execute(
             }
         }
     }
-    timers::drain(runtime, states, attack, room, native, map, parties, now).await;
+    timers::drain(
+        runtime, states, attack, room, native, map, parties, now, charms,
+    )
+    .await;
 }
 
 fn source_for(

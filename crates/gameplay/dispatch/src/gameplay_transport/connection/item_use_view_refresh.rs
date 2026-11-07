@@ -44,3 +44,25 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     view.inventory_refresh_pending = false;
     Some(())
 }
+
+/// Publish a committed Newhaven kit through the ordinary inventory/container delta owner.
+/// A failed read retains the existing pending-refresh retry; no lane/Runtime lock is held.
+pub(in crate::gameplay_transport) async fn refresh_newhaven_inventory<
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+>(
+    stream: &mut S,
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    view: Option<&mut SessionItemView>,
+    views: Option<&mut ContainerViewState>,
+    sequence: &mut u64,
+) -> Option<()> {
+    if authority.take_newhaven_inventory_changed(admitted.game_session_id)
+        && let Some(view) = view
+    {
+        refresh(stream, authority, actor, admitted, view, views, sequence).await?;
+    }
+    Some(())
+}

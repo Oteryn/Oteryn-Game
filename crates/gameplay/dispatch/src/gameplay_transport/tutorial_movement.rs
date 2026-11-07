@@ -90,9 +90,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if let Some(event) = event
                 && let Ok(Some(fence)) = self.current_quest_fence(session).await
-                && self.tutorial_event(fence, event).await.is_err()
             {
-                operator_event("tutorial_movement_progress_unavailable");
+                if self.tutorial_event(fence, event).await.is_err() {
+                    operator_event("tutorial_movement_progress_unavailable");
+                }
+                // Ordinary movement released its lane. The kit helper takes that same lane
+                // for its equipment mutation; admission retries a temporarily refused grant.
+                let _ = self.grant_newhaven_starter(fence.item_fence()).await;
             }
         }
         outcome

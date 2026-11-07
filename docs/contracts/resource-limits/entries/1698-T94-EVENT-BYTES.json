@@ -1,0 +1,21 @@
+{
+  "owner_contract": "OTERYN_GAME_WORLD_EVENT_OUTCOMES_AND_GUILD_SEASON_V1.md",
+  "configurable_range": {
+    "minimum": 16384,
+    "maximum": 16384
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Canonical T94 producer body bound; overflow refuses without truncation. Platform adapter qualification remains separate.",
+  "client_visible": false,
+  "boundary_tests": [
+    "t94_transport_routes_and_bounds_are_separate",
+    "t94_rejects_malformed_wire_and_full_snapshot_bounds"
+  ],
+  "id": "T94-EVENT-BYTES",
+  "resource": "T94 canonical publication body",
+  "unit": "bytes",
+  "hard_maximum": 16384,
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/world_event_outcomes.rs EVENT_BYTES"
+  ]
+}

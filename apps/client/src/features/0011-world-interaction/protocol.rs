@@ -62,7 +62,7 @@ pub(in crate::play) use session_trait;
 
 macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
-        super::feature_0037_depot::protocol::dispatch! {
+        super::feature_0051_staff::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
             Ok(crate::combat_input::PlayCommand::WorldContext(command)) => {
                 match $outbox.world_context_run(&mut $session, &command).await {

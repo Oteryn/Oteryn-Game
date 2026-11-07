@@ -1,0 +1,8 @@
+{
+  "url": "https://tibia.fandom.com/api.php?action=query&format=json&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&titles=Measuring%20Tibia",
+  "user_agent": "Oteryn-Game source research (read-only)",
+  "method": "GET",
+  "status": 402,
+  "reason": "Payment Required",
+  "content_type": "application/json"
+}

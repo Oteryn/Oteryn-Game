@@ -2180,5 +2180,45 @@
     "cold_native_compile": "PASS4m38s noOOM",
     "clippy_three_crates_seconds": 149,
     "clippy_safe_landing_seconds": 21.76
+  },
+  "current_main_merge_full_test": {
+    "state": "MERGING_MAIN_REGENERATING_BEFORE_FULL_DEPENDENT_RUN",
+    "main": "bbb3e06d0",
+    "head_before_merge": "7b009e1ee",
+    "changed_crates": 30,
+    "dependent_crates": 46,
+    "test_set": "/tmp/questpc2-main-dependent-test-set.json",
+    "runner": "/tmp/questpc2-run-dependent-tests.py",
+    "full_run_pending": true,
+    "latest_focused_pg_seconds": 133.72,
+    "latest_red": "journal unavailable after all source flow and phase4 succeed; fixture lacks journal owner content",
+    "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
+  },
+  "current_validation": {
+    "main_merge": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+    "state": "compiling WIP checkpoint requested by latest owner reminder; full46 test execution continues, not green",
+    "postgres_required": true,
+    "dependent_crates": 46,
+    "push_policy": "one push after full dependent set passes; automatic push reminder retracted while run pending",
+    "logs": [
+      "/tmp/questpc2-main-merge-tree-resume.log",
+      "/tmp/questpc2-main-merge-remaining-regeneration.log",
+      "/tmp/questpc2-main-dependent-nextest-full.log"
+    ],
+    "last_observed_remote": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+    "local_head": "7b009e1ee306111a230be0b56c511de47c000f80",
+    "build_jobs": 1,
+    "test_threads": 1,
+    "build_result": "all46 test targets compiled in 7m17s after 5 diagonal match fixes",
+    "tests_scheduled": 10722,
+    "existing_ignored_tests": 44,
+    "observed_runtime_failures": 51,
+    "exact_red_points": [
+      "default client capability set ends ...383,384,371: strict ascending codec rejects handshakes",
+      "client placement index sha256 does not match pinned world digest",
+      "corpse_must_be_an_admitted_materializable_bounded_container accepts a fixture expected rejected",
+      "six authoring-script failures recorded in resume; Elvenbane journal unavailable in focused PG proof"
+    ],
+    "updated_utc": "2026-11-07T16:55:16.239379+00:00"
   }
 }

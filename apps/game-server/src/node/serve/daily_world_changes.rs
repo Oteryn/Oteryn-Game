@@ -35,6 +35,22 @@ pub(super) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorld
     })
 }
 
+/// Qualify the boot's optional composition against its resolved reset epoch.
+pub(super) fn bind_layers(
+    checked: crate::map::boot::CheckedBundle,
+    changes: &DailyWorldChanges,
+) -> Result<crate::map::boot::CheckedBundle, crate::map::boot::BootRefusal> {
+    // A fresh World without an admitted reset retains its ordinary base only.
+    if changes.reset_epoch == 0 {
+        return Ok(checked);
+    }
+    checked.compose_epoch_admitted_layers(
+        changes.reset_epoch,
+        &changes.layers(),
+        &changes.exit_layers(),
+    )
+}
+
 /// The physical draws bind World and committed epoch, never Channel or process lifetime.
 fn map_changes(world: WorldId, changes: &DailyWorldChanges) -> crate::map::daily::DailyMap {
     let mut hash = Sha256::new();
@@ -54,6 +70,9 @@ pub(super) fn prepare_map(
     world: WorldId,
     changes: &DailyWorldChanges,
 ) -> crate::map::boot::CheckedBundle {
+    if changes.reset_epoch == 0 {
+        return checked;
+    }
     checked.with_daily_map(map_changes(world, changes))
 }
 
@@ -64,6 +83,9 @@ pub(super) fn apply(
     changes: &DailyWorldChanges,
     map: Option<&crate::map::boot::BundleWorld>,
 ) -> usize {
+    if changes.reset_epoch == 0 {
+        return 0;
+    }
     let mut placed = 0;
     let trader = changes
         .oriental_trader
@@ -100,6 +122,9 @@ pub(super) fn apply_items(
     map: Option<&crate::map::facts::BundleFacts>,
     changes: &DailyWorldChanges,
 ) -> usize {
+    if changes.reset_epoch == 0 {
+        return 0;
+    }
     let Some(map) = map else {
         return 0;
     };
@@ -192,6 +217,51 @@ mod tests {
     const JUNE_13: i64 = 1_939_118_400_000;
     const JULY_1: i64 = 1_940_630_400_000;
     const MAY_31_LAST: i64 = 1_938_038_399_999;
+
+    #[test]
+    fn world_src_zero_epoch_boot_keeps_base_without_daily_grants()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, pins) = crate::map::boot::tests::bundle();
+        let boot_pins = crate::map::boot::BootPins {
+            map_revision: format!(
+                "sha256:{}",
+                pins.digest
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            ),
+            bundle: pins,
+            start: crate::map::overlay::TilePos {
+                x: 3,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let checked = crate::map::boot::check(bytes.clone(), boot_pins.clone())?;
+        let unqualified = roll(world(), 0, JUNE_13);
+        let bound = prepare_map(bind_layers(checked, &unqualified)?, world(), &unqualified);
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])?;
+        let booted = bound.boot(world(), channel, crate::map::boot::tests::items)?;
+        assert!(booted.base().active_layers().is_empty());
+        assert!(booted.base().exit_layers().is_empty());
+        assert_eq!(booted.base().layer_epoch(), None);
+        assert!(
+            crate::map::boot::check(bytes, boot_pins)?
+                .compose_epoch_layers(0, &[], &[])
+                .is_err()
+        );
+        let mut runtime = channel_runtime();
+        assert_eq!(
+            apply(
+                &mut runtime,
+                Some(&boot(&["oteryn:npc.rosemarie"])),
+                &unqualified,
+                None
+            ),
+            0
+        );
+        Ok(())
+    }
 
     #[test]
     fn w05b_the_boot_roll_is_fixed_per_reset_epoch_and_follows_the_calendar() {

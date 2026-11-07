@@ -123,6 +123,7 @@ pub struct ItemMintCause {
     loot_table: TypedDefinitionRef,
     purpose_key: String,
     draw_ordinal: u32,
+    corpse_race: Option<crate::domain::bestiary::BestiaryRace>,
 }
 
 impl ItemMintCause {
@@ -148,7 +149,18 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
+            corpse_race: None,
         })
+    }
+
+    /// Bind source Creature identity only to the committed death's own corpse.
+    /// Skinning never derives race from a shared corpse Item definition.
+    pub fn with_corpse_race(mut self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
+        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY || self.draw_ordinal != 0 {
+            return Err(ItemMintError::InvalidInput);
+        }
+        self.corpse_race = Some(race);
+        Ok(self)
     }
 
     /// Test-only: production causes descend from a committed Combat death.
@@ -175,6 +187,7 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
+            corpse_race: None,
         }
     }
 }
@@ -1427,6 +1440,12 @@ fn intent_binding(
     ]) {
         push_text(&mut semantic, value)?;
     }
+    // Absent provenance retains the byte layout of historical reservations.
+    if let Some(race) = &cause.corpse_race {
+        push_text(&mut semantic, b"corpse-source-race.v1")?;
+        push_text(&mut semantic, race.key().as_bytes())?;
+        push_text(&mut semantic, race.definition_revision().as_bytes())?;
+    }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = [0_u8; 33];
     binding[0] = INTENT_BINDING_VERSION;
@@ -1948,6 +1967,18 @@ async fn insert_receipt(
     .bind(corpse_entry.map(|entry| entry.placement_ordinal.to_string()))
     .execute(&mut **tx)
     .await?;
+    if let Some(race) = &request.cause.corpse_race {
+        sqlx::query(
+            "INSERT INTO game_corpse_source_races(item_instance_id,mint_transaction_id,race_key,race_definition_revision) \
+             VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)",
+        )
+        .bind(frozen.item_instance_id.as_slice())
+        .bind(frozen.transaction_id.as_slice())
+        .bind(race.key())
+        .bind(race.definition_revision())
+        .execute(&mut **tx)
+        .await?;
+    }
     Ok(())
 }
 
@@ -2191,6 +2222,39 @@ mod tests {
             ruleset_revision: "ruleset-1".into(),
             sim_revision: "sim-1".into(),
         }
+    }
+
+    #[test]
+    fn srx2_scavenge_corpse_source_is_typed_and_bound_to_mint_intent() {
+        let race = crate::domain::bestiary::BestiaryRace::new(
+            "oteryn:creature.dragon",
+            "dragon-r1",
+            vec![5, 50, 500],
+        )
+        .expect("race");
+        assert!(request().cause.with_corpse_race(race.clone()).is_err());
+        let mut corpse = request();
+        corpse.cause.purpose_key = CORPSE_MATERIALIZATION_PURPOSE_KEY.into();
+        corpse.cause.draw_ordinal = 0;
+        let legacy = intent_binding(&corpse, None).expect("legacy");
+        corpse.cause = corpse.cause.with_corpse_race(race).expect("typed corpse");
+        assert_ne!(legacy, intent_binding(&corpse, None).expect("bound race"));
+        let mut other = corpse.clone();
+        other.cause = other
+            .cause
+            .with_corpse_race(
+                crate::domain::bestiary::BestiaryRace::new(
+                    "oteryn:creature.dragon_lord",
+                    "dragon-r1",
+                    vec![5, 50, 500],
+                )
+                .expect("other race"),
+            )
+            .expect("typed other corpse");
+        assert_ne!(
+            intent_binding(&corpse, None).expect("first"),
+            intent_binding(&other, None).expect("second")
+        );
     }
 
     #[test]

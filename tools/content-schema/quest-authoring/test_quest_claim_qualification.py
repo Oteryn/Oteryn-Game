@@ -1,5 +1,6 @@
 """Unit tests for the quest claim qualification audit."""
 
+import copy
 import importlib.util
 import json
 import tempfile
@@ -30,15 +31,23 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # Seventeen additional N--Q selectors have actual dispatch/PG proofs.
         # Keep both the exact remaining denominator and the full inventory.
-        self.assertEqual(sum(counts.values()), 280)
+        self.assertEqual(sum(counts.values()), 283)
         coverage = qualification.read_json(qualification.COVERAGE)
         self.assertEqual(coverage['counts'], {
-            'dispatch_pg_qualified': 28, 'not_playable': 28, 'supported_unqualified': 280})
+            'dispatch_pg_qualified': 28, 'not_playable': 25, 'supported_unqualified': 283})
         self.assertEqual(sum(coverage['counts'].values()), 336)
+        ledger = qualification.read_json(qualification.LEDGER)
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            record = ledger["claims"][key]
+            self.assertEqual(record["disposition"], "blocked")
+            self.assertEqual(record["dependency"], "QUEST-QUAL-1")
 
     def test_missing_row_is_rejected(self):
-        del self.ledger["claims"][next(iter(self.ledger["claims"]))]
-        self.assertTrue(any("missing claim" in error for error in self.check()))
+        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+            with self.subTest(claim=key):
+                ledger = copy.deepcopy(self.ledger)
+                del ledger["claims"][key]
+                self.assertIn(f"missing claim: {key}", self.check(ledger))
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

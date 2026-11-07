@@ -777,6 +777,8 @@ def main() -> int:
     # Replay the same source-qualified Demon loot packet used by the producer.
     from encounter_loot_item_admissions import apply_admissions as apply_encounter_loot_admissions
     apply_encounter_loot_admissions(legacy_items, ROOT)
+    from itemhold_q import apply_admissions as apply_quest_item_holds
+    apply_quest_item_holds(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
