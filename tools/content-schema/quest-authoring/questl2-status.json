@@ -2511,13 +2511,20 @@
       "pending_build_log": "/tmp/l2-merged668-check.log"
     },
     "delivery_batch_wip": {
-      "compilation": "dispatch focused test binary compiled successfully in 5m20s",
-      "postgres_log": "/tmp/l2-delivery-green5.log",
+      "compilation": "Merged dispatch test binary compiled successfully in 6m00s; /tmp/l2-delivery-green6.log",
+      "postgres_log": "/tmp/l2-delivery-green6.log",
       "exact_red_point": "Steal From Thieves: second chest USE returns Rejected after freeing one main-backpack entry (expected Committed). Troll Sabotage: native hotkey equipment response decodes as Malformed after reaching the helmet gate.",
       "cartography_qualified": true,
       "clippy_final": "/tmp/l2-delivery-clippy5.log",
       "pins_final_pending": true,
-      "handoff_merge": "Preserved remote 352325ea9; merged dispatch and all its tests compile (cargo check --tests, 2m48s, /tmp/l2-handoff-wip-check.log). Full combined PG run remains pending."
+      "handoff_merge": "Preserved remote 352325ea9; merged dispatch and all its tests compile (cargo check --tests, 2m48s, /tmp/l2-handoff-wip-check.log). Full combined PG run remains pending.",
+      "corrected_red_points": [
+        "Negotiate hotkey capability179 dependencies12/14 and assert command348 is selected",
+        "Use separate one-coin filler stacks so full-slot refusal is independent of the source 400-ounce bag weight",
+        "Both nested coin moves select main-backpack custody explicitly"
+      ],
+      "rerun_status": "Three full journeys running; previous red points remain unqualified until they complete.",
+      "authoring_tests_passed": 49
     }
   },
   "cross_lane_inspection": {

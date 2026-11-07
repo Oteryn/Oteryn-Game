@@ -250,3 +250,8 @@ The shared PG harness initializes players one tile west of its anchor. L2 delive
 anchors account for that offset, and every journey asserts its initial player cell
 before issuing commands. Equipment predicates use durable semantic slot codes
 from `crates/protocol-oteryn/src/item_view.rs:210`, rather than wire ordinals.
+Native hotkey equipment negotiates capability179 and its declared dependencies
+12/14. Steal From Thieves fills every backpack slot with separate one-coin stacks;
+100-coin filler stacks unintentionally exceeded the starter character carrying capacity
+when adding the source 400-ounce bag. Slot count and atomic two-output refusal
+assertions are retained. Both nested moves select an actual main-backpack entry.
