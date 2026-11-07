@@ -2969,7 +2969,7 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
           "minimum": 1,
           "maximum": 1,
           "set": 2
@@ -2992,7 +2992,42 @@
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:68:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/outfox-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.budrik",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:106:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
       ]
     },
     {

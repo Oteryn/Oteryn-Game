@@ -67,3 +67,25 @@ Crystal9f, sha256 ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9
 They issue scale11550/sinew11548 once per character, without a mission-start
 prerequisite, and retain the corpse. This slice proves the world grant
 participant; it does not independently qualify the complete Father quest.
+
+### L2 Sam and Outfox native access composition
+
+Source9f Sam111-117 (sha ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b)
+consumes3244 and refers the player to Kroox. Kroox63-67 (sha
+080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497) grants
+the mine permission and promises dwarven armor. The startup chest table74
+(sha0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca)
+locates the untagged chest at32455,31968,z14. Restore the promised native
+armor3397 there through the shared world reward participant and an internal
+once flag; no legacy unique id is fabricated. The native gate at32455,31967,z14
+retains appearance1644/action40603 and its exact named storage.
+
+Budrik61-106 (sha0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5)
+issues Outfox, writes the Questline field, and exchanges139 for875. The old
+callback omitted `/questline`; the canonical door action41492 already reads
+the correct field. Its existing helmet claim6257 remains the reward owner.
+
+The full source-world fixture exposed a routing guard before qualified bundle
+owners, preventing native door/chest USE. Apply that guard only to the legacy
+fallback without a bundle. Qualified bundle handlers retain their digest,
+revision, actor/session, reach, storage, custody and MINT checks.

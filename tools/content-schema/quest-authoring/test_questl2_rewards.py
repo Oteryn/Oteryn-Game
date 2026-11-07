@@ -123,6 +123,17 @@ class LaneL2Rewards(unittest.TestCase):
             with self.assertRaises((ValueError,ValidationError)):
                 q.validate_callbacks({'schema':1, 'callbacks':[bad]})
 
+    def test_outfox_issue_and_return_use_the_native_door_track(self):
+        key = 'oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline'
+        start = self.callbacks['outfox-start']
+        finish = self.callbacks['outfox-helmet']
+        self.assertEqual(start['storage'][-1]['track'],key)
+        self.assertEqual(start['storage'][-1]['set'],1)
+        self.assertEqual(finish['storage'][0]['track'],key)
+        self.assertEqual(finish['storage'][0]['set'],2)
+        self.assertEqual(finish['take'],[{'item':'oteryn:item.tibia.i139','count':1}])
+        self.assertEqual(finish['give']['item'],'oteryn:item.tibia.i875')
+
     def test_sam_kroox_opens_both_source_tracks_without_minting_armor(self):
         callback = self.callbacks['sam-kroox']
         self.assertEqual(callback['npc'], 'oteryn:npc.kroox')

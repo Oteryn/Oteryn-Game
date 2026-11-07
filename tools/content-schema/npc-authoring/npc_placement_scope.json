@@ -18,6 +18,7 @@
     "oteryn:npc.blind_orc",
     "oteryn:npc.brewster",
     "oteryn:npc.broken_servant_sentry",
+    "oteryn:npc.budrik",
     "oteryn:npc.cael",
     "oteryn:npc.carlos",
     "oteryn:npc.cipfried",
@@ -37,6 +38,7 @@
     "oteryn:npc.jorge",
     "oteryn:npc.kasmir",
     "oteryn:npc.kepar",
+    "oteryn:npc.kroox",
     "oteryn:npc.lily",
     "oteryn:npc.maealil",
     "oteryn:npc.marina",
@@ -51,6 +53,7 @@
     "oteryn:npc.quentin",
     "oteryn:npc.rahkem",
     "oteryn:npc.raymond_striker",
+    "oteryn:npc.sam",
     "oteryn:npc.santiago",
     "oteryn:npc.seymour",
     "oteryn:npc.tereban",
@@ -103,6 +106,27 @@
         "x": 32796,
         "y": 31558,
         "z": 2
+      }
+    ],
+    "oteryn:npc.sam": [
+      {
+        "x": 32361,
+        "y": 32198,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.kroox": [
+      {
+        "x": 32651,
+        "y": 31887,
+        "z": 9
+      }
+    ],
+    "oteryn:npc.budrik": [
+      {
+        "x": 32525,
+        "y": 31905,
+        "z": 8
       }
     ]
   }

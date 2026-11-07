@@ -879,8 +879,17 @@
     },
     {
       "title": "Sam's Old Backpack",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-sam",
+          "duration_seconds": 77.504514167,
+          "postgresql": "18.6",
+          "passed": true,
+          "log": "/tmp/l2-samfox-green3.log"
+        }
+      ],
+      "journey": "Actual NPC issuance/hand-in, native sealed door before/after entitlement, source chest reward, final return where applicable, replay and duplicate refusal; no quest progress or earned outputs seeded."
     },
     {
       "title": "Sea of Light",
@@ -984,8 +993,17 @@
     },
     {
       "title": "To Outfox a Fox",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-outfox",
+          "duration_seconds": 77.230736392,
+          "postgresql": "18.6",
+          "passed": true,
+          "log": "/tmp/l2-samfox-green3.log"
+        }
+      ],
+      "journey": "Actual NPC issuance/hand-in, native sealed door before/after entitlement, source chest reward, final return where applicable, replay and duplicate refusal; no quest progress or earned outputs seeded."
     },
     {
       "title": "Tomes of Knowledge",
@@ -1598,6 +1616,20 @@
       "generation_log": "/tmp/l2-world-reward-generate.log",
       "pin_refresh_log": "/tmp/l2-world-reward-pin-refresh.log",
       "pin_check_log": "/tmp/l2-world-reward-pin-check.log"
+    },
+    "sam_outfox_slice": {
+      "postgres_passed": 2,
+      "postgres_log": "/tmp/l2-samfox-green3.log",
+      "shared_authoring_passed": 51,
+      "shared_authoring_log": "/tmp/l2-samfox-authoring-final.log",
+      "additional_l2_authoring_passed": 14,
+      "l2_authoring_log": "/tmp/l2-samfox-l2-authoring.log",
+      "placements_passed": 11,
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-samfox-clippy-final.log",
+      "formatting_exit_code": 0,
+      "pin_check_log": "/tmp/l2-samfox-pin-check.log",
+      "world_pin_digest": "053a2a27bb7fd93fe044456f533b738b90a765bc0d83e5ce5a55550657b18b68"
     }
   },
   "cross_lane_inspection": {

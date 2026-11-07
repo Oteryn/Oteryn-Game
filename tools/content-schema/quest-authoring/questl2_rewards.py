@@ -125,6 +125,16 @@ def append(callbacks, offers, inputs, pin):
                    'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 1}],
                    'reply': [held], 'close_after': True})
 
+    fox = 'u8_1/to_outfox_afox_quest/questline'
+    for callback in callbacks:
+        if callback['key'] == 'oteryn:quest-reward/outfox-helmet':
+            callback['storage'] = [state(fox,1,2)]
+            callback['sources'].append('crystal:'+pin+':data-global/npc/budrik.lua:68:sha256:'+hashlib.sha256(inputs['data-global/npc/budrik.lua']).hexdigest())
+    add('outfox-start','tibia_tales','budrik',['yes'],
+        [state('u8_1/tibia_tales/default_start',-1,1,1),state(fox,-1,1,0)],
+        "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!",
+        topic=1,source_text='player:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)',
+        offer=(['mission','quest'],"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?"))
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',
         ['sam sent me', 'sam send me'],

@@ -358,10 +358,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
             return outcome;
         }
-        if self
-            .rooms
-            .gate_source_world()
-            .is_some_and(|room| room.source_world().is_some())
+        // A qualified bundle supplies its own fenced target, chest and door owners.
+        // The source-world guard protects only the legacy entry-room fallback.
+        if self.bundle_map().is_none()
+            && self
+                .rooms
+                .gate_source_world()
+                .is_some_and(|room| room.source_world().is_some())
         {
             return UseOutcome::rejected();
         }

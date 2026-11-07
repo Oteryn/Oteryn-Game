@@ -21,10 +21,15 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     }
     let started = std::time::Instant::now();
     eprintln!("POSTGRES_CASE_STARTED {name}");
+    let source_position = match name {
+        "qengine-rewards-l2-sam" => Some(Position{x:32455,y:31967,floor:-14}),
+        "qengine-rewards-l2-outfox" => Some(Position{x:32467,y:31969,floor:-5}),
+        _=>None,
+    };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
+            source_position.unwrap_or(Position {
                 // Keep the longer NPC corridor away from Behemoth's five barriers.
                 x: if name == "qengine-rewards-paid-stake-priests" {
                     33310
@@ -33,7 +38,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 },
                 y: 31677,
                 floor: -15,
-            },
+            }),
             false,
         )
     });
@@ -170,6 +175,9 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
     scenario("qengine-rewards-exchange-fixed")
 }
 
+#[path = "qengine_rewards/questl2_journeys.rs"]
+pub(super) mod questl2_journeys;
+
 #[path = "qengine_rewards/exchange_fixed.rs"]
 mod exchange_fixed;
 
@@ -250,6 +258,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "outfox-start" => &["mission"],
         "exchange-cyclops-start" => &["uth'lokr", "yes"],
         "exchange-cyclops-skirts" | "exchange-cyclops-draconian-steel" => &["uth'lokr"],
         "exchange-cyclops-royal-steel" => &["uth'kean"],
@@ -753,6 +762,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox") {
+        return questl2_journeys::exercise(owner,admitted,h,name).await;
+    }
     if name.starts_with("qengine-rewards-l2-father-") {
         return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;
     }
