@@ -34,7 +34,7 @@ async fn track(h: &Harness, name: &str) -> TestResult<i64> {
 async fn completed(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.newhaven_legion_helmet_quest' AND completed_character_revision IS NOT NULL").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     direction: StepDirection,

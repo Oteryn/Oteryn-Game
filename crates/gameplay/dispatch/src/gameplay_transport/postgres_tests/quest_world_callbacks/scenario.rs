@@ -87,6 +87,8 @@ fn scenario_case(
             | "qengine-rewards-nimmersatt-passage"
     ) {
         super::super::questpc5_nimmersatt_world_items::world()?
+    } else if name == "qengine-rewards-nomads-mini" {
+        super::super::questpc5_nomads_mini::world()?
     } else if name == "qengine-rewards-newhaven-legion-route" {
         super::super::questpc5_legion_route::world()?
     } else if name == "qengine-rewards-newhaven-legion-gates" {
@@ -183,7 +185,9 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let nimmersatt_premium = if name.starts_with("qengine-rewards-nimmersatt-") {
+        let nimmersatt_premium = if name.starts_with("qengine-rewards-nimmersatt-")
+            || name == "qengine-rewards-nomads-mini"
+        {
             let (consumer, clock, activation, _) =
                 crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
                     id(40),

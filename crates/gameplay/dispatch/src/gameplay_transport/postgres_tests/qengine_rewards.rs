@@ -35,6 +35,12 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     y: 31578,
                     floor: -7,
                 }
+            } else if name == "qengine-rewards-nomads-mini" {
+                Position {
+                    x: 33220,
+                    y: 32579,
+                    floor: -7,
+                }
             } else if name == "qengine-rewards-newhaven-legion-gates" {
                 Position {
                     x: 32143,
@@ -622,6 +628,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-nomads-mini" {
+        return Box::pin(super::questpc5_nomads_mini::exercise(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-nimmersatt-passage" {
         super::questpc5_nimmersatt_world_items::exercise_passage(owner, admitted, h).await?;
         return Ok(());
