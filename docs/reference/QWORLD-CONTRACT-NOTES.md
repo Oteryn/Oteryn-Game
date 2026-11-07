@@ -757,3 +757,10 @@ focused production check (1m00s); Clippy with `-D warnings` for world-change,
 durability, dispatch, game-server and bundle compiler (2m12s), plus content and
 quests; official pin-refresh/pin-check; and duplicate migrations on the committed
 candidate. No full PostgreSQL suite was run.
+
+### Persisted native decision boundary regression
+Added focused serialization/recovery tests covering 256 epoch/calendar decisions
+and rejecting zero epochs, unknown Fury/ Nightmares layers, mismatched Fury
+entrances, invalid trader values and unknown payload fields. Both cases passed
+in 0.01 seconds (build 1.13 seconds); world-change test-target Clippy with
+`-D warnings` and focused formatting passed. Production behavior is unchanged.
