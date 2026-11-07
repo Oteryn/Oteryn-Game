@@ -19,6 +19,8 @@ SOURCE_REVISION = 'zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddef
 SOURCE_PREFIX = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
 INPUT_DIRECTORY = Path('tools/content-schema/quest-authoring/batches/quests4')
 CALLBACK_OUTPUT = Path('content/quests/world-callbacks.json')
+SHARED_CALLBACK_OUTPUT = Path('content/quests/shared-source-callbacks.json')
+SHARDED_QUESTS = {'mintwallin_quest', 'devil_helmet'}
 NPC_OUTPUT_DIRECTORY = Path('content/dialogues/quest-sources')
 QUEST_ORDER = (
     'cults_of_tibia', 'devil_helmet', 'dreamers_challenge_quest', 'elemental_spheres',
@@ -416,32 +418,38 @@ def load_packets(root, selected=None, available=False):
 def expected_files(root, selected=None, available=False):
     root = Path(root)
     packets = load_packets(root, selected=selected, available=available)
-    seed = read(root / CALLBACK_OUTPUT)
-    fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
-    require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),
-            'existing world callbacks: invalid schema')
+    destinations = (CALLBACK_OUTPUT, SHARED_CALLBACK_OUTPUT)
+    merged = {}
     authored = {callback['key']: callback for packet in packets for callback in packet['callbacks']}
     existing_keys = set()
-    retained = []
-    for callback in seed['callbacks']:
-        require(isinstance(callback, dict) and isinstance(callback.get('key'), str), 'invalid existing callback')
-        key = callback['key']
-        require(key not in existing_keys, 'duplicate existing callback key: ' + key)
-        existing_keys.add(key)
-        if key in authored:
-            require(callback.get('quest') == authored[key]['quest'], 'foreign existing callback key: ' + key)
-        else:
-            retained.append(copy.deepcopy(callback))
-    merged = copy.deepcopy(seed)
-    merged['callbacks'] = retained
+    for destination in destinations:
+        seed = (read(root / destination) if destination == CALLBACK_OUTPUT or (root / destination).exists()
+                else {'schema': 1, 'callbacks': []})
+        fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
+        require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),
+                'existing world callbacks: invalid schema')
+        retained = []
+        for callback in seed['callbacks']:
+            require(isinstance(callback, dict) and isinstance(callback.get('key'), str), 'invalid existing callback')
+            key = callback['key']
+            require(key not in existing_keys, 'duplicate existing callback key: ' + key)
+            existing_keys.add(key)
+            if key in authored:
+                require(callback.get('quest') == authored[key]['quest'], 'foreign existing callback key: ' + key)
+            else:
+                retained.append(copy.deepcopy(callback))
+        merged[destination] = {'schema': 1, 'callbacks': retained}
     outputs = {}
     for packet in packets:
         excluded = {row['key'] for row in packet['runtime_exclusions']}
-        merged['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
+        destination = SHARED_CALLBACK_OUTPUT if packet['quest_directory'] in SHARDED_QUESTS else CALLBACK_OUTPUT
+        merged[destination]['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
         outputs[NPC_OUTPUT_DIRECTORY / (packet['quest_directory'] + '.json')] = encoded(packet['npc_source'])
-    require(len(merged['callbacks']) <= MAX_CALLBACKS, f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
-    merged['callbacks'].sort(key=lambda callback: callback['key'])
-    outputs[CALLBACK_OUTPUT] = encoded(merged)
+    require(sum(len(value['callbacks']) for value in merged.values()) <= MAX_CALLBACKS,
+            f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
+    for destination, value in merged.items():
+        value['callbacks'].sort(key=lambda callback: callback['key'])
+        outputs[destination] = encoded(value)
     return outputs
 
 

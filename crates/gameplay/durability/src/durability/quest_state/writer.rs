@@ -189,7 +189,8 @@ impl DurabilityRoot {
                                 || c.minimum_level.is_some()
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
-                                || c.native_rule.is_some())
+                                || c.native_rule.is_some()
+                                || !c.required_claims.is_empty())
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -521,9 +522,11 @@ impl DurabilityRoot {
                             }
                         }
                     }
+                    let source_binding = callback.as_ref().and_then(|callback| callback.bind_inexact_source_transition(transition));
+                    let evaluation_transition = source_binding.as_ref().unwrap_or(transition);
                     let changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
-                            || catalogue.evaluate(transition, &stored, now),
+                            || catalogue.evaluate(evaluation_transition, &stored, now),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {

@@ -13,6 +13,14 @@ pub const MAX_EFFECTS: usize = 8;
 mod objects;
 pub use objects::{ObjectEffects, ObjectMutation};
 
+// Exact corpus-backed sources additionally verified by source_world_objects.py.
+// This admits only these files, not arbitrary callbacks at a different revision.
+const SOURCE_WORLD_REFS: &[&str] = &[
+    "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+    "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+    "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+];
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct Position {
@@ -33,6 +41,8 @@ pub enum Trigger {
 #[serde(deny_unknown_fields)]
 pub struct Selector {
     pub position: Option<Position>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub positions: Vec<Position>,
     pub unique: Option<u16>,
     pub action: Option<u16>,
     pub appearance: Option<u16>,
@@ -88,6 +98,14 @@ pub struct ItemOnTarget {
     pub target_replacement: Option<u16>,
 }
 
+/// A source-world operation relocates every occupant before changing its cells.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OccupantEjection {
+    pub positions: Vec<Position>,
+    pub destination: Position,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct MonkReward {
@@ -107,11 +125,15 @@ pub struct Callback {
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eject_occupants: Option<OccupantEjection>,
     pub passages: Vec<Passage>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub objects: Option<ObjectEffects>,
     pub teleport: Option<Position>,
     pub storage: Vec<Storage>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_claims: Vec<String>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
@@ -132,6 +154,80 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// Only exact retained source SETs with fenced missing-claim predicates may
+    /// write on departure; ordinary stateless recovery retains its stricter rule.
+    #[must_use]
+    pub fn is_guarded_source_departure(&self) -> bool {
+        self.trigger == Trigger::StepOut
+            && !self.required_claims.is_empty()
+            && !self.storage.is_empty()
+            && self.storage.iter().all(|storage| {
+                !storage.preserve
+                    && !storage.read_only
+                    && super::loader::inexact_source_set(&self.key, &storage.track)
+                        == Some(storage.set)
+            })
+            && self.lever.is_none()
+            && self.objects.is_none()
+            && self.eject_occupants.is_none()
+            && self.passages.is_empty()
+            && self.teleport.is_none()
+            && self.offerings.is_empty()
+            && self.item_on_target.is_none()
+            && self.minimum_level.is_none()
+            && self.experience.is_none()
+            && self.monk_reward.is_none()
+            && self.native_rule.is_none()
+            && !self.return_on_failure
+    }
+
+    /// Resolve only a retained inexact source SET whose missing predicates are
+    /// supplied by this callback's fenced claim checks. The catalogue and its
+    /// historical definition hash remain unchanged; generic evaluation stays closed.
+    #[must_use]
+    pub fn bind_inexact_source_transition(
+        &self,
+        source: &QuestTransition,
+    ) -> Option<QuestTransition> {
+        if self.required_claims.is_empty()
+            || source.key != self.key
+            || source.quest != self.quest
+            || source.effects.len() != self.storage.len()
+            || source.completes
+            || source.experience != self.experience
+        {
+            return None;
+        }
+        let mut bound = source.clone();
+        let mut resolved = false;
+        for (effect, storage) in bound.effects.iter_mut().zip(&self.storage) {
+            if effect.track != storage.track || storage.read_only || storage.preserve {
+                return None;
+            }
+            let matching_from = match effect.from {
+                QuestComparison::Eq(value) => storage.minimum == value && storage.maximum == value,
+                QuestComparison::Between(minimum, maximum) => {
+                    storage.minimum == minimum && storage.maximum == maximum
+                }
+                _ => false,
+            };
+            if !matching_from {
+                return None;
+            }
+            if effect.effect == QuestEffectKind::Computed {
+                if super::loader::inexact_source_set(&self.key, &storage.track) != Some(storage.set)
+                {
+                    return None;
+                }
+                effect.effect = QuestEffectKind::Set(storage.set);
+                resolved = true;
+            } else if effect.effect != QuestEffectKind::Set(storage.set) {
+                return None;
+            }
+        }
+        resolved.then_some(bound)
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -149,6 +245,21 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/shared-source-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/source-world-callbacks.json"
+    ))?);
+    if callbacks
+        .iter()
+        .map(|callback| &callback.key)
+        .collect::<BTreeSet<_>>()
+        .len()
+        != callbacks.len()
+    {
+        return Err("duplicate world callback across source shards".into());
+    }
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() >= MAX_CALLBACKS {
         return Err("callback bounds including Rotten Blood altar".into());
@@ -174,9 +285,64 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !keys.insert(&callback.key)
             || (selector.position.is_none()
                 && selector.unique.is_none()
-                && selector.action.is_none())
+                && selector.action.is_none()
+                && selector.positions.is_empty())
             || selector.position.is_some_and(|p| !valid_pos(p))
+            || selector.positions.len() > MAX_EFFECTS
+            || selector.positions.iter().any(|p| !valid_pos(*p))
+            || selector
+                .positions
+                .iter()
+                .copied()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != selector.positions.len()
+            || (!selector.positions.is_empty()
+                && (selector.position.is_some()
+                    || selector.unique.is_some()
+                    || selector.action.is_some()))
+            || callback.required_claims.len() > MAX_EFFECTS
+            || callback
+                .required_claims
+                .iter()
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callback.required_claims.len()
+            || callback
+                .required_claims
+                .iter()
+                .any(|key| !super::valid_quest_key(key))
+            || (!callback.required_claims.is_empty()
+                && (callback.storage.is_empty() || callback.is_read_only()))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.eject_occupants.as_ref().is_some_and(|ejection| {
+                callback.trigger != Trigger::Use
+                    || callback.objects.is_some()
+                    || !callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.teleport.is_some()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || ejection.positions.is_empty()
+                    || ejection.positions.len() > MAX_EFFECTS
+                    || ejection
+                        .positions
+                        .iter()
+                        .copied()
+                        .collect::<BTreeSet<_>>()
+                        .len()
+                        != ejection.positions.len()
+                    || ejection.positions.iter().any(|p| !valid_pos(*p))
+                    || !valid_pos(ejection.destination)
+                    || ejection.positions.contains(&ejection.destination)
+                    || callback
+                        .passages
+                        .iter()
+                        .any(|p| p.position == ejection.destination)
+            })
             || !objects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
@@ -225,6 +391,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                    || SOURCE_WORLD_REFS.contains(&source.as_str())
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
@@ -264,6 +431,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             // A departure restores Channel map facts; it cannot write a second
             // durable consequence for the same committed movement command.
             || (callback.trigger == Trigger::StepOut
+                && !callback.is_guarded_source_departure()
                 && (!callback.reversible
                     || callback.teleport.is_some()
                     || !callback.storage.is_empty()
@@ -304,6 +472,48 @@ fn extend_callbacks(
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
+        if let Some(existing) = transitions
+            .iter()
+            .find(|transition| transition.key == callback.key)
+        {
+            let matching = existing.quest == callback.quest
+                && !existing.completes
+                && existing.experience == callback.experience
+                && existing.effects.len() == callback.storage.len()
+                && existing
+                    .effects
+                    .iter()
+                    .zip(&callback.storage)
+                    .all(|(effect, storage)| {
+                        effect.track == storage.track
+                            && !storage.preserve
+                            && !storage.read_only
+                            && callback.native_rule.is_none()
+                            && (effect.effect == QuestEffectKind::Set(storage.set)
+                                || (effect.effect == QuestEffectKind::Computed
+                                    && !callback.required_claims.is_empty()
+                                    && super::loader::inexact_source_set(
+                                        &callback.key,
+                                        &storage.track,
+                                    ) == Some(storage.set)))
+                            && match effect.from {
+                                QuestComparison::Eq(value) => {
+                                    storage.minimum == value && storage.maximum == value
+                                }
+                                QuestComparison::Between(minimum, maximum) => {
+                                    storage.minimum == minimum && storage.maximum == maximum
+                                }
+                                _ => false,
+                            }
+                    });
+            if !matching {
+                return Err(format!(
+                    "world binding differs from source transition {}",
+                    callback.key
+                ));
+            }
+            continue;
+        }
         for storage in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
                 if callback.native_rule.is_none() && !storage.preserve && !storage.read_only {

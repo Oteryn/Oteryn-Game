@@ -2,7 +2,7 @@
 //! Reward shapes, item admission and once identities remain in the existing catalogue.
 use super::*;
 
-/// Bind only the source-backed Beregar, Elvenbane and smithhammer objects.
+/// Bind only the exact source-backed native objects listed below.
 /// `matches` reads immutable server facts for the actual top-level palette entry.
 pub fn bind_standalone_chests(
     base: &impl RewardClaimBase,
@@ -10,6 +10,46 @@ pub fn bind_standalone_chests(
     matches: impl Fn(u64, u32, u16) -> bool,
 ) -> Result<Vec<ServedClaim>, ClaimsError> {
     let sources = [
+        (
+            "oteryn:reward-claim.kv.lifering",
+            6131,
+            32443,
+            32238,
+            -11,
+            2469,
+        ),
+        (
+            "oteryn:reward-claim.kv.mintwallincyclops",
+            6138,
+            32591,
+            32097,
+            -14,
+            2472,
+        ),
+        (
+            "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+            6095,
+            33080,
+            32014,
+            -13,
+            2469,
+        ),
+        (
+            "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+            6096,
+            33031,
+            32050,
+            -13,
+            2469,
+        ),
+        (
+            "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+            6094,
+            33078,
+            31980,
+            -13,
+            2469,
+        ),
         (
             "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
             6079,

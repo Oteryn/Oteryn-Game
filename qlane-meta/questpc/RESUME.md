@@ -1,3 +1,51 @@
+## Source-world batch — GREEN, 2026-11-07
+
+Branch remains `claude/happy-davinci-ijz3wy-questpc-pc2`. Concurrent source work
+through `2ea1809a15b2bea2dffde3347f8773fb1e95fa5e` is retained by fast-forward. The earlier lane
+snapshot6c09e0365 and the Elvenbane commit4e12ac30e remain ancestors.
+
+Life Ring's source bridge/ejection and native filled-bag contract is QUALIFIED.
+Hidden Threats now has all five guarded departures and three native chests;
+its full NPC/forge/rescue/room composition remains active. Mintwallin retains
+its concurrent qualification and now binds the exact UID-free native import
+through the existing source callback and Objects owner. No duplicate object API.
+
+Real PostgreSQL18.6 markers:
+- POSTGRES_CASE_COMPLETED quest_source_objects_hidden_threats duration=51.844283716s
+- POSTGRES_CASE_COMPLETED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=46.266795229s
+- POSTGRES_CASE_COMPLETED quest_source_objects_mintwallin duration=46.058620043s
+
+Recovery RED48.255387091s reproduced a committed progress event pinned by a
+newer shared origin revision. GREEN recovers the exact receipt and preserves
+that revision. Progress-only departures have no map projection. Existing
+stateless supersession is retained and regression-tested. All callback units,
+changed-crate alltarget/allfeature check and clippy-Dwarnings, formatting,
+generation and unchanged world pin checks pass; exact commands/log hashes:
+`cloud-source-world-validation.json`. A full incremental cache interrupted
+Clippy once; generated cache only was cleared and interrupted checks rerun with
+CARGO_INCREMENTAL=0. Keep that setting for later batches.
+
+Counts: 60QUALIFIED/117UNFINISHED/
+1excluded DawnportBLOCKED. Six A..M entries qualified in qengine2
+are explicitly skipped per owner; their code is not asserted merged here.
+
+Continue Hidden Threats source composition. Exact pinned NPC/source paths were
+read: Ratter accepts help; Servant requires eight rescues and20rare earth,
+rewards two3040 and sets line5; forge and room scripts are retained in the donor
+corpus. Use the internally consistent pinned Canary04b83 source programme: eight
+distinct rescues, counter0->8, then rare-earth hand-in sets access9. Crystal
+rescuer flags/counters conflict; retain that source difference explicitly. The concurrent writer's
+latest next-work note is Draconia; preserve its work when fetching.
+
+Source-world authoring: run
+`python3 tools/content-schema/quest-authoring/source_world_objects.py --check`.
+It verifies donor custody, actual native map roots, sole-lever aliases, native
+Terrain facts and claim definitions. Runtime bindings use their own shard;
+generator-owned reviewed source callbacks stay intact. Preserve Father's atomic
+11-track write, exact charge matches and all current owner exclusions.
+
+---
+
 ## Devil Helmet qualified — 2026-11-07
 Original source contractQUALIFIED: UID25030 entry creates one435 if absent;
 departure removes it, including real USE departure. Source tests cover fresh and

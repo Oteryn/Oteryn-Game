@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 59,
-    "UNFINISHED": 118,
+    "QUALIFIED": 60,
+    "UNFINISHED": 117,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -1052,7 +1052,8 @@
         "targets": [
           "Sturdy Book"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Bear Room Quest",
@@ -2657,7 +2658,8 @@
         "targets": [
           "Rathleton abandoned sewers"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Dawnport Quest",
@@ -3065,7 +3067,8 @@
         "targets": [
           "Annihilator completion intent"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Demon Wars World Change",
@@ -4072,7 +4075,8 @@
           "Slime Gobbler",
           "slime fungus"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Elephant Tusk Quest",
@@ -4630,7 +4634,8 @@
         "targets": [
           "Porcelain Mask"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Fiend Slayer Outfits Quest",
@@ -5436,7 +5441,8 @@
         "targets": [
           "Dark Trails completion qualification"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Goblin Merchant Quest",
@@ -6014,7 +6020,25 @@
           "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
         ]
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "source_components": [
+        {
+          "status": "QUALIFIED",
+          "scope": "all five source StepOut positions, exact two fragment receipt predicates,2->3, three no-UID native rewards and durable recovery",
+          "test": "quest_source_objects_hidden_threats_stepout_requires_both_once_claims",
+          "definition_hash_preserved": true,
+          "generic_computed_evaluation": "NOT_SUPPORTED",
+          "recovery": "exact committed receipt; newer shared map revision preserved",
+          "evidence": "qlane-meta/questpc/cloud-source-world-validation.json"
+        }
+      ],
+      "blocker": {
+        "missing_piece": "Continue the full source NPC/forge/rescue/door and Cave Spider room composition. The guarded departure and native rewards are implemented and qualified; no shared-engine ownership deferral applies.",
+        "evidence": [
+          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/corym_servant.lua",
+          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/action-key_forge.lua"
+        ]
+      }
     },
     {
       "title": "Hive Born World Change",
@@ -7264,8 +7288,8 @@
       "title": "Life Ring Quest",
       "canonical": "oteryn:quest.life_ring_quest",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "original source-native six-cell bridge toggle, top-creature ejection and native once filled-bag contract",
       "reward_claims": [
         {
           "claim": "oteryn:reward-claim.kv.lifering",
@@ -7273,19 +7297,6 @@
           "retained_test": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal"
         }
       ],
-      "queued_stage_binding": {
-        "stage": "s1",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
-      },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "explore",
-        "objective": "Locate the hidden Life Ring cave route near Thais.",
-        "targets": [
-          "Thais Life Ring cave route"
-        ]
-      },
       "superseded_unfinished_evidence": {
         "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Thais Life Ring cave route) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
         "evidence": [
@@ -7312,7 +7323,40 @@
           "Kept all six source positions and the occupant requirement; did not qualify a reward-only or empty bridge surrogate."
         ]
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "additional_authored_programme_not_qualified": {
+        "scope": "complete pinned quest path",
+        "queued_stage_binding": {
+          "stage": "s1",
+          "native_dispatch_binding": null,
+          "runtime_enabled": false
+        },
+        "first_unqualified_stage": {
+          "key": "s1",
+          "kind": "explore",
+          "objective": "Locate the hidden Life Ring cave route near Thais.",
+          "targets": [
+            "Thais Life Ring cave route"
+          ]
+        }
+      },
+      "qualification": [
+        {
+          "test": "quest_source_objects_life_ring_real_use_opens_and_restores_native_water",
+          "checks": [
+            "native2772 lever without fabricated AID",
+            "six native4598 grounds transform to5770 and restore",
+            "sole source occupants: caller, another player and live creature",
+            "ambiguous stack refuses the entire toggle",
+            "stale target, later stale actor proof and failed projection preserve state",
+            "no lever Quest receipts",
+            "native bag2853 with3052 and3085 exactly once on replay",
+            "source200 equals pinned definition200; fresh full-charge state has no override"
+          ],
+          "evidence": "qlane-meta/questpc/cloud-source-world-validation.json",
+          "world_route_certification": false
+        }
+      ]
     },
     {
       "title": "Lion Trophy Quest",
@@ -8403,6 +8447,19 @@
               "sha256": "ee83ec453703898f21a0741efbaf4427cc28d9e9d5c25975ffef9aaf6c40d8d4"
             }
           }
+        },
+        {
+          "scope": "native import binding for the already qualified source callback and once cache",
+          "reuses": "4a88a91a097ba9b27b14789935d6b78eb01f03cb",
+          "test": "quest_source_objects_mintwallin_real_use_applies_all_twelve_edits",
+          "checks": [
+            "original AID30008 registration retained",
+            "one exact unbound native lever alias backed by immutable map custody",
+            "existing Objects owner; no duplicate callback or persistence writer",
+            "all twelve edits, collision and repeat refusal",
+            "native source item3028 once/replay"
+          ],
+          "evidence": "qlane-meta/questpc/cloud-source-world-validation.json"
         }
       ]
     },
@@ -8453,14 +8510,14 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Devil Helmet source sewer and five rewards",
-    "validation": "qlane-meta/questpc/cloud-devil-validation.json",
-    "qualified_titles_added": 1,
-    "counts": {
-      "QUALIFIED": 59,
-      "UNFINISHED": 118,
-      "BLOCKED": 1
-    }
+    "scope": [
+      "Life Ring Quest",
+      "Hidden Threats Quest source components",
+      "Mintwallin native import binding"
+    ],
+    "status": "GREEN",
+    "evidence": "qlane-meta/questpc/cloud-source-world-validation.json",
+    "base_head": "2ea1809a15b2bea2dffde3347f8773fb1e95fa5e"
   },
   "continuation": {
     "base": "9bf74b42d",
@@ -8684,5 +8741,18 @@
         "pin_refresh": "PASS; unchanged 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
       }
     }
+  },
+  "cross_lane_qualified_elsewhere": {
+    "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "sha": "059364f38c7c82b5e624d908bc69b2af6d7e54ba",
+    "titles": [
+      "Battle Mage Outfits Quest",
+      "Dark Trails Quest",
+      "Demon Outfits Quest",
+      "Elementalist Outfits Quest",
+      "Festive Outfits Quest",
+      "Glooth Engineer Outfits Quest"
+    ],
+    "rule": "Skip per current owner; this does not claim those implementations are merged here."
   }
 }

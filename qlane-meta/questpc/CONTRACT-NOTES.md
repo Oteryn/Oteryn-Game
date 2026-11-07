@@ -101,3 +101,30 @@ UID6141: one3269 at32466,32148,z15. UID5017 supplies2969/key3610 at32589,32100,z
 UID5016 supplies2969/key3667 at32576,32216,z15. Existing canonical claim selectors,
 positions, item IDs, quantities and key bindings were independently checked against
 these source rows. The original misspellingdevilhemet1/2/3 remains the claim identity.
+
+Source-world native bindings (Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d):
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/movement-chests_check.lua
+The normalized source-world-objects custody packet records script hashes, native
+map roots and reward facts; its generator verifies the retained corpus without
+copying donor files. Life Ring's exact native lever toggles six4598 grounds to5770
+and restores them. Closing uses the existing sole-current-actor authority for
+source getTopCreature semantics; ambiguous stacked occupants refuse atomically.
+Every actor proof and the map projection commit together, with rollback on failure.
+The native bag contains3052 and3085. Source200 charges exactly matches the pinned
+necklace definition200; fresh full charges have no timed override row.
+
+Hidden Threats source departures require both exact personal once-claim receipts
+and line2, then set3. The retained source transition and definition hash remain
+unchanged; generic Computed evaluation remains unsupported. Only the verified
+source SET is bound temporarily under those predicates. Progress-only departure
+recovery has no map projection and cannot be pinned by another player's later
+shared origin revision; the real PostgreSQL regression exercises that interruption.
+This component does not certify the remaining NPC/forge/rescue/room storyline.
+
+The reviewed callback base is restored byte-for-byte to SHA256
+c57297aabe3763a3d35f56e83dbbd16487ff56c121de0ca9691a8267a16dc8ad. Mintwallin and Devil Helmet's
+three additive callbacks remain generated and loaded from shared-source-callbacks;
+new native source callbacks use source-world-callbacks. Cross-shard uniqueness and
+the combined runtime cap remain enforced. No frozen approval or guard is changed.

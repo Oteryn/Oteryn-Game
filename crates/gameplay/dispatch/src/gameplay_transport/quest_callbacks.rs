@@ -4,6 +4,7 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod ejection;
 mod execute;
 mod objects;
 mod rewards;
@@ -103,22 +104,52 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                 floor: -8,
             })
         && !map.facts.house_tile(pos);
+    // Native import drops this source AID. The source-world custody packet
+    // proves the sole unbound 2772 lever within ten cells of the exact wall row.
+    let native_mintwallin = callback.key == "oteryn:quest-callback/mintwallin-cyclops-lever"
+        && selector.action == Some(30008)
+        && selector.unique.is_none()
+        && selector.position.is_none()
+        && ordinal == 1
+        && pos
+            == tile(Position {
+                x: 32600,
+                y: 32105,
+                floor: -14,
+            })
+        && !map.facts.house_tile(pos)
+        && map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|tile| {
+                tile.ids()
+                    .iter()
+                    .zip(tile.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+            })
+            .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+            .is_some_and(|facts| facts.appearance_id == 2772 && !facts.bound);
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.
-    selector.position.is_none_or(|p| tile(p) == pos)
-        && (selector.position.is_none()
+    (selector.positions.is_empty() || selector.positions.iter().any(|p| tile(*p) == pos))
+        && selector.position.is_none_or(|p| tile(p) == pos)
+        && ((selector.position.is_none() && selector.positions.is_empty())
             || selector.unique.is_some()
             || selector.action.is_some()
             || selector.appearance.is_some()
             || callback.trigger == Trigger::Use
             || ordinal == 0)
         && (native_smithhammer
+            || native_mintwallin
             || map
                 .facts
                 .quest_callback_matches(key, selector.unique, selector.action, None))
-        && (map
-            .facts
-            .quest_callback_matches(key, None, None, selector.appearance)
+        && (native_mintwallin
+            || map
+                .facts
+                .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
                 || native_smithhammer
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
@@ -139,9 +170,9 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
                         .is_some_and(|facts| {
                             facts.appearance_id == appearance
-                                || (native_smithhammer
-                                    && callback.lever == Some([2772, 2773])
-                                    && facts.appearance_id == 2773)
+                                || callback.lever.is_some_and(|pair| {
+                                    pair[0] == appearance && pair[1] == facts.appearance_id
+                                })
                         })
                 })))
 }

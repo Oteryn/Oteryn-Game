@@ -115,7 +115,31 @@ class QuestBatch4Tests(unittest.TestCase):
                 path.unlink()
 
     def output(self):
-        return json.loads((self.root / tool.CALLBACK_OUTPUT).read_text())
+        result = json.loads((self.root / tool.CALLBACK_OUTPUT).read_text())
+        shared = self.root / tool.SHARED_CALLBACK_OUTPUT
+        if shared.exists():
+            result['callbacks'].extend(json.loads(shared.read_text())['callbacks'])
+            result['callbacks'].sort(key=lambda row: row['key'])
+        return result
+
+    def test_shared_source_additions_preserve_frozen_base(self):
+        for name in tool.SHARDED_QUESTS:
+            self.packets[name]['callbacks'] = [callback(name, name + '-source')]
+        self.run_generator()
+        expected = copy.deepcopy(self.seed)
+        expected['callbacks'].sort(key=lambda row: row['key'])
+        self.assertEqual(json.loads((self.root / tool.CALLBACK_OUTPUT).read_text()), expected)
+        shared = json.loads((self.root / tool.SHARED_CALLBACK_OUTPUT).read_text())
+        self.assertEqual(len(shared['callbacks']), 2)
+        self.assertEqual(self.run_generator(check=True), [])
+
+    def test_duplicate_keys_across_callback_shards_refuse_before_writes(self):
+        write_json(self.root / tool.SHARED_CALLBACK_OUTPUT,
+                   {'schema': 1, 'callbacks': [self.seed['callbacks'][0]]})
+        before = (self.root / tool.CALLBACK_OUTPUT).read_bytes()
+        with self.assertRaisesRegex(ValueError, 'duplicate existing callback key'):
+            self.run_generator()
+        self.assertEqual((self.root / tool.CALLBACK_OUTPUT).read_bytes(), before)
 
     def test_deterministic_regeneration_sorts_union_and_keeps_complete_npc_source(self):
         cults = self.packets['cults_of_tibia']
