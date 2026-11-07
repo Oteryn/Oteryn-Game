@@ -4,6 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+#[path = "daily_world_gates.rs"]
+mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
@@ -597,6 +599,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flatten()
             .collect::<Vec<_>>();
         // Overlapping eligible stages still refuse; registration order is never authority.
+        if selected.is_empty() {
+            return self
+                .step_daily_world_gate(permit, actor, session, origin, entered)
+                .await;
+        }
         let selected_pair = if let [pair] = selected.as_slice() {
             *pair
         } else {

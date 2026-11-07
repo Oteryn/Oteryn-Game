@@ -760,7 +760,7 @@ pub fn stage_preprocessed_player_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, true, None)
+    stage_hit(state, magnitude, now, true, true, None, false)
 }
 
 pub(crate) fn stage_preprocessed_player_components(
@@ -778,7 +778,15 @@ pub(crate) fn stage_preprocessed_player_components(
     let total = primary
         .checked_add(secondary)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_hit(state, total, now, true, true, Some((primary, secondary)))
+    stage_hit(
+        state,
+        total,
+        now,
+        true,
+        true,
+        Some((primary, secondary)),
+        false,
+    )
 }
 
 /// Crystal creature.cpp:842-845 excludes life drain from base mitigation while keeping
@@ -813,7 +821,7 @@ fn stage_incoming_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, true, false, None)
+    stage_hit(state, magnitude, now, true, false, None, false)
 }
 
 /// CONDITIONS-0 §3.5: an `agony` tick skips the whole incoming mitigation pipeline (damage
@@ -830,7 +838,7 @@ pub fn stage_agony_hit(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, magnitude, now, false, false, None)
+    stage_hit(state, magnitude, now, false, false, None, false)
 }
 
 fn stage_hit(
@@ -840,6 +848,7 @@ fn stage_hit(
     mitigated: bool,
     preprocessed: bool,
     components: Option<(u32, u32)>,
+    direct_health: bool,
 ) -> Result<
     (
         PlayerSpellState,
@@ -889,6 +898,10 @@ fn stage_hit(
         } else {
             reduce(remaining)
         };
+    }
+    // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
+    // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
+    if mitigated || direct_health {
         let capacity = next
             .conditions
             .mana_shield_at(now)
@@ -913,7 +926,7 @@ fn stage_hit(
             next.conditions.remove_type(ConditionType::ManaShield);
         }
     }
-    if mitigated {
+    if mitigated || direct_health {
         next.apply_wheel_gift(remaining, now)?;
     }
     let damage = crate::ability::creature_bite::floor_creature_damage(next.health, remaining);
@@ -929,6 +942,8 @@ fn stage_hit(
 
 #[cfg(test)]
 mod energy_ring_tests;
+#[cfg(test)]
+mod srvgap_c4_tests;
 
 #[cfg(test)]
 mod tests {

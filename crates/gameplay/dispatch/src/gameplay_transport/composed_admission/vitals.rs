@@ -46,6 +46,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if !self.drome_sync(game_session_id, false).await {
+            return None;
+        }
         // Named House residents also own these persistent native conditions.
         // Checkpoint before unrelated Channel-only cadence may return early.
         if !self

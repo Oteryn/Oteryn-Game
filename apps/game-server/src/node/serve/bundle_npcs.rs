@@ -357,6 +357,13 @@ impl LoadedNpcCatalogue {
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
+        let mut talk = NpcTalkBook::from_model_with_native_quests(&model, &native_npcs);
+        talk.bind_source_voices(catalogue, &model, |text| {
+            crate::chat::ChatText::parse(text)
+                .ok()
+                .map(|text| text.as_str().to_owned())
+        })
+        .map_err(|_| BootError::ContentActivation("NPC source voices"))?;
         Ok(Self {
             admitted: model
                 .npcs()
@@ -364,10 +371,7 @@ impl LoadedNpcCatalogue {
                 .map(|reference| reference.key.clone())
                 .collect(),
             catalogue_sha256,
-            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
-                &model,
-                &native_npcs,
-            )),
+            talk: Arc::new(talk),
         })
     }
 }

@@ -209,9 +209,24 @@ async fn resume_case(
     } else {
         wire::CAPABILITY_HOUSE_TRANSFER_V1
     };
+    let mut supported_capabilities = vec![supported, 67];
+    supported_capabilities.sort_unstable();
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[supported])
-            .ok_or("selection")?;
+        crate::gameplay_transport::connection::fresh_capability_selection(
+            &owner,
+            &supported_capabilities,
+        )
+        .ok_or("selection")?;
+    assert!(admitted.continuity.selected_capabilities.contains(67));
+    assert!(
+        !owner
+            .required_capabilities
+            .authenticate_support(&supported_capabilities)
+            .map_err(debug)?
+            .selected()
+            .contains(67),
+        "exercise a mechanic outside the immutable boot offer"
+    );
     let before_conditions = if conditions {
         Some(install_reconnect_conditions(&owner, &deps).await?)
     } else {
@@ -248,7 +263,7 @@ async fn resume_case(
                 admitted.game_session_id,
                 &token,
                 10,
-                u64::from(supported)
+                &supported_capabilities
             )
         )
     );
@@ -282,6 +297,10 @@ async fn resume_case(
     let mut resumed = resumed?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.continuity.connection_generation, 2);
+    assert_eq!(
+        resumed.continuity.selected_capabilities, admitted.continuity.selected_capabilities,
+        "resume retains dynamically offered mechanics without widening or dropping them"
+    );
     if delayed_readback {
         // Even an unregistered command must receive its ordered refusal. It traverses
         // the same retained-NPC reconciliation that precedes the node seam's step.
@@ -474,7 +493,7 @@ async fn resume_same_session(
     source: crate::foundation::GameSessionId,
     token: &str,
     transport: u8,
-    supported: u64,
+    supported: &[u32],
 ) -> TestResult<AdmittedSession> {
     let mut body = Vec::new();
     bytes(&mut body, 1, source.as_bytes());
@@ -483,7 +502,9 @@ async fn resume_same_session(
     scalar(&mut body, 4, 1);
     scalar(&mut body, 5, 1);
     scalar(&mut body, 6, 1);
-    scalar(&mut body, 7, supported);
+    for id in supported {
+        scalar(&mut body, 7, u64::from(*id));
+    }
     bytes(&mut body, 8, b"resume-busy-holder-test");
     let mut frame = vec![8, MessageType::ClientResume as u8];
     bytes(&mut frame, 4, &body);

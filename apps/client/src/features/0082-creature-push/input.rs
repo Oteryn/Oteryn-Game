@@ -3,10 +3,7 @@ use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
 use oteryn_renderer::{BatchError, TileCoord};
-use oteryn_session::{
-    ActorPosition, EntityKind,
-    creature_push::{CreaturePushIntent, encode_creature_push_intent},
-};
+use oteryn_session::{ActorPosition, EntityKind, creature_push::CreaturePushIntent};
 
 impl PlayView {
     pub fn world_pointer_input(
@@ -120,14 +117,12 @@ impl PlayView {
                                             floor,
                                         },
                                     };
-                                    if let Ok(payload) = encode_creature_push_intent(&intent) {
+                                    if let Some(command) =
+                                        oteryn_client_ui::creature_push::request(intent)
+                                    {
                                         let _ = link.commands.send(
                                             crate::combat_input::PlayCommand::ServerMechanic(
-                                                ServerMechanicCommand {
-                                                    capability: 82,
-                                                    command_type: 98,
-                                                    payload,
-                                                },
+                                                command,
                                             ),
                                         );
                                     }

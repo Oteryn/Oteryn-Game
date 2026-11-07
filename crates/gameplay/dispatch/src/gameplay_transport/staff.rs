@@ -169,15 +169,31 @@ pub(super) use composed_methods;
 
 #[cfg(test)]
 pub(super) mod test_clock {
-    // Only this mechanic's PG tests override time; no runtime input can reach it.
-    use std::sync::Mutex;
-    static NOW: Mutex<Option<Option<(u64, u64)>>> = Mutex::new(None);
-    pub(in super::super) fn set(now: Option<(u64, u64)>) {
-        if let Ok(mut value) = NOW.lock() {
-            *value = Some(now);
-        }
+    // Each PG scenario owns a current-thread runtime on its own OS thread.
+    // A missing/future clock in one scenario must not affect another fixture.
+    use std::cell::Cell;
+    thread_local! {
+        static NOW: Cell<Option<Option<(u64, u64)>>> = const { Cell::new(None) };
     }
-    pub(super) fn get() -> Option<Option<(u64, u64)>> {
-        NOW.lock().ok().and_then(|now| *now)
+    pub(in super::super) fn set(now: Option<(u64, u64)>) {
+        NOW.set(Some(now));
+    }
+    pub(in crate::gameplay_transport) fn get() -> Option<Option<(u64, u64)>> {
+        NOW.get()
+    }
+    #[test]
+    fn staff_test_clock_overrides_are_isolated_between_scenarios() {
+        let available = std::thread::spawn(|| {
+            set(Some((1, 1)));
+            let unavailable = std::thread::spawn(|| {
+                assert_eq!(get(), None);
+                set(None);
+                assert_eq!(get(), Some(None));
+            });
+            assert!(unavailable.join().is_ok());
+            assert_eq!(get(), Some(Some((1, 1))));
+        });
+        assert!(available.join().is_ok());
+        assert_eq!(get(), None);
     }
 }

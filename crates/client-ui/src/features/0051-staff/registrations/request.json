@@ -1,0 +1,15 @@
+{
+  "mechanic": "0051-staff",
+  "kind": "handlers",
+  "id": "0051-staff-request",
+  "status": "supported",
+  "commands": [
+    60
+  ],
+  "direction": "client_to_server",
+  "capability": 51,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "No client authority settings; signatures, roster and scope are server-owned."
+  }
+}

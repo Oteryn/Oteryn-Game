@@ -1011,7 +1011,7 @@
     "first_unqualified_stage": {
       "key": "s10",
       "kind": "collect",
-      "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
+      "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
       "targets": [
         "Winning Lottery Ticket"
       ]
@@ -1561,7 +1561,13 @@
         "qlane-meta/questpc8/continuation-validation.json"
       ]
     },
-    "round": "L7"
+    "round": "L7",
+    "active_validation": {
+      "main_merge": "bbb3e06d0; source resolved, generated integration in progress",
+      "full_reverse_dependency_gate": "44-crate compile PASS16m31s; full PG run launched2026-11-07T16:59:29Z, pending result",
+      "known_red": "native PostgreSQL 84.828575874s: declared initial stage absent from admission copy",
+      "proof": "reverse-dependency-validation.json"
+    }
   },
   {
     "canonical": "oteryn:quest.authored.torch_quest",

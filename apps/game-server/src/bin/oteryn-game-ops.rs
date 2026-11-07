@@ -1542,7 +1542,7 @@ async fn projection(
 }
 
 const PUBLIC_PROJECTION_USAGE: &str = "public-projection resync --family \
-all|highscores|character_profile|world_online --raise-epoch true|false: re-enqueue the current \
+all|highscores|character_profile|world_online|world_totals --raise-epoch true|false: re-enqueue the current \
 public snapshots of the family for the Platform public read model and print the public projection \
 epoch. `true` (only with `--family all`) raises the epoch above the public epoch fence and then \
 persists the fence; it uses the [public_projection] operator credential of the ops config. After a \
@@ -1563,7 +1563,15 @@ async fn public_projection(
         return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
     }
     let family = arguments.take("family")?;
-    if !["all", "highscores", "character_profile", "world_online"].contains(&family.as_str()) {
+    if ![
+        "all",
+        "highscores",
+        "character_profile",
+        "world_online",
+        "world_totals",
+    ]
+    .contains(&family.as_str())
+    {
         return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
     }
     let raise = match arguments.take("raise-epoch")?.as_str() {
@@ -1840,7 +1848,13 @@ mod tests {
         let words = |words: &[&str]| {
             Arguments::parse(words.iter().map(|word| (*word).to_owned()).collect()).unwrap()
         };
-        for family in ["all", "highscores", "character_profile", "world_online"] {
+        for family in [
+            "all",
+            "highscores",
+            "character_profile",
+            "world_online",
+            "world_totals",
+        ] {
             connected.borrow_mut().clear();
             let resync = words(&[
                 "public-projection",

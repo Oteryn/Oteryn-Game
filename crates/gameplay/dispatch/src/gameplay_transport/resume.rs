@@ -190,12 +190,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let token = std::str::from_utf8(attempt.recovery_material).map_err(|_| Rejected)?;
         let key_id = fresh_grant_signing_key_id(token).ok_or(Rejected)?;
-        let account_id = canonical_uuid(&controller.account_id);
-        self.evidence
-            .refresh_recovery(self.root, self.holder, &account_id, &key_id)
+        let account =
+            crate::domain::AccountId::from_bytes(controller.account_id).map_err(|_| Rejected)?;
+        if self
+            .root
+            .staff_account_banned(self.character, account)
             .await
-            .map_err(|_| Unavailable)?;
-
+            .map_err(|_| Unavailable)?
+        {
+            return Err(Rejected);
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone())
             .with_house_lifecycle_owner(self.holder);
         let session_id = lost.game_session_id;
@@ -207,6 +211,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if session.session_state() != GameSessionState::Reconnectable {
             return Err(Rejected);
         }
+        let fence = super::item_fence_of(session).ok_or(Rejected)?;
+        if fence.connection_generation.get() != lost.continuity.connection_generation
+            || self
+                .root
+                .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
+                .await
+                .map_err(|_| Unavailable)?
+        {
+            return Err(Rejected);
+        }
+        let account_id = canonical_uuid(&controller.account_id);
+        self.evidence
+            .refresh_recovery(self.root, self.holder, &account_id, &key_id)
+            .await
+            .map_err(|_| Unavailable)?;
+
         let (loss, loss_decided_at) = store
             .owning_loss(session_id, epoch)
             .await
@@ -505,6 +525,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &recovery.world_policy_revision,
             )
             .map_err(|_| Rejected)?;
+        if capabilities
+            .selected()
+            .as_slice()
+            .iter()
+            .any(|id| !lost.continuity.selected_capabilities.contains(*id))
+        {
+            // Current mandatory requirements cannot widen a retained negotiation.
+            return Err(AdmissionRefusal::RecoveryCapabilityRequired);
+        }
         // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
         // client that no longer supports a selected capability falls back to fresh admission.
         // D449: only a resume that passed every other check (the verified recovery credential,
@@ -531,7 +560,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         // The resumed session as the candidate connection would serve it.
         let mut resumed = lost;
-        resumed.continuity.selected_capabilities = capabilities.selected();
+        // The authenticated boot profile checks requirements, but does not contain
+        // dynamically offered mechanics. Retain the original negotiated set exactly.
         resumed.controller = Some(ControllerBinding {
             transport: attempt.transport,
             account_id: controller.account_id,

@@ -81,7 +81,7 @@ def qualify(root, definition, xml_raw, *, terminal_expiry=False):
     if (not row['admission']['materializable']
             or row['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']):
         raise ValueError('AUTHORED_CUSTODY_NOT_PORTABLE')
-    groups = ('physical', 'stack', 'container', 'temporal') if timed else ('physical', 'stack', 'container')
+    groups = ('physical', 'stack', 'container', 'charges', 'temporal') if timed else ('physical', 'stack', 'container')
     for group in groups:
         if grizzly.known_conflict(definition['semantics'][group], row['semantics'][group]):
             raise ValueError('AUTHORED_CUSTODY_CANONICAL_' + group.upper() + ':' + definition['identity']['key'])

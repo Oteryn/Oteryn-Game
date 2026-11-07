@@ -60,6 +60,9 @@ pub(in crate::gameplay_transport) fn train_hit(
     rule: impl FnOnce(&mut HitTrainingCounters) -> u64,
     due: &mut TrainingDue,
 ) {
+    if runtime.is_tibiadrome(actor) {
+        return;
+    }
     let Some(formula) = formula else {
         return;
     };

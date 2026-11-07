@@ -61,6 +61,7 @@ impl super::super::DurabilityRoot {
             return Ok(None);
         };
         let after = after.to_owned();
+        let include_taints = query.ends_with(&[16, 1]);
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -184,7 +185,7 @@ impl super::super::DurabilityRoot {
                             })
                         })
                         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
-                    let payload = encode_bosstiary_list(
+                    let mut payload = encode_bosstiary_list(
                         u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entries,
                         more,
@@ -193,6 +194,21 @@ impl super::super::DurabilityRoot {
                         progress_more,
                     )
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if include_taints {
+                        let soul_war = super::super::quest_state::soul_war::read_taint_count_in_transaction(
+                            &mut tx, fence.character_id, now / 1_000,
+                        ).await?;
+                        let (rotten_blood, rotten_blood_flags, rotten_blood_final) =
+                            super::super::quest_state::rotten_blood::read_taints_in_transaction(
+                                &mut tx, fence.character_id,
+                            ).await?;
+                        oteryn_protocol_oteryn::boss_encounter::append_boss_taints(
+                            &mut payload,
+                            oteryn_protocol_oteryn::boss_encounter::BossTaints {
+                                soul_war, rotten_blood, rotten_blood_flags, rotten_blood_final,
+                            },
+                        ).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Some(payload))
                 })

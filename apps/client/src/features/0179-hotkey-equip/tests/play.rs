@@ -66,8 +66,7 @@ fn assigned_item_key_sends_the_definition_and_waits_for_the_server()
     Ok(())
 }
 
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0179_hotkey_equip::view::native;
 
 #[test]
 fn native_hotkey_configuration_and_visible_refusal() -> Result<(), Box<dyn std::error::Error>> {

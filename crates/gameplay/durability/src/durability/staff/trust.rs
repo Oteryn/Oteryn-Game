@@ -73,11 +73,13 @@ pub(super) fn digest(bytes: &[u8]) -> String {
         .map(|b| format!("{b:02x}"))
         .collect()
 }
-/// The typed grammar contains ASCII keys, ASCII strings and no JSON numbers.
+/// The typed grammar contains ASCII keys/strings, booleans and bounded safe
+/// integer coordinates; identities and large counters remain decimal strings.
 /// RFC 8785 serialization of that subset equals serde_json's sorted Value encoding.
 pub(super) fn canonical<T: Serialize>(value: &T) -> Result<Vec<u8>, TrustError> {
     // Explicit sorting also works if another workspace consumer enables serde_json's
-    // preserve_order feature. The signed grammar has ASCII keys and string values only.
+    // preserve_order feature. All signed keys are ASCII and numeric coordinates
+    // are safe integers, so this subset has the same RFC8785 scalar encoding.
     fn sorted(value: serde_json::Value) -> serde_json::Value {
         match value {
             serde_json::Value::Object(map) => {

@@ -292,6 +292,9 @@
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
     },
     {
+      "path": "content/cosmetics/outfits/authoring.json"
+    },
+    {
       "path": "content/cosmetics/outfits/native-cosmetics.json"
     },
     {
@@ -608,6 +611,12 @@
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"
+    },
+    {
+      "path": "content/items/definitions/srx1-item-updates.json"
+    },
+    {
+      "path": "content/items/definitions/starting-loadout-profiles.json"
     },
     {
       "path": "content/items/index.json"
@@ -998,7 +1007,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3743,
+          "record_count": 3748,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1006,7 +1015,20 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "9815bdd9519a852ce8bdab83034c7053766730604cfeb68a6ff43c17590e014d"
+          "sha256": "76136fa2b24f22191ee38a24bb9050e5facba8d4ec0d16013083b73e2c7edabc"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/items/definitions/starting-loadout-profiles.json",
+          "record_count": 10,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+          },
+          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
         }
       ],
       "Presentation": [

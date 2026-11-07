@@ -1,0 +1,8 @@
+name=rest_status
+commands=493
+transport=rest_status
+composed=rest_status
+authority=rest_status
+offer=632,rest_status::offered,rest_status_available
+[route]
+routing::rest_status::route(authority, &session.admitted, command).await

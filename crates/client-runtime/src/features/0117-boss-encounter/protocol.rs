@@ -8,6 +8,33 @@ pub struct Snapshot {
     pub points: u64,
     pub cooldown_next: Option<String>,
     pub progress_next: Option<String>,
+    pub taints: Option<Taints>,
+}
+/// Counts are supplied by the Quest owners; the client never computes expiry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Taints {
+    pub soul_war: u8,
+    pub rotten_blood: u8,
+    pub rotten_blood_flags: u8,
+    pub rotten_blood_final: bool,
+}
+fn taints(bytes: &[u8]) -> Option<Taints> {
+    // Four required bounded scalars, in canonical field order.
+    let [8, soul, 16, rotten, 24, flags, 32, final_taint] = *bytes else {
+        return None;
+    };
+    (soul <= 5 && rotten <= 4 && flags <= 15 && final_taint <= 1).then_some(Taints {
+        soul_war: soul,
+        rotten_blood: rotten,
+        rotten_blood_flags: flags,
+        rotten_blood_final: final_taint == 1,
+    })
+}
+/// Opt in explicitly so servers preserve the legacy reply for older clients.
+pub fn query_taints(after: &str) -> Option<super::raw_feature::FeatureCommand> {
+    let mut command = query(after)?;
+    command.payload.extend_from_slice(&[16, 1]);
+    Some(command)
 }
 pub fn query(after: &str) -> Option<super::raw_feature::FeatureCommand> {
     let mut payload = Vec::new();
@@ -91,6 +118,7 @@ pub fn decode(bytes: &[u8]) -> Option<Snapshot> {
             26 => 2,
             40 => 4,
             50 => 8,
+            58 => 16,
             18 | 34 => 0,
             _ => return None,
         };
@@ -100,6 +128,7 @@ pub fn decode(bytes: &[u8]) -> Option<Snapshot> {
         seen |= bit;
         match tag {
             8 => out.now = var(bytes, &mut at)?,
+            58 => out.taints = Some(taints(take(bytes, &mut at)?)?),
             40 => out.points = var(bytes, &mut at)?,
             26 => out.cooldown_next = Some(key(take(bytes, &mut at)?)?),
             50 => out.progress_next = Some(key(take(bytes, &mut at)?)?),
@@ -184,3 +213,39 @@ pub use oteryn_session::property_services::{bosstiary_slots, hazard};
 #[path = "protocol/rewards.rs"]
 mod rewards;
 pub use rewards::{RewardChest, decode_rewards};
+
+#[cfg(test)]
+mod taint_tests {
+    use super::*;
+
+    #[test]
+    fn srx3_taints_decoder_requires_bounded_complete_unique_server_projection() {
+        let value = [58, 8, 8, 5, 16, 4, 24, 15, 32, 1];
+        let mut bytes = vec![8, 0];
+        bytes.extend_from_slice(&value);
+        assert_eq!(
+            decode(&bytes).and_then(|page| page.taints),
+            Some(Taints {
+                soul_war: 5,
+                rotten_blood: 4,
+                rotten_blood_flags: 15,
+                rotten_blood_final: true,
+            })
+        );
+        for (index, invalid) in [(3, 6), (5, 5), (7, 16), (9, 2)] {
+            let mut malformed = bytes.clone();
+            malformed[index + 2] = invalid;
+            assert!(decode(&malformed).is_none());
+        }
+        for end in 3..bytes.len() {
+            assert!(decode(&bytes[..end]).is_none());
+        }
+        bytes.extend_from_slice(&value);
+        assert!(decode(&bytes).is_none());
+        assert_eq!(decode(&[8, 0]).and_then(|page| page.taints), None);
+        assert_eq!(
+            query_taints("").map(|command| command.payload),
+            Some(vec![16, 1])
+        );
+    }
+}

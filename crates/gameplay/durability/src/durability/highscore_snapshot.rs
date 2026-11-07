@@ -17,7 +17,6 @@ use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_lists};
-use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -46,10 +45,10 @@ pub const CUT_CHARACTERS_MAX: usize = 50_000;
 pub const CUT_SOURCE_PAGE_ROWS: usize = 1_000;
 /// One keyset page of the cut's eligible Characters in CharacterId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_character` (0129).
-pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
+pub const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
 /// One keyset page of the cut's account representatives in AccountId order. Its World range and
 /// order are an index range scan of `game_character_roots_highscore_world_account` (0129).
-pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
+pub const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND NOT game_account_closure_detached(r.character_id) AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
 
 /// The bounds of one World cut. Production uses [`CutLimits::REGISTERED`]; a fixture may only
 /// tighten them, never pass the registered hard maximums.
@@ -624,7 +623,6 @@ async fn read_boss_points(
     Ok(bosses)
 }
 
-#[derive(Serialize)]
 struct StoredRow {
     filter: i16,
     position: i32,
@@ -756,9 +754,21 @@ async fn publish_cut(
             .bind(world.as_bytes().as_slice()).bind(i32::from(category)).bind(computed_at_ms)
             .bind(&source_cut).bind(count).fetch_one(&mut **tx).await?;
         // At most 6000 rows/category, one bounded bulk statement instead of per-row calls.
-        let json = serde_json::to_string(&rows).map_err(|_| corrupt())?;
-        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM jsonb_to_recordset($2::jsonb) AS x(filter SMALLINT,position INTEGER,rank BIGINT,character_id TEXT,name TEXT,vocation TEXT,level BIGINT,value_primary BIGINT,value_progress BIGINT)")
-            .bind(id).bind(&json).execute(&mut **tx).await?.rows_affected();
+        // Typed arrays avoid serializing and reparsing every field as JSON while the
+        // atomic publication transaction is holding its bounded Root pass.
+        let filters: Vec<_> = rows.iter().map(|r| r.filter).collect();
+        let positions: Vec<_> = rows.iter().map(|r| r.position).collect();
+        let ranks: Vec<_> = rows.iter().map(|r| r.rank).collect();
+        let characters: Vec<_> = rows.iter().map(|r| r.character_id.as_str()).collect();
+        let names: Vec<_> = rows.iter().map(|r| r.name.as_str()).collect();
+        let vocations: Vec<_> = rows.iter().map(|r| r.vocation.as_str()).collect();
+        let levels: Vec<_> = rows.iter().map(|r| r.level).collect();
+        let primary: Vec<_> = rows.iter().map(|r| r.value_primary).collect();
+        let progress: Vec<_> = rows.iter().map(|r| r.value_progress).collect();
+        let inserted = sqlx::query("INSERT INTO game_world_highscore_rows(snapshot_id,filter,position,rank,character_id,name,vocation,level,value_primary,value_progress) SELECT $1,x.filter,x.position,x.rank,x.character_id::uuid,x.name,x.vocation,x.level,x.value_primary,x.value_progress FROM unnest($2::smallint[],$3::integer[],$4::bigint[],$5::text[],$6::text[],$7::text[],$8::bigint[],$9::bigint[],$10::bigint[]) AS x(filter,position,rank,character_id,name,vocation,level,value_primary,value_progress)")
+            .bind(id).bind(&filters).bind(&positions).bind(&ranks).bind(&characters)
+            .bind(&names).bind(&vocations).bind(&levels).bind(&primary).bind(&progress)
+            .execute(&mut **tx).await?.rows_affected();
         if inserted != u64::try_from(count).map_err(|_| corrupt())? {
             return Err(corrupt());
         }
@@ -823,12 +833,12 @@ async fn read_in_transaction(
     let start = i64::from(page - 1) * i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let end = start + i64::try_from(PAGE_ROWS).map_err(|_| corrupt())?;
     let filter = i16::try_from(filter).map_err(|_| corrupt())?;
-    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
+    let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND position>$3 AND position<=$4 ORDER BY position LIMIT 50")
         .bind(id).bind(filter).bind(start).bind(end).fetch_all(&mut **tx).await?
         .into_iter().map(stored_row).collect::<Result<Vec<_>>>()?;
-    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND position>$3)")
+    let has_more = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND position>$3)")
         .bind(id).bind(filter).bind(end).fetch_one(&mut **tx).await?;
-    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND character_id=encode($3,'hex')::uuid")
+    let own_row = sqlx::query("SELECT uuid_send(character_id) AS character_id,rank,name,vocation,level,value_primary,value_progress FROM game_world_highscore_rows WHERE snapshot_id=$1 AND filter=$2 AND NOT game_account_closure_detached(character_id) AND character_id=encode($3,'hex')::uuid")
         .bind(id).bind(filter).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
         .map(stored_row).transpose()?;
     Ok(SnapshotPage {

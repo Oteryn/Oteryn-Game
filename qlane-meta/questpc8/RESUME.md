@@ -1,3 +1,53 @@
+# Full44-crate PostgreSQL gate launched16:59:29UTC
+
+World pin refresh PASS95e866ad15e6afe3e5919d8e29aa94b4ff6eb132ef3d20efbb4c8dbc18a6aba7.
+Duplicate migration guard PASS. Full44-crate nextest command is running
+with PostgreSQL fixture enabled, success output retained and no fail-fast;
+currently waiting for strict Clippy Cargo lock. Log:
+/tmp/questpc8-full-dependent-nextest.log. Compile-only44-crate PASS16m31s.
+This merge remains WIP: known real Winterlight PG84.828575874s fails on
+missing declared initial stage in admission copy. Collect ALL runtime
+failures, fix together, rerun full44then ONE push.20of23qualified.
+
+# Full reverse-dependency binary build PASS16m31s
+
+All44selected crates compile their test targets. This is build-only proof,
+not a runtime test pass. Content model generation acquired the Cargo lock;
+finish merged content/Prey/pins, then run /tmp/questpc8-run-full.sh with
+PG and no fail-fast. Collect all failures, fix root causes together, rerun
+all44before ONE push. Known Winterlight initial-track RED remains.
+
+# Main merge integration: source-overlapping starter providers
+
+The44-crate nextest binary build reached linking. Full tests have NOT yet
+started. World materialization succeeded; native registration exposed an
+overlap between existing Newhaven reward Items and main starter providers.
+The source importer now preserves existing equipment, verifies matching
+identity/binding/physics, adds pinned source armour and emits only absent
+identities into the small fragment. Two focused Python tests PASS3.246s;
+fmt/whitespace PASS. Regenerating merged native inputs before full PG run.
+Do not push until ALL44crates pass together under the owner correction.
+
+# Owner validation rule: full reverse dependencies before next push
+
+Mainbbb3e06d0 is being merged. Source conflicts are resolved; preserving
+main NX5 cosmetics and51grant mappings, native quest dialogues/source voices,
+daily world gates, all existing lane mechanics and both native loot bridges.
+Two pre-merge source edits were recovered from the named stash; generated
+outputs are recomputed, never replaced with old snapshots. Regeneration is
+compiling merged constructors before full nextest.
+
+The owner now requires every touched crate and its normal reverse dependents,
+including PG, before any push. Main expands the set to44crates; see
+reverse-dependency-validation.json. Run without fail-fast, collect ALL failures,
+group/fix together and rerun full set before ONE push. Ignore the old automatic
+15-minute push reminder during this run per explicit owner correction.
+
+Known focused PG84.828575874s proves the declared stage0 is absent from the
+admission copy. Keep that test; fix it with the other full-run root causes.
+20of23active entries qualified; Winterlight,Colours,Wrath remain under active
+implementation. Do not end with only a status message.
+
 # Queen item admission and21focused Python tests PASS
 
 All3722prior native Item profiles remain byte-identical. Added21profiles:

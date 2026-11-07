@@ -127,6 +127,7 @@ mod monk;
 pub(crate) mod quest;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
+mod tibiadrome;
 mod viola_book;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;

@@ -287,10 +287,11 @@ pub fn load() -> Result<Vec<Callback>, String> {
         true,
     )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
-    if callbacks.len() >= MAX_CALLBACKS {
+    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including Rotten Blood altar".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
+    callbacks.push(super::schrodinger_island::callback());
     let keys: BTreeSet<_> = callbacks.iter().map(|c| &c.key).collect();
     if keys.len() != callbacks.len() {
         return Err("duplicate callback across registries".into());

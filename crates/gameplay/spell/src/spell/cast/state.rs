@@ -312,6 +312,14 @@ impl PlayerSpellState {
     /// creates it, before its first command and before any vitals snapshot is sent. It is the
     /// actor's initial state, so the `ACTOR_VITALS` revision is unchanged. A health that would be
     /// zero changes nothing: a saved actor is alive, and the actor keeps its maxima.
+    /// Manual combat.md:280: restore pre-entry pools under a new published vitals revision.
+    pub fn after_drome_exit(&self, health: u32, mana: u32) -> Option<Self> {
+        let mut next = self.clone();
+        next.restore_saved_vitals(health, mana);
+        next.drome_practice = false;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
     pub fn restore_saved_vitals(&mut self, health: u32, mana: u32) {
         let health = health.min(self.facts.max_health);
         if health == 0 {

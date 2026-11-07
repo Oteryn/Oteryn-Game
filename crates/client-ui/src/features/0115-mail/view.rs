@@ -1,7 +1,7 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
     format!(
-        "Mail\r\n{}\r\n{}",
+        "Writing and mail\r\n{}\r\n{}",
         panel.summary,
         if panel.pending {
             "Waiting for the server"

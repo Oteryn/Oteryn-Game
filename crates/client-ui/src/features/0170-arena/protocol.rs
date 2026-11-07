@@ -1,4 +1,5 @@
 use super::ArenaPanel;
+pub use oteryn_client_runtime::arena::{DromeAction, DromeResult as DromeReply};
 use oteryn_client_runtime::{
     arena::{self, ArenaAction},
     raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
@@ -28,7 +29,7 @@ pub fn request(panel: &mut ArenaPanel, intent: Intent) -> Option<FeatureCommand>
             (arena::COMMAND_TYPE_ARENA_MATCH, payload)
         }
     };
-    panel.pending = Some(kind);
+    panel.pending = Some(intent);
     panel.feedback = None;
     Some(FeatureCommand {
         capability: arena::CAPABILITY_ARENA_V1,
@@ -49,13 +50,15 @@ pub fn apply_result(panel: &mut ArenaPanel, result: &GatedCommandResult) -> bool
         return false;
     }
     let valid = match kind {
-        arena::COMMAND_TYPE_ARENA_CATALOGUE => arena::decode_catalogue(&result.payload)
+        Intent::Catalogue => arena::decode_catalogue(&result.payload)
             .map(|rows| panel.challenges = rows)
             .is_ok(),
-        arena::COMMAND_TYPE_ARENA_MATCH => arena::decode_match_result(&result.payload)
+        Intent::Action(ArenaAction::Drome(_)) => DromeReply::decode(&result.payload)
+            .map(|reply| panel.drome = Some(reply))
+            .is_ok(),
+        Intent::Action(_) => arena::decode_match_result(&result.payload)
             .map(|reply| panel.result = Some(reply))
             .is_ok(),
-        _ => false,
     };
     panel.feedback = if valid {
         None

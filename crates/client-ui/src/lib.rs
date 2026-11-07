@@ -20,6 +20,8 @@ pub mod guild_war;
 pub mod guildhall;
 #[path = "features/0049-house/mod.rs"]
 pub mod house;
+#[path = "features/0207-house-furniture-wrap/mod.rs"]
+pub mod house_furniture_wrap;
 #[path = "features/0059-house-move-out/mod.rs"]
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]
@@ -43,6 +45,8 @@ pub mod training;
 
 #[path = "features/0014-container-tree/mod.rs"]
 pub mod container_tree;
+#[path = "features/0082-creature-push/mod.rs"]
+pub mod creature_push;
 #[path = "features/0012-item-equip-drop/mod.rs"]
 pub mod equipment;
 #[path = "features/0004-item-view-move/mod.rs"]
@@ -55,6 +59,8 @@ pub mod item_use;
 
 #[path = "features/0288-ambient-sound/mod.rs"]
 pub mod ambient_sound;
+#[path = "features/0350-item-effects/mod.rs"]
+pub mod item_effects;
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
@@ -105,6 +111,8 @@ pub mod daily_boost;
 pub mod depot;
 #[path = "features/0153-depot-search/mod.rs"]
 pub mod depot_search;
+#[path = "features/0104-forge-creature/mod.rs"]
+pub mod forge_creature;
 /// Live server highscores panel.
 #[path = "features/0009-highscores/mod.rs"]
 pub mod highscores;
@@ -219,6 +227,11 @@ pub mod server_save_countdown;
 #[path = "features/0072-task-board/mod.rs"]
 pub mod task_board;
 
+#[path = "features/0051-staff/mod.rs"]
+pub mod staff;
+#[path = "features/0330-staff-tools/mod.rs"]
+pub mod staff_tools;
+
 /// Server-owned stash browsing and conversion controls.
 #[path = "features/0062-stash/mod.rs"]
 pub mod stash;
@@ -259,3 +272,24 @@ pub mod chat_private_channel;
 /// Negotiated public chat rooms, their live lines, and room controls.
 #[path = "features/0259-chat-public-channels/mod.rs"]
 pub mod chat_public_channels;
+
+#[path = "features/0278-battle-instinct-status/mod.rs"]
+pub mod battle_instinct_status;
+#[path = "features/0276-condition-status/mod.rs"]
+pub mod condition_status;
+#[path = "features/0382-death-protection/mod.rs"]
+pub mod death_protection;
+#[path = "features/0384-mechanics-status/mod.rs"]
+pub mod mechanics_status;
+#[path = "features/0280-party-effects/mod.rs"]
+pub mod party_effects;
+#[path = "features/0383-party-member-effects/mod.rs"]
+pub mod party_member_effects;
+#[path = "features/0381-potion-durations/mod.rs"]
+pub mod potion_durations;
+#[path = "features/0277-rest-status/mod.rs"]
+pub mod rest_status;
+#[path = "features/0370-skill-display/mod.rs"]
+pub mod skill_display;
+#[path = "features/0279-skill-progress/mod.rs"]
+pub mod skill_progress;

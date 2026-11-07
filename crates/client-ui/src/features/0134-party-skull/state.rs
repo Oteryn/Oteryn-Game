@@ -11,6 +11,7 @@ pub struct Panel {
     pub fields: [String; 0],
     pub feedback: String,
     pub summary: String,
+    pub icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
 }
 impl Panel {
     pub fn begin(&mut self, kind: u32) -> bool {

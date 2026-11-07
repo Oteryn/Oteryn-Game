@@ -1469,21 +1469,18 @@ fn boss_points_query_is_served_through_the_client_handler() -> TestResult {
     })
 }
 
-/// Migration 0929's restated guard on the cluster-global job group, as the migration runs it.
+/// Migration 0996's restated guard on the cluster-global job group, as the migration runs it.
 fn job_role_guard() -> &'static str {
-    const MIGRATION: &str = include_str!("../../migrations/0929_highscore_boss_points.sql");
+    const MIGRATION: &str = include_str!("../../migrations/0996_account_deletion_finalization.sql");
+    const END: &str = "END $highscore_role_guard$;";
     let start = MIGRATION
-        .find("DO $$")
-        .expect("0929 opens with its role guard");
-    let end = start
-        + MIGRATION[start..]
-            .find("END $$;")
-            .expect("the guard block ends")
-        + 7;
+        .find("DO $highscore_role_guard$")
+        .expect("0996 restates its role guard");
+    let end = start + MIGRATION[start..].find(END).expect("the guard block ends") + END.len();
     &MIGRATION[start..end]
 }
 
-/// Runs `statements` and then the 0929 guard in one transaction. With `refusal` the guard must
+/// Runs `statements` and then the 0996 guard in one transaction. With `refusal` the guard must
 /// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
 /// group exist only in this transaction, so no other database on the shared cluster ever sees
 /// them; after the rollback the provisioned group passes the guard again.
@@ -1658,8 +1655,8 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
     run("hsjobprivileges", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_shdepend"));
-        // Provisioned: exactly the table-level grants of 0129 in this database, none on a
-        // shared object, and the group owns nothing.
+        // Provisioned: the table-level grants of 0129/0929 plus exactly the
+        // closure predicate of 0996, no shared grants, and the group owns nothing.
         let grants: Vec<(String, String)> = sqlx::query_as(
             "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \
              FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a \
@@ -1685,6 +1682,20 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
             grants,
             expected.map(|(relation, privileges)| (relation.to_owned(), privileges.to_owned()))
         );
+        let functions: Vec<(String, String)> = sqlx::query_as(
+            "SELECT p.oid::regprocedure::text, a.privilege_type \
+             FROM pg_proc p CROSS JOIN LATERAL aclexplode(p.proacl) a \
+             WHERE a.grantee = 'oteryn_game_highscore_job'::regrole AND NOT a.is_grantable \
+             ORDER BY p.oid::regprocedure::text COLLATE \"C\"",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        let expected_functions = [("game_account_closure_detached(uuid)", "EXECUTE")];
+        assert_eq!(
+            functions,
+            expected_functions
+                .map(|(function, privilege)| (function.to_owned(), privilege.to_owned()))
+        );
         let dependencies: (i64, i64) = sqlx::query_as(
             "SELECT count(*) FILTER (WHERE deptype = 'a' AND classid = 'pg_class'::regclass \
                                      AND objsubid = 0), count(*) \
@@ -1694,7 +1705,9 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
         )
         .fetch_one(&h.pool)
         .await?;
-        assert_eq!(dependencies, (11, 11));
+        let table_count = i64::try_from(expected.len())?;
+        let function_count = i64::try_from(expected_functions.len())?;
+        assert_eq!(dependencies, (table_count, table_count + function_count));
         h.pool.execute(guard).await?;
         let refusal = Some("holds a privilege outside the highscore grants");
         let job = "oteryn_game_highscore_job";
@@ -1720,6 +1733,9 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
             ],
             vec![function, format!("ALTER FUNCTION {probe}() OWNER TO {job}")],
             vec![format!("GRANT UPDATE ON game_character_roots TO {job}")],
+            vec![format!(
+                "GRANT EXECUTE ON FUNCTION game_account_closure_detached(UUID) TO {job} WITH GRANT OPTION"
+            )],
             vec![format!(
                 "GRANT TRUNCATE ON game_world_highscore_rows TO {job}"
             )],

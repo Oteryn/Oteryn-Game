@@ -9,6 +9,7 @@ import re
 import subprocess
 import tempfile
 import textwrap
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,13 +40,45 @@ class QualificationPlacementTests(unittest.TestCase):
         job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
         return job.split(f"      - name: {name}\n", 1)[1].split("\n      - name: ", 1)[0]
 
+    @staticmethod
+    def route_script(text):
+        block = text.split("      - name: Resolve Molehill routing\n", 1)[1].split("        run: |\n", 1)[1]
+        lines = []
+        for line in block.splitlines(keepends=True):
+            if line.strip() and not line.startswith("          "):
+                break
+            lines.append(line)
+        return textwrap.dedent("".join(lines)).strip() + "\n"
+
+    def test_molehill_routing_follows_heartbeat(self):
+        # on/split always route to Molehill; auto/auto-split only while the PC heartbeat
+        # (OTERYN_MOLEHILL_SEEN, Unix seconds) is at most ten minutes old; anything else is hosted.
+        harness = (ROOT / ".github/workflows/pr-postgres-harness.yml").read_text()
+        script = self.route_script(self.pr)
+        self.assertEqual(script, self.route_script(harness))
+        now = int(time.time())
+        fresh, stale, future = str(now - 60), str(now - 700), str(now + 3600)
+        cases = (
+            ("on", "", "on"), ("on", stale, "on"), ("split", "", "split"),
+            ("auto", fresh, "on"), ("auto", stale, "off"), ("auto", "", "off"),
+            ("auto", "junk", "off"), ("auto", future, "off"),
+            ("auto-split", fresh, "split"), ("auto-split", stale, "off"),
+            ("off", fresh, "off"), ("", fresh, "off"),
+        )
+        for mode, seen, expected in cases:
+            with self.subTest(mode=mode, seen=seen), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "output"
+                env = dict(os.environ, MODE=mode, SEEN=seen, MAX_AGE="600", GITHUB_OUTPUT=str(output))
+                subprocess.run(["bash", "-c", script], env=env, check=True, capture_output=True)
+                self.assertEqual(output.read_text(), f"mode={expected}\n")
+
     def test_rust_fast_runner_toggle_and_hosted_cache(self):
         job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
         # Pin the complete expression: unset/off defaults to hosted, only the
         # Clippy leg uses the PC, and only same-repository, non-dependabot PRs
         # may execute on the owner's PC.
         expected = (
-            "${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && matrix.kind == 'clippy' && "
+            "${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && "
             "github.event.pull_request.head.repo.full_name == github.repository && "
             "github.actor != 'dependabot[bot]') && "
             "fromJSON('[\"self-hosted\",\"linux\",\"x64\",\"oteryn-molehill\"]') "

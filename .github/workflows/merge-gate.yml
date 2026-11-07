@@ -625,18 +625,55 @@ jobs:
           path: ${{ runner.temp }}/jobresult
           key: ${{ steps.jr_key.outputs.key }}
 
+  # OTERYN_SELF_HOSTED_RUST: on = Clippy on Molehill, auto = Molehill only while its heartbeat
+  # (repository variable OTERYN_MOLEHILL_SEEN, Unix seconds, written every 5 minutes by the PC
+  # while a runner listener is alive) is at most 10 minutes old, anything else = hosted.
+  # It needs nothing, so it finishes while scope and lanes still run.
+  runner_route:
+    name: Merge gate / Molehill runner routing
+    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions: {}
+    outputs:
+      rust_runner_mode: ${{ steps.route.outputs.mode }}
+    steps:
+      - name: Resolve Molehill routing
+        id: route
+        env:
+          MODE: ${{ vars.OTERYN_SELF_HOSTED_RUST }}
+          SEEN: ${{ vars.OTERYN_MOLEHILL_SEEN }}
+          MAX_AGE: '600'
+        run: |
+          set -euo pipefail
+          now="$(date +%s)"
+          alive=false
+          if [[ "$SEEN" =~ ^[0-9]{9,11}$ ]] && (( now - SEEN >= -120 && now - SEEN <= MAX_AGE )); then
+            alive=true
+          fi
+          case "$MODE" in
+            on) mode=on ;;
+            split) mode=split ;;
+            auto) if [[ "$alive" == true ]]; then mode=on; else mode=off; fi ;;
+            auto-split) if [[ "$alive" == true ]]; then mode=split; else mode=off; fi ;;
+            *) mode=off ;;
+          esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Molehill routing: variable '${MODE:-unset}', heartbeat alive=$alive -> $mode"
+
   # One job id, four parallel matrix legs: strict Clippy on one leg, and the unit tests of
   # the same changed crates hash-partitioned over three nextest shards. `needs.rust_fast.result`
   # is success only when every leg succeeds, so validate and game-gate keep their semantics.
   rust_fast:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
-    needs: [scope, lanes]
+    needs: [scope, lanes, runner_route]
     if: needs.lanes.outputs.rust == 'true'
-    # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); turn it
-    # off or delete it when the PC is offline. The three test shards always run hosted from the
+    # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); auto
+    # does so only while the Molehill heartbeat is fresh (resolved in runner_route), so an
+    # offline PC falls back to hosted. The three test shards always run hosted from the
     # rust.yml cache, so one PR no longer builds the same test binaries three times on the PC.
     # Forks and dependabot stay hosted because PR code would run on the owner's machine.
-    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read

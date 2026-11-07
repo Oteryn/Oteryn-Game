@@ -233,6 +233,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return GuildReply::Unavailable;
         };
+        let ready = {
+            let runtime = self.runtime.lock().await;
+            super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+                && self
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .is_some()
+        };
+        let content = content.with_runtime_consumers(ready);
         let Ok(mut port) = NativeCharmProgressionPort::bind(
             self.root,
             self.character,

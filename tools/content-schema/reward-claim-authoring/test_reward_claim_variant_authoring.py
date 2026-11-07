@@ -69,7 +69,11 @@ class CanonicalVariantTests(unittest.TestCase):
                     self.assertEqual(p['reward'][charge['reward_field']][charge['reward_index']]['count'], 1)
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
-                    self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                    if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
+                        self.assertFalse(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        self.assertTrue(d['native_contents']['placements'])
+                    else:
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
 

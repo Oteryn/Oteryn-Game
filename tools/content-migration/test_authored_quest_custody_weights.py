@@ -48,6 +48,7 @@ class CustodyWeights(unittest.TestCase):
         before = copy.deepcopy(self.icicle)
         row = custody.qualify(ROOT, self.icicle, self.raw, terminal_expiry=True)
         self.assertEqual(self.icicle, before)
+        self.assertEqual(row['semantics']['charges'], custody.grizzly.source.NA)
         temporal = row['semantics']['temporal']['value']
         self.assertEqual(temporal['duration'], custody.grizzly.source.K(600000))
         self.assertEqual(temporal['decay_target'], custody.grizzly.source.NA)

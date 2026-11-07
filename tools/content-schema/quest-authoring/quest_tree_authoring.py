@@ -61,6 +61,13 @@ def claim_catalogue(root):
             binding.get('canonical_item', {}).get('key') in full_charge_items
             for binding in claim.get('source_variant', {}).get('item_bindings', [])
             if binding.get('canonical_item'))
+        historical = {
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }.get(claim['identity']['key'])
+        if historical is not None:
+            claim['_source_hold_categories'] = historical
     return claims
 
 
@@ -121,6 +128,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
             if claim.get('definition_profile') == 'authored_variant_v1':
                 issues.append({'code': 'claim_native_lowering_missing', 'source_key': ref['key']})
                 categories = {hold['category'] for hold in claim['data_holds']}
+                categories.update(claim.get('_source_hold_categories', []))
                 if claim.get('_source_baseline_item_hold'):
                     categories.add('item')
                 for category in sorted(categories):

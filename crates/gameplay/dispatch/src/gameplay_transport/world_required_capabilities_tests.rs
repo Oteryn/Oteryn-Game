@@ -501,18 +501,18 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
         assert!(!session.selected().contains(WEATHER));
         assert!(session.selected().contains(6));
     }
-    // The default sets are the bound sets: the shipped data loads in this build.
+    // Shipped weather remains offered; native gameplay is absent, so names are withheld.
     assert_eq!(
         offered_for_scope_with(true, None, true),
-        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
+        without_entity_names(super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES)
     );
     assert_eq!(
         offered_for_scope(true, None),
-        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
+        without_entity_names(super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES)
     );
     assert_eq!(
         offered_for_scope_with(false, None, true),
-        PRODUCTION_OFFERED_CAPABILITIES
+        without_entity_names(PRODUCTION_OFFERED_CAPABILITIES)
     );
 }
 
@@ -663,4 +663,36 @@ fn every_transfer_into_a_channel_scope_stays_refused() {
         crate::house_scope::exit_into_channel(),
         Err(crate::house_scope::HouseHandoffError::ExitNotAdmitted)
     ));
+}
+
+#[test]
+fn missing_native_gameplay_withholds_entity_names_and_required_v2_refuses_boot() {
+    for bundle in [false, true] {
+        for weather in [false, true] {
+            let offered = offered_for_scope_with(bundle, None, weather);
+            assert!(offered.iter().all(|cap| cap.id != 286));
+            assert!(std::ptr::eq(
+                offered,
+                offered_for_scope_with(bundle, None, weather)
+            ));
+            let declared: &[u32] = if bundle { &[11, 18, 30, 286] } else { &[286] };
+            assert_eq!(
+                BoundRequiredCapabilities::for_channel_boot(
+                    declared,
+                    channel_scope(1, 2),
+                    7,
+                    "policy-7",
+                    offered,
+                )
+                .unwrap_err(),
+                BootCapabilityError::Unoffered(286),
+            );
+            assert_eq!(
+                SelectedCapabilities::select(offered, &[6, 286])
+                    .unwrap()
+                    .as_slice(),
+                &[6]
+            );
+        }
+    }
 }

@@ -9,6 +9,7 @@ fn result(disposition: party::PartyDisposition) -> party::PartyResult {
             name: "Leader".into(),
             leader: true,
             expires_at: 0,
+            party_spell_remaining_ms: None,
         }],
         invitations: Vec::new(),
     }
@@ -64,6 +65,7 @@ fn request_uses_party_codec_and_requires_selection() -> Result<(), &'static str>
         name: "Member".into(),
         leader: false,
         expires_at: 0,
+        party_spell_remaining_ms: None,
     });
     let mut panel = PartyPanel {
         selected: true,
@@ -193,6 +195,7 @@ fn leadership_controls_follow_own_character_and_authoritative_role_changes()
         name: "Member".into(),
         leader: false,
         expires_at: 0,
+        party_spell_remaining_ms: None,
     });
     let mut panel = PartyPanel {
         selected: true,
