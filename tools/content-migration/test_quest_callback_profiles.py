@@ -35,7 +35,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.document['records'] = [r for r in self.document['records']
                                     if r['production_definition']['production_key'] not in
                                     (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
-                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388')]
+                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388', 'oteryn:item.tibia.i2973')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
 
@@ -60,7 +60,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.admit()
         rows = {r['production_definition']['production_key']: r
                 for r in json.loads(self.generated[PROFILE])['records']}
-        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019'):
+        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019', 'oteryn:item.tibia.i2973'):
             row = rows[key]
             self.assertEqual(row['admission'], {'materializable': True,
                              'stack_class': 'NonStackable',
@@ -69,6 +69,8 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(row['production_binding']['target']['key'], key)
             self.assertEqual(row['semantics']['physical']['value']['pickupable'],
                              {'state': 'KNOWN', 'value': True})
+        self.assertEqual(rows['oteryn:item.tibia.i2973']['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 100})
 
     def test_demon_helmet_chest_reuses_canonical_equipment_without_new_owner(self):
         self.admit()
@@ -92,6 +94,27 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.assertEqual(rows[key]['admission'], {'materializable': True,
                          'stack_class': 'NonStackable',
                          'legal_destinations': ['CharacterInventory', 'Ground']})
+
+    def test_every_ready_reward_leaf_has_its_exact_native_item_profile(self):
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        expected = {
+            item['item']['key']
+            for path in sorted((ROOT / 'content/interactions/reward_claims').glob('reward-claim*.json'))
+            for row in json.loads(path.read_bytes())['records']
+            if row['definition'].get('readiness') == 'ready'
+            and row['definition'].get('quest', {}).get('key') != 'canary:quest/dawnport_quest'
+            for placement in row['definition']['placements']
+            for item in placement['reward'].get('items', [])
+        }
+        self.assertEqual(sorted(expected - rows.keys()), [])
+        for key in expected:
+            self.assertTrue(rows[key]['admission']['materializable'], key)
+            self.assertEqual(rows[key]['production_binding']['target']['key'], key)
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+        self.assertEqual(rows['oteryn:item.tibia.i5952']['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 120})
 
     def test_rotten_blood_rust_callback_admits_the_canonical_bloody_tear_once(self):
         # Rotten Blood's fixed callback is authored in Rust, so the JSON callback
@@ -171,7 +194,9 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        self.assertEqual(len(expected), 130)
+        # Complete charged/fluid/key/text recipes add thirty identities to the
+        # original 130-Item closure, including the fixed Holy Icon entitlement.
+        self.assertEqual(len(expected), 160)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

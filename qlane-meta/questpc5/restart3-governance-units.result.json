@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/agents/tests",
+  "exit": 0,
+  "duration_seconds": 0.573
+}

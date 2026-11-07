@@ -9,6 +9,7 @@ Original Lua, DAT, XML, OTBM and client assets are never copied into the output.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -397,6 +398,54 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
     return facts
 
 
+def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
+    """Current named drops and the owner-approved native30 corpse projection.
+
+    Crystal201189f8 the_corruptor.lua:68-77 supplies chance/count fields; current
+    Wiki names resolve its four stale Item IDs (QUESTPC newhaven proposal).
+    Reference tables and their source48 corpse admission remain unchanged.
+    """
+    key = 'oteryn:loot.creature.the_corruptor'
+    table = copy.deepcopy(tables[key])
+    expected = {3359, 8820, 3375, 3074, 3723, 3338, 7618, 7620, 3031}
+    if ({entry['item']['key'] for entry in table['entries']}
+            != {f'oteryn:item.tibia.i{item}' for item in expected}
+            or len(table['entries']) != len(expected)):
+        raise ValueError('Corruptor source loot changed; reconcile its native projection')
+    for entry in table['entries']:
+        item = {7618: 266, 7620: 268, 8820: 7991}.get(
+            int(entry['item']['key'].removeprefix('oteryn:item.tibia.i')))
+        if item is not None:
+            entry['item'] = facts[f'oteryn:item.tibia.i{item}']['item']
+    # The original importer omitted unresolved source44773. Its named refined
+    # bow is current51760; absent source min/max uses the established1..1 default.
+    table['entries'].append({'item': facts['oteryn:item.tibia.i51760']['item'],
+                             'min_count': 1, 'max_count': 1, 'probability_ppm': 47600})
+    tables[key] = table
+    _, profiles = read(item_definitions / 'spell-native-profiles.json')
+    # Include every guaranteed-vocation item and each durable decay stage, even
+    # when the ordinary table cannot roll that item.
+    selected = (3359, 3285, 3375, 3571, 51760, 3074, 7991, 3066, 50195, 51119, 3338,
+                52113, 52114, 52115, 52116)
+    for item in selected:
+        fact = facts[f'oteryn:item.tibia.i{item}']
+        ref = fact['item']
+        exact = {'family': ref['family'], 'production_key': ref['key'],
+                 'revision_ref': ref['revision']}
+        rows = [row for row in profiles['records'] if row['production_definition'] == exact]
+        if len(rows) != 1 or rows[0]['admission']['materializable'] is not True:
+            raise ValueError(f'Corruptor requires one admitted exact native Item: {item}')
+        container = rows[0]['semantics'].get('container', {})
+        capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
+        fact['materializable'] = True
+        fact['container_capacity'] = capacity['value'] if capacity.get('state') == 'KNOWN' else None
+        if item in (52113, 52114, 52115) and fact['container_capacity'] != 30:
+            raise ValueError('Corruptor corpse requires the explicit native30 projection')
+        if item == 52116 and fact['container_capacity'] is not None:
+            raise ValueError('Corruptor final decay stage is not a container')
+    return [facts[f'oteryn:item.tibia.i{item}']['item'] for item in selected]
+
+
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
                 loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
@@ -425,6 +474,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if ref['family'] != 'Item' or fact is None or fact['item'] != ref:
             raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
         named[ref['key']] = fact
+
+    if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
+           for record in creatures['records']):
+        for ref in corruptor_loot_projection(tables, facts, item_definitions):
+            name(ref)
 
     for record in creatures['records']:
         target = record['profile']['target']

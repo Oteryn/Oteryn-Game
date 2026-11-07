@@ -229,6 +229,36 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
+    // Preserve source captures and their counts; only the production catalogue
+    // and its executable bindings are filtered by the owner's target scope.
+    let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    lowered.catalogue = QuestStateCatalogue::new(
+        content_revision,
+        lowered
+            .catalogue
+            .tracks
+            .values()
+            .filter(|track| super::in_runtime_scope(&track.quest))
+            .cloned()
+            .collect(),
+        lowered
+            .catalogue
+            .transitions
+            .values()
+            .filter(|transition| super::in_runtime_scope(&transition.quest))
+            .cloned()
+            .collect(),
+    )
+    .map_err(QuestLoadError::Catalogue)?;
+    lowered.catalogue.npc_legacy = npc_legacy;
+    lowered
+        .source_tracks
+        .retain(|key, _| lowered.catalogue.track(key).is_some());
+    lowered
+        .requested_by
+        .retain(|key, _| lowered.catalogue.transition(key).is_some());
     Ok(lowered)
 }
 
@@ -362,6 +392,54 @@ mod tests {
         load_embedded_quest_state("content-1").expect("embedded quest state loads")
     }
 
+    #[test]
+    fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
+        let loaded =
+            load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;
+        assert!(
+            loaded
+                .catalogue()
+                .definition_hash("oteryn:quest.dawnport_quest")
+                .is_none()
+        );
+        assert!(
+            loaded
+                .catalogue()
+                .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
+                .is_none()
+        );
+        let callbacks = crate::quest::world_callbacks::load()?;
+        assert!(
+            callbacks
+                .iter()
+                .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
+        );
+        let mut expected = std::collections::BTreeSet::new();
+        for document in [
+            crate::quest::world_callbacks::EMBEDDED,
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+        ] {
+            let source: serde_json::Value =
+                serde_json::from_str(document).map_err(|error| error.to_string())?;
+            for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                }
+            }
+        }
+        expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        expected.insert(crate::quest::schrodinger_island::callback().key);
+        assert_eq!(
+            callbacks
+                .into_iter()
+                .map(|callback| callback.key)
+                .collect::<std::collections::BTreeSet<_>>(),
+            expected
+        );
+        Ok(())
+    }
+
     fn document() -> serde_json::Value {
         serde_json::from_str(EMBEDDED).expect("embedded quest state is JSON")
     }
@@ -372,7 +450,9 @@ mod tests {
 
     #[test]
     fn every_lowered_record_loads_under_an_oteryn_key() {
-        let lowered = embedded();
+        // Source transcription remains complete, including owner-excluded
+        // donor quests. The owner_scope test separately checks runtime admission.
+        let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let document = document();
         let quests = document["quests"].as_array().expect("quests");
         let (mut tracks, mut transitions) = (0, 0);
@@ -404,42 +484,53 @@ mod tests {
 
     #[test]
     fn a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings() {
-        let lowered = embedded();
+        // The source capture retains its exact 0..=1 bounds. The executable
+        // catalogue additionally accepts the native NPC storage domain while
+        // preserving the legacy absent-track default.
+        let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let track = lowered.catalogue().track(QUEST_LOG).expect("track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        let native = embedded();
+        let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
-            lowered.source_track(QUEST_LOG),
-            Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")
+            (track.quest.as_str(), track.initial, track.min, track.max),
+            (QUEST, 0, -1, i64::from(i32::MAX))
         );
-        let transition = lowered
-            .catalogue()
-            .transition(QUEST_LOG_NPC_1)
-            .expect("transition");
-        assert_eq!(
-            transition.effects,
-            vec![QuestEffect {
-                track: QUEST_LOG.into(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(1),
-            }]
-        );
-        assert!(!transition.completes);
-        assert_eq!(
-            lowered.requested_by(QUEST_LOG_NPC_1),
-            Some(&QuestRequestedBy {
-                npc: "canary:npc/tereban_functions".into(),
-                keywords: vec![QuestKeyword::Word("yes".into())],
-                topics: vec![1],
-            })
-        );
-        let changes = lowered
-            .catalogue()
-            .evaluate(transition, &BTreeMap::new(), 0)
-            .expect("first write");
-        assert_eq!((changes[0].before, changes[0].after), (0, 1));
+        for lowered in [&lowered, &native] {
+            assert_eq!(
+                lowered.source_track(QUEST_LOG),
+                Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")
+            );
+            let transition = lowered
+                .catalogue()
+                .transition(QUEST_LOG_NPC_1)
+                .expect("transition");
+            assert_eq!(
+                transition.effects,
+                vec![QuestEffect {
+                    track: QUEST_LOG.into(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(1),
+                }]
+            );
+            assert!(!transition.completes);
+            assert_eq!(
+                lowered.requested_by(QUEST_LOG_NPC_1),
+                Some(&QuestRequestedBy {
+                    npc: "canary:npc/tereban_functions".into(),
+                    keywords: vec![QuestKeyword::Word("yes".into())],
+                    topics: vec![1],
+                })
+            );
+            let changes = lowered
+                .catalogue()
+                .evaluate(transition, &BTreeMap::new(), 0)
+                .expect("first write");
+            assert_eq!((changes[0].before, changes[0].after), (0, 1));
+        }
     }
 
     #[test]

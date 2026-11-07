@@ -1,0 +1,104 @@
+{
+  "task_id": "questpc5",
+  "base": "28e4313e1",
+  "counts": {
+    "BLOCKED": 30,
+    "QUALIFIED": 3
+  },
+  "product_hashes": {
+    "apps/game-server/migrations/1004_fathers_burden_items.sql": "98556abbafa6b961a51029cfe2cee8923322006eec6bb2c737d99b9e5a1a29f9",
+    "content/content.lock.json": "34b663eebc4d16899cd8fd151f66cafd5406046d5020efbac1911098bd0be0d1",
+    "content/items/definitions/spell-native-profiles.json": "9332e23548fb551f64ba661394b86f902804f3218f5e93d87b80d6bd5c66f9a6",
+    "content/items/index.json": "0a591ff9f37a8855244781f6687b08f9a9de81639eba92e1cb0b5067b97129af",
+    "content/manifest.json": "c2f9812fc0cc78c323d02876df4f5777d6073897f524481499c175d4b03ca542",
+    "content/spells.manifest.json": "62105d7125424bb5de779f68b771dca878ef8d3a6fe1c1ad60e40b7346f27608",
+    "crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs": "db33c17352de67d1aa8d0bf48eaa2c9f9859651a8100987a68f2296c98742c34",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs": "a9302029878ebbe2267654705911e25c0d0382abcc098e3ca16fb5c4df61621c",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs": "e9baddef5e7c02a64f46f845e3b253c222a8502dc79120cfeac9eb78c9dd7f86",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc5_reward_paths.rs": "6ba15d016366770484869c88ad5efb8360aa6c661319c6574a6e0bad0bf2487f",
+    "crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs": "1b8f7148697a6c2b7472bad655c1d0230d13d80014f6f2d4e75ee1422d591846",
+    "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs": "90b01a7ce50bd0151227fab6793eba9f13553669733750f39215b0d84f81a2a7",
+    "tools/content-migration/questpc5_father_item_profiles.py": "3f3d07ea4b0a4e4e8fa97f4b4d37f5acd9abfd1e9bb79fd966e34ce1abb2bde0",
+    "tools/content-migration/register_spell_families.py": "5511d134013ce70593a6630cd78ca1e29a4246a60aebf8a2fc6b25f3e4f83110",
+    "tools/content-migration/test_questpc5_father_item_profiles.py": "8f6f022d27b29560f59bc3555f220b9737b30668d9dd8bbce766558a5cd95c75"
+  },
+  "checks": {
+    "server-clippy": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 125.70082064899998
+    },
+    "content-native-units": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-content",
+        "--lib",
+        "content::native_gameplay::tests::",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 274.3893263210002
+    },
+    "server-content": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 130.67706330300007
+    },
+    "world-project": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 96.13671572800013
+    },
+    "fmt": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 8.810481953999897
+    }
+  }
+}

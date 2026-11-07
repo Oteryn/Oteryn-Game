@@ -429,6 +429,7 @@ fn scenario_in_world(
                 reversible: false,
                 passages: vec![],
                 teleport: Some(position(destination)),
+                remote_teleport: None,
                 storage: if refused {
                     vec![Storage {
                         track: "fixture:unknown-track".into(),
@@ -437,6 +438,7 @@ fn scenario_in_world(
                         set: 1,
                         set_if: None,
                         preserve: false,
+                        read_only: false,
                     }]
                 } else {
                     vec![]

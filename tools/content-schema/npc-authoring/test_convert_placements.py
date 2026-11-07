@@ -40,6 +40,17 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_l2_reward_and_programme_npcs_have_global_deployment_cells(self):
+        expected = {
+            'oteryn:npc.jorge': {'x': 32204, 'y': 32292, 'floor': 6},
+            'oteryn:npc.tereban': {'x': 33170, 'y': 31807, 'floor': 6},
+        }
+        actual = [r['declaration'] for r in self.records
+                  if r['declaration']['npc'] in expected]
+        self.assertEqual(len(actual), 2)
+        self.assertEqual({r['npc']: r['cell'] for r in actual}, expected)
+        self.assertTrue(all(r['provenance'] for r in actual))
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
@@ -56,6 +67,13 @@ class ConvertPlacementsTest(unittest.TestCase):
         for key, cell in expected.items():
             self.assertEqual(actual[key]['cell'], cell)
             self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
+
+    def test_viola_uses_the_newhaven_magic_shop_source_cell(self):
+        viola = next(r['declaration'] for r in self.records
+                     if r['declaration']['npc'] == 'oteryn:npc.viola')
+        self.assertEqual(viola['cell'], {'x': 32571, 'y': 32507, 'floor': 7})
+        self.assertEqual(viola['direction'], 'south')
+        self.assertTrue(any(row['origin'] == 'crystal' for row in viola['provenance']))
 
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]

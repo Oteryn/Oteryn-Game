@@ -69,9 +69,12 @@ pub struct Storage {
     /// Replace only this exact locked value; other values remain unchanged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub set_if: Option<i64>,
-    /// A read-only gate: validate the locked value without resetting later progress.
+    /// Preserve the track value within a receipt-bearing transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
+    /// Validate quest progress without writing tracks, state, receipts or revisions.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub read_only: bool,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -103,6 +106,14 @@ pub struct MonkReward {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct RemoteTeleport {
+    pub position: Position,
+    pub appearance: u16,
+    pub destination: Position,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Callback {
     pub key: String,
     pub quest: String,
@@ -113,6 +124,9 @@ pub struct Callback {
     pub reversible: bool,
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
+    /// Select an alternate destination from the current composed remote tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_teleport: Option<RemoteTeleport>,
     pub storage: Vec<Storage>,
     /// Checked against the progression owner in the same fenced quest transaction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -138,6 +152,14 @@ pub struct Callback {
     pub sources: Vec<String>,
 }
 
+impl Callback {
+    /// A pure quest-state predicate, with no Quest mutation or receipt.
+    #[must_use]
+    pub fn is_read_only(&self) -> bool {
+        !self.storage.is_empty() && self.storage.iter().all(|storage| storage.read_only)
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
@@ -154,6 +176,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
     ))?);
+    callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
     }
@@ -186,6 +209,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.remote_teleport.as_ref().is_some_and(|remote| {
+                !valid_pos(remote.position)
+                    || !valid_pos(remote.destination)
+                    || remote.appearance == 0
+                    || callback.trigger != Trigger::StepIn
+                    || !callback.is_read_only()
+                    || callback.teleport.is_none()
+            })
             || callback.failure_teleport.is_some_and(|p| {
                 !valid_pos(p) || callback.trigger != Trigger::StepIn || !callback.return_on_failure
             })
@@ -193,6 +224,20 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
+            || (callback.storage.iter().any(|storage| storage.read_only)
+                && (!callback.is_read_only()
+                    || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
+                    || callback.teleport.is_none()
+                    || callback.lever.is_some()
+                    || !callback.passages.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || !callback.effects.is_empty()
+                    || callback.storage.iter().any(|storage| storage.preserve)))
             || callback.passages.len() > MAX_EFFECTS
             || callback.storage.len() > MAX_EFFECTS
             || callback
@@ -253,7 +298,28 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .is_some_and(|rule| !valid_native_callback(callback, rule))
             || callback
                 .lever
-                .is_some_and(|p| p[0] == p[1] || callback.trigger != Trigger::Use)
+                .is_some_and(|p| {
+                    p[0] == p[1]
+                        || (callback.trigger != Trigger::Use
+                            && (!callback.reversible
+                                || !callback.storage.is_empty()
+                                || callback.teleport.is_some()
+                                || !callback.offerings.is_empty()
+                                || callback.item_on_target.is_some()))
+                })
+            // Departure restores Channel-local map facts only. It must never
+            // introduce another durable transition for the same movement cause.
+            || (callback.trigger == Trigger::StepOut
+                && ((callback.lever.is_some() && !callback.reversible)
+                    || callback.teleport.is_some()
+                    || !callback.storage.is_empty()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.minimum_level.is_some()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.return_on_failure))
             || callback.passages.iter().any(|p| !valid_pos(p.position))
             || callback.offerings.iter().any(|o| {
                 !valid_pos(o.position)
@@ -267,6 +333,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || s.set_if.is_some_and(|value| {
                         !(s.minimum..=s.maximum).contains(&value)
                             || s.preserve
+                            || s.read_only
                             || callback.native_rule.is_some()
                     })
             })
@@ -291,7 +358,7 @@ fn extend_callbacks(
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
             if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
-                if callback.native_rule.is_none() && !storage.preserve {
+                if callback.native_rule.is_none() && !storage.preserve && !storage.read_only {
                     track.max = track.max.max(storage.set).max(storage.maximum);
                 }
             } else {
@@ -306,13 +373,18 @@ fn extend_callbacks(
                     quest: callback.quest.clone(),
                     initial: -1,
                     min: -1,
-                    max: if storage.preserve {
+                    max: if storage.preserve || storage.read_only {
                         storage.maximum
                     } else {
                         storage.set.max(storage.maximum)
                     },
                 });
             }
+        }
+        // Pure gates must not acquire a generic transition: even ADD(0)
+        // creates a Character revision, quest state and receipt.
+        if callback.is_read_only() {
+            continue;
         }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
@@ -351,6 +423,69 @@ mod tests {
     use super::*;
 
     #[test]
+    fn remote_teleport_is_a_bounded_read_only_step() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json")).map_err(|e| e.to_string())?;
+        let mut callback = source["callbacks"][0].clone();
+        callback["remote_teleport"] = serde_json::json!({
+            "position": {"x":32156,"y":31125,"floor":-10}, "appearance":2772,
+            "destination": {"x":32157,"y":31125,"floor":-11}
+        });
+        let document =
+            |callback| serde_json::json!({"schema":1,"callbacks":[callback]}).to_string();
+        assert!(parse(&document(callback.clone())).is_ok());
+        for case in 0..5 {
+            let mut invalid = callback.clone();
+            match case {
+                0 => invalid["remote_teleport"]["appearance"] = 0.into(),
+                1 => invalid["remote_teleport"]["position"]["floor"] = (-16).into(),
+                2 => invalid["remote_teleport"]["destination"]["floor"] = 1.into(),
+                3 => invalid["trigger"] = "use".into(),
+                _ => invalid["storage"][0]["read_only"] = false.into(),
+            }
+            assert!(parse(&document(invalid)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        let callbacks = parse(&serde_json::json!({"schema": 1, "callbacks": [held["callbacks"][1].clone(), held["callbacks"][3].clone()]}).to_string())?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        for callback in callbacks {
+            assert!(
+                catalogue.transition(&callback.key).is_none(),
+                "read-only USE acquired a write transition"
+            );
+            assert!(catalogue.track(&callback.storage[0].track).is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_world_callbacks_reject_mixed_mutations() -> Result<(), String> {
+        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
+        for case in 0..5 {
+            let mut callback = held["callbacks"][1].clone();
+            match case {
+                0 => callback["experience"] = 1.into(),
+                1 => callback["storage"][0]["preserve"] = true.into(),
+                2 => callback["trigger"] = "step_out".into(),
+                3 => callback["teleport"] = serde_json::Value::Null,
+                _ => callback["effects"] = serde_json::json!({"say":"Source speech."}),
+            }
+            assert!(
+                parse(&serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string())
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
     -> Result<(), String> {
         let callback = serde_json::json!({
@@ -387,6 +522,9 @@ mod tests {
         ] {
             let mut invalid = callback.clone();
             invalid["storage"][0][field] = value;
+            if field == "read_only" {
+                invalid["teleport"] = serde_json::json!({"x":1,"y":2,"floor":-7});
+            }
             assert!(parse(&encoded(invalid)).is_err());
         }
         Ok(())

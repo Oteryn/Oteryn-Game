@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet",
+  "exit": 0,
+  "duration_seconds": 150.559
+}

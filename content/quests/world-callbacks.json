@@ -885,6 +885,130 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33605,
+          "y": 31468,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32456,
+        "y": 32291,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33601,
+          "y": 31468,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32456,
+        "y": 32291,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32456,
+          "y": 32290,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33614,
+        "y": 31494,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32203,
+          "y": 32303,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33614,
+        "y": 31494,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/behemoth",
       "quest": "oteryn:quest.behemoth_quest",
       "trigger": "use",
@@ -3585,14 +3709,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -3632,14 +3756,14 @@
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         },
         {
           "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
           "minimum": 1,
           "maximum": 1,
           "set": 1,
-          "preserve": true
+          "read_only": true
         }
       ],
       "offerings": [],
@@ -6640,6 +6764,146 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/order-of-the-stag-boat-return",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33874,
+          "y": 32250,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32395,
+        "y": 32511,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:44-46"
+      ],
+      "success_message": "You row back to the shore of Bounac."
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32393,
+          "y": 32513,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33875,
+        "y": 32249,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 3,
+          "maximum": 13,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This small fishing boat is tied up firmly. You have no reason to set sail.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:27-39",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-82"
+      ],
+      "success_message": "After a rough journey, you reach the shore of the Isle of Ada."
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-crypt-exit",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32402,
+          "y": 32472,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32402,
+        "y": 32473,
+        "floor": -4
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua:157-157"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/order-of-the-stag-mark-wall",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33834,
+          "y": 32139,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33833,
+        "y": 32138,
+        "floor": -4
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "minimum": 11,
+          "maximum": 13,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The wall does not move. There must be a way to open it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134-145",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:50-82"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/outlaw-camp-door",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "trigger": "use",
@@ -6773,6 +7037,35 @@
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/pirates-tail-cheesy-exit",
+      "quest": "oteryn:quest.a_pirates_tail",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33925,
+          "y": 31355,
+          "floor": -7
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33799,
+        "y": 31321,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:117"
+      ],
+      "success_message": "You set sail and leave. But on your way you back you hit a reef and the boat springs a leak. You only just reach the coasts."
     },
     {
       "key": "oteryn:quest-callback/postman-letterbag-delivery",
@@ -8391,6 +8684,78 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:6",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:7",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:42"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-in",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25010,
+        "action": null,
+        "appearance": null
+      },
+      "lever": [
+        431,
+        430
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-stairs-out",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": null,
+        "unique": 25010,
+        "action": null,
+        "appearance": null
+      },
+      "lever": [
+        431,
+        430
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-35"
       ]
     },
     {

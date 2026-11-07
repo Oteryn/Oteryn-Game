@@ -1,0 +1,122 @@
+{
+  "batch": "remote-item travel predicate prerequisite",
+  "base_commit": "be670b5c145bd14882926e917299b4bd35c480b3",
+  "scope": "Generic mechanism only; complete quest routes remain active work.",
+  "postgres_version": "18.6",
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "file": "data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+    "lines": "18-23",
+    "git_blob_sha1": "5fd560ef6dbdf27bcb58f0f14447750fe90dc062",
+    "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua#L18",
+    "crosscheck": "https://raw.githubusercontent.com/opentibiabr/canary/main/data-otservbr-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+    "crosscheck_git_blob_sha1": "5fd560ef6dbdf27bcb58f0f14447750fe90dc062"
+  },
+  "red": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc5_l5_remote_hoist_predicate_is_admitted -- --nocapture",
+    "exit_code": 101,
+    "evidence": [
+      "POSTGRES_CASE_STARTED remote_hoist 3.451998372s",
+      "Error: \"unknown field `remote_teleport`, expected one of `key`, `quest`, `trigger`, `selector`, `lever`, `reversible`, `passages`, `teleport`, `storage`, `minimum_level`, `experience`, `monk_reward`, `offerings`, `item_on_target`, `return_on_failure`, `failure_message`, `success_message`, `native_rule`, `sources`\"",
+      "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2536 filtered out; finished in 3.46s"
+    ]
+  },
+  "green": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc5_l5_remote_hoist -- --nocapture",
+    "exit_code": 0,
+    "cases_in_order": [
+      "schema admission",
+      "lever 2772: lower floor",
+      "lever transformed from 2772 to 2773: upper floor",
+      "absent lever: upper floor",
+      "missing chest instruction: refuse without writes"
+    ],
+    "evidence": [
+      "POSTGRES_CASE_STARTED remote_hoist 3.971660106s",
+      "POSTGRES_CASE_COMPLETED remote_hoist 5.89442396s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=None allowed=true departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=46.473947553s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=None allowed=true departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=45.291489632s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=None allowed=true departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=46.772537157s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=Some(1) allowed=false departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=51.645160838s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2536 filtered out; finished in 191.28s"
+    ]
+  },
+  "inherited_recovery": {
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib questpc5_l5_hoist_cancelled_read_reconciles_before_next_command -- --nocapture",
+    "exit_code": 0,
+    "evidence": [
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=None allowed=true departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=47.842708214s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=Some(0) allowed=false departed=false tracks_unchanged receipts_unchanged revision_unchanged duration=48.047275994s",
+      "QUEST_CALLBACK_LITERAL_USE_POSTGRES_CASE_COMPLETED oteryn:quest-callback/formogar-hoist-3059 stage=Some(1) missing=None allowed=true departed=true tracks_unchanged receipts_unchanged revision_unchanged duration=43.897917161s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2535 filtered out; finished in 142.00s"
+    ]
+  },
+  "checks": {
+    "cargo_check": {
+      "command": "cargo check --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch",
+      "exit_code": 0,
+      "terminal": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 35s"
+      ]
+    },
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings",
+      "exit_code": 0,
+      "terminal": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 52s"
+      ]
+    },
+    "unit": {
+      "command": "cargo test --locked -p oteryn-gameplay-quests --lib remote_teleport_is_a_bounded_read_only_step",
+      "exit_code": 0,
+      "terminal": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 261 filtered out; finished in 0.00s"
+      ]
+    },
+    "python": {
+      "command": "python -m unittest discover -s tools/content-schema/quest-authoring -p test_quest_batch4.py",
+      "exit_code": 0,
+      "terminal": [
+        "----------------------------------------------------------------------",
+        "Ran 17 tests in 0.512s",
+        "",
+        "OK"
+      ]
+    },
+    "authoring": {
+      "command": "python tools/content-schema/quest-authoring/quest_batch4.py --available --check",
+      "exit_code": 0,
+      "terminal": [
+        "quest_batch4: 21 source packets validated; 0 generated files changed"
+      ]
+    },
+    "fmt": {
+      "command": "cargo fmt --all --check",
+      "exit_code": 0
+    },
+    "mounted_fmt": {
+      "command": "rustfmt --edition 2024 --config skip_children=true --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/literal_uses.rs",
+      "exit_code": 0
+    }
+  },
+  "log_sha256": {
+    "remote-red": "dc41400d26b4a820d321df6c8115cb789be264bd07b111a532ef0aa8046ce641",
+    "remote-green-final": "357102da4d72125a4912d18d6f01cd499f412de3d1760782c51f192cc4b4ccdc",
+    "recovery-red-online": "95e0b2957d98ce6ce1551ced738d8208c8c882d5dd14565f824bb1ac1b99aeab",
+    "remote-schema-red": "14c66435bee754dd0c733d9851b50d8b82b62d5aad299f40c1b09ae19a47c5e2",
+    "remote-schema-green-final": "e32b72b906e90d246f3cb62f523118206d1e4e2b7667b93295b609f50c47b2e1",
+    "engine-check": "a87e80ee109cff2246bf8400cd395707684c13e2faa1fedfc4b97a27b3f11562",
+    "engine-clippy": "d27caf7539617e638a7c6305b2ff5bb6155f8de508fecdbe523db5cfa28345be",
+    "engine-unit": "533ef060a7243db77bfa87c3add52340a898f2a5136dbb18c61fe5e6bb30fc37",
+    "engine-fmt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "engine-mounted-fmt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "engine-authoring-check": "1c9bfd6344727313032b6a8ba6dc3f2ecf00b39eddf6946a02e77dc72dd0b56e"
+  },
+  "review": [
+    "Read all nine product-file diffs and CODEX-CHECKLIST.md.",
+    "Read-only STEP only; bounds, mixed mutations and unknown fields rejected.",
+    "Uses the composed tile under the runtime owner and the existing fenced read, movement, cancellation and receipt owners.",
+    "No SQL, migrations, protocol, dependencies, charge grants or generated content changed.",
+    "All three Callback constructors updated; no tests weakened."
+  ]
+}

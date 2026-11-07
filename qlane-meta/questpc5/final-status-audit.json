@@ -1,0 +1,10 @@
+{
+  "task_id": "questpc5",
+  "titles": 33,
+  "QUALIFIED": 3,
+  "BLOCKED": 30,
+  "UNFINISHED": 0,
+  "resolved_blocker_refs": 139,
+  "positive_source_cohorts": 3,
+  "partial_father_pg_seconds": 69.439690489
+}

@@ -284,6 +284,7 @@ pub(super) fn plan(
     catalogue: &NpcRuleCatalog,
     input: &NpcRuleInput<'_>,
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
+    storage_only: bool,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
     if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
@@ -315,6 +316,14 @@ pub(super) fn plan(
             }
             let mut eligible = true;
             for guard in &rule.guards {
+                if storage_only
+                    && !matches!(
+                        guard,
+                        NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 if !state.guard(guard, input)? {
                     eligible = false;
                     break;
@@ -324,6 +333,17 @@ pub(super) fn plan(
                 continue;
             }
             for effect in &rule.effects {
+                if storage_only
+                    && !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetNowPlus { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                    )
+                {
+                    return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
+                }
                 let concrete = match effect {
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                         resolve_native(effect, &rule.key, resolutions)?
@@ -341,6 +361,9 @@ pub(super) fn plan(
             }
             selected_rule_keys.push(rule.key.clone());
             reply.extend_from_slice(&rule.reply);
+            if reply.len() > 32 {
+                return Err(NpcRuleError::LimitExceeded);
+            }
             if !rule.inventory_failure_reply.is_empty() {
                 inventory_failure_reply.clone_from(&rule.inventory_failure_reply);
             }

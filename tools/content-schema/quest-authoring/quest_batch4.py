@@ -61,7 +61,7 @@ PACKET_FIELDS = {
 CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
-    'offerings', 'item_on_target', 'return_on_failure', 'failure_teleport', 'failure_message',
+    'offerings', 'item_on_target', 'return_on_failure', 'failure_teleport', 'remote_teleport', 'failure_message',
     'success_message', 'native_rule', 'effects', 'sources',
 }
 CALLBACK_REQUIRED = {
@@ -319,6 +319,13 @@ def validate_callback(callback, directory):
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
     require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    if callback['trigger'] == 'step_out':
+        require((callback.get('lever') is None or callback['reversible']) and not callback.get('teleport')
+                and not callback['storage'] and not callback['offerings']
+                and not callback.get('item_on_target') and not callback.get('minimum_level')
+                and not callback.get('experience') and not callback.get('monk_reward')
+                and not callback.get('native_rule') and not callback['return_on_failure'],
+                key + ': departure must only restore map facts')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -333,7 +340,10 @@ def validate_callback(callback, directory):
     lever = callback.get('lever')
     if lever is not None:
         require(isinstance(lever, list) and len(lever) == 2 and lever[0] != lever[1]
-                and all(integer(value, 0, 65535) for value in lever) and callback['trigger'] == 'use',
+                and all(integer(value, 0, 65535) for value in lever)
+                and (callback['trigger'] == 'use' or callback['reversible']
+                     and not callback['storage'] and not callback.get('teleport')
+                     and not callback['offerings'] and not callback.get('item_on_target')),
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
@@ -341,13 +351,22 @@ def validate_callback(callback, directory):
         position(callback['failure_teleport'], key + ': failure_teleport')
         require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
                 key + ': failure landing requires returning step')
+    remote = callback.get('remote_teleport')
+    if remote is not None:
+        fields(remote, {'position', 'appearance', 'destination'},
+               {'position', 'appearance', 'destination'}, key + ': remote teleport')
+        position(remote['position'], key + ': remote position')
+        position(remote['destination'], key + ': remote destination')
+        require(integer(remote['appearance'], 1, 65535)
+                and callback['trigger'] == 'step_in' and callback.get('teleport') is not None,
+                key + ': remote teleport requires a readonly step')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'set_if'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
@@ -356,8 +375,23 @@ def validate_callback(callback, directory):
         if storage.get('set_if') is not None:
             require(integer(storage['set_if'], -(2 ** 63), 2 ** 63 - 1)
                     and storage['minimum'] <= storage['set_if'] <= storage['maximum']
-                    and not storage.get('preserve', False) and callback.get('native_rule') is None,
+                    and not storage.get('preserve', False) and not storage.get('read_only', False)
+                    and callback.get('native_rule') is None,
                     key + ': invalid conditional set')
+        require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+    if remote is not None:
+        require(callback['storage'] and all(s.get('read_only') is True for s in callback['storage']),
+                key + ': remote teleport requires a readonly step')
+    if any(entry.get('read_only', False) for entry in callback['storage']):
+        require(all(entry.get('read_only', False) and not entry.get('preserve', False)
+                    for entry in callback['storage'])
+                and callback['trigger'] in ('use', 'step_in') and callback.get('teleport') is not None
+                and not callback.get('lever') and not callback['passages']
+                and not callback['offerings'] and not callback.get('item_on_target')
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None
+                and not callback.get('effects'),
+                key + ': invalid read-only callback')
     seen = set()
     for passage in callback['passages']:
         fields(passage, {'position', 'appearance'}, {'position', 'appearance', 'replacement'}, key + ': passage')

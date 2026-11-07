@@ -36,11 +36,9 @@ def compile_callbacks(existing, previous, shards):
             # ANSWER R-CALLBACK-SCHEMA=B: do not silently lower a held field
             # into a different operation accepted by the current contract.
             # https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355
-            # The shared writer now supports explicit recovery landings and exact
-            # conditional storage writes; unsupported speech stays closed.
-            declined = {'success_message', 'success_say'} & row.keys()
+            declined = {'success_say'} & row.keys()
             storage_extensions = any(
-                set(state) - {'track', 'minimum', 'maximum', 'set', 'preserve', 'set_if'}
+                set(state) - {'track', 'minimum', 'maximum', 'set', 'read_only', 'preserve', 'set_if'}
                 for state in row.get('storage', [])
             )
             failure = row.get('failure_teleport')
@@ -60,7 +58,8 @@ def compile_callbacks(existing, previous, shards):
                     or type(state.get('minimum')) is not int
                     or type(state.get('maximum')) is not int
                     or not state['minimum'] <= state['set_if'] <= state['maximum']
-                    or state.get('preserve', False) or row.get('native_rule') is not None
+                    or state.get('preserve', False) or state.get('read_only', False)
+                    or row.get('native_rule') is not None
                 ) for state in row.get('storage', [])
             )
             if declined or storage_extensions or conditional_extensions:
@@ -74,7 +73,7 @@ def compile_callbacks(existing, previous, shards):
             callbacks.append(row)
         sources.append({'path': path, 'keys': sorted(source_keys)})
     # Runtime adds one existing Rotten Blood altar. Keep its reserved slot.
-    if len(callbacks) >= 256:
+    if len(callbacks) >= 512:
         raise ValueError('callback budget including existing Rotten Blood altar')
     return {'schema': 1, 'callbacks': sorted(callbacks, key=lambda row: row['key'])}, {'schema': SCHEMA, 'sources': sources}
 
@@ -90,6 +89,20 @@ def outputs(root):
     # sibling is outside this closed input set.
     paths += sorted((root / 'tools/content-schema/quest-authoring/batch3_c/world').glob('*.json'))
     shards = {path.relative_to(root).as_posix(): read(path) for path in paths}
+    # QUESTPC: exact literal USEs and genuine read-only Stag guards now have
+    # production owners. Historical held records remain source evidence.
+    choices = {
+        'content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json': None,
+        'content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json': {'oteryn:quest-callback/pirates-tail-cheesy-exit'},
+        'tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json': None,
+    }
+    for name, keys in choices.items():
+        callbacks = [row for row in read(root / name)['callbacks']
+                     if keys is None or row['key'] in keys]
+        expected = 1 if keys else 4
+        if len(callbacks) != expected:
+            raise ValueError(f'QUESTPC callback source changed: {name}')
+        shards[name] = {'schema': 1, 'callbacks': callbacks}
     world, index = compile_callbacks(read(root / WORLD), index, shards)
     encode = lambda value: json.dumps(value, ensure_ascii=False, indent=2) + '\n'
     return {WORLD: encode(world), INDEX: encode(index)}

@@ -1,0 +1,36 @@
+{
+  "retrieved_utc": "2026-11-06",
+  "evidence_class": "TIBIAWIKI_STRUCTURED",
+  "facts": [
+    {
+      "title": "Overhunting World Change",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Overhunting_World_Change&oldid=404828",
+      "facts": {
+        "captured_wolves_required": 50,
+        "killed_starving_wolves_equivalent": 500,
+        "activation": "next server save"
+      },
+      "crosscheck": "https://tibia.pl/quest_pokaz/Overhunting_Quest",
+      "scope": "Reference facts only; no implemented world-state or NPC transaction is implied."
+    },
+    {
+      "title": "Lava Wall (Criatura)",
+      "url": "https://www.tibiawiki.com.br/wiki/Lava_Wall_%28Criatura%29",
+      "facts": {
+        "health": "unknown",
+        "experience": "unknown",
+        "physical_damage_multiplier_percent": 0
+      },
+      "scope": "The ordinary Lava Wall page is scenery, not this encounter creature. No numeric health may be inferred from its wall appearance."
+    },
+    {
+      "title": "Dragon Bride",
+      "url": "https://www.tibiawiki.com.br/wiki/Dragon_Bride",
+      "facts": {
+        "health": "immortal",
+        "experience": 0
+      },
+      "scope": "No finite combat health is inferred."
+    }
+  ]
+}

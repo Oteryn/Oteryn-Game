@@ -1,19 +1,11 @@
-//! Test-only source qualification for declarative NPC branches in quest batch three.
-//!
-//! Mounted only with `cfg(test)`: it validates captured programs and builds pure
-//! plans for source tests. No production NPC API, adapter or writer executes them.
-//! Coordinator ANSWER forbids changing those owners in this batch:
-//! https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671
-//! Crystal `201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20`
-//! defines keyword matching; individual programs retain their source references.
+//! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
+//! Crystal source references and source-order branches are retained in each program.
 
 mod evaluate;
 mod keyword;
 mod validate;
 
-// Directory-scanned source data only. No NPC owner applies these plans yet;
-// see PR2843#issuecomment-6589900671. Each quest can add its own file without
-// editing a shared include list or depending on other quest commits.
+// Directory-scanned source programs retain their exact source custody.
 include!(concat!(env!("OUT_DIR"), "/npc_rule_programs.rs"));
 
 use std::collections::BTreeMap;
@@ -22,10 +14,9 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// Preserve the existing QuestState bound; an oversized donor transaction is
-/// refused whole, never split. Coordinator ANSWER, point 5:
-/// https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205
-pub const MAX_NPC_TRACK_CHANGES: usize = 8;
+/// Use the shared QuestState bound; oversized donor transactions are refused
+/// whole, never split into separate character revisions.
+pub const MAX_NPC_TRACK_CHANGES: usize = super::QUESTSTATE0_RL_02;
 pub const MAX_NPC_EFFECTS: usize = 128;
 const SOURCE_PIN: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:";
 
@@ -164,8 +155,8 @@ pub enum NpcRuleGuard {
     },
 }
 
-/// Effects retain source order. Storage/topic effects have already been evaluated
-/// in the plan; the owner executes the other typed effects after durable admission.
+/// Effects retain source order. Storage/topic effects are evaluated in the plan;
+/// the production storage owner refuses effects requiring another native owner.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NpcRuleEffect {
@@ -374,8 +365,77 @@ impl NpcRuleCatalog {
         Ok(catalogue)
     }
 
+    /// Preserve the source's absent value while accepting the complete native
+    /// track range shared with other quest owners. Source bytes keep their digest.
+    pub fn with_native_bounds(
+        mut self,
+        native: &super::QuestStateCatalogue,
+    ) -> Result<Self, NpcRuleError> {
+        for program in &mut self.programs {
+            for track in &mut program.document.tracks {
+                let definition = native
+                    .track(&track.key)
+                    .ok_or_else(|| NpcRuleError::MissingTrack(track.key.clone()))?;
+                if definition.quest != track.quest
+                    || (definition.initial != track.initial
+                        && !(definition.initial == 0
+                            && track.initial == -1
+                            && native
+                                .npc_legacy
+                                .get(&track.quest)
+                                .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
+                    || definition.min > track.min
+                    || definition.max < track.max
+                {
+                    return Err(NpcRuleError::Invalid(format!(
+                        "native NPC track refinement: {}",
+                        track.key
+                    )));
+                }
+                track.min = definition.min;
+                track.max = definition.max;
+            }
+        }
+        Ok(self)
+    }
+
     pub fn load_embedded() -> Result<Self, NpcRuleError> {
-        Self::from_json_documents(NPC_RULE_PROGRAMS)
+        Self::embedded().cloned()
+    }
+
+    /// Parse and validate immutable source content once before owner transactions.
+    pub fn embedded() -> Result<&'static Self, NpcRuleError> {
+        static SOURCE: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
+            std::sync::OnceLock::new();
+        SOURCE
+            .get_or_init(|| Self::from_json_documents(NPC_RULE_PROGRAMS))
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+
+    /// A..M programs with read-compatible legacy definitions, plus the already active Stag.
+    pub fn runtime() -> Result<&'static Self, NpcRuleError> {
+        static RUNTIME: std::sync::OnceLock<Result<NpcRuleCatalog, NpcRuleError>> =
+            std::sync::OnceLock::new();
+        RUNTIME
+            .get_or_init(|| {
+                let mut catalogue = Self::load_embedded()?;
+                catalogue.programs.retain(|p| {
+                    matches!(
+                        p.document.quest.as_str(),
+                        "oteryn:quest.a_father_s_burden_quest"
+                            | "oteryn:quest.a_pirates_tail"
+                            | "oteryn:quest.bigfoot_s_burden_quest"
+                            | "oteryn:quest.hero_of_rathleton_quest"
+                            | "oteryn:quest.hot_cuisine_quest"
+                            | "oteryn:quest.in_service_of_yalahar_quest"
+                            | "oteryn:quest.the_order_of_the_stag_quest"
+                    )
+                });
+                Ok(catalogue)
+            })
+            .as_ref()
+            .map_err(Clone::clone)
     }
 
     #[must_use]
@@ -390,20 +450,201 @@ impl NpcRuleCatalog {
             .find(|program| program.document.quest == quest)
     }
 
-    pub fn plan(&self, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+    #[cfg(test)]
+    pub(super) fn plan(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.plan_with_native(input, &BTreeMap::new())
+    }
+
+    /// Storage-only owner: every reached guard must be storage-owned, including
+    /// guards of skipped branches. Unowned effects refuse the entire operation.
+    pub fn plan_storage(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        evaluate::plan(self, input, &BTreeMap::new(), true)
+    }
+
+    /// Tereban's fixed material hand-ins have an inventory and quest-XP owner.
+    /// Other NPCs and effect families retain their storage-only boundary.
+    pub fn plan_father_items(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        if input.npc != "oteryn:npc.tereban" {
+            return Err(NpcRuleError::Invalid("not Tereban".into()));
+        }
+        if self
+            .program("oteryn:quest.a_father_s_burden_quest")
+            .is_none_or(|program| {
+                program
+                    .document
+                    .rules
+                    .iter()
+                    .flat_map(|rule| &rule.guards)
+                    .any(|guard| {
+                        !matches!(
+                            guard,
+                            NpcRuleGuard::Storage { .. } | NpcRuleGuard::Item { .. }
+                        )
+                    })
+            })
+        {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "Tereban guard".into(),
+            ));
+        }
+        let plan = evaluate::plan(self, input, &BTreeMap::new(), false)?;
+        if plan.as_ref().is_some_and(|plan| {
+            plan.quest != "oteryn:quest.a_father_s_burden_quest"
+                || plan.effects.iter().any(|effect| {
+                    !matches!(
+                        effect,
+                        NpcRuleEffect::Set { .. }
+                            | NpcRuleEffect::Add { .. }
+                            | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::TakeItem { .. }
+                            | NpcRuleEffect::GiveItem { .. }
+                            | NpcRuleEffect::Experience { .. }
+                    )
+                })
+        }) {
+            return Err(NpcRuleError::MissingNativeResolution(
+                "Tereban effect".into(),
+            ));
+        }
+        Ok(plan)
     }
 
     /// Native effects require a bounded result from the encounter/RNG owner. The
     /// key is the full selected rule key. Missing or malformed results refuse the
     /// whole plan; no unresolved obligation reaches the durable writer.
-    pub fn plan_with_native(
+    #[cfg(test)]
+    fn plan_with_native(
         &self,
         input: &NpcRuleInput<'_>,
         resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        evaluate::plan(self, input, resolutions)
+        evaluate::plan(self, input, resolutions, false)
     }
+}
+
+/// Refine only original source-qualified tracks; preserve every wider native bound.
+pub(super) fn extend(
+    catalogue: super::QuestStateCatalogue,
+    source_tracks: &BTreeMap<String, String>,
+) -> Result<super::QuestStateCatalogue, String> {
+    let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    let mut legacy = catalogue.npc_legacy.clone();
+    for program in source.programs() {
+        let quest = &program.document.quest;
+        if quest != "oteryn:quest.the_order_of_the_stag_quest"
+            && let Some(hash) = catalogue.definition_hash(quest)
+        {
+            legacy.insert(
+                quest.clone(),
+                (
+                    hash,
+                    catalogue
+                        .tracks
+                        .values()
+                        .filter(|track| &track.quest == quest)
+                        .map(|track| (track.key.clone(), track.initial))
+                        .collect(),
+                ),
+            );
+        }
+    }
+    let mut tracks = catalogue.tracks.clone();
+    let mut transitions = catalogue.transitions.clone();
+    for program in source.programs() {
+        for track in &program.document.tracks {
+            if let Some(native) = tracks.get_mut(&track.key) {
+                let original = track
+                    .key
+                    .strip_prefix("oteryn:")
+                    .map(|tail| format!("canary:{tail}"));
+                if native.quest != track.quest
+                    || (native.initial != track.initial
+                        && !(native.initial == 0
+                            && source_tracks.get(&track.key) == original.as_ref()))
+                {
+                    return Err(format!("NPC source track conflict: {}", track.key));
+                }
+                // Keep the old catalogue's absent value for every existing native
+                // consumer. Only source NPC planning uses its donor absent value.
+                native.min = native.min.min(track.min);
+                native.max = native.max.max(track.max);
+            } else {
+                tracks.insert(
+                    track.key.clone(),
+                    super::QuestTrack {
+                        key: track.key.clone(),
+                        quest: track.quest.clone(),
+                        initial: track.initial,
+                        min: track.min,
+                        max: track.max,
+                    },
+                );
+            }
+        }
+        // An unexecutable definition marker binds every guard, reply, effect and
+        // source reference into the existing quest definition hash.
+        let first = program
+            .document
+            .tracks
+            .first()
+            .ok_or("NPC program has no tracks")?;
+        let digest = program
+            .digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let key = format!("oteryn:quest-npc-pin/{digest}");
+        if transitions
+            .insert(
+                key.clone(),
+                super::QuestTransition {
+                    key,
+                    quest: program.document.quest.clone(),
+                    effects: vec![super::QuestEffect {
+                        track: first.key.clone(),
+                        from: super::QuestComparison::Any,
+                        effect: super::QuestEffectKind::Computed,
+                    }],
+                    completes: false,
+                    experience: None,
+                },
+            )
+            .is_some()
+        {
+            return Err("duplicate NPC source pin".into());
+        }
+    }
+    let mut active = super::QuestStateCatalogue::new(
+        catalogue.content_revision,
+        tracks.into_values().collect(),
+        transitions.into_values().collect(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    active.npc_legacy = legacy;
+    Ok(active)
+}
+
+/// Only an exact pre-activation definition can retain its old absent-track values.
+/// Existing rows, their values, pins and receipts are never rewritten.
+pub fn legacy_defaults<'a>(
+    catalogue: &'a super::QuestStateCatalogue,
+    quest: &str,
+    stored_hash: &[u8; 32],
+) -> Option<&'a BTreeMap<String, i64>> {
+    catalogue
+        .npc_legacy
+        .get(quest)
+        .filter(|(hash, _)| hash == stored_hash)
+        .map(|(_, defaults)| defaults)
 }
 
 #[cfg(test)]

@@ -666,6 +666,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 quantity,
                 key_number: None,
                 text: None,
+                fluid_subtype: None,
+                charges_remaining: None,
             });
         }
         let pin = format!(
@@ -688,6 +690,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: 1,
             contents,
             root_text: None,
+            root_fluid_subtype: None,
+            root_charges_remaining: None,
             backpack,
             content_revision: pin,
             ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
