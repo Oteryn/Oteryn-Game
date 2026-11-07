@@ -450,10 +450,12 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     };
     permit.check_channel(world_id, channel_id)?;
-    apply_owned_input(tx, input, transaction).await
+    apply_input_rows(tx, input, transaction).await
 }
 
-async fn apply_owned_input(
+/// Applies the row changes of one consumed input once the caller has proven
+/// its authority (spell lane channel check or the NPC item permit).
+async fn apply_input_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     input: &Input,
     transaction: &str,
@@ -571,11 +573,7 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        // The NPC permit owns carried inputs, never ground mutations.
-        if input.kind == "ground" {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        apply_owned_input(tx, &input, &transaction).await?;
+        apply_input_rows(tx, &input, &transaction).await?;
     }
     Ok(true)
 }

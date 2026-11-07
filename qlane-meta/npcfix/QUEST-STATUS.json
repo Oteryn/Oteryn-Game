@@ -9345,5 +9345,30 @@
       "freshness": "PASS Item/Mount equivalence215.438s, materialized tree0.230s, quest binding42.572s, Grizzly11.219s; prepush2-qnpcfx-final-validation-results.json",
       "completion_matrix": "PASS regenerated all373 matrix, byte-unchanged; prepush2-qnpcfx-completion-matrix.log"
     }
+  },
+  "fixture_pair_main_3032": {
+    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+    "predecessor_pushed": "98f67f0c7346c04c6292db1b7b4877295a5dc22e",
+    "shared_reuse": "Take Main quest_world_callback.rs exactly; remove lane apply_owned_input variant. Spell channel checks and fenced NPC carried-input ownership remain Main-owned.",
+    "known_reds": {
+      "five_shops": "Actual PG failure430.757s with all5 markers: duplicate ground move Refused(NotSupported), source98f67; fixture has no bundle map.",
+      "state_three": "Actual PG214.793s: Chalice and Restless Soul PASS; Tereban yes105 Rejected because fixture lacks active generation required by Main NPC executor."
+    },
+    "fixture_repairs": [
+      "Seed one ordinary20-slot carried backpack for Toffee; move each remaining duplicate through the real item-loop Container destination; prove same live quantity in that bag and unchanged money. Preserve all35 offer, wrong-price, exact quantity, receipt and replay assertions.",
+      "Activate the existing native generation only for Tereban. Reuse Main canonical mission-accept receipt, keep11-track/cardinality/value assertions, add bound durable replay and one-receipt assertions. No split write."
+    ],
+    "unit_collection": {
+      "superseded": "nextest10-crate run:631/5023 executed,629PASS,2SIGINT,4392notrun. Not a green result.",
+      "replacement": "cargo test --lib --bins --no-fail-fast for same10 crates, no filters, test-threads1; own PG separate and enabled. /tmp/npcfix-evidence/fixture-pair-current-unit-tests.log",
+      "status": "PENDING; queued behind workspace check. Native binary current-source own5PG cases scheduled afterward."
+    },
+    "generated": "Audit lists and completion matrix regenerated; native44 expected outputs recomputed/checked byte-current; world pin-check PASS (two independent builds). No content or authoring input changed; prior full central-tree/binding/world-metadata outputs remain byte-current.",
+    "check": "PASS cargo check --workspace --all-targets7m08s and cargo fmt --all --check; fixture-pair-main-check.log and fixture-pair-main-fmt-check.log",
+    "qualification": "No promotion:256QUALIFIED,30AUTHORED;7PENDING;27excluded/superseded/other-lane.",
+    "engine_requests": [
+      "Anna: retail Targuna continuation/destination admission alongside existing owner-selected tutorial landing; existing Main and qengine2 route checked, request sent. Other event/travel requests retained."
+    ],
+    "pending": "Full10-crate cargo-test unit replacement and actual current5PG cases pending under PREPUSH-2 cadence exception. Earlier Clippy interrupted for Main3032 merge, rerun pending."
   }
 }

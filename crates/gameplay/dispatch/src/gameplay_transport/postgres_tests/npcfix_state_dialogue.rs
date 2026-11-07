@@ -51,8 +51,20 @@ fn scenario(npc: &str) -> TestResult {
             prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
-            let deps = Dependencies::new()?;
+            let world = crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
+            let activated = (npc == "tereban").then(||
+                crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None));
+            let deps = if let Some((_, pin)) = activated.as_ref() {
+                let channel_pin = crate::foundation::ChannelContentPin::from_activation(
+                    world, pin.activation_sequence(), pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(), pin.frame_binding().digest(),
+                    pin.qualified_room().map_revision_digest(), (2, 0, 7));
+                Dependencies::with_content_and_capacity(channel_pin,
+                    crate::content::qualify_native_entry_room(world).map_err(debug)?,
+                    crate::spell::cast::v1_spell_book().map_err(debug)?, 2)?
+            } else { Dependencies::new()? };
             let mut owner = deps.owner(&h, &authority);
+            owner.active_generation = activated.as_ref().and_then(|(controller, _)| controller.active());
             let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
             let catalogue = if npc == "a_restless_soul" {
                 let story = loaded.catalogue().transition("oteryn:quest-transition/npcfix/restless-soul/story")
@@ -87,9 +99,22 @@ fn scenario(npc: &str) -> TestResult {
                 talk(&mut owner, &admitted, actor, 104, "mission").await?;
                 let lines = talk(&mut owner, &admitted, actor, 105, "yes").await?;
                 assert!(lines.iter().any(|line| line.contains("I am relieved")));
-                let count: i64 = sqlx::query_scalar("SELECT cardinality(track_keys)::bigint FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/npcfix/fathers-burden/accept'")
+                let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
+                let replay = h.root.reconcile_npc_program(&authority, fence.character_id,
+                    crate::durability::quest_state::npc_program::NpcProgramRequest {
+                        command: CommandRef::new(admitted.game_session_id, CommandId::new(105).map_err(debug)?),
+                        npc: key.clone(), trigger: oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger::Say,
+                        message: "yes".into(), topic: 1,
+                        transition_key: "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept".into(),
+                    }).await.map_err(debug)?.ok_or("canonical acceptance replay")?;
+                assert_eq!(replay.reply, lines, "replay keeps the canonical response");
+                let QuestTransitionOutcome::AlreadyCommitted(receipt) = replay.transition else { return Err("canonical replay receipt".into()); };
+                assert_eq!(receipt.changes.len(), 11);
+                let count: i64 = sqlx::query_scalar("SELECT cardinality(track_keys)::bigint FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept'")
                     .fetch_one(&h.pool).await?;
                 assert_eq!(count,11);
+                let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.a_father_s_burden_quest'").fetch_one(&h.pool).await?;
+                assert_eq!(receipts,1,"one atomic acceptance, including replay");
                 for track in ["status","quest_log","sinew","wood","cloth","silk","crystal","root","iron","scale"] {
                     assert_eq!(progress(&owner,&admitted,&authority,&format!("{FATHER}{track}")).await?,1);
                 }

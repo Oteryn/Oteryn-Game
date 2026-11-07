@@ -16,8 +16,8 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
-#[path = "npc_postage/duplicate_drop.rs"]
-mod duplicate_drop;
+#[path = "npc_postage/duplicate_store.rs"]
+mod duplicate_store;
 
 #[path = "npc_postage/exact_shops.rs"]
 mod exact_shops;
@@ -187,6 +187,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                     _ => None,
                 };
                 let mut inventory = vec![("oteryn:item.tibia.i3031", 100)];
+                if key == "toffee" { inventory.push(("oteryn:item.tibia.i2854", 1)); }
                 if let Some(item) = merchandise {
                     inventory.extend([(item, 1), (item, 1)]);
                 }
@@ -285,7 +286,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                             .fetch_one(&h.pool).await?;
                         assert_eq!(after, receipts + 1, "one durable receipt per exact contract offer");
                         if key == "toffee" {
-                            duplicate_drop::apply(&h, &owner, deps.actor,
+                            duplicate_store::apply(&h, &owner, deps.actor,
                                 command(ordinal + 2), item).await?;
                             assert_eq!(exact_shops::gold(&h).await?, gold, "moving the retained duplicate preserves money");
                         }
