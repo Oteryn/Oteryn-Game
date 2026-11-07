@@ -525,14 +525,7 @@ async fn consume_inputs(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
-        apply_input(
-            tx,
-            permit,
-            fence,
-            &input,
-            &transaction,
-        )
-        .await?;
+        apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
 }

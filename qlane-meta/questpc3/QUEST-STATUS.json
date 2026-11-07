@@ -5230,6 +5230,75 @@
           "remaining_red": "Immediate return USE hits the existing200ms world-action clock; now fixture advances2s before return"
         },
         "qualification": "Four selected-source BURNs, exact consumed-source replay, wrong target and fresh duplicate refusal, unearned/before-four portal refusal, both native destinations, unchanged appearance25160 and one USE revision per portal. No success progress seeded."
+      },
+      "first_dragon_life_20": {
+        "batch": "first_dragon_life_20",
+        "phase": "QUALIFIED_MECHANISM: three native source life-site visits PG18.6 GREEN73622ms; changed-crate unit suites still running/pending under PREPUSH-2 exception",
+        "entries": [
+          "AID25002 DesertTile once",
+          "AID25003 StoneSculptureTile once",
+          "AID25004 SuntowerTile once"
+        ],
+        "engine_expansion": false,
+        "red": {
+          "postgres": "18.6",
+          "duration_ms": 63798,
+          "completed": 0,
+          "counter": 0,
+          "expected_completed": 3,
+          "log": "/tmp/questpc3-first-dragon-life-red.log",
+          "sha256": "eed21bee9acb018043522ae14cd6cf2cae7a26281d70176b759cdb8d67f7cec8"
+        },
+        "decisions": [
+          "Source has no Questline prerequisite",
+          "Reuse canonical SecretsCounter initial0; source flags initial-1",
+          "Keep unbounded source counter within existing signed32-bit width; no artificial cap3",
+          "Source selectors are AIDs only; test coordinates are synthetic geometry, not live placement facts"
+        ],
+        "checks": {
+          "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
+          "workspace_all_targets": "PASS4m40s /tmp/questpc3-batch20-qualified-workspace-check.log",
+          "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
+          "postgres_green": "PENDING after generated files settle",
+          "remaining_changed_crate_units": "PENDING: client-assets, client-ui, game-server, gameplay-content, dispatch, durability, encounter-rules, foundation, npc, quests, social, world; world-change21PASS",
+          "generated": "Refreshed native43, Grizzly30/30, canonical blessing8 and all authoring families, binding evidence, all373 matrix and Item audit tags; duplicate checkCLEAR",
+          "fmt": "PASS /tmp/questpc3-batch20-qualified-fmt.log",
+          "pins": "PASS /tmp/questpc3-batch20-qualified-pins.log; unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
+          "pending": [
+            "post-merge First Dragon lava and three-life-site real PG cases",
+            "unit suites for oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-encounter-rules, oteryn-gameplay-foundation, oteryn-gameplay-npc, oteryn-gameplay-quests, oteryn-gameplay-social, oteryn-gameplay-world"
+          ],
+          "unit_suites": "10crate2353unit tests RUNNING, no failures reported yet; dispatch/server unit suites pending; world-change21PASS"
+        },
+        "post_merge_pg": {
+          "version": "18.6",
+          "lava": {
+            "result": "PASS",
+            "duration_ms": 76982,
+            "sacrifices": 4,
+            "portals": 2,
+            "receipts": 4,
+            "counter": 4
+          },
+          "life": {
+            "result": "fixture assertion failed before qualification",
+            "duration_ms": 66719,
+            "point": "source revision1 versus incorrect expected0; source appearance invariance plus exactly-one revision assertion now retained"
+          },
+          "log": "/tmp/questpc3-prepush2-first-dragon-pg.log"
+        },
+        "retry": "Focused life rerun compiler SIGKILL before execution; cgroup reports OOM kill. Next retry CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_TEST_DEBUG=0, preserving all assertions.",
+        "unit_retry": "Non-heavy10-crate build hit disk full before test execution; stale inactive caches removed, queued retry paused for mandatory publish gate; all12unit suites remain pending. Keep current PG cache1es7p8qb8nel8, not obsolete pre-merge1xzydsvq6pzum.",
+        "green": {
+          "postgres": "18.6",
+          "duration_ms": 73622,
+          "completed": 3,
+          "counter": 3,
+          "result": "PASS",
+          "log": "/tmp/questpc3-first-dragon-life-low-memory-pg.log",
+          "sha256": "3c3e6d9daa589a7e20ebe490de7debc907e85282ca62f0bd5665f51469fd7eee",
+          "proof": "Native StepIn per AID25002/25003/25004, source flags, three counter increments, fresh reentry refuses duplicate credit, each source appearance100 unchanged and exactly-one revision advance; no Questline prerequisite/success seed"
+        }
       }
     },
     "counts": {
@@ -5239,7 +5308,7 @@
     },
     "current_batch": {
       "batch": "first_dragon_life_20",
-      "phase": "COMPILING_WIP: correct native StepIn revision contract; own PG rerun and12crate units pending under PREPUSH-2 cadence exception",
+      "phase": "QUALIFIED_MECHANISM: three native source life-site visits PG18.6 GREEN73622ms; changed-crate unit suites still running/pending under PREPUSH-2 exception",
       "entries": [
         "AID25002 DesertTile once",
         "AID25003 StoneSculptureTile once",
@@ -5263,17 +5332,18 @@
       ],
       "checks": {
         "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
-        "workspace_all_targets": "PASS7m24s /tmp/questpc3-batch20-publish-check.log",
+        "workspace_all_targets": "PASS4m40s /tmp/questpc3-batch20-qualified-workspace-check.log",
         "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
         "postgres_green": "PENDING after generated files settle",
         "remaining_changed_crate_units": "PENDING: client-assets, client-ui, game-server, gameplay-content, dispatch, durability, encounter-rules, foundation, npc, quests, social, world; world-change21PASS",
-        "generated": "PASS native43 +Grizzly30/30 +all repo authoring-family producers +binding evidence +all373 matrix +Item audit tags; canonical blessing registration8 --checkPASS; duplicate migrationsCLEAR",
-        "fmt": "PASS /tmp/questpc3-batch20-publish-fmt.log",
-        "pins": "PASS official release pin-refresh /tmp/questpc3-batch20-publish-pins.log unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
+        "generated": "Refreshed native43, Grizzly30/30, canonical blessing8 and all authoring families, binding evidence, all373 matrix and Item audit tags; duplicate checkCLEAR",
+        "fmt": "PASS /tmp/questpc3-batch20-qualified-fmt.log",
+        "pins": "PASS /tmp/questpc3-batch20-qualified-pins.log; unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
         "pending": [
           "post-merge First Dragon lava and three-life-site real PG cases",
           "unit suites for oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-encounter-rules, oteryn-gameplay-foundation, oteryn-gameplay-npc, oteryn-gameplay-quests, oteryn-gameplay-social, oteryn-gameplay-world"
-        ]
+        ],
+        "unit_suites": "10crate2353unit tests RUNNING, no failures reported yet; dispatch/server unit suites pending; world-change21PASS"
       },
       "post_merge_pg": {
         "version": "18.6",
@@ -5293,7 +5363,17 @@
         "log": "/tmp/questpc3-prepush2-first-dragon-pg.log"
       },
       "retry": "Focused life rerun compiler SIGKILL before execution; cgroup reports OOM kill. Next retry CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_TEST_DEBUG=0, preserving all assertions.",
-      "unit_retry": "Non-heavy10-crate build hit disk full before test execution; stale inactive caches removed, queued retry paused for mandatory publish gate; all12unit suites remain pending. Keep current PG cache1es7p8qb8nel8, not obsolete pre-merge1xzydsvq6pzum."
+      "unit_retry": "Non-heavy10-crate build hit disk full before test execution; stale inactive caches removed, queued retry paused for mandatory publish gate; all12unit suites remain pending. Keep current PG cache1es7p8qb8nel8, not obsolete pre-merge1xzydsvq6pzum.",
+      "green": {
+        "postgres": "18.6",
+        "duration_ms": 73622,
+        "completed": 3,
+        "counter": 3,
+        "result": "PASS",
+        "log": "/tmp/questpc3-first-dragon-life-low-memory-pg.log",
+        "sha256": "3c3e6d9daa589a7e20ebe490de7debc907e85282ca62f0bd5665f51469fd7eee",
+        "proof": "Native StepIn per AID25002/25003/25004, source flags, three counter increments, fresh reentry refuses duplicate credit, each source appearance100 unchanged and exactly-one revision advance; no Questline prerequisite/success seed"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -5468,9 +5548,15 @@
     },
     "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
     "next_batch_preparation": {
-      "batch": "first_dragon_life_20",
-      "entries": 3,
-      "phase": "focused PG RED building; source AIDs25002-25004, no questline prerequisite; no callbacks authored yet",
+      "batch": "first_dragon_quiz_21",
+      "phase": "drafts only in /tmp; next add mounted PG test and run genuine RED before authoring callbacks/placement",
+      "entries": [
+        "quiz introduction and first question",
+        "Tahmehe answer",
+        "Ishara answer",
+        "Svir final access once; repeated completed quiz read-only",
+        "sourceNPC placement admission"
+      ],
       "engine_expansion": false
     },
     "next_bridge_research": {
@@ -5504,7 +5590,7 @@
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
     "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
-    "phase": "Publishing compiling batch20 +two main integrations; next run focused PG lava/life cases and12remaining crate units, collect failures together, then continue First Dragon quiz using existing main NPC owner",
+    "phase": "Batch20 life sites PG-qualified; publish after PREPUSH-2 gates, then quizRED from prepared drafts and remaining units",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
       "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
@@ -9876,7 +9962,7 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T22:43:31.446280+00:00",
+    "updated_at": "2026-11-07T23:09:39.975187+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
       "main": "e1ca3e003",
@@ -9884,10 +9970,11 @@
       "conflicts": "7 resolved: main visibility/roll integration, combine Callback fields, generated incoming receipt/variant inputs refreshed by repository tooling",
       "compatibility": "29 lane QuestTransition literals explicitly world_changeNone; Stampede capture/restore retained via main NativeDecision, historical missing flag defaultsfalse;21unitPASS",
       "regeneration_route": "No content/world inputs changed; five materializer-source diffs only ignore default-public visibility, serialized public field omitted. Full legacy replay stopped; use repo tree/native generators, inventory repin and official final pin-refresh; validate Item/Mount equivalence/world-metadata.",
-      "latest_main": "f641d8d6c",
-      "latest_merge": "6d2751f1b",
+      "latest_main": "47db34f09",
+      "latest_merge": "8531be3dc",
       "latest_conflicts": "6 conflicts resolved: retain Santiago/Rookgaard plus native NPC book admission; both map/chest and Grizzly producers preserved; derived native inputs refreshed",
-      "compatibility_fixes": "3 incoming one-root reward requests backpack_outputsfalse; existing NPC sealed item permit and existing Spell channel permit route through one shared SQL writer viaunder50-line helper; canonical blessing registration regenerated from8existing rows rather than incoming stale4"
+      "compatibility_fixes": "3 incoming one-root reward requests backpack_outputsfalse; existing NPC sealed item permit and existing Spell channel permit route through one shared SQL writer viaunder50-line helper; canonical blessing registration regenerated from8existing rows rather than incoming stale4",
+      "latest_reuse": "Reuse main apply_input_rows single SQL writer; remove lane InputAuthority helper, retain spell channel check and sealed NPC item permit. Source change is the same arity-fix integration already required by QNPCFX."
     },
     "standing_engine_rule": {
       "owner": "qengine2",
