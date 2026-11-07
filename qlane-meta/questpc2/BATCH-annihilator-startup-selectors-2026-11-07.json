@@ -1,0 +1,55 @@
+{
+  "batch_id": "annihilator-startup-selectors-2026-11-07",
+  "base_sha": "97c922c33",
+  "scope": "Restore four existing source chest startup selectors using the existing generic authoring tool; compose actual captured selectors with the existing shared claim/MINT owner.",
+  "source": {
+    "path": "qlane-meta/questpc2/reference/data-global/startup/tables/chest.lua:1235-1263",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+    "normalized_capture": "tools/content-schema/world-authoring/samples/quest-chest-bindings/questpc2-annihilator.json",
+    "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
+  },
+  "reuse": "quest_chest_bindings.py capture/apply/check, canonical claim agreement, exact top-level appearance matching and source hold checks unchanged. Fresh qengine2 and questpc3-8 had no existing Annihilator chest startup capture; questpc4 still ACTIONABLE. No parallel engine or weakened binder.",
+  "changes": [
+    "Capture6085/6086/6087/6088 at33227/33229/33231/33233,y31656,z13, Item2472; all share the already admitted Annihilator claim.",
+    "Apply with repository tooling to the existing canonical World data region/index/capture summary. The decoded semantic diff proves exactly4 formerly absent unique attrs and no geometry, item, flag, depth, nested content or unrelated attribute changes.",
+    "Read committed captured selectors in the new PG fixture and run literal native USE through the real shared once-claim owner, cold replay and alternate-choice refusal. Existing choice cohort unchanged.",
+    "Regenerate the World pin with pin-refresh and prove it with pin-check. No executable, object, archive, donor-source copy or unrelated World change is included."
+  ],
+  "red": {
+    "log": "/tmp/questpc2-annihilator-startup-red.log",
+    "postgres_version": 180006,
+    "duration_seconds": 3.9,
+    "failure": "Annihilator source chest startup UID missing"
+  },
+  "green": {
+    "postgres_cases": 1,
+    "postgres_version": 180006,
+    "duration_seconds": 43.95,
+    "log": "/tmp/questpc2-annihilator-startup-final-pg.log",
+    "earlier_green_duration_seconds": 43.66,
+    "earlier_green_log": "/tmp/questpc2-annihilator-startup-green.log",
+    "tool_tests_passed": 11,
+    "tool_capture_and_apply_checks": "PASS",
+    "semantic_diff": "/tmp/questpc2-annihilator-startup-semantic-diff.json",
+    "check": "/tmp/questpc2-annihilator-startup-check.log",
+    "check_duration_seconds": 13.8,
+    "clippy": "/tmp/questpc2-annihilator-startup-final-clippy.log",
+    "clippy_duration_seconds": 20.82,
+    "clippy_scope": "dispatch all targets/features -D warnings",
+    "content_cases": 123,
+    "content_duration_seconds": 1.97,
+    "content_log": "/tmp/questpc2-annihilator-startup-content.log",
+    "world_cases": 5,
+    "world_duration_seconds": 46.28,
+    "world_log": "/tmp/questpc2-annihilator-startup-world.log",
+    "pin_refresh": "/tmp/questpc2-annihilator-startup-pin-refresh.log",
+    "pin_check": "/tmp/questpc2-annihilator-startup-pin-check.log",
+    "pin_digest": "b731b0debd508413ce0ccd353e43cb1b6eac8c350a169f7887541881fa6e9356",
+    "fmt": "/tmp/questpc2-annihilator-startup-fmt.log",
+    "governance": "/tmp/questpc2-annihilator-startup-governance.log",
+    "zero_test_pg_results_accepted": false
+  },
+  "whole_quest_qualifications": 0,
+  "next": "Implement the continuous native Annihilator route against real source-region geometry and genuine current player/progression fences: entry door, exact four-person lever, source combat clearance, physical earned chest and sealed re-entry. Reuse encounter/reward owners; no invented kill flag or escape timer."
+}

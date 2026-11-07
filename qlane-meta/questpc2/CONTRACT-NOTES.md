@@ -112,3 +112,12 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   isolated door PG fixture is a mechanic proof, not a source-room placement
   claim. Implement source startup chest-selector binding and the continuous
   native route next, using retained source startup tables; no invented kill flag.
+
+- Restored startup selectors6085-6088 with existing quest_chest_bindings.py,
+  using exact retained Crystal201189f chest.lua:1235-1263 SHA256
+  7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4.
+  The existing canonical region now carries those4unique attrs. A decoded
+  before/after comparison proves all geometry/items/flags/depths/other attrs
+  unchanged; no executable/object/archive/reference copy is added.
+  The same real captured selectors now pass native PG USE, cold replay, one
+  shared claim/MINT and alternate-choice refusal (PG18.6,43.95s).

@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Published shared four-player encounter entry and reward-choice cohorts are reused; source reward door, forced close displacement and exact durable claim gate are now PG verified. Continuous source-room entry-to-earned-reward route remains active implementation. No source escape timer or all-six-kill predicate is invented.",
+      "blocker": "Existing party encounter/reward owners reused; source reward door and four real captured startup chest selectors are PG verified. Continuous native source-room entry/combat/earned-reward route remains active implementation; no invented escape timer or all-six-kill storage.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -612,6 +612,13 @@
         "record": "BATCH-annihilator-reward-door-2026-11-07.json",
         "postgres_version": 180006,
         "duration_seconds": 44.47
+      },
+      "source_startup_slice": {
+        "status": "PG_VERIFIED",
+        "record": "BATCH-annihilator-startup-selectors-2026-11-07.json",
+        "selectors": 4,
+        "postgres_version": 180006,
+        "duration_seconds": 43.95
       }
     },
     {
@@ -1630,226 +1637,10 @@
     }
   },
   "current_batch": {
-    "id": "source-door-integration-2026-11-07",
-    "state": "INTEGRATION_CHECKPOINT",
-    "reused_sha": "97c922c33",
-    "whole_quest_qualifications": 0,
-    "checks": [
-      {
-        "name": "atomic-unit",
-        "command": [
-          "cargo",
-          "test",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-entities",
-          "--features",
-          "test-support",
-          "--lib",
-          "source_step_projection_refusal_restores_the_entire_carrier",
-          "--",
-          "--nocapture",
-          "--test-threads=1"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 3.526,
-        "counts": [
-          [
-            "1",
-            "0",
-            "0"
-          ]
-        ],
-        "postgres_marker": null,
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-atomic-unit.log"
-      },
-      {
-        "name": "annihilator-door",
-        "command": [
-          "cargo",
-          "test",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-dispatch",
-          "--lib",
-          "annihilator_reward_door_tracks_the_real_shared_claim",
-          "--",
-          "--nocapture",
-          "--test-threads=1"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 350.821,
-        "counts": [
-          [
-            "1",
-            "0",
-            "0"
-          ]
-        ],
-        "postgres_marker": "ANNIHILATOR_REWARD_DOOR POSTGRES_CASE_COMPLETED",
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-annihilator-door.log"
-      },
-      {
-        "name": "actual-claim",
-        "command": [
-          "cargo",
-          "test",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-dispatch",
-          "--lib",
-          "quest_container_chests_annihilator_choices_share_storage_and_achievement",
-          "--",
-          "--nocapture",
-          "--test-threads=1"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 55.473,
-        "counts": [
-          [
-            "1",
-            "0",
-            "0"
-          ]
-        ],
-        "postgres_marker": "W15B_STORAGE_CHOICE POSTGRES_CASE_COMPLETED",
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-actual-claim.log"
-      },
-      {
-        "name": "party-entry",
-        "command": [
-          "cargo",
-          "test",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-dispatch",
-          "--lib",
-          "qengine_annihilator_party_encounter_fail_closed",
-          "--",
-          "--nocapture",
-          "--test-threads=1"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 56.425,
-        "counts": [
-          [
-            "1",
-            "0",
-            "0"
-          ]
-        ],
-        "postgres_marker": "POSTGRES_CASE_COMPLETED annihilator-entry",
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-party-entry.log"
-      },
-      {
-        "name": "banshee",
-        "command": [
-          "cargo",
-          "test",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-dispatch",
-          "--lib",
-          "m06q_placed_quest_door_use_wire_requires_durable_storage",
-          "--",
-          "--nocapture",
-          "--test-threads=1"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 54.454,
-        "counts": [
-          [
-            "1",
-            "0",
-            "0"
-          ]
-        ],
-        "postgres_marker": "M06Q EXECUTED: placed action 10089",
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-banshee.log"
-      },
-      {
-        "name": "check",
-        "command": [
-          "cargo",
-          "check",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-quests",
-          "-p",
-          "oteryn-gameplay-durability",
-          "-p",
-          "oteryn-gameplay-entities",
-          "-p",
-          "oteryn-gameplay-world",
-          "-p",
-          "oteryn-gameplay-dispatch"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 96.264,
-        "counts": [],
-        "postgres_marker": null,
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-check.log"
-      },
-      {
-        "name": "clippy",
-        "command": [
-          "cargo",
-          "clippy",
-          "--locked",
-          "--offline",
-          "-p",
-          "oteryn-gameplay-quests",
-          "-p",
-          "oteryn-gameplay-durability",
-          "-p",
-          "oteryn-gameplay-entities",
-          "-p",
-          "oteryn-gameplay-world",
-          "-p",
-          "oteryn-gameplay-dispatch",
-          "--all-targets",
-          "--all-features",
-          "--",
-          "-D",
-          "warnings"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 199.993,
-        "counts": [],
-        "postgres_marker": null,
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-clippy.log"
-      },
-      {
-        "name": "fmt",
-        "command": [
-          "cargo",
-          "fmt",
-          "--all",
-          "--",
-          "--check"
-        ],
-        "exit_code": 0,
-        "duration_seconds": 14.717,
-        "counts": [],
-        "postgres_marker": null,
-        "passed": true,
-        "log": "/tmp/questpc2-door-merge-fmt.log"
-      }
-    ],
-    "next": "Merge published e0aca5741 startup selectors; complete fresh content/pin and focused PG checks before FF push."
+    "id": "door-startup-integration-2026-11-07",
+    "record": "BATCH-door-startup-integration-2026-11-07.json",
+    "state": "GREEN",
+    "whole_quest_qualifications": 0
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1862,16 +1653,19 @@
     "BATCH-source-corpse-integration-2026-11-07.json",
     "BATCH-group-source-authoring-2026-11-07.json",
     "BATCH-group-source-key-2026-11-07.json",
-    "BATCH-group-authoring-integration-2026-11-07.json"
+    "BATCH-group-authoring-integration-2026-11-07.json",
+    "BATCH-annihilator-reward-door-2026-11-07.json",
+    "BATCH-annihilator-startup-selectors-2026-11-07.json",
+    "BATCH-door-startup-integration-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Push integrated green head FF, then complete owned whole encounter/escape/door/reward paths; no entry-only whole qualification.",
+    "task": "Implement source Desert Dungeon four-vocation/four-offering atomic party transfer with genuine Fresh/Character owner proof; reuse native encounter movement and existing immutable offering receipts. Continue owned whole quests without deferral.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
-    "sha": "c63c6cc71234772960bebb68d0e9bf5fa62d8a6c",
+    "sha": "e0aca57413e36818be5406052ac656d240236b15",
     "records": [
       "BATCH-instance-corpse-root-2026-11-06.json",
       "BATCH-native-corpse-binding-2026-11-07.json",
