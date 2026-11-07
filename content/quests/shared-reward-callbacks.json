@@ -2,6 +2,196 @@
   "schema": 1,
   "callbacks": [
     {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/await-food",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will await your return. Chase Opponent helps you follow fast creatures. Bring me meat or ham when you return."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L164"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/favor",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Standing here all day makes me hungry. Could you help me find some food?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/greet",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Welcome, |PLAYERNAME|. As a tailor and merchant, I can show you how to change your outfit. Shall I?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L85"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/hunt",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt rabbits or deer, loot them, and bring me a piece of meat or ham. I will pay you for it."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/outfit-lesson",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Choose an outfit and colours that suit you. You can open Set Outfit from your character's menu. Try it and talk to me again."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L145"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning/club-grant",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.santiago",
