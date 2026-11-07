@@ -1,9 +1,9 @@
 {
-  "state": "Full native PG GREEN; final ledger/source closeout",
-  "postgres_duration_seconds": 113.401070463,
+  "state": "QUALIFIED",
+  "postgres_duration_seconds": 113.890788027,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
   "log_sha256": "f36874af9ba4d1e9db0b1be6c232f6834b6db2e073faad5e5ad4c78755fa3341",
-  "exact_red_point": "Previous actual native run completed nine machines, both hand-ins, five corym deaths and report, then failed because the report reused the callback-wide once key. Explicit occurrence option, shared claim-key function reuse and same-transaction changed-state proof are now implemented in1303; fresh PG fixture migrated successfully and full native test is running.",
+  "exact_red_point": null,
   "native_walkable_chamber_cells": [
     [
       33008,
@@ -38,9 +38,9 @@
       32146
     ]
   ],
-  "qualified_l7": 19,
-  "remaining_l7": 4,
-  "next_slice": "Correct bounded native arrival, finish native route and prove occurrence-bound recurring MINT before qualification.",
+  "qualified_l7": 20,
+  "remaining_l7": 3,
+  "next_slice": "Continue Colours,Winterlight,Wrath",
   "authored": {
     "machine_callbacks": 9,
     "hand_ins": 2,
@@ -58,5 +58,6 @@
     "latest_dispatch_clippy": "PASS3m03s"
   },
   "green_duration_seconds": 116.777669567,
-  "green_log": "/tmp/questpc8-venore-occurrence-green2.log"
+  "green_log": "/tmp/questpc8-venore-occurrence-green2.log",
+  "proof": "venore-route-validation.json"
 }

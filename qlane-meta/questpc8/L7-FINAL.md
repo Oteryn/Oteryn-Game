@@ -1,3 +1,8 @@
+Current checkpoint:20/23active L7entries QUALIFIED,3remain. Venore full
+native circuit and ordinary kill rewards pass initialized PostgreSQL113.890788027s.
+See venore-route-validation.json and current QUEST-STATUS.json/RESUME.md.
+This is continuing work, not the final lane state.
+
 Current checkpoint:19/23active L7entries QUALIFIED,4remain. Mystery of the
 Valley now passes its complete finite chosen native route and atomic crafting
 on initialized PostgreSQL. See mystery-route-validation.json and current

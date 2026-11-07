@@ -1525,21 +1525,25 @@
   {
     "canonical": "oteryn:quest.authored.venore_daily_tasks_quest",
     "title": "Venore Daily Tasks Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "kind": "active_implementation",
-      "owner": "questpc8",
-      "missing_piece": "Full native PostgreSQL GREEN113.890788027s including ordinary XP on each of five captured corym deaths. All9machines/2hand-ins/exact1000XP1000gold/report/cold/replay/72000-second guards pass. Refreshed prey model15cases776creatures and provider registration pass; final drift/pin/strict rechecks running before qualification.",
-      "evidence": [
-        "qlane-meta/questpc8/CONTRACT-NOTES.md",
-        "qlane-meta/questpc8/migration-number-registry.json",
-        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc8_venore_supplies.rs"
-      ]
-    },
-    "round": "L7"
+    "mechanism": "Native daily construction circuit, captured corym death credit and ordinary rewards, occurrence MINT and exact72000-second repeat",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "proof": "venore-route-validation.json",
+    "qualification_scope": "Complete finite chosen Oteryn recipe; CONTRACT-NOTES.md records selected ordering and native bindings",
+    "qualified_components": [
+      "Owned rope/shovel, actual native Norman/Scott/Frank, three real uncharged supplies",
+      "Nine source-geometry machine USEs, strict reach/order and replay rejection",
+      "Both exact tool hand-ins burn their physical inputs; oil remains uncharged and retained",
+      "Five native corym captured deaths each commit ordinary XP and capped quest credit",
+      "Report gives exactly1000XP and1000gold, completes once, retains cooldown state",
+      "Original callback source key retained; occurrence MINT claim differs by nonce through shared SQL owner",
+      "Immediate/cold refusal, exact72000-second boundary, rejected no-op occurrence effects"
+    ]
   },
   {
     "canonical": "oteryn:quest.winterlight_solstice",

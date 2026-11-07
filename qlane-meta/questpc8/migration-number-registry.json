@@ -57,7 +57,7 @@
     "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql"
   ],
   "duplicate_numbers": [],
-  "validation_state": "PASS: coordinator numbering, byte-identical shared migrations, focused PostgreSQL proofs and all selected strict/generated checks.",
+  "validation_state": "PASS: canonical coordinator numbering, all8shared migrations byte-identical to current QENGINE2, all4lane migrations initialized on PostgreSQL, final strict/generated/pin checks pass.",
   "shared_pr_3020_state": "OPEN",
   "tested_source_head": "42fabc9f143fec0875e41d877468ab8e610da409",
   "postgres": [
@@ -136,8 +136,9 @@
   "supplement_1303": {
     "path": "apps/game-server/migrations/1303_questpc8_occurrence_reward_mint.sql",
     "sha256": "c79752de099590d21afb9ae783e47cb9adf804bcf7663bd715af2a245c31fc37",
-    "state": "Schema migrated and native occurrence-key report passed; final full circuit rerun and strict test-delta checks running."
+    "state": "PASS: initialized full native PostgreSQL113.890788027s, exact occurrence/no-op/replay guards; final strict/default/generated/pin checks pass."
   },
-  "fresh_shared_qengine2_head": "52e3dbacb",
-  "all_shared_migrations_still_byte_identical": true
+  "fresh_shared_qengine2_head": "233e6aaa689a7cc2f86aee824018ad5852f77a73",
+  "all_shared_migrations_still_byte_identical": true,
+  "latest_venore_proof": "venore-route-validation.json"
 }

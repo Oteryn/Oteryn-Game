@@ -1,3 +1,17 @@
+# Venore QUALIFIED:20of23active L7entries
+
+Full initialized native PostgreSQL route GREEN113.890788027s. Five captured corym
+deaths now each commit ordinary XP through exact source corpse17449, not a
+quest-only bypass. Nine machines, two hand-ins,1000XP/1000gold, occurrence
+MINT, cold/replay refusal and exact72000-second boundary pass. Eleven focused
+importer tests, default check, strict Clippy, fmt, generated drift, refreshed
+prey model, world pins and duplicate migrations pass. See venore-route-validation.json.
+
+Continue Colours,Winterlight,Wrath; all missing generic mechanics are owned
+here. Do not end while entries remain. Push after every green slice and at
+least every15minutes. Shared0999-1006remain byte-identical to QENGINE2; QBASE
+1200-1205unchanged; lane migrations1300-1303.
+
 # Full Venore ordinary rewards PostgreSQL GREEN113.890788027s
 
 All five native corym deaths now commit ordinary XP; full nine-machine route,
