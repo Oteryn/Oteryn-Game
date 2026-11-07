@@ -168,7 +168,9 @@ Checks:fmt;check20.68s;2 unit tests1.16s;clippy44.58s;16 Python tests5.506s;
 callback/placement reproduction;repo pin-refresh6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.
 Commit/push green Royal slice immediately. Content tests/world targets/pin-check
 currently session95586;logs /tmp/qengine2-batch4-royal-{content-tests,world-tests,pincheck}.log.
-Record their completion after push. Counts11/66 qualified,55 remaining.
+Royal follow-on checks COMPLETE:123 content tests2.12s;5 world tests46.20s;
+pin-check passed6989e9ea9b9b48dafa8bff6295f0b20aa8786916893dadd5aa2962e7e953b125.
+Royal pushed059364f38. Counts11/66 qualified,55 remaining.
 
 Next: Pirate completes L1-04group. Use original pirate-sabre callback unchanged,
 add source Raymond Striker base and Ariella hat introduction/hand-in. Source
@@ -178,3 +180,11 @@ Ariella exact items6101/6102/6100/6099;start via addon/task/yes/yes then task/ye
 Source parent objectives retain other lane ownership;do not seed internal outfit
 stages. Three NPC actors must be placed together once (Raymond,Morgan,Ariella).
 Run actual PG RED before Pirate production changes;push each green slice.
+
+Pirate source facts settled: Duncan task/yes/yes sets Sabre1 and DefaultStart1;
+100 eye patches6098 ->2,100 peg legs6126 ->3,100 hooks6097 ->4; reuse Morgan
+firebird ->5/addon1. Raymond pirate outfit requires external Laguna1/Rays4=5
+and sets base1. Ariella addon/task/yes/yes sets hat1;task/yes consumes one each
+6101/6102/6100/6099 and sets hat2/addon2. All pirate/default-start tracks retain
+existing OutfitAndAddon quest owner. New source models/placements are not yet
+authored: actual PG RED build15963 /tmp/qengine2-batch4-pirate-red.log first.
