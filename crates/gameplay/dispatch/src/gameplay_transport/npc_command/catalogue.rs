@@ -34,6 +34,7 @@ pub(super) enum Step {
     Reply {
         lines: Vec<String>,
         end: bool,
+        end_delay_ms: u64,
         npc_actor: ExactActorRef,
     },
     Refused,
@@ -158,7 +159,16 @@ pub(super) fn prepare(
         let end = plan
             .effects
             .iter()
-            .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { delay_ms: 0 }));
+            .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { .. }));
+        let end_delay_ms = plan
+            .effects
+            .iter()
+            .filter_map(|effect| match effect {
+                NpcRuleEffect::EndConversation { delay_ms } => Some(*delay_ms),
+                _ => None,
+            })
+            .min()
+            .unwrap_or(0);
         let npc_actor = next.npc_actor;
         state.catalogue = (!end).then_some(Pending::Topic(next));
         return if plan.reply.is_empty() && !end {
@@ -167,6 +177,7 @@ pub(super) fn prepare(
             Some(Step::Reply {
                 lines: plan.reply,
                 end,
+                end_delay_ms,
                 npc_actor,
             })
         };
@@ -216,8 +227,31 @@ fn end_response(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     npc_actor: ExactActorRef,
+    delay_ms: u64,
     response: &mut NpcTalkOutcome,
 ) {
+    if delay_ms != 0 {
+        let Some(generation) = admission.states.chat.npc_conversation_generation(session) else {
+            return;
+        };
+        if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_millis(delay_ms);
+            if state.delayed_end.as_ref().is_none_or(|end| {
+                end.generation != generation
+                    || end.npc_actor != npc_actor
+                    || deadline < end.deadline
+            }) {
+                state.delayed_end = Some(DelayedEnd {
+                    npc_actor,
+                    generation,
+                    deadline,
+                });
+            }
+        }
+        return;
+    }
     admission.states.chat.end_engagement(session, npc_actor);
     if let Some(conversation) = &mut response.conversation {
         conversation.open = None;
@@ -258,11 +292,18 @@ pub(super) async fn apply(
         Step::Reply {
             lines,
             end,
+            end_delay_ms,
             npc_actor,
         } => {
             let mut response = response(admission, command.game_session_id, &intent, lines);
             if end {
-                end_response(admission, command.game_session_id, npc_actor, &mut response);
+                end_response(
+                    admission,
+                    command.game_session_id,
+                    npc_actor,
+                    end_delay_ms,
+                    &mut response,
+                );
             }
             return response;
         }
@@ -400,6 +441,7 @@ pub(super) async fn apply(
                     admission,
                     command.game_session_id,
                     next.npc_actor,
+                    commit.end_delay_ms,
                     &mut response,
                 );
             }
@@ -485,6 +527,7 @@ pub(in crate::gameplay_transport) async fn resume(
                         admission,
                         command.game_session_id,
                         next.npc_actor,
+                        commit.end_delay_ms,
                         &mut response,
                     );
                 }
@@ -500,4 +543,43 @@ pub(in crate::gameplay_transport) async fn resume(
             },
         },
     )
+}
+
+pub(super) struct DelayedEnd {
+    npc_actor: ExactActorRef,
+    generation: u64,
+    deadline: std::time::Instant,
+}
+
+pub(super) fn follow_end(
+    conversations: &NpcConversations,
+    chat: &ChatRuntime,
+    session: GameSessionId,
+) {
+    let generation = chat.npc_conversation_generation(session);
+    let engaged = chat.engaged(session);
+    let due = {
+        let Ok(mut sessions) = conversations.sessions.lock() else {
+            return;
+        };
+        let Some(state) = sessions.get_mut(&session) else {
+            return;
+        };
+        let Some(end) = &state.delayed_end else {
+            return;
+        };
+        if generation != Some(end.generation) || engaged != Some(end.npc_actor) {
+            state.delayed_end = None;
+            return;
+        }
+        if std::time::Instant::now() < end.deadline {
+            return;
+        }
+        state.delayed_end.take()
+    };
+    if let Some(end) = due
+        && chat.npc_conversation_generation(session) == Some(end.generation)
+    {
+        chat.end_engagement(session, end.npc_actor);
+    }
 }

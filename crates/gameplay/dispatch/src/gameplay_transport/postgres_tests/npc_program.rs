@@ -209,3 +209,67 @@ pub(super) async fn exercise(
     assert_eq!(count, 1);
     Ok(())
 }
+
+#[test]
+fn catalogue_npc_delayed_end_runs_in_real_dispatch() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("catalogue-npc-end", || {
+        super::quest_world_callbacks::scenario("catalogue-npc-end", Position { x: 33294, y: 31677, floor: -15 }, false)
+    })?;
+    eprintln!("POSTGRES_CASE_COMPLETED catalogue_npc_delayed_end_runs_in_real_dispatch {:?}", started.elapsed());
+    Ok(())
+}
+
+pub(super) async fn exercise_end(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession) -> TestResult {
+    let [emperor] = super::classic_quests::install(owner, admitted, ["oteryn:npc.emperor_rehal"]).await?;
+    super::classic_quests::talk(owner, admitted, emperor, 2800, "hi").await?;
+    let session = admitted.game_session_id;
+    assert!(owner.states.chat.engaged(session).is_some());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let update = {
+            let runtime = owner.runtime.lock().await;
+            owner.states.npc_conversations.follow(&owner.states.chat, &runtime, session, Some(emperor))
+        };
+        if let Some(update) = update
+            && update.conversation.is_some_and(|c| c.open.is_none())
+        { break; }
+        if std::time::Instant::now() >= deadline { return Err("authored delayed close did not reach domain 7".into()); }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    assert!(owner.states.chat.engaged(session).is_none());
+    Ok(())
+}
+
+#[test]
+fn catalogue_npc_calendar_month_runs_in_real_dispatch() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("catalogue-npc-calendar", || {
+        super::quest_world_callbacks::scenario("catalogue-npc-calendar", Position { x: 33294, y: 31677, floor: -15 }, false)
+    })?;
+    eprintln!("POSTGRES_CASE_COMPLETED catalogue_npc_calendar_month_runs_in_real_dispatch {:?}", started.elapsed());
+    Ok(())
+}
+
+pub(super) async fn exercise_calendar(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, h: &Harness) -> TestResult {
+    let [chef] = super::classic_quests::install(owner, admitted, ["oteryn:npc.jean_pierre"]).await?;
+    let month: i32 = sqlx::query_scalar("SELECT extract(month FROM statement_timestamp() AT TIME ZONE 'UTC')::integer").fetch_one(&h.pool).await?;
+    let lines = super::classic_quests::talk(owner, admitted, chef, 2900, "hi").await?;
+    if month == 8 {
+        assert!(!lines.is_empty(), "August opens the source cooking conversation");
+    } else {
+        assert!(lines.is_empty(), "the source rejects the greeting outside August");
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while owner.states.chat.engaged(admitted.game_session_id).is_some() {
+            {
+                let runtime = owner.runtime.lock().await;
+                let _ = owner.states.npc_conversations.follow(&owner.states.chat, &runtime, admitted.game_session_id, Some(chef));
+            }
+            if std::time::Instant::now() >= deadline { return Err("outside-August dismissal did not close".into()); }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    }
+    Ok(())
+}

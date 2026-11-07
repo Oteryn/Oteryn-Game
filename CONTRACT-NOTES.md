@@ -690,13 +690,27 @@ completed in 6m58s; `catalogue_npc_source_acceptance_is_atomic_and_replay_bound`
 ran against the retained PostgreSQL cluster and passed in 67.58s (acceptance,
 rollback-safe receipt, replay and session fencing). The epoch month boundary unit
 case passed in 0.00s. These cases do not qualify any title in the QNPCFX list.
-The next integration batch must replace the zero-delay-only EndConversation
-handling in `npc_program/items.rs`, expand the value participant beyond its
-single GiveItem, and admit the corresponding effects only after each durable
-participant is wired. `npc_program.rs` also currently treats empty track changes
+The baseline still required delayed EndConversation and broader rewards.
+The delayed EndConversation batch below resolves the former. The value
+participant still needs expansion beyond its single GiveItem, admitting each
+corresponding effect only after its durable participant is wired. `npc_program.rs` also currently treats empty track changes
 as read-only; repeatable value-only exchanges require an atomic receipt path.
 Restoring the two pc2 source documents changes the embedded registry from 13
 programs / 1123 rules / 78 NPCs to 15 / 1167 / 89; the dispatch assertion records
 those exact counts.
 
 The restored 15-program registry passed the same real-dispatch PostgreSQL case in 62.16s. Focused all-target/all-feature clippy with `-D warnings`, including game-server, passed in 3m07s. Pin refresh retained the existing world pin.
+
+QNPCFX delayed EndConversation now preserves the source delay in durable NPC
+responses and polls a conversation-generation/NPC-bound deadline through the
+normal domain-7 follow path. Earliest deadlines survive repeated replies; old
+conversation generations cannot close a replacement conversation. Native source
+NPCs whose conditional greeting has no literal text can now admit focus before
+the shared executor decides its reply or delayed dismissal.
+
+Focused PostgreSQL cases on this batch ran, with no skips: source acceptance /
+replay / fencing 64.66s, Emperor Rehal delayed dismissal 64.71s, and Jean Pierre
+CalendarMonth gating 64.71s. All three passed. Changed-crate all-target/all-feature
+clippy with `-D warnings` passed in 1m39s. Pin refresh and pin-check passed, retaining
+world pin `6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
+These effect cases still do not qualify a complete title from the QNPCFX list.

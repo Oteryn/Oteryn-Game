@@ -29,6 +29,7 @@ pub struct NpcProgramCommit {
     pub read_only: bool,
     pub inventory_changed: bool,
     pub end_conversation: bool,
+    pub end_delay_ms: u64,
 }
 
 impl NpcProgramRequest {
@@ -268,7 +269,7 @@ impl DurabilityRoot {
             } else { None };
             let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
             if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() {
-                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan) };
+                let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
@@ -338,8 +339,8 @@ impl DurabilityRoot {
             } else {
                 sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::numeric,$5::text::numeric)").bind(id).bind(quest).bind(&pin).bind(hash.as_slice()).bind(&committed).execute(&mut **tx).await?;
             }
-            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
-                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
+                .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
             if father_items {
                 let amount = fathers_burden::experience(&plan)?;
                 insert_xp_obligation(&mut tx, character, &q, amount, &pin).await?;
@@ -347,7 +348,7 @@ impl DurabilityRoot {
             let receipt=load_receipt(&mut tx,character,&q).await?.ok_or(DurabilityError::InvalidStoredState)?;
             let receipt=decode_receipt(&receipt)?;
             tx.commit(deadline).await?;
-            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
+            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),end_conversation:items::ends(&plan),end_delay_ms:items::end_delay(&plan),reply:plan.reply,next_topic:plan.next_topic,read_only:false,inventory_changed:item_action}))
         })).await?
     }
 }
@@ -360,6 +361,7 @@ fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
         read_only: false,
         inventory_changed: false,
         end_conversation: false,
+        end_delay_ms: 0,
     }
 }
 
@@ -374,7 +376,7 @@ async fn load(
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
     }
-    let response=sqlx::query("SELECT reply,next_topic,inventory_changed,end_conversation FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
+    let response=sqlx::query("SELECT reply,next_topic,inventory_changed,end_conversation,end_delay_ms FROM game_quest_npc_program_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND transition_key=$4")
         .bind(character.as_bytes().as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
     Ok(Ok(Some(NpcProgramCommit {
         transition: QuestTransitionOutcome::AlreadyCommitted(decode_receipt(&row)?),
@@ -383,6 +385,7 @@ async fn load(
         read_only: false,
         inventory_changed: response.try_get("inventory_changed")?,
         end_conversation: response.try_get("end_conversation")?,
+        end_delay_ms: u64::try_from(response.try_get::<i32, _>("end_delay_ms")?).map_err(|_| DurabilityError::InvalidStoredState)?,
     })))
 }
 

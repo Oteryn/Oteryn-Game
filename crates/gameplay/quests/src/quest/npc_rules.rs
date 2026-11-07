@@ -445,6 +445,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                         )
                 });

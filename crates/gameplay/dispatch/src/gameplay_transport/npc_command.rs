@@ -77,6 +77,7 @@ struct SessionNpc {
     monk: Option<monk::Pending>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
+    delayed_end: Option<catalogue::DelayedEnd>,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
@@ -254,6 +255,7 @@ impl NpcConversations {
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
+        catalogue::follow_end(self, chat, session);
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
             if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
