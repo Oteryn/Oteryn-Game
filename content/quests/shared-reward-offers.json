@@ -114,6 +114,18 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Do you want to buy the dungeon key for 2000 gold?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"

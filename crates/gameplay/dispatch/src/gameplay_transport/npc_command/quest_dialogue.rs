@@ -340,6 +340,25 @@ pub(super) async fn apply(
     let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
         .ok()
         .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
+    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        })
+        .is_some_and(|c| c.fee.is_some())
+    {
+        match super::endgame::prepare_reward_fee(admission, command, fence).await {
+            Ok(payment) => Some(payment),
+            Err(outcome) => {
+                finish(admission, command.game_session_id, false);
+                return *outcome;
+            }
+        }
+    } else {
+        None
+    };
     let outcome = if value_callback {
         let Some(native) = admission
             .active_generation
@@ -360,6 +379,7 @@ pub(super) async fn apply(
             crate::durability::reward_claim_mint::QuestRewardAdmission {
                 native,
                 weights: &weights,
+                fee_payment: fee_payment.as_ref(),
             },
         )
         .await

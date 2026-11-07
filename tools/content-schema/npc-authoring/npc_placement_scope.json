@@ -17,6 +17,7 @@
     "oteryn:npc.cledwyn",
     "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
+    "oteryn:npc.dermot",
     "oteryn:npc.dixi",
     "oteryn:npc.emael",
     "oteryn:npc.enpa_deia_pema",
@@ -53,6 +54,13 @@
       {
         "x": 32801,
         "y": 31188,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.dermot": [
+      {
+        "x": 32165,
+        "y": 32437,
         "z": 7
       }
     ]

@@ -33,6 +33,82 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/fibula-key-first",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "fee": {
+        "gold": 2000,
+        "include_bank": true
+      },
+      "give": {
+        "item": "oteryn:item.tibia.i2968",
+        "count": 1,
+        "contents": [],
+        "key_number": 3940
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:66-81:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/fibula-key-repeat",
+      "quest": "oteryn:quest.deeper_fibula_quest",
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "fee": {
+        "gold": 2000,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "give": {
+        "item": "oteryn:item.tibia.i2968",
+        "count": 1,
+        "contents": [],
+        "key_number": 3940
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:66-81:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/hallowed-holy-water",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.costello",

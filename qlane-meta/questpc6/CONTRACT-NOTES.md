@@ -36,3 +36,23 @@ Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d startup/tables/door_key.lua:
 Capture tooling verifies the archive's source blob hashes and exact map cells;
 no binary map or conflicting attribute is overwritten. Existing Item profiles
 are unchanged, and only missing native locked door1631 is admitted by tooling.
+
+## Dermot source sale and authored Fibula decisions
+
+Crystal9f5a72c data-global/npc/dermot.lua:66-81 (SHA256
+ efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec)
+sells native2968 with action3940 for2000 using removeMoneyBank. Repeated paid
+sales remain available; only the first sale activates the optional authored
+supplement. Native cash uses the existing V1 fee path and bank funds require the
+existing V2 activation. A refused/replayed command never charges another fee.
+Source placement is world-npc.xml:1953-1954,32165/32437/7, SHA256
+3cc9a769cda450a0e5e0c60bcc65973031efe8b94e5ea6a4256473d3e45fd306.
+Reuse qengine2 commit33b640335's fee participant, with migration1000 renamed1096
+because this branch already uses1000; main/open-PR number claim confirmed1096.
+
+For the next batch, the chosen recipe requires eight native Dragon/Dragon Lord
+kills in the final cavern; it does not require a new private instance. Use the
+existing native cavern and present most-damage principal, retain death-time
+eligibility on the existing kill retry queue, and never infer credited deaths
+from NPC flags. Original six source claim access remains unchanged. This decision
+is implementation scope, not a claim that the remaining authored path is done.

@@ -46,6 +46,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.dermot",
+      "greet": "Hello, traveller |PLAYERNAME|. How can I help you?",
+      "farewell": "See you again.",
+      "walkaway": "See you again.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:100:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:101:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:102:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "greet": "Hello there.",
       "farewell": "Good bye.",

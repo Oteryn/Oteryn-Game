@@ -1,33 +1,25 @@
 # Active questpc6 continuation — authored Fibula obligation
 
-The owner's repeated continuation instruction supersedes the previous narrow
-scope decision. One owned entry is IN_PROGRESS: Deeper Fibula's retained authored
-supplement. Its original source well and six-claim contract remains QUALIFIED;
-that evidence is not full supplement completion. The 31 verified foreign titles
-and Dawnport exclusion remain unchanged. Do not stop at the top-level historical
-source qualification or repeat another ownership-only checkpoint.
+One owned entry remains IN_PROGRESS: the authored Fibula supplement. Original
+well/six-claim evidence remains QUALIFIED, 31 foreign titles and excluded Dawnport
+remain skipped. Do not stop on the source-only qualification.
 
-Current batch restores the exact source key3940 door at32190,32432,8 and
-key3980 door at32277,32420,10. Both raw native doors are Item1631 without action
-attributes. The pinned source startup table supplies the exact actions, and the
-existing importer adds only the missing native locked1631 profile. Binary maps
-and all previous native profiles are unchanged. Focused real PostgreSQL18.6
-RED2 failed ItemReference in102.77s; GREEN2 passed in108.76s, with completion
-markers55.342866373s and40.963891839s. All-target check and all-target/all-feature Clippy on dispatch/world/content,
-formatting, content123/123, World repository5/5, source-binding units3/3,
-native-profile Python2/2, original key wire PG1/1 (46.03s; marker42.10553814s),
-and tool-only pin refresh/check passed. Exact proof is in
-cloud-fibula-keys-verification.json. Commit and push this green batch, then
-continue the remaining authored supplement; do not end on this mechanism slice.
+Completed mechanism batches: source Key3940/3980 doors (cloud-fibula-keys-verification.json)
+and Dermot source placement plus repeatable 2000-gold exact Key3940 sale
+(cloud-fibula-purchase-verification.json). Native fee participant reused from
+qengine2 commit33b640335; migration renamed1096 after main/open-PR number claim.
+Actual PostgreSQL18.6 RED3/142.02s then final GREEN3/295.10s proves cash, V2 bank,
+full-backpack rollback, exact key custody, repeat purchase and command replay.
+Neither source sales nor their payment grants are made once-only.
 
-Next: reuse qengine2 commit33b640335's generic native fee/MINT participant (do not
-reimplement its payments), add exact keyed root rewards and explicitly paid
-repeatability, and bind the source key seller. Then compose expertise/key3980
-acquisition, generic native-death goals and eight-kill supplement completion.
-The source Dermot sale is repeatable: Crystal9f5a72c data-global/npc/dermot.lua:
-66-81, key2968/action3940 for2000 including bank funds. Do not invent a once-only
-NPC flag to restrict source sales. Existing MINT already persists key numbers.
-No missing shared mechanism is being deferred to another lane. No PR.
+NEXT: verify raw well and expertise native map selectors (well1931 at32172,32439,7
+has no raw action; level door1648 at32212,32435,10 source action1050), earn Key3980,
+then generic native-death goal capped at eight and terminal completion. Use existing
+native cavern and most-damage kill principal: the literal chosen recipe requires
+eight Dragon/Dragon Lord kills there and does not require a new private instance.
+Preserve original source rewards/access. No shared engine dependency is deferred.
+No PR; keep batch commits/pushes. Fetch task branch before each push and compare
+FETCH_HEAD (remote.origin.fetch only maps main, so task tracking ref can be stale).
 
 ---
 Historical continuation records below do not describe the active queue.

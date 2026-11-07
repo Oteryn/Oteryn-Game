@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
-fn scenario(name: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -143,6 +143,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "fibula-key-first" | "fibula-key-repeat" => &["key"],
         "knight-sword" => &["forge"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
@@ -181,7 +182,7 @@ async fn acknowledge_probe(
 
 // A conversation spans several commands on ONE connection. Re-opening the
 // one-command movement helper correctly clears conversation engagement.
-async fn wire_grant(
+pub(super) async fn wire_grant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -594,6 +595,9 @@ pub(super) async fn exercise(
         .await?;
     println!("POSTGRES_CASE_STARTED {name} server_version={version}");
 
+    if name.starts_with("qengine-rewards-fibula-key-") {
+        return super::questpc6_fibula_purchase::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
     }

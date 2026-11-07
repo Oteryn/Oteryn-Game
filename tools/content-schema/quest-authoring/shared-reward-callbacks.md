@@ -25,10 +25,10 @@ Each record has these fields:
 | `npc` | Canonical `oteryn:npc.<name>`, resolved through the current conversation. |
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
-| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. An ordinary reward changes a value outside its accepted range. Explicit paid repeatable item sales preserve every storage guard and require a positive fee; unpaid grants remain once-only. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
-| `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
+| `give` | Optional/null `{item, count, contents?, key_number?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
 | `achievement` | Optional/null canonical `oteryn:achievement/<name>` from the admitted achievement catalogue. |
 | `reply` | One to eight response lines, each at most 512 UTF-8 bytes. |
@@ -85,3 +85,14 @@ wrong position/appearance, Houses and conflicting native attributes.
 The finite exchange-item provider preserves an already admitted record when its
 identity, admission and known physical custody facts agree. It refuses conflicting
 custody and does not replace another provider's attributes or source semantics.
+
+Exact prices use the optional `fee` participant (`gold`, `include_bank`). The native
+fee owner and reward MINT share the existing fenced Quest transaction and receipt.
+Reused from qengine2 commit33b640335; migration1096 avoids this branch's existing
+Corruptor migration1000.
+
+`give.key_number` binds one non-container native KEY root to its nonzero u16
+number. It cannot be attached to a different Item classification.
+`repeatable: true` is available only for a positive-fee item sale with preserved
+guards, no outfit and no achievement; each new command pays, while replay
+returns the existing receipt.

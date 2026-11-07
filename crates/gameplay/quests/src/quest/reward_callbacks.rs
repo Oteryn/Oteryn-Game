@@ -22,6 +22,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key_number: Option<u16>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -30,6 +32,14 @@ pub struct OutfitReward {
     pub outfit: String,
     /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
     pub addons: u8,
+}
+
+/// Exact source price; only the durable fee owner may consume the funds.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -43,6 +53,11 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     pub take: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
+    /// Paid item sales may preserve their guards; unpaid rewards remain once-only.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -51,6 +66,10 @@ pub struct RewardCallback {
     pub achievement: Option<String>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Deserialize)]
@@ -100,14 +119,34 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || s.read_only
                     || s.set_if.is_some()
             })
-            || c.storage
+            || (c
+                .storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                && !c.repeatable)
+            || (c.repeatable
+                && (c.fee.is_none()
+                    || c.give.is_none()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()
+                    || c.storage.iter().any(|s| !s.preserve)))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -115,6 +154,8 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
+                    || r.key_number
+                        .is_some_and(|number| number == 0 || r.count != 1 || !r.contents.is_empty())
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| !item(&s.item, s.count))
             })
@@ -193,6 +234,48 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn paid_repeatable_key_sales_require_price_preserved_guards_and_one_key() -> Result<(), String>
+    {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let index = value["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .position(|c| c["key"] == "oteryn:quest-reward/fibula-key-repeat")
+            .ok_or("key sale")?;
+        assert!(parse(&value.to_string()).is_ok());
+        for edit in 0..7 {
+            let mut invalid = value.clone();
+            let c = &mut invalid["callbacks"][index];
+            match edit {
+                0 => c["fee"] = serde_json::Value::Null,
+                1 => c["fee"]["gold"] = 0.into(),
+                2 => c["give"]["key_number"] = 0.into(),
+                3 => c["give"]["count"] = 2.into(),
+                4 => {
+                    c["give"]["contents"] =
+                        serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1}])
+                }
+                5 => c["storage"][0]["preserve"] = false.into(),
+                _ => c["achievement"] = "oteryn:achievement/backpack_tourist".into(),
+            }
+            assert!(
+                parse(&invalid.to_string()).is_err(),
+                "invalid paid sale {edit}"
+            );
+        }
+        value["callbacks"][index]["repeatable"] = false.into();
+        assert!(
+            parse(&value.to_string()).is_err(),
+            "ordinary rewards still need a once-only guard"
+        );
+        Ok(())
+    }
+
     #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {

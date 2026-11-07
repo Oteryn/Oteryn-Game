@@ -748,13 +748,12 @@
           "Key 3940"
         ]
       },
-      "missing_piece": "Active implementation: compose the paid keyed-NPC acquisition, expertise route, eight credited native cavern deaths and final completion using generic reusable owners. The two source key-door startup bindings are implemented in the current batch.",
+      "missing_piece": "Active implementation: prove expertise/key3980 route, eight credited native cavern deaths and final completion using reusable owners.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
       ],
       "remaining_work": [
-        "Reuse qengine2 native fee participant; support exact keyed NPC rewards and repeated paid source key acquisition.",
         "Prove the expertise route and earned Key3980 acquisition alongside the restored exact keyed access.",
         "Implement reusable one-shot participant-bound kill goals on the existing lethal queue, including pre-activation refusal and replay.",
         "Compose the eight-death goal and terminal source reward path into authored supplement completion with PostgreSQL proof."
@@ -763,6 +762,11 @@
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-keys-verification.json",
         "scope": "Exact source key3940/3980 doors only; NPC acquisition, expertise and native-kill completion remain active work."
+      },
+      "key_purchase": {
+        "status": "QUALIFIED_MECHANISM",
+        "evidence": "cloud-fibula-purchase-verification.json",
+        "scope": "Source repeated 2000 gold sale, exact native key number and source Dermot placement."
       }
     },
     "qualification": {
