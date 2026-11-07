@@ -949,3 +949,21 @@ limits were widened: domain14 already allows15,488 bytes. Four changed client
 crates pass all-target/all-feature Clippy-D warnings in1.19s after the test
 uses Result propagation. The complete native client345/UI274 tests pass16.57s
 and0.01s execution respectively.
+
+### Full-validation owner rule, November7
+
+The owner now requires every inverse normal workspace dependency's complete
+Nextest suite, including PostgreSQL, before any push, plus periodic main merges.
+The initial inverse closure has32 crates (recorded by cargo tree); this supersedes
+selective green-step pushes. Full failures will be collected and grouped before
+fixing and rerunning the entire set. No further push is claimed before that gate.
+
+Native provider registration passes92.238s and its check96.226s; the normal
+Prey simulation passes15 cases/777 creatures (Cargo2m42s, about6m30s total).
+Normal pin-refresh succeeds with digest4730c4d24e4c5c643041c67a38fc5c7202a98576b9189d3f89fb632402eccf54.
+Actual PostgreSQL timer cases pass59.738/61.446/67.912s, static aqueduct86.488s,
+bedkit85.106s, expanded container53.308s, capacityV253.270s, nativechair56.808s,
+nativecupboard84.368s and Cake extraction76.066s. An earlier disk-exhaustion
+batch's unexecuted failures were rerun rather than counted as mechanics verdicts.
+Cake phase and seasonal NPC/contribution failures remain to be grouped with
+full Nextest results. Known regeneration RED tests remain intact pending fix.

@@ -38,6 +38,34 @@ def initialized_item_ids(raw):
     return initialized
 
 
+def native_item_specs(xml, objects, initialized, carpet_type, known_xml_types):
+    """Read-only C++ item facts, independent of Item materialization admission."""
+    grouped = {}
+    # Crystal items.cpp:203-208,216-217,232-244; item_parse.cpp:117-136,
+    # 210-212,798-803 applies the source XML overrides after initialization.
+    for item in sorted(initialized):
+        flags = objects[item]['flags']
+        attributes = source.attrs(xml[item]) if item in xml else {}
+        order = next((value for flag, value in (('clip', 1), ('top', 3), ('bottom', 2))
+                      if flags.get('flags.' + flag, False)), 0)
+        carpet = flags.get('market.category', 0) == carpet_type
+        if attributes.get('type', '').lower() in known_xml_types:
+            carpet = attributes['type'].lower() == 'carpet'
+        movable = not flags.get('flags.unmove', False)
+        solid = bool(flags.get('flags.unpass', False))
+        # pugixml::xml_attribute::as_bool reads the first character.
+        if 'movable' in attributes:
+            movable = attributes['movable'][:1] in ('1', 't', 'T', 'y', 'Y')
+        if 'blocking' in attributes:
+            solid = attributes['blocking'][:1] in ('1', 't', 'T', 'y', 'Y')
+        facts = (carpet, movable, order != 0, order, solid,
+                 bool(flags.get('flags.has_height', False)))
+        grouped.setdefault(facts, []).append(item)
+    fields = ('carpet', 'movable', 'always_on_top', 'always_on_top_order',
+              'block_solid', 'has_height')
+    return [{'item_ids': ids, **dict(zip(fields, facts))} for facts, ids in sorted(grouped.items())]
+
+
 def capture(crystal, canary):
     sources = {}
 
@@ -109,6 +137,23 @@ def capture(crystal, canary):
     wrap_parser = read('src/items/functions/item/item_parse.cpp')
     if 'itemType.wrapableTo = pugi::cast<int32_t>(valueAttribute.value());\n\t\titemType.wrapable = true;' not in wrap_parser:
         raise ValueError('HOUSE_WRAP_XML_SOURCE_DRIFT')
+    item_definitions = read('src/items/items_definitions.hpp')
+    item_parse_header = read('src/items/functions/item/item_parse.hpp')
+    enum_body = re.search(r'enum ItemTypes_t\s*\{(.*?)\};', item_definitions, re.S)[1]
+    enum_body = re.sub(r'//[^\n]*', '', enum_body)
+    ordinal = -1
+    carpet_type = None
+    for entry in enum_body.split(','):
+        match = re.fullmatch(r'\s*(ITEM_TYPE_\w+)(?:\s*=\s*(\d+))?\s*', entry)
+        if not match:
+            continue
+        ordinal = int(match[2]) if match[2] else ordinal + 1
+        if match[1] == 'ITEM_TYPE_CARPET':
+            carpet_type = ordinal
+            break
+    if carpet_type is None:
+        raise ValueError('HOUSE_CARPET_CPP_TYPE_MISSING')
+    known_xml_types = set(re.findall(r'\{\s*"([a-z]+)"\s*,\s*ITEM_TYPE_', item_parse_header))
     engine = read('src/game/game.cpp')
     if 'const ItemType &newType = Item::items[newId];\n\tif (newType.id == 0) {\n\t\treturn item;' not in engine:
         raise ValueError('HOUSE_TRANSFORM_INVALID_TARGET_SOURCE_DRIFT')
@@ -158,6 +203,9 @@ def capture(crystal, canary):
                              for row in unavailable)
     bed_item_ids = sorted(item for item in qualified if source.attrs(xml[item]).get('type') == 'bed')
     crystal_objects = source.engine_items.load_appearance_objects(crystal_appearance_raw)
+    item_specs = native_item_specs(xml, crystal_objects,
+                                   initialized_item_ids(crystal_appearance_raw),
+                                   carpet_type, known_xml_types)
     wrap_eligible = []
     for item in sorted(qualified):
         attributes = source.attrs(xml[item])
@@ -187,7 +235,7 @@ def capture(crystal, canary):
                  'carpets': carpets, 'windows': windows, 'mirror': mirror, 'bathtub': bathtub,
                  'music': music, 'birdcage': birdcage, 'fish_tank': fish_tank, 'magic_trees': trees,
                  'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids, 'wrap_pairs': wrap_pairs, 'wrap_eligible': [row['item_id'] for row in wrap_eligible],
-                 'wrap_eligibility': wrap_eligible,
+                 'wrap_eligibility': wrap_eligible, 'native_item_specs': item_specs,
                  'native_transforms': sorted(native_transforms, key=lambda row: (row['item_id'], row['kind'])),
                  'unavailable_native_transforms': unavailable}
     ids = set(mirror['item_ids']) | {bathtub['item_id'], bathtub['target'], birdcage['item_id'], birdcage['target'], fish_tank['item_id'], 26100}
@@ -336,6 +384,17 @@ def sql_pairs(catalogue, profiles=None):
              '\n ) AS eligible(source) WHERE source=p_source)\n$$;\n'
              'REVOKE ALL ON FUNCTION game_house_native_wrap_eligible(TEXT) FROM PUBLIC,oteryn_game_control;\n'
              'GRANT EXECUTE ON FUNCTION game_house_native_wrap_eligible(TEXT) TO oteryn_game_runtime;\n')
+    spec_rows = []
+    for spec in catalogue['native_item_specs']:
+        item_ids = ','.join(map(str, spec['item_ids']))
+        facts = {key: value for key, value in spec.items() if key != 'item_ids'}
+        spec_rows.append("  (ARRAY[" + item_ids + "]::bigint[],'" + json.dumps(facts, separators=(',', ':')) + "'::jsonb)")
+    text += ('CREATE OR REPLACE FUNCTION game_house_native_item_spec(p_item_id BIGINT)\n'
+             'RETURNS JSONB LANGUAGE sql IMMUTABLE AS $$\n'
+             ' SELECT spec FROM (VALUES\n' + ',\n'.join(spec_rows) +
+             '\n ) AS specs(item_ids,spec) WHERE p_item_id=ANY(item_ids)\n$$;\n'
+             'REVOKE ALL ON FUNCTION game_house_native_item_spec(BIGINT) FROM PUBLIC,oteryn_game_control;\n'
+             'GRANT EXECUTE ON FUNCTION game_house_native_item_spec(BIGINT) TO oteryn_game_runtime;\n')
     bed_pairs = set()
     for kit in catalogue['bed_kits']:
         for orientation, originals in [('south', (2491, 5501, 15506)), ('east', (2489, 5499, 15508))]:

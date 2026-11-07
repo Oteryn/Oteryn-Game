@@ -12,6 +12,7 @@ from house_decoration_actions import (
     apply_top_order,
     apply_carpet_types,
     initialized_item_ids,
+    native_item_specs,
     encode,
     sql_pairs,
 )
@@ -88,6 +89,34 @@ class HouseDecorationActions(unittest.TestCase):
             self.assertIn('Ground', profile['admission']['legal_destinations'])
             self.assertIsInstance(profile['attributes']['always_on_top'], bool)
             self.assertIn(profile['attributes']['always_on_top_order'], (0, 1, 2, 3))
+
+    def test_native_tile_specs_are_complete_read_only_source_facts(self):
+        catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
+        rows = catalogue['native_item_specs']
+        specs = {item: row for row in rows for item in row['item_ids']}
+        self.assertEqual(sum(len(row['item_ids']) for row in rows), len(specs))
+        self.assertEqual(len(specs), 43392)
+        self.assertEqual(sum(row['carpet'] for row in specs.values()), 161)
+        self.assertFalse(specs[26151]['carpet'])
+        self.assertTrue(specs[51222]['carpet'])
+        self.assertTrue(specs[51223]['carpet'])
+        self.assertIn(100, specs)
+        self.assertNotIn(0, specs)
+        profiles = json.loads((ROOT / PROFILES).read_bytes())
+        self.assertNotIn('oteryn:item.tibia.i100', {row['production_definition']['production_key'] for row in profiles['records']},
+                         'read-only source specs grant no Item materialization')
+        self.assertIn(b'FUNCTION game_house_native_item_spec(p_item_id BIGINT)', sql_pairs(catalogue, profiles))
+
+    def test_native_tile_specs_apply_cpp_precedence_and_xml_overrides(self):
+        import xml.etree.ElementTree as ET
+        xml = {1: ET.fromstring('<item id="1"><attribute key="type" value="carpet"/><attribute key="movable" value="false"/><attribute key="blocking" value="true"/></item>'),
+               2: ET.fromstring('<item id="2"><attribute key="type" value="carpet"/></item>')}
+        objects = {1: {'flags': {'flags.clip': True, 'flags.top': True, 'flags.has_height': True}},
+                   2: {'flags': {}}}
+        rows = native_item_specs(xml, objects, {1}, 38, {'carpet', 'container'})
+        self.assertEqual(rows, [{'item_ids': [1], 'carpet': True, 'movable': False,
+                                'always_on_top': True, 'always_on_top_order': 1,
+                                'block_solid': True, 'has_height': True}])
 
     def test_initialized_wrap_eligibility_preserves_runtime_output_and_source_intent(self):
         catalogue = json.loads((ROOT / CATALOGUE).read_bytes())

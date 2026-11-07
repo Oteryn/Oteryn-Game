@@ -378,6 +378,29 @@ pub(super) async fn wrap_scenario(
     assert!(packed["remaining_ms"].is_null());
     assert!(packed["deadline_at"].is_null());
     assert_eq!(packed["state_revision"], 2);
+    let target = owner
+        .root
+        .house_furniture_kit_target(owner.character, id(71))
+        .await?
+        .ok_or("latest proven wrap target")?;
+    assert_eq!(
+        target.production_key, "oteryn:item.tibia.i35949",
+        "the production unwrap reader resolves a placed kit without purchased origin"
+    );
+    let target_key = target.production_key;
+    let catalogue = owner
+        .root
+        .house_furniture_catalogue(owner.holder, fence, context.house().clone())
+        .await?
+        .map_err(debug)?;
+    assert!(
+        catalogue.items.iter().any(|item| item.item == id(71)
+            && item
+                .target
+                .as_ref()
+                .is_some_and(|target| target.production_key == target_key)),
+        "the native selection panel advertises the same proven unwrap target"
+    );
     let request = wire::Request {
         action: wire::Action::Unwrap,
         expected_revision: 2,
@@ -394,9 +417,7 @@ pub(super) async fn wrap_scenario(
             owner.holder,
             fence,
             command,
-            |key| {
-                (key == "oteryn:item.tibia.i23398").then(|| "oteryn:item.tibia.i35949".to_owned())
-            },
+            move |key| (key == "oteryn:item.tibia.i23398").then_some(target_key),
             |key| (key == "oteryn:item.tibia.i2854").then_some(8),
         )
         .await?;

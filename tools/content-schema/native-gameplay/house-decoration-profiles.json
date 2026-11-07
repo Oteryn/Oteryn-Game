@@ -2,7 +2,7 @@
   "schema": "OTERYN_HOUSE_DECORATION_PROFILES/v1",
   "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
   "canary_commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-  "catalogue_sha256": "59793944ead18cd303abe1270a9aa76e0bb5cb85a00de257d5e72bcf2de9061e",
+  "catalogue_sha256": "38bd71f879b915654393123379162d495388a709d87ba317a9373de63b6fc6ef",
   "appearance_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
   "sources": [
     {

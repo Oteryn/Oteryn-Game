@@ -375,8 +375,8 @@ GRANT EXECUTE ON FUNCTION game_house_decoration_pair(TEXT,TEXT),game_house_decor
 -- decoration kit, clears its duration, and starts a fresh duration on unwrap.
 CREATE FUNCTION game_house_timed_decoration_wrap_pair(p_before TEXT,p_after TEXT,p_action SMALLINT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE STRICT AS $$ SELECT
- (p_action=1 AND p_before IN('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969') AND p_after='oteryn:item.tibia.i23398') OR
- (p_action=2 AND p_before='oteryn:item.tibia.i23398' AND p_after IN('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969')) $$;
+ (p_action=1 AND game_house_timed_decoration_duration(p_before) IS NOT NULL AND p_after='oteryn:item.tibia.i23398') OR
+ (p_action=2 AND p_before='oteryn:item.tibia.i23398' AND game_house_timed_decoration_duration(p_after) IS NOT NULL) $$;
 
 -- The generated 1161 forward predicate retains qualified Crystal XML
 -- wrapableto file:line evidence, including items.xml:67147-67154,67218-67225.
@@ -394,8 +394,9 @@ RETURNS BOOLEAN LANGUAGE sql STABLE STRICT SECURITY DEFINER AS $$
  SELECT (game_house_furniture_wrap_pair_before_timers(p_item,p_before,p_after,p_action)
   AND (p_action<>2 OR NOT EXISTS(SELECT 1 FROM latest) OR EXISTS(SELECT 1 FROM latest
    WHERE after_key=p_before AND before_item->>'definition_production_key'=p_after)))
- OR (p_action=1 AND game_house_native_wrap_pair(p_before,p_after))
- OR (p_action=2 AND game_house_native_wrap_pair(p_after,p_before)
+ OR (p_action=1 AND p_before<>'oteryn:item.tibia.i23398'
+  AND p_after='oteryn:item.tibia.i23398' AND game_house_native_wrap_eligible(p_before))
+ OR (p_action=2 AND p_before='oteryn:item.tibia.i23398' AND game_house_native_wrap_eligible(p_after)
   AND EXISTS(SELECT 1 FROM latest WHERE after_key=p_before
    AND before_item->>'definition_production_key'=p_after))
 $$;
@@ -406,12 +407,36 @@ REVOKE ALL ON FUNCTION game_house_furniture_wrap_pair(UUID,TEXT,TEXT,SMALLINT),
  game_house_furniture_wrap_pair_before_timers(UUID,TEXT,TEXT,SMALLINT)
  FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
 
+-- Crystal src/game/game.cpp:4897-4913: each wrap replaces unWrapId with
+-- the current form, overriding its original purchase orientation.
+DO $migration$
+DECLARE body TEXT; needle TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_house_furniture_catalogue(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC,UUID,TEXT)'::regprocedure);
+ needle:='origin.target_key,origin.target_revision';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing wrap target projection boundary'; END IF;
+ body:=replace(body,needle,$projection$
+  CASE WHEN i.definition_production_key=latest.after_key THEN latest.before_item->>'definition_production_key' ELSE origin.target_key END,
+  CASE WHEN i.definition_production_key=latest.after_key THEN latest.before_item->>'definition_revision_ref' ELSE origin.target_revision END
+ $projection$);
+ needle:='LEFT JOIN game_house_furniture_kit_origins origin ON origin.item_instance_id=i.item_instance_id';
+ IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing wrap provenance join boundary'; END IF;
+ body:=replace(body,needle,$join$
+ LEFT JOIN LATERAL(SELECT before_item,after_key FROM game_house_furniture_wrap_receipts prior
+  WHERE prior.item_instance_id=i.item_instance_id AND prior.action=1
+  ORDER BY (before_item->>'state_revision')::numeric DESC LIMIT 1) latest ON true
+ LEFT JOIN game_house_furniture_kit_origins origin ON origin.item_instance_id=i.item_instance_id
+ $join$);
+ EXECUTE body;
+END $migration$;
+
 CREATE FUNCTION game_house_timed_decoration_wrap_complete(p_transaction UUID) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE r game_house_furniture_wrap_receipts%ROWTYPE; w game_item_timed_state_writes%ROWTYPE;
- t game_item_timed_states%ROWTYPE;
+ t game_item_timed_states%ROWTYPE; duration BIGINT;
 BEGIN
  SELECT * INTO r FROM game_house_furniture_wrap_receipts WHERE transaction_id=p_transaction;
+ duration:=game_house_timed_decoration_duration(CASE WHEN r.action=1 THEN r.before_item->>'definition_production_key' ELSE r.after_key END);
  SELECT * INTO w FROM game_item_timed_state_writes WHERE transaction_id=p_transaction;
  SELECT * INTO t FROM game_item_timed_states WHERE item_instance_id=r.item_instance_id;
  IF r.transaction_id IS NULL OR r.created_xact_id<>pg_current_xact_id()
@@ -425,13 +450,13 @@ BEGIN
   OR w.definition_after_revision_ref IS DISTINCT FROM r.before_item->>'definition_revision_ref'
   OR w.full_charges IS NOT NULL
   OR (w.expected_revision=0 AND (w.deadline_before IS NOT NULL
-   OR w.remaining_ms_before IS DISTINCT FROM (CASE WHEN r.action=1 THEN 200000::bigint ELSE NULL::bigint END)))
+   OR w.remaining_ms_before IS DISTINCT FROM (CASE WHEN r.action=1 THEN duration ELSE NULL::bigint END)))
   OR (r.action=1 AND (w.cause<>6 OR w.lit_continuous OR w.full_remaining_ms IS NOT NULL
    OR w.remaining_ms_after IS NOT NULL OR w.deadline_after IS NOT NULL
-   OR w.remaining_ms_before IS NULL OR w.remaining_ms_before NOT BETWEEN 1 AND 200000))
-  OR (r.action=2 AND (w.cause<>5 OR NOT w.lit_continuous OR w.full_remaining_ms IS DISTINCT FROM 200000::bigint
+   OR w.remaining_ms_before IS NULL OR w.remaining_ms_before NOT BETWEEN 1 AND duration))
+  OR (r.action=2 AND (w.cause<>5 OR NOT w.lit_continuous OR w.full_remaining_ms IS DISTINCT FROM duration
    OR w.remaining_ms_before IS NOT NULL OR w.deadline_before IS NOT NULL
-   OR w.remaining_ms_after IS DISTINCT FROM 200000::bigint OR w.deadline_after IS DISTINCT FROM w.committed_at+200000))
+   OR w.remaining_ms_after IS DISTINCT FROM duration OR w.deadline_after IS DISTINCT FROM w.committed_at+duration))
   OR t.item_instance_id IS NULL OR t.state_revision<>w.expected_revision+1
   OR t.charges IS NOT NULL OR t.remaining_ms IS DISTINCT FROM w.remaining_ms_after OR t.deadline_at IS DISTINCT FROM w.deadline_after
   OR EXISTS(SELECT 1 FROM game_item_timed_state_writes other WHERE other.item_instance_id=w.item_instance_id
@@ -451,15 +476,16 @@ CREATE CONSTRAINT TRIGGER game_house_timed_decoration_wrap_guard AFTER INSERT ON
 CREATE FUNCTION game_house_timed_decoration_wrap_apply(p_transaction UUID) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE r game_house_furniture_wrap_receipts%ROWTYPE; t game_item_timed_states%ROWTYPE;
- w game_item_timed_state_writes%ROWTYPE;
+ w game_item_timed_state_writes%ROWTYPE; duration BIGINT;
 BEGIN
  SELECT * INTO r FROM game_house_furniture_wrap_receipts WHERE transaction_id=p_transaction;
  IF r.transaction_id IS NULL OR r.created_xact_id<>pg_current_xact_id()
   OR game_house_timed_decoration_wrap_pair(r.before_item->>'definition_production_key',r.after_key,r.action) IS DISTINCT FROM true
  THEN RAISE EXCEPTION 'aqueduct wrapping requires its current wrap receipt' USING ERRCODE='23514'; END IF;
+ duration:=game_house_timed_decoration_duration(CASE WHEN r.action=1 THEN r.before_item->>'definition_production_key' ELSE r.after_key END);
  SELECT * INTO t FROM game_item_timed_states WHERE item_instance_id=r.item_instance_id FOR UPDATE;
  IF t.item_instance_id IS NOT NULL AND (t.charges IS NOT NULL
-   OR (r.action=1 AND (t.remaining_ms IS NULL OR t.remaining_ms NOT BETWEEN 1 AND 200000))
+   OR (r.action=1 AND (t.remaining_ms IS NULL OR t.remaining_ms NOT BETWEEN 1 AND duration))
    OR (r.action=2 AND (t.remaining_ms IS NOT NULL OR t.deadline_at IS NOT NULL)))
  THEN RAISE EXCEPTION 'invalid aqueduct wrapping timer predecessor' USING ERRCODE='23514'; END IF;
  PERFORM game_house_timed_decoration_register(r.before_item->>'definition_revision_ref');
@@ -474,9 +500,9 @@ BEGIN
  w.definition_before_family:='Item';w.definition_before_production_key:=r.before_item->>'definition_production_key';
  w.definition_before_revision_ref:=r.before_item->>'definition_revision_ref';w.definition_after_family:='Item';
  w.definition_after_production_key:=r.after_key;w.definition_after_revision_ref:=w.definition_before_revision_ref;
- w.remaining_ms_before:=CASE WHEN t.item_instance_id IS NULL AND r.action=1 THEN 200000 ELSE t.remaining_ms END;
+ w.remaining_ms_before:=CASE WHEN t.item_instance_id IS NULL AND r.action=1 THEN duration ELSE t.remaining_ms END;
  w.deadline_before:=t.deadline_at; w.lit_continuous:=r.action=2;
- IF r.action=2 THEN w.full_remaining_ms:=200000;w.remaining_ms_after:=200000; END IF;
+ IF r.action=2 THEN w.full_remaining_ms:=duration;w.remaining_ms_after:=duration; END IF;
  INSERT INTO game_item_timed_state_writes SELECT(w).* RETURNING * INTO w;
  IF w.expected_revision=0 THEN
   INSERT INTO game_item_timed_states VALUES(w.item_instance_id,NULL,w.remaining_ms_after,w.deadline_after,1);
@@ -502,7 +528,7 @@ BEGIN
  EXECUTE replace(body,needle,hook||needle);
  body:=pg_get_functiondef('game_house_decoration_timed_deadline_stamp()'::regprocedure);
  needle:=' RETURN NEW;';
- hook:=E' IF EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts wr WHERE wr.transaction_id=NEW.transaction_id AND wr.created_xact_id=pg_current_xact_id() AND wr.action=2 AND wr.item_instance_id=NEW.item_instance_id AND game_house_timed_decoration_wrap_pair(wr.before_item->>''definition_production_key'',wr.after_key,wr.action)) THEN NEW.deadline_after:=NEW.committed_at+200000; END IF;\n';
+ hook:=E' IF EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts wr WHERE wr.transaction_id=NEW.transaction_id AND wr.created_xact_id=pg_current_xact_id() AND wr.action=2 AND wr.item_instance_id=NEW.item_instance_id AND game_house_timed_decoration_wrap_pair(wr.before_item->>''definition_production_key'',wr.after_key,wr.action)) THEN NEW.deadline_after:=NEW.committed_at+game_house_timed_decoration_duration(NEW.definition_after_production_key); END IF;\n';
  EXECUTE replace(body,needle,hook||needle);
  body:=pg_get_functiondef('game_item_timed_state_write_consistency_guard()'::regprocedure);
  needle:=substring(body from E'(?i)\\mBEGIN\\M');
