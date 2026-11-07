@@ -1031,3 +1031,30 @@ Validation at the owner's requested immediate CI push:
   a runner error invoking the script-only tree test through unittest (its script
   assertions and child commands reached their final PASS before unittest exited
   with no discovered classes). Focused corrections are being rerun.
+
+## PR #3020 main merge and guard regression repair
+
+Merged main d34807f5b (SRVWLD) while retaining QENGINE2's encounter callback
+branch. Dryad watersplash remains after successful commit_source_step and uses
+the committed destination. docs/reference/SRVWLD-CONTRACT-NOTES.md is taken
+byte-for-byte from main; existing QENGINE2 entries remain in this file.
+
+The receipt no-TRUNCATE probe explicitly includes the FK closure added by
+0999-1001: game_quest_reward_sources, game_quest_reward_fees and
+game_quest_reward_participants. No CASCADE is used. The exact 23514, guard
+message and unchanged-state assertions remain intact. The original repository
+guard module, linked against freshly built production dependencies in a focused
+source-module harness, passed on real PostgreSQL in 14.741s.
+
+The reward-bag catalogue has 28 playable bags: exactly 27 existing bags plus
+QENGINE_GNOMISH_SUPPLY (15698), captured from Crystal 9f5a72c64
+random_items.lua:49-80. The test preserves the 27-bag legacy inventory and
+one-item mint assertions, and independently reaches all 25 new supply outcomes
+with their exact source quantities and total weight 10001.
+
+Validation on the merged tree: dispatch cargo check, all targets/features, passed
+in 84s. The fresh dispatch binary ran 22 focused callback/real-PG regressions: all
+passed, execution 545.989s (1123.039s including compilation). Dryad enter/leave
+reported real-PG completion markers at 62.125s and 62.870s. The strengthened
+reward-bag case passed in 52.05s. PR #3022 was still open at this batch; its two
+main-red fixes are intentionally left to its owner and a subsequent main merge.
