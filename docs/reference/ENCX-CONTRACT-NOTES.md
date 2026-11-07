@@ -891,3 +891,14 @@ The negative case is further strengthened with a fresh XP occurrence and an
 explicit assertion that no rejected-key XP receipt remains; that rerun is
 pending at this WIP checkpoint. This proves consumer scope composition after a
 native handoff, not a physical Primal encounter or template qualification.
+
+### Instance receipt component proof completed
+
+The strengthened `boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences`
+case passed against PostgreSQL in 206.38s. It performs a real command-178 Instance
+handoff, supplies a captured death to the existing XP/consumer seam, retains one
+Hazard receipt on replay and rejects an untagged alias using a fresh occurrence,
+with no partial XP receipt. It does not prove physical Primal combat or qualify
+a Primal room. Dispatch check passed in 16.14s; test-target clippy passed with
+warnings denied in 3m42s; fmt and architecture passed. No further identifiers or
+migrations were allocated.
