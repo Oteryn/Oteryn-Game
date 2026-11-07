@@ -1028,3 +1028,13 @@ fn srv7_chondur_natural_stampor_materials_real_npc_trade_grants_mount11() -> Tes
         .map_err(|_| "Chondur natural source scenario panicked")??;
     Ok(())
 }
+
+#[test]
+fn srv7_chondur_historical_owned_materials_real_npc_trade_grants_mount11() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| chondur::historical_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Chondur historical owned-material scenario panicked")??;
+    Ok(())
+}

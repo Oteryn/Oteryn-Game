@@ -28,23 +28,34 @@ pub(super) async fn trade(
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
 ) -> TestResult {
+    trade_with_provenance(h, owner, admitted, npc, true).await
+}
+pub(super) async fn trade_with_provenance(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    natural: bool,
+) -> TestResult {
     // This is a prerequisite assertion, not a forged source producer. The
     // preceding natural acquisition loop must have killed unchanged1200HP/
     //780XP source Stampors and moved these actual MINT items with corpse TAKE.
-    for (item, minimum) in [(12312, 50), (12314, 30), (12313, 100)] {
-        let count: i64 = sqlx::query_scalar(
-            "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i \
+    if natural {
+        for (item, minimum) in [(12312, 50), (12314, 30), (12313, 100)] {
+            let count: i64 = sqlx::query_scalar(
+                "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_instances i \
             JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id \
             WHERE i.definition_production_key=$1 AND r.loot_table_family='Loot' \
             AND r.loot_table_production_key='oteryn:loot.creature.stampor'",
-        )
-        .bind(format!("oteryn:item.tibia.i{item}"))
-        .fetch_one(&h.pool)
-        .await?;
-        assert!(
-            count >= minimum,
-            "natural source material {item}: {count}/{minimum}"
-        );
+            )
+            .bind(format!("oteryn:item.tibia.i{item}"))
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(
+                count >= minimum,
+                "natural source material {item}: {count}/{minimum}"
+            );
+        }
     }
     let prior: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key=$1",

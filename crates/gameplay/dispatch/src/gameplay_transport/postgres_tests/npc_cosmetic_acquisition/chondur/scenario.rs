@@ -7,7 +7,13 @@ use crate::gameplay_transport::connection::{
 };
 use oteryn_protocol_oteryn::logout::LogoutResult;
 pub(in super::super) fn scenario() -> TestResult {
-    run(async |admin| {
+    run_scenario(false)
+}
+pub(in super::super) fn historical_scenario() -> TestResult {
+    run_scenario(true)
+}
+fn run_scenario(historical: bool) -> TestResult {
+    run(async move |admin| {
         reset();
         let began = std::time::Instant::now();
         let h = Harness::create_appearance_with_admission_seed(
@@ -49,7 +55,7 @@ pub(in super::super) fn scenario() -> TestResult {
         let mut session = GameSessionId::decode(&id(50)).map_err(debug)?;
         let mut needs_fresh = false;
         let mut old_lease = 2_u64;
-        let mut final_trade = false;
+        let mut final_trade = historical;
         let mut total_deaths = 0_usize;
         for batch in 0..2_u64 {
             let frame = source_frame::load(world, native, final_trade)?;
@@ -219,9 +225,14 @@ pub(in super::super) fn scenario() -> TestResult {
                     (32361, 32551, 7),
                     "production different-frame admission fallback uses verified source start; no position write"
                 );
-                trade::trade(&h, &mut owner, &mut admitted, npc).await?;
+                if historical {
+                    historical::mint_materials(&h, &mut owner, &mut admitted).await?;
+                    trade::trade_with_provenance(&h, &mut owner, &mut admitted, npc, false).await?;
+                } else {
+                    trade::trade(&h, &mut owner, &mut admitted, npc).await?;
+                }
                 eprintln!(
-                    "SRV7_CHONDUR_NATURAL_SOURCE_NATIVE_TRADE_EXECUTED actual_stampor_deaths={total_deaths} source_frame_phase={batch} source_frame_fixture_composition=true elapsed={:.3}s",
+                    "SRV7_CHONDUR_SOURCE_NATIVE_TRADE_EXECUTED historical_owned_operands={historical} actual_stampor_deaths={total_deaths} source_frame_phase={batch} source_frame_fixture_composition=true elapsed={:.3}s",
                     began.elapsed().as_secs_f64()
                 );
                 drop(owner);
