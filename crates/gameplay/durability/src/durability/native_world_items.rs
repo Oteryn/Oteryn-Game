@@ -193,48 +193,7 @@ impl QualifiedItemDefinition {
                 _ => return Err("unknown native Item stack capabilities"),
             },
         };
-        let decay = match &record.semantics.temporal {
-            F::NotApplicable => None,
-            F::Known(temporal) => {
-                let F::Known(crate::content::ReferenceTemporalMode::DurableAbsoluteDeadline) =
-                    temporal.consumption_mode
-                else {
-                    return Err("native Item lifetime lacks an absolute owner policy");
-                };
-                let F::Known(crate::content::ReferenceMilliseconds(duration)) = temporal.duration
-                else {
-                    return Err("unknown native Item duration");
-                };
-                if !matches!(temporal.stop_duration, F::Known(false)) {
-                    return Err("native Item pausable lifetime requires its time-budget owner");
-                }
-                let target = match &temporal.decay_target {
-                    F::NotApplicable => None,
-                    F::Known(target) => Some(TypedDefinitionRef {
-                        family: "Item".into(),
-                        production_key: target.key.clone(),
-                        revision_ref: target.revision.clone(),
-                    }),
-                    _ => return Err("unknown native Item decay target"),
-                };
-                if duration == 0 {
-                    if target.is_some() {
-                        return Err("zero-duration Item transform");
-                    }
-                    None
-                } else {
-                    if stack_maximum != 1 {
-                        return Err("stacked Item lifetime needs split-owner semantics");
-                    }
-                    Some(QualifiedItemDecay {
-                        duration_millis: u32::try_from(duration)
-                            .map_err(|_| "Item duration overflow")?,
-                        target,
-                    })
-                }
-            }
-            _ => return Err("unknown native Item temporal capability"),
-        };
+        let decay = qualify_item_decay(&record.semantics.temporal, stack_maximum)?;
         Ok(Self {
             definition: crate::durability::item_mint::TypedDefinitionRef {
                 family: record.production_definition.family.clone(),
@@ -319,6 +278,56 @@ impl QualifiedItemDefinition {
         })
     }
 }
+/// Reuse the native absolute-lifetime policy independently of spell field classification.
+pub(crate) fn qualify_item_decay(
+    temporal: &crate::content::ReferenceItemField<crate::content::ReferenceItemTemporal>,
+    stack_maximum: u32,
+) -> Result<Option<QualifiedItemDecay>, &'static str> {
+    use crate::content::ReferenceItemField as F;
+    Ok(match temporal {
+        F::NotApplicable => None,
+        F::Known(temporal) => {
+            let F::Known(crate::content::ReferenceTemporalMode::DurableAbsoluteDeadline) =
+                temporal.consumption_mode
+            else {
+                return Err("native Item lifetime lacks an absolute owner policy");
+            };
+            let F::Known(crate::content::ReferenceMilliseconds(duration)) = temporal.duration
+            else {
+                return Err("unknown native Item duration");
+            };
+            if !matches!(temporal.stop_duration, F::Known(false)) {
+                return Err("native Item pausable lifetime requires its time-budget owner");
+            }
+            let target = match &temporal.decay_target {
+                F::NotApplicable => None,
+                F::Known(target) => Some(TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: target.key.clone(),
+                    revision_ref: target.revision.clone(),
+                }),
+                _ => return Err("unknown native Item decay target"),
+            };
+            if duration == 0 {
+                if target.is_some() {
+                    return Err("zero-duration Item transform");
+                }
+                None
+            } else {
+                if stack_maximum != 1 {
+                    return Err("stacked Item lifetime needs split-owner semantics");
+                }
+                Some(QualifiedItemDecay {
+                    duration_millis: u32::try_from(duration)
+                        .map_err(|_| "Item duration overflow")?,
+                    target,
+                })
+            }
+        }
+        _ => return Err("unknown native Item temporal capability"),
+    })
+}
+
 fn qualify_field_class(
     classification: &crate::content::ReferenceItemField<
         crate::content::ReferenceItemClassification,

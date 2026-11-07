@@ -24,6 +24,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::actor_spell::ChannelSpellStates;
 use super::chat_relay::ChatRelay;
+use super::connection::FreshAdmissionAuthority;
 use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::chat::relay::{RelayDestination, RelayLine};
@@ -752,6 +753,8 @@ pub fn chat_in_premium_channel(
         intent,
         now,
         None,
+        None,
+        None,
     )
 }
 
@@ -770,6 +773,8 @@ fn chat_with_quest_greetings(
     intent: &ChatIntent,
     now: SemanticTimeMicros,
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    carried_counts: Option<&BTreeMap<String, i64>>,
+    world_minute: Option<u32>,
 ) -> ChatIntentResult {
     let ChatIntent::Say { mode, text } = intent else {
         // Private and room lines never take the Channel path (`ComposedFreshAdmission::chat_relay`).
@@ -857,6 +862,8 @@ fn chat_with_quest_greetings(
             &text,
             &listeners,
             quest_tracks,
+            carried_counts,
+            world_minute,
         );
     }
     result(ChatDisposition::Ok)
@@ -890,6 +897,8 @@ fn npc_answer(
     text: &ChatText,
     listeners: &[(GameSessionId, ChatPosition)],
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    carried_counts: Option<&BTreeMap<String, i64>>,
+    world_minute: Option<u32>,
 ) {
     let visible = runtime.visible_entities();
     let mut spots = Vec::new();
@@ -929,19 +938,28 @@ fn npc_answer(
     if prior != Some(reply.id)
         && speaking.engaged == Some(reply.id)
         && let Some(key) = runtime.npc_key(reply.id)
-        && oteryn_gameplay_npc::quest_greetings::uses_quest_progress(key)
     {
-        let Some(greeting) = oteryn_gameplay_npc::quest_greetings::select(key, quest_tracks) else {
-            // Failed quest admission cannot fabricate a new/default branch. An
-            // existing conversation remains intact, just as on a full NPC queue.
-            speaking.engaged = prior;
-            return;
-        };
-        reply.text = greeting.to_owned();
-        if quest_tracks.is_some_and(|tracks| {
-            !oteryn_gameplay_npc::quest_greetings::permits_conversation(key, tracks)
-        }) {
-            speaking.engaged = prior;
+        if let Some(entry) = book
+            .get(key)
+            .filter(|entry| entry.greeting_items().next().is_some())
+        {
+            let Some(greeting) = entry.conditional_greeting(quest_tracks, carried_counts) else {
+                speaking.engaged = prior;
+                return;
+            };
+            reply.text = greeting.into();
+        } else if oteryn_gameplay_npc::quest_greetings::uses_quest_progress(key) {
+            let Some(greeting) = oteryn_gameplay_npc::quest_greetings::select(key, quest_tracks)
+            else {
+                speaking.engaged = prior;
+                return;
+            };
+            reply.text = greeting.into();
+            if quest_tracks.is_some_and(|tracks| {
+                !oteryn_gameplay_npc::quest_greetings::permits_conversation(key, tracks)
+            }) {
+                speaking.engaged = prior;
+            }
         }
     }
     let speaker_name = speaking.name.clone();
@@ -970,7 +988,10 @@ fn npc_answer(
         generation: *generation,
     };
     for text in std::iter::once(reply.text).chain(reply.continuations) {
-        let text = oteryn_gameplay_npc::quest_greetings::render_player_name(&text, &speaker_name);
+        let named = oteryn_gameplay_npc::quest_greetings::render_player_name(&text, &speaker_name);
+        let Some(text) = super::npc_talk::render_world_time(&named, world_minute) else {
+            continue;
+        };
         let Ok(line) = ChatText::parse(&text) else {
             continue;
         };
@@ -1120,16 +1141,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } => self.session_premium_gate(session).await,
             _ => PremiumGate::CLOSED,
         };
+        let greeting_items = {
+            let runtime = self.runtime.lock().await;
+            self.states
+                .chat
+                .npc_talk()
+                .map(|book| {
+                    runtime
+                        .visible_entities()
+                        .npcs
+                        .iter()
+                        .filter_map(|npc| runtime.npc_key(npc.actor).and_then(|key| book.get(key)))
+                        .flat_map(|entry| entry.greeting_items())
+                        .map(str::to_owned)
+                        .collect::<std::collections::BTreeSet<_>>()
+                })
+                .unwrap_or_default()
+        };
+        let carried_counts = if greeting_items.is_empty() {
+            None
+        } else {
+            match self.current_quest_fence(session).await {
+                Ok(Some(fence)) => self
+                    .root
+                    .read_quest_carried_counts(
+                        self.character,
+                        fence,
+                        greeting_items.into_iter().collect(),
+                    )
+                    .await
+                    .ok(),
+                _ => None,
+            }
+        };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let quest_tracks = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
-            Some(
-                oteryn_gameplay_npc::quest_greetings::CONDITIONAL_QUEST_TRACKS
-                    .into_iter()
-                    .filter_map(|key| copy.tracks().get(key).map(|value| (key.to_owned(), *value)))
-                    .collect::<BTreeMap<_, _>>(),
-            )
+            Some(copy.tracks().clone())
         });
         chat_with_quest_greetings(
             &self.states.chat,
@@ -1140,6 +1189,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             now,
             quest_tracks.as_ref(),
+            carried_counts.as_ref(),
+            super::npc_talk::world_minute(self.world_clock_utc_ms()),
         )
     }
 
@@ -2021,6 +2072,9 @@ mod tests {
         const JACK_LINE: &str = "oteryn:quest-progress/quest/u12_20/grave_danger/questline";
         const SOUL: &str = "oteryn:npc.a_restless_soul";
         const SOUL_LINE: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline";
+        const WANDERING: &str = "oteryn:npc.a_wandering_soul";
+        const ALDEE: &str = "oteryn:npc.al_dee";
+        const BLOOD: &str = "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05";
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),
@@ -2069,6 +2123,40 @@ mod tests {
                 true,
             ),
             (SOUL, SOUL_LINE, None, None, false),
+            (
+                WANDERING,
+                BLOOD,
+                Some(0),
+                Some(
+                    "Is that you...? No... it's not... she never woke up again... the pain... cursed... to wander... Leave me alone in my mourning...",
+                ),
+                true,
+            ),
+            (
+                WANDERING,
+                BLOOD,
+                Some(2),
+                Some("I saw you... who are you... what do you want from me...?"),
+                true,
+            ),
+            (
+                WANDERING,
+                BLOOD,
+                Some(3),
+                Some("The pain is slightly less... but the crystal is already charged."),
+                true,
+            ),
+            (WANDERING, BLOOD, Some(4), None, false),
+            (WANDERING, BLOOD, None, None, false),
+            (
+                ALDEE,
+                BLOOD,
+                None,
+                Some(
+                    "Hello, hello, Aela! Please come in, look, and buy! I'm a specialist for all sorts of {tools}. Just ask me for a {trade} to see my offers! You can also ask me for general {hints} about the game. ... You can also ask me about each {citizen} of the isle.",
+                ),
+                true,
+            ),
         ] {
             let (mut runtime, chat, first, second) = two_players(0);
             let spot = runtime
@@ -2095,6 +2183,16 @@ mod tests {
             chat.install_npc_talk(Arc::clone(&book));
             chat.set_npc_service(first.1);
             let tracks = value.map(|value| BTreeMap::from([(track.to_owned(), value)]));
+            let carried = if key == WANDERING {
+                match value {
+                    Some(0) => Some(BTreeMap::new()),
+                    Some(2) => Some(BTreeMap::from([("oteryn:item.tibia.i8453".into(), 1)])),
+                    Some(3) => Some(BTreeMap::from([("oteryn:item.tibia.i8225".into(), 1)])),
+                    _ => None,
+                }
+            } else {
+                None
+            };
             let outcome = chat_with_quest_greetings(
                 &chat,
                 &runtime,
@@ -2104,6 +2202,8 @@ mod tests {
                 &say("hi"),
                 BASE,
                 tracks.as_ref(),
+                carried.as_ref(),
+                Some(90),
             );
             assert_eq!(outcome, result(ChatDisposition::Ok));
             let heard = texts(chat.drain(first.1));
@@ -2119,6 +2219,25 @@ mod tests {
                 focused,
                 "focus {key} {value:?}"
             );
+            if key == ALDEE {
+                let result_of_time = chat_with_quest_greetings(
+                    &chat,
+                    &runtime,
+                    &ChannelSpellStates::default(),
+                    first,
+                    PremiumGate::CLOSED,
+                    &say("time"),
+                    SemanticTimeMicros::from_micros(BASE.get() + 2_000_000),
+                    None,
+                    None,
+                    Some(90),
+                );
+                assert_eq!(result_of_time, result(ChatDisposition::Ok));
+                let heard = texts(chat.drain(first.1));
+                assert_eq!(heard, texts(chat.drain(second.1)));
+                assert!(heard[1].1.starts_with("It's about 01:30."));
+                assert!(!heard[1].1.contains("|TIME|"));
+            }
         }
     }
 }

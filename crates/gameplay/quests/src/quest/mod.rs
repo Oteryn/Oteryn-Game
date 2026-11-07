@@ -37,6 +37,7 @@ pub mod native_rules;
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
+pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
 pub mod soul_war;

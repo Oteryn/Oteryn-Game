@@ -1,0 +1,747 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "crest"
+      ],
+      "topic": 0,
+      "next_topic": 60,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that serpent crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tribal crest"
+      ],
+      "topic": 0,
+      "next_topic": 61,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that tribal crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "holy water"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "reply": [
+        "Who sent you?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "cape",
+        "first addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the old cape with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "hat",
+        "second addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the sedge hat with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "What would you like me to forge?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "addons"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Choose the first or second addon."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "flou"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "explain"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "old backpack",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Did you find my old backpack?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.al_dee",
+      "keywords": [
+        "pick",
+        "small axe"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/pick_quest/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Picks are hard to come by. I trade them only in exchange for high quality small axes. Would you like to make that deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.al_dee",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/pick_quest/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Well, then don't."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "distress",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "My pride is great but not greater than reason. I am not too proud to ask for help as this is a dark hour. ... ",
+        "This glade has been desecrated. We kept it secret for centuries, yet evil has found a way to sully and destroy what was our most sacred. ...",
+        "There is only one way to reinvigorate its spirits, a guardian must venture down there and bring life back into the forest. ... ",
+        "Stolen {seeds} need to be wrested from the {intruders} and planted where the soil still hungers. ... ",
+        "The purest {water} from the purest well needs to be brought there and poured and {birds} that give life need to be brought back to the inner sanctum of the glade. ...",
+        "Will you be our guardian?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "cages"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Crafted generations ago to rob a creature of its freedom for that it may earn it again truthfully. You will need them if you plan on returning the birds to their rightful home in the glade. ... ",
+        "Are you in need of another one? "
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I already handed a cage to you. If you are in need of another one, you will have to return to me later."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "seeds"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Seeds to give life to strong trees, blooming and proud. The {intruders} robbed us from them."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "intruders"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The intruders appeared in the blink of an eye. Out of thin air, as if they came from nowhere. They overrun the glade within ours and drove away what was remaining from us within the day."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "water"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The purest water flows through this well. For centuries we concealed it, for other beings to not lay their eyes on it."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "birds"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Take care, guardian."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "phials"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Phials for the purest water from our sacred well. They are finely crafted and very fragile. We keep a small supply up here around the well. Probably the only thing the intruders did not care for."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_wandering_soul",
+      "keywords": [
+        "blood crystal"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "A crystal? My mind is too clouded by grief to understand what you mean right now."
+      ]
+    }
+  ]
+}

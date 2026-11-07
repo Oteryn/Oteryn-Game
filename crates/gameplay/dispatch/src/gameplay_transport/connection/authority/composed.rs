@@ -382,12 +382,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 break outcome;
             }
         };
+        let minute = npc_talk::world_minute(self.world_clock_utc_ms());
         if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
             && let Some(conversation) = &mut outcome.conversation
         {
-            for line in &mut conversation.lines {
-                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
-            }
+            conversation.lines.retain_mut(|line| {
+                let named = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+                match npc_talk::render_world_time(&named, minute) {
+                    Some(rendered) => {
+                        *line = rendered;
+                        true
+                    }
+                    None => false,
+                }
+            });
         }
         Some(outcome)
     }
@@ -399,12 +407,20 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
         let mut outcome = self.vocation_talk(actor, command, intent).await;
+        let minute = npc_talk::world_minute(self.world_clock_utc_ms());
         if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
             && let Some(conversation) = &mut outcome.conversation
         {
-            for line in &mut conversation.lines {
-                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
-            }
+            conversation.lines.retain_mut(|line| {
+                let named = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+                match npc_talk::render_world_time(&named, minute) {
+                    Some(rendered) => {
+                        *line = rendered;
+                        true
+                    }
+                    None => false,
+                }
+            });
         }
         outcome
     }

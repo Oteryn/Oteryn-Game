@@ -747,7 +747,8 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Blood Crystal enchantment is a Blood Brothers quest transaction; excluded quest-lane repair required.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Exchange component qualified: Mission05>=2 preserved, exact8453->8225 paid repeats, once-only achievement, original seven-day decay, source voices and physical-lane protection. Whole NPC qualification continues immediately with source-map anchor repair; existing donor point is BlockSolid.",
+      "component_qualification": "PostgreSQL RED114.13s; held-lane non-yes RED96.33s; final three GREEN128.74s. Source-backed native generation and actual compiler parity independently checked. Shared Hallowed regression101.08s; quests259, NPC25, chat1; seven changed crates all-target/all-feature check and clippy -D warnings; fmt and repository regeneration/pins passed."
     },
     {
       "npc": "Chartan",
@@ -773,7 +774,7 @@
       "audit_status": "DIFF",
       "evidence": ".npcaudit/research/cranky-lizard-crone.md:1",
       "test": "Source review",
-      "status": "PENDING",
+      "status": "QUALIFIED_OTHER_LANE",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/cranky_lizard_crone.lua",
         "sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
@@ -781,7 +782,25 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Affirmative cape/hat exchanges require Wayfarer quest transitions; excluded quest-lane repair required.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Owner-required skip: source lane already qualifies the Wayfarer base/cape/hat NPC journey; reuse its shared engine and source callbacks.",
+      "qualification": {
+        "branch": "claude/happy-davinci-ijz3wy-qengine2",
+        "head": "9d3c3869f03a523601d5567cdb352d40854f3517",
+        "record": "qlane-meta/qengine2/QUEST-STATUS.json#/quests canonical oteryn:quest.wayfarer_outfits_quest",
+        "evidence": {
+          "batch": "L1-01",
+          "paths": [
+            "l1-wayfarer-wardrobe",
+            "l1-wayfarer-cape",
+            "l1-wayfarer-hat"
+          ],
+          "source": [
+            "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:50-95:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+            "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua:3-9:sha256:f4b5e3fdb2daa7e1ab892dfa6983e58b20a2d85874c3911f87ac32fe6a3a17bf"
+          ],
+          "scope": "All L1 base outfit and addon reward branches; preserve parent QuestState ownership and prerequisite tracks. Actual NPC/USE command dispatch, durable value receipts, atomic source flags, replay, client catalogue and earned appearance selection verified."
+        }
+      }
     },
     {
       "npc": "Esrik",
@@ -1773,9 +1792,9 @@
       "npc": "Al Dee",
       "town": "Rookgaard",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/15",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "evidence": "content/quests/shared-reward-callbacks.json:1; tools/content-schema/quest-authoring/npcfix_rewards.py:1; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npcfix_reward_dialogue.rs:1",
+      "test": "npcfix_reward_postgres_ plus actual repository NPC admission and source authoring reproduction",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/al_dee.lua",
         "sha256": "f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
@@ -1783,7 +1802,8 @@
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
       },
       "historical_note": "Retail placement authored. Pick Quest affirmative exchange requires the excluded quest lane.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Repeatable paid axe3462 -> pick3456 through the real fenced writer; exact confirmation, unpaid refusal, replay and physical-lane custody protection, source time and headers.",
+      "qualification": "PostgreSQL RED114.13s; held-lane non-yes RED96.33s; final three GREEN128.74s. Source-backed native generation and actual compiler parity independently checked. Shared Hallowed regression101.08s; quests259, NPC25, chat1; seven changed crates all-target/all-feature check and clippy -D warnings; fmt and repository regeneration/pins passed."
     },
     {
       "npc": "Dixi",
@@ -2584,17 +2604,18 @@
       "npc": "A Weakened Forest Fury",
       "town": "Venore",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/13",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "PENDING",
+      "evidence": "content/quests/shared-reward-callbacks.json:1; tools/content-schema/quest-authoring/npcfix_rewards.py:1; crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npcfix_reward_dialogue.rs:1",
+      "test": "npcfix_reward_postgres_ plus actual repository NPC admission and source authoring reproduction",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_weakened_forest_fury.lua",
         "sha256": "0d4e15a43d66332de7ca283d776f6a692d6247c80dacb66517c02f782db266e6",
         "class": "OTS_HYPOTHESIS_ONLY",
-        "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+        "assumption": "Pinned donor messages and BirdCage storage are authoritative compatibility evidence. Conservatively honor its explicit replacement-cage refusal: only the initial flag0->1 guardian acceptance issues a free cage; repeated requests never mint more."
       },
       "historical_note": "Retail placement authored. Forgotten Knowledge guarded interaction requires the excluded quest lane.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "One guardian acceptance issues cage23812 and BirdCage0->1 atomically. Premature confirmation and later cage requests never duplicate the free grant. Source messages and native physical admission verified.",
+      "qualification": "PostgreSQL RED114.13s; held-lane non-yes RED96.33s; final three GREEN128.74s. Source-backed native generation and actual compiler parity independently checked. Shared Hallowed regression101.08s; quests259, NPC25, chat1; seven changed crates all-target/all-feature check and clippy -D warnings; fmt and repository regeneration/pins passed."
     },
     {
       "npc": "Allen",
@@ -3075,7 +3096,104 @@
         "clippy": "PASS same packages/targets/features -D warnings, 40.23s after final fix",
         "self_review": "PASS; source-only guarded branches reuse existing fenced writer, no new durable authority, literal replies preserved; no binary/workflow/repository tooling edits"
       },
-      "placement_audit": "Compiler parity found Restless Soul held SpawnPoint at (32257,31101,10). State caller component passes but whole NPC qualification requires physical admission. Do not treat synthetic-room PG coverage as compiler admission proof."
+      "placement_audit": "Compiler parity found Restless Soul held SpawnPoint at (32257,31101,10). State caller component passes but whole NPC qualification requires physical admission. Do not treat synthetic-room PG coverage as compiler admission proof.",
+      "commit": "2df0986bb",
+      "push": "PASS origin exact NPCFIX branch eac78c5b8..2df0986bb"
+    },
+    {
+      "name": "source-backed costed NPC exchanges",
+      "entries": [
+        "A Weakened Forest Fury",
+        "Al Dee",
+        "A Wandering Soul"
+      ],
+      "state": "GREEN",
+      "session": 71904,
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_reward_postgres_ -- --nocapture",
+      "log": "/tmp/npcfix-evidence/reward-guard-final-pg.log",
+      "reuse": "Delivered source-only mechanisms from qengine2 9d3c3869f and questl2 7e16b64ee. Original shared physical helper guard restored and composed with matching-scope reward participant. No foreign B3 or placement output imported.",
+      "red_result": "3 failed, 114.13s; all three POSTGRES_STARTED markers, exact NoConversation at hi; per-case completion markers 90.73s/114.09s and wandering marker in reward-red.log",
+      "implementation": "Selective QENGINE2 reward and shared callback source reuse, preserving NPCFIX state stories and generated placement cohort. QUESTL2 capacity and costed-repeat semantics reused. Added explicit once-only achievements on costed repeats, native-matched original absolute reward deadlines, bounded carried evidence for conditional voices, canonical initial-value eligibility, and source-backed NPCFIX authoring module. Factored native lifetime qualification from spell-field classification. Source |TIME| uses the existing wire World clock in both NPC command and ordinary chat; unavailable evidence drops the unresolved line. Conditional read failure closes only the exact newly engaged NPC.",
+      "assumptions": [
+        "Forest Fury cage acceptance is guarded by its existing issued-cage flag; the source replacement dialogue explicitly declines another free cage.",
+        "Al Dee uses a preserved internal receipt track for its source-stateless costed exchange; it grants no invented quest progress."
+      ],
+      "validation_notes": [
+        "First diagnostic check found one foreign test RewardCallback constructor requiring new repeat flags; fixed with false defaults.",
+        "Authoring suite retained all original wardrobe/source assertions; extended original-composition cohort check with a separate exact three-callback NPCFIX assertion.",
+        "Native source revealed charged blood crystal seven-day expiry; implemented original absolute Item schedule rather than stripping its timer.",
+        "Stopped builds before removing only disposable /workspace/oteryn-env/target/debug/incremental after disk dropped to 5 GB free; sources/PG/dependencies retained.",
+        "Source-authoring suite PASS12,7.114s; retains all original wardrobe target and source assertions. Added command crystal voice, exact seven-day deadline, unpaid refusal and exact recipe replay checks. First GREEN compile attempt stopped on missing adapter import, now fixed; no PG result claimed."
+      ],
+      "first_postgres_result": "2 passed (Wandering104.59s; Fury104.67s), Al Dee failed112:yes due Pick temporal UNKNOWN; all DB markers present, total107.19s",
+      "repair": "Pinned item capture now fills only unknown temporal facts on existing native profiles, rejecting all known semantic conflicts and retaining other owner fields. Pick3456 is source-proven non-timed. No runtime refusal or test predicate weakened.",
+      "next": "After Al Dee GREEN: full repository regeneration, all-three fresh PG plus focused common-engine regression, relevant unit/content checks, physical parity, strict changed-crate checks, then commit and fast-forward push.",
+      "isolated_al_dee_green": "PASS, POSTGRES_STARTED and POSTGRES_CASE_COMPLETED,96.502s; two paid exchanges, exact words, unpaid refusal, exact replay",
+      "metadata_checkpoint": "371b5ed38 pushed fast-forward on current remote2a871a435 via isolated sparse metadata worktree; published ACTIVE-REWARD-DELIVERY.md to prevent duplicate caller work while source validation continues.",
+      "upstream_merge_pending": "Fetched explicit lane tracking ref bb1c5b464: includes planner, checkpoint371b5ed38 and independent Fading Memory-only source producer. Preserve and combine add/add producer/schema/test conflicts. remote.origin.fetch tracks main only; always fetch refs/heads/<lane>:refs/remotes/origin/<lane>.",
+      "source_profile_tests": "PASS2,15.841s; unknown lifetime enrichment preserves every other existing field and known weight conflicts reject.",
+      "regeneration": "Completed repository generation; exact 42-output registration and all original 41 outputs retained. All Python checks passed. Repository integration 5 passed in56.17s. Pin b2c1f0d77b22c96cb32de336768475913406451924a1ec92e7f45885eac782f8 refreshed and checked with repository compiler.",
+      "physical_admission": {
+        "Al Dee": "ADMITTED",
+        "A Weakened Forest Fury": "ADMITTED",
+        "A Wandering Soul": "Source cell32914,31490,7 is BlockSolid. Exchange proof does not qualify placement. Resolve in immediate following source-map placement batch; do not weaken terrain admission."
+      },
+      "final_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
+      "number_check": "Repository next-free-numbers.py checked origin/main91afbe0ba1 plus open PR changed-file numbers:1140-1143 not reserved;0999 source reuse also unreserved.",
+      "review_finding": "Reused qengine source removed existing SpellLanePermit arguments from shared location helpers. Restore original guard and thread a matching permit through QuestRewardAdmission; NPC adapter must acquire physical lane before revision slot, honor player-trade physical-service exclusion and drop lane before refresh.",
+      "guard_regression": "Al Dee held-lane PG PASS97.17s because the outer NPC bank handler already briefly acquires a permit for words containing yes, then drops it before quest dispatch. Added equivalent real non-yes Wandering blood crystal assertion; current reward-nonyes-physical-red.log. Actual missing inner guard must be tested there before applying /tmp/npcfix-evidence/restore-physical-guard.py.",
+      "npc_units": "24 passed,1 failed139.35s: imported test requires no scripted dialogue keywords. Original assertion preserved; static source headers now projected into separate text-only tuples, never scripted keyword records. Rerun full25 after repair.",
+      "guard_red": "FAIL against PostgreSQL,96.33s, POSTGRES_STARTED and completion96.324s; exact assertion a non-yes reward must wait for the physical lane. No guard repair applied until this failure.",
+      "guard_repair": "Restored original SpellLanePermit helper signatures and all existing world callers; reward participant now requires and validates matching-scope permit. Adapter acquires physical lane before Character revision slot, honors existing player-trade physical_service exclusion and drops permit before refresh. Original no-script unit assertion unchanged; static headers use separate text-only records.",
+      "final_guard_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
+      "checks": {
+        "quest_units": "259 passed12.73s before Rust-only permit/header repair; no quest crate changes since",
+        "npc_units": "25 passed145.47s after repair, original no-script assertion retained",
+        "shared_reward_postgres": "Hallowed Ground PASS101.08s after repair, POSTGRES_CASE_COMPLETED101.076s",
+        "generation": "All Python checks PASS; repository integration5 passed56.17s; pin-refresh/pin-check PASS",
+        "source_authoring": "12 passed7.114s",
+        "native_source_closure": "2 passed15.841s",
+        "ordinary_chat": "1 passed38.61s after repair",
+        "world_time": "1 pure unit passed; actual time response also checked by Al Dee PostgreSQL case",
+        "cargo_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 56s",
+        "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 33s",
+        "fmt": "PASS cargo fmt --all --check; mounted helpers explicitly rustfmt",
+        "self_review": "PASS after repairing proved non-yes physical-lane bypass and preserving original no-script assertion; see REVIEW-BATCH3.md",
+        "npc_style_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 46s",
+        "number_allocation": "Repository next-free-numbers.py main/open-PR lookup: new1140-1143 and reused0999 unreserved"
+      },
+      "native_fact_citations": [
+        {
+          "item": 3456,
+          "source": "imports/canary/items-xml/items.xml:10819",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "temporal_fields": []
+        },
+        {
+          "item": 8225,
+          "source": "imports/canary/items-xml/items.xml:22837",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "temporal_fields": [
+            "imports/canary/items-xml/items.xml:22840 <attribute key=\"duration\" value=\"604800\"/>",
+            "imports/canary/items-xml/items.xml:22841 <attribute key=\"decayTo\" value=\"8453\"/>"
+          ]
+        },
+        {
+          "item": 8453,
+          "source": "imports/canary/items-xml/items.xml:23064",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "temporal_fields": []
+        },
+        {
+          "item": 23812,
+          "source": "imports/canary/items-xml/items.xml:47125",
+          "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "temporal_fields": []
+        }
+      ],
+      "pre_review_pg": "PASS3,111.13s; all POSTGRES_STARTED and completion markers. Al Dee103.595s, Wandering108.389s, Fury111.127s; paid repeats/exact words/unpaid refusal/replay/voices/original timer/one achievement verified.",
+      "commit": "source commit follows this record",
+      "push": "Merge current incoming planner/source authoring, validate affected paths and push fast-forward."
     }
   ],
   "owner_constraints": {
@@ -3090,11 +3208,11 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Reuse qengine2 reward engine and questl2 reward capacity; resolve actual NPC admission and continue remaining entries.",
+  "next_batch": "Immediately repair physical anchors for Wandering Soul, Restless Soul, Doctor Marrow and Goldro using source/map proof and real PostgreSQL admission; then remaining owned entries, including Fading Memory cooldown reuse.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
-      "head": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+      "head": "9d3c3869f",
       "found": [
         "atomic NPC take/give/present callbacks",
         "outfit and achievement grants",
@@ -3104,10 +3222,11 @@
       "action": "Merge/reuse after committing the current green caller batch; do not author a second inventory grant engine."
     },
     "questl2": {
-      "head": "e5a4d6e7e46e7bf3a6754b563fd8647900de7680",
+      "head": "7e16b64ee",
       "found": [
         "16-track shared reward capacity",
-        "PG atomic eleven-track proof"
+        "PG atomic eleven-track proof",
+        "explicit costed repeatable item exchange with occurrence mint keys and exact replay"
       ],
       "action": "Reuse reward-plan/schema capacity extensions; both implementations use the same core bound."
     },
@@ -3121,5 +3240,100 @@
     },
     "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+  },
+  "active_batch": {
+    "name": "source-backed costed NPC exchanges",
+    "entries": [
+      "A Weakened Forest Fury",
+      "Al Dee",
+      "A Wandering Soul"
+    ],
+    "state": "GREEN",
+    "session": 71904,
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_reward_postgres_ -- --nocapture",
+    "log": "/tmp/npcfix-evidence/reward-guard-final-pg.log",
+    "reuse": "Delivered source-only mechanisms from qengine2 9d3c3869f and questl2 7e16b64ee. Original shared physical helper guard restored and composed with matching-scope reward participant. No foreign B3 or placement output imported.",
+    "red_result": "3 failed, 114.13s; all three POSTGRES_STARTED markers, exact NoConversation at hi; per-case completion markers 90.73s/114.09s and wandering marker in reward-red.log",
+    "implementation": "Selective QENGINE2 reward and shared callback source reuse, preserving NPCFIX state stories and generated placement cohort. QUESTL2 capacity and costed-repeat semantics reused. Added explicit once-only achievements on costed repeats, native-matched original absolute reward deadlines, bounded carried evidence for conditional voices, canonical initial-value eligibility, and source-backed NPCFIX authoring module. Factored native lifetime qualification from spell-field classification. Source |TIME| uses the existing wire World clock in both NPC command and ordinary chat; unavailable evidence drops the unresolved line. Conditional read failure closes only the exact newly engaged NPC.",
+    "assumptions": [
+      "Forest Fury cage acceptance is guarded by its existing issued-cage flag; the source replacement dialogue explicitly declines another free cage.",
+      "Al Dee uses a preserved internal receipt track for its source-stateless costed exchange; it grants no invented quest progress."
+    ],
+    "validation_notes": [
+      "First diagnostic check found one foreign test RewardCallback constructor requiring new repeat flags; fixed with false defaults.",
+      "Authoring suite retained all original wardrobe/source assertions; extended original-composition cohort check with a separate exact three-callback NPCFIX assertion.",
+      "Native source revealed charged blood crystal seven-day expiry; implemented original absolute Item schedule rather than stripping its timer.",
+      "Stopped builds before removing only disposable /workspace/oteryn-env/target/debug/incremental after disk dropped to 5 GB free; sources/PG/dependencies retained.",
+      "Source-authoring suite PASS12,7.114s; retains all original wardrobe target and source assertions. Added command crystal voice, exact seven-day deadline, unpaid refusal and exact recipe replay checks. First GREEN compile attempt stopped on missing adapter import, now fixed; no PG result claimed."
+    ],
+    "first_postgres_result": "2 passed (Wandering104.59s; Fury104.67s), Al Dee failed112:yes due Pick temporal UNKNOWN; all DB markers present, total107.19s",
+    "repair": "Pinned item capture now fills only unknown temporal facts on existing native profiles, rejecting all known semantic conflicts and retaining other owner fields. Pick3456 is source-proven non-timed. No runtime refusal or test predicate weakened.",
+    "next": "After Al Dee GREEN: full repository regeneration, all-three fresh PG plus focused common-engine regression, relevant unit/content checks, physical parity, strict changed-crate checks, then commit and fast-forward push.",
+    "isolated_al_dee_green": "PASS, POSTGRES_STARTED and POSTGRES_CASE_COMPLETED,96.502s; two paid exchanges, exact words, unpaid refusal, exact replay",
+    "metadata_checkpoint": "371b5ed38 pushed fast-forward on current remote2a871a435 via isolated sparse metadata worktree; published ACTIVE-REWARD-DELIVERY.md to prevent duplicate caller work while source validation continues.",
+    "upstream_merge_pending": "Fetched explicit lane tracking ref bb1c5b464: includes planner, checkpoint371b5ed38 and independent Fading Memory-only source producer. Preserve and combine add/add producer/schema/test conflicts. remote.origin.fetch tracks main only; always fetch refs/heads/<lane>:refs/remotes/origin/<lane>.",
+    "source_profile_tests": "PASS2,15.841s; unknown lifetime enrichment preserves every other existing field and known weight conflicts reject.",
+    "regeneration": "Completed repository generation; exact 42-output registration and all original 41 outputs retained. All Python checks passed. Repository integration 5 passed in56.17s. Pin b2c1f0d77b22c96cb32de336768475913406451924a1ec92e7f45885eac782f8 refreshed and checked with repository compiler.",
+    "physical_admission": {
+      "Al Dee": "ADMITTED",
+      "A Weakened Forest Fury": "ADMITTED",
+      "A Wandering Soul": "Source cell32914,31490,7 is BlockSolid. Exchange proof does not qualify placement. Resolve in immediate following source-map placement batch; do not weaken terrain admission."
+    },
+    "final_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
+    "number_check": "Repository next-free-numbers.py checked origin/main91afbe0ba1 plus open PR changed-file numbers:1140-1143 not reserved;0999 source reuse also unreserved.",
+    "review_finding": "Reused qengine source removed existing SpellLanePermit arguments from shared location helpers. Restore original guard and thread a matching permit through QuestRewardAdmission; NPC adapter must acquire physical lane before revision slot, honor player-trade physical-service exclusion and drop lane before refresh.",
+    "guard_regression": "Al Dee held-lane PG PASS97.17s because the outer NPC bank handler already briefly acquires a permit for words containing yes, then drops it before quest dispatch. Added equivalent real non-yes Wandering blood crystal assertion; current reward-nonyes-physical-red.log. Actual missing inner guard must be tested there before applying /tmp/npcfix-evidence/restore-physical-guard.py.",
+    "npc_units": "24 passed,1 failed139.35s: imported test requires no scripted dialogue keywords. Original assertion preserved; static source headers now projected into separate text-only tuples, never scripted keyword records. Rerun full25 after repair.",
+    "guard_red": "FAIL against PostgreSQL,96.33s, POSTGRES_STARTED and completion96.324s; exact assertion a non-yes reward must wait for the physical lane. No guard repair applied until this failure.",
+    "guard_repair": "Restored original SpellLanePermit helper signatures and all existing world callers; reward participant now requires and validates matching-scope permit. Adapter acquires physical lane before Character revision slot, honors existing player-trade physical_service exclusion and drops permit before refresh. Original no-script unit assertion unchanged; static headers use separate text-only records.",
+    "final_guard_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
+    "checks": {
+      "quest_units": "259 passed12.73s before Rust-only permit/header repair; no quest crate changes since",
+      "npc_units": "25 passed145.47s after repair, original no-script assertion retained",
+      "shared_reward_postgres": "Hallowed Ground PASS101.08s after repair, POSTGRES_CASE_COMPLETED101.076s",
+      "generation": "All Python checks PASS; repository integration5 passed56.17s; pin-refresh/pin-check PASS",
+      "source_authoring": "12 passed7.114s",
+      "native_source_closure": "2 passed15.841s",
+      "ordinary_chat": "1 passed38.61s after repair",
+      "world_time": "1 pure unit passed; actual time response also checked by Al Dee PostgreSQL case",
+      "cargo_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 56s",
+      "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 33s",
+      "fmt": "PASS cargo fmt --all --check; mounted helpers explicitly rustfmt",
+      "self_review": "PASS after repairing proved non-yes physical-lane bypass and preserving original no-script assertion; see REVIEW-BATCH3.md",
+      "npc_style_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 46s",
+      "number_allocation": "Repository next-free-numbers.py main/open-PR lookup: new1140-1143 and reused0999 unreserved"
+    },
+    "native_fact_citations": [
+      {
+        "item": 3456,
+        "source": "imports/canary/items-xml/items.xml:10819",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "temporal_fields": []
+      },
+      {
+        "item": 8225,
+        "source": "imports/canary/items-xml/items.xml:22837",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "temporal_fields": [
+          "imports/canary/items-xml/items.xml:22840 <attribute key=\"duration\" value=\"604800\"/>",
+          "imports/canary/items-xml/items.xml:22841 <attribute key=\"decayTo\" value=\"8453\"/>"
+        ]
+      },
+      {
+        "item": 8453,
+        "source": "imports/canary/items-xml/items.xml:23064",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "temporal_fields": []
+      },
+      {
+        "item": 23812,
+        "source": "imports/canary/items-xml/items.xml:47125",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "temporal_fields": []
+      }
+    ],
+    "pre_review_pg": "PASS3,111.13s; all POSTGRES_STARTED and completion markers. Al Dee103.595s, Wandering108.389s, Fury111.127s; paid repeats/exact words/unpaid refusal/replay/voices/original timer/one achievement verified.",
+    "commit": "source commit follows this record",
+    "push": "Merge current incoming planner/source authoring, validate affected paths and push fast-forward."
   }
 }

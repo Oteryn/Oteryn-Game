@@ -23,6 +23,85 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
+const REWARD_CALLBACKS: &str =
+    include_str!("../../../../content/quests/shared-reward-callbacks.json");
+const REWARD_GREETINGS: &str =
+    include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+struct ConditionalGreeting {
+    track: String,
+    minimum: i64,
+    item: String,
+    text: String,
+}
+
+#[derive(serde::Deserialize)]
+struct RewardMessages {
+    npc: String,
+    greet: String,
+    farewell: String,
+    walkaway: String,
+    #[serde(default)]
+    conditional: Vec<ConditionalGreeting>,
+}
+
+fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
+    #[derive(serde::Deserialize)]
+    struct Document {
+        schema: u32,
+        npcs: Vec<RewardMessages>,
+    }
+    static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
+    let rows = DATA.get_or_init(|| {
+        serde_json::from_str::<Document>(REWARD_GREETINGS)
+            .ok()
+            .filter(|d| {
+                d.schema == 1
+                    && d.npcs.len() <= 256
+                    && d.npcs.iter().all(|npc| {
+                        npc.conditional.len() <= 8
+                            && npc.conditional.iter().all(|variant| {
+                                variant.track.starts_with("oteryn:quest-progress/")
+                                    && variant.track.len() <= 128
+                                    && variant.item.starts_with("oteryn:item.")
+                                    && variant.item.len() <= 256
+                                    && !variant.text.is_empty()
+                                    && variant.text.len() <= 1024
+                                    && !variant.text.chars().any(char::is_control)
+                            })
+                    })
+            })
+            .map(|d| d.npcs)
+    });
+    reward_callback_npc(key).then_some(())?;
+    rows.as_ref()?.iter().find(|r| r.npc == key)
+}
+
+// Project only the identities here. The Quest loader owns validation of the
+// complete callback; admitting a greeting grants no durable reward authority.
+fn reward_callback_npc(key: &str) -> bool {
+    #[derive(serde::Deserialize)]
+    struct Document {
+        schema: u32,
+        callbacks: Vec<Identity>,
+    }
+    #[derive(serde::Deserialize)]
+    struct Identity {
+        npc: String,
+    }
+    static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
+        std::sync::OnceLock::new();
+    NPCS.get_or_init(|| {
+        serde_json::from_str::<Document>(REWARD_CALLBACKS)
+            .ok()
+            .filter(|d| d.schema == 1 && d.callbacks.len() <= 256)
+            .map(|d| d.callbacks.into_iter().map(|c| c.npc).collect())
+            .unwrap_or_default()
+    })
+    .contains(key)
+}
+
 fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
     keyword.reply.len() == 1 && literal_topic(keyword)
 }
@@ -46,8 +125,11 @@ pub struct NpcTalkEntry {
     bank: bool,
     admitted_dialogue: bool,
     dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
+    /// Read-only source headers contain only triggers and text, never scripted effects.
+    source_literals: Vec<(Vec<String>, String)>,
     greetings: Vec<String>,
     greeting_reply: String,
+    conditional_greetings: Vec<ConditionalGreeting>,
     farewell_reply: String,
     source_name_templates: bool,
     source_walkaway: Option<String>,
@@ -63,6 +145,35 @@ impl NpcTalkEntry {
     pub fn greeting(&self) -> &str {
         &self.greeting_reply
     }
+    /// Read-only voice selection; this grants no item or progress authority.
+    pub fn conditional_greeting(
+        &self,
+        tracks: Option<&std::collections::BTreeMap<String, i64>>,
+        carried: Option<&std::collections::BTreeMap<String, i64>>,
+    ) -> Option<&str> {
+        if self.conditional_greetings.is_empty() {
+            return Some(&self.greeting_reply);
+        }
+        let (tracks, carried) = (tracks?, carried?);
+        Some(
+            self.conditional_greetings
+                .iter()
+                .find(|variant| {
+                    tracks.get(&variant.track).copied().unwrap_or(0) >= variant.minimum
+                        && carried.get(&variant.item).is_some_and(|count| *count > 0)
+                })
+                .map_or(self.greeting_reply.as_str(), |variant| {
+                    variant.text.as_str()
+                }),
+        )
+    }
+
+    pub fn greeting_items(&self) -> impl Iterator<Item = &str> {
+        self.conditional_greetings
+            .iter()
+            .map(|variant| variant.item.as_str())
+    }
+
     pub fn bank(&self) -> bool {
         self.bank
     }
@@ -101,8 +212,10 @@ impl NpcTalkEntry {
             bank: false,
             admitted_dialogue: false,
             dialogue_keywords: Vec::new(),
+            source_literals: Vec::new(),
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_reply: format!("Greetings, I am {name}."),
+            conditional_greetings: Vec::new(),
             farewell_reply: "Farewell.".to_owned(),
             source_name_templates: false,
             source_walkaway: None,
@@ -164,12 +277,14 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{}",
+                "{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
+                REWARD_CALLBACKS,
+                REWARD_GREETINGS,
                 state_stories::TEXT,
             )),
             ..Self::default()
@@ -179,6 +294,7 @@ impl NpcTalkBook {
                 .insert(reference.key.clone(), npc.name.clone());
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
+            let reward_messages = reward_messages(&reference.key);
             let state_messages = state_stories::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
@@ -258,6 +374,15 @@ impl NpcTalkBook {
                 // consumers. This admits their greeting, not their Lua/script
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
+            } else if let Some(messages) = reward_messages {
+                // Stateful effects belong to dispatch. Literal source headers are
+                // projected separately into a type that cannot carry script effects.
+                (
+                    messages.greet.clone(),
+                    messages.farewell.clone(),
+                    None,
+                    Vec::new(),
+                )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -408,19 +533,36 @@ impl NpcTalkBook {
                         .any(|service| service.bank),
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
+                    conditional_greetings: reward_messages
+                        .map(|messages| messages.conditional.clone())
+                        .unwrap_or_default(),
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
                         || isle_messages.is_some()
+                        || reward_callback_npc(&reference.key)
                         || state_messages.is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else if let Some(messages) = state_messages {
                         Some(messages.walkaway)
                     } else {
-                        isle_messages.map(|messages| messages.walkaway)
+                        isle_messages
+                            .map(|messages| messages.walkaway)
+                            .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
                     },
                     topic_reply,
                     dialogue_keywords,
+                    source_literals: reward_messages
+                        .and(npc.bank_dialogue.as_ref())
+                        .map(|dialogue| {
+                            dialogue
+                                .keywords
+                                .iter()
+                                .filter(|keyword| literal_keyword(keyword))
+                                .map(|keyword| (keyword.triggers.clone(), keyword.reply[0].clone()))
+                                .collect()
+                        })
+                        .unwrap_or_default(),
                     offers: npc
                         .services
                         .iter()
@@ -552,6 +694,17 @@ pub fn talk<K: Copy + PartialEq>(
                 continuations: Vec::new(),
             });
         }
+        if let Some((_, reply)) = npc.entry.source_literals.iter().find(|(triggers, _)| {
+            triggers
+                .iter()
+                .all(|trigger| contains_words(&said, &words(trigger)))
+        }) {
+            return Some(NpcReply {
+                id: npc.id,
+                text: reply.clone(),
+                continuations: Vec::new(),
+            });
+        }
         if let Some(keyword) = npc.entry.dialogue_keywords.iter().find(|keyword| {
             // Project keywords canonicalize their trigger set by sorting. Every literal
             // trigger must occur, independently of that serialization order.
@@ -614,6 +767,33 @@ fn start<K: Copy + PartialEq>(
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+            let key = format!("oteryn:npc.{name}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("missing reward conversation {key}"))?;
+            assert!(!entry.greeting_reply.is_empty());
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "no scripted reward branch opens through talk rules"
+            );
+        }
+        assert!(!reward_callback_npc("oteryn:npc.unqualified"));
+        Ok(())
+    }
 
     #[test]
     fn monk_pilgrimage_npcs_have_native_conversation_entries() -> Result<(), String> {

@@ -35,7 +35,10 @@ class AcceptedOverlayTests(unittest.TestCase):
         actual=registration.outputs(ROOT)
         # PREY-DIFF registers the generated tier and slot-value tables below;
         # C1 registers the Newhaven starting-loadout item profiles.
-        self.assertEqual(len(actual),41)
+        reward_proof='tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
+        self.assertEqual(len(actual),42)
+        self.assertIn(reward_proof,actual)
+        self.assertEqual(len(set(actual)-{reward_proof}),41)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)

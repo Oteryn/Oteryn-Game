@@ -37,6 +37,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 type RecentIntents = VecDeque<u64>;
 mod classic_quests;
 mod coin_exchange;
+mod conditional_greeting;
 mod dark_trails;
 mod endgame;
 mod grizzly;
@@ -50,6 +51,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod state_dialogue;
@@ -859,6 +861,18 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) =
+        conditional_greeting::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return conditional_greeting::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) =
         state_dialogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)

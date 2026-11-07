@@ -840,6 +840,20 @@ mod death_ml_loss_composed {
             .as_mut()
             .ok_or("the manifest pins build training")?
             .content_revision = content.into();
+        {
+            let cosmetics = &mut supplied.cosmetics;
+            let mut packet: serde_json::Value = serde_json::from_slice(&cosmetics.bytes)?;
+            if packet["availability"] == "authored" {
+                // The fixture rebinds the Character content revision above;
+                // its admitted appearance packet must use that same revision.
+                packet["authoring"]["document"]["content_revision"] = content.into();
+                cosmetics.bytes = serde_json::to_vec(&packet)?;
+                cosmetics.sha256 = sha2::Sha256::digest(&cosmetics.bytes)
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect();
+            }
+        }
         let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
             .map_err(debug)?;
         let issuance = NativeEntryActivationIssuance {
