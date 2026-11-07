@@ -180,4 +180,3 @@ async fn relog_and_check(
     }
     Ok(())
 }
-
