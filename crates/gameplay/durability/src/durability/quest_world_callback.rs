@@ -82,6 +82,7 @@ pub(super) async fn consume_reward_inputs(
         .take
         .iter()
         .chain(&callback.present)
+        .chain(&callback.present_any)
         .map(|i| i.item.as_str())
         .collect();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
@@ -100,6 +101,28 @@ pub(super) async fn consume_reward_inputs(
             }
         }
         if needed != 0 {
+            return Ok(false);
+        }
+    }
+    // Alternatives borrow the same bounded locked custody scan. Each choice
+    // must satisfy its own full count; partial quantities from different Item
+    // definitions cannot be combined. No evidence is consumed by this check.
+    if !callback.present_any.is_empty() {
+        let mut satisfied = false;
+        for evidence in &callback.present_any {
+            let mut needed = i64::from(evidence.count);
+            for row in &rows {
+                if row.try_get::<&str, _>("definition_production_key")? == evidence.item {
+                    let quantity: i64 = row.try_get("quantity")?;
+                    needed -= needed.min(quantity);
+                }
+            }
+            if needed == 0 {
+                satisfied = true;
+                break;
+            }
+        }
+        if !satisfied {
             return Ok(false);
         }
     }

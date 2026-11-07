@@ -78,6 +78,61 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/beginning-carlos/food-evidence",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "yes",
+        "help",
+        "ok"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_quest_log",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_trade_storage",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "present_any": [
+        {
+          "item": "oteryn:item.tibia.i3577",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3582",
+          "count": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That smells delicious. Ask me for a trade and I will pay two gold pieces for each piece of meat or ham."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L168-L177"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/beginning-carlos/greet",
       "quest": "oteryn:quest.the_beginning_quest",
       "npc": "oteryn:npc.carlos",

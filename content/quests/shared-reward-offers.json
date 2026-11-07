@@ -554,6 +554,28 @@
       "reply": [
         "Did your hunt succeed? Have you brought meat or ham?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.carlos",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "Do you still have meat or ham? Ask me for a trade to sell it."
+      ]
     }
   ]
 }
