@@ -162,6 +162,11 @@ impl DurabilityRoot {
             .find(|c| c.key == request.transition_key);
         if reward_callback.is_some() != reward_admission.is_some()
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+            || reward_callback.as_ref().is_some_and(|callback| {
+                catalogue
+                    .transition(&request.transition_key)
+                    .is_none_or(|transition| transition.experience != callback.experience)
+            })
         {
             return Err(CharacterProgressionError::InvalidInput);
         }

@@ -42,6 +42,9 @@ pub struct RewardCallback {
     pub topic: u16,
     pub next_topic: u16,
     pub storage: Vec<Storage>,
+    /// Awarded by the existing fenced Quest XP obligation owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
     pub take: Vec<ItemAmount>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -100,6 +103,8 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+            || c.experience
+                .is_some_and(|value| !(1..=super::QUESTGATE0_RL_05).contains(&value))
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -180,7 +185,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 })
                 .collect(),
             completes: false,
-            experience: None,
+            experience: callback.experience,
         });
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
@@ -196,6 +201,12 @@ mod tests {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let callbacks = load()?;
         assert!(callbacks.len() >= 6);
+        for amount in [0, -1, super::super::QUESTGATE0_RL_05 + 1] {
+            let mut invalid: serde_json::Value =
+                serde_json::from_str(source).map_err(|error| error.to_string())?;
+            invalid["callbacks"][0]["experience"] = amount.into();
+            assert!(parse(&invalid.to_string()).is_err(), "invalid XP {amount}");
+        }
         for edit in 0..6 {
             let mut value: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;

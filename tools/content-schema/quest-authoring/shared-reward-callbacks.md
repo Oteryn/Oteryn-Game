@@ -21,6 +21,7 @@ Each record has these fields:
 | `keywords` | One to eight exact, trimmed, lowercase ASCII player messages. |
 | `topic`, `next_topic` | Current/committed conversation topic, unsigned 16-bit integers. |
 | `storage` | One to eight `{track, minimum, maximum, set, preserve?}` predicates/effects. Bounds are inclusive; missing progress reads as `-1`. `preserve: true` keeps that predicate's value. At least one changed value must leave its accepted range, preventing immediate repeat grants. |
+| `experience` | Optional/null `1..100000000` XP, using the existing Quest XP obligation and transfer owner. The callback and executable transition must name the same amount; replay cannot transfer it twice. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
@@ -48,10 +49,11 @@ conversation offers to these registries during integration; it must preserve
 the existing records and unique keys. Do not replace the shared generator's
 outputs with a lane-only document.
 
-The current lane program contains Santiago's initial greeting and five
-storage-only tutorial confirmations. Return greetings restore source topics.
-These callbacks do not qualify the whole tutorial: physical hand-ins, world
-objects, XP, equipment and health lessons need their own executable bindings and
-PostgreSQL evidence. The reused optional item, outfit and achievement owners
+The current lane program contains Santiago's initial greeting, five tutorial
+confirmations, the exact three-leg/100-XP hand-in, and a native fish grant.
+Zirella's delivered-firewood reward grants 50 XP. Return greetings restore source topics.
+These callbacks do not qualify the whole tutorial: the remaining world
+objects, occurrences, equipment, health lessons and wood delivery still need
+their own executable bindings and PostgreSQL evidence. The reused optional item, outfit and achievement owners
 are available to subsequent source compositions; no unconfigured reward is
 inferred from dialogue text.

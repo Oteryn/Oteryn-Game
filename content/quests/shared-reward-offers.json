@@ -198,6 +198,28 @@
       "reply": [
         "Have you seen Zirella nearby?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "keywords": [
+        "hi",
+        "hello",
+        "greetings"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/zirella_npc_greet_storage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "reply": [
+        "That is enough firewood for my oven. Are you ready for your reward?"
+      ]
     }
   ]
 }

@@ -839,31 +839,40 @@
       }
     ],
     "current_batch": {
-      "id": "npc-programs-01",
+      "id": "tutorial-rewards-01",
       "phase": "GREEN",
-      "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+      "whole_entry_qualifications": 0,
+      "entries": [
+        "oteryn:quest.the_beginning_quest"
+      ],
+      "source_callbacks": [
+        "legs-handin:3physical7882+100XP, both flags7/5",
+        "food-grant:3578x1, both flags11/9",
+        "zirella-reward:50XP, both flags8/8"
+      ],
+      "generic_feature": "Optional bounded NPC callback XP uses the existing Quest XP obligation/transfer owner; common writer requires callback and executable transition XP amounts to match. No new XP writer or schema.",
       "red": {
-        "path": "/tmp/questpc3-npc-greet-red-positioned.log",
-        "failure": "NoConversation versus Ok",
-        "postgres_marker_ms": 86938,
-        "duration_seconds": 87.08
+        "log": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
+        "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50",
+        "postgres_marker_ms": 96086,
+        "duration_seconds": 96.32,
+        "failure": "Ok versus required Rejected: source hand-in branch absent"
       },
-      "first_green": {
-        "path": "/tmp/questpc3-npc-greet-green.log",
-        "scope": "Initial atomic source greeting and regreet only",
-        "postgres_marker_ms": 90144,
-        "completed_ms": 90482
+      "excluded_fixture_runs": [
+        "Missing FreshAdmissionAuthority trait import: compile failure, not RED.",
+        "initialized=true seeded another progression profile: no valid fence; changed to fresh admission initialized=false, not RED.",
+        "First positive run proved legs/100XP/replay and native fish, then AlreadyPlaced at a second NPC installation. Place Santiago+Zirella once; rerun all three."
+      ],
+      "validation_so_far": {
+        "cargo_check": "PASS four changed crates/all features",
+        "parser": "PASS1 including invalid XP bounds",
+        "schema": "PASS",
+        "native_regeneration": "PASS no unexpected native inputs",
+        "clippy": "PASS final4crates/all features/all targets after both-NPC fixture correction."
       },
-      "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
-      "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
-      "proof": "checks.npc_programs_01",
-      "publication": {
-        "mode": "commit and fast-forward push immediately after metadata update",
-        "parent": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-        "branch": "claude/happy-davinci-ijz3wy-questpc3",
-        "local_commit": "a4f1f4a21"
-      },
-      "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      "proof_pending": [],
+      "proof": "checks.tutorial_rewards_01",
+      "publication": "Commit green slice, merge remote025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e, validate combined source, fast-forward push."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1290,6 +1299,96 @@
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_sum.rs": "6e18451e6a76582748cb24ea40a3767d16f4d1bcd71e21763256b35a35c6acb8",
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "5316fa4183a42dc51f850fc60f0dcc424de350e367f6b3efd1a5515c58cda883"
         }
+      },
+      "tutorial_rewards_01": {
+        "logs": {
+          "red": {
+            "path": "/tmp/questpc3-beginning-rewards-red-valid-context.log",
+            "sha256": "af0fc50f48619a1aaf9c0b969282dcd68632bb5dffec5da85a85bc224d9a8b50"
+          },
+          "green": {
+            "path": "/tmp/questpc3-beginning-rewards-green-final.log",
+            "sha256": "99397df2ddb97be3dc332346b9b86f9bd32f0518c8fe08a0059c5d2cc2bbc2e8"
+          },
+          "dialogue": {
+            "path": "/tmp/questpc3-beginning-rewards-dialogue-regression.log",
+            "sha256": "7932f334cfcb0258bd76ebe11334387ff6f4d7b9b59946199223e937d59251c6"
+          },
+          "npc_book": {
+            "path": "/tmp/questpc3-beginning-rewards-npc-book.log",
+            "sha256": "ace29935408b71b9a026c12f17cd8f158d98cb54113a2397dd0e9d4628d531bc"
+          },
+          "parser": {
+            "path": "/tmp/questpc3-beginning-rewards-parser.log",
+            "sha256": "f50709473b92358e55ad24b8cc37b11ab8e7f5a2147fe866e9ec02f73667c940"
+          },
+          "check": {
+            "path": "/tmp/questpc3-beginning-rewards-check.log",
+            "sha256": "088c8d26dcbd683486235ecccfcf1a1287693717d274fdb8a1f17f51f7e11c4b"
+          },
+          "clippy": {
+            "path": "/tmp/questpc3-beginning-rewards-clippy-final.log",
+            "sha256": "a339183c52d0e53d4e4f0c9debe9bc54b1cc92574f4440c4570ce578f1fa5266"
+          },
+          "fmt": {
+            "path": "/tmp/questpc3-beginning-rewards-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "regeneration": {
+            "path": "/tmp/questpc3-beginning-rewards-regen.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754"
+          },
+          "pin_check": {
+            "path": "/tmp/questpc3-beginning-rewards-pin-check.log",
+            "sha256": "b07bdff1b9ba6c4706c27a74e2ed7abb08deb3ca632b58077b23830a0b578a70"
+          },
+          "content_integration": {
+            "path": "/tmp/questpc3-beginning-rewards-content-integration.log",
+            "sha256": "7e6f73c4a583b3d9e8c492a5bcdeaf59b4cf1a9d56adbf7355d36f4f185429f5"
+          },
+          "content_world": {
+            "path": "/tmp/questpc3-beginning-rewards-content-world.log",
+            "sha256": "27cc4b8412e1856e4bd568890452d7f2793c48e88cc6091118c752c7cd42ddb1"
+          }
+        },
+        "results": {
+          "postgres": "18.6, selected PG cases not skipped",
+          "red_seconds": 96.32,
+          "red_marker_ms": 96086,
+          "green_seconds": 141.87,
+          "green_complete_ms": 141867,
+          "dialogue_seconds": 131.46,
+          "dialogue_complete_ms": 131460,
+          "source_rewards": 3,
+          "native_fish": 1,
+          "physical_legs_debited": 3,
+          "total_xp": 150,
+          "exact_replays": 3,
+          "substituted_xp_rejected": "InvalidInput before value",
+          "npc_book": 1,
+          "npc_book_seconds": 40.24,
+          "parser": 1,
+          "content_integration": 123,
+          "content_integration_seconds": 4.02,
+          "content_world": 5,
+          "content_world_seconds": 89.44,
+          "cargo_check": "PASS4crates/all features",
+          "clippy": "PASS4crates/all features/all targets -D warnings",
+          "fmt": "PASS cargo fmt all/check and four explicit changed Rust files",
+          "schema_producer_pin_and_native_regeneration": "PASS; pin unchanged; no unexpected native diffs"
+        },
+        "input_sha256": {
+          "content/dialogues/quests/shared-reward-greetings.json": "ff2ed02cdbdbac768262c88af93619130ea131355d707078968a574d1ff41ea8",
+          "content/quests/shared-reward-callbacks.json": "de1948837f9fff7b880e87ae607f17ba1b710d679a58a4e81558669e844e03f8",
+          "content/quests/shared-reward-offers.json": "b2aec9e8a79654fcfed366b96b45322ffe707b2b5ac75f8d556417dc5cab2bdf",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_beginning_rewards.rs": "c02165b58846a38d167fbcb2392d628862513c2e689f2de08ffdb22c2629891d",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "268d473a6ecb34e2ef9accf63d02fab8d8f6ae1c0bc6060a26cd70254750e1dd",
+          "crates/gameplay/durability/src/durability/quest_state/writer.rs": "c5f735f1bfb8b3775f6c701766f36b2d239189b993bc9eb4209346ab93a23f8c",
+          "crates/gameplay/quests/src/quest/reward_callbacks.rs": "dfef254b9e3c9ea7b35a6590e31d26e2ba0f624b649d908de352fa79e623bfb0",
+          "tools/content-schema/quest-authoring/questpc3_npc_programs.py": "5f7d4597577471781895e6b6f3f5939d5b5be8f4db327beed5ba69db95c99112",
+          "tools/content-schema/quest-authoring/shared-reward-callbacks.md": "12e360527059858e0e9e2e39e6e78d20feb8dfb7b54f21c50951e2c4db2288d1",
+          "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json": "a3a426042d92ab96b8c044de0f49d5b9012167baa6aba4fa16fdced014ac1929"
+        }
       }
     },
     "source_corrections": [
@@ -1317,7 +1416,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T00:13:04.902970+00:00",
+    "updated_at": "2026-11-07T00:52:44.265647+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -1471,6 +1570,35 @@
       },
       "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
       "combined_proof": "checks.npc_sum_integration"
+    },
+    "completed_mechanism_batches": {
+      "npc-programs-01": {
+        "id": "npc-programs-01",
+        "phase": "GREEN",
+        "scope": "Selectively reused qengine2 NPC reward engine; six Santiago source callbacks and return greetings. Whole Beginning remains in progress.",
+        "red": {
+          "path": "/tmp/questpc3-npc-greet-red-positioned.log",
+          "failure": "NoConversation versus Ok",
+          "postgres_marker_ms": 86938,
+          "duration_seconds": 87.08
+        },
+        "first_green": {
+          "path": "/tmp/questpc3-npc-greet-green.log",
+          "scope": "Initial atomic source greeting and regreet only",
+          "postgres_marker_ms": 90144,
+          "completed_ms": 90482
+        },
+        "fixture_correction": "Expanded scenario initially installed prerequisite transitions after initial receipt; definition-hash pin correctly refused. Install fixture catalogue before first receipt; retain immutable definition guard. This fixture failure is not missing-mechanism RED evidence.",
+        "reuse_source": "origin/claude/happy-davinci-ijz3wy-qengine2 be6db5edd^..5a6de28c1; NPC-only composition. Existing multi-stack world inputs, Rookgaard messages and native counters retained. No unrelated outfit/world data or world binaries imported.",
+        "proof": "checks.npc_programs_01",
+        "publication": {
+          "local_commit": "a4f1f4a21c60772ee53c6d16e2f9b167ff2c6f8a",
+          "merge_commit": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
+          "remote_verified": true,
+          "integrated_remote": "73a106fc5035885a844c81e8618900f80c028116"
+        },
+        "environment_recovery": "Content repository linker hit signal7/bus error with137MB free. Removed only obsolete unlocked incremental snapshots, retained newest caches and all build settings; retry5tests passed84.49s."
+      }
     }
   }
 }
