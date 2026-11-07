@@ -1197,3 +1197,68 @@ Final allocations:1100,1101,1103,1104,1105,1106,1107;1102 and1108-1109 unused.
 Existing unmerged1150 corrected, no1151 allocated. Existing Highscores14 reused,
 new17 allocated,13/15/16 reserved. Existing command14/capability0009 reused.
 Terrain8614-8692 and World Bundle format8 retained; all pins were generated.
+
+## Combined SRVENC and ENCX delivery (owner direction, 2026-11-07)
+
+ENCX advanced from b5103e7f to 7328791ae after integrating main1ae39c7fb;
+this branch merges that head for the owner's single combined delivery.
+Exactly one1150_qualified_activity_catalogue.sql retains ENCX's unique
+room-template/content index and SRVENC's INSERT-only append publisher privilege
+and1104 immutable catalogue closure. Keep ENCX1151 tagged endgame receipts and
+1152 native Instance corpse scope extension; no duplicate migration or new
+command/capability/mechanic number is allocated by this merge.
+
+1152 preserves SRVENC1100's existing17-byte typed cause primary keys and all
+1100/1101/1103 proof bodies, adding equivalent33-byte assignment projections
+without UPDATEing immutable accepted rows. Crystal201189f
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,94`
+requires physical corpse39530 plus personal boss rewards. New unified Instance
+mint writes use ENCX semanticv2/native53-byte framing; exact accepted SRVENC
+semanticv1/61-byte reservations remain resumable with their original complete
+hash, frozen audit envelope, identities, budget and physical corpse reference.
+Channel52-byte framing is unchanged. Compatibility never treats a hash prefix
+or an arbitrary opaque corpse reference as proof of the exact typed death.
+
+Merged-schema RED proof: the original1152 fails on an actual1100 prefix with
+`column "death_instance_id" ... already exists`; the adapted1152 populated
+prefix preservation proof passes in0.148s. The first full39-test mint run
+passed37, with both new preservation cases exposing an incorrect test
+assumption about terminal replay work: resource-limit0319-DUR03-RL-08 requires
+each commit attempt to charge one unit, including AlreadyCommitted. The tests
+must require the exact+1 per replay, preserve every other field, and reject a
+fourth attempt with the whole row unchanged; the production cap remains3.
+
+Combined validation checkpoints: focused UI/protocol/content/mechanic56/56
+PASS78.083s runtime (277.681s including build); all8 native source-world
+projection tests PASS0.937s; boss/source Python8/8 PASS1.849s. Official compiler
+pin-refresh PASS145.933s; isolated final pin-check PASS166.356s, bundleformat8
+32,879,502bytes and digest196a7f87877c7f1725a04ad008b5768dad4b7848fe99b17d2b92ef49bf8d856d.
+Architecture-check PASS4.095s. No full reverse-dependency nextest suite was run.
+
+Final corrected focused mint/audit39/39 PASS30.507s runtime. Real PostgreSQL:
+`native_instance_corpse_migration_preserves_committed_causes_and_replay_postgres`
+13.315s; `native_instance_corpse_migration_preserves_legacy_v1_corpse_and_loot_replay_postgres`
+15.495s; `native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+15.584s; `boss_activity_item_consumers_postgres`13.724s. Canonical and legacy
+pending reservations resume before first commit with whole-row equality;
+post-migration terminal replay preserves frozen bytes and charges exactly one
+work unit; fourth attempts reject with whole rows unchanged. The43-file
+spell-provider freshness check passes83.568s.
+
+Production PostgreSQL checkpoints pass:
+`boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody`
+124.294s and `boss_rewards_postgres_production_boss_lethal_to_personal_item_custody`
+86.529s. ENCX's captured-death component after a real native Instance handoff,
+`boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences`,
+passes340.688s; `endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02`
+passes13.556s. These are precise component/production boundaries, not a claim
+that Primal's complete production combat chain or W17's unsourced archetypes
+have become donor-qualified through this merge.
+
+Owner's superseding push rule (2026-11-07): publish once workspace/all-target
+check and fmt pass, without holding the compiling merge for remaining tests.
+Final `cargo check --workspace --all-targets --keep-going` PASS763.057s
+(includes build-lock wait). Focused mint39/39 and unit56/56 already pass;
+combined production46-case run and changed-crate clippy continue independently.
+Final architecture PASS10.600s, duplicate migrations PASS1.801s, registry
+fragments PASS0.176s. No pending test or lint is represented as passed here.

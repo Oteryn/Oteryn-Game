@@ -109,6 +109,19 @@ fn scenario() -> TestResult {
             );
         }
         assert_eq!(counters(&h).await?, before);
+        // Canonical template keys must reach the same gates as captured creature
+        // aliases; otherwise a qualified template could bypass endgame access.
+        for (number, key) in [(8, "oteryn:boss.the_primal_menace"), (9, "oteryn:boss.bakragore")] {
+            let payload = encode_boss_key(key).map_err(debug)?;
+            assert_eq!(
+                super::boss_encounter::exchange_kind(&owner, &mut admitted, number,
+                    COMMAND_TYPE_BOSS_LEVER, &payload).await?,
+                (CommandStatus::Rejected, encode_boss_activity_reply(&BossActivityReply::Refused(
+                    BossActivityRefusal::Level,
+                )).map_err(debug)?)
+            );
+        }
+        assert_eq!(counters(&h).await?, before);
         println!("ENDGAME_ENTRY POSTGRES_CASE_COMPLETED");
         Ok(())
     })
@@ -153,7 +166,14 @@ fn qualified_catalogue_scenario(require_primal: bool) -> TestResult {
             let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
             let owner = deps.owner(&h, &authority);
             deps.initialize(&owner).await;
-            let (controller, pin) = crate::content::native_gameplay::test_support::activated_loop_monster(deps.admitted.world_id, false);
+            let source_bundle = serde_json::to_vec(&serde_json::json!({
+                "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+                "channel": include_str!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"),
+                "primal": include_str!("../../../../../../tools/content-schema/native-gameplay/crystal-primal-region.json"),
+            }))?;
+            let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                deps.admitted.world_id, Some(&source_bundle),
+            );
             let candidates = crate::content::bosses::activity_template::captured_boss_levers().map_err(debug)?;
             let (templates, diagnostics) = controller.qualify_initial_activity_template(pin.qualified_room(), pin.qualified_room(), "content-1", &candidates);
             let publisher = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone());

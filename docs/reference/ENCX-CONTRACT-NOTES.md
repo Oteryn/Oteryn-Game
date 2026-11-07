@@ -715,3 +715,300 @@ cells and the source boss, entry, lever and exit positions. The current loader
 including exact source bounds, frame, tile count (2833), digest and closure.
 A separate provenance-qualified Crystal region must be admitted; replacing
 those checks with permissive bounds would invalidate the existing source proof.
+
+### Primal source region capture
+
+`capture_primal_region.py` verifies the exact Crystal `201189f` map Git blob
+`e61658ec0ab7b70ec35025ae969426d6fc57ae75` before parsing. Bounds and required
+placements come from the generated donor lever capture. The generated region
+contains 510 tiles: 504 arena cells plus required source entry/exit cells outside
+that rectangle. Unknown selected attributes, duplicate cells, substituted bytes,
+missing placements and capacity overflow are rejected. This is source capture,
+not active map admission or creature qualification.
+
+### Primal item semantics capture
+
+The source-region generator now verifies pinned appearances blob
+`37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0` and item XML blob
+`ea4196beae8f77be898f05de89db81de134886b6` before reusing the repository's
+item-loader projection. It emits 89 item policies for the 510 selected tiles.
+All required placements have ground and are not solid-blocked. One dynamic
+item remains explicit: source teleport 1949 at `(33567,32758,15)` has donor
+destination `(0,0,0)` and requires the encounter exit owner; it is not silently
+promoted to ordinary terrain or an invented destination. Three Python tests
+pass, including red-before-green item-source substitution coverage.
+
+### Source-qualified Primal map facts
+
+`qualify_primal_region` consumes only the exact generated 510-tile document and
+its explicit parent coordinate frame/map revision. It provides scoped collision
+facts without issuing an artifact pin, activated room or mutable instance. The
+source teleport remains `Unqualified` until the exit owner is composed. The new
+Rust test `primal_region_admits_source_placements_and_refuses_pending_teleport`
+failed before the qualifier existed and passes after implementation (0.04s),
+covering boss/return walkability, pending teleport refusal and document
+substitution. This is a source-admission slice; production template integration
+and the real-dispatch W10 chain remain incomplete.
+
+### Source region artifact carrier
+
+The native source carrier now accepts an explicit bundle of the unchanged pinned
+Thalom document and exact generated Primal document. Server qualification merges
+only captured cells; gaps stay absent and the unresolved teleport stays unknown.
+The client projection includes both regions, and existing carrier cross-pins bind
+that projection and both source documents. Region tests passed (3 tests, 1.42s),
+including real artifact encode/decode and client substitution rejection; content
+clippy passed with warnings denied. The bundle test was red first with
+`InvalidProject("native source world qualification")` (0.21s). The production
+Primal fixture still needs to select the new source bundle and resolve encounter
+hooks; this is not a completed encounter chain.
+
+Focused baselines on the preceding source-facts checkpoint: Soul War
+`soul_war_postgres_native_taints_xp_reset_and_replay` passed in 79.92s; Summer
+`summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres`
+passed in 42.36s. Neither proves the full W11/W16 encounter-chain requirement.
+
+### Production map provider checkpoint
+
+`encounter_source_regions.apply_native` is part of the existing native provider
+registration tool. It packages the unchanged pinned channel source with the
+verified Primal document and regenerates the production manifest's source-world
+pin. The Primal PG fixture now activates this packaged source rather than the
+Thalom-only fixture. Native provider regeneration and `--check` passed; world
+pin-refresh completed without tracked pin changes. Content/dispatch clippy passed
+with warnings denied (1m35s), fmt and architecture passed.
+
+The unchanged Primal catalogue assertion ran against PostgreSQL for 71.88s and
+remains red. Its exact qualification refusal advanced from `OutsideQualifiedMap`
+to `SourceHookUnavailable`. Crystal `monster/quests/primal_ordeal_quest/
+the_primal_menace.lua:66-69` requires `ThePrimalMenaceDeath` and
+`ThePrimeOrdealBossDeath`; `:339-347` invokes custom `onThink` behavior. Those
+callbacks must be composed before the room can be published. No callback is
+marked available solely to get a row into the catalogue.
+
+### Canonical boss identity reaches entry gates
+
+The real-dispatch PostgreSQL entry scenario now checks canonical Primal and
+Bakragore template keys as well as creature aliases. Before the fix it failed in
+4.88s (`ContentUnavailable` instead of the required level refusal). Both identity
+forms now resolve through captured source data before catalogue lookup, retained
+handoff retry and endgame policy selection. The unchanged assertions passed in
+4.59s; dispatch check (5.27s), clippy (7.36s) and fmt passed. This closes an entry
+policy routing gap without admitting an unqualified template.
+
+Production map checkpoint pin-check passed in 2m31.825s. The dependent server
+crate passed check (1m39s) and clippy with warnings denied (24.12s).
+
+### Pinned Primal hook discovery
+
+The lever importer now discovers Primal's direct source requirements from three
+exact Git blobs: monster `76adae125dd1f8eb099878b6fa5f8b96f91445e8`, hazard
+handler `3cafb041e31f9f068b2ec118af2b5575aee6d2bc`, and quest death handler
+`cb0c34b64010470546b125959f2a63690bedb64b`. Missing or substituted source stays
+unknown. Generated requirements are `ThePrimalMenaceDeath`,
+`ThePrimeOrdealBossDeath`, and `mType.onThink`. `callbacks_known` describes
+source discovery only; native qualification still rejects these unsupported
+requirements with `SourceHookUnavailable`.
+
+Five Python provenance/parser tests pass (0.004s), including red-before-green
+hook discovery, missing-source refusal and source substitution rejection. All
+four activity-template tests pass (68.04s), preserving map bounds and physical
+corpse gates. Content check passed (11.51s), clippy with warnings denied passed
+(6.10s). This is not native hook composition or a completed W10 encounter.
+
+### Primal Hazard Instance identity consumer checkpoint
+
+Primal's Hazard consumer now accepts the native death owner's existing tagged
+Instance receipt framing through `party_kill_xp::decoded_death_scope`, retaining
+legacy Channel bytes unchanged. No new encoding, identifier or migration is
+introduced. The new scope regression was red on the Channel-only implementation
+and is green after reuse of the shared decoder. It rejects cross-namespace UUID
+aliasing, generation mismatch and truncated keys. Durability check passed in
+1m00s; the legacy Hazard PostgreSQL regression and clippy are still running at
+this WIP checkpoint. This does not remove the transport's Channel-only endgame
+composition gate or qualify the unsupported Primal hooks.
+
+### Consumer checkpoint validation completed
+
+At `77e1b2067`, the legacy real-dispatch Hazard scenario
+`primal_hazard_postgres_kill_unlock_selection_replay_cap_and_fences` passed in
+40.46s, covering selection, unlocks, replay, caps and fences. Durability clippy
+passed with warnings denied (3m05s); fmt and architecture passed. The fresh full
+Primal reachability case ran for 72.94s and remains red with
+`SourceHookUnavailable`. Tagged Instance scope matching is covered by the new
+unit regression; an end-to-end Instance death/reward case is not yet proven.
+The transport's endgame Channel-only cast, Soul War/Rotten Blood consumers,
+Instance corpse custody and native Primal hook composition remain unfinished.
+
+### Shared endgame tagged-death receipt checkpoint
+
+Migration 1151 preserves the existing Soul War/Rotten Blood receipt predicates
+and additionally accepts the native owner's existing 53-byte Instance framing
+only with tag 2. The transport no longer narrows endgame deaths to a 52-byte
+Channel array. Soul War and Rotten Blood reuse the same scope/generation decoder
+as Primal; native source receipt, membership, transaction-origin and session
+fences remain required. Legacy occurrence bytes are unchanged.
+
+The Rotten Blood occurrence regression failed before the slice API (E0308) and
+passes after implementation; dispatch/server check passed in 19.62s. This is a
+compiling WIP: migration 1151 and focused PostgreSQL regressions still need to
+run. Native hook composition and physical Instance corpse custody remain
+unimplemented. No new command, capability or mechanic identifier is allocated.
+
+### Shared consumer checkpoint validation completed
+
+At `f8ed17e96`, migration 1151 applied successfully in both focused PostgreSQL
+scenarios. `soul_war_postgres_native_taints_xp_reset_and_replay` passed in 80.45s;
+`rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse` passed in
+107.77s. Changed durability/dispatch/server crates passed clippy with warnings
+denied (2m40s); fmt and architecture passed. These are legacy Channel consumer
+regressions, not a positive Instance encounter-chain proof. The Rotten Blood
+case still explicitly preserves physical corpse refusals for unqualified bosses.
+A real tagged Instance death transaction and full production entry/fight/reward/
+exit remain to be demonstrated before either W10 or W11 is DONE.
+
+### Instance receipt integration fixture WIP
+
+A new real-handoff component case enters an assigned Instance through command
+178, then exercises the captured-death consumer seam for tagged receipt replay
+and Channel/Instance alias rejection. It does not seed a Primal catalogue row or
+claim a physical Primal fight. Existing Channel captured-death fixtures retain
+their default 52-byte key type; the helper now also accepts a tagged-key type.
+The new case compiles (test build 1m44s) and is still running at this checkpoint.
+The helper's known remaining Channel-only guard is `Err("channel fixture")`;
+the runtime red result has not yet been observed. No new numbers are allocated.
+
+### Scoped receipt helper fix
+
+The new Instance receipt case reached `Error: "channel fixture"` after a real
+native handoff (205.88s). Selecting `SpellLane::for_scope` from the current fence
+instead of constructing a Channel lane turns the same component case green
+(205.57s): the native tagged Primal receipt grants one Hazard unlock, replays
+without another grant and rejects a stripped namespace tag. Test-target dispatch
+clippy passed with warnings denied (3m42s).
+
+The negative case is further strengthened with a fresh XP occurrence and an
+explicit assertion that no rejected-key XP receipt remains; that rerun is
+pending at this WIP checkpoint. This proves consumer scope composition after a
+native handoff, not a physical Primal encounter or template qualification.
+
+### Instance receipt component proof completed
+
+The strengthened `boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences`
+case passed against PostgreSQL in 206.38s. It performs a real command-178 Instance
+handoff, supplies a captured death to the existing XP/consumer seam, retains one
+Hazard receipt on replay and rejects an untagged alias using a fresh occurrence,
+with no partial XP receipt. It does not prove physical Primal combat or qualify
+a Primal room. Dispatch check passed in 16.14s; test-target clippy passed with
+warnings denied in 3m42s; fmt and architecture passed. No further identifiers or
+migrations were allocated.
+
+### W10 Instance death audit prerequisite
+
+Crystal `201189f`,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,94`
+declares corpse 39530 and `rewardBoss = true`. The physical death in its native
+activity must retain its Instance identity through corpse and loot audit records.
+The existing Ground and EventEnvelope messages already admit an exact Instance;
+the death reference now has additive optional protobuf field 6, `instance_id`.
+Exactly one of Channel and Instance is accepted, with the same typed scope
+required by the Ground destination and envelope. Corpse-container loot retains
+the death's scope even though its destination names only its parent corpse.
+Absent field 6 preserves the captured Channel wire bytes and existing bounds.
+No command, capability, mechanic or registry number was allocated.
+
+`instance_death_mint_audit_keeps_channel_and_instance_identities_disjoint` first
+ran red with `InvalidInput` (0.007s; build/run 80.561s), then passed (0.016s).
+The 30 audit tests passed in 0.390s (build/run 80.243s), including the existing
+Channel compatibility and resource-bound cases. The audit tag/golden generator
+produced no changes. Architecture checking passed. All 708 durability tests
+passed, with no skipped tests, in 451.420s (build/run 533.000s), including
+`boss_activity_item_consumers_postgres` (6.061s). Cargo check passed in 94.176s.
+Clippy identified one complex return type; named scope fields resolved it and
+clippy passed with warnings denied in 1m05s. The 30 audit tests passed again in
+0.432s after that correction. The 25-package dependent PostgreSQL run at
+`2f291e493` is still collecting all failures; it has reported the guild-war
+test transport-gate race described by its `pending` assertion.
+
+This checkpoint covers wire validation. The production death-mint owner still
+requires Channel identity; Instance corpse custody and native Primal hook
+composition remain to be implemented. The Primal production room remains
+unqualified with `SourceHookUnavailable`; W10 is unfinished.
+
+### W10 native Instance corpse and loot owner
+
+Donor: Crystal `201189f`,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,94`
+requires corpse 39530 alongside personal boss rewards. Migration **1152** extends
+native creature-death reservations and receipts with exact Instance identity.
+It preserves Channel identity, existing row immutability checks, work-unit
+charges, materialization stamping, corpse capacity and atomic receipt/audit
+proofs. The source key uses the existing assignment encoding: Channel tag 1,
+activity Instance tag 3; runtime/custody Instance kind remains 2. Legacy Channel
+intent bindings retain version 1; Instance bindings use version 2 so their
+business-intent framing is disjoint. No command/capability/mechanic/registry IDs
+were allocated.
+
+Combat now passes the committed death's actual scope and native occurrence
+bytes into this owner. The same owner mints the corpse on Instance Ground and
+its loot into that corpse, using the actual Ground root's item lane and key-33
+lock. The narrow Instance placement proof requires the same complete death
+cause, frozen reservation, current assignment, fresh corpse and same-transaction
+audit. Existing accepted placement causes remain installed.
+
+`physical_instance_death_reaches_the_mint_cause_without_channel_aliasing` ran red
+with `AuthorityRejected` after an actual carrier lethal commit, then green.
+The PostgreSQL case
+`native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+exposed and fixed the generated-key/immutability interaction, the missing
+native-corpse Instance placement cause and the Channel-only corpse-root lock.
+It passed in 4.816s, then passed again with a real Channel control in **5.053s**.
+It checks corpse and loot commits, exact scope, immutable audit, replay, wrong
+lane, same-UUID Channel alias, unowned Instance and stale generation. The focused
+46-test set passed in 5.062s (build/run 82.480s). Audit tag/golden regeneration and
+pin refresh produced no changes; the world pin remains
+`6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
+
+The owner decision replaced full reverse-dependent nextest runs with focused
+mechanic tests and workspace compilation. The old 25-package run at `2f291e493`
+was stopped as directed after 2,140 cases: 2,137 passed, one client guild-war
+transport-gate race failed and two running tests were interrupted. Its complete
+log was retained outside the repository. No test was disabled or deleted; the
+legacy Channel replay assertions remain.
+
+This is a native corpse-owner component proof. Production Primal hook
+composition, qualification and the complete encounter chain remain unfinished;
+W10, W11 and W16 are not DONE. The Primal qualification case still reaches
+`SourceHookUnavailable` before publication.
+
+Final focused validation for this owner step: workspace/all-target check passed
+in 188.849s, changed-crate/all-target clippy with warnings denied in 64.504s,
+workspace fmt check in 15.245s, duplicate-migration check against fetched
+`origin/main` (`1ae39c7fb`) in 0.367s and pin-check in 28.617s. Pin refresh and
+audit tag/golden regeneration used repository tooling and changed no artifacts.
+
+
+## ENCX integration of main 1ae39c7fb
+
+Merged main with the repository merge drivers. Rebuilt the conflicting spell
+manifest through `tools/merge-driver/regen.sh --skip-checks`, then explicitly ran
+`register_spell_families.py` and its `--check` mode; both passed. The first final
+pin refresh was killed while competing with clippy; the isolated retry passed.
+Preserved incoming producer/quest notes under
+`docs/reference/QENGINE2-CONTRACT-NOTES.md`, leaving no root contract notes.
+QENGINE/QBASE migrations remain 0999–1008; no 1200–1205 copies or new ENCX
+migration/command/capability/mechanic numbers were introduced.
+
+Focused validation: 46 corpse/mint/audit tests passed in 5.181s, including actual
+PostgreSQL execution of
+`native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+in 5.175s. All eight native source-world tests passed in 1.184s, including
+`source_region_bundle_admits_primal_and_projects_both_regions` in 0.848s.
+The two map-capture and three boss-lever importer Python tests also passed.
+Workspace/all-target check passed in 443.842s; all-target clippy with warnings
+denied passed for all eleven ENCX-changed crates in 648.620s (both times include
+build-lock waits). The redundant smaller clippy run was stopped after the broader
+run passed. Fmt check passed in 18.423s, duplicate-migration check in 0.398s,
+pin refresh in 31.210s, pin-check in 33.765s and architecture-check in 6.041s.
+These component and integration checks do not change W10/W11/W16 completion:
+the full Primal production qualification/encounter chain remains unfinished.

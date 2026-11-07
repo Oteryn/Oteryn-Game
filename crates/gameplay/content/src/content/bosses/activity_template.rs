@@ -318,12 +318,15 @@ impl ContentActivationController {
         }
         let source = room.source_world();
         let frame = if source.is_some() {
-            let frame: SourceFrameDocument = serde_json::from_slice(
-                active
-                    .native_source_world()
-                    .ok_or(R::SourceMapUnavailable)?,
-            )
-            .map_err(|_| R::SourceMapUnavailable)?;
+            let frame_document =
+                crate::content::project::native_spell_world::channel_source_document(
+                    active
+                        .native_source_world()
+                        .ok_or(R::SourceMapUnavailable)?,
+                )
+                .map_err(|_| R::SourceMapUnavailable)?;
+            let frame: SourceFrameDocument =
+                serde_json::from_slice(&frame_document).map_err(|_| R::SourceMapUnavailable)?;
             if frame.native_frame.floor_transform != "native_floor=-source_z"
                 || parent.frame_binding().digest() != room.frame_binding().digest()
             {

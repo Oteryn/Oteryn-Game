@@ -36,9 +36,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return malformed();
         }
-        let Ok(intent) = wire::decode_boss_key(payload) else {
+        let Ok(mut intent) = wire::decode_boss_key(payload) else {
             return malformed();
         };
+        if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
+            intent.boss_key = canonical;
+        }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -89,10 +92,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
         };
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
-            && oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
-                &intent.boss_key,
-            )
-            .is_some()
+            && super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some()
         {
             use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
             match self.endgame_boss_entry(admitted, payload).await {
@@ -289,11 +289,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         // Crystal 201189f boss_lever.lua:183-218 validates the entire lever
         // roster. Endgame quest gates therefore apply to every participant.
-        if oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
-            &intent.boss_key,
-        )
-        .is_some()
-        {
+        if super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some() {
             for participant in &participants {
                 let member = self
                     .activity_runtimes

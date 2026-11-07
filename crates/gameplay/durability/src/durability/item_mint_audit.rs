@@ -1519,6 +1519,73 @@ pub(super) mod tests {
     }
 
     #[test]
+    fn instance_death_mint_audit_keeps_channel_and_instance_identities_disjoint() {
+        // Crystal 201189f the_primal_menace.lua:79,94: the reward boss has a
+        // physical corpse. Its activity death must retain its actual Instance.
+        let mut instance = mint();
+        let death = instance
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap();
+        death.channel_id.clear();
+        death.instance_id = Some(uuid(2));
+        let ground = instance.destination.as_mut().unwrap();
+        ground.channel_id.clear();
+        ground.instance_id = Some(uuid(2));
+
+        let wire = encode_mint_event(identity(), instance.clone(), Type2EventTuple::V1)
+            .expect("Instance death MINT audit");
+        let (envelope, decoded) = decode_envelope(&wire).unwrap();
+        assert_eq!(decoded, instance);
+        assert_eq!(envelope.world_id, Some(uuid(1)));
+        assert_eq!(envelope.instance_id, Some(uuid(2)));
+        assert!(envelope.channel_id.is_none());
+        assert_ne!(
+            wire,
+            encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap()
+        );
+
+        let mut mixed = instance.clone();
+        mixed
+            .source
+            .as_mut()
+            .unwrap()
+            .death_occurrence
+            .as_mut()
+            .unwrap()
+            .channel_id = uuid(2);
+        assert_eq!(check_mint(&mixed), Err(AuditError::InvalidInput));
+        let mut alias = instance.clone();
+        alias.destination.as_mut().unwrap().instance_id = None;
+        alias.destination.as_mut().unwrap().channel_id = uuid(2);
+        assert_eq!(check_mint(&alias), Err(AuditError::InvalidInput));
+        let mut other = instance.clone();
+        other.destination.as_mut().unwrap().instance_id = Some(uuid(3));
+        assert_eq!(check_mint(&other), Err(AuditError::InvalidInput));
+
+        let mut alias_envelope = envelope;
+        alias_envelope.instance_id = None;
+        alias_envelope.channel_id = Some(uuid(2));
+        let alias_wire = encode_bounded(&alias_envelope, RL07_ENVELOPE_BYTES_MAX).unwrap();
+        assert!(decode_envelope(&alias_wire).is_err());
+
+        instance.destination = None;
+        instance.corpse_container_entry =
+            Some(super::super::item_transfer_audit::OneItemContainerEntryV1 {
+                parent_item_instance_id: uuid(10),
+                placement_ordinal: 1,
+            });
+        let wire = encode_mint_event(identity(), instance.clone(), Type2EventTuple::V1).unwrap();
+        let (envelope, decoded) = decode_envelope(&wire).unwrap();
+        assert_eq!(decoded, instance);
+        assert_eq!(envelope.instance_id, Some(uuid(2)));
+        assert!(envelope.channel_id.is_none());
+    }
+
+    #[test]
     fn content_key_and_technical_field_bounds_are_max_and_max_plus_one() {
         assert!(check_content_key(&"k".repeat(512)).is_ok());
         assert_eq!(
