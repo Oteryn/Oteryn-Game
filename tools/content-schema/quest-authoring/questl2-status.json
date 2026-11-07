@@ -99,6 +99,39 @@
         "All eight material hand-ins, cape, experience and exact replay"
       ],
       "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:175-180; tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json"
+    },
+    {
+      "name": "exact-value conditional storage effects",
+      "status": "QUALIFIED",
+      "source_commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+      "red_before_change": {
+        "postgresql": "18.6",
+        "test": "quest_conditional_reset_preserves_absent_initial_flag_and_replays",
+        "duration_seconds": 2.86,
+        "observed": 0,
+        "expected": -1
+      },
+      "postgres": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-later",
+          "duration_seconds": 3.728290096,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-absent",
+          "duration_seconds": 3.733027436,
+          "passed": true,
+          "postgresql": "18.6"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-reset-match",
+          "duration_seconds": 3.736739252,
+          "passed": true,
+          "postgresql": "18.6"
+        }
+      ],
+      "scope": "Generic effect and fenced receipt/replay only; Draconia still requires the complete NPC/offering/exit journey."
     }
   ],
   "entries": [
@@ -498,8 +531,8 @@
       "regenerated": true,
       "checked": true,
       "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
-      "bytes": 31101960,
-      "reason": "Merged all souvenir profiles and included Jorge in the production NPC placement family",
+      "bytes": 31101986,
+      "reason": "Combined PC5 source programmes, shared reward providers, and Global Jorge/Tereban/Viola placements; pin-check verified the merged tree.",
       "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
@@ -610,6 +643,33 @@
     "father_item_profile_tests": {
       "passed": 1,
       "failed": 0
+    },
+    "conditional_reset": {
+      "postgresql": "18.6",
+      "passed": 3,
+      "failed": 0,
+      "selected_skipped": 0,
+      "unit_tests": {
+        "passed": 1,
+        "failed": 0
+      },
+      "formatting": "cargo fmt --all --check; mounted test rustfmt --check; git diff --check",
+      "world_pin": {
+        "regenerated": true,
+        "checked": true,
+        "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
+        "bytes": 31101986
+      },
+      "clippy": {
+        "packages": [
+          "oteryn-gameplay-quests",
+          "oteryn-gameplay-dispatch"
+        ],
+        "all_targets": true,
+        "all_features": true,
+        "deny_warnings": true,
+        "exit_code": 0
+      }
     }
   },
   "cross_lane_inspection": {
@@ -619,7 +679,8 @@
     "next": "Continue source-backed full journeys and reuse the inspected PC5 travel/issuance and PC6 conditional reset mechanisms as needed.",
     "reused": [
       "QENGINE2 possession predicates and world outfit reward composition",
-      "PC5 source NPC programmes, material/XP composition and claim-progress bindings"
+      "PC5 source NPC programmes, material/XP composition and claim-progress bindings",
+      "PC6 exact-value conditional effect and PostgreSQL replay proofs"
     ],
     "qengine2_reuse": {
       "commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",

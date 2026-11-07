@@ -96,6 +96,14 @@ Where does a character's quest progress live, and how does it change safely?
   - `effect`: `SET v`, `ADD n` (checked `i64`), or `SET_NOW` (server Unix time), each within the
     track's `[min, max]`. `SET_NOW` and `elapsed` use the database transaction time (`now()`), never
     a node clock.
+- **Owner continuation amendment (2026-11-07, L2):** `SET_IF equals, value` compares
+  the exact locked track value, writes `value` on a match and retains the value otherwise.
+  Both literals must satisfy the track bounds. Stable definition-hash tag 6 leaves existing
+  encodings unchanged. The existing fenced writer records the retained value and handles
+  replay in the same receipt transaction. Reused from PC6 `be812420e3c20d9dd8ae6c3c23a9c4acb942ceda`;
+  Draconia source: Crystal `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+  `data-global/scripts/quests/draconia/movement-escape.lua:17-19`,
+  git blob SHA-1 `8d9e413024dc127b7b26513127b033ec19bfe615`.
 - The 35 `computed: expression` effects have no kind yet: each needs a closed kind added by
   amendment, and until then its transition is `NOT_SUPPORTED`.
 - A transition may carry `completes: true`, which completes its quest (§3).
