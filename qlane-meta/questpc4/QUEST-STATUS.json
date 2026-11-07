@@ -6929,7 +6929,7 @@
       "remote_verified": true
     },
     "native_sign_batch_23": {
-      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "status": "QUALIFIED_COMPONENT",
       "previous_pushed_head": "c2cd9c4d6e23bd4dfc5feb2ed788c9ec311eb436",
       "scope": "5nativeUSEcases ordered/outoforder/missingmiddle/reentry+replay/unrelatedcontrol; Rootflagsandreceipts-only, nosqlstate",
       "points": [
@@ -7105,7 +7105,7 @@
       "source_contract": "CONTRACT-NOTES.md batch23 scriptSHA+linesandnativeSourceSHA, authorednotrecovered",
       "red_session": 95131,
       "red_log": "/tmp/questpc4-native-signs-red.log",
-      "implementation": "None yet; append8sparsebindingsonlyafteractualPGRED usingalreadyqualifiednativecounterpartsloader, existingstatecallbacksunchanged.",
+      "implementation": "Eight sparse exact native pillar bindings; original source state, predecessor guards and replay ownership unchanged.",
       "next_sql": 1259,
       "whole_entries_remaining": 17,
       "red": {
@@ -7116,6 +7116,33 @@
         "expected": "Committedwithonlyorderedcurrentflag1",
         "log": "/tmp/questpc4-native-signs-red.log",
         "compiled": "4m47s"
+      },
+      "checkpoint_head": "d73590380ea2dbf70fb633a56a49a37ff01be1b3",
+      "green": {
+        "postgres_version": "18.6",
+        "native_cases": 5,
+        "native_total_seconds": 138.18,
+        "marker": "POSTGRES_DATABASE_READY l6_native_signs",
+        "log": "/tmp/questpc4-native-signs-green.log",
+        "flame_regression_cases": 1,
+        "flame_regression_seconds": 62.853706775,
+        "flame_log": "/tmp/questpc4-native-signs-flame-regression.log"
+      },
+      "gates": {
+        "fmt": "PASS",
+        "check": "PASS 6m06s including build lock wait",
+        "clippy": "PASS -D warnings 3m07s",
+        "metadata_units": "2 PASS 0.01s",
+        "frozen_hashes": "1 PASS 1.30s",
+        "admission_units": "3 PASS 0.02s",
+        "ancient_source_units": "5 PASS 2.72s",
+        "room_source_unit": "1 PASS 1.38s",
+        "duplicates": "PASS",
+        "diff": "PASS"
+      },
+      "main_registry_recheck": {
+        "sha": "d34807f5bd234ee8318e57ba454ba39be0df113d",
+        "result": "No QENGINE2 0999-1006 or QBASE1200-1205 migrations integrated; no conditional merge needed."
       }
     }
   },
