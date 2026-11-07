@@ -74,6 +74,17 @@ The public candidate view omits hidden identities entirely; a hidden NPC also
 loses every shop relation. Secret achievements are omitted conservatively.
 No public artifact includes the private coverage ledger.
 
+Platform consumer clarification: CATALOG_EXPORT_V1 contains **public records
+only**. An optional `visibility` field anywhere in entity/relation `data`,
+including nested objects and arrays, must be exactly the string `public`.
+`hidden`, unknown strings, null and non-string values are rejected by both
+producer and verifier, even with a valid recomputed payload digest. Invalid
+records are never repaired by dropping the field. Absence preserves the
+existing carrier shape; top-level record fields remain the closed v1 shape.
+This is an export-boundary invariant, not permission to export a hidden source
+record with its flag removed. The source view must omit that record and its
+relations first. These are owner/Platform export rules, not donor gameplay rules.
+
 The quest schema pin is regenerated with the existing
 `amend_monk_source_receipt.py` tool, which verifies all 28 reviewed cores and
 their SOURCE/recipe admission before refreshing compiler descriptors. Then
@@ -140,3 +151,153 @@ Crystal `data/scripts/spells/healing/light_healing.lua:1` difference is retained
 at `docs/architecture/reviews/OTERYN_GAME_CANARY_PARITY_INVENTORY_2026-10-25_SOURCE_DIFF_LEDGER.md:320`;
 the catalogue does not recalculate or choose a healing formula. These examples
 justify retaining unsupported semantics instead of filling gaps from donors.
+
+## Additive revision proposal: schema 1.1.0, `area` (scheduled FOLLOW-UP)
+
+**Design only; not implemented or advertised by the current producer.** The
+coordinator-scheduled Area source-admission / bundle change is a separate
+follow-up. No SQL migration is needed, but it does not fit the current catalogue
+adapter package: it changes the compiler-owned World bundle manifest contract,
+the corresponding server decoder/profile and regenerated bundle pins. Merely
+adding an Area parser to this exporter would violate the shared-loader rule.
+The current v1 verifier continues to reject both capability `area` (even when
+unsupported) and schema `1.1.0`; the existing eight-capability output is unchanged.
+
+### Existing source and smallest server-owned seam
+
+The 443 region/subregion definitions and 22 city definitions already live at
+`content/world/areas/{regions,cities}/areas-*.json`, under
+`OTERYN_AREA_AUTHORING/candidate-1`. The same records must remain the only
+editable source. Islands, streets and hunting-place catalogues have separate
+schemas; they are explicitly unsupported by this proposal, with no name-based
+crosswalk or invented geometry. Dawnport population remains excluded by the
+owner's lane rules.
+
+There is an existing admitted geographic carrier despite the absence of Area
+declarations in WorldProject: the compiler's
+`tools/world-bundle-compiler/src/compile/subareas.rs::Source::load` reads these
+shards and admits source masks into `oteryn_world_bundle::subarea::Table`.
+The server uses `bundle::read` through its map boot loader
+(`crates/gameplay/world/src/map/boot.rs:296`). Its decoded bundle contains
+`manifest.subareas`, spawn points and NPC placements. `Table::resolve`
+(`crates/world-bundle/src/subarea.rs:76`) is the existing membership lookup;
+label positions and hometown temples are not area boundaries.
+
+However, the current `subarea::Area` carrier
+(`crates/world-bundle/src/subarea.rs:21`) loses source `visibility`, `kind` and
+`identity.revision`. `Source::load` currently constructs it without those
+fields. An old bundle therefore cannot prove G-2 visibility, even if a new
+exporter supplies a default `public`. Do not export those bundles as public
+Area authority or infer kind/revision from names or keys.
+
+The minimal follow-up is to extend that existing carrier, not create a second
+Area list: retain the source definition revision, closed area kind and G-2
+visibility during compiler admission. Validate missing source visibility as
+public and reject values outside `public|hidden`. Bind this admission to a
+versioned `PUBLIC_AREA_SOURCE_V1` bundle profile; the public view must refuse
+area promotion for a bundle without that proof marker. The bundle owner must
+choose the required format/runtime compatibility revision and server-first
+rollout under `OTERYN_WORLD_BUNDLE_FORMAT_V1.md`; old bundle bytes are never
+relabelled or treated as visibility-qualified.
+
+Add an admitted-bundle entry point beside `public_content_view`, taking the
+already server-decoded, digest-checked bundle and admitted WorldProject.
+Require the bundle's content revision and content-lock digest to match that
+project and its committed World pin. Keep this qualification loader-owned:
+derive a read-only carrier from the original bounded bytes, not from a
+caller-populated `Bundle.digest` or reconstructed manifest DTO.
+The CLI uses that same decoder and proof
+checks for an explicit matching bundle input; it never parses area JSON or
+bitmap assets. A changed area is recompiled by the existing content/bundle
+tooling and then appears in the view without a catalogue-specific re-export or
+editable duplicate. Existing v1 callers remain unchanged.
+
+### Proposed payload, identity and visibility
+
+Schema `1.1.0` adds one capability, `area`; region is a kind, not another
+capability. An entity retains the existing carrier, with `type: area`,
+`capability_id: area`, and `content_key` equal to the source's native key, e.g.
+`oteryn:content.area.region.thais`. Numeric source/town ids, display names and
+asset hashes are never canonical identity. The exact `data` keys are:
+
+| Field | Contract |
+| --- | --- |
+| `payload_revision` | Integer constant `1`. |
+| `definition_revision` | Source `identity.revision`, 1–128 UTF-8 bytes. |
+| `name` | Admitted display name, 1–128 characters and at most 256 UTF-8 bytes; no exporter normalization. |
+| `kind` | `region`, `subregion` or `city`, retained from source. |
+| `visibility` | Required constant `public`. |
+| `is_hometown` | Admitted boolean; no citizenship, access or runtime availability claim. |
+
+No raw source ids, masks, coordinates, temples, provenance blobs or hidden
+identity lists are part of this minimal payload. Export only public areas with
+public ancestors; omit a hidden area's descendants as well, rather than leak a
+hidden parent key or silently reparent a child. Regions have no parent edge;
+subregions/cities have exactly one public region parent. Unknown/malformed
+visibility, duplicate keys, unknown fields and invalid/cyclic parents fail
+source admission. The private coverage ledger records omitted/unsupported
+entries with reasons; it is never serialized to Platform/Atlas.
+
+### Relations to areas, creatures and NPCs
+
+All three relation types use capability `area` and the existing relation carrier:
+
+| Type | Source → target | Exact data |
+| --- | --- | --- |
+| `area_parent` | Area → its public parent region | `payload_revision: 1`, `basis: declared_parent`. |
+| `area_creature` | Area → exported public creature | `payload_revision: 1`, `basis: admitted_spawn_position`. |
+| `area_npc` | Area → exported public NPC | `payload_revision: 1`, `basis: admitted_npc_position`. |
+
+Use each admitted spawn point's absolute x/y and source floor, or each admitted
+NPC placement's x/y/floor, with the same bundle's `Table::resolve`. A successful
+lookup may produce subarea and parent-region relations. Deduplicate each
+`(type, source_key, target_key)` tuple. Its stable relation key is
+`oteryn:relation.<type>.<sha256>`, where the lowercase digest is over canonical
+UTF-8 JSON `[type,source_key,target_key]` (no LF). This avoids placement-order ids.
+Source and target must both exist in the same snapshot. A hidden NPC, hidden
+area/ancestor or unsupported target capability produces no public relation.
+
+Missing/unadmitted mask coverage stays unknown: never use nearest label,
+rectangle guesses, donor coordinates or a temple to manufacture membership.
+Relations mean static admitted placement evidence, not current occupancy,
+roaming range, player access or executable/reachable availability. Record
+`membership_not_admitted`, `hidden_endpoint`, `unsupported_endpoint`, or
+`excluded_scope` reasons privately. Do not infer authoritative absence from
+missing relations or publish an unqualified source-key crosswalk.
+
+### Bounds, completeness and rollout
+
+Retain server bounds: at most 1,024 areas, 512 masks, 262,144 mask runs and
+4,194,304 admitted tiles (`subarea.rs`); at most 131,072 spawn points
+(`spawn.rs::MAX_POINTS`) and 2,048 NPC placements (`npc.rs::MAX_PLACEMENTS`).
+Reuse the compiler's existing bounded shard capture (32 directory entries and
+16 MiB per source read). Area keys/names are at most 256 UTF-8 bytes; native
+creature/NPC keys retain their existing 128-byte bounds. Parent depth is one
+edge to a region. At most two membership edges per placement plus 1,024 parent
+edges gives a maximum 267,264 area relations before deduplication.
+
+Global catalogue limits remain 256 MiB, 200,000 entities, 1,000,000 relations,
+2,048 bytes per string, signed-64-bit integers and depth 16. Family and global
+limits both apply and fail closed; there is no truncation. Preserve canonical
+sorting and semantic/transport digest rules. No new numeric registry allocation
+or migration is reserved by this design.
+
+After matching Game payload and Platform validators exist (§15), initial area
+coverage is at most `supported/partial`; unsupported source families, excluded
+population and unadmitted geometry prevent an authoritative-empty or complete
+claim. Before that proof exists, a future 1.1.0 producer declares area
+`unsupported/unknown`. No area tombstones are allowed under partial/unknown.
+Roll out Game admission/decoder and pinned bundle, then Platform's inactive
+1.1.0 validator/importer, then enable a qualified catalogue profile. Retain v1
+artifacts for old consumers, which reject 1.1.0 rather than silently dropping
+the new category. Activation remains a separate owner gate.
+
+Follow-up acceptance tests must use the real bundle writer/server reader and
+cover visibility propagation/defaults, rejection of unqualified old bundles,
+hidden-parent and hidden-NPC relation suppression, endpoint integrity,
+unadmitted mask coverage, bounds, full source-entry/field coverage and
+byte/digest determinism after a one-place source edit. Source evidence is the
+existing admitted mask/town contracts, not a new donor inference: the World
+bundle contract §§16–17 and pinned Crystal
+`00ce02a57ca5a12e48f32a3476e37471167e4c3f`, `data-global/world/world.otbm`
+(town sample `tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json`).
