@@ -328,7 +328,7 @@ pub(super) async fn consume(
         return Ok(true);
     }
     consume_inputs(
-        tx, fence, request, callback, context, command, world_id, channel_id,
+        tx, permit, fence, request, callback, context, command, world_id, channel_id,
     )
     .await
 }
@@ -376,6 +376,7 @@ pub(super) async fn context_is_current(
 #[allow(clippy::too_many_arguments)]
 async fn consume_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
@@ -549,18 +550,13 @@ async fn consume_inputs(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
-        apply_input(tx, &input, &transaction).await?;
+        apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
 }
 
 fn location_queries(kind: &str) -> Result<(&'static str, &'static str), DurabilityError> {
     match kind {
-        "ground" => Ok((
-            "SELECT to_jsonb(l) FROM game_item_ground_locations l \
-             WHERE item_instance_id=$1::uuid FOR UPDATE",
-            "DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid",
-        )),
         "container" => Ok((
             "SELECT to_jsonb(l) FROM game_item_container_entries l \
              WHERE item_instance_id=$1::uuid FOR UPDATE",
@@ -589,7 +585,12 @@ async fn lock_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     input: &Input,
 ) -> Result<(), DurabilityError> {
-    let (query, _) = location_queries(&input.kind)?;
+    let query = if input.kind == "ground" {
+        "SELECT to_jsonb(l) FROM game_item_ground_locations l \
+         WHERE item_instance_id=$1::uuid FOR UPDATE"
+    } else {
+        location_queries(&input.kind)?.0
+    };
     let actual: Option<serde_json::Value> = sqlx::query_scalar(query)
         .bind(&input.item)
         .fetch_optional(&mut **tx)
@@ -602,9 +603,19 @@ async fn lock_location(
 
 async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    permit.check_channel(world_id, channel_id)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
@@ -619,7 +630,11 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     }
     if input.replacement.is_none() && input.quantity == i64::from(input.count) {
-        let (_, query) = location_queries(&input.kind)?;
+        let query = if input.kind == "ground" {
+            "DELETE FROM game_item_ground_locations WHERE item_instance_id=$1::uuid"
+        } else {
+            location_queries(&input.kind)?.1
+        };
         let removed = sqlx::query(query)
             .bind(&input.item)
             .execute(&mut **tx)
