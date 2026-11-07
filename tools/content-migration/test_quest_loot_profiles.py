@@ -26,6 +26,9 @@ class NativeQuestLootFacts(unittest.TestCase):
         missing = {key for key in required if not self.facts[key]['materializable']}
         expected = {f'oteryn:item.tibia.i{number}' for number in
                     [7398, 3413, 3410, 9657, 9689, 3336, 3355, 3277]}
+        animal_expected = expected.copy()
+        expected |= {f'oteryn:item.tibia.i{number}' for number in
+                     [281, 3006, 3036, 3037, 3038, 5809, 5892, 5904, 7414, 7427, 23529, 23531, 23533, 23542, 23543, 23544, 25759, 30192, 30195, 30275, 30276, 30277, 30278, 30279, 30280, 30281, 30282, 30283, 30284, 30285, 30318, 30319, 30320, 30321, 30322]}
         self.assertEqual(missing, expected)
         facts, tables = copy.deepcopy(self.facts), copy.deepcopy(self.tables)
         loot.apply_loot_facts(facts, loot.ROOT, self.creatures, tables, self.profiles)
@@ -33,7 +36,7 @@ class NativeQuestLootFacts(unittest.TestCase):
         self.assertEqual(tables, self.tables)
         changed = {key for key in facts if facts[key] != self.facts[key]}
         self.assertEqual(changed, expected)
-        for key in changed:
+        for key in animal_expected:
             expected_fact = copy.deepcopy(self.facts[key])
             expected_fact['materializable'] = True
             self.assertEqual(facts[key], expected_fact)
@@ -85,6 +88,18 @@ class NativeQuestLootFacts(unittest.TestCase):
         fact['charges'] = 199
         with self.assertRaisesRegex(ValueError, 'ACCEPTED_CHARGE_CONFLICT'):
             loot.project(fact, self.native[key], self.bindings[key])
+
+    def test_ordinary_source_charge_absence_cannot_replace_an_existing_charge_fact(self):
+        key = 'oteryn:item.tibia.i30318'
+        fact = copy.deepcopy(self.facts[key])
+        with self.assertRaisesRegex(ValueError, 'CHARGE_POLICY_CONFLICT'):
+            loot.project(fact, self.native[key], self.bindings[key])
+        projected = loot.project(fact, self.native[key], self.bindings[key], source_charges_absent=True)
+        self.assertTrue(projected['materializable'])
+        self.assertNotIn('charges', projected)
+        fact['charges'] = 1
+        with self.assertRaisesRegex(ValueError, 'CHARGE_POLICY_CONFLICT'):
+            loot.project(fact, self.native[key], self.bindings[key], source_charges_absent=True)
 
 
 if __name__ == '__main__':

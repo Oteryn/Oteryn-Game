@@ -70,6 +70,22 @@ pub(super) async fn exercise(
         .find(|p| p.definition_key == "oteryn:creature.percht")
         .and_then(|p| p.outfit_appearance())
         .ok_or("native Percht look")?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
+    {
+        let sessions = owner.states.quest_sessions.lock().map_err(debug)?;
+        let copy = sessions
+            .get(&admitted.game_session_id)
+            .and_then(|entry| entry.copy.as_ref())
+            .ok_or("admitted Quest copy")?;
+        assert_eq!(
+            copy.tracks()
+                .get("oteryn:quest-progress/chosen/winterlight/stage"),
+            Some(&0),
+            "the real admission reader supplies the declared initial stage"
+        );
+    }
     super::questpc8_mystery_geometry::arrive(
         owner,
         admitted,

@@ -1,3 +1,18 @@
+# Queen item admission and21focused Python tests PASS
+
+All3722prior native Item profiles remain byte-identical. Added21profiles:
+Queen corpse plus20missing source loot Items; source51-entry loot table,
+probabilities and quantities unchanged. Explicit native30/source40projection
+and terminal Icicle600-second native timed owner qualify.12corpse+6loot+3
+weight/timed tests PASS. Real loot table refreshed; Prey model refresh running.
+
+Latest native PG84.571113489s reached first bonfire but fixture had no Quest
+admission copy for selecting its disjoint stages. Added real fenced admission
+read and exact declared-stage0assertion; all-feature dispatch test check2m41s
+PASS and rerun queued/building. No Quest progress is seeded.20of23qualified;
+full native route, strict checks, model/drift/pins still required. Continue
+without deferring shared mechanics and push at least every15minutes.
+
 # World/death-only track declarations compile and pass ownership tests
 
 20of23active entries qualified. Latest initialized PG RED88.874996944s
