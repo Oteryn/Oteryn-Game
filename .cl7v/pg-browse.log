@@ -1,0 +1,223 @@
+   Compiling memchr v2.8.3
+   Compiling cmov v0.5.4
+   Compiling serde_core v1.0.229
+   Compiling syn v2.0.119
+   Compiling errno v0.3.14
+   Compiling bitflags v2.13.1
+   Compiling generic-array v0.14.9
+   Compiling linux-raw-sys v0.12.1
+   Compiling rustls v0.23.46
+   Compiling futures-io v0.3.34
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling signal-hook-registry v1.4.8
+   Compiling io-lifetimes v3.0.1
+   Compiling ctutils v0.4.4
+   Compiling io-lifetimes v2.0.4
+   Compiling cpufeatures v0.2.17
+   Compiling scopeguard v1.2.0
+   Compiling io-extras v0.19.0
+   Compiling ambient-authority v0.0.2
+   Compiling maybe-owned v0.3.4
+   Compiling lock_api v0.4.14
+   Compiling equivalent v1.0.2
+   Compiling tokio v1.53.1 (/home/mole/oteryn-cache/rs-wt/cl7v/vendor/tokio-1.53.1)
+   Compiling rustix v1.1.6
+   Compiling digest v0.11.3
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.6
+   Compiling allocator-api2 v0.2.21
+   Compiling foldhash v0.2.0
+   Compiling oteryn-gameplay-content v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/content)
+   Compiling crossbeam-utils v0.8.22
+   Compiling digest v0.10.7
+   Compiling sha2 v0.11.1
+   Compiling futures-util v0.3.34
+   Compiling thiserror-impl v2.0.20
+   Compiling rand_core v0.10.1
+   Compiling hashbrown v0.16.1
+   Compiling parking v2.2.1
+   Compiling tinyvec_macros v0.1.1
+   Compiling hashbrown v0.17.1
+   Compiling event-listener v5.4.2
+   Compiling tinyvec v1.12.0
+   Compiling oteryn-simulation-determinism v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/simulation-determinism)
+   Compiling crossbeam-queue v0.3.13
+   Compiling hashlink v0.11.1
+   Compiling webpki-roots v1.0.10
+   Compiling indexmap v2.14.0
+   Compiling uuid v1.25.0
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling thiserror v2.0.20
+   Compiling num-traits v0.2.19
+   Compiling unicode-normalization v0.1.25
+   Compiling getrandom v0.4.3
+   Compiling chacha20 v0.10.2
+   Compiling sha2 v0.10.9
+   Compiling smallvec v1.15.2
+   Compiling either v1.18.0
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+   Compiling hmac v0.13.0
+   Compiling futures-channel v0.3.34
+   Compiling form_urlencoded v1.2.2
+   Compiling parking_lot_core v0.9.12
+   Compiling oteryn-protocol-oteryn v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/protocol-oteryn)
+   Compiling oteryn-gameplay-domain v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/domain)
+   Compiling oteryn-world-bundle v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/world-bundle)
+   Compiling unicode-properties v0.1.4
+   Compiling unicode-bidi v0.3.18
+   Compiling parking_lot v0.12.5
+   Compiling hkdf v0.13.0
+   Compiling atoi v2.0.0
+   Compiling rustix-linux-procfs v0.1.1
+   Compiling synstructure v0.13.2
+   Compiling fs-set-times v0.20.3
+   Compiling tracing-attributes v0.1.31
+   Compiling stringprep v0.1.5
+   Compiling futures-intrusive v0.5.0
+   Compiling cap-primitives v4.0.3
+   Compiling rand v0.10.2
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling md-5 v0.11.0
+   Compiling cap-std v4.0.3
+   Compiling hex v0.4.3
+   Compiling whoami v2.1.3
+   Compiling cap-fs-ext v4.0.3
+   Compiling tracing v0.1.44
+   Compiling dotenvy v0.15.7
+   Compiling curve25519-dalek-derive v0.1.1
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+   Compiling zerofrom v0.1.8
+   Compiling yoke v0.8.3
+   Compiling signature v2.2.0
+   Compiling itertools v0.14.0
+   Compiling ed25519 v2.2.3
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling oteryn-error-codes v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/error-codes)
+   Compiling curve25519-dalek v4.1.3
+   Compiling winnow v1.0.4
+   Compiling oteryn-foundation v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/foundation)
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling icu_locale_core v2.3.0
+   Compiling tokio-rustls v0.26.6
+   Compiling tokio-stream v0.1.19
+   Compiling icu_collections v2.3.0
+   Compiling ed25519-dalek v2.2.0
+   Compiling prost-derive v0.14.4
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling serde_spanned v1.1.1
+   Compiling oteryn-gameplay-quests v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/quests)
+   Compiling oteryn-gameplay-admission-evidence v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/admission-evidence)
+   Compiling oteryn-gameplay-social-rules v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/social-rules)
+   Compiling oteryn-gameplay-housing v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/housing)
+   Compiling toml v1.1.6+spec-1.1.0
+   Compiling icu_provider v2.3.1
+   Compiling oteryn-gameplay-economy v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/economy)
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling prost v0.14.4
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-character-recovery-fence v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/character-recovery-fence)
+   Compiling oteryn-gameplay-world-change v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/world-change)
+   Compiling oteryn-gameplay-node-files v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/node-files)
+   Compiling oteryn-gameplay-source-critical-baseline v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/source-critical-baseline)
+   Compiling hyper v1.11.0
+   Compiling tower v0.5.3
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling oteryn-client-domain v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/client-domain)
+   Compiling oteryn-diagnostics v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/diagnostics)
+   Compiling oteryn-client-ui v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/client-ui)
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling serde_urlencoded v0.7.1
+   Compiling oteryn-renderer v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/renderer)
+   Compiling rustls-platform-verifier v0.7.0
+   Compiling hyper-util v0.1.20
+   Compiling tokio-util v0.7.19
+   Compiling url v2.5.8
+   Compiling oteryn-ntp-clock v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/ntp-clock)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/dispatch)
+   Compiling oteryn-world-bundle-compiler v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/tools/world-bundle-compiler)
+   Compiling sqlx-core v0.9.0 (/home/mole/oteryn-cache/rs-wt/cl7v/vendor/sqlx-core-0.9.0)
+   Compiling tower-http v0.6.11
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+   Compiling oteryn-gameplay-foundation v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/foundation)
+   Compiling oteryn-session v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/session)
+   Compiling hyper-rustls v0.27.9
+   Compiling oteryn-gameplay-weather v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/weather)
+   Compiling reqwest v0.13.5
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+   Compiling oteryn-client-runtime v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/client-runtime)
+   Compiling oteryn-session-tcp v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/session-tcp)
+   Compiling sqlx-postgres v0.9.0 (/home/mole/oteryn-cache/rs-wt/cl7v/vendor/sqlx-postgres-0.9.0)
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling oteryn-dev-client v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/tools/dev-client)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling sqlx-macros-core v0.9.0
+   Compiling sqlx-macros v0.9.0
+   Compiling sqlx v0.9.0
+   Compiling oteryn-gameplay-progression v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/progression)
+   Compiling oteryn-gameplay-entities v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/entities)
+   Compiling oteryn-gameplay-characters v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/characters)
+   Compiling oteryn-gameplay-items v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/items)
+   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/encounter-rules)
+   Compiling oteryn-gameplay-combat-rules v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/combat-rules)
+   Compiling oteryn-gameplay-spell-rules v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/spell-rules)
+   Compiling oteryn-gameplay-durability v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/combat)
+   Compiling oteryn-gameplay-npc v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/npc)
+   Compiling oteryn-gameplay-spell v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/social)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/crates/gameplay/encounters)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 19s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/oteryn_gameplay_dispatch-243ff9211cef347f)
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::proficiency_browse::proficiency_browse_postgres_pinned_catalogue_live_xp_and_session_fence ... oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=3
+POSTGRES_CASE_COMPLETED proficiency_browse: 665 weapons, 44.308277248s
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2512 filtered out; finished in 44.40s
+

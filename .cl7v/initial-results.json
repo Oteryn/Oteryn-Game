@@ -1,0 +1,21 @@
+[
+  {
+    "label": "fmt-initial",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all --check",
+    "exit_code": 0,
+    "log": ".cl7v/fmt-initial.log"
+  },
+  {
+    "label": "clippy-initial",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --offline --locked -p oteryn-client -p oteryn-client-runtime -p oteryn-client-ui -p oteryn-gameplay-dispatch -p oteryn-protocol-oteryn -p oteryn-session --all-targets --all-features --quiet -- -D warnings",
+    "exit_code": 0,
+    "log": ".cl7v/clippy-initial.log"
+  },
+  {
+    "label": "unit-tests-initial",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-client -p oteryn-client-runtime -p oteryn-client-ui -p oteryn-protocol-oteryn -p oteryn-session --no-fail-fast",
+    "exit_code": 0,
+    "pass_count": 1527,
+    "log": ".cl7v/unit-tests-initial.log"
+  }
+]

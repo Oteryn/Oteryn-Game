@@ -1,0 +1,48 @@
+{
+  "P08": [
+    "play::tests::feature_0195_weapon_proficiency::controls_encode_exact_request_and_reply_and_refusal_are_visible",
+    "play::tests::feature_0195_weapon_proficiency::native_proficiency_browse_decodes_experience_and_pages_the_complete_list",
+    "play::tests::feature_0195_weapon_proficiency::native_proficiency_rejects_invalid_fields_and_clears_perks",
+    "play::tests::feature_0195_weapon_proficiency::proficiency_page_rejects_truncation_trailing_and_oversized_rows",
+    "play::tests::feature_0195_weapon_proficiency::native_proficiency_actions_and_input_gates",
+    "capability_support::weapon_proficiency_tests::proficiency_browse_is_advertised_and_routed_with_item_identity",
+    "gameplay_transport::monk_save::postgres_tests::proficiency_browse::proficiency_browse_postgres_pinned_catalogue_live_xp_and_session_fence",
+    "gameplay_transport::monk_save::postgres_tests::proficiency_select_perk::proficiency_select_perk_wire_refusals_replay_and_durable_selection",
+    "gameplay_transport::weapon_proficiency::tests::real_kill_dispatch_credits_every_recent_contributor_full_points_once",
+    "gameplay_transport::weapon_proficiency::tests::real_attack_dispatch_applies_selected_threshold_effects_once",
+    "gameplay_transport::weapon_proficiency::tests::an_active_modification_replaces_its_level_perk_in_attack_damage",
+    "gameplay_transport::weapon_proficiency::tests::production_catalogue_resolves_promoted_weapon_for_durable_writer",
+    "gameplay_transport::weapon_proficiency::tests::promoted_selected_attack_perk_reaches_live_dispatch",
+    "gameplay_transport::weapon_proficiency::tests::selected_source_defense_perks_reach_mitigation_projection_and_clear",
+    "gameplay_transport::kill_reward::proficiency_kill_tests::proficiency_kill_credit_full_points_window_replay_and_checkpoint_decision",
+    "gameplay_transport::kill_reward::proficiency_kill_tests::daily_proficiency_bonus_credits_exact_chance_and_never_replays"
+  ],
+  "M04": [
+    "play::tests::feature_0082_creature_push::creature_pointer_preserves_cl1_ground_clicks_and_cl2_cursor_targeting",
+    "play::tests::feature_0082_creature_push::death_discards_queued_cl3_controls_without_discarding_logout",
+    "play::tests::feature_0082_creature_push::native_drag_cancels_on_focus_loss_or_stale_target_and_decodes_refusal",
+    "play::tests::feature_0082_creature_push::native_drag_sends_push_once_without_attacking_or_walking",
+    "capability_support::creature_push_tests::creature_push_is_advertised_and_routed_with_its_prerequisites",
+    "gameplay_transport::monk_save::postgres_tests::creature_push::creature_push_real_dispatch_moves_and_refuses_on_postgres"
+  ],
+  "I17": [
+    "play::tests::feature_0179_hotkey_equip::assigned_item_key_sends_the_definition_and_waits_for_the_server",
+    "play::tests::feature_0179_hotkey_equip::native_hotkey_configuration_and_visible_refusal",
+    "play::tests::feature_0179_hotkey_equip::hotkey_equip_panel_opens_and_sends",
+    "capability_support::hotkey_equip_tests::hotkey_equip_carried_is_advertised_with_its_command_owner"
+  ],
+  "I18": [
+    "play::tests::feature_0230_browse_field::browse_field_native_controls_and_results",
+    "play::tests::feature_0230_browse_field::browse_field_native_item_controls_preserve_move_and_up_routes",
+    "play::tests::feature_0230_browse_field::browse_field_panel_opens_and_sends",
+    "play::tests::feature_0230_browse_field::browse_field_selects_the_first_visible_server_window",
+    "play::tests::feature_0230_browse_field::browse_field_native_moves_use_session_item_commands",
+    "play::tests::feature_0230_browse_field::browse_field_up_keeps_the_ground_container_view_id"
+  ],
+  "P05": [
+    "play::tests::feature_0072_task_board::talisman_purchase_uses_full_owner_and_displays_refusal"
+  ],
+  "W06": [
+    "play::tests::feature_0006_world_spatial_entities::echo_portal_click_walks_and_reward_remains_in_native_container"
+  ]
+}

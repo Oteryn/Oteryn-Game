@@ -1,0 +1,488 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running `/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/oteryn-architecture-check workspace .`
+client structure: WARN: apps/client/src/windows_shell.rs: 421 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/play/mailbox.rs: 547 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/play/session_loop.rs: 423 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/play/session_stepper.rs: 436 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/features/0098-quick-loot/native.rs: 482 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/features/0140-prey/native.rs: 575 lines (warning 400, hard 600)
+client structure: WARN: apps/client/src/features/local-native-login/mod.rs: 227 lines (warning 200, hard 300)
+client structure: WARN: apps/client/src/features/0230-browse-field/native.rs: 427 lines (warning 400, hard 600)
+client structure: WARN: crates/client-ui/src/features/0199-cyclopedia-character/tests/mod.rs: 233 lines (warning 200, hard 300)
+client structure: WARN: crates/client-ui/src/features/0072-task-board/mod.rs: 201 lines (warning 200, hard 300)
+client structure: WARN: crates/client-assets/src/appearance.rs: 560 lines (warning 400, hard 600)
+client structure: WARN: crates/renderer/src/lib.rs: 455 lines (warning 400, hard 600)
+client structure: WARN: crates/renderer/src/batch.rs: 1152 lines (warning 400, hard 600)
+client structure: WARN: crates/input-actions/src/semantic.rs: 411 lines (warning 400, hard 600)
+client structure: WARN: crates/input-actions/src/physical.rs: 458 lines (warning 400, hard 600)
+client structure: WARN: crates/input-actions/src/lib.rs: 543 lines (warning 400, hard 600)
+client structure: WARN: crates/input-platform/src/adapter.rs: 574 lines (warning 400, hard 600)
+client structure: WARN: crates/session/src/lib.rs: 429 lines (warning 400, hard 600)
+client structure: WARN: crates/session/src/session_tests_items.rs: 717 lines (warning 700, hard 1000)
+client structure: WARN: crates/platform-client/src/native_login.rs: 925 lines (warning 400, hard 600)
+client generated Rust: 20 lines, 104059 bytes (OUT_DIR only)
+client mechanic coverage:
+[
+  {
+    "mechanic": "0001-bestiary-charms",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0003-npc-service",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0004-item-view-move",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0006-world-spatial-entities",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0007-chat",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0008-achievement-notices",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0009-highscores",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0010-analyser",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0011-world-interaction",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0012-item-equip-drop",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0014-container-tree",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0015-item-use",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0016-quest-log",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0017-attack",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0018-world-map-view",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0019-world-light",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0021-logout",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0022-rune-use",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0023-presentation",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0025-appearance",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0026-world-weather",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0028-item-look",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0029-map-state",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0030-world-spatial-fields",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0031-tutorial-notices",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0032-daily-reward",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0033-spectate",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0036-chat-guild-room",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0037-depot",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0039-timed-item",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0040-guild",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0042-party",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0043-vip",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0049-house",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0051-staff",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0053-world-event",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0054-training",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0055-guild-bank",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0059-house-move-out",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0060-player-trade",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0061-item-stack-count",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0062-stash",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0063-market",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0064-target-move",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0066-refusal-detail",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0067-bestiary-charm-progression",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0068-imbue",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0072-task-board",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0075-server-save-countdown",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0076-player-report",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0080-chat-private-channel",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0081-npc-shop",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0082-creature-push",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0083-channel-list",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0086-house-transfer",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0087-pvp-expert",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0091-field-runes",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0092-zones-nologout",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0093-subarea",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0097-character-info",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0098-quick-loot",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0099-guildhall",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0103-guild-war",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0104-forge-creature",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0115-mail",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0117-boss-encounter",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0132-inspection",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0134-party-skull",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0140-prey",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0146-container-sort",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0147-exiva-settings",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0148-wheel-allocation",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0149-raid-schedule",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0150-house-podium",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0151-daily-boost",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0152-item-forge",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0153-depot-search",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0154-store",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0164-fishing",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0165-hireling",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0168-animus-mastery",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0170-arena",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0171-coin-conversion",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0179-hotkey-equip",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0180-hotkey-equip-carried",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0182-daily-reward",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0195-weapon-proficiency",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0197-cyclopedia-tracker",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0200-team-finder-leader",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0207-house-furniture-wrap",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0224-boss-rewards",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0225-boss-difficulty",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0230-browse-field",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0232-team-finder-members",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0233-player-typing",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0240-chat-party-room",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0250-hireling-management",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0258-vip-presence",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0259-chat-public-channels",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0272-atelier-resources",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0274-loyalty-skills",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0275-empty-outfit",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0276-condition-status",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0277-rest-status",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0278-battle-instinct-status",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0279-skill-progress",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0280-party-effects",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0285-store-purchase-history",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0286-world-spatial-entities",
+    "status": "unsupported"
+  },
+  {
+    "mechanic": "0287-actor-spell-catalog",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0288-ambient-sound",
+    "status": "supported"
+  },
+  {
+    "mechanic": "0370-skill-display",
+    "status": "supported"
+  }
+]
+client largest files: [(1152, "crates/renderer/src/batch.rs"), (925, "crates/platform-client/src/native_login.rs"), (717, "crates/session/src/session_tests_items.rs"), (664, "crates/session/src/session_tests_entities.rs"), (603, "crates/session/src/session_tests_chat.rs"), (575, "apps/client/src/features/0140-prey/native.rs"), (574, "crates/input-platform/src/adapter.rs"), (572, "crates/session/src/session_tests_push.rs"), (560, "crates/client-assets/src/appearance.rs"), (547, "apps/client/src/play/mailbox.rs")]
+workspace-boundaries: PASS

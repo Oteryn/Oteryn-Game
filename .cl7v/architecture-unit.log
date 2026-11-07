@@ -1,0 +1,86 @@
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling oteryn-architecture-check v0.1.0 (/home/mole/oteryn-cache/rs-wt/cl7v/tools/architecture-check)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.05s
+     Running unittests src/lib.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/oteryn_architecture_check-7882038f2502859c)
+
+running 32 tests
+test gameplay::tests::gameplay_boss_guard_warns_or_errors_as_configured ... ok
+test gameplay::tests::gameplay_boss_guard_checks_files_and_all_declaration_kinds ... ok
+test gameplay::tests::gameplay_layer_parser_rejects_duplicate_assignments_and_invalid_layers ... ok
+test gameplay::tests::gameplay_dev_edges_do_not_enter_layer_walk ... ok
+test tests::declared_dev_edge_from_production_root_to_tool_passes_closure ... ok
+test gameplay::tests::gameplay_layer_order_rejects_every_upward_or_unlisted_peer_edge ... ok
+test gameplay::tests::gameplay_listed_l3_and_actor_carrier_edges_pass ... ok
+test tests::checked_in_policy_is_structurally_valid ... ok
+test tests::client_closure_admits_session_tcp_and_its_session_crates ... ok
+test tests::dev_edge_naming_unknown_member_fails_shape ... ok
+test gameplay::tests::gameplay_purity_checks_normal_build_renamed_and_target_specific_dependencies ... ok
+test gameplay::tests::gameplay_layers_cover_members_and_exceptions_are_bounded ... ok
+test tests::duplicate_metadata_package_name_fails_closed ... ok
+test tests::structural_policy_does_not_freeze_member_count ... ok
+test tests::duplicate_policy_package_or_path_fails_closed ... ok
+test tests::normal_edge_from_production_root_to_tool_still_fails_closure ... ok
+test tests::production_root_cannot_reach_synthetic_member ... ok
+test tests::production_root_must_have_production_role ... ok
+test tests::internal_edges_splits_normal_build_and_dev_by_kind ... ok
+test tests::client_edge_to_canary_synthetic_tool_or_dev_client_still_fails_closure ... ok
+test tests::the_premium_bypass_read_is_named_only_by_the_gate_and_its_qualification ... ok
+test tests::undeclared_dev_edge_fails ... ok
+test tests::the_empty_latch_witness_is_minted_only_by_the_latch_read ... ok
+test tests::session_tcp_edge_to_dev_client_still_fails_closure ... ok
+test tests::same_cardinality_wrong_manifest_path_fails ... ok
+test tests::same_path_set_paired_to_wrong_packages_fails ... ok
+test gameplay::tests::gameplay_persistence_names_are_forbidden ... ok
+test client_structure::tests::settings_unknown_keys_round_trip_and_generated_entries_equal_fragments ... ok
+test client_structure::tests::synthetic_command_and_mechanic_extend_only_additive_sources ... ok
+test client_structure::tests::pushed_handler_requires_reducer_window_and_test ... ok
+test tests::checked_in_workspace_metadata_matches_declared_paths ... ok
+test tests::checked_in_game_server_names_restricted_calls_only_where_allowed ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running unittests src/main.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/oteryn_architecture_check-5b81d745559ab2e6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/client_layering.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/client_layering-c16699827bf97cdf)
+
+running 4 tests
+test client_dependency_cycles_are_rejected ... ok
+test purity_and_dev_build_edges_cannot_bypass_layering ... ok
+test forbidden_edge_classes_fail_with_real_cargo_metadata ... ok
+test workspace_command_runs_client_layering_against_current_metadata ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.59s
+
+     Running tests/client_structure.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/client_structure-1814dd8c7fd4351d)
+
+running 9 tests
+test per_mechanic_unsupported_baseline_files_count_once ... ok
+test default_conflicts_fail_but_explicit_precedence_disambiguates ... ok
+test new_files_and_existing_ratchets_enforce_lines_and_bytes ... ok
+test feature_layout_and_versioned_directory_names_fail ... ok
+test central_catalogues_and_event_matches_fail_outside_features ... ok
+test supported_entry_symbols_asset_digests_and_parents_are_checked ... ok
+test shell_test_fragment_limits_and_generated_output_are_enforced ... ok
+test duplicate_unknown_misnamed_missing_and_unsupported_growth_fail ... ok
+test structure_command_checks_real_tree_and_reports_every_mechanic ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+
+     Running tests/gameplay_workspace.rs (/home/mole/oteryn-cache/target-codex/lanes/cl7v/debug/deps/gameplay_workspace-737649cf3897e907)
+
+running 1 test
+test gameplay_workspace_command_enforces_layers_names_and_boss_modes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+   Doc-tests oteryn_architecture_check
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

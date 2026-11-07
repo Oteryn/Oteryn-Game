@@ -1,0 +1,82 @@
+[
+  {
+    "label": "pg-browse",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib proficiency_browse_postgres_pinned_catalogue_live_xp_and_session_fence -- --nocapture --test-threads=1",
+    "exit_code": 0,
+    "duration_seconds": 365.86,
+    "pg_marker": true,
+    "pg_not_configured": false,
+    "log": ".cl7v/pg-browse.log",
+    "pass_count": 1
+  },
+  {
+    "label": "pg-selection",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib proficiency_select_perk_wire_refusals_replay_and_durable_selection -- --nocapture --test-threads=1",
+    "exit_code": 0,
+    "duration_seconds": 42.72,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/pg-selection.log",
+    "pass_count": 1
+  },
+  {
+    "label": "dispatch-proficiency-unit",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib weapon_proficiency::tests",
+    "exit_code": 0,
+    "duration_seconds": 0.95,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/dispatch-proficiency-unit.log",
+    "pass_count": 6
+  },
+  {
+    "label": "dispatch-proficiency-kill-unit",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib proficiency_kill_tests",
+    "exit_code": 0,
+    "duration_seconds": 0.67,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/dispatch-proficiency-kill-unit.log",
+    "pass_count": 2
+  },
+  {
+    "label": "pg-creature-push",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib creature_push_real_dispatch_moves_and_refuses_on_postgres -- --nocapture --test-threads=1",
+    "exit_code": 0,
+    "duration_seconds": 82.06,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/pg-creature-push.log",
+    "pass_count": 1
+  },
+  {
+    "label": "architecture-unit",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo test --offline --locked -p oteryn-architecture-check --no-fail-fast",
+    "exit_code": 0,
+    "duration_seconds": 9.04,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/architecture-unit.log",
+    "pass_count": 46
+  },
+  {
+    "label": "architecture-workspace",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo run --offline --locked -p oteryn-architecture-check -- workspace .",
+    "exit_code": 0,
+    "duration_seconds": 3.36,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/architecture-workspace.log",
+    "pass_count": 0
+  },
+  {
+    "label": "architecture-client-structure",
+    "command": "/home/mole/oteryn-cache/codex-bin/cargo run --offline --locked -p oteryn-architecture-check -- client-structure .",
+    "exit_code": 0,
+    "duration_seconds": 1.17,
+    "pg_marker": null,
+    "pg_not_configured": false,
+    "log": ".cl7v/architecture-client-structure.log",
+    "pass_count": 0
+  }
+]
