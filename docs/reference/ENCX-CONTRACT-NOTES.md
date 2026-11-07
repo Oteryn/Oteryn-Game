@@ -815,3 +815,15 @@ hook discovery, missing-source refusal and source substitution rejection. All
 four activity-template tests pass (68.04s), preserving map bounds and physical
 corpse gates. Content check passed (11.51s), clippy with warnings denied passed
 (6.10s). This is not native hook composition or a completed W10 encounter.
+
+### Primal Hazard Instance identity consumer checkpoint
+
+Primal's Hazard consumer now accepts the native death owner's existing tagged
+Instance receipt framing through `party_kill_xp::decoded_death_scope`, retaining
+legacy Channel bytes unchanged. No new encoding, identifier or migration is
+introduced. The new scope regression was red on the Channel-only implementation
+and is green after reuse of the shared decoder. It rejects cross-namespace UUID
+aliasing, generation mismatch and truncated keys. Durability check passed in
+1m00s; the legacy Hazard PostgreSQL regression and clippy are still running at
+this WIP checkpoint. This does not remove the transport's Channel-only endgame
+composition gate or qualify the unsupported Primal hooks.
