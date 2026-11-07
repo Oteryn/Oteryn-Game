@@ -1012,3 +1012,18 @@ run passed. Fmt check passed in 18.423s, duplicate-migration check in 0.398s,
 pin refresh in 31.210s, pin-check in 33.765s and architecture-check in 6.041s.
 These component and integration checks do not change W10/W11/W16 completion:
 the full Primal production qualification/encounter chain remains unfinished.
+
+
+## ENCX publication cadence (owner direction)
+
+After the integrated main checkpoint, publish compiling work within fifteen
+minutes, then at least every thirty minutes. The pre-push gates are
+`cargo check --workspace --all-targets` and `cargo fmt --check`; full suites run
+in CI. If a main merge cannot be resolved within fifteen minutes, abort that
+merge, publish the last compiling state, and resume the integration afterwards.
+Keep follow-ups small for the single SRVENC integration PR. This checkpoint
+adds no runtime behavior or allocated numbers. The next W10 production gate
+remains the captured Primal callbacks in `activity_template.rs`; neither source
+hook qualification nor the unfinished W10/W11/W16 chain tests are relaxed.
+
+Checkpoint gates passed: workspace/all-target compile 220.394s; fmt 14.866s.
