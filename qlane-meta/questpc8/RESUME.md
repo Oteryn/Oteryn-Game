@@ -1,3 +1,21 @@
+# World/death-only track declarations compile and pass ownership tests
+
+20of23active entries qualified. Latest initialized PG RED88.874996944s
+identified reward-track declarations rejecting a world/death-only owner.
+Generic declaration validation now includes actual bounded World and death
+registrations, retaining exact same-Quest ownership. Four-crate default
+check1m28s,9existing reward tests and1new world-only/conflicting-owner test
+PASS. Full native Winterlight rerun is building.
+
+Cosmetics now use the required manifest/v6 discriminator; the earlier actual
+PG3.273628405s provisioning rejection is fixed in the registration producer.
+Explicit source40/native30Queen corpse projection and ordinary quest-loot
+cohort admission are authored. Source loot entries/chances/quantities remain
+unchanged; accepted branch/Percht Skull weights are retained by exact digest
+corrections. Ordinary item generation is still running; no qualification
+until full PG and all final checks. Push every15minutes, then continue the
+remaining Colours/Wrath entries.
+
 # Winterlight full route authored; native PG build running
 
 20of23active entries qualified. Actual bonfire RED75.313223529s is followed

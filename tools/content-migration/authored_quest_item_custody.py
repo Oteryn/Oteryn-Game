@@ -40,7 +40,7 @@ def correct_weight(root, definition, node, row):
         row['semantics']['physical']['value']['weight'] = copy.deepcopy(accepted)
 
 
-def qualify(root, definition, xml_raw):
+def qualify(root, definition, xml_raw, *, terminal_expiry=False):
     if hashlib.sha256(xml_raw).hexdigest() != XML_SHA256:
         raise ValueError('AUTHORED_CUSTODY_XML_PIN')
     source = grizzly.source
@@ -61,8 +61,12 @@ def qualify(root, definition, xml_raw):
     if node is None:
         raise ValueError('AUTHORED_CUSTODY_SOURCE_ITEM')
     attributes = source.attrs(node)
-    if {'charges', 'duration', 'decayto', 'stopduration'} & attributes.keys():
-        raise ValueError('AUTHORED_CUSTODY_INSTANCE_OWNER_REQUIRED')
+    timed = {'charges', 'duration', 'decayto', 'stopduration'} & attributes.keys()
+    if timed:
+        if (not terminal_expiry or timed - {'duration', 'decayto'} or 'duration' not in timed
+                or not 1 <= int(attributes['duration']) <= 0xffffffff // 1000
+                or int(attributes.get('decayto', '0')) != 0):
+            raise ValueError('AUTHORED_CUSTODY_INSTANCE_OWNER_REQUIRED')
     objects = source.engine_items.load_appearance_objects(client)
     appearance = objects.get(item_id)
     if appearance is None or any(appearance['flags'].get('flags.' + name, False)
@@ -77,7 +81,8 @@ def qualify(root, definition, xml_raw):
     if (not row['admission']['materializable']
             or row['admission']['legal_destinations'] != ['CharacterInventory', 'Ground']):
         raise ValueError('AUTHORED_CUSTODY_NOT_PORTABLE')
-    for group in ('physical', 'stack', 'container'):
+    groups = ('physical', 'stack', 'container', 'temporal') if timed else ('physical', 'stack', 'container')
+    for group in groups:
         if grizzly.known_conflict(definition['semantics'][group], row['semantics'][group]):
             raise ValueError('AUTHORED_CUSTODY_CANONICAL_' + group.upper() + ':' + definition['identity']['key'])
     if definition['stack_class'] not in ('Unknown', row['admission']['stack_class']):
@@ -86,7 +91,7 @@ def qualify(root, definition, xml_raw):
     # its custody facts; all other groups remain exactly the accepted canonical data.
     for group in row['semantics']:
         row['semantics'][group] = (grizzly.accepted_first(definition['semantics'][group], row['semantics'][group])
-                                   if group in ('physical', 'stack', 'container')
+                                   if group in groups
                                    else copy.deepcopy(definition['semantics'][group]))
     return source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': [row]},
                                 index, {item_id})['records'][0]

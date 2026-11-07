@@ -22,7 +22,9 @@ def required_items(root, creatures, tables):
     corpse.required(root, creatures)
     objectives = {row['key']: row for row in json.loads((root / corpse.OBJECTIVES).read_bytes())['objectives']}
     rules = json.loads((root / corpse.RULES).read_bytes())['rules']
-    selected = {objectives[rule['objective']]['creature'] for rule in rules}
+    rule_creatures = {objectives[rule['objective']]['creature'] for rule in rules}
+    ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())['objectives']
+    selected = rule_creatures | {objectives[key]['creature'] for key in ordinary}
     native = {row['profile']['target']['key']: row['profile']['target'] for row in creatures['records']}
     definitions = {}
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
@@ -50,6 +52,10 @@ def required_items(root, creatures, tables):
 
     for creature in sorted(selected):
         definition = definitions.get(creature)
+        # The real loot generator binds a null table when a native-only Creature
+        # has no canonical definition. A quest-loot rule still requires one.
+        if definition is None and creature not in rule_creatures:
+            continue
         if definition is None or definition['identity'] != native[creature]:
             raise ValueError('QUEST_LOOT_CREATURE_DEFINITION_BINDING')
         reference = definition['loot']
@@ -62,7 +68,44 @@ def required_items(root, creatures, tables):
     return found
 
 
-def project(fact, record, binding):
+def admit(root, generated, profile_path, manifest_path, order, canonical):
+    """Admit the exact scoped ordinary loot cohort through existing custody owners."""
+    import hashlib
+    import authored_quest_item_custody as custody
+    creatures = json.loads(generated.get(corpse.CREATURES, (root / corpse.CREATURES).read_bytes()))
+    tables = {}
+    for path in sorted((root / 'content/loot').glob('loot-*.json')):
+        for row in json.loads(path.read_bytes())['records']:
+            definition = row['definition']
+            if definition['identity']['key'] in tables:
+                raise ValueError('QUEST_LOOT_DUPLICATE_TABLE')
+            tables[definition['identity']['key']] = definition
+    wanted = required_items(root, creatures, tables)
+    document = json.loads(generated[profile_path])
+    existing = {row['production_definition']['production_key']: row for row in document['records']}
+    definitions = {}
+    for path in sorted((root / 'content/items/definitions').glob('items-*.json')):
+        for row in json.loads(path.read_bytes())['records']:
+            definition = row['definition']
+            key = definition['identity']['key']
+            if key in wanted and key not in existing:
+                if key in definitions:
+                    raise ValueError('QUEST_LOOT_DUPLICATE_CANONICAL_ITEM')
+                definitions[key] = definition
+    if set(definitions) != set(wanted) - set(existing):
+        raise ValueError('QUEST_LOOT_CANONICAL_ITEM_MISSING')
+    raw = (root / corpse.XML).read_bytes()
+    records = [custody.qualify(root, definition, raw, terminal_expiry=True)
+               for _, definition in sorted(definitions.items())]
+    document['records'].extend(records)
+    document['records'].sort(key=order)
+    generated[profile_path] = canonical(document)
+    manifest = json.loads(generated[manifest_path])
+    manifest['item_profiles']['sha256'] = hashlib.sha256(generated[profile_path]).hexdigest()
+    generated[manifest_path] = canonical(manifest)
+
+
+def project(fact, record, binding, *, source_charges_absent=False):
     """One exact, previously source-qualified native profile; no new source inference."""
     identity = fact['item']
     typed = {'family': identity['family'], 'production_key': identity['key'],
@@ -117,18 +160,24 @@ def project(fact, record, binding):
         result['charges'] = count['value']
         if stackable:
             result['stackable'] = True
-    elif charges != corpse.grizzly.source.NA or 'charges' in fact:
+    elif (charges != corpse.grizzly.source.NA
+          and not (source_charges_absent and charges == corpse.grizzly.source.U)) or 'charges' in fact:
         raise ValueError('QUEST_LOOT_NATIVE_CHARGE_POLICY_CONFLICT')
     return result
 
 
 def apply_loot_facts(facts, root, creatures, tables, profiles=None):
+    import hashlib
     required = required_items(root, creatures, tables)
     profiles = profiles or json.loads((root / PROFILE).read_bytes())
     native = {row['production_definition']['production_key']: row for row in profiles['records']}
     if len(native) != len(profiles['records']):
         raise ValueError('QUEST_LOOT_DUPLICATE_NATIVE_ITEM')
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+    raw = (root / corpse.XML).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != corpse.XML_SHA:
+        raise ValueError('QUEST_LOOT_SOURCE_XML_PIN')
+    xml = corpse.grizzly.source.xml_index(raw)
     updates = {}
     for key, reference in required.items():
         fact = facts.get(key)
@@ -141,6 +190,10 @@ def apply_loot_facts(facts, root, creatures, tables, profiles=None):
             raise ValueError('QUEST_LOOT_NATIVE_ADMISSION_MISSING:' + key)
         if len(matches) != 1:
             raise ValueError('QUEST_LOOT_AMBIGUOUS_EXACT_BINDING:' + key)
-        updates[key] = project(fact, native[key], matches[0])
+        number = corpse.item_id(reference)
+        if number not in xml:
+            raise ValueError('QUEST_LOOT_SOURCE_ITEM_ABSENT')
+        updates[key] = project(fact, native[key], matches[0],
+                               source_charges_absent='charges' not in corpse.grizzly.source.attrs(xml[number]))
     # Publish only after the complete scoped cohort passes; no partial input mutation.
     facts.update(updates)

@@ -173,6 +173,30 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     Ok(parse_document(text)?.callbacks)
 }
 
+fn external_track_owners() -> Result<&'static [(String, String)], String> {
+    static OWNERS: std::sync::OnceLock<Result<Vec<(String, String)>, String>> =
+        std::sync::OnceLock::new();
+    OWNERS
+        .get_or_init(|| {
+            let mut owners = Vec::new();
+            for callback in super::world_callbacks::load()? {
+                for storage in callback.storage {
+                    if !storage.read_only {
+                        owners.push((callback.quest.clone(), storage.track));
+                    }
+                }
+            }
+            for objective in super::death_objectives::load()? {
+                owners.push((objective.quest.clone(), objective.stage.clone()));
+                owners.push((objective.quest.clone(), objective.counter.clone()));
+            }
+            Ok(owners)
+        })
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
+}
+
 fn parse_document(text: &str) -> Result<Document, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     let mut keys = BTreeSet::new();
@@ -189,6 +213,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
         return Err("reward callback bounds".into());
     }
     let mut declared = BTreeSet::new();
+    let external = external_track_owners()?;
     for track in &document.tracks {
         let owners = document
             .callbacks
@@ -205,6 +230,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                             .map(|operation| (&callback.quest, &operation.track)),
                     )
             })
+            .chain(external.iter().map(|(quest, track)| (quest, track)))
             .filter(|(_, key)| key.as_str() == track.key.as_str())
             .map(|(quest, _)| quest)
             .collect::<Vec<_>>();
@@ -893,6 +919,38 @@ mod tests {
         }
         callback.per_occurrence_mint = false;
         assert_eq!(legacy, value_plan(&callback)?);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod world_track_owner_tests {
+    use super::*;
+
+    #[test]
+    fn world_only_track_declarations_preserve_exact_quest_ownership() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/chosen-reward-callbacks.json");
+        let document = parse_document(source)?;
+        assert!(
+            document
+                .tracks
+                .iter()
+                .any(|track| track.key == "oteryn:quest-progress/chosen/winterlight/stage")
+        );
+        let mut wrong: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let track = wrong["tracks"]
+            .as_array_mut()
+            .ok_or("tracks")?
+            .iter_mut()
+            .find(|track| track["key"] == "oteryn:quest-progress/chosen/winterlight/stage")
+            .ok_or("stage")?;
+        track["quest"] = "oteryn:quest.authored.venore_daily_tasks_quest".into();
+        let wrong = serde_json::to_string(&wrong).map_err(|e| e.to_string())?;
+        assert!(
+            parse_document(&wrong).is_err(),
+            "world/death ownership cannot be reassigned by a declaration"
+        );
         Ok(())
     }
 }

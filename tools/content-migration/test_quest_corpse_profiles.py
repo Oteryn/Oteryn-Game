@@ -49,8 +49,8 @@ class CorpseQualification(unittest.TestCase):
             self.assertEqual(facts[key]['container_capacity'], expected, key)
 
     def test_exact_source_capacities_and_complete_decay_chains(self):
-        self.assertEqual(self.plan.roots, {5960, 5962, 5968, 5975, 17449})
-        self.assertEqual(len(self.plan.records), 18)
+        self.assertEqual(self.plan.roots, {5960, 5962, 5968, 5975, 17449, 30272})
+        self.assertEqual(len(self.plan.records), 19)
         for number, capacity, target in [(5960, 7, 3987), (5962, 30, 3989),
                                          (5968, 5, 4007), (5975, 20, 4291)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
@@ -67,6 +67,20 @@ class CorpseQualification(unittest.TestCase):
                          corpse.grizzly.source.NA)
         self.assertEqual(self.plan.records['oteryn:item.tibia.i4292']['semantics']['container'],
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
+
+    def test_queen_projection_retains_source40_and_native30_without_changing_other_corpses(self):
+        key = 'oteryn:item.tibia.i30272'
+        self.assertEqual(corpse.grizzly.source.attrs(self.xml[30272])['containersize'], '40')
+        self.assertEqual(self.plan.projected_source_capacities, {key: 40})
+        self.assertEqual(self.plan.records[key]['semantics']['container'],
+                         corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(30)}))
+        packet = json.loads((corpse.ROOT / corpse.REQUIREMENTS).read_bytes())
+        for field, value in [('source_capacity', 41), ('native_capacity', 31)]:
+            bad = copy.deepcopy(packet)
+            bad['capacity_projections'][0][field] = value
+            with patch.object(Path, 'read_bytes', return_value=json.dumps(bad).encode()):
+                with self.assertRaisesRegex(ValueError, 'PROJECTION_BINDING'):
+                    corpse.projection_limits(corpse.ROOT, self.plan.roots, self.xml)
 
     def test_preserves_canonical_data_and_every_unrelated_semantic_group(self):
         before = copy.deepcopy(self.definitions)

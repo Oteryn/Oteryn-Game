@@ -92,6 +92,7 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
         if output not in qualified:
             raise ValueError("COSMETICS_PIN_REQUIRES_CANONICAL_AUTHORING")
         generated.update(qualified)
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
         manifest["cosmetics"] = {
             "path": Path(os.path.relpath(output, "content")).as_posix(),
             "sha256": hashlib.sha256(qualified[output]).hexdigest(),
@@ -423,6 +424,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_corpse_profiles
     quest_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import quest_loot_profiles
+    quest_loot_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)

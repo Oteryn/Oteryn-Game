@@ -7,7 +7,7 @@ full pinned XML decay closure. No ordinary loot table or canonical hold is chang
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 from pathlib import Path
@@ -51,7 +51,8 @@ def required(root=ROOT, creatures=None):
     if len(by_creature) != len(creatures['records']):
         raise ValueError('QUEST_CORPSE_DUPLICATE_CREATURE')
     ordinary = json.loads((root / REQUIREMENTS).read_bytes())
-    if (set(ordinary) != {'schema', 'objectives', 'sources'} or ordinary.get('schema') != 1
+    if (not {'schema', 'objectives', 'sources'} <= set(ordinary)
+            or set(ordinary) - {'schema', 'objectives', 'sources', 'capacity_projections'} or ordinary.get('schema') != 1
             or not isinstance(ordinary['objectives'], list) or len(ordinary['objectives']) > MAX_ROOTS
             or any(not isinstance(key, str) or not key.startswith('oteryn:quest-death/') for key in ordinary['objectives'])
             or len(set(ordinary['objectives'])) != len(ordinary['objectives'])
@@ -147,7 +148,7 @@ def world_objects(root, selected):
     return found
 
 
-def qualify(number, definition, world, node, appearance, physical, bindings, fresh):
+def qualify(number, definition, world, node, appearance, physical, bindings, fresh, capacity_limit=None):
     identity = definition['identity']
     binding = bindings.get(str(number))
     if (item_id(identity) != number or binding is None or binding['disposition'] != 'EXACT'
@@ -193,6 +194,11 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
     if fresh and (result['semantics']['container']['state'] != 'KNOWN'
                   or 'containersize' not in grizzly.source.attrs(node)):
         raise ValueError('QUEST_CORPSE_FRESH_CONTAINER_CAPACITY')
+    if capacity_limit is not None:
+        capacity = result['semantics']['container']['value']['capacity']['value']
+        if not fresh or capacity_limit != 30 or not 30 < capacity <= 65535:
+            raise ValueError('QUEST_CORPSE_NATIVE_CAPACITY_PROJECTION')
+        result['semantics']['container']['value']['capacity'] = grizzly.source.K(capacity_limit)
     return result
 
 
@@ -200,6 +206,28 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
 class Qualification:
     roots: set[int]
     records: dict[str, dict]
+    projected_source_capacities: dict[str, int] = field(default_factory=dict)
+
+
+def projection_limits(root, roots, xml):
+    """Explicit source-to-native projections retain the accepted30-entry corpse bound."""
+    records = json.loads((root / REQUIREMENTS).read_bytes()).get('capacity_projections', [])
+    if not isinstance(records, list) or len(records) > MAX_ROOTS:
+        raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_BOUNDS')
+    limits, source_capacities = {}, {}
+    for record in records:
+        if set(record) != {'item', 'source_capacity', 'native_capacity', 'sources'}:
+            raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_SHAPE')
+        number = item_id({'family': 'Item', 'key': record['item'], 'revision': 'definition-r1'})
+        capacity = grizzly.source.attrs(xml[number]).get('containersize') if number in xml else None
+        if (number not in roots or number in limits or record['native_capacity'] != 30
+                or type(record['source_capacity']) is not int or not 30 < record['source_capacity'] <= 65535
+                or capacity != str(record['source_capacity']) or not record['sources']
+                or any(not isinstance(s, str) or not s for s in record['sources'])):
+            raise ValueError('QUEST_CORPSE_CAPACITY_PROJECTION_BINDING')
+        limits[number] = 30
+        source_capacities[record['item']] = record['source_capacity']
+    return limits, source_capacities
 
 
 def qualifications(root=ROOT, creatures=None):
@@ -208,6 +236,7 @@ def qualifications(root=ROOT, creatures=None):
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
         raise ValueError('QUEST_CORPSE_XML_PIN')
     xml = grizzly.source.xml_index(raw)
+    limits, source_capacities = projection_limits(root, roots, xml)
     selected = decay_closure(roots, xml)
     if not selected:
         return Qualification(roots, {})
@@ -225,8 +254,8 @@ def qualifications(root=ROOT, creatures=None):
         if number not in appearances or number not in policies:
             raise ValueError('QUEST_CORPSE_CLIENT_ITEM_ABSENT')
         records[key] = qualify(number, accepted[key], objects.get(number), xml[number],
-                               appearances[number], policies[number], bindings, number in roots)
-    return Qualification(roots, records)
+                               appearances[number], policies[number], bindings, number in roots, limits.get(number))
+    return Qualification(roots, records, source_capacities)
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -256,7 +285,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
 def apply_loot_facts(facts, root=ROOT, creatures=None):
     """Called by the real loot generator before it selects named Item facts."""
     updates = []
-    for key, record in qualifications(root, creatures).records.items():
+    qualified = qualifications(root, creatures)
+    for key, record in qualified.records.items():
         production = record['production_definition']
         identity = {'family': production['family'], 'key': production['production_key'],
                     'revision': production['revision_ref']}
@@ -266,7 +296,8 @@ def apply_loot_facts(facts, root=ROOT, creatures=None):
         container = record['semantics']['container']
         capacity = container['value']['capacity']['value'] if container['state'] == 'KNOWN' else None
         if (fact['materializable'] and fact['container_capacity'] != capacity
-                or fact['container_capacity'] is not None and fact['container_capacity'] != capacity):
+                or fact['container_capacity'] is not None and fact['container_capacity'] != capacity
+                and (fact['materializable'] or fact['container_capacity'] != qualified.projected_source_capacities.get(key))):
             raise ValueError('QUEST_CORPSE_LOOT_CAPACITY_CONFLICT')
         updates.append((fact, capacity))
     for fact, capacity in updates:
