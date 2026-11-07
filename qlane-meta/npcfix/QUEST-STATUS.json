@@ -1219,7 +1219,7 @@
     },
     {
       "name": "retail-travel-and-placement-qualification-24",
-      "state": "QUALIFIED_COMPONENTS",
+      "state": "QUALIFIED",
       "entries": [
         "Captain Seahorse",
         "Captain Max",
@@ -1290,7 +1290,14 @@
         ],
         "known_ground_walkable": false,
         "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
-        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore"
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore",
+        "state": "RESOLVED"
+      },
+      "landing_proof": {
+        "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+        "duration_seconds": 169.91,
+        "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
       }
     },
     {
@@ -1364,6 +1371,31 @@
       "green_seconds": 79.63,
       "postgres_marker": true,
       "scope": "Retail placement and actual NPC name/talk only. Four whole quest paths remain with L2, not claimed qualified."
+    },
+    {
+      "name": "native-paid-travel-bounded-landing",
+      "state": "QUALIFIED",
+      "entries": [
+        "Tarak (Inner)",
+        "Tarak (Sunken)",
+        "Captain Max",
+        "Captain Seahorse"
+      ],
+      "scope": "Generic paid preflight agrees with the existing NPC-0 bounded placement search. Authored house/closed-door targets still refuse; every fallback candidate is pinned, walkable and outside houses/closed doors. Authored destination and price are unchanged; actual placement is persisted once.",
+      "red": {
+        "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+        "duration_seconds": 160.38,
+        "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+      },
+      "green": {
+        "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+        "duration_seconds": 169.91,
+        "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+        "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+      },
+      "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+      "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
     }
   ],
   "incoming_six_cells": {
@@ -1378,7 +1410,7 @@
     ],
     "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
   },
-  "next_batch": "Apply documented shared NPC-0 radius3 fallback in paid preflight; preserve authored destination and house/door guards, run real PG GREEN and changed entities/dispatch checks, restore Tarak qualification and push.",
+  "next_batch": "Push this green generic landing slice immediately, then continue remaining pure placements, held physical cells and pending NPC mechanisms. No final turn while owned entries remain.",
   "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
   "schema": 1,
   "active_reward_delivery": {
@@ -1423,7 +1455,12 @@
       "action": "Reuse only where an owned NPC entry needs these mechanisms."
     },
     "world_lanes": "Fetched worldchg, wvar, wevents and wcontrib. HEAD trees contain no QUEST-STATUS/RESUME. Earlier seven world-NPC ownership assumptions are withdrawn pending exact allocation/binding proof; entries are active again.",
-    "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
+    "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification.",
+    "paid_landing": {
+      "qengine2": "97cb9db79",
+      "questl2": "0c74b25cc",
+      "result": "Both still use exact-cell paid preflight; reuse the existing entities NPC-0 iterator, not another search algorithm."
+    }
   },
   "concurrent_cooldown_status": {
     "schema": 1,
@@ -1801,10 +1838,10 @@
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
   "counts": {
-    "QUALIFIED": 156,
+    "QUALIFIED": 157,
     "PENDING": 10,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 127,
+    "AUTHORED; QUALIFICATION PENDING": 126,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -6001,15 +6038,27 @@
       "npc": "Tarak (Inner)",
       "town": "Yalahar",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak. Canonical boat landing requires the existing bounded respawn fallback in paid preflight; active regression/fix.",
+      "work": "Monument Tower50/aliases and exact Tarak display retained. Canonical blocked boat target uses the existing bounded radius3 admission order before payment; actual arrival skips protected fallback cells, retains authored target, persists the admitted shoreline and replays without another debit.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
-      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING",
+      "test": "npcfix_fading_and_retained_placements_postgres; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals (canonical blocked-boat/house/shore regression)",
+      "status": "QUALIFIED",
       "qualification": {
         "batch": "retail-travel-and-placement-qualification-24",
         "postgres_red_seconds": 47.16,
         "postgres_green_seconds": 134.5,
-        "scope": "Source-cell actor and prior synthetic travel component retained; actual canonical boat landing admission is being repaired."
+        "scope": "Monument Tower50/aliases and exact Tarak display retained. Canonical blocked boat target uses the existing bounded radius3 admission order before payment; actual arrival skips protected fallback cells, retains authored target, persists the admitted shoreline and replays without another debit.",
+        "landing_red": {
+          "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+          "duration_seconds": 160.38,
+          "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+          "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+        },
+        "landing_green": {
+          "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+          "duration_seconds": 169.91,
+          "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+          "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+        }
       },
       "runtime_landing_issue": {
         "source_cell": [
@@ -6023,7 +6072,8 @@
         ],
         "known_ground_walkable": false,
         "cause": "paid_travel.rs exact-cell preflight rejects a target for which arrival already supports NPC-0 radius3 fallback",
-        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore"
+        "active_test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals; all18 routes retained, actual water target plus protected nearer-house candidate and admitted shore",
+        "state": "RESOLVED"
       }
     },
     {
@@ -6174,15 +6224,29 @@
     "checks": "PASS cargo fmt all; check5 changed crates alltargets/allfeatures2m34s; clippy same-Dwarnings5m17s; quest263/12.34s; MINTunit10, including layout hash and root-entry bounds; authoring13/7.819s; profile9/20.352s; native42 and pin-check568fe0..."
   },
   "active_landing_batch": {
-    "state": "RED_BUILDING",
+    "name": "native-paid-travel-bounded-landing",
+    "state": "QUALIFIED",
     "entries": [
       "Tarak (Inner)",
       "Tarak (Sunken)",
       "Captain Max",
       "Captain Seahorse"
     ],
-    "source_contract": "NPC-0 radius3 north-clockwise fallback is already implemented in entities/carrier/runtime_actor_death.rs; reuse its iterator, preserve authored target and exact keyword/price, retain house/door rejection and apply it to fallback landings. No terrain rewrite or collision exception.",
-    "red_build": "/tmp/npcfix-evidence/paid-landing-red-build.log"
+    "scope": "Generic paid preflight agrees with the existing NPC-0 bounded placement search. Authored house/closed-door targets still refuse; every fallback candidate is pinned, walkable and outside houses/closed doors. Authored destination and price are unchanged; actual placement is persisted once.",
+    "red": {
+      "log": "/tmp/npcfix-evidence/paid-landing-red.log",
+      "duration_seconds": 160.38,
+      "sha256": "c8a25be6127b7d9854d83b5f781db6584f419bdfbbf560e6522700a6c1f8a9d0",
+      "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+    },
+    "green": {
+      "log": "/tmp/npcfix-evidence/paid-landing-green.log",
+      "duration_seconds": 169.91,
+      "sha256": "32d19c88cd7adaaf8e7c2d758ad9711208e885ed8b979b841502671a29ffb4b8",
+      "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel"
+    },
+    "regressions": "All18 original S10T routes, transaction rollback, exact price/confirmation, actual arrival, durable position, one fee/receipt per occurrence and replay retained. Tarak uses its canonical non-walkable water target, an adversarial nearer-house candidate and admitted shore. Existing fallback iterator body byte-identical; only exported for reuse.",
+    "checks": "fmt PASS; changed entities and dispatch check alltargets/allfeatures PASS; same crates strict Clippy -D warnings PASS. No World terrain/pin/generated-file change."
   },
   "incoming_cooldown_delivery": {},
   "parallel_batches": {

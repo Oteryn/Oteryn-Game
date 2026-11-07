@@ -130,6 +130,7 @@ mod runtime_actor_damage_batch;
 
 #[path = "carrier/runtime_actor_death.rs"]
 mod runtime_actor_death;
+pub use runtime_actor_death::respawn_fallback_cells;
 
 #[path = "carrier/runtime_actor_familiar_defense.rs"]
 pub mod runtime_actor_familiar_defense;

@@ -3,6 +3,7 @@ use super::npc_travel::{FeeOutcome, TravelCapture, TravelStep};
 use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::npc_travel::ConsumeReplay;
+use crate::map::view::MapFacts;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn newhaven_chase_step(
@@ -210,7 +211,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             y: cell.y,
                             z: i32::from(cell.floor),
                         })
-                        .is_none_or(|tile| map.facts.doors().blocks(tile))
+                        .is_none_or(|tile| {
+                            map.facts.house_tile(tile) || map.facts.doors().blocks(tile)
+                        })
                     })
                 })
                 .ok()?;

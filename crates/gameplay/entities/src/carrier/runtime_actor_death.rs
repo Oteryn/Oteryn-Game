@@ -117,9 +117,10 @@ fn occupied_by_another(
 /// NPC-0 §6.1: the placement fallback searches within this Chebyshev distance.
 const RESPAWN_FALLBACK_RADIUS: i32 = 3;
 
-/// `recorded`, then each ring of the same floor out to [`RESPAWN_FALLBACK_RADIUS`], each ring
+/// `recorded`, then each ring of the same floor out to Chebyshev radius three,
 /// from its north cell clockwise (north is `y - 1`, east is `x + 1`).
-fn respawn_fallback_cells(
+/// Placement and travel preflight share this bounded search order.
+pub fn respawn_fallback_cells(
     recorded: MovementLocalPosition,
 ) -> impl Iterator<Item = MovementLocalPosition> {
     let ring = |radius: i32| {

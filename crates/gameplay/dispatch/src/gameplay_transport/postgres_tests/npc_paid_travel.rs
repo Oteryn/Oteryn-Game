@@ -922,7 +922,10 @@ fn scenario() -> TestResult {
                     },
                 )
                 .await;
-            assert!(failed.unknown);
+            assert!(
+                failed.unknown,
+                "{captain} {destination}: bounded landing admission must reach the injected transaction failure"
+            );
             assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
             assert_eq!(gold(&h).await?, before);
             let request = {
@@ -939,6 +942,15 @@ fn scenario() -> TestResult {
                     _ => return Err("S10T paid request".into()),
                 }
             };
+            assert_eq!(
+                (
+                    request.arrival.destination.x,
+                    request.arrival.destination.y,
+                    request.arrival.destination.floor
+                ),
+                *tile,
+                "the durable request retains the exact authored target",
+            );
             sqlx::raw_sql("DROP TRIGGER s10t_travel_fail ON game_character_pending_arrivals; DROP FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
             let travelled = owner
                 .resume_npc_bank(
@@ -961,9 +973,14 @@ fn scenario() -> TestResult {
                 .read_actor_position(dependencies.actor)
                 .map_err(debug)?
                 .position();
-            assert_eq!((position.x, position.y, position.floor), *tile);
+            let landed = if *captain == "tarak_inner" {
+                (32940, 31183, 7)
+            } else {
+                *tile
+            };
+            assert_eq!((position.x, position.y, position.floor), landed);
             let saved:(i32,i32,i16)=sqlx::query_as("SELECT tile_x,tile_y,tile_floor FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-            assert_eq!(saved, *tile);
+            assert_eq!(saved, landed);
             let current = owner
                 .current_quest_fence(session)
                 .await
@@ -979,7 +996,7 @@ fn scenario() -> TestResult {
                     .await?;
             assert_eq!(after, receipts + 1);
             eprintln!(
-                "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
+                "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} authored={tile:?} arrival={landed:?} replay charged once"
             );
         }
         assert_eq!(
@@ -1097,16 +1114,28 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
             max_y: 65535,
             floors: vec![-7, -6, -5],
         },
-        palette: vec![PaletteEntry {
-            key: "terrain:grass".into(),
-            family: Family::Terrain,
-            id: 0,
-            terrain: Some(Terrain {
-                kind: TerrainKind::Ground,
-                walkable: Some(true),
-                ground_speed: Some(150),
-            }),
-        }],
+        palette: vec![
+            PaletteEntry {
+                key: "terrain:grass".into(),
+                family: Family::Terrain,
+                id: 0,
+                terrain: Some(Terrain {
+                    kind: TerrainKind::Ground,
+                    walkable: Some(true),
+                    ground_speed: Some(150),
+                }),
+            },
+            PaletteEntry {
+                key: "terrain:shallow-water".into(),
+                family: Family::Terrain,
+                id: 1,
+                terrain: Some(Terrain {
+                    kind: TerrainKind::Ground,
+                    walkable: Some(false),
+                    ground_speed: Some(0),
+                }),
+            },
+        ],
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
         dropped_teleports: vec![],
@@ -1135,6 +1164,10 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
             points.push(point);
         }
     }
+    // Canonical Tarak target32939,31182,7 is non-walkable shallow water with
+    // boat1756; the shore32940,31183,7 has walkable floor8311. A nearer house
+    // exercises the existing public-travel restriction for fallback cells too.
+    points.extend([(32940, 31182, -7), (32940, 31183, -7)]);
     for (x, y, floor) in points {
         grouped
             .entry((floor, y / 32, x / 32))
@@ -1143,10 +1176,18 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
                 x,
                 y,
                 flags: 0,
-                house: 0,
+                house: if (x, y, floor) == (32940, 31182, -7) {
+                    55
+                } else {
+                    0
+                },
                 zones: vec![],
                 items: vec![Item {
-                    palette: 0,
+                    palette: if (x, y, floor) == (32939, 31182, -7) {
+                        1
+                    } else {
+                        0
+                    },
                     depth: 0,
                     attrs: Attrs::default(),
                 }],

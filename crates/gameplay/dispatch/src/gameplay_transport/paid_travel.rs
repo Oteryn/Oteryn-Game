@@ -332,21 +332,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: destination.y,
             floor: destination.floor,
         };
-        if !super::super::respawn_cell_admissible(
-            self.movement_cells.index(),
-            self.movement_cells.scope(),
-            self.world_id,
-            runtime.content_pin().server_artifact_digest(),
-            &std::collections::BTreeSet::new(),
-            cell,
-        ) || self.bundle_map().is_some_and(|map| {
-            crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
-                x: cell.x,
-                y: cell.y,
-                z: i32::from(cell.floor),
+        let protected = |candidate: crate::foundation::MovementLocalPosition| {
+            self.bundle_map().is_some_and(|map| {
+                crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+                    x: candidate.x,
+                    y: candidate.y,
+                    z: i32::from(candidate.floor),
+                })
+                .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
             })
-            .is_none_or(|tile| map.facts.house_tile(tile) || map.facts.doors().blocks(tile))
-        }) {
+        };
+        let doors = std::collections::BTreeSet::new();
+        if protected(cell)
+            || !oteryn_gameplay_entities::carrier::respawn_fallback_cells(cell).any(|candidate| {
+                super::super::respawn_cell_admissible(
+                    self.movement_cells.index(),
+                    self.movement_cells.scope(),
+                    self.world_id,
+                    runtime.content_pin().server_artifact_digest(),
+                    &doors,
+                    candidate,
+                ) && !protected(candidate)
+            })
+        {
             return None;
         }
         let (gold, platinum, crystal) = npc_command::bank_coin_definitions(self, &runtime)?;
