@@ -47,6 +47,7 @@ pub mod soul_war_dialogue;
 pub mod stampede;
 pub mod task_board;
 pub mod threatened_dreams;
+pub mod trade_callbacks;
 pub mod unnatural_selection;
 pub mod world_callbacks;
 pub mod wrath_sleeping_dragon;

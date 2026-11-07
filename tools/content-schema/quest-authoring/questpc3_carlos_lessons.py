@@ -76,6 +76,21 @@ def documents():
         if field in ("callbacks", "npcs"):
             document[field].sort(key=lambda row: row["key"] if field == "callbacks" else row["npc"])
         result[path] = document
+    path = "content/quests/shared-trade-callbacks.json"
+    target = ROOT / path
+    document = json.loads(target.read_text()) if target.exists() else {"schema": 1, "callbacks": []}
+    trade_key = "oteryn:quest-trade/questpc3/beginning/carlos-food-sale"
+    document["callbacks"] = [row for row in document["callbacks"] if row["key"] != trade_key] + [{
+        "key": trade_key, "quest": QUEST, "npc": NPC, "side": "sell",
+        "items": ["oteryn:item.tibia.i3577", "oteryn:item.tibia.i3582"],
+        "unit_price": 2, "offer_count": 1, "minimum_units": 1,
+        "storage": [storage(GREET, 6, 6, 7),
+                    {**storage(LOG, 6, 6, 6), "preserve": True},
+                    {**storage(BASE + "carlos_npc_trade_storage", 1, 1, 1), "preserve": True}],
+        "sources": [SOURCE + "#L46-L48",
+                    "#owner-authorized-source-hook-repair: actual committed eligible food sale; no report-only progress"]}]
+    document["callbacks"].sort(key=lambda row: row["key"])
+    result[path] = document
     return result
 
 

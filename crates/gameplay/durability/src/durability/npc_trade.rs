@@ -32,6 +32,7 @@
 
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
+mod quest_obligations;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
@@ -644,7 +645,8 @@ impl DurabilityRoot {
         } else {scope_of(&fence).map_err(|_|NpcTradeError::AuthorityRejected)?};
         let hireling_sell=sell_hireling::selected(hireling.as_ref(),&request);
         let priced = if hireling_sell {sell_hireling::validate(&request,sell_all)?} else {validate(&request, sell_all)?};
-        let mut binding = request_binding(&fence, world_id, &request, sell_all);
+        let quest_rule = quest_obligations::select(&request)?;
+        let mut binding = quest_obligations::bind(request_binding(&fence, world_id, &request, sell_all),quest_rule.as_ref())?;
         if let Some(source)=&hireling {binding=source.bind(binding);}
         let recovery = authority
             .record_for(self)
@@ -767,6 +769,11 @@ impl DurabilityRoot {
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    let quest_capture = match quest_obligations::eligible(&mut tx,&fence,quest_rule.as_ref(),units).await? {
+                        quest_obligations::Eligibility::Ready(snapshot) => Some(snapshot),
+                        quest_obligations::Eligibility::NotApplicable => None,
+                        quest_obligations::Eligibility::CapacityExceeded => return Ok(Err(NpcTradeError::RequirementNotMet)),
+                    };
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };
 
@@ -827,6 +834,9 @@ impl DurabilityRoot {
                         house_key.as_deref(),
                     )
                     .await?;
+                    if let (Some(snapshot),Some(rule)) = (quest_capture.as_ref(),quest_rule.as_ref()) {
+                        quest_obligations::insert(&mut tx,&fence,&request,rule,snapshot).await?;
+                    }
                     if let Some(source)=&hireling
                         && let Err(error)=source.apply_materialized(&mut tx,world_id,&request,plan.item_instance_id).await {return Ok(Err(error));}
                     grant_missing(

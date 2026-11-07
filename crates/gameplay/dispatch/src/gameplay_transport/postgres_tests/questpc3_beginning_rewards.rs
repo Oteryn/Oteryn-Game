@@ -59,6 +59,9 @@ enum Scenario {
     Damage,
     CarlosLessons,
     CarlosFood,
+    CarlosSale,
+    CarlosSaleRecovery,
+    CarlosSalePreEligible,
 }
 
 #[test]
@@ -132,6 +135,62 @@ fn questpc3_beginning_carlos_accepts_either_food_without_consumption() -> TestRe
         })?
         .join()
         .map_err(|_| "Carlos food panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_real_food_sale_advances_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_SALE POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            let started = std::time::Instant::now();
+            let result = std::panic::catch_unwind(|| scenario(Scenario::CarlosSale));
+            eprintln!(
+                "QUESTPC3_CARLOS_SALE POSTGRES_CASE_COMPLETED duration_ms={} success={}",
+                started.elapsed().as_millis(),
+                matches!(&result, Ok(Ok(())))
+            );
+            match result {
+                Ok(result) => result.map_err(|error| error.to_string()),
+                Err(panic) => std::panic::resume_unwind(panic),
+            }
+        })?
+        .join()
+        .map_err(|_| "Carlos sale panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_sale_obligation_recovers_without_conversation() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_CARLOSSALERECOVERY POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+        let started=std::time::Instant::now();
+        let result=std::panic::catch_unwind(||scenario(Scenario::CarlosSaleRecovery));
+        eprintln!("QUESTPC3_CARLOS_CARLOSSALERECOVERY POSTGRES_CASE_COMPLETED duration_ms={} success={}",started.elapsed().as_millis(),matches!(&result,Ok(Ok(()))));
+        match result {Ok(result)=>result.map_err(|error|error.to_string()),Err(panic)=>std::panic::resume_unwind(panic)}
+    })?.join().map_err(|_|"Carlos sale proof panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_preeligible_sale_cannot_qualify_on_replay() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_CARLOSSALEPREELIGIBLE POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(256 << 20).spawn(|| {
+        let started=std::time::Instant::now();
+        let result=std::panic::catch_unwind(||scenario(Scenario::CarlosSalePreEligible));
+        eprintln!("QUESTPC3_CARLOS_CARLOSSALEPREELIGIBLE POSTGRES_CASE_COMPLETED duration_ms={} success={}",started.elapsed().as_millis(),matches!(&result,Ok(Ok(()))));
+        match result {Ok(result)=>result.map_err(|error|error.to_string()),Err(panic)=>std::panic::resume_unwind(panic)}
+    })?.join().map_err(|_|"Carlos sale proof panicked")??;
     Ok(())
 }
 
@@ -217,6 +276,12 @@ fn scenario(mode: Scenario) -> TestResult {
                     .ok_or("source transition")
             })
             .collect::<Result<Vec<_>, _>>()?;
+        if let Some(transition) =
+            original.transition("oteryn:quest-trade/questpc3/beginning/carlos-food-sale")
+        {
+            // Mount the actual source transition, never seed its positive outcome.
+            transitions.push(transition.clone());
+        }
         for (phase, npc, greet, log) in [
             ("equipment", "santiago", 3, 2),
             ("damage", "santiago", 9, 7),
@@ -230,6 +295,27 @@ fn scenario(mode: Scenario) -> TestResult {
                 effects: [
                     (format!("{npc}_npc_greet_storage"), greet),
                     (format!("{npc}_quest_log"), log),
+                ]
+                .into_iter()
+                .map(|(name, value)| QuestEffect {
+                    track: format!("{BASE}{name}"),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Set(value),
+                })
+                .collect(),
+                completes: false,
+                experience: None,
+            });
+        }
+        if matches!(mode, Scenario::CarlosSalePreEligible) {
+            transitions.push(QuestTransition {
+                key: "oteryn:quest-transition/fixture/beginning-reward/carlos-prior-readiness"
+                    .into(),
+                quest: QUEST.into(),
+                effects: [
+                    ("carlos_npc_greet_storage", 5),
+                    ("carlos_quest_log", 5),
+                    ("carlos_npc_trade_storage", 0),
                 ]
                 .into_iter()
                 .map(|(name, value)| QuestEffect {
@@ -258,7 +344,14 @@ fn scenario(mode: Scenario) -> TestResult {
             vec![1, 1],
             "source legs are distinct nonstackable Items"
         );
-        if matches!(mode, Scenario::CarlosLessons | Scenario::CarlosFood) {
+        if matches!(
+            mode,
+            Scenario::CarlosLessons
+                | Scenario::CarlosFood
+                | Scenario::CarlosSale
+                | Scenario::CarlosSaleRecovery
+                | Scenario::CarlosSalePreEligible
+        ) {
             let [carlos] =
                 super::classic_quests::install(&owner, &admitted, ["oteryn:npc.carlos"]).await?;
             let items_before: i64 =
@@ -336,7 +429,13 @@ fn scenario(mode: Scenario) -> TestResult {
                 items_after, items_before,
                 "outfit and hunt instructions grant no physical items"
             );
-            if matches!(mode, Scenario::CarlosFood) {
+            if matches!(
+                mode,
+                Scenario::CarlosFood
+                    | Scenario::CarlosSale
+                    | Scenario::CarlosSaleRecovery
+                    | Scenario::CarlosSalePreEligible
+            ) {
                 for (index, input) in [None, Some((3578, 115_u8)), Some((3582, 116_u8))]
                     .into_iter()
                     .enumerate()
@@ -454,6 +553,377 @@ fn scenario(mode: Scenario) -> TestResult {
                     "repeating confirmation cannot create another eligibility receipt"
                 );
                 assert_eq!(quantity(&h, "oteryn:item.tibia.i3582").await?, 1);
+                if matches!(
+                    mode,
+                    Scenario::CarlosSale
+                        | Scenario::CarlosSaleRecovery
+                        | Scenario::CarlosSalePreEligible
+                ) {
+                    use oteryn_protocol_oteryn::npc_service::{NpcTradeIntent, NpcTradeSide};
+                    // A valid current fence cannot execute a trade continuation without its captured source.
+                    let fence = owner
+                        .current_quest_fence(admitted.game_session_id)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                    let absent = slot
+                        .commit_quest_transition(
+                            owner.root,
+                            owner.character,
+                            owner.holder,
+                            fence,
+                            QuestTransitionRequest {
+                                transition_key:
+                                    "oteryn:quest-trade/questpc3/beginning/carlos-food-sale".into(),
+                                cause: QuestCause::TradeObligation(CommandRef::new(
+                                    admitted.game_session_id,
+                                    CommandId::new(9999).map_err(debug)?,
+                                )),
+                            },
+                            owner.quest_catalogue.clone().ok_or("catalogue")?,
+                        )
+                        .await;
+                    drop(slot);
+                    assert!(matches!(absent,Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)));
+                    if matches!(mode, Scenario::CarlosSalePreEligible) {
+                        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                        let seeded=slot.commit_quest_transition(owner.root,owner.character,owner.holder,fence,QuestTransitionRequest {transition_key:"oteryn:quest-transition/fixture/beginning-reward/carlos-prior-readiness".into(),cause:QuestCause::Command(CommandRef::new(admitted.game_session_id,CommandId::new(4690).map_err(debug)?))},owner.quest_catalogue.clone().ok_or("catalogue")?).await.map_err(debug)?;
+                        assert!(matches!(seeded, QuestTransitionOutcome::Committed(_)));
+                        drop(slot);
+                        owner
+                            .refresh_quest_session(admitted.game_session_id, false)
+                            .await;
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4691, "bye")
+                            .await?;
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4692, "hi")
+                            .await?;
+                        let early_intent = carlos_ham_intent(&owner, carlos).await?;
+                        let early_command = open_carlos_sale(
+                            &mut owner,
+                            admitted.game_session_id,
+                            admitted.runtime_actor.ok_or("actor")?,
+                            carlos,
+                            4693,
+                        )
+                        .await?;
+                        let gold = quantity(&h, "oteryn:item.tibia.i3031").await?;
+                        assert!(matches!(
+                            owner
+                                .npc_trade(
+                                    admitted.runtime_actor.ok_or("actor")?,
+                                    early_command,
+                                    early_intent
+                                )
+                                .await,
+                            crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded
+                        ));
+                        assert_eq!(quantity(&h, "oteryn:item.tibia.i3031").await?, gold + 2);
+                        assert_eq!(
+                            super::classic_quests::progress(
+                                &owner,
+                                &admitted,
+                                &authority,
+                                &format!("{BASE}carlos_npc_greet_storage")
+                            )
+                            .await?,
+                            5
+                        );
+                        let obligations:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_obligations WHERE source_kind='npc_trade'").fetch_one(&h.pool).await?;
+                        assert_eq!(
+                            obligations, 0,
+                            "ineligible sale captures no future progress"
+                        );
+                        let mut tx = h.pool.begin().await?;
+                        sqlx::query("SET LOCAL session_replication_role=replica")
+                            .execute(&mut *tx)
+                            .await?;
+                        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3582','definition-r1',1,1,encode($3,'hex')::uuid)").bind(id(117).as_slice()).bind(id(42).as_slice()).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,8,encode($5,'hex')::uuid)").bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(117).as_slice()).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                        tx.commit().await?;
+                        super::classic_quests::talk(&mut owner, &admitted, carlos, 4696, "yes")
+                            .await?;
+                        assert_eq!(
+                            super::classic_quests::progress(
+                                &owner,
+                                &admitted,
+                                &authority,
+                                &format!("{BASE}carlos_npc_greet_storage")
+                            )
+                            .await?,
+                            6
+                        );
+                        assert!(matches!(
+                            owner
+                                .npc_trade(
+                                    admitted.runtime_actor.ok_or("actor")?,
+                                    early_command,
+                                    early_intent
+                                )
+                                .await,
+                            crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded
+                        ));
+                        assert_eq!(
+                            super::classic_quests::progress(
+                                &owner,
+                                &admitted,
+                                &authority,
+                                &format!("{BASE}carlos_npc_greet_storage")
+                            )
+                            .await?,
+                            6,
+                            "replaying an old ineligible sale cannot qualify after readiness"
+                        );
+                        assert_eq!(quantity(&h, "oteryn:item.tibia.i3031").await?, gold + 2);
+                        eprintln!(
+                            "QUESTPC3_CARLOS_SALE POSTGRES_PREELIGIBILITY_REPLAY_PROVED duration_ms={}",
+                            started.elapsed().as_millis()
+                        );
+                    }
+
+                    let book = owner.states.chat.npc_talk().ok_or("NPC book")?;
+                    let entry = book.get("oteryn:npc.carlos").ok_or("Carlos")?;
+                    let intent = {
+                        let runtime = owner.runtime.lock().await;
+                        let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+                            &runtime,
+                            owner.active_generation,
+                        )
+                        .ok_or("item index")?;
+                        let (offer_index, (shown, _)) =
+                            oteryn_gameplay_npc::npc_command::projected(entry.offers(), index)
+                                .enumerate()
+                                .find(|(_, (_, source))| {
+                                    source.item.key == "oteryn:item.tibia.i3582"
+                                })
+                                .ok_or("source ham offer")?;
+                        assert_eq!(shown.side, NpcTradeSide::Sell);
+                        assert_eq!(shown.unit_price, 2);
+                        NpcTradeIntent {
+                            npc_actor: carlos,
+                            catalogue_revision: book.catalogue_revision(),
+                            offer_index: u32::try_from(offer_index)?,
+                            side: shown.side,
+                            quantity: 1,
+                            expected_unit_price: shown.unit_price,
+                        }
+                    };
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(2))
+                        .ok_or("clock")?;
+                    let fence = owner
+                        .current_quest_fence(admitted.game_session_id)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let actor = admitted.runtime_actor.ok_or("actor")?;
+                    let opened = owner
+                        .npc_talk(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: if matches!(mode, Scenario::CarlosSalePreEligible) {
+                                    4800
+                                } else {
+                                    4690
+                                },
+                                item_fence: Some(fence.item_fence()),
+                            },
+                            NpcTalkIntent {
+                                npc_actor: carlos,
+                                text: "trade".into(),
+                            },
+                        )
+                        .await;
+                    assert_eq!(opened.disposition, NpcIntentDisposition::Ok);
+                    assert!(
+                        opened
+                            .window
+                            .as_ref()
+                            .is_some_and(|window| window.open.is_some()),
+                        "real source trade window must open"
+                    );
+                    let gold_before = quantity(&h, "oteryn:item.tibia.i3031").await?;
+                    let command = UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: if matches!(mode, Scenario::CarlosSalePreEligible) {
+                            4801
+                        } else {
+                            4691
+                        },
+                        item_fence: Some(fence.item_fence()),
+                    };
+                    if matches!(mode, Scenario::CarlosSaleRecovery) {
+                        owner
+                            .states
+                            .npc_conversations
+                            .fixture_interrupt_trade_quest_commit(
+                                admitted.game_session_id,
+                                command.command_id,
+                            )?;
+                    }
+                    let sold = owner.npc_trade(actor, command, intent).await;
+                    if matches!(mode, Scenario::CarlosSaleRecovery) {
+                        assert!(matches!(
+                            sold,
+                            crate::gameplay_transport::npc_trade_command::NpcTradeStep::Unknown
+                        ));
+                    } else {
+                        assert!(matches!(
+                            sold,
+                            crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded
+                        ));
+                    }
+                    assert_eq!(quantity(&h, "oteryn:item.tibia.i3582").await?, 0);
+                    assert_eq!(
+                        quantity(&h, "oteryn:item.tibia.i3031").await?,
+                        gold_before + 2
+                    );
+                    let greet = super::classic_quests::progress(
+                        &owner,
+                        &admitted,
+                        &authority,
+                        &format!("{BASE}carlos_npc_greet_storage"),
+                    )
+                    .await?;
+                    eprintln!(
+                        "QUESTPC3_CARLOS_SALE POSTGRES_ASSERTION_REACHED committed_ham_sale=true gold_delta=2 greet={} duration_ms={}",
+                        greet,
+                        started.elapsed().as_millis()
+                    );
+                    let greet = if matches!(mode, Scenario::CarlosSaleRecovery) {
+                        assert_eq!(greet, 6, "lost acknowledgement precedes quest drain");
+                        let pending = owner
+                            .root
+                            .read_character_quest_state(&authority, fence.character_id)
+                            .await
+                            .map_err(debug)?;
+                        assert_eq!(
+                            pending
+                                .pending_obligations()
+                                .filter(|entry| entry.trade_source)
+                                .count(),
+                            1
+                        );
+                        let valid_fence = owner
+                            .current_quest_fence(admitted.game_session_id)
+                            .await
+                            .map_err(|()| "fence")?
+                            .ok_or("fence")?;
+                        let mut wrong_generation = valid_fence;
+                        wrong_generation.character_lease_generation = wrong_generation
+                            .character_lease_generation
+                            .checked_add(1)
+                            .ok_or("generation")?;
+                        let mut slot = owner
+                            .revision_sequencer
+                            .acquire(valid_fence.character_id)
+                            .await;
+                        let rejected = slot
+                            .commit_quest_transition(
+                                owner.root,
+                                owner.character,
+                                owner.holder,
+                                wrong_generation,
+                                QuestTransitionRequest {
+                                    transition_key:
+                                        "oteryn:quest-trade/questpc3/beginning/carlos-food-sale"
+                                            .into(),
+                                    cause: QuestCause::TradeObligation(CommandRef::new(
+                                        admitted.game_session_id,
+                                        CommandId::new(command.command_id).map_err(debug)?,
+                                    )),
+                                },
+                                owner.quest_catalogue.clone().ok_or("catalogue")?,
+                            )
+                            .await;
+                        drop(slot);
+                        assert!(matches!(rejected,Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)),"captured proof cannot replace current lease authority");
+                        for statement in [
+                            "UPDATE game_character_quest_obligations SET state='WAITING_MIGRATION',result_code='REVISION_MISMATCH',updated_at=updated_at+1,source_state=source_state || jsonb_build_object('oteryn:quest-progress/quest/u8_2/the_beginning_quest/carlos_npc_greet_storage',5) WHERE source_kind='npc_trade' AND state='PENDING'",
+                            "UPDATE game_character_quest_obligations SET state='WAITING_MIGRATION',result_code='REVISION_MISMATCH',updated_at=updated_at+1,source_binding=decode(repeat('00',32),'hex') WHERE source_kind='npc_trade' AND state='PENDING'",
+                        ] {
+                            let result = sqlx::query(statement).execute(&h.pool).await;
+                            if let Err(sqlx::Error::Database(error)) = result {
+                                assert_eq!(
+                                    error.code().as_deref(),
+                                    Some("23514"),
+                                    "only the immutable proof is invalid; the state transition is otherwise legal"
+                                );
+                            } else {
+                                return Err(
+                                    "trade proof mutation was not refused by its constraint".into(),
+                                );
+                            }
+                        }
+                        owner
+                            .states
+                            .chat
+                            .converse(admitted.game_session_id, |engaged| {
+                                *engaged = None;
+                            })
+                            .ok_or("chat session")?;
+                        let cold = crate::durability::quest_state::admit_character_quest_state(
+                            &owner.revision_sequencer,
+                            owner.root,
+                            owner.character,
+                            owner.holder,
+                            valid_fence,
+                            owner.quest_catalogue.as_ref(),
+                        )
+                        .await;
+                        assert!(!cold.retry);
+                        let copy = cold.copy.ok_or("cold quest copy")?;
+                        assert_eq!(copy.pending_obligations().count(), 0);
+                        assert_eq!(
+                            copy.tracks()
+                                .get(&format!("{BASE}carlos_npc_greet_storage")),
+                            Some(&7)
+                        );
+                        eprintln!(
+                            "QUESTPC3_CARLOS_SALE POSTGRES_COLD_RECOVERY_AND_PROOF_GUARDS_PROVED duration_ms={}",
+                            started.elapsed().as_millis()
+                        );
+                        super::classic_quests::progress(
+                            &owner,
+                            &admitted,
+                            &authority,
+                            &format!("{BASE}carlos_npc_greet_storage"),
+                        )
+                        .await?
+                    } else {
+                        greet
+                    };
+                    assert_eq!(
+                        greet, 7,
+                        "actual successful source food sale must advance the tutorial through its quest owner"
+                    );
+                    let replay = owner.npc_trade(actor, command, intent).await;
+                    assert!(matches!(
+                        replay,
+                        crate::gameplay_transport::npc_trade_command::NpcTradeStep::Traded
+                    ));
+                    assert_eq!(
+                        quantity(&h, "oteryn:item.tibia.i3031").await?,
+                        gold_before + 2
+                    );
+                    assert_eq!(
+                        super::classic_quests::progress(
+                            &owner,
+                            &admitted,
+                            &authority,
+                            &format!("{BASE}carlos_npc_greet_storage")
+                        )
+                        .await?,
+                        7
+                    );
+                    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1").bind("oteryn:quest-trade/questpc3/beginning/carlos-food-sale").fetch_one(&h.pool).await?;
+                    assert_eq!(
+                        receipts, 1,
+                        "original sale receipt drives one quest transition"
+                    );
+                }
             }
             return Ok(());
         }
@@ -1106,4 +1576,77 @@ async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {
 async fn experience(h: &Harness) -> TestResult<u64> {
     let value: String = sqlx::query_scalar("SELECT total_experience::text FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     Ok(value.parse()?)
+}
+
+async fn carlos_ham_intent(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcTradeIntent> {
+    use oteryn_protocol_oteryn::npc_service::{NpcTradeIntent, NpcTradeSide};
+    let book = owner.states.chat.npc_talk().ok_or("NPC book")?;
+    let entry = book.get("oteryn:npc.carlos").ok_or("Carlos")?;
+    let runtime = owner.runtime.lock().await;
+    let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+        &runtime,
+        owner.active_generation,
+    )
+    .ok_or("item index")?;
+    let (offer_index, (shown, _)) =
+        oteryn_gameplay_npc::npc_command::projected(entry.offers(), index)
+            .enumerate()
+            .find(|(_, (_, source))| source.item.key == "oteryn:item.tibia.i3582")
+            .ok_or("ham offer")?;
+    assert_eq!(shown.side, NpcTradeSide::Sell);
+    assert_eq!(shown.unit_price, 2);
+    Ok(NpcTradeIntent {
+        npc_actor: npc,
+        catalogue_revision: book.catalogue_revision(),
+        offer_index: u32::try_from(offer_index)?,
+        side: shown.side,
+        quantity: 1,
+        expected_unit_price: shown.unit_price,
+    })
+}
+async fn open_carlos_sale(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    actor: crate::foundation::ExactActorRef,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    command_id: u64,
+) -> TestResult<UseCommand> {
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    let opened = owner
+        .npc_talk(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id,
+                item_fence: Some(fence.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "trade".into(),
+            },
+        )
+        .await;
+    assert_eq!(opened.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        opened
+            .window
+            .as_ref()
+            .is_some_and(|window| window.open.is_some())
+    );
+    Ok(UseCommand {
+        game_session_id: session,
+        command_id: command_id + 1,
+        item_fence: Some(fence.item_fence()),
+    })
 }

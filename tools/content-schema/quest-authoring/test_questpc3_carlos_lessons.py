@@ -50,11 +50,19 @@ class CarlosLessons(unittest.TestCase):
         self.assertIsNone(row['outfit'])
         self.assertFalse(row.get('completes', False))
 
+    def test_sale_progress_requires_an_actual_eligible_source_trade(self):
+        rows = authoring.documents()['content/quests/shared-trade-callbacks.json']['callbacks']
+        row = next(row for row in rows if row['key'] == 'oteryn:quest-trade/questpc3/beginning/carlos-food-sale')
+        self.assertEqual((row['npc'], row['side'], row['unit_price'], row['offer_count'], row['minimum_units']), (authoring.NPC, 'sell', 2, 1, 1))
+        self.assertEqual(row['items'], ['oteryn:item.tibia.i3577', 'oteryn:item.tibia.i3582'])
+        self.assertEqual(row['storage'][0], authoring.storage(authoring.GREET, 6, 6, 7))
+        self.assertTrue(all(condition['preserve'] for condition in row['storage'][1:]))
+
     def test_other_lane_and_npc_records_are_preserved(self):
         for relative, document in authoring.documents().items():
             old = json.loads((authoring.ROOT / relative).read_text())
             field = 'callbacks' if 'callbacks' in document else 'offers' if 'offers' in document else 'npcs'
-            foreign = lambda row: not row['key'].startswith(authoring.PREFIX) if field == 'callbacks' else row['npc'] != authoring.NPC
+            foreign = lambda row: (row['key'] != 'oteryn:quest-trade/questpc3/beginning/carlos-food-sale' if relative.endswith('shared-trade-callbacks.json') else not row['key'].startswith(authoring.PREFIX)) if field == 'callbacks' else row['npc'] != authoring.NPC
             self.assertEqual([row for row in old[field] if foreign(row)], [row for row in document[field] if foreign(row)])
 
 

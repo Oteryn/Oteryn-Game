@@ -90,6 +90,7 @@ fn a_cause_round_trips_through_its_stored_shape() {
         QuestCause::Use(command(2, u64::MAX)),
         QuestCause::Step(command(2, u64::MAX)),
         QuestCause::ClaimObligation(command(3, 1)),
+        QuestCause::TradeObligation(command(3, 1)),
         QuestCause::CreatureDeath(death),
     ] {
         let (stored_id, ordinal) = cause.key();
@@ -111,6 +112,7 @@ fn the_copy_applies_receipts_and_settles_obligations() {
             claim,
             transition_key: "oteryn:t/1".into(),
             waiting_migration: false,
+            trade_source: false,
         }],
         ..QuestStateCopy::default()
     };
@@ -141,6 +143,7 @@ fn the_copy_applies_receipts_and_settles_obligations() {
         claim,
         transition_key: "oteryn:t/1".into(),
         waiting_migration: false,
+            trade_source: false,
     });
     copy.settle_obligation(
         claim,

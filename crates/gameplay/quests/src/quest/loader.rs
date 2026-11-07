@@ -223,6 +223,8 @@ pub fn load_embedded_quest_state(
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::trade_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::stampede::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
