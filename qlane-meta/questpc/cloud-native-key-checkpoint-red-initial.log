@@ -1,0 +1,76 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 25s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b4f5a8b0ba0b5a59)
+
+running 5 tests
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3003_crash_replay ... QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3003 crash=true full=false
+
+thread 'gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3003_crash_replay' (99766) panicked at crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs:718:13:
+assertion `left == right` failed
+  left: []
+ right: [3003]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3004 ... Error: "map pickup test gate poisoned"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3005 ... Error: "map pickup test gate poisoned"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3006 ... Error: "map pickup test gate poisoned"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3007 ... Error: "map pickup test gate poisoned"
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3003_crash_replay
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3004
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3005
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3006
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3007
+
+test result: FAILED. 0 passed; 5 failed; 0 ignored; 0 measured; 2562 filtered out; finished in 45.04s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

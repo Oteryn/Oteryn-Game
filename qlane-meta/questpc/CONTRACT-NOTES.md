@@ -216,3 +216,18 @@ attributes absent. Those need explicit reviewed/pinned source-number bindings
 in the next composition slice; an unbound inventory key is insufficient. This
 research stopped after the source/wiki/native comparison, without inventing
 production selector aliases or treating personal rewards as shared stock.
+
+Primary-source refinement for native Draconia stock: the pinned KeyDoorAction
+startup table explicitly lists each key object and its door, and Storage.Quest.Key
+resolves IDs3001-3008 to those exact numbers. This supersedes the earlier room-
+based wiki inference for the five existing native stock objects3003-3007. Sources:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/door_key.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/lib/core/storages.lua
+The new producer reuses questpc6's source custody/native-map pin pattern, verifies
+both source SHA256/git blob identity and the exact unique non-House native key,
+and emits only those five source action bindings. No binary map is rewritten.
+The runtime binder reuses questpc6@f91534062's source_bindings owner, restricted
+to this slice's capture; exact position/item/floor/house checks and conflicting
+native attributes remain authoritative. Effective startup attributes must pass
+the same closed pickup eligibility wrapper, including derived unique/action
+refusals, so a stale handle cannot materialize an entry the binder seals.

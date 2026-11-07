@@ -1,3 +1,24 @@
+## Five native stock PG proofs — runtime local, strict checks in progress
+All five actual PostgreSQL18.6 source-coordinate stock cases RED on missing key
+number, then GREEN5/5,226.66s. Keys3003-3007 use their exact pinned startup/native
+positions with no fixture-injected action. Key3003 includes MINT/TRANSFER crash,
+rehide and replay. Red first assertion poisoned fixture mutex: four collateral
+mutex failures are excluded; four fresh test processes each executed real PG and
+failed the intended empty-bindings assertion. All logs, durations, source working
+hashes in cloud-native-key-checkpoint.json. Seven focused pure units pass0.05s;
+fmt and five source/native pin checks pass. Current cargo check/clippy running;
+pin refresh remains required. This checkpoint publishes evidence/status only;
+implementation code and captures remain LOCAL until every strict gate is green.
+
+Continue active sessions if present: PG52188 completed successfully; strict58690
+runs focused units/check/clippy against unchanged source; pin refresh must follow.
+Before final feature push, archive final check/clippy/pin logs, update current
+status to implementation_published=true, fetch/merge target, push immediately.
+No title promotion yet; counts60/117/1excluded unchanged. Do not end while work
+remains. Next exact source key-door/access selectors, party gates, NPC/first shared
+stock key and original reward composition. Source primary startup tables now give
+exact key+door positions, superseding wiki coordinate approximations.
+
 ## Shared source-key pickup wire GREEN — 2026-11-07
 Three real PostgreSQL18.6 cases RED130.06s / GREEN132.83s: silver3007 real
 command9 pickup/replay39.355735236s; copper3008 MINT/TRANSFER interruption and

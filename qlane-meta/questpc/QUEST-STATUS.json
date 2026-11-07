@@ -8512,8 +8512,8 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Source action-bound shared key command9 pickup",
-    "validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json",
+    "name": "Five native source-stock PG evidence checkpoint; runtime local pending strict checks",
+    "validation": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
     "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 60,
@@ -9128,10 +9128,12 @@
       }
     },
     "shared_map_keys": {
-      "state": "source_action_bound_pickup_pg_green",
+      "state": "native_stock_pg_green_verification_running",
       "validation": "qlane-meta/questpc/cloud-map-key-validation.json",
-      "next": "Reuse questpc6 source_bindings.rs for five reviewed native Draconia key placements lacking action numbers; then party switches and source route composition.",
-      "wire_validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json"
+      "next": "Finish strict Rust checks and pin refresh, publish runtime binding slice immediately; then exact source doors/access/party/NPC and remaining route composition.",
+      "wire_validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json",
+      "native_checkpoint": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
+      "implementation_published": false
     }
   },
   "cross_lane_qualified_elsewhere": {
