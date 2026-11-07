@@ -742,6 +742,206 @@
       "reply": [
         "A crystal? My mind is too clouded by grief to understand what you mean right now."
       ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 3,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 4,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 5,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "diary"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... you... read Marziel's diary and know our story...?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... then... tell me... I'm so sad... was it my fault? Why did he leave me... Arthei..?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "vampire"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... so there is nothing I could have done...? He's a vampire now... what can we do..."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "free soul"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... he can't be freed from his curse that easily... he must be awaken first..."
+      ]
     }
   ]
 }

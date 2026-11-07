@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
 import npcfix_rewards
 
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       12599, 12601, 12803, 28792, 28793} | npcfix_rewards.ITEMS
+       12599, 12601, 12803, 28792, 28793, 8746} | npcfix_rewards.ITEMS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

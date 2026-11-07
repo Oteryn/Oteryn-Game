@@ -824,6 +824,7 @@ async fn wardrobe(
         achievement: None,
         repeatable: false,
         achievement_once: false,
+        cooldown: None,
         reply: vec![],
         sources: vec![],
     };

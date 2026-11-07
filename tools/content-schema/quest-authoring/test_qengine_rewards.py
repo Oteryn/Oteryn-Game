@@ -69,8 +69,8 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         all_callbacks=self.callbacks['callbacks']
-        npcfix=[c for c in all_callbacks if c['key'].startswith('oteryn:quest-reward/npcfix/')]
-        self.assertEqual({c['key'].split('/')[-1] for c in npcfix}, {'al-dee-pick','forest-fury-cage','wandering-crystal'})
+        npcfix=[c for c in all_callbacks if c['key'].startswith(('oteryn:quest-reward/npcfix/', 'oteryn:quest-reward/npcfix-'))]
+        self.assertEqual({c['key'].split('/')[-1] for c in npcfix}, {'al-dee-pick','forest-fury-cage','wandering-crystal','npcfix-ghost-tear'})
         callbacks=[c for c in all_callbacks if c not in npcfix]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})

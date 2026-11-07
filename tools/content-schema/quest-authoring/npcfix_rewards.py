@@ -129,13 +129,19 @@ def encoded(value):
     return json.dumps(value, ensure_ascii=False, indent=2) + '\n'
 
 
-def outputs(root=ROOT):
+def outputs(root=ROOT, generated=None):
     source = json.loads(INPUT.read_text())
     if source['schema'] != 1:
         raise ValueError('NPCFIX_REWARD_SCHEMA')
     owners = set(source['owns'])
+    def read(relative, empty):
+        if generated is not None and relative in generated:
+            return json.loads(generated[relative])
+        path = root / relative
+        return json.loads(path.read_text()) if path.is_file() else empty
+
     callbacks = root / 'content/quests/shared-reward-callbacks.json'
-    document = json.loads(callbacks.read_text()) if callbacks.is_file() else {'schema': 1, 'callbacks': []}
+    document = read('content/quests/shared-reward-callbacks.json', {'schema': 1, 'callbacks': []})
     document['callbacks'] = [row for row in document['callbacks']
                              if row['npc'] not in owners] + source['callbacks']
     declared = {row['key'] for row in source['tracks']}
@@ -151,9 +157,17 @@ def outputs(root=ROOT):
     for relative, field in [('content/quests/shared-reward-offers.json', 'offers'),
                             ('content/dialogues/quests/shared-reward-greetings.json', 'npcs')]:
         path = root / relative
-        current = json.loads(path.read_text()) if path.is_file() else {'schema': 1, field: []}
+        current = read(relative, {'schema': 1, field: []})
         current[field] = [row for row in current[field] if row['npc'] not in owners] + source[field]
         result[path] = encoded(current)
+    return result
+
+
+def overlay_generated(generated, root=ROOT):
+    """Compose owned rows after the shared producer, preserving its current generation."""
+    result = dict(generated)
+    for path, value in outputs(root, generated).items():
+        result[str(path.relative_to(root))] = value.encode()
     return result
 
 

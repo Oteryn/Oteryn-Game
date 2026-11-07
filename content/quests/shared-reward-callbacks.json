@@ -1190,6 +1190,55 @@
       ],
       "repeatable": true,
       "achievement_once": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix-ghost-tear",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "awaken"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i8746",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "... to awake him... I don't know but... he once truly loved me... maybe there is still something left... somewhere... here... take this from me....and thank you for listening..."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L48-L125:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ],
+      "repeatable": true,
+      "cooldown": {
+        "track": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+        "seconds": 72000
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L5-L117:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ]
     }
   ]
 }

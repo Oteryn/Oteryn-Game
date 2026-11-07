@@ -712,7 +712,13 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Ghost's Tear reward is a Blood Brothers quest transaction; excluded quest-lane repair required.",
-      "work": "Complete this NPC interaction with source-backed reusable state/reward/access callbacks; inspect and reuse qengine2 and relevant lane implementations first."
+      "work": "Reward/locked cooldown component qualified with actual PG113.90s. Continue captured real placement32952,31440,3 and literal cooldown refusal/topic reset; whole NPC remains active.",
+      "runtime_component": {
+        "status": "QUALIFIED",
+        "test": "npcfix_reward_postgres_fading_memory_story_and_database_cooldown",
+        "postgres": "POSTGRES_STARTED a_fading_memory;113.90s",
+        "scope": "Exact source story, item8746,20-hour DB cooldown, post-expiry reward and malformed-plan item+clock rollback"
+      }
     },
     {
       "npc": "A Sleeping Dragon",
@@ -3342,6 +3348,30 @@
         "pin_check": "PASS fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
         "self_review": "No findings; original captured anchors and retail observations retained; strict map/compiler limits unchanged; no binary, workflow or repository-tool edits."
       }
+    },
+    {
+      "name": "Locked DB-time free repeat and Fading Memory source reward",
+      "state": "QUALIFIED_COMPONENT",
+      "red": "Live PG missing source callback8.18s; old exact-claim SQL failure112.67s; preserve these proofs in /tmp/npcfix-evidence",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+        "duration_seconds": 113.9,
+        "result": "Exact source topics/keyword; initial gift; early DB-time refusal despite advanced conversation clock; second post-expiry gift; malformed clock plan refuses with complete item+clock rollback",
+        "log": "/tmp/npcfix-evidence/fading-port-green.log"
+      },
+      "checks": {
+        "quest_units": "7 passed1.25s",
+        "authoring": "5 owned+12 shared pass; strict original recipes/pins retained",
+        "native": "PASS42-file generation and reproduction",
+        "fmt": "PASS all workspace and both mounted test files",
+        "check": "PASS changed packages all targets/features6m47s",
+        "clippy": "PASS same targets/features -D warnings7m54s",
+        "integration": "123 passed6.25s",
+        "repository": "5 passed; see /tmp/npcfix-evidence/fading-content-repository.log",
+        "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
+        "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
+      },
+      "next": "Immediately push, then finish Fading placement and literal refusal with independent physical rows; preserve other worker Wandering/Doctor/Goldro ownership."
     }
   ],
   "owner_constraints": {
@@ -3514,5 +3544,37 @@
   "incoming_source_authoring": {
     "head": "0cbb57db2ec4b2729eb4a8bab78204ed3f4ee8d6",
     "note": "Preserved planner and inactive Fading Memory-only authoring. Current live callbacks remain qengine source compositions; cooldown runtime integration follows after physical admission batch."
+  },
+  "parallel_batches": {
+    "fading_runtime": {
+      "state": "QUALIFIED_COMPONENT",
+      "base": "7178e767e",
+      "scope": "Generic declared source clock and DB-backed free repeats; Fading story/item8746; preserve incoming expiry and achievement-once engine.",
+      "red": "POSTGRES_STARTED a_fading_memory; callback missing8.18s; subsequent old-base SQL occurrence failure112.67s resolved by reuse.",
+      "unit": "7 passed1.25s",
+      "authoring": "5 standalone and12 shared producer tests pass; strict foreign temporal/achievement preservation",
+      "sql": "1144 extends incoming latest proof; keep1142/1143 intact",
+      "logs": "/tmp/npcfix-evidence/fading-port-{green,check,clippy}.log",
+      "next": "Actual PG GREEN, final gates, immediate push; then finish Fading real placement and literal cooldown refusal in independent physical batch. Do not duplicate active Wandering/Doctor/Goldro.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+        "duration_seconds": 113.9,
+        "result": "Exact source topics/keyword; initial gift; early DB-time refusal despite advanced conversation clock; second post-expiry gift; malformed clock plan refuses with complete item+clock rollback",
+        "log": "/tmp/npcfix-evidence/fading-port-green.log"
+      },
+      "checks": {
+        "quest_units": "7 passed1.25s",
+        "authoring": "5 owned+12 shared pass; strict original recipes/pins retained",
+        "native": "PASS42-file generation and reproduction",
+        "fmt": "PASS all workspace and both mounted test files",
+        "check": "PASS changed packages all targets/features6m47s",
+        "clippy": "PASS same targets/features -D warnings7m54s",
+        "integration": "123 passed6.25s",
+        "repository": "5 passed; see /tmp/npcfix-evidence/fading-content-repository.log",
+        "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
+        "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
+      },
+      "scope_limit": "Reward and reusable clock participant qualified. Whole Fading NPC still requires real placement and literal cooldown refusal/topic reset."
+    }
   }
 }

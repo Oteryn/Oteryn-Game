@@ -49,6 +49,14 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// A source cooldown is evaluated under the writer's lock using database time.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardCooldown {
+    pub track: String,
+    pub seconds: u32,
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -92,6 +100,8 @@ pub struct RewardCallback {
     /// Costed repeats may retain one idempotent account achievement occurrence.
     #[serde(default, skip_serializing_if = "is_false")]
     pub achievement_once: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown: Option<RewardCooldown>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
 }
@@ -100,10 +110,24 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// Source-bound catalogue input only; this declaration never writes progress.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TrackDeclaration {
+    key: String,
+    quest: String,
+    initial: i64,
+    min: i64,
+    max: i64,
+    sources: Vec<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
     schema: u32,
+    #[serde(default)]
+    tracks: Vec<TrackDeclaration>,
     callbacks: Vec<RewardCallback>,
 }
 
@@ -114,6 +138,10 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 }
 
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
+    parse_document(text).map(|document| document.callbacks)
+}
+
+fn parse_document(text: &str) -> Result<Document, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
@@ -127,8 +155,35 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
     };
     let item =
         |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
-    if document.schema != 1 || document.callbacks.len() > 256 {
+    if document.schema != 1 || document.callbacks.len() > 256 || document.tracks.len() > 256 {
         return Err("reward callback bounds".into());
+    }
+    let mut declarations = BTreeSet::new();
+    for track in &document.tracks {
+        if !slug(&track.key, "oteryn:", b"._/:-", 128)
+            || !slug(&track.quest, "oteryn:", b"._/:-", 128)
+            || !declarations.insert(&track.key)
+            || track.min > track.initial
+            || track.initial > track.max
+            || track.sources.is_empty()
+            || track.sources.len() > 8
+            || track.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
+            || !document.callbacks.iter().any(|c| {
+                c.requires.iter().any(|r| r.track == track.key)
+                    || c.cooldown
+                        .as_ref()
+                        .is_some_and(|clock| clock.track == track.key)
+            })
+            || document
+                .callbacks
+                .iter()
+                .any(|c| c.storage.iter().any(|r| r.track == track.key))
+        {
+            return Err(format!(
+                "invalid reward prerequisite declaration {}",
+                track.key
+            ));
+        }
     }
     for c in &document.callbacks {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
@@ -140,7 +195,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || c.storage.is_empty()
-            || c.storage.len() > super::QUESTSTATE0_RL_02
+            || c.storage.len() + usize::from(c.cooldown.is_some()) > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
             || c.requires.len() > 8
             || requires.len() != c.requires.len()
@@ -156,11 +211,19 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || (c.repeatable
-                && (c.take.is_empty()
+                && ((c.take.is_empty() && c.cooldown.is_none())
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || (c.achievement.is_some() && !c.achievement_once)))
             || (c.achievement_once && (!c.repeatable || c.achievement.is_none()))
+            || c.cooldown.as_ref().is_some_and(|clock| {
+                !c.repeatable
+                    || !slug(&clock.track, "oteryn:", b"._/:-", 128)
+                    || clock.seconds == 0
+                    || clock.seconds > 31_536_000
+                    || tracks.contains(&clock.track)
+                    || requires.contains(&clock.track)
+            })
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -210,13 +273,35 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             return Err(format!("invalid reward callback {}", c.key));
         }
     }
-    Ok(document.callbacks)
+    Ok(document)
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let callbacks = load()?;
+    let document = parse_document(include_str!(
+        "../../../../../content/quests/shared-reward-callbacks.json"
+    ))?;
+    for declaration in document.tracks {
+        let declared = QuestTrack {
+            key: declaration.key,
+            quest: declaration.quest,
+            initial: declaration.initial,
+            min: declaration.min,
+            max: declaration.max,
+        };
+        if let Some(existing) = tracks.iter().find(|t| t.key == declared.key) {
+            if existing != &declared {
+                return Err(format!(
+                    "conflicting reward prerequisite declaration {}",
+                    declared.key
+                ));
+            }
+        } else {
+            tracks.push(declared);
+        }
+    }
+    let callbacks = document.callbacks;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
     for callback in &callbacks {
         for s in &callback.storage {
@@ -236,22 +321,37 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
+        let mut effects: Vec<_> = callback
+            .storage
+            .iter()
+            .map(|s| QuestEffect {
+                track: s.track.clone(),
+                from: QuestComparison::Between(s.minimum, s.maximum),
+                effect: if s.preserve {
+                    QuestEffectKind::Add(0)
+                } else {
+                    QuestEffectKind::Set(s.set)
+                },
+            })
+            .collect();
+        if let Some(clock) = &callback.cooldown {
+            let track = tracks
+                .iter()
+                .find(|track| track.key == clock.track)
+                .ok_or("undeclared reward cooldown")?;
+            if track.quest != callback.quest {
+                return Err("foreign reward cooldown".into());
+            }
+            effects.push(QuestEffect {
+                track: clock.track.clone(),
+                from: QuestComparison::ElapsedAtLeast(i64::from(clock.seconds)),
+                effect: QuestEffectKind::SetNow,
+            });
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .map(|s| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: if s.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::Set(s.set)
-                    },
-                })
-                .collect(),
+            effects,
             completes: false,
             experience: None,
         });
@@ -458,6 +558,74 @@ mod tests {
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod npcfix_tests {
+    use super::*;
+
+    #[test]
+    fn repeatable_callbacks_require_a_cost_or_a_locked_database_cooldown() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        for invalid in 0..4 {
+            let mut document: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            let callback = document["callbacks"]
+                .as_array_mut()
+                .ok_or("callbacks")?
+                .iter_mut()
+                .find(|row| row["key"] == "oteryn:quest-reward/npcfix-ghost-tear")
+                .ok_or("cooldown callback")?;
+            match invalid {
+                0 => {
+                    callback["cooldown"] = serde_json::Value::Null;
+                }
+                1 => {
+                    callback["cooldown"] = serde_json::json!({"track":"oteryn:clock","seconds":0});
+                }
+                2 => {
+                    callback["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.pirate","addons":0});
+                }
+                _ => {
+                    callback["give"] = serde_json::Value::Null;
+                }
+            }
+            assert!(parse(&serde_json::to_string(&document).map_err(|e| e.to_string())?).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn source_cooldown_uses_the_locked_timestamp_and_exact_twenty_hour_boundary()
+    -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = loaded.catalogue();
+        let transition = catalogue
+            .transition("oteryn:quest-reward/npcfix-ghost-tear")
+            .ok_or("tear transition")?;
+        let clock = transition
+            .effects
+            .iter()
+            .find(|effect| effect.effect == QuestEffectKind::SetNow)
+            .ok_or("clock effect")?;
+        let mut stored = BTreeMap::from([(clock.track.clone(), 28_001)]);
+        assert_eq!(
+            catalogue.evaluate(transition, &stored, 100_000),
+            Err(super::super::QuestRefusal::StageMismatch)
+        );
+        stored.insert(clock.track.clone(), 28_000);
+        let changes = catalogue
+            .evaluate(transition, &stored, 100_000)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track == clock.track && change.after == 100_000)
+        );
         Ok(())
     }
 }
