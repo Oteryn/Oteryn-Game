@@ -1,7 +1,9 @@
+mod outfit_rgba;
 use crate::catalog::Catalog;
 use crate::error::AssetError;
 use crate::sheets::{CELL_PX, SpriteSheets};
 use crate::store::{AssetStore, MAX_APPEARANCES_BYTES};
+pub use outfit_rgba::OutfitRgbaCell;
 use prost::Message;
 use std::collections::HashMap;
 
@@ -86,6 +88,8 @@ struct FlagsMsg {
     hang: Option<bool>,
     #[prost(message, optional, tag = "21")]
     hook: Option<HookMsg>,
+    #[prost(bool, optional, tag = "22")]
+    rotate: Option<bool>,
     #[prost(message, optional, tag = "26")]
     shift: Option<ShiftMsg>,
     #[prost(message, optional, tag = "27")]
@@ -136,6 +140,8 @@ pub struct Appearance {
     pub on_top: bool,
     pub stackable: bool,
     pub fluid: bool,
+    /// Official appearance flag 22: the native context menu may offer Rotate.
+    pub rotatable: bool,
     /// Hangs on a wall hook; its pattern follows the hook of the tile it is on.
     pub hangable: bool,
     /// The hook this entry gives the tile it is on.
@@ -461,6 +467,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         on_top: flags.top.unwrap_or(false),
         stackable: flags.cumulative.unwrap_or(false),
         fluid: flags.liquidcontainer.unwrap_or(false) || flags.liquidpool.unwrap_or(false),
+        rotatable: flags.rotate.unwrap_or(false),
         hangable: flags.hang.unwrap_or(false),
         hook: match flags.hook.and_then(|hook| hook.direction) {
             Some(1) => Hook::South,
@@ -471,90 +478,9 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+#[path = "appearance_tests.rs"]
+mod tests;
 
-    fn shifted(x: u32, y: u32) -> AppearanceMsg {
-        AppearanceMsg {
-            id: Some(1),
-            frame_group: vec![FrameGroupMsg {
-                sprite_info: Some(SpriteInfoMsg {
-                    sprite_id: vec![1],
-                    ..SpriteInfoMsg::default()
-                }),
-            }],
-            flags: Some(FlagsMsg {
-                shift: Some(ShiftMsg {
-                    x: Some(x),
-                    y: Some(y),
-                }),
-                ..FlagsMsg::default()
-            }),
-        }
-    }
-
-    #[test]
-    fn an_oversized_displacement_makes_the_entry_unusable() {
-        let kept = convert(1, shifted(8, MAX_DISPLACEMENT_PX));
-        assert_eq!(
-            kept.map(|kept| (kept.displacement_x, kept.displacement_y)),
-            Some((8, MAX_DISPLACEMENT_PX))
-        );
-        assert!(convert(1, shifted(u32::MAX, 0)).is_none());
-        assert!(convert(1, shifted(0, MAX_DISPLACEMENT_PX + 1)).is_none());
-    }
-
-    fn with_flags(width: u32, flags: FlagsMsg) -> Option<Appearance> {
-        let message = AppearanceMsg {
-            id: Some(1),
-            frame_group: vec![FrameGroupMsg {
-                sprite_info: Some(SpriteInfoMsg {
-                    pattern_width: Some(width),
-                    sprite_id: vec![1; width as usize],
-                    ..SpriteInfoMsg::default()
-                }),
-            }],
-            flags: Some(flags),
-        };
-        convert(1, message)
-    }
-
-    #[test]
-    fn a_hangable_entry_follows_the_hook_of_its_tile() {
-        let hook = |direction| FlagsMsg {
-            hook: Some(HookMsg {
-                direction: Some(direction),
-            }),
-            ..FlagsMsg::default()
-        };
-        let hooks: Vec<_> = [hook(1), hook(2), hook(7)]
-            .into_iter()
-            .map(|flags| with_flags(1, flags).map(|wall| wall.hook))
-            .collect();
-        assert_eq!(
-            hooks,
-            [Some(Hook::South), Some(Hook::East), Some(Hook::None)]
-        );
-
-        let hanging = FlagsMsg {
-            hang: Some(true),
-            ..FlagsMsg::default()
-        };
-        let on = |width, hook, x| {
-            with_flags(width, hanging.clone()).map(|item| {
-                pattern(
-                    &item,
-                    Placement {
-                        hook,
-                        ..Placement::at(x, 5, -7)
-                    },
-                )
-            })
-        };
-        assert_eq!(on(3, Hook::None, 1), Some((0, 0, 0)));
-        assert_eq!(on(3, Hook::South, 1), Some((1, 0, 0)));
-        assert_eq!(on(3, Hook::East, 1), Some((2, 0, 0)));
-        assert_eq!(on(2, Hook::East, 1), Some((0, 0, 0)));
-        assert_eq!(on(1, Hook::South, 0), Some((0, 0, 0)));
-    }
-}
+#[cfg(test)]
+#[path = "appearance_rotate_tests.rs"]
+mod rotate_tests;

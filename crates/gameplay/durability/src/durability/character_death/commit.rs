@@ -15,6 +15,7 @@ impl DurabilityRoot {
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
         selection_root: Option<[u8; 32]>,
+        house: Option<crate::durability::house_scope_handoff::HouseId>,
     ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
@@ -77,7 +78,11 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(CharacterProgressionError::AuthorityRejected));
                     }
-                    let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+                    let admitted=match house.as_ref() {
+                        Some(house)=>crate::durability::character_progression::assert_house_death_fence(&mut tx,&fence.item_fence(),Some(fence.expected_character_revision.get()),&node,house).await?,
+                        None=>assert_gameplay_fence(&mut tx,&fence,&node).await?,
+                    };
+                    let root = match admitted {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };

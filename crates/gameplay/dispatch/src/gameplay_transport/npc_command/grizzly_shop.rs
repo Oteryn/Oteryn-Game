@@ -65,6 +65,11 @@ impl NpcConversations {
         let entry = book.get(key)?;
         let mut sessions = self.sessions.lock().ok()?;
         let state = sessions.get_mut(&session)?;
+        if !super::furniture_shop::trade_available(key, state.furniture_questline) {
+            state.window = None;
+            state.window_offers.clear();
+            return Some(NpcTradeWindow::default());
+        }
         let eligible: Vec<_> = entry
             .offers()
             .iter()

@@ -16,17 +16,17 @@ pub(super) async fn read(
     .await?;
     let account = AccountId::from_bytes(*account.as_bytes())
         .map_err(|_| AppearanceReadError::InvalidStoredState)?;
-    Ok(
-        read_account_appearance_unlocks(connection, account, grant_keys)
-            .await?
-            .into_iter()
-            .filter(|fact| {
-                matches!(
-                    fact.source_kind.as_str(),
-                    "quest" | "npc" | "mount_taming" | "item_action" | "task_board"
-                )
-            })
-            .map(|fact| (fact.unlock_key, fact.content_revision))
-            .collect(),
-    )
+    let mut facts: Vec<_> = read_account_appearance_unlocks(connection, account, grant_keys)
+        .await?
+        .into_iter()
+        .filter(|fact| {
+            matches!(
+                fact.source_kind.as_str(),
+                "quest" | "npc" | "npc_wedding" | "mount_taming" | "item_action" | "task_board"
+            )
+        })
+        .map(|fact| (fact.unlock_key, fact.content_revision))
+        .collect();
+    facts.extend(super::super::horse_rental::earned(connection, character, grant_keys).await?);
+    Ok(facts)
 }

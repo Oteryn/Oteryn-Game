@@ -35,19 +35,26 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod cake_bakers;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
 mod endgame;
+mod fresh_greet;
+mod furniture_shop;
 mod grizzly;
 mod grizzly_shop;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod horse_rental;
 mod isle_of_evil;
 mod liquid_black;
+mod lynda_wedding;
 mod monk;
+mod npc_cosmetics;
 mod premium_purchase;
 mod quest_dialogue;
+mod seasonal_cake;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -64,6 +71,7 @@ struct SessionNpc {
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
     /// Display cache only; the NPC trade writer independently checks quest points.
     grizzly_shop_points: Option<i64>,
+    furniture_questline: Option<i64>,
     grizzly_shop_items: std::collections::BTreeSet<String>,
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
@@ -75,6 +83,9 @@ struct SessionNpc {
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
+    cosmetics: Option<npc_cosmetics::State>,
+    horse_rental: Option<horse_rental::State>,
+    lynda_wedding: Option<lynda_wedding::State>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
     hireling: Option<hireling_services::State>,
@@ -570,6 +581,12 @@ impl NpcConversations {
             position: there,
             entry,
         }];
+        let furniture_stage = sessions
+            .get(&session)
+            .and_then(|state| state.furniture_questline);
+        if npc.key == "oteryn:npc.hairycles" && furniture_stage.is_none() {
+            return NpcTalkOutcome::only(Disposition::NoConversation);
+        }
         let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
             let prior = *engaged;
             let had = prior.is_some();
@@ -584,7 +601,7 @@ impl NpcConversations {
             // An unknown session, or an NPC already serving `NPC0-RL-05` customers.
             return NpcTalkOutcome::only(Disposition::Rejected);
         };
-        let Some(reply) = reply else {
+        let Some(mut reply) = reply else {
             // Nothing recognised: without a conversation there is nobody to answer.
             return NpcTalkOutcome::only(if had {
                 Disposition::Ok
@@ -592,6 +609,21 @@ impl NpcConversations {
                 Disposition::NoConversation
             });
         };
+        if npc.key == "oteryn:npc.hairycles"
+            && oteryn_gameplay_npc::quest_greetings::get(&npc.key)
+                .is_some_and(|source| source.greet.text == reply.text)
+        {
+            let Some(stage) = furniture_stage else {
+                return NpcTalkOutcome::only(Disposition::NoConversation);
+            };
+            let tracks =
+                std::collections::BTreeMap::from([(furniture_shop::TRACK.to_owned(), stage)]);
+            let Some(line) = oteryn_gameplay_npc::quest_greetings::select(&npc.key, Some(&tracks))
+            else {
+                return NpcTalkOutcome::only(Disposition::NoConversation);
+            };
+            reply.text = line.to_owned();
+        }
         let open = engaged.then_some((intent.npc_actor, NpcConversationState::Open));
         NpcTalkOutcome {
             unknown: false,
@@ -660,6 +692,24 @@ pub(super) async fn npc_bank_talk(
                     )
                 })
         });
+    let furniture_stage = admission
+        .states
+        .quest_sessions
+        .lock()
+        .ok()
+        .and_then(|sessions| {
+            let copy = sessions.get(&session)?.copy.as_ref()?;
+            Some(
+                copy.tracks()
+                    .get(furniture_shop::TRACK)
+                    .copied()
+                    .unwrap_or(0),
+            )
+        });
+    admission
+        .states
+        .npc_conversations
+        .refresh_furniture_shop_context(session, furniture_stage);
     let native = admission
         .active_generation
         .filter(|active| {
@@ -671,11 +721,10 @@ pub(super) async fn npc_bank_talk(
         .states
         .npc_conversations
         .refresh_grizzly_shop_context(session, points, grizzly_shop::admitted_items(native));
-    let ordinary = admission.states.npc_conversations.talk_in(
+    let (ordinary, fresh_greet) = admission.states.npc_conversations.talk_with_fresh_greet(
         &admission.states.chat,
         &runtime,
-        actor,
-        session,
+        (actor, session),
         &intent,
         admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
@@ -683,6 +732,24 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if let Some(step) = fresh_greet.and_then(|witness| {
+        npc_cosmetics::prepare_greet(admission, actor, command, &intent, &runtime, witness)
+    }) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        if let Some(outcome) =
+            npc_cosmetics::apply(admission, actor, command, intent.clone(), step).await
+        {
+            return outcome;
+        }
+        if yes {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return unknown();
+            };
+            _trade_permit = Some(permit);
+        }
+        runtime = admission.runtime.lock().await;
     }
     if let Some(context) = admission
         .states
@@ -752,6 +819,44 @@ pub(super) async fn npc_bank_talk(
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = cake_bakers::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return cake_bakers::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = seasonal_cake::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return seasonal_cake::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = horse_rental::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return horse_rental::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = lynda_wedding::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return lynda_wedding::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = npc_cosmetics::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        if let Some(outcome) =
+            npc_cosmetics::apply(admission, actor, command, intent.clone(), step).await
+        {
+            return outcome;
+        }
+        // A sealed read-only no-choice must not take the retained Quest owner's
+        // topic. The generic permit/slot have been dropped; reprove independently.
+        if yes {
+            let Some(permit) = admission.spell_lane_permit().await else {
+                return unknown();
+            };
+            _trade_permit = Some(permit);
+        }
+        runtime = admission.runtime.lock().await;
     }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

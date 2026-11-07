@@ -1,0 +1,80 @@
+{
+  "schema": "OTERYN_SRV7_CURRENT_MESSENGER_STOCK/v1",
+  "donor": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/npc/messenger_of_santa.lua",
+    "sha256": "cb91c928e0d5dfd8dbf4cd327667a2456be8bcc57461e226cde3af36260939b1",
+    "lines": [
+      55,
+      66
+    ]
+  },
+  "current_wiki": {
+    "article_id": 62185,
+    "original_url": "https://tibia.fandom.com/wiki/Messenger_of_Santa",
+    "mirror_url": "https://raw.githubusercontent.com/Lavovskii/grimorio/acc9994e2ad8868696bc10ef08070108e2baba92/quests/data/wiki/messenger-of-santa-da836.json",
+    "mirror_revision": "acc9994e2ad8868696bc10ef08070108e2baba92",
+    "sha256": "36eaf3275dd982ead0c27380b158e4a77bbbec69b00694d38b887bf2e53ec64c",
+    "added_stock_quote": "Christmas Present (Blue) 20",
+    "blue_present_article": 43052,
+    "blue_present_client_id": 6510,
+    "tree_package_article": 43048,
+    "rendered_tree_icon_client_id": 2812
+  },
+  "normalization": "Keep pinned real construction kit10208; the Wiki rendered2812tree does not create a duplicate shop package. Add current bluepresent6510@20.",
+  "offers": [
+    {
+      "source_id": 6387,
+      "price": 10
+    },
+    {
+      "source_id": 6488,
+      "price": 40
+    },
+    {
+      "source_id": 6501,
+      "price": 45
+    },
+    {
+      "source_id": 6502,
+      "price": 25
+    },
+    {
+      "source_id": 6503,
+      "price": 25
+    },
+    {
+      "source_id": 6504,
+      "price": 25
+    },
+    {
+      "source_id": 6505,
+      "price": 20
+    },
+    {
+      "source_id": 6506,
+      "price": 70
+    },
+    {
+      "source_id": 6507,
+      "price": 60
+    },
+    {
+      "source_id": 6508,
+      "price": 80
+    },
+    {
+      "source_id": 6509,
+      "price": 20
+    },
+    {
+      "source_id": 6510,
+      "price": 20
+    },
+    {
+      "source_id": 10208,
+      "price": 50
+    }
+  ]
+}

@@ -38,7 +38,9 @@ fn reaudit_usable_item_actions() -> TestResult {
             let seal = harness.recovery.seal_current().map_err(debug)?;
             let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
             let deps = Dependencies::new()?;
-            let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(deps.admitted.world_id, None);
+            // The C4 refusal case deliberately supplies an unavailable cosmetics section.
+            let unavailable = crate::content::native_gameplay::NativeGameplayInput::unavailable_cosmetics();
+            let (controller, pin) = crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(deps.admitted.world_id, None, Some(&unavailable.bytes));
             let active = controller.active().ok_or("active")?;
             assert!(active.native_gameplay().ok_or("native")?.cosmetics().is_none());
             let mut owner = deps.owner(&harness, &authority);

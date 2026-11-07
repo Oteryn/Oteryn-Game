@@ -156,6 +156,13 @@ pub fn map_harvest(source: u16, roll: u32) -> Option<MapHarvest> {
         return None;
     }
     Some(match source {
+        // Crystal actions_cake_bite.lua:46-57; the closed World owner gates the CAS.
+        12085 | 12086 => MapHarvest {
+            after: 0,
+            yield_item: None,
+            source_ground: true,
+            decay: None,
+        },
         3699 => MapHarvest {
             after: 3700,
             yield_item: Some((3588, 3)),

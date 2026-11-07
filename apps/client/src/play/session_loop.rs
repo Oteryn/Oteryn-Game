@@ -21,6 +21,7 @@ pub async fn run_session<T: Stepper>(
 ) {
     outbox.discovery_initialize(&session);
     outbox.properties_initialize(&session);
+    outbox.house_death_scope(session.feature_selected(86), session.feature_snapshot(51));
     outbox.analyser_initialize(session.feature_selected(10));
     if let Err(error) = outbox
         .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))
@@ -32,12 +33,16 @@ pub async fn run_session<T: Stepper>(
     outbox.appearance_initialize(&session);
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
+    outbox.rotation_initialize(session.feature_selected(
+        oteryn_client_runtime::world_interaction::world_rotate::CAPABILITY_WORLD_ROTATE_V1,
+    ));
     outbox.targeting_initialize(session.feature_selected(15));
     // Publish sources only after their equipment, movement and targeting routes are ready.
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
     outbox.container_initialize(session.container_views());
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
+    outbox.house_death_vitals_current(session.own_house_vitals_current());
     outbox.channel_list_initialize(session.feature_snapshot(48));
     outbox.world_light_initialize(session.feature_snapshot(18));
     outbox.world_weather_initialize(session.feature_snapshot(22));
@@ -92,7 +97,10 @@ pub async fn run_session<T: Stepper>(
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
-    outbox.world_event_initialize(session.feature_selected(53));
+    outbox.world_event_initialize(
+        session.feature_selected(53),
+        session.feature_selected(oteryn_client_runtime::world_event::CAPABILITY_SEASONAL_EVENTS_V1),
+    );
     outbox.daily_boost_initialize(session.feature_selected(151));
     outbox.highscores_initialize(session.server_mechanic_selected(9));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
@@ -111,6 +119,20 @@ pub async fn run_session<T: Stepper>(
     loop {
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
+            Ok(PlayCommand::HouseDeathExit {command,house_session,connection_generation,scope_generation,lease_generation,house,death_generation}) => {
+                if !outbox.house_death_exit_current(house_session,connection_generation,scope_generation,lease_generation,&house,death_generation){continue;}
+                match session.feature(&command).await {
+                    Ok(result)=>{
+                        outbox.properties_result(&command,&result);
+                        if result.status==oteryn_session::CommandStatus::Rejected {
+                            outbox.house_death_exit_rejected(house_session,connection_generation,scope_generation,lease_generation,&house,death_generation);
+                        }
+                        publish(&mut session,&outbox,&mut held);
+                        continue;
+                    }
+                    Err(error)=>error,
+                }
+            }
             Ok(PlayCommand::Feature(command)) => match session.feature(&command).await {
                 Ok(result) => {
                     match command.capability {
@@ -118,6 +140,13 @@ pub async fn run_session<T: Stepper>(
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
+                        384 => {
+                            // Install preceding inventory/reset pushes before validating the
+                            // advisory response against its selected-item generation.
+                            publish(&mut session, &outbox, &mut held);
+                            outbox.rotation_probe_result(&result);
+                            continue;
+                        },
                         54 | 55 | 115 | 150 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),

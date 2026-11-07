@@ -56,7 +56,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (runtime_scope, map_revision) = {
             let runtime = self.runtime.lock().await;
             (
-                runtime.binding().runtime_scope(),
+                runtime
+                    .house_player_for_session(session)
+                    .ok()
+                    .flatten()
+                    .map_or(runtime.binding().runtime_scope(), |(_, house)| house.scope),
                 runtime.map_revision_digest(),
             )
         };

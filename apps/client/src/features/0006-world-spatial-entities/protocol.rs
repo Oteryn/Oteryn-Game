@@ -13,6 +13,17 @@ pub(in crate::play) fn entities(
 }
 
 impl crate::play::Outbox {
+    pub(in crate::play) fn appearance_palette(&self, palette: Option<&[[u8; 3]]>) {
+        let palette = palette
+            .filter(|values| values.len() <= 256)
+            .unwrap_or_default();
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        if mailbox.appearance_palette != palette {
+            mailbox.appearance_palette = palette.to_vec();
+            mailbox.pushed.appearance_palette = Some(palette.to_vec());
+        }
+    }
+
     pub(in crate::play) fn appearances(&self, entries: Vec<oteryn_session::VisibleAppearance>) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         if mailbox.appearance_state != entries {

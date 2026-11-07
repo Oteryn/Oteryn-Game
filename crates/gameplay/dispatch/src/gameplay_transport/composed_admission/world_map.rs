@@ -66,13 +66,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .players
             .iter()
             .map(|entry| (VisibleKind::Player, entry)))
-        .chain(
-            visible
-                .creatures
-                .iter()
-                .map(|entry| (VisibleKind::Creature, entry)),
-        )
-        .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
+        .chain(visible.creatures.iter().map(|entry| {
+            (
+                if super::super::seasonal_appearance::creature(&runtime, entry.actor) {
+                    VisibleKind::SeasonalCreature
+                } else {
+                    VisibleKind::Creature
+                },
+                entry,
+            )
+        }))
+        .chain(visible.npcs.iter().map(|entry| {
+            (
+                if runtime
+                    .npc_key(entry.actor)
+                    .and_then(super::super::seasonal_appearance::npc)
+                    .is_some()
+                {
+                    VisibleKind::SeasonalNpc
+                } else {
+                    VisibleKind::Npc
+                },
+                entry,
+            )
+        }))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
             display_name: None,
             health_percent: runtime

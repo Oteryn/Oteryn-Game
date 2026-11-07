@@ -76,6 +76,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         oteryn_client_runtime::inventory::initial(self)
     }
+    fn own_house_vitals_current(&self) -> bool {
+        Session::own_house_vitals_current(self)
+    }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         Session::actor_vitals(self).copied()
     }
@@ -172,6 +175,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn entities_changed(&self, held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
         let entities = self.world_entities()?;
         (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
+    }
+    fn appearance_palette(&self) -> Option<&[[u8; 3]]> {
+        Session::appearance_palette(self)
     }
     fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> {
         Session::visible_appearances(self)
@@ -420,7 +426,10 @@ pub(super) fn publish<T: Stepper>(
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);
     }
+    outbox.house_death_scope(session.feature_selected(86), session.feature_snapshot(51));
     outbox.vitals(session.actor_vitals());
+    outbox.house_death_vitals_current(session.own_house_vitals_current());
+    outbox.appearance_palette(session.appearance_palette());
     outbox.appearances(session.visible_appearances());
     if let Some(payload) = session.feature_snapshot(98) {
         outbox.cyclopedia_tracker_push(payload);

@@ -218,6 +218,7 @@ fn families() -> Families {
             direction: Direction::South,
             respawn_ms: 60_000,
             boss_policy: None,
+            weighted: Vec::new(),
         }],
     }];
     // Authored out of key order on purpose: the bundle sorts by NPC, then position.

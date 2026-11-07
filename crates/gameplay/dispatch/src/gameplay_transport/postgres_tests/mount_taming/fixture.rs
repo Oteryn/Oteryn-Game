@@ -6,6 +6,8 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
         Cases::Outcomes => "mount_taming_wire",
         Cases::Items => "mount_taming_items",
         Cases::MusicBox => "mount_taming_music",
+        Cases::ProductionItems => "srv7_taming_sources",
+        Cases::ProductionMusicBox => "srv7_music_sources",
     };
     let harness = Harness::create(admin, tag, true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -18,8 +20,16 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     let world = WorldId::decode(&id(42)).map_err(debug)?;
     let channel = ChannelId::decode(&id(43)).map_err(debug)?;
     let session = GameSessionId::decode(&id(50)).map_err(debug)?;
+    let cosmetics = if matches!(cases, Cases::ProductionItems | Cases::ProductionMusicBox) {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        crate::content::native_gameplay::NativeGameplayInput::from_manifest(&path)
+            .map_err(debug)?.cosmetics.bytes
+    } else {
+        cosmetics()?
+    };
     let (controller, pin) =
-        crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(world, None, Some(&cosmetics()?));
+        crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(world, None, Some(&cosmetics));
     let active = controller.active().expect("active generation");
     let native = active.native_gameplay().expect("native content");
     let index = native.item_index().expect("item index");
@@ -178,8 +188,8 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     runtime_role(&harness.root).await?;
     match cases {
         Cases::Outcomes => outcomes::run(&owner, &harness, actor, session, index).await?,
-        Cases::Items => pairs::run(&owner, &harness, actor, session, index, false).await?,
-        Cases::MusicBox => pairs::run(&owner, &harness, actor, session, index, true).await?,
+        Cases::Items | Cases::ProductionItems => pairs::run(&owner, &harness, actor, session, index, false).await?,
+        Cases::MusicBox | Cases::ProductionMusicBox => pairs::run(&owner, &harness, actor, session, index, true).await?,
     }
     drop(owner);
     drop(authority);

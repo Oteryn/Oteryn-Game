@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "records": [
+    {
+      "grant_key": "oteryn:appearance-grant/npc/amber/citizen/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.citizen_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/norma/citizen/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.citizen_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/tom/druid/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.druid_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cledwyn/rift_warrior/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.rift_warrior_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cledwyn/rift_warrior/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.rift_warrior_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/kesar_the_younger_day/royal_bounacean_advisor/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.royal_bounacean_advisor_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hairycles/shaman/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.shaman_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "grant_key": "oteryn:appearance-grant/npc/amber/citizen/addon1",
+      "npc": "oteryn:npc.amber",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/amber.lua:82",
+      "sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/norma/citizen/addon2",
+      "npc": "oteryn:npc.norma",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/norma.lua:115",
+      "sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/tom/druid/addon1",
+      "npc": "oteryn:npc.tom",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tom.lua:249",
+      "sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cledwyn/rift_warrior/addon1",
+      "npc": "oteryn:npc.cledwyn",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:180",
+      "sha256": "915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cledwyn/rift_warrior/addon2",
+      "npc": "oteryn:npc.cledwyn",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:195",
+      "sha256": "915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/kesar_the_younger_day/royal_bounacean_advisor/addon2",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:120",
+      "sha256": "5e2f9ad788c3b985c82d2d33abb8a72d4e776b03659d6a6ebe69fbd8ceff1a65"
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hairycles/shaman/base",
+      "npc": "oteryn:npc.hairycles",
+      "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:454-456",
+      "sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+    }
+  ]
+}

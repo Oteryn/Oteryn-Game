@@ -324,6 +324,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     if let Some(outcome) = super::monk::resume(admission, command).await {
         return Some(outcome);
     }
+    if let Some(outcome) = super::npc_cosmetics::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::classic_quests::resume(admission, command).await {
         return Some(outcome);
     }

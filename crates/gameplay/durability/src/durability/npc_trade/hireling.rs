@@ -192,11 +192,11 @@ impl DurabilityRoot {
     }
     pub async fn commit_hireling_trade(&self,authority:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
         fence:CurrentCharacterItemFence,request:NpcTradeRequest,selection:HirelingTradeSelection,sell_all:bool)->Result<NpcTradeOutcome> {
-        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all, hireling:Some(Extra::Trade(selection)), weights:None }).await
+        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all, hireling:Some(Extra::Trade(selection)), furniture:None, weights:None }).await
     }
     pub async fn commit_hireling_package(&self,authority:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
         fence:CurrentCharacterItemFence,request:NpcTradeRequest,selection:HirelingPackageSelection,
         weights:&dyn ItemWeightLookup)->Result<NpcTradeOutcome> {
-        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all:false, hireling:Some(Extra::Package(Box::new(selection))), weights:Some(weights) }).await
+        self.commit_trade(authority,node,fence,request,TradeCommitOptions { sell_all:false, hireling:Some(Extra::Package(Box::new(selection))), furniture:None, weights:Some(weights) }).await
     }
 }

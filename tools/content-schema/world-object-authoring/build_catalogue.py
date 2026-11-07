@@ -390,6 +390,26 @@ def outputs(
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import summer_entry_ground
+
+        files[summer_entry_ground.SHARD] = summer_entry_ground.outputs()[summer_entry_ground.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += summer_entry_ground.MARKER_NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
+    if include_qualified:
+        import seasonal_bridge_ground
+        import summer_npc_ground
+        for leaf in (seasonal_bridge_ground, summer_npc_ground):
+            files[leaf.SHARD] = leaf.outputs()[leaf.SHARD]
+            index_path = "content/world/terrain/index.json"
+            index = json.loads(files[index_path])
+            if leaf.NOTE not in index["notes"]:
+                index["notes"] += leaf.NOTE
+            files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 

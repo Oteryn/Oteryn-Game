@@ -1,0 +1,32 @@
+[
+  {
+    "mechanic": "0371-seasonal-events",
+    "kind": "handlers",
+    "id": "0371-seasonal-events-observation",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 371,
+    "entry": "protocol.rs::apply_result",
+    "push_messages": [
+      "WorldEventStateV1.seasonal"
+    ],
+    "reducer": "protocol.rs::apply_result",
+    "test": "tests.rs::seasonal_observation_requires_negotiation",
+    "shared_commands": [
+      64
+    ],
+    "not_applicable": {
+      "state": "The existing world-event panel retains the server observation.",
+      "input": "The existing Ctrl+N world-event query requests the shared command.",
+      "settings": "Seasonal dates and activation remain server-owned."
+    }
+  },
+  {
+    "mechanic": "0371-seasonal-events",
+    "kind": "panels",
+    "id": "0371-seasonal-events-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

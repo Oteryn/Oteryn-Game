@@ -50,7 +50,7 @@ impl SessionAppearance {
         }
         let mut candidate = self.clone();
         candidate.select_hirelings(channel);
-        let visible = staged_view.appearance_actors(self.forge);
+        let visible = staged_view.appearance_actors(self.forge || !candidate.seasonal.is_empty());
         let player_refs = candidate.players(&visible);
         let observation = authority
             .appearance_observation_projected(

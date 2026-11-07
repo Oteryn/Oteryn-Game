@@ -65,6 +65,38 @@ impl AppearanceContent<String> for NativeCosmeticsView {
         }
         self.content.earned_unlock(grant_key, provenance, target)
     }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        sex: crate::domain::appearance::Sex,
+    ) -> UnlockFact {
+        if provenance == DROME_PROVENANCE {
+            self.earned_unlock(grant_key, provenance, target)
+        } else {
+            self.content
+                .earned_unlock_for_sex(grant_key, provenance, target, sex)
+        }
+    }
+    fn earned_source_look_addon(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        look: u32,
+        addon: u8,
+    ) -> UnlockFact {
+        if provenance == DROME_PROVENANCE
+            && grant_key == DROME_LION
+            && addon == 0
+            && [1206, 1207].contains(&look)
+        {
+            UnlockFact::Compatible
+        } else {
+            self.content
+                .earned_source_look_addon(grant_key, provenance, look, addon)
+        }
+    }
     fn palette_size(&self) -> u16 {
         self.content.palette_size()
     }

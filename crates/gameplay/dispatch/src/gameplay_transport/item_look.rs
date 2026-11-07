@@ -4,6 +4,9 @@
 //! before examination. Handles alone never establish an item's continued availability.
 
 use super::ComposedFreshAdmission;
+mod decoration_kit;
+#[path = "item_look/house_decoration_kit.rs"]
+mod house_decoration_kit;
 use super::item_ref_admission::pinned_index;
 use super::item_view::{ItemKey, SessionItemView, ViewItem};
 use super::world_spatial::ActorPosition;
@@ -303,6 +306,11 @@ pub(super) async fn look_item(
     views: &SessionItemView,
     target: ItemHandle,
 ) -> ItemLookResult {
+    if let Some(result) =
+        house_decoration_kit::look(admission, actor, session, fence, views, target).await
+    {
+        return result;
+    }
     match observe_look_item(admission, actor, session, fence, views, target).await {
         Ok(result) => result,
         Err(refusal) => ItemLookResult::Refused(refusal),
@@ -434,6 +442,16 @@ async fn observe_look_item(
     let key = views.resolve(target).ok_or(unavailable)?;
     let (definition, count, distance) =
         observe_item(admission, actor, session, fence, views, target).await?;
+    let description = if definition.production_key == "oteryn:item.tibia.i23398" && distance <= 1 {
+        match key {
+            ItemKey::Instance(item) => {
+                decoration_kit::decoration_kit_description(admission, item).await?
+            }
+            _ => None,
+        }
+    } else {
+        None
+    };
     let runtime = admission.runtime.lock().await;
     let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
     let observed = ObservedLookItem {
@@ -453,7 +471,13 @@ async fn observe_look_item(
         target,
         Some(observed),
     ) {
-        ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
+        ItemLookOutcome::Text(mut text) => {
+            if let Some(description) = description {
+                text.push('\n');
+                text.push_str(&description);
+            }
+            ItemLookResult::Text(bounded_text(text))
+        }
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
     if is_spellbook(&definition.production_key) {

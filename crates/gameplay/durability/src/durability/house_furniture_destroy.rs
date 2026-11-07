@@ -160,4 +160,65 @@ impl DurabilityRoot {
             count.try_into().map_err(|_| DurabilityError::InvalidStoredState)
         })).await
     }
+    /// Settle existing source-qualified furniture clocks for a current Channel bag.
+    /// House custody uses its independent named-House owner; no deadline is reset.
+    pub async fn expire_carried_furniture_timers(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<u32, DurabilityError> {
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Ok(0);
+        };
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move{
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !prove_current_incarnation(&mut tx,&node).await? {return Ok(0)};
+            let fact=node.fact();
+            let count:i32=sqlx::query_scalar("SELECT game_furniture_carried_decay_expire(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice())
+                .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
+                .bind(fence.scope_ownership_generation.get().to_string()).bind(fact.node_id().as_bytes().as_slice())
+                .bind(fact.registration_revision().to_string()).bind(world_id.as_bytes().as_slice())
+                .bind(channel_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;
+            count.try_into().map_err(|_|DurabilityError::InvalidStoredState)
+        })).await
+    }
+}
+impl DurabilityRoot {
+    /// Actual Channel Ground has no Character owner; its current node owns expiry.
+    pub async fn expire_ground_furniture_timers(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        node: &NodeIncarnationProof,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: u64,
+    ) -> Result<u32, DurabilityError> {
+        permit.check_scope(scope)?;
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = scope
+        else {
+            return Ok(0);
+        };
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !prove_current_incarnation(&mut tx,&node).await? {return Ok(0)};
+            let fact=node.fact();
+            let count:i32=sqlx::query_scalar("SELECT game_furniture_ground_decay_expire(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric)")
+                .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+                .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(generation.to_string()).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;
+            count.try_into().map_err(|_|DurabilityError::InvalidStoredState)
+        })).await
+    }
 }

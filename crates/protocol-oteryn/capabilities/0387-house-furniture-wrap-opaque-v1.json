@@ -1,0 +1,20 @@
+{
+  "id": 387,
+  "name": "HOUSE_FURNITURE_WRAP_OPAQUE_V1",
+  "constant": "house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_OPAQUE_V1",
+  "requires": [
+    11,
+    86,
+    207,
+    385
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

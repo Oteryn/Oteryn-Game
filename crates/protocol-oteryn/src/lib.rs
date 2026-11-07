@@ -128,6 +128,7 @@ pub mod world_event;
 pub mod world_interaction;
 pub mod world_map;
 pub mod world_object;
+pub mod world_rotate;
 pub mod world_spatial;
 pub mod world_spatial_entities;
 pub mod world_weather;

@@ -72,6 +72,7 @@ fn sv10_overlapping_events_compose_like_crystal_on_real_kills_postgres() -> Test
 }
 
 pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
+    if let Some(source) = super::cosmetic_source_loot::table_override()? { return Ok(Some(source)); }
     let rate = oteryn_gameplay_foundation::scheduled_events::current_rates().loot;
     if rate < 200 || !rate.is_multiple_of(100) {
         return super::w22a_loot::table_override();

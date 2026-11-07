@@ -407,6 +407,7 @@ pub(super) async fn exchange(
         current_source,
         current_target,
         false,
+        None,
     )
     .await
 }
@@ -428,10 +429,37 @@ pub(super) async fn exchange_latest_source(
         current_source,
         None,
         true,
+        None,
     )
     .await
 }
 
+/// Rotate still resolves a source from the actual inventory publication.
+pub(super) async fn exchange_rotate(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    observed: std::num::NonZeroU32,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_selected_source(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        None,
+        false,
+        Some(observed),
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture independently selects command and source/target publication"
+)]
 async fn exchange_selected_source(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -440,9 +468,12 @@ async fn exchange_selected_source(
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
     latest_source: bool,
+    rotate: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
-        owner.root.maintain_ready_once().await.map_err(debug)?;
+        owner.root.maintain_ready_once().await.map_err(|error| {
+            format!("native wire command={command_id} decode_stage=1 error={error:?}")
+        })?;
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
@@ -464,7 +495,7 @@ async fn exchange_selected_source(
                                 domain.payload,
                                 admitted.continuity.selected_capabilities.contains(12),
                             )
-                            .map_err(debug)?;
+                            .map_err(|error| format!("native wire command={command_id} decode_stage=2 error={error:?}"))?;
                         // A picked-up target may precede the real bag in the
                         // inventory. OPEN must name a published, native-qualified
                         // container rather than merely any non-source item.
@@ -509,7 +540,11 @@ async fn exchange_selected_source(
                         let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
                             domain.payload,
                         )
-                        .map_err(debug)?;
+                        .map_err(|error| {
+                            format!(
+                                "native wire command={command_id} decode_stage=3 error={error:?}"
+                            )
+                        })?;
                         target = map
                             .tiles
                             .iter()
@@ -558,7 +593,9 @@ async fn exchange_selected_source(
                     handle: container.ok_or("nested source container handle")?,
                     replace_view: None,
                 })
-                .map_err(debug)?;
+                .map_err(|error| {
+                    format!("native wire command={command_id} decode_stage=4 error={error:?}")
+                })?;
             let frame = oteryn_protocol_oteryn::encode_client_command(
                 1,
                 &oteryn_protocol_oteryn::ClientCommandValue {
@@ -577,7 +614,11 @@ async fn exchange_selected_source(
                     let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                     assert_eq!(result.command_id, command_id - 1);
                     assert_eq!(
-                        containers::decode_container_view_result(result.payload).map_err(debug)?,
+                        containers::decode_container_view_result(result.payload).map_err(
+                            |error| format!(
+                                "native wire command={command_id} decode_stage=5 error={error:?}"
+                            )
+                        )?,
                         containers::ContainerViewOutcome::Opened
                     );
                     opened = true;
@@ -586,7 +627,7 @@ async fn exchange_selected_source(
                     let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
                     if delta.domain_id == containers::STATE_DOMAIN_CONTAINER_VIEWS {
                         let views =
-                            containers::decode_container_views(delta.payload).map_err(debug)?;
+                            containers::decode_container_views(delta.payload).map_err(|error| format!("native wire command={command_id} decode_stage=6 error={error:?}"))?;
                         source = views
                             .views
                             .iter()
@@ -602,13 +643,27 @@ async fn exchange_selected_source(
                 admitted.continuity.selected_capabilities.as_slice(),
                 payload,
             )
-            .map_err(debug)?;
+            .map_err(|error| {
+                format!("native wire command={command_id} decode_stage=7 error={error:?}")
+            })?;
             intent.target = UseTarget::Item(source.ok_or("current source handle")?);
             if current_target.is_some() {
                 intent.use_with_map_item =
                     Some(MapUseTarget::Item(target.ok_or("current target handle")?));
             }
-            encode_item_use_intent(&intent).map_err(debug)?
+            if let Some(observed) = rotate {
+                oteryn_protocol_oteryn::world_rotate::encode_rotate_intent(
+                    &intent.target,
+                    Some(observed),
+                )
+                .map_err(|error| {
+                    format!("native wire command={command_id} decode_stage=8 error={error:?}")
+                })?
+            } else {
+                encode_item_use_intent(&intent).map_err(|error| {
+                    format!("native wire command={command_id} decode_stage=9 error={error:?}")
+                })?
+            }
         } else {
             payload.to_vec()
         };
@@ -616,7 +671,11 @@ async fn exchange_selected_source(
             1,
             &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id,
-                command_type: 2,
+                command_type: if rotate.is_some() {
+                    oteryn_protocol_oteryn::world_rotate::COMMAND_TYPE_ROTATE_WORLD_ITEM
+                } else {
+                    2
+                },
                 payload: &actual,
             },
         )?;
@@ -629,9 +688,21 @@ async fn exchange_selected_source(
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
-                    let disposition =
+                    let disposition = if rotate.is_some() {
+                        let (disposition, gate) =
+                            oteryn_protocol_oteryn::world_rotate::decode_rotate_result(
+                                result.payload,
+                            )
+                            .map_err(|error| format!("native wire command={command_id} decode_stage=10 error={error:?}"))?;
+                        assert_eq!(
+                            gate, None,
+                            "qualified Dracoyle rotation must not be sealed: {disposition:?}"
+                        );
+                        disposition
+                    } else {
                         oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
-                            .map_err(debug)?;
+                            .map_err(|error| format!("native wire command={command_id} decode_stage=11 error={error:?}"))?
+                    };
                     return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
                 }
             }

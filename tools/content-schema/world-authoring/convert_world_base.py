@@ -1169,6 +1169,12 @@ def build(
     import quest_door_bindings
 
     quest_door_bindings.overlay_outputs(out)
+    import citizen_bindings
+
+    citizen_bindings.overlay_outputs(out)
+    import spike_portal_bindings
+
+    spike_portal_bindings.overlay_outputs(out)
     return out
 
 

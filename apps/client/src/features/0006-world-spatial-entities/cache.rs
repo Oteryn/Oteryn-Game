@@ -1,10 +1,14 @@
 //! Play-view lifetime assets and atlas cells. Recentring does not reload or repack them.
+#[path = "item_cache.rs"]
+mod item_cache;
 use super::*;
 use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
+
+type OutfitCacheKey = (u32, u32, u8, [u16; 4], [[u8; 3]; 4]);
 
 struct Assets {
     index: AppearanceIndex,
@@ -17,7 +21,8 @@ pub(super) struct PresentationCache {
     attempted: bool,
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
-    outfits: BTreeMap<(u32, u32), Vec<Draw>>,
+    outfits: BTreeMap<OutfitCacheKey, Vec<Draw>>,
+    items: BTreeMap<u32, Vec<Draw>>,
     image: Option<Arc<AtlasImage>>,
     packed_cells: usize,
     #[cfg(test)]
@@ -39,6 +44,7 @@ impl PresentationCache {
         self.pixels.clear();
         self.glyphs.clear();
         self.outfits.clear();
+        self.items.clear();
         self.image = None;
         self.packed_cells = 0;
     }
@@ -91,14 +97,31 @@ impl PresentationCache {
         &mut self,
         look: Option<&oteryn_session::Look>,
         direction: u32,
+        palette: Option<&[[u8; 3]]>,
     ) -> Vec<Draw> {
+        if let Some(oteryn_session::Look::Item { definition_ref }) = look {
+            return self.item(*definition_ref);
+        }
         if matches!(look, Some(oteryn_session::Look::EmptyOutfit)) {
             return Vec::new();
         }
-        let Some(oteryn_session::Look::Outfit { look_type, .. }) = look else {
+        let Some(oteryn_session::Look::Outfit {
+            look_type,
+            colours,
+            addons,
+        }) = look
+        else {
             return marker();
         };
-        let key = (*look_type, direction);
+        let mut rgb = [[255; 3]; 4];
+        for (part, index) in colours.iter().enumerate() {
+            match palette.and_then(|palette| palette.get(usize::from(*index))) {
+                Some(value) => rgb[part] = *value,
+                None if *index == 0 => {}
+                None => return marker(),
+            }
+        }
+        let key = (*look_type, direction, *addons, *colours, rgb);
         if let Some(draws) = self.outfits.get(&key) {
             return draws.clone();
         }
@@ -109,17 +132,14 @@ impl PresentationCache {
         let resolved = self.assets.as_ref().and_then(|assets| {
             let mut assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
             let Assets { index, sheets } = &mut *assets;
-            let entry = index.resolve_outfit(sheets, *look_type, direction).ok()?;
-            entry
-                .cells
-                .iter()
-                .map(|cell| {
-                    sheets
-                        .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)
-                        .ok()
-                        .map(|rgba| ([cell.offset_x, cell.offset_y], rgba))
-                })
-                .collect::<Option<Vec<_>>>()
+            Some(
+                index
+                    .resolve_outfit_rgba(sheets, *look_type, direction, *addons, rgb)
+                    .ok()?
+                    .into_iter()
+                    .map(|cell| (cell.offset, cell.rgba))
+                    .collect::<Vec<_>>(),
+            )
         });
         let draws = resolved
             .and_then(|cells| {

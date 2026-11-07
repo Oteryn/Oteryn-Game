@@ -1,12 +1,12 @@
 //! HOUSE-ITEM-WIRE-1: explicit wrap command, House custody and durable conversion.
-use super::house_furnishing::{self as rules, Action, Authority, Command, Item, Rule, State};
 use super::furniture_catalog;
+use super::house_furnishing::{self as rules, Action, Authority, Command, Item, Rule, State};
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use crate::content::ReferenceItemField;
+use crate::domain::hireling::catalogue::{DECORATION_KIT_ITEM_ID, wrapped_trade_item};
 use crate::durability::house_scope_handoff::HouseId;
 use crate::durability::house_wrap::HouseWrapCommand;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::domain::hireling::catalogue::{DECORATION_KIT_ITEM_ID, wrapped_trade_item};
 use oteryn_protocol_oteryn::house_wrap as wire;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -68,25 +68,48 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
-fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefinitionRef>) -> Option<String> {
-    if let Some(target)=target {
+fn draft(
+    request: wire::Request,
+    definition: &str,
+    target: Option<&TypedDefinitionRef>,
+) -> Option<String> {
+    if let Some(target) = target {
         request.expected_revision.checked_add(1)?;
-        let id=target.production_key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
-        if target.family != "Item" || target.revision_ref != "definition-r1" || (!wrapped_trade_item(id) && furniture_catalog::wrapped_to(id) != Some(DECORATION_KIT_ITEM_ID)) { return None; }
-        let kit=format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}");
-        return match request.action {
-            wire::Action::Unwrap if definition==kit => Some(target.production_key.clone()),
-            wire::Action::Wrap if definition==target.production_key => Some(kit),
-            _ => None,
-        };
+        let id = target
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")?
+            .parse::<u32>()
+            .ok()?;
+        if target.family != "Item" || target.revision_ref != "definition-r1" {
+            return None;
+        }
+        let kit_id = furniture_catalog::wrapped_to(id)
+            .or_else(|| wrapped_trade_item(id).then_some(DECORATION_KIT_ITEM_ID))?;
+        let kit = format!("oteryn:item.tibia.i{kit_id}");
+        match request.action {
+            wire::Action::Unwrap if definition == kit => {
+                return Some(target.production_key.clone());
+            }
+            wire::Action::Wrap if definition == target.production_key => return Some(kit),
+            wire::Action::Unwrap => return None,
+            // A source-authored rotation may have changed the original shop
+            // target. Its current exact source is retained by the next receipt.
+            wire::Action::Wrap => {}
+        }
     }
     request.expected_revision.checked_add(1)?;
-    let source_id = definition.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
+    let source_id = definition
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse::<u32>()
+        .ok()?;
     let (action, output_id) = match request.action {
         wire::Action::Wrap => (Action::Wrap, furniture_catalog::wrapped_to(source_id)?),
         // Crystal construction_kits.lua:1-58 places a kit only on a House tile;
         // House admission and ACL fencing are enforced by execute before this draft.
-        wire::Action::Unwrap => (Action::PlaceKit, furniture_catalog::construction_kit_to(source_id)?),
+        wire::Action::Unwrap => (
+            Action::PlaceKit,
+            furniture_catalog::construction_kit_to(source_id)?,
+        ),
     };
     let output = format!("oteryn:item.tibia.i{output_id}");
     let mut state = State {
@@ -163,7 +186,11 @@ pub(super) async fn execute(
     {
         return refuse(wire::Refusal::Stale);
     }
-    let target=owner.root.house_furniture_kit_target(owner.character,request.item).await.ok()?;
+    let target = owner
+        .root
+        .house_furniture_kit_source(owner.character, request.item)
+        .await
+        .ok()?;
     let _lane = owner.spell_lane_permit().await?;
     let blocked_doors = owner.door.lock().await.blocking_cells().clone();
     let (house, placement_blocked) = {
@@ -182,9 +209,33 @@ pub(super) async fn execute(
             return refuse(wire::Refusal::NotWrapable);
         }
 
-        if let Some(target)=&target
-            && (index.definition_ref(&target.family,&target.production_key,&target.revision_ref).is_none()
-                || index.definition_ref("Item",&format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}"),&target.revision_ref).is_none()) {
+        if let Some(source) = &target
+            && (index
+                .definition_ref(
+                    &source.target.family,
+                    &source.target.production_key,
+                    &source.target.revision_ref,
+                )
+                .is_none()
+                || furniture_catalog::wrapped_to(
+                    source
+                        .target
+                        .production_key
+                        .strip_prefix("oteryn:item.tibia.i")?
+                        .parse()
+                        .ok()?,
+                )
+                .or(Some(DECORATION_KIT_ITEM_ID))
+                .is_none_or(|kit| {
+                    index
+                        .definition_ref(
+                            "Item",
+                            &format!("oteryn:item.tibia.i{kit}"),
+                            &source.target.revision_ref,
+                        )
+                        .is_none()
+                }))
+        {
             return refuse(wire::Refusal::NotWrapable);
         }
 
@@ -233,8 +284,16 @@ pub(super) async fn execute(
         } else {
             false
         };
-        (HouseId::new(admitted.world_id, &state.house)?, placement_blocked)
+        (
+            HouseId::new(admitted.world_id, &state.house)?,
+            placement_blocked,
+        )
     };
+    owner
+        .root
+        .expire_house_furniture(owner.holder, fence, house.clone())
+        .await
+        .ok()?;
     let native = owner.active_generation?.native_gameplay()?.clone();
     let reply = owner
         .root
@@ -251,7 +310,11 @@ pub(super) async fn execute(
             // original target cell blocked now. None closes the proposed fresh
             // pair, while preserving that authoritative receipt lookup.
             move |key| {
-                if placement_blocked { None } else { draft(request, key, target.as_ref()) }
+                if placement_blocked {
+                    None
+                } else {
+                    draft_with_source(request, key, target.as_ref())
+                }
             },
             move |key| {
                 let policy = native.item_policy(key, "definition-r1")?;
@@ -269,11 +332,13 @@ pub(super) async fn execute(
         .ok()?;
     // Keep durable replay and current authority outcomes intact. Only the
     // fresh pair rejected for our live placement check receives Blocked.
-    Some(if placement_blocked && reply == wire::Reply::Refused(wire::Refusal::NotWrapable) {
-        wire::Reply::Refused(wire::Refusal::Blocked)
-    } else {
-        reply
-    })
+    Some(
+        if placement_blocked && reply == wire::Reply::Refused(wire::Refusal::NotWrapable) {
+            wire::Reply::Refused(wire::Refusal::Blocked)
+        } else {
+            reply
+        },
+    )
 }
 
 #[cfg(test)]
@@ -289,7 +354,10 @@ mod tests {
             acl_revision: 1,
             position: [1, 2, 7],
         };
-        assert_eq!(draft(request, FURNITURE, None).as_deref(), Some(KIT));
+        assert_eq!(
+            draft(request, FURNITURE, None).as_deref(),
+            Some("oteryn:item.tibia.i23398")
+        );
         assert!(draft(request, "chair", None).is_none());
         request.action = wire::Action::Unwrap;
         assert_eq!(draft(request, KIT, None).as_deref(), Some(FURNITURE));
@@ -297,22 +365,39 @@ mod tests {
 
     #[test]
     fn purchased_kit_keeps_its_exact_source_target_both_directions() {
-        let mut request=wire::Request {action:wire::Action::Unwrap,item:[7;16],
-            expected_revision:1,acl_revision:1,position:[1,2,7]};
+        let mut request = wire::Request {
+            action: wire::Action::Unwrap,
+            item: [7; 16],
+            expected_revision: 1,
+            acl_revision: 1,
+            position: [1, 2, 7],
+        };
         for id in crate::domain::hireling::catalogue::WRAPPED_TRADE_ITEM_IDS {
-            let target=TypedDefinitionRef {family:"Item".into(),production_key:format!("oteryn:item.tibia.i{id}"),
-                revision_ref:"definition-r1".into()};
-            request.action=wire::Action::Unwrap;
-            assert_eq!(draft(request,"oteryn:item.tibia.i23398",Some(&target)),Some(target.production_key.clone()));
-            request.action=wire::Action::Wrap;
-            assert_eq!(draft(request,&target.production_key,Some(&target)).as_deref(),Some("oteryn:item.tibia.i23398"));
-            assert!(draft(request,"oteryn:item.tibia.i3264",Some(&target)).is_none());
+            let target = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                revision_ref: "definition-r1".into(),
+            };
+            request.action = wire::Action::Unwrap;
+            assert_eq!(
+                draft(request, "oteryn:item.tibia.i23398", Some(&target)),
+                Some(target.production_key.clone())
+            );
+            request.action = wire::Action::Wrap;
+            assert_eq!(
+                draft(request, &target.production_key, Some(&target)).as_deref(),
+                Some("oteryn:item.tibia.i23398")
+            );
+            assert!(draft(request, "oteryn:item.tibia.i3264", Some(&target)).is_none());
         }
-        request.action=wire::Action::Unwrap;
-        assert!(draft(request,"oteryn:item.tibia.i23398",None).is_none());
-        let forged=TypedDefinitionRef {family:"Item".into(),production_key:"oteryn:item.tibia.i3657".into(),
-            revision_ref:"definition-r1".into()};
-        assert!(draft(request,"oteryn:item.tibia.i23398",Some(&forged)).is_none());
+        request.action = wire::Action::Unwrap;
+        assert!(draft(request, "oteryn:item.tibia.i23398", None).is_none());
+        let forged = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i3657".into(),
+            revision_ref: "definition-r1".into(),
+        };
+        assert!(draft(request, "oteryn:item.tibia.i23398", Some(&forged)).is_none());
     }
 
     #[test]
@@ -332,6 +417,64 @@ mod tests {
         for (_, result) in furniture_catalog::CONSTRUCTION_KITS {
             let key = format!("oteryn:item.tibia.i{result}");
             assert_eq!(index.revision(&key), Some("definition-r1"), "{key}");
+        }
+    }
+}
+
+// A current wrapper and target read from immutable server provenance retain
+// historical inputs independently of today's canonical new-wrap output.
+fn draft_with_source(
+    request: wire::Request,
+    definition: &str,
+    source: Option<&crate::durability::house_wrap::HouseFurnitureKitSource>,
+) -> Option<String> {
+    if let Some(source) = source
+        && request.action == wire::Action::Unwrap
+        && source.wrapper.family == "Item"
+        && source.wrapper.revision_ref == "definition-r1"
+        && source.wrapper.production_key == definition
+        && source.target.family == "Item"
+        && source.target.revision_ref == "definition-r1"
+    {
+        return Some(source.target.production_key.clone());
+    }
+    draft(request, definition, source.map(|source| &source.target))
+}
+#[cfg(test)]
+mod retained_source_tests {
+    use super::*;
+    #[test]
+    fn historical_wrapper_inputs_survive_canonical_new_wrap_outputs() {
+        for (wrapper, target) in [(6371, 6355), (26054, 31510)] {
+            let source = crate::durability::house_wrap::HouseFurnitureKitSource {
+                target: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: format!("oteryn:item.tibia.i{target}"),
+                    revision_ref: "definition-r1".into(),
+                },
+                wrapper: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: format!("oteryn:item.tibia.i{wrapper}"),
+                    revision_ref: "definition-r1".into(),
+                },
+            };
+            let request = wire::Request {
+                action: wire::Action::Unwrap,
+                item: [1; 16],
+                expected_revision: 2,
+                acl_revision: 1,
+                position: [1, 2, 7],
+            };
+            assert_eq!(
+                draft_with_source(request, &source.wrapper.production_key, Some(&source)),
+                Some(source.target.production_key.clone())
+            );
+            assert!(draft_with_source(request, "oteryn:item.tibia.i1", Some(&source)).is_none());
+            assert!(
+                draft_with_source(request, &source.wrapper.production_key, None)
+                    .is_none_or(|target| target == "oteryn:item.tibia.i6355"),
+                "only independent real construction recipes may supply an unproven wrapper target"
+            );
         }
     }
 }

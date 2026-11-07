@@ -6,5 +6,5 @@
   "payload_schema": "docs/contracts/protocol-oteryn/v1/world_event_v1.proto#WorldEventQueryV1",
   "result_schema": "docs/contracts/protocol-oteryn/v1/world_event_v1.proto#WorldEventStateV1",
   "max_payload_bytes": 0,
-  "max_result_payload_bytes": 144
+  "max_result_payload_bytes": 256
 }

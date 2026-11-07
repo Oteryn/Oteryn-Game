@@ -69,11 +69,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()?;
+        let premium = self.session_premium_gate(session).await.premium_current();
         let runtime = self.runtime.lock().await;
         if !current_runtime(&runtime, actor, session, &fence, &content) {
             return None;
         }
-        let (base, _) = catalogue::base(&content, &state);
+        let (mut base, _) = catalogue::base(&content, &state);
+        if base
+            .mount_key
+            .as_deref()
+            .and_then(crate::durability::horse_rental::rules::Horse::for_key)
+            .is_some_and(|h| h.premium() && !premium)
+        {
+            base.mount_key = None;
+        }
         Some(
             base.mount_key
                 .as_deref()
@@ -101,6 +110,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         change: wire::Change,
     ) -> Option<wire::ChangeResult> {
+        #[cfg(test)]
+        let horse_diagnostic = change
+            .selection
+            .mount_key
+            .as_deref()
+            .and_then(crate::durability::horse_rental::rules::Horse::for_key)
+            .is_some();
         let request = command_replay::request(command, &change)?;
         let Some(admitted) = command.item_fence else {
             return Some(wire::ChangeResult::Rejected);
@@ -120,7 +136,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             Ok(None) => {},
             Err(AppearanceWriteError::Unavailable(_) | AppearanceWriteError::Fence(crate::durability::character_progression::CharacterProgressionError::Unavailable(_))) => return None,
-            Err(_) => return Some(wire::ChangeResult::Rejected),
+            Err(error) => {
+                let _ = &error;
+                #[cfg(test)]
+                if horse_diagnostic { eprintln!("SRV7_HORSE_APPEARANCE_REFUSED stage=reconcile-request error={error:?}"); }
+                return Some(wire::ChangeResult::Rejected);
+            }
         }
         let existing = self
             .states
@@ -160,6 +181,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
             if command.item_fence != Some(fence.item_fence()) {
+                #[cfg(test)]
+                if horse_diagnostic {
+                    eprintln!(
+                        "SRV7_HORSE_APPEARANCE_REFUSED stage=item-fence admitted={:?} current={:?}",
+                        command.item_fence,
+                        fence.item_fence()
+                    );
+                }
                 return Some(wire::ChangeResult::Rejected);
             }
             let Some((context, content)) = self.appearance_context() else {
@@ -168,6 +197,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if context != change.context
                 || fence.expected_character_revision.get() != change.expected_root_revision
                 || content.content_revision() != change.content_revision
+            {
+                #[cfg(test)]
+                if horse_diagnostic {
+                    eprintln!(
+                        "SRV7_HORSE_APPEARANCE_REFUSED stage=context requested_root={} actual_root={} requested_content={:?} actual_content={:?} context_equal={}",
+                        change.expected_root_revision,
+                        fence.expected_character_revision.get(),
+                        change.content_revision,
+                        content.content_revision(),
+                        context == change.context
+                    );
+                }
+                return Some(wire::ChangeResult::Rejected);
+            }
+            if change
+                .selection
+                .mount_key
+                .as_deref()
+                .and_then(crate::durability::horse_rental::rules::Horse::for_key)
+                .is_some_and(|h| h.premium())
+                && !self
+                    .session_premium_gate(command.game_session_id)
+                    .await
+                    .premium_current()
             {
                 return Some(wire::ChangeResult::Rejected);
             }
@@ -187,6 +240,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             let request = command_replay::request(command, &change)?;
             if request.before != state.selected {
+                #[cfg(test)]
+                if horse_diagnostic {
+                    eprintln!(
+                        "SRV7_HORSE_APPEARANCE_REFUSED stage=stored-prior requested={:?} actual={:?}",
+                        request.before, state.selected
+                    );
+                }
                 return Some(wire::ChangeResult::Rejected);
             }
             let mut commands = self.states.appearance_commands.0.lock().ok()?;
@@ -261,7 +321,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(AppearanceWriteError::Fence(
                 crate::durability::character_progression::CharacterProgressionError::Unavailable(_),
             )) => None,
-            Err(_) => Some(wire::ChangeResult::Rejected),
+            Err(error) => {
+                let _ = &error;
+                #[cfg(test)]
+                if horse_diagnostic {
+                    eprintln!("SRV7_HORSE_APPEARANCE_REFUSED stage=durable-commit error={error:?}");
+                }
+                Some(wire::ChangeResult::Rejected)
+            }
         };
         if result.is_some() {
             self.states
@@ -330,7 +397,8 @@ macro_rules! composed_methods {
             empty_outfit: bool,
             entities: Vec<EntityRef>,
         ) -> Option<appearance_change::observation::Observation> {
-            appearance_change::observation::observe(self, actor, session, empty_outfit, entities).await
+            appearance_change::observation::observe(self, actor, session, empty_outfit, entities)
+                .await
         }
         async fn appearance_change(
             &self,

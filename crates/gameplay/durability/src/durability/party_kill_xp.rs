@@ -309,6 +309,12 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.level,
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let amount = oteryn_gameplay_characters::hunting_experience::cake_world_experience(
+            amount,
+            modifiers.cake_xp_percent,
+            member.premium,
+        )
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let mut request = member.request;
         request.amount = oteryn_simulation_determinism::ExactI64::new(amount);
         let xp = if amount > 0 {
@@ -332,12 +338,12 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
-        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14)")
+        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,cake_xp_percent) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15)")
             .bind(input.death_key.as_slice()).bind(member.fence.character_id.as_bytes().as_slice())
             .bind(xp.as_ref().map(|_|request.occurrence.as_bytes().as_slice()))
             .bind(member.shared).bind(member.party_id.as_ref().map(|id|id.as_slice())).bind(member.party_revision.map(|r|r.to_string()))
             .bind(raw).bind(modifiers.prey_slot).bind(modifiers.prey_epoch).bind(modifiers.prey_grade)
-            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent)
+            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent).bind(modifiers.cake_xp_percent)
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
             raw: input.base_xp,
@@ -373,6 +379,10 @@ fn hunting_binding(
     // Appended only while the bonus applies, so level-50+ bindings stay as before PAR-C14.
     if modifiers.level < 50 {
         binding.extend_from_slice(&modifiers.level.to_be_bytes());
+    }
+    if modifiers.cake_xp_percent > 0 {
+        binding.extend_from_slice(b"cake-world-bonus:v1");
+        binding.extend_from_slice(&modifiers.cake_xp_percent.to_be_bytes());
     }
     Sha256::digest(binding).into()
 }

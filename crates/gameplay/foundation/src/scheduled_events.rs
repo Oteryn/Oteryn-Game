@@ -17,6 +17,9 @@
 //! Crystal reads the host's local clock once at startup. Oteryn reads UTC at each use, as the
 //! Rashid rotation fixes its calendar to UTC (`rashid_schedule.rs`).
 
+mod seasonal;
+pub use seasonal::{current_seasonal_events, santa_occurrence_at, seasonal_events_at};
+
 use serde::Deserialize;
 use std::sync::OnceLock;
 
@@ -54,36 +57,36 @@ struct SourceSchedule {
     /// Annual gameplay-event windows are consumed by their individual owners; the rate
     /// scheduler still validates their committed calendar shape when loading this shared file.
     #[serde(default, rename = "seasonal")]
-    _seasonal: Vec<SourceSeasonalEvent>,
+    seasonal: Vec<SourceSeasonalEvent>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceSeasonalEvent {
     #[serde(rename = "event")]
-    _event: String,
+    event: String,
     #[serde(rename = "source")]
     _source: String,
     #[serde(rename = "windows")]
-    _windows: Vec<SourceSeasonalWindow>,
+    windows: Vec<SourceSeasonalWindow>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceSeasonalWindow {
     #[serde(rename = "start")]
-    _start: SourceMonthDay,
+    start: SourceMonthDay,
     #[serde(rename = "end_exclusive")]
-    _end_exclusive: SourceMonthDay,
+    end_exclusive: SourceMonthDay,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceMonthDay {
     #[serde(rename = "month")]
-    _month: u8,
+    month: u8,
     #[serde(rename = "day")]
-    _day: u8,
+    day: u8,
 }
 
 /// One `events.xml` `<event>` with its `<ingame>` rates (absent attributes stay 100).
@@ -133,6 +136,7 @@ pub enum ScheduleError {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Schedule {
     events: Vec<ScheduledEvent>,
+    seasonal: Vec<SourceSeasonalEvent>,
 }
 
 impl Schedule {
@@ -141,6 +145,22 @@ impl Schedule {
     pub fn parse(source: &str) -> Result<Self, ScheduleError> {
         let source: SourceSchedule =
             serde_json::from_str(source).map_err(|error| ScheduleError::Json(error.to_string()))?;
+        for event in &source.seasonal {
+            if event.windows.is_empty() {
+                return Err(ScheduleError::DateTime(event.event.clone()));
+            }
+            for window in &event.windows {
+                for date in [&window.start, &window.end_exclusive] {
+                    if utc_instant(&format!("{}/{}/2000", date.month, date.day), "00:00").is_none()
+                    {
+                        return Err(ScheduleError::DateTime(event.event.clone()));
+                    }
+                }
+                if window.start == window.end_exclusive {
+                    return Err(ScheduleError::EndBeforeStart(event.event.clone()));
+                }
+            }
+        }
         let mut events = Vec::with_capacity(source.events.len());
         for event in source.events {
             let start_hour = event
@@ -174,7 +194,10 @@ impl Schedule {
                 },
             });
         }
-        Ok(Self { events })
+        Ok(Self {
+            events,
+            seasonal: source.seasonal,
+        })
     }
 
     /// The compounded rates at a UTC instant; both window edges are inclusive.
@@ -307,6 +330,10 @@ pub mod test_clock {
     /// Until the guard drops, `current_rates` on this thread reads `schedule` at `unix_seconds`.
     pub fn set(schedule: Schedule, unix_seconds: i64) -> Guard {
         Guard(CLOCK.with(|clock| clock.borrow_mut().replace((schedule, unix_seconds))))
+    }
+
+    pub(super) fn instant() -> Option<i64> {
+        CLOCK.with(|clock| clock.borrow().as_ref().map(|(_, now)| *now))
     }
 
     pub(super) fn rates() -> Option<EventRates> {

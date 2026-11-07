@@ -81,6 +81,13 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "path": Path(os.path.relpath(path, "content")).as_posix(),
             "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         }
+    cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
+    if (root / cosmetics).is_file():
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
+        manifest["cosmetics"] = {
+            "path": "cosmetics/outfits/native-cosmetics.json",
+            "sha256": hashlib.sha256((root / cosmetics).read_bytes()).hexdigest(),
+        }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
@@ -405,6 +412,43 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
+    import mount_kit_item_profiles
+    mount_kit_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                  NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import furniture_item_profiles
+    furniture_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import seasonal_creature_profiles
+    seasonal_creature_profiles.admit(root, generated, spell_import.canonical_bytes)
+    import seasonal_item_profiles
+    seasonal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                 NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import spike_corridor_item_profiles
+    spike_corridor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                       NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import hugo_route_item_profile
+    hugo_route_item_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                  NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import pumpkin_skinning_item_profiles
+    pumpkin_skinning_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                         NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import horse_station_item_profiles
+    horse_station_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                     NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import seasonal_corpse_item_profiles
+    seasonal_corpse_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                       NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import acquisition_loot_item_profiles
+    acquisition_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                      NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import shards_prefix_item_profiles
+    shards_prefix_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                      NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import summer_instance_item_profiles
+    summer_instance_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                       NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import summer_amulet_item_profiles
+    summer_amulet_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                     NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

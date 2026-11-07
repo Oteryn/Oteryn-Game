@@ -128,6 +128,7 @@ fn point(creature: &str, x: u16) -> SpawnPoint {
         direction: Direction::South,
         respawn_ms: 60_000,
         boss_policy: None,
+        weighted: Vec::new(),
     }
 }
 
@@ -300,6 +301,7 @@ fn a_duplicate_source_key_fails_compilation() -> TestResult {
 
 fn table(sources: usize, points: usize) -> spawn::Table {
     spawn::Table {
+        weighted: Vec::new(),
         creatures: vec![spawn::Creature {
             key: "oteryn:creature.rat".into(),
             period: Period::All,
@@ -534,5 +536,50 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
         }
     }
     assert_eq!(checked, 27);
+    Ok(())
+}
+
+#[test]
+fn srv7_weighted_spawn_bundle_requires_runtime5_and_retains_one_physical_point() -> TestResult {
+    use oteryn_world_bundle_compiler::project::WeightedSpawnChoice;
+    let mut families = Families::default();
+    families.teleports.insert((5, 1, 7), (300, 40, 6));
+    families
+        .creatures
+        .insert("oteryn:creature.rat".into(), creature("All", false, false));
+    families
+        .creatures
+        .insert("oteryn:creature.bat".into(), creature("All", false, false));
+    let mut weighted = point("rat", 1);
+    weighted.respawn_ms = 47_104_000;
+    weighted.weighted = vec![
+        WeightedSpawnChoice {
+            creature: "oteryn:creature.bat".into(),
+            weight: 25,
+        },
+        WeightedSpawnChoice {
+            creature: "oteryn:creature.rat".into(),
+            weight: 25,
+        },
+    ];
+    families.spawns.push(SpawnSource {
+        key: "oteryn:spawn.weighted".into(),
+        centre: (1, 1, 7),
+        points: vec![weighted],
+    });
+    let regions = regions()?;
+    let palette = palette();
+    let mut source = input(&regions, &palette, &families);
+    source.identity.min_runtime_version = "4".into();
+    assert!(
+        compile(&source, &Resolver).is_err(),
+        "old runtimes cannot silently realize the timing owner"
+    );
+    source.identity.min_runtime_version = "5".into();
+    let result = compile(&source, &Resolver)?;
+    let decoded = bundle::read(&result.bytes)?;
+    assert_eq!(decoded.spawns.point_count(), 1);
+    assert_eq!(decoded.spawns.weighted.len(), 1);
+    equivalence(&source, &Resolver, &result.bytes)?;
     Ok(())
 }

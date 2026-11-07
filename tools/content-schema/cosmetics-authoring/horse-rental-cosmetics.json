@@ -1,0 +1,81 @@
+{
+  "mounts": [
+    {
+      "key": "oteryn:content.mount.rented_horse",
+      "revision": "srv7-r1",
+      "look": {
+        "id": 421,
+        "source_record_sha256": "5c31ec20621c8660dec3bf1ba94e117fe1d47714f02648b5a2cac0513b521f41"
+      },
+      "speed_bonus": 10,
+      "premium": false,
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L51",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "key": "oteryn:content.mount.rented_horse_brown",
+      "revision": "srv7-r1",
+      "look": {
+        "id": 438,
+        "source_record_sha256": "f5375f1ffd2ba388ae9481de483bd01eb546f67ae848945a9efea264d9c1c543"
+      },
+      "speed_bonus": 10,
+      "premium": true,
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L55",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "key": "oteryn:content.mount.rented_horse_gray",
+      "revision": "srv7-r1",
+      "look": {
+        "id": 437,
+        "source_record_sha256": "2fd9c9d0469426ec5470a407b3d491874693945abfe7d76db94f4d42c5346cbc"
+      },
+      "speed_bonus": 10,
+      "premium": true,
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L54",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    }
+  ],
+  "grant_mappings": [
+    {
+      "grant_key": "oteryn:rental.horse.22",
+      "target": {
+        "kind": "Mount",
+        "mount_key": "oteryn:content.mount.rented_horse"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-horse-station-rental-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:rental.horse.25",
+      "target": {
+        "kind": "Mount",
+        "mount_key": "oteryn:content.mount.rented_horse_gray"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-horse-station-rental-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:rental.horse.26",
+      "target": {
+        "kind": "Mount",
+        "mount_key": "oteryn:content.mount.rented_horse_brown"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-horse-station-rental-v1"
+      ]
+    }
+  ]
+}

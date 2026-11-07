@@ -8,6 +8,7 @@ use std::path::Path;
 
 use oteryn_world_bundle_compiler::Error;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use super::{
     PIN_SCHEMA, PINS, Pin, build_twice, derive_identity, hex, identity_text, inputs_digest, read,
@@ -58,7 +59,10 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
         }
         reports.push(json!({"world": slug, "digest": pin.digest, "previous": old.digest}));
     }
-    Ok(json!({"inputs_digest": tree, "pins": reports}))
+    let client_placement_index = refresh_client_placement_pin(root)?;
+    Ok(
+        json!({"inputs_digest": tree, "pins": reports, "client_placement_index": client_placement_index}),
+    )
 }
 
 /// Points the manifest's `[world_bundle]` table and `[readiness] map_revision` at the new pin.
@@ -90,4 +94,78 @@ fn refresh_manifest(path: &Path, old: &Pin, new: &Pin) -> Result<(), Error> {
 
 fn write(path: &Path, text: &str) -> Result<(), Error> {
     fs::write(path, text).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
+}
+
+/// The native asset loader pins the exact same placement index as the World compiler.
+/// Keep this source pin in the owning refresh operation, with the strict loader unchanged.
+fn refresh_client_placement_pin(root: &Path) -> Result<Value, Error> {
+    let index = read(&root.join("content/world/placements/index.json"))?;
+    let digest = hex(&Sha256::digest(&index));
+    let path = root.join("crates/client-assets/src/world.rs");
+    let text = String::from_utf8(read(&path)?)
+        .map_err(|error| Error::Format(format!("{}: {error}", path.display())))?;
+    const PREFIX: &str = "pub const PLACEMENT_INDEX_SHA256: &str =\n    \"";
+    let (before, after) = text
+        .split_once(PREFIX)
+        .ok_or_else(|| Error::Format("client placement pin anchor absent".to_owned()))?;
+    let (previous, tail) = after
+        .split_once('"')
+        .ok_or_else(|| Error::Format("client placement pin literal absent".to_owned()))?;
+    if previous.len() != 64
+        || !previous.bytes().all(|byte| byte.is_ascii_hexdigit())
+        || tail.contains(PREFIX)
+    {
+        return Err(Error::Format(
+            "client placement pin shape is not unique SHA-256".to_owned(),
+        ));
+    }
+    write(&path, &format!("{before}{PREFIX}{digest}\"{tail}"))?;
+    Ok(
+        json!({"path": "content/world/placements/index.json", "previous": previous, "sha256": digest}),
+    )
+}
+
+#[cfg(test)]
+mod client_placement_pin_tests {
+    use super::*;
+
+    #[test]
+    fn changed_placement_index_refreshes_only_its_client_pin()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::env::temp_dir().join(format!(
+            "oteryn-client-placement-pin-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(root.join("content/world/placements"))?;
+        fs::create_dir_all(root.join("crates/client-assets/src"))?;
+        let index = root.join("content/world/placements/index.json");
+        let source = root.join("crates/client-assets/src/world.rs");
+        let old = "0".repeat(64);
+        let untouched = format!("// neighboring input digest {old}\n");
+        let prefix = "pub const PLACEMENT_INDEX_SHA256: &str =\n    \"";
+        fs::write(&source, format!("{untouched}{prefix}{old}\";\n"))?;
+        fs::write(&index, b"{\"palette\":[],\"regions\":[]}")?;
+        let first = refresh_client_placement_pin(&root)?;
+        assert_eq!(first["previous"], old);
+        let first_pin = first["sha256"].as_str().ok_or("first placement pin")?;
+        assert_eq!(
+            fs::read_to_string(&source)?,
+            format!("{untouched}{prefix}{first_pin}\";\n")
+        );
+        // A changed source palette is a changed client generation, even with no regions.
+        let changed = b"{\"palette\":[{\"source_item_id\":7}],\"regions\":[]}";
+        fs::write(&index, changed)?;
+        let second = refresh_client_placement_pin(&root)?;
+        assert_eq!(second["previous"], first_pin);
+        assert_ne!(second["sha256"], first["sha256"]);
+        let second_pin = second["sha256"].as_str().ok_or("changed placement pin")?;
+        let exact = format!("{untouched}{prefix}{second_pin}\";\n");
+        assert_eq!(fs::read_to_string(&source)?, exact);
+        assert_eq!(fs::read(&index)?, changed);
+        let stable = refresh_client_placement_pin(&root)?;
+        assert_eq!(stable["previous"], stable["sha256"]);
+        assert_eq!(fs::read_to_string(&source)?, exact);
+        fs::remove_dir_all(root)?;
+        Ok(())
+    }
 }

@@ -24,7 +24,12 @@ impl ChannelRuntimeV1 {
         }
         let creature = template.creature_key();
         let policy = self.companion_policy(creature)?;
-        if policy.reward_boss != Some(true) {
+        let ordinary_source = template.source_portal()
+            && template.boss_key() == "oteryn:boss.rakesh_moonfang"
+            && creature == "oteryn:creature.rakesh_moonfang"
+            && policy.reward_boss == Some(false)
+            && policy.maximum_health == 25_500;
+        if policy.reward_boss != Some(true) && !ordinary_source {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
         let health = policy.maximum_health;

@@ -75,3 +75,22 @@ pub(in crate::play) fn edit(
         *slot = value;
     }
 }
+
+/// Preserve the native automatic-temple UX; the server settles and chooses the destination.
+pub(in crate::play) fn automatic_exit_after_death(link: &PlayLink, in_flight: bool) {
+    if in_flight {
+        return;
+    }
+    let mut mailbox = lock(&link.mailbox);
+    let Some(command) =
+        crate::play::feature_local_death_respawn::protocol::prepare_house_death_exit(&mut mailbox)
+    else {
+        return;
+    };
+    if link.commands.send(command).is_err() {
+        mailbox
+            .properties
+            .house_transfer
+            .failed("The session has ended");
+    }
+}

@@ -1,0 +1,7 @@
+name=scripted_item_effects
+offer_only=true
+commands=
+transport=scripted_item_effects
+composed=scripted_item_effects
+authority=scripted_item_effects
+offer=640,scripted_item_effects::offered,scripted_item_effects_available

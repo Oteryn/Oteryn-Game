@@ -34,7 +34,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod pumpkin_portal;
 mod quest_callbacks;
+mod seasonal_cake;
 use quest_callbacks::CallbackStates;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
@@ -154,7 +156,7 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [12369, 13842, 26077, 26087, 26100]
+        let movement_definitions = [8886, 12113, 12369, 13842, 26077, 26087, 26100]
             .into_iter()
             .chain(6594..=6608)
             .filter_map(|id| {
@@ -349,6 +351,7 @@ impl BundleFacts {
                 if placement != plain || ambiguous {
                     self.placements.push((key, placement));
                 }
+                self.initialize_pumpkin_portal(pos, tile, ordinal, key, item.palette);
             }
             if blocks {
                 blocked.insert(pos);
@@ -418,14 +421,27 @@ impl BundleFacts {
         }
     }
 
-    /// Immutable authored facts for a named-House view. The bundle palette and
-    /// placements are shared; Channel door, rotation and callback state is not.
+    /// Authored facts and qualified House BASE transforms for a named-House view.
+    /// Channel doors, rotations and callback state remain excluded. The old
+    /// Channel rotation entry point cannot write an authored House placement.
     pub fn base_only(&self) -> PinnedFacts<'_> {
+        let rotations = self.rotations.lock().ok().map(|states| {
+            Arc::new(
+                states
+                    .iter()
+                    .filter_map(|(key, value)| {
+                        view::placement_of(*key)
+                            .filter(|(position, _)| self.house_tile(*position))
+                            .map(|_| (*key, *value))
+                    })
+                    .collect(),
+            )
+        });
         PinnedFacts {
             facts: self,
             callbacks: Some(Arc::default()),
             doors: DoorStates::default(),
-            rotations: Some(Arc::default()),
+            rotations,
         }
     }
 
@@ -532,7 +548,7 @@ impl BundleFacts {
             }
             if *current == revision {
                 return *facts == after.unwrap_or(before)
-                    && states.hidden.contains(&key) == after.is_none();
+                    && states.gathering_hidden.contains(&key) == after.is_none();
             }
         }
         if states.changed.len() + states.hidden.len() >= super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -544,9 +560,13 @@ impl BundleFacts {
             .changed
             .insert(key, (revision, after.unwrap_or(before)));
         if after.is_none() {
+            states.gathering_hidden.insert(key);
             states.hidden.insert(key);
         } else {
-            states.hidden.remove(&key);
+            states.gathering_hidden.remove(&key);
+            if !states.cake_hidden.contains(&key) {
+                states.hidden.remove(&key);
+            }
         }
         true
     }
@@ -561,11 +581,34 @@ impl BundleFacts {
         before: EntryFacts,
         after: EntryFacts,
     ) -> oteryn_protocol_oteryn::world_object::UseDisposition {
+        self.transform_fixed_base(key, expected_revision, before, after, false)
+    }
+
+    /// The named-House owner must hold its actual current House and target-tile
+    /// authority through this synchronous CAS. This does not admit Channel rotation.
+    pub fn transform_house_base(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        before: EntryFacts,
+        after: EntryFacts,
+    ) -> oteryn_protocol_oteryn::world_object::UseDisposition {
+        self.transform_fixed_base(key, expected_revision, before, after, true)
+    }
+
+    fn transform_fixed_base(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        before: EntryFacts,
+        after: EntryFacts,
+        house_use: bool,
+    ) -> oteryn_protocol_oteryn::world_object::UseDisposition {
         use oteryn_protocol_oteryn::world_object::UseDisposition;
         let Some((pos, _)) = view::placement_of(key) else {
             return UseDisposition::NothingToUse;
         };
-        if self.house_tile(pos)
+        if self.house_tile(pos) != house_use
             || self.doors.contains(key)
             || before.bound
             || before.pickupable
@@ -908,6 +951,14 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn ground_speed_override(&self, pos: TilePos) -> Option<u16> {
+        self.callbacks
+            .lock()
+            .ok()?
+            .cake_ground_speeds
+            .get(&pos)
+            .copied()
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.lock().ok()?.movement_item(id)
     }
@@ -979,6 +1030,13 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn ground_speed_override(&self, pos: TilePos) -> Option<u16> {
+        self.callbacks
+            .as_ref()?
+            .cake_ground_speeds
+            .get(&pos)
+            .copied()
+    }
     fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
         self.callbacks.as_ref()?.movement_item(id)
     }

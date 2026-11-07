@@ -25,6 +25,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .content_pin()
             .server_artifact_digest();
+        let house = {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .house_player_for_session(fence.game_session_id)
+                .ok()
+                .flatten()
+                .and_then(|(_, state)| {
+                    crate::durability::house_scope_handoff::HouseId::new(
+                        self.world_id,
+                        &state.house,
+                    )
+                })
+        };
+        if let Some(house) = house {
+            let death = self
+                .root
+                .settle_runtime_house_player_death_with_items(
+                    &self.revision_sequencer,
+                    self.character,
+                    self.holder,
+                    &house,
+                    fence,
+                    request,
+                    formula,
+                    premium,
+                    Some(root),
+                )
+                .await?;
+            self.apply_house_player_death_items(&permit, &house, fence, &death)
+                .await?;
+            return Ok(death);
+        }
         let death = self
             .root
             .settle_runtime_player_death_with_items(

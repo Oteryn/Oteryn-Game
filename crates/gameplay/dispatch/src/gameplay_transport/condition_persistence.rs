@@ -76,6 +76,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        if self
+            .resolve_pending_cake_food(actor, session)
+            .await
+            .is_err()
+        {
+            return false;
+        }
+        if self
+            .resolve_pending_npc_ajax_effect(actor, session)
+            .await
+            .is_err()
+        {
+            return false;
+        }
+        if self
+            .resolve_pending_npc_hazard_effect(actor, session)
+            .await
+            .is_err()
+        {
+            return false;
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let Ok((current, _)) = store.current_session_at(session).await else {
             return false;

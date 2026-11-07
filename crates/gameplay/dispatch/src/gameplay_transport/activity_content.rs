@@ -79,10 +79,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         let source_scope = {
             let runtime = self.runtime.lock().await;
-            if runtime.content_pin().frame_binding_digest()
-                != template.room().frame_binding().digest()
-                || runtime.content_pin().map_revision_digest()
-                    != template.room().map_revision_digest()
+            if runtime.content_pin().frame_binding_digest() != template.origin_frame_digest()
+                || runtime.content_pin().map_revision_digest() != template.origin_map_digest()
                 || runtime.content_pin().server_artifact_digest()
                     != active.identity().server_artifact_digest()
                 || runtime.content_pin().client_artifact_digest()
@@ -108,7 +106,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if issued.activation_sequence != active.activation_sequence()
             || issued.server_artifact_digest != active.identity().server_artifact_digest()
             || issued.client_artifact_digest != active.identity().client_artifact_digest()
-            || issued.frame_binding_digest != template.room().frame_binding().digest()
+            || issued.frame_binding_digest != template.origin_frame_digest()
         {
             return Err(ActivityRefusal::ContentChanged);
         }

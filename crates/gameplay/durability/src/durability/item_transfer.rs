@@ -1332,15 +1332,17 @@ pub(super) async fn read_derived_transfer_capacity_centi_oz(
     let vocation = vocation
         .as_deref()
         .unwrap_or(super::character_build::NO_VOCATION);
-    let base = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let base =
+        oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(level, vocation)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
     let wheel = if weights.wheel_premium_current(account) {
         super::character_wheel::read_capacity_bonus_in_transaction(tx, character, vocation, level)
             .await?
     } else {
         0
     };
-    base.checked_add(wheel).ok_or(DurabilityError::InvalidStoredState)
+    base.checked_add(wheel)
+        .ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_source(
@@ -1832,12 +1834,12 @@ async fn apply_transfer(
            source_quantity_before, source_quantity_after, receiver_item_instance_id, \
            receiver_quantity_before, receiver_quantity_after, \
            destination_parent_item_instance_id, destination_ordinal, occurred_at, \
-           envelope_sha256, committed_at) \
+           envelope_sha256, committed_at, furniture_content_digest) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, $4, \
            encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7, encode($8,'hex')::uuid, $9, $10, \
            CASE WHEN $11::bytea IS NULL THEN NULL ELSE encode($11,'hex')::uuid END, $12, $13, \
            CASE WHEN $14::bytea IS NULL THEN NULL ELSE encode($14,'hex')::uuid END, \
-           $15::text::numeric(20,0), $16, $17, $18)",
+           $15::text::numeric(20,0), $16, $17, $18, $19)",
     )
     .bind(command.game_session_id().as_bytes().as_slice())
     .bind(command.command_id().get().to_string())
@@ -1857,8 +1859,24 @@ async fn apply_transfer(
     .bind(frozen.occurred_at_unix_ms)
     .bind(envelope_sha256.as_slice())
     .bind(committed_at)
+    .bind(
+        matches!(
+            frozen.request.item.definition.production_key.as_str(),
+            "oteryn:item.tibia.i9034"
+                | "oteryn:item.tibia.i9039"
+                | "oteryn:item.tibia.i35949"
+                | "oteryn:item.tibia.i35951"
+                | "oteryn:item.tibia.i35969"
+                | "oteryn:item.tibia.i35971"
+        )
+        .then(|| frozen.request.weight_generation_digest.to_vec()),
+    )
     .execute(&mut **tx)
     .await?;
+    sqlx::query("SELECT game_house_furniture_transfer_start(encode($1,'hex')::uuid)")
+        .bind(tx_id)
+        .execute(&mut **tx)
+        .await?;
     Ok(CommittedItemTransfer {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,

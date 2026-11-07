@@ -109,6 +109,7 @@ pub(in super::super::super) fn dependencies(
     // later displaced admission position used by the scenario.
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
     let census = Table {
+        weighted: Vec::new(),
         creatures: vec![Creature {
             key: "oteryn:creature.rat".into(),
             period: Period::All,

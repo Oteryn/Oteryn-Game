@@ -1,8 +1,8 @@
 //! SRVGAP-C1: compose the separately pinned starter Item closure into the existing artifact.
 //! The old provider bytes remain exact when the optional supplement is absent.
 use super::{
-    ContentError, ItemProfilesDocument, MAX_ITEM_PROFILES, MAX_RECORDS, PinnedGameplayBytes, hex,
-    invalid, qualify, sha256,
+    ContentError, ItemProfilesDocument, MAX_ITEM_PROFILES, MAX_ITEM_RECORDS, PinnedGameplayBytes,
+    hex, invalid, qualify, sha256,
 };
 use std::collections::BTreeSet;
 
@@ -24,7 +24,7 @@ pub(super) fn merge(
         || extra.schema != items.schema
         || extra.records.is_empty()
         || extra.records.len() > 20
-        || items.records.len() + extra.records.len() > MAX_RECORDS
+        || items.records.len() + extra.records.len() > MAX_ITEM_RECORDS
     {
         return Err(invalid("starting loadout Item discriminator or bounds"));
     }

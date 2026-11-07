@@ -49,6 +49,7 @@ pub struct Pushed {
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
     pub appearances: Option<Vec<oteryn_session::VisibleAppearance>>,
+    pub appearance_palette: Option<Vec<[u8; 3]>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
     pub markers_reset: bool,
@@ -80,6 +81,7 @@ impl Pushed {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
         self.appearances = newer.appearances.or(self.appearances.take());
+        self.appearance_palette = newer.appearance_palette.or(self.appearance_palette.take());
         self.server_messages.append(newer.server_messages);
         self.achievements.extend(newer.achievements);
         if newer.chat_reset {
@@ -106,6 +108,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) house_death_exit: super::feature_local_death_respawn::protocol::HouseDeathExitState,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,
@@ -119,6 +122,7 @@ pub(super) struct Mailbox {
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
+    pub(super) rotation_probe: oteryn_client_ui::world_rotate::InventoryProbe,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
@@ -176,6 +180,7 @@ pub(super) struct Mailbox {
     pub(super) guild: oteryn_client_ui::guild::GuildPanel,
     /// Last published connection-local presentation, including appearance-only updates.
     pub(super) appearance_state: Vec<oteryn_session::VisibleAppearance>,
+    pub(super) appearance_palette: Vec<[u8; 3]>,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,

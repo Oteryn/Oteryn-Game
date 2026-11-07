@@ -10,10 +10,15 @@ use crate::foundation::CharacterId;
 #[path = "house_interior/step.rs"]
 mod step;
 pub use step::{HouseStepReadRequest, HouseStepSnapshot};
+#[path = "house_interior/native.rs"]
+mod native;
+pub use native::{
+    NativeHouseMoveContext, NativeHousePrepared, NativeHouseRecovery, NativeHouseTarget,
+};
 
 pub use oteryn_gameplay_housing::house_interior::{
-    HouseCharacterSource, HouseItemAction, HouseItemReceipt, HouseItemOutcome,
-    HOUSE_INTERIOR_ITEMS_MAX, HouseInteriorError, HouseItemRole,
+    HOUSE_INTERIOR_ITEMS_MAX, HouseCharacterSource, HouseInteriorError, HouseItemAction,
+    HouseItemOutcome, HouseItemReceipt, HouseItemRole,
 };
 
 pub type HouseInteriorLocation =
@@ -247,6 +252,7 @@ struct FrozenHouseItem {
     transaction: [u8; 16],
     event: [u8; 16],
     occurred_at: i64,
+    native_intent: Option<Vec<u8>>,
 }
 fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write;
@@ -467,7 +473,21 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: HouseItemRequest,
     ) -> WriterResult<HouseItemCandidate> {
-        let p = context(&request, fence.character_id)?;
+        self.freeze_house_item_inner(authority, node, fence, request, None)
+            .await
+    }
+    async fn freeze_house_item_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: HouseItemRequest,
+        native_intent: Option<Vec<u8>>,
+    ) -> WriterResult<HouseItemCandidate> {
+        let p = native::with_wire(
+            context(&request, fence.character_id)?,
+            native_intent.as_deref(),
+        )?;
         let binding = intent_binding(&p);
         let recovery = authority
             .record_for(self)
@@ -480,13 +500,13 @@ impl DurabilityRoot {
                 if row.try_get::<Vec<u8>,_>("intent_binding")? != binding {return Ok(Err(HouseWriterError::ConflictingOccurrence));}
                 let historical=match receipt(&mut tx,request.command,&binding).await? {Ok(v)=>v.is_some(),Err(e)=>return Ok(Err(e))};
                 if !historical && !named_house_current(&mut tx,&node,fence,&request).await? {return Ok(Err(HouseWriterError::NotCurrent));}
-                let frozen=FrozenHouseItem{request,character:fence.character_id,binding,transaction:uuid_text(row.try_get("transaction_id")?)?,event:uuid_text(row.try_get("event_id")?)?,occurred_at:row.try_get("occurred_at")?};
+                let frozen=FrozenHouseItem{request,character:fence.character_id,binding,transaction:uuid_text(row.try_get("transaction_id")?)?,event:uuid_text(row.try_get("event_id")?)?,occurred_at:row.try_get("occurred_at")?,native_intent};
                 if !historical && let Err(error)=run_shape(&mut tx,&node,fence,&frozen,true).await? {return Ok(Err(error));}
                 commit_semantic_transaction(tx,deadline).await?;return Ok(Ok(HouseItemCandidate{frozen}));
             }
             if !named_house_current(&mut tx,&node,fence,&request).await? {return Ok(Err(HouseWriterError::NotCurrent));}
             let row=sqlx::query("SELECT game_character_uuid_v7()::text transaction_id,game_character_uuid_v7()::text event_id,floor(extract(epoch FROM statement_timestamp())*1000)::bigint occurred_at").fetch_one(&mut *tx).await?;
-            let frozen=FrozenHouseItem{request,character:fence.character_id,binding,transaction:uuid_text(row.try_get("transaction_id")?)?,event:uuid_text(row.try_get("event_id")?)?,occurred_at:row.try_get("occurred_at")?};
+            let frozen=FrozenHouseItem{request,character:fence.character_id,binding,transaction:uuid_text(row.try_get("transaction_id")?)?,event:uuid_text(row.try_get("event_id")?)?,occurred_at:row.try_get("occurred_at")?,native_intent};
             sqlx::query("INSERT INTO game_item_transfer_reservations(game_session_id,command_id,character_id,world_id,channel_id,source_item_instance_id,destination_kind,intent_binding,transaction_id,event_id,occurred_at,work_units_used,reserved_at,source_kind,house_key,house_scope_generation,house_intent) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,NULL,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,0,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$11,$12,$13::text::numeric,$14)")
                 .bind(frozen.request.command.game_session_id().as_bytes().as_slice()).bind(frozen.request.command.command_id().get().to_string()).bind(frozen.character.as_bytes().as_slice()).bind(frozen.request.house.world_id().as_bytes().as_slice()).bind(frozen.request.item_instance_id.as_slice()).bind(frozen.request.action.shape()-2).bind(&frozen.binding).bind(frozen.transaction.as_slice()).bind(frozen.event.as_slice()).bind(frozen.occurred_at).bind(frozen.request.action.source_kind()).bind(frozen.request.house.house_key()).bind(fence.scope_ownership_generation.get().to_string()).bind(p).execute(&mut *tx).await?;
             if let Err(error)=run_shape(&mut tx,&node,fence,&frozen,true).await? {return Ok(Err(error));}
@@ -502,6 +522,28 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &HouseItemCandidate,
+    ) -> WriterResult<HouseItemOutcome> {
+        self.commit_house_item_inner(authority, node, fence, candidate, None)
+            .await
+    }
+    pub async fn commit_house_item_with_native(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &HouseItemCandidate,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    ) -> WriterResult<HouseItemOutcome> {
+        self.commit_house_item_inner(authority, node, fence, candidate, Some(native))
+            .await
+    }
+    async fn commit_house_item_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &HouseItemCandidate,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> WriterResult<HouseItemOutcome> {
         let recovery = authority
             .record_for(self)
@@ -536,21 +578,33 @@ impl DurabilityRoot {
             return Ok(HouseItemOutcome::AlreadyCommitted(receipt));
         }
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
+        let mut native = native;
+        self.try_issue_semantic_pass()?.run_with_context(&mut native,move |holder,deadline,native|Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;cause_lock(&mut tx,frozen.request.command).await?;
             match receipt(&mut tx,frozen.request.command,&frozen.binding).await? {
                 Ok(Some(r))=>{tx.commit(deadline).await?;return Ok(Ok(HouseItemOutcome::AlreadyCommitted(r)));},Err(e)=>return Ok(Err(e)),_=>{}
             }
             if fence.character_id!=frozen.character || !named_house_current(&mut tx,&node,fence,&frozen.request).await? {return Ok(Err(HouseWriterError::NotCurrent));}
             let facts=match run_shape(&mut tx,&node,fence,&frozen,false).await? {Ok(facts)=>facts,Err(error)=>return Ok(Err(error))};
+            let (native_digest,santa_toy_digest)=if let Some(native)=native {
+                use oteryn_gameplay_content::content::native_gameplay::NativeItemDestination;
+                let key=facts["definition_production_key"].as_str().ok_or(DurabilityError::InvalidStoredState)?.to_owned();
+                let revision=facts["definition_revision_ref"].as_str().ok_or(DurabilityError::InvalidStoredState)?.to_owned();
+                let Some(policy)=native.item_policy(&key,&revision) else{return Ok(Err(HouseWriterError::ContentChanged));};
+                let record=policy.record();
+                let destination=if matches!(frozen.request.action,HouseItemAction::Take{..}){NativeItemDestination::CharacterInventory}else{NativeItemDestination::Ground};
+                if record.production_definition.family!=facts["definition_family"].as_str().ok_or(DurabilityError::InvalidStoredState)?||!record.admission.materializable||!record.admission.legal_destinations.contains(&destination){return Ok(Err(HouseWriterError::ContentChanged));}
+                (matches!(key.as_str(),"oteryn:item.tibia.i9034"|"oteryn:item.tibia.i9039"|"oteryn:item.tibia.i35949"|"oteryn:item.tibia.i35951"|"oteryn:item.tibia.i35969"|"oteryn:item.tibia.i35971").then(||native.source_digest().to_vec()), matches!(key.as_str(),"oteryn:item.tibia.i6566"|"oteryn:item.tibia.i6567"|"oteryn:item.tibia.i6568").then(||native.source_digest().to_vec()))
+            }else{(None,None)};
             let message=message_from_facts(&frozen,&facts)?;
             let tuple=tx.tuple();
             let envelope=match event::encode_house_transfer_event(TransferEventIdentity{event_id:frozen.event,transaction_id:frozen.transaction,occurred_at_unix_ms:frozen.occurred_at,server_build_id:SERVER_BUILD_ID},message,tuple.tuple()){Ok(v)=>v,Err(e)=>return Ok(Err(e.into()))};
             let command=frozen.request.command;
             sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
                 .bind(frozen.event.as_slice()).bind(frozen.transaction.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(frozen.request.item_instance_id.as_slice()).bind(frozen.occurred_at).bind(audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut **tx).await?;
-            sqlx::query("INSERT INTO game_item_transfer_receipts(game_session_id,command_id,character_id,intent_binding,transaction_id,event_id,shape,source_item_instance_id,source_quantity_before,source_quantity_after,destination_parent_item_instance_id,destination_ordinal,occurred_at,envelope_sha256,committed_at) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,encode($8,'hex')::uuid,$9,$9,$10::text::uuid,$11::text::numeric,$12,sha256($13),floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
-                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(frozen.character.as_bytes().as_slice()).bind(&frozen.binding).bind(frozen.transaction.as_slice()).bind(frozen.event.as_slice()).bind(frozen.request.action.shape()).bind(frozen.request.item_instance_id.as_slice()).bind(number(&facts,"quantity_before")? as i64).bind(facts["destination_parent"].as_str()).bind(optional_number(&facts,"destination_ordinal")?.map(|v|v.to_string())).bind(frozen.occurred_at).bind(&envelope).execute(&mut **tx).await?;
+            sqlx::query("INSERT INTO game_item_transfer_receipts(game_session_id,command_id,character_id,intent_binding,transaction_id,event_id,shape,source_item_instance_id,source_quantity_before,source_quantity_after,destination_parent_item_instance_id,destination_ordinal,occurred_at,envelope_sha256,committed_at,furniture_content_digest,santa_toy_content_digest) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,encode($8,'hex')::uuid,$9,$9,$10::text::uuid,$11::text::numeric,$12,sha256($13),floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$14,$15)")
+                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(frozen.character.as_bytes().as_slice()).bind(&frozen.binding).bind(frozen.transaction.as_slice()).bind(frozen.event.as_slice()).bind(frozen.request.action.shape()).bind(frozen.request.item_instance_id.as_slice()).bind(number(&facts,"quantity_before")? as i64).bind(facts["destination_parent"].as_str()).bind(optional_number(&facts,"destination_ordinal")?.map(|v|v.to_string())).bind(frozen.occurred_at).bind(&envelope).bind(native_digest).bind(santa_toy_digest.as_deref()).execute(&mut **tx).await?;
+            if santa_toy_digest.is_some(){sqlx::query("SELECT game_santa_toy_transfer_start(encode($1,'hex')::uuid)").bind(frozen.transaction.as_slice()).execute(&mut **tx).await?;}
             tx.commit(deadline).await?;Ok(Ok(HouseItemOutcome::Committed(HouseItemReceipt{transaction_id:frozen.transaction,event_id:frozen.event,occurred_at_unix_ms:frozen.occurred_at,envelope_sha256:Sha256::digest(&envelope).into(),envelope:Some(envelope)})))
         })).await?
     }
@@ -785,7 +839,9 @@ async fn run_shape(
     frozen: &FrozenHouseItem,
     preflight: bool,
 ) -> DbResult<WriterResult<Value>> {
-    let mut p = match context(&frozen.request, frozen.character) {
+    let mut p = match context(&frozen.request, frozen.character)
+        .and_then(|p| native::with_wire(p, frozen.native_intent.as_deref()))
+    {
         Ok(p) => p,
         Err(e) => return Ok(Err(e)),
     };

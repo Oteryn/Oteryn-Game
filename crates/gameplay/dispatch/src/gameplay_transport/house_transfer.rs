@@ -16,6 +16,8 @@ use crate::foundation::{
 use oteryn_protocol_oteryn::house_transfer::{self as wire, HouseTransferAck};
 #[path = "house_transfer/admission.rs"]
 mod admission;
+#[path = "house_transfer/death.rs"]
+mod death;
 #[path = "house_transfer/movement.rs"]
 mod movement;
 #[path = "house_transfer/session_views.rs"]
@@ -41,6 +43,16 @@ pub(super) fn handoff_continuity(
     }
 }
 
+#[track_caller]
+fn refuse_house_transfer() -> TransferResult {
+    #[cfg(any(test, feature = "test-support"))]
+    eprintln!(
+        "SRV7_HOUSE_TRANSFER_REFUSED at={}",
+        std::panic::Location::caller()
+    );
+    Some((None, Vec::new()))
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn transfer_house(
         &self,
@@ -48,16 +60,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: u64,
         body: &[u8],
     ) -> TransferResult {
-        let refuse = || Some((None, Vec::new()));
+        let intent = wire::decode_house_transfer_intent(body).ok()?;
+        if intent.exit
+            && let Some(actor) = admitted.runtime_actor
+        {
+            let death = {
+                let runtime = self.runtime.lock().await;
+                if runtime
+                    .house_actor_state(actor, admitted.game_session_id)
+                    .is_ok()
+                {
+                    self.states.spell_states.lock().await.player_death(
+                        &runtime,
+                        actor,
+                        admitted.game_session_id,
+                    )
+                } else {
+                    None
+                }
+            };
+            if let Some(death) = death {
+                return self
+                    .transfer_house_after_death(admitted, command, body, death)
+                    .await;
+            }
+        }
+        self.transfer_house_inner(admitted, command, body, None)
+            .await
+    }
+    async fn transfer_house_inner(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        body: &[u8],
+        death: Option<super::actor_spell::PlayerDeath>,
+    ) -> TransferResult {
         let Ok(intent) = wire::decode_house_transfer_intent(body) else {
-            return refuse();
+            return refuse_house_transfer();
         };
         let (Some(actor), Some(controller), Some(fence)) = (
             admitted.runtime_actor,
             admitted.controller,
             admitted.item_fence,
         ) else {
-            return refuse();
+            return refuse_house_transfer();
         };
         if !admitted
             .continuity
@@ -73,7 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .transitioning(admitted.game_session_id)
             || self.states.newhaven_travel.held(admitted.game_session_id)
         {
-            return refuse();
+            return refuse_house_transfer();
         }
         let house = HouseId::new(self.world_id, &intent.house)?;
         self.evidence
@@ -93,7 +139,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .ok()?;
         if capabilities.selected() != admitted.continuity.selected_capabilities {
-            return refuse();
+            return refuse_house_transfer();
         }
         if !self
             .prepare_house_transfer_checkpoints(actor, admitted.game_session_id)
@@ -112,24 +158,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
             self.owner_now(),
         );
-        if spells.is_dead(actor)
+        if (spells.is_dead(actor) && death.is_none())
+            || death.is_some_and(|expected| {
+                spells
+                    .player_death(&runtime, actor, admitted.game_session_id)
+                    .is_none_or(|held| {
+                        held.occurrence != expected.occurrence || held.cell != expected.cell
+                    })
+            })
             || spells.has_pending_spell_commit(actor, admitted.game_session_id)
-            || locks.pve_in_fight_until.is_some()
-            || locks.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked
+            || (death.is_none()
+                && (locks.pve_in_fight_until.is_some()
+                    || locks.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked))
         {
-            return refuse();
+            return refuse_house_transfer();
         }
         let (lease, position, origin) = if intent.exit {
             let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
-                return refuse();
+                return refuse_house_transfer();
             };
             if state.house != intent.house
                 || state.scope != fence.runtime_scope
                 || state.generation != fence.scope_ownership_generation
             {
-                return refuse();
+                return refuse_house_transfer();
             }
-            let position = if self.bundle_map().is_some() {
+            let position = if let Some(death) = death {
+                let committed = self
+                    .root
+                    .reconcile_character_death(self.character, death.occurrence)
+                    .await
+                    .ok()??;
+                if committed.death_cell.runtime_scope != state.scope {
+                    return refuse_house_transfer();
+                }
+                // The ordinary death owner selected the current town's temple.
+                let p: &[u8; 10] = committed.respawn_position.as_slice().try_into().ok()?;
+                LocalPosition {
+                    x: i32::from_be_bytes(p[..4].try_into().ok()?),
+                    y: i32::from_be_bytes(p[4..8].try_into().ok()?),
+                    floor: i16::from_be_bytes(p[8..10].try_into().ok()?),
+                }
+            } else if self.bundle_map().is_some() {
                 super::house_query::entrance(&intent.house)?
             } else {
                 state.origin_position
@@ -149,33 +219,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     runtime.content_pin().server_artifact_digest(),
                     doors.blocking_cells(),
                     cell,
-                ) && !census
-                    .iter()
-                    .any(|(_, snapshot, _)| snapshot.position() == cell)
+                ) && (death.is_some()
+                    || !census
+                        .iter()
+                        .any(|(_, snapshot, _)| snapshot.position() == cell))
             };
-            let position = [
-                position,
-                state.origin_position,
-                runtime.content_pin().entry_start(),
-            ]
-            .into_iter()
-            .find(|p| clear(*p))?;
+            let candidates = if death.is_some() {
+                vec![position]
+            } else {
+                vec![
+                    position,
+                    state.origin_position,
+                    runtime.content_pin().entry_start(),
+                ]
+            };
+            let position = candidates.into_iter().find(|p| clear(*p))?;
             (state.lease, position, position)
         } else {
             if fence.runtime_scope != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
                 || fence.scope_ownership_generation != runtime.binding().scope_generation()
             {
-                return refuse();
+                return refuse_house_transfer();
             }
             let Ok(lease) = runtime.bound_attacker_lease(actor, admitted.game_session_id) else {
-                return refuse();
+                return refuse_house_transfer();
             };
             let Ok(current) = runtime.read_actor_position(actor) else {
-                return refuse();
+                return refuse_house_transfer();
             };
             let origin = current.position();
             let Some(position) = self.house_door_destination(&intent.house, origin) else {
-                return refuse();
+                return refuse_house_transfer();
             };
             (
                 lease,
@@ -190,20 +264,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if lease.character_id().as_bytes() != fence.character_id.as_bytes()
             || lease.generation() != fence.character_lease_generation
         {
-            return refuse();
+            return refuse_house_transfer();
         }
         let destination = SecureIdentifiers.game_session_id()?;
         if !self.house_session_views_ready(admitted.game_session_id, destination) {
-            return refuse();
+            return refuse_house_transfer();
         }
-        let Some(views) = spells.prepare_house_transfer_views(
-            &runtime,
-            &attack,
-            actor,
-            admitted.game_session_id,
-            destination,
-        ) else {
-            return refuse();
+        let views = if let Some(death) = death {
+            spells.prepare_house_death_transfer_views(
+                &runtime,
+                &attack,
+                actor,
+                admitted.game_session_id,
+                destination,
+                death,
+            )
+        } else {
+            spells.prepare_house_transfer_views(
+                &runtime,
+                &attack,
+                actor,
+                admitted.game_session_id,
+                destination,
+            )
+        };
+        let Some(views) = views else {
+            return refuse_house_transfer();
         };
         let transfer = *SecureIdentifiers.game_session_id()?.as_bytes();
         let next_lease =
@@ -276,18 +362,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok()?;
             Some(token)
         };
-        let committed = self
-            .root
-            .commit_house_transfer(
-                self.character,
-                self.holder,
-                request,
-                capabilities.current_check(),
-            )
-            .await;
+        let committed = if let Some(death) = death {
+            self.root
+                .commit_house_death_transfer(
+                    self.character,
+                    self.holder,
+                    request,
+                    capabilities.current_check(),
+                    death.occurrence,
+                )
+                .await
+        } else {
+            self.root
+                .commit_house_transfer(
+                    self.character,
+                    self.holder,
+                    request,
+                    capabilities.current_check(),
+                )
+                .await
+        };
         let (ack, payload) = match committed {
             Ok(committed) => committed,
-            Err(_) => {
+            Err(error) => {
+                #[cfg(any(test, feature = "test-support"))]
+                eprintln!("SRV7_HOUSE_TRANSFER_ROOT_REFUSED error={error:?}");
+                #[cfg(not(any(test, feature = "test-support")))]
+                let _ = error;
                 let (source, _) = FreshAdmissionStore::from_root(self.root.clone())
                     .current_session_at(admitted.game_session_id)
                     .await
@@ -301,7 +402,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .lift_player_fence(actor, admitted.game_session_id, token)
                             .ok()?;
                     }
-                    return refuse();
+                    return refuse_house_transfer();
                 }
                 return None;
             }
@@ -911,6 +1012,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .await
         .ok_or(Unavailable)?;
+        if recovered.ack.house.is_none() {
+            self.finish_recovered_house_death(&admitted)
+                .await
+                .ok_or(Unavailable)?;
+        }
         self.states.command_ingress.admit(destination);
         self.states.gameplay_idle_presence.observe(admitted);
         self.states.gameplay_idle_presence.forget(recovered.source);

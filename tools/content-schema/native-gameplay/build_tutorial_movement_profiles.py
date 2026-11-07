@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TUTORIAL-1: derive exactly the 17 path Item profiles using the existing pinned importer.
+"""Derive tutorial path profiles and W23's Gray Beach civic portal with the pinned importer.
 
 Only --capture reads references. No original source/appearance files are redistributed.
 """
@@ -14,7 +14,8 @@ from lower_item_consumption_packet import fetch
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = Path(__file__).with_name('movement-item-profiles.json')
-IDS = {3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
+# Crystal 201189f8 startup/tables/teleport.lua:457-459: the Gray Beach citizen portal.
+IDS = {3892, 3893, 5022, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
 
 
 def capture():

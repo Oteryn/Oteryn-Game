@@ -75,7 +75,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         tokio::pin!(soulpits);
         let raids = self.run_raid_effects(shutdown);
         tokio::pin!(raids);
+        let pumpkins = self.run_pumpkin_portals(shutdown);
+        tokio::pin!(pumpkins);
+        let horses = self.run_horse_station(shutdown);
+        tokio::pin!(horses);
+        let cakes = self.run_cake_events(shutdown);
+        tokio::pin!(cakes);
         std::future::poll_fn(|cx| {
+            if let std::task::Poll::Ready(exit) = horses.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
+            if let std::task::Poll::Ready(exit) = pumpkins.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
+            if let std::task::Poll::Ready(exit) = cakes.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
             if let std::task::Poll::Ready(exit) = raids.as_mut().poll(cx) {
                 return std::task::Poll::Ready(exit);
             }

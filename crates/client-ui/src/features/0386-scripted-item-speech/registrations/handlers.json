@@ -1,0 +1,22 @@
+{
+  "mechanic": "0386-scripted-item-speech",
+  "kind": "handlers",
+  "id": "0386-scripted-item-speech-projection",
+  "status": "supported",
+  "commands": [],
+  "not_applicable": {
+    "view": "The existing native CHAT_V1 panel displays decoded scripted item speech.",
+    "input": "Item USE is the existing input; player MonsterSay intents remain invalid.",
+    "settings": "This does not enable optional ambient voices or audio.",
+    "state": "The existing session domain-12 store owns chat revisions.",
+    "protocol": "The session chat decoder owns the explicit capability-386 MonsterSay gate."
+  },
+  "direction": "server_to_client",
+  "capability": 386,
+  "entry": "protocol.rs::line_text",
+  "reducer": "protocol.rs::line_text",
+  "push_messages": [
+    "ChatLine"
+  ],
+  "test": "tests/state.rs::scripted_item_line_uses_existing_native_chat_panel"
+}

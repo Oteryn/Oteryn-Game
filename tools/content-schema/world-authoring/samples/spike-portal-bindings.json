@@ -1,0 +1,188 @@
+{
+  "withheld": [
+    {
+      "action": 4226,
+      "reason": "Source premium admission requires independent real Premium owner; no matching admitted production callback, do not stamp."
+    }
+  ],
+  "schema": 1,
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "source": "data-global/startup/tables/item.lua",
+  "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+  "rules": [
+    "data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:1-58"
+  ],
+  "bindings": [
+    {
+      "position": [
+        32223,
+        32606,
+        15
+      ],
+      "item": 19387,
+      "action": 4243,
+      "source_line": 595
+    },
+    {
+      "position": [
+        32226,
+        32595,
+        8
+      ],
+      "item": 19387,
+      "action": 4229,
+      "source_line": 539
+    },
+    {
+      "position": [
+        32226,
+        32598,
+        11
+      ],
+      "item": 19387,
+      "action": 4235,
+      "source_line": 563
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        8
+      ],
+      "item": 19387,
+      "action": 4228,
+      "source_line": 535
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        9
+      ],
+      "item": 19387,
+      "action": 4230,
+      "source_line": 543
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        10
+      ],
+      "item": 19387,
+      "action": 4232,
+      "source_line": 551
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        11
+      ],
+      "item": 19387,
+      "action": 4234,
+      "source_line": 559
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        12
+      ],
+      "item": 19387,
+      "action": 4236,
+      "source_line": 567
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        13
+      ],
+      "item": 19387,
+      "action": 4238,
+      "source_line": 575
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        14
+      ],
+      "item": 19387,
+      "action": 4240,
+      "source_line": 583
+    },
+    {
+      "position": [
+        32234,
+        32604,
+        15
+      ],
+      "item": 19387,
+      "action": 4242,
+      "source_line": 591
+    },
+    {
+      "position": [
+        32238,
+        32623,
+        12
+      ],
+      "item": 19387,
+      "action": 4237,
+      "source_line": 571
+    },
+    {
+      "position": [
+        32240,
+        32621,
+        10
+      ],
+      "item": 19387,
+      "action": 4233,
+      "source_line": 555
+    },
+    {
+      "position": [
+        32242,
+        32620,
+        9
+      ],
+      "item": 19387,
+      "action": 4231,
+      "source_line": 547
+    },
+    {
+      "position": [
+        32243,
+        32596,
+        8
+      ],
+      "item": 19387,
+      "action": 4227,
+      "source_line": 531
+    },
+    {
+      "position": [
+        32244,
+        32587,
+        14
+      ],
+      "item": 19387,
+      "action": 4241,
+      "source_line": 587
+    },
+    {
+      "position": [
+        32244,
+        32620,
+        13
+      ],
+      "item": 19387,
+      "action": 4239,
+      "source_line": 579
+    }
+  ]
+}

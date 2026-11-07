@@ -243,10 +243,30 @@ async fn deposit(
 
 /// A second historical Character root receives a genuine independently verified Fresh session.
 /// The shared verifier and publications own every claim; commands retain all production guards.
-async fn peer(
+pub(in crate::gameplay_transport) async fn peer(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     base: AdmittedSession,
+) -> TestResult<AdmittedSession> {
+    peer_at(
+        h,
+        owner,
+        base,
+        MovementLocalPosition {
+            x: 9,
+            y: 1,
+            floor: 7,
+        },
+    )
+    .await
+}
+/// Choose the initial qualified position before the genuine Fresh peer is installed.
+/// A published peer is never re-initialized to disguise a movement or handoff.
+pub(in crate::gameplay_transport) async fn peer_at(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    base: AdmittedSession,
+    position: MovementLocalPosition,
 ) -> TestResult<AdmittedSession> {
     use crate::durability::guild_chat_fixture::{historical_character, sid};
     let character = crate::domain::CharacterId::from_bytes(sid(90, 1)).map_err(debug)?;
@@ -327,14 +347,7 @@ async fn peer(
             .map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         runtime
-            .initialize_pinned_test_position(
-                actor,
-                MovementLocalPosition {
-                    x: 9,
-                    y: 1,
-                    floor: 7,
-                },
-            )
+            .initialize_pinned_test_position(actor, position)
             .map_err(debug)?;
         runtime
             .bind_attacker_lease(

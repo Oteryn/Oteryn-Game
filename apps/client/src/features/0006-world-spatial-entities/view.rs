@@ -28,7 +28,8 @@ impl PlayView {
         self.facing
     }
 
-    pub(in crate::play) fn place(&mut self, position: ActorPosition) {
+    pub(in crate::play) fn place(&mut self, mut position: ActorPosition) {
+        position.floor = self.presentation_floor(position.floor);
         if self.floor != position.floor {
             self.inputs.retain(|input| {
                 !matches!(input, crate::play::Input::TargetWalk(target)
@@ -41,6 +42,18 @@ impl PlayView {
 }
 
 impl PlayView {
+    pub(crate) fn set_presentations_with_palette(
+        &mut self,
+        entries: Vec<oteryn_session::VisibleAppearance>,
+        palette: Option<&[[u8; 3]]>,
+    ) -> Result<(), BatchError> {
+        self.appearance_palette = palette
+            .filter(|palette| palette.len() <= 256)
+            .unwrap_or_default()
+            .to_vec();
+        self.set_presentations(entries)
+    }
+
     pub fn set_presentations(
         &mut self,
         entries: Vec<oteryn_session::VisibleAppearance>,

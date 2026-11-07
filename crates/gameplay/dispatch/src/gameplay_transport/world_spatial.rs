@@ -125,6 +125,10 @@ const NPC_HEALTH_PERCENT: u8 = 100;
 pub enum VisibleKind {
     Player,
     Creature,
+    /// Finite W05d source roster; encoded as ordinary Creature, without Forge.
+    SeasonalCreature,
+    /// Finite W05d source NPC roster, encoded as ordinary NPC.
+    SeasonalNpc,
     /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
     /// carries 100 for it.
     Npc,
@@ -172,8 +176,8 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
-        VisibleKind::Creature => (EntityKind::Creature, actor),
-        VisibleKind::Npc | VisibleKind::Hireling => (
+        VisibleKind::Creature | VisibleKind::SeasonalCreature => (EntityKind::Creature, actor),
+        VisibleKind::Npc | VisibleKind::SeasonalNpc | VisibleKind::Hireling => (
             EntityKind::Npc,
             EntityDetail::Actor {
                 direction: entity.direction,

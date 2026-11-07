@@ -25,6 +25,7 @@ struct TaskSnapshot {
     lease_generation: u64,
     observed_revision: u64,
     active_tasks: Vec<u8>,
+    spike_main: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,6 +43,17 @@ struct Recipient {
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
+    pub(super) spike_recipients: Vec<SpikeRecipient>,
+}
+
+/// Actual task state observed at death, not a later live assignment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SpikeRecipient {
+    pub(super) actor: ExactActorRef,
+    pub(super) session: GameSessionId,
+    pub(super) character: [u8; 16],
+    pub(super) lease_generation: u64,
+    pub(super) observed_revision: u64,
 }
 
 /// Capture memory only; there is no independently drained queue here. Sessions are
@@ -109,6 +121,7 @@ fn freeze(
         boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
     });
     let mut recipients = Vec::new();
+    let mut spike_recipients = Vec::new();
     for character in members {
         let Some(snapshot) = snapshots
             .iter()
@@ -119,6 +132,19 @@ fn freeze(
         if snapshot.observed_revision == 0 || snapshot.active_tasks.len() > quest::ACTIVE_TASK_LIMIT
         {
             continue;
+        }
+        if creature == "oteryn:creature.demon_skeleton"
+            && snapshot
+                .spike_main
+                .is_some_and(|main| (0..7).contains(&main))
+        {
+            spike_recipients.push(SpikeRecipient {
+                actor: snapshot.actor,
+                session: snapshot.session,
+                character,
+                lease_generation: snapshot.lease_generation,
+                observed_revision: snapshot.observed_revision,
+            });
         }
         let mut actions: Vec<_> = snapshot
             .active_tasks
@@ -155,6 +181,7 @@ fn freeze(
     FrozenGrizzlyDeath {
         source: Some(source),
         recipients,
+        spike_recipients,
     }
 }
 
@@ -278,6 +305,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
+                        spike_main:copy.tracks().get("oteryn:quest-progress/quest/u10_20/spike_task_quest/spike_upper_kill_main").copied(),
                     })
                 })
         };

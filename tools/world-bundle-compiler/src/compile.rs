@@ -489,6 +489,36 @@ fn spawns_with(
                     };
                     if reason.is_none() {
                         creatures.insert(point.creature.as_str(), creature);
+                        if !point.weighted.is_empty() {
+                            if point.boss_policy.is_some()
+                                || !(2..=64).contains(&point.weighted.len())
+                            {
+                                return Err(Error::Format(
+                                    "invalid weighted ordinary point".into(),
+                                ));
+                            }
+                            let mut total = 0u32;
+                            let mut choices = BTreeSet::new();
+                            for choice in &point.weighted {
+                                let facts = families.creatures.get(&choice.creature).filter(|facts|
+                                    facts.period=="All" && !facts.boss && !facts.encounter_bound)
+                                    .ok_or_else(||Error::Format("weighted alternative is not admitted ordinary All creature".into()))?;
+                                if choice.weight == 0 || !choices.insert(choice.creature.as_str()) {
+                                    return Err(Error::Format(
+                                        "zero or repeated weighted alternative".into(),
+                                    ));
+                                }
+                                total = total
+                                    .checked_add(choice.weight)
+                                    .ok_or_else(|| Error::Limit("weighted sum overflow".into()))?;
+                                creatures.insert(choice.creature.as_str(), facts);
+                            }
+                            if total == 0 || !choices.contains(point.creature.as_str()) {
+                                return Err(Error::Format(
+                                    "weighted timing creature is not an alternative".into(),
+                                ));
+                            }
+                        }
                     }
                     reason
                 }
@@ -524,12 +554,31 @@ fn spawns_with(
             })
             .collect::<Result<_, Error>>()?,
         sources: Vec::with_capacity(kept.len()),
+        weighted: Vec::new(),
     };
     for (key, (source, points)) in kept {
         let (cx, cy, cz) = source.centre;
         let floor = native_floor(cz)?;
         let mut list = Vec::with_capacity(points.len());
         for point in points {
+            if !point.weighted.is_empty() {
+                let mut choices: Vec<_> = point
+                    .weighted
+                    .iter()
+                    .map(|choice| spawn::WeightedChoice {
+                        creature: index[choice.creature.as_str()],
+                        weight: choice.weight,
+                    })
+                    .collect();
+                choices.sort_by_key(|choice| choice.creature);
+                table.weighted.push(spawn::WeightedPoint {
+                    source: u32::try_from(table.sources.len())
+                        .map_err(|_| Error::Limit("weighted source index".into()))?,
+                    point: u16::try_from(list.len())
+                        .map_err(|_| Error::Limit("weighted point index".into()))?,
+                    choices,
+                });
+            }
             if creatures[point.creature.as_str()].period != "All" {
                 report.inactive_points += 1;
             }

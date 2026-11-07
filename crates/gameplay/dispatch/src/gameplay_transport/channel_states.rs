@@ -22,6 +22,9 @@ pub struct ChannelSessionStates {
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// Shared weak browse containers live only while a connection holds a view.
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
+    /// Calendar projection hint only; the durable Cake World owner rechecks every mutation.
+    pub(super) cake_stage: std::sync::atomic::AtomicU8,
+    pub(super) horse_expiry: super::horse_station::ExpiryClocks,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
@@ -80,6 +83,9 @@ pub struct ChannelSessionStates {
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
+    pub(super) house_item_effects:
+        std::sync::Arc<std::sync::Mutex<super::house_item_use::side_effects::cues::Journal>>,
+    pub(super) pumpkin_portals: super::pumpkin_portals::PumpkinPortalSessions,
     pub(super) resting_areas: super::resting_area::RestingAreaSessions,
     /// RAIDS-GLOBAL: the Channel and its Activity scopes share current recipients.
     pub(super) server_messages: std::sync::Arc<super::raid_notices::ServerMessageHub>,
@@ -137,6 +143,7 @@ impl ChannelSessionStates {
         self.analyser.forget(session);
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);
+        self.horse_expiry.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
         self.gameplay_idle_presence.forget(session);
@@ -144,6 +151,7 @@ impl ChannelSessionStates {
         self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         self.grizzly_boss.forget(session);
+        self.pumpkin_portals.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
         }

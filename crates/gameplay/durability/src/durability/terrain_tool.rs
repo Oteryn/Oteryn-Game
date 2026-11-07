@@ -134,9 +134,12 @@ impl DurabilityRoot {
             if !fence_is_live(&mut tx, &fence, &node).await? { return Err(DurabilityError::Unavailable); }
             sqlx::query("WITH due AS (SELECT world_id,channel_id,placement,reset_epoch FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND map_revision=$3 AND content_generation=$4 AND reset_epoch=$5 AND decay_at_unix_ms <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint ORDER BY decay_at_unix_ms,placement LIMIT 32 FOR UPDATE) UPDATE game_terrain_tool_transforms t SET state_item_id=t.decay_states[t.decay_step+1],object_revision=t.object_revision+1,decay_step=t.decay_step+1,decay_at_unix_ms=CASE WHEN t.decay_step+1 < cardinality(t.decay_states) THEN t.decay_at_unix_ms+t.decay_delays[t.decay_step+2] ELSE NULL END FROM due WHERE (t.world_id,t.channel_id,t.placement,t.reset_epoch)=(due.world_id,due.channel_id,due.placement,due.reset_epoch)")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch).execute(&mut **tx).await?;
-            let rows = sqlx::query("SELECT placement,object_revision,state_item_id FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND map_revision=$3 AND content_generation=$4 AND reset_epoch=$5 ORDER BY placement LIMIT 1025")
+            let rows = sqlx::query("SELECT t.placement,t.object_revision,t.state_item_id,EXISTS(SELECT 1 FROM game_seasonal_cake_bite_receipts cake WHERE cake.world_id=t.world_id AND cake.channel_id=t.channel_id AND cake.placement=t.placement AND cake.terrain_reset_epoch=t.reset_epoch AND cake.terrain_map_revision=t.map_revision AND cake.terrain_content_generation=t.content_generation AND cake.terrain_revision_after<=t.object_revision) AS cake_source FROM game_terrain_tool_transforms t WHERE t.world_id=encode($1,'hex')::uuid AND t.channel_id=encode($2,'hex')::uuid AND t.map_revision=$3 AND t.content_generation=$4 AND t.reset_epoch=$5 ORDER BY t.placement LIMIT 2141")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch).fetch_all(&mut **tx).await?;
-            if rows.len()>1024 { return Err(DurabilityError::InvalidStoredState); }
+            // Preserve the ordinary1024 budget; only exact immutable Cake/CAS
+            // source receipts admit the additional1116 eating-floor placements.
+            let cake = rows.iter().try_fold(0_usize, |count,row| row.try_get::<bool,_>("cake_source").map(|cake|count+usize::from(cake)))?;
+            if cake>1116 || rows.len().saturating_sub(cake)>1024 {return Err(DurabilityError::InvalidStoredState);}
             let result = rows.into_iter().map(|row| Ok(TerrainState { placement: row.try_get("placement")?, revision: row.try_get("object_revision")?, item: u32::try_from(row.try_get::<i64,_>("state_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)? })).collect::<Result<Vec<_>,DurabilityError>>()?;
             tx.commit(deadline).await?;
             Ok(result)
@@ -159,7 +162,7 @@ pub(super) async fn apply_in_transaction(
         command,
         intent,
         scope,
-        Some(mutation.tool),
+        ObjectTool::Ordinary(Some(mutation.tool)),
         &MapMutation {
             placement: mutation.placement.clone(),
             expected_revision: mutation.expected_revision,
@@ -182,7 +185,42 @@ pub(super) async fn apply_map_in_transaction(
     scope: &TerrainScope,
     mutation: &MapMutation,
 ) -> Result<bool, DurabilityError> {
-    apply_object_in_transaction(tx, fence, command, intent, scope, None, mutation).await
+    apply_object_in_transaction(
+        tx,
+        fence,
+        command,
+        intent,
+        scope,
+        ObjectTool::Ordinary(None),
+        mutation,
+    )
+    .await
+}
+
+/// The closed seasonal owner uses a receipt-producing Cake gateway; ordinary
+/// terrain mutation keeps its existing SQL admission and behavior.
+pub(super) async fn apply_cake_in_transaction(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: &[u8],
+    scope: &TerrainScope,
+    mutation: &MapMutation,
+) -> Result<bool, DurabilityError> {
+    apply_object_in_transaction(
+        tx,
+        fence,
+        command,
+        intent,
+        scope,
+        ObjectTool::Cake,
+        mutation,
+    )
+    .await
+}
+enum ObjectTool {
+    Ordinary(Option<[u8; 16]>),
+    Cake,
 }
 
 async fn apply_object_in_transaction(
@@ -191,7 +229,7 @@ async fn apply_object_in_transaction(
     command: CommandRef,
     intent: &[u8],
     scope: &TerrainScope,
-    tool: Option<[u8; 16]>,
+    tool: ObjectTool,
     mutation: &MapMutation,
 ) -> Result<bool, DurabilityError> {
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -226,12 +264,34 @@ async fn apply_object_in_transaction(
         .map(|(state, _)| i64::from(*state))
         .collect();
     let delays: Vec<i64> = mutation.decay.iter().map(|(_, delay)| *delay).collect();
-    let applied: bool = sqlx::query_scalar("SELECT game_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
-                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string())
-                .bind(fence.character_id.as_bytes().as_slice()).bind(tool.as_ref().map(|id| id.as_slice())).bind(intent)
-                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&mutation.placement)
-                .bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
-                .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))
-                .bind(states).bind(delays).fetch_one(&mut ***tx).await?;
+    let (tool, query) = match tool {
+        ObjectTool::Ordinary(tool) => (
+            tool,
+            "SELECT game_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
+        ),
+        ObjectTool::Cake => (
+            None,
+            "SELECT game_cake_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
+        ),
+    };
+    let applied: bool = sqlx::query_scalar(query)
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(tool.as_ref().map(|id| id.as_slice()))
+        .bind(intent)
+        .bind(world.as_bytes().as_slice())
+        .bind(channel.as_bytes().as_slice())
+        .bind(&mutation.placement)
+        .bind(&scope.map_revision)
+        .bind(scope.content_generation.as_slice())
+        .bind(scope.reset_epoch)
+        .bind(mutation.expected_revision)
+        .bind(i64::from(mutation.before))
+        .bind(i64::from(mutation.after))
+        .bind(states)
+        .bind(delays)
+        .fetch_one(&mut ***tx)
+        .await?;
     Ok(applied)
 }

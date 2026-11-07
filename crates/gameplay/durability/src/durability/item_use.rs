@@ -48,15 +48,16 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod concoction;
-pub mod drome_cube;
-pub mod gourmet;
 pub mod condition_potions;
+pub mod cupcakes;
+pub mod drome_cube;
 pub mod fluid;
-mod tibiadrome;
+pub mod gourmet;
 pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
+mod tibiadrome;
 
 pub use carried_inventory::ItemUseInventory;
 mod hireling_lamp;
@@ -80,8 +81,15 @@ pub enum ItemUseKind {
         wire_binding: [u8; 32],
     },
     /// E12: native lamp burn under a named House fence, composed with placement.
-    HirelingLamp { origin_channel: [u8; 16] },
-    HirelingFood { origin_channel: [u8; 16] },
+    HirelingLamp {
+        origin_channel: [u8; 16],
+    },
+    HirelingFood {
+        origin_channel: [u8; 16],
+    },
+    Cupcake {
+        origin_channel: [u8; 16],
+    },
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -101,6 +109,7 @@ impl ItemUseKind {
             Self::DromeCube { .. } => drome_cube::DROME_CUBE_CAUSE,
             Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
+            Self::Cupcake { .. } => cupcakes::CUPCAKE_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -227,7 +236,8 @@ impl ItemUseRequest {
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::Cupcake { .. },
             ) => true,
             (
                 _,
@@ -237,7 +247,8 @@ impl ItemUseRequest {
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::Cupcake { .. },
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -304,7 +315,10 @@ impl ItemUseRequest {
         let mut hasher = Sha256::new();
         hasher.update(b"oteryn.item_use.request.v1");
         hasher.update(self.kind.code().to_be_bytes());
-        if let ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel } = self.kind {
+        if let ItemUseKind::HirelingLamp { origin_channel }
+        | ItemUseKind::HirelingFood { origin_channel }
+        | ItemUseKind::Cupcake { origin_channel } = self.kind
+        {
             hasher.update(origin_channel);
         }
         if let ItemUseKind::PickRefine {
@@ -401,12 +415,15 @@ impl DurabilityRoot {
                 | ItemUseKind::DromeCube { .. }
                 | ItemUseKind::HirelingLamp { .. }
                 | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::Cupcake { .. }
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
         ) || oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
             &request.source_definition.production_key,
-        ).is_some() {
+        )
+        .is_some()
+        {
             return Err(ItemUseError::InvalidInput);
         }
         self.commit_use(authority, node, fence, request, None).await
@@ -452,8 +469,12 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Some(outcome)=tibiadrome::replay(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
-                        tx.commit(deadline).await?;return Ok(Ok(outcome));
+                    if let Some(outcome) = tibiadrome::replay(&mut tx, &fence, &request)
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                    {
+                        tx.commit(deadline).await?;
+                        return Ok(Ok(outcome));
                     }
                     match replay(&mut tx, &fence, &request).await {
                         Ok(Some(outcome)) => {
@@ -502,8 +523,12 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
                     }
-                    if let Some(outcome)=tibiadrome::preserve(&mut tx,&fence,&request).await.map_err(|_|DurabilityError::InvalidStoredState)? {
-                        tx.commit(deadline).await?;return Ok(Ok(outcome));
+                    if let Some(outcome) = tibiadrome::preserve(&mut tx, &fence, &request)
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                    {
+                        tx.commit(deadline).await?;
+                        return Ok(Ok(outcome));
                     }
                     let tuple = tx.tuple();
                     if let ItemUseKind::PickRefine { .. } = request.kind {
@@ -553,6 +578,7 @@ impl DurabilityRoot {
                                 | ItemUseKind::Concoction
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
+                                | ItemUseKind::Cupcake { .. }
                                 | ItemUseKind::DromeCube { .. } => None,
                             };
                             if let Some(counted) = counted {
@@ -709,10 +735,19 @@ pub(super) async fn write(
     // Only the typed Hireling owner can reach this branch, after its named-House fence.
     // The original Channel is audit provenance; it does not replace the current House scope.
     let (world, channel) = match (fence.runtime_scope, request.kind) {
-        (RuntimeScopeRefV1::Channel { world_id, channel_id }, _) =>
-            (*world_id.as_bytes(), *channel_id.as_bytes()),
-        (RuntimeScopeRefV1::Instance { world_id, .. }, ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel }) =>
-            (*world_id.as_bytes(), origin_channel),
+        (
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            },
+            _,
+        ) => (*world_id.as_bytes(), *channel_id.as_bytes()),
+        (
+            RuntimeScopeRefV1::Instance { world_id, .. },
+            ItemUseKind::HirelingLamp { origin_channel }
+            | ItemUseKind::HirelingFood { origin_channel }
+            | ItemUseKind::Cupcake { origin_channel },
+        ) => (*world_id.as_bytes(), origin_channel),
         _ => return Err(ItemUseError::AuthorityRejected),
     };
     let holder = *fence.character_id.as_bytes();
@@ -720,7 +755,8 @@ pub(super) async fn write(
         return Ok(outcome);
     }
     if matches!(request.kind, ItemUseKind::HirelingLamp { .. })
-        && let Some(outcome) = hireling_lamp::write_if_inbox(connection, fence, request, tuple).await?
+        && let Some(outcome) =
+            hireling_lamp::write_if_inbox(connection, fence, request, tuple).await?
     {
         return Ok(outcome);
     }
@@ -846,9 +882,16 @@ pub(super) async fn write(
         ItemUseFlaskPlan::None | ItemUseFlaskPlan::Missing => None,
     };
     let source_house = if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
-        && matches!(request.kind, ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. }) {
+        && matches!(
+            request.kind,
+            ItemUseKind::HirelingLamp { .. }
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::Cupcake { .. }
+        ) {
         Some(hireling_lamp::house_scope(connection, fence).await?)
-    } else { None };
+    } else {
+        None
+    };
     let item_use = OneItemUseV1 {
         source_before: Some(state(
             &request.source_item_instance_id,

@@ -396,8 +396,11 @@ where
     A: FreshAdmissionAuthority,
 {
     sounds(stream, authority, session).await?;
+    let furniture_refresh = authority
+        .take_furniture_inventory_refresh(session.admitted.game_session_id)
+        .await;
     if let Some(view) = session.item_view.as_mut()
-        && view.inventory_refresh_pending
+        && (view.inventory_refresh_pending || furniture_refresh)
     {
         item_use_view_refresh::refresh(
             stream,
@@ -568,7 +571,10 @@ where
     let ambient_selected = session
         .selected_capabilities
         .contains(wire::CAPABILITY_AMBIENT_SOUND_V1);
-    if !presentation_selected && !ambient_selected {
+    let item_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_ITEM_EFFECTS_V1);
+    if !presentation_selected && !ambient_selected && !item_selected {
         return Ok(());
     }
     let Some((cursor, mut events)) = authority
@@ -590,9 +596,18 @@ where
         ambient_sound(stream, session, cue_id).await?;
     }
 
+    let item_events: Vec<_> = events
+        .iter()
+        .copied()
+        .filter(|event| {
+            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+        })
+        .collect();
     events.retain(|event| {
         presentation_selected
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
+            && !(item_selected
+                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
     for (index, event) in events.iter_mut().enumerate() {
         event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
@@ -626,6 +641,9 @@ where
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.presentation_revision = revision;
+    }
+    if !item_events.is_empty() {
+        item_effects(stream, session, &item_events).await?;
     }
     session.sound_cursor = cursor;
     Ok(())
@@ -668,5 +686,39 @@ pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
     session.ambient_revision = revision;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
+    Ok(())
+}
+
+async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let payload = wire::encode_item_effect_batch(events).map_err(|_| ServeEnd::Disconnected)?;
+    let revision = session
+        .item_effects_revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_ITEM_EFFECTS,
+        session.item_effects_revision,
+        revision,
+        1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    session.item_effects_revision = revision;
     Ok(())
 }

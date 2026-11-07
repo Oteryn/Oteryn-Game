@@ -209,10 +209,13 @@
       "required": ["family", "records", "schema", "shard"],
       "properties": {
         "family": { "const": "Transition.Teleport" },
-        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/transition_record" } },
+        "records": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "oneOf": [{ "$ref": "#/$defs/transition_record" }, { "$ref": "#/$defs/derived_pumpkin_transition" }] } },
         "schema": { "const": "OTERYN_TRANSITION_AUTHORING_SHARD/v1" },
         "shard": { "$ref": "#/$defs/shard_header" }
       }
+    },
+    "derived_pumpkin_transition": {
+      "const": {"declaration":{"from":{"coordinate_frame":"global-target-2026-09-27","floor":15,"x":33317,"y":32419},"identity":{"key":"oteryn:transition.teleport.x33317_y32419_z15","revision":"definition-r1"},"kind":"Transition","object":{"family":"Item","key":"oteryn:item.tibia.i1949","revision":"definition-r1"},"to":{"coordinate_frame":"global-target-2026-09-27","floor":1,"x":33213,"y":32454},"transition_kind":"teleport"},"source_bindings":[{"disposition":"EXACT","external_id":"33317,32419,15:1949","identity_namespace":"oteryn/derived-halloween-reward-room","source_key":"oteryn:source.native-derived-halloween-room","source_revision":"48b645d0d99acc8e7424ab44407ce43fa0370bf4108785b7433941c5f8476c86","target":{"family":"Transition","key":"oteryn:transition.teleport.x33317_y32419_z15","revision":"definition-r1"}}]}
     },
     "family_index": {
       "type": "object",
@@ -230,6 +233,7 @@
             "tools/content-schema/world-authoring/convert_hunting_places.py"
           ]
         },
+        "native_derived_transitions": { "const": [{"classification":"DERIVED_NATIVE_ROOM","generator":"tools/content-migration/pumpkin_room.py","path":"tools/content-migration/pumpkin_room.json","sha256":"48b645d0d99acc8e7424ab44407ce43fa0370bf4108785b7433941c5f8476c86","transition":"oteryn:transition.teleport.x33317_y32419_z15"}] },
         "population_state": { "const": "POPULATED" },
         "record_count": { "type": "integer", "minimum": 1 },
         "schema": { "const": "OTERYN_FAMILY_INDEX/v1" },

@@ -107,6 +107,61 @@ fn combine_elements(
         (None, None) => Some(None),
     }
 }
+// Finite NPC source admission into the existing death-capable condition owner.
+use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_foundation::foundation::condition::{
+    ConditionDefinition, ConditionSourceKind, ConditionStore, ConditionTick, TickKind,
+};
+pub(super) fn ajax_source_fire_tick(
+    store: &ConditionStore<String>,
+    tick: &ConditionTick<String>,
+) -> bool {
+    if tick.provenance.source_kind != ConditionSourceKind::SelfUse
+        || tick.provenance.source.is_some()
+        || tick.provenance.lineage.is_some()
+        || tick.provenance.definition_key != "npc.ajax.source_fire"
+        || tick.provenance.definition_revision != 1
+        || !matches!(
+            tick.kind,
+            TickKind::Damage {
+                element: DotElement::Fire,
+                amount: 10,
+                refused: false
+            }
+        )
+    {
+        return false;
+    }
+    let Some(expected) = ConditionDefinition::new(
+        "npc.ajax.source_fire",
+        1,
+        ConditionValues::DamageOverTime {
+            element: DotElement::Fire,
+            total_min: 100,
+            total_max: 100,
+            per_tick: 10,
+            interval_ms: 2000,
+            delayed: true,
+        },
+    ) else {
+        return false;
+    };
+    store.instances().iter().any(|instance| {
+        instance.sequence() == tick.sequence
+            && instance.definition() == &expected
+            && instance.provenance() == &tick.provenance
+            && tick
+                .due
+                .checked_sub(instance.started_at())
+                .is_some_and(|elapsed| {
+                    elapsed > 0 && elapsed <= 20_000_000 && elapsed.is_multiple_of(2_000_000)
+                })
+            && instance.remaining_total() > 0
+            && instance.remaining_total() <= 100
+            && instance.remaining_total().is_multiple_of(10)
+    })
+}
+
 impl ChannelSpellStates {
     /// A preview is read-only. Canonical Creature-origin damage is consumed by
     /// the existing HP/conditions/death owner, including after its creator dies.
@@ -142,15 +197,20 @@ impl ChannelSpellStates {
                     &t.provenance,
                 ))
         };
+        let source_without_attacker =
+            |tick: &oteryn_gameplay_foundation::foundation::condition::ConditionTick<String>| {
+                environment(tick) || ajax_source_fire_tick(before.owned_conditions(), tick)
+            };
         if !preview.combat_ticks.iter().any(|t| {
             hit(t.kind)
-                && (t.provenance.source_kind == ConditionSourceKind::Creature || environment(t))
+                && (t.provenance.source_kind == ConditionSourceKind::Creature
+                    || source_without_attacker(t))
         }) {
             return None;
         }
         if preview.combat_ticks.iter().any(|t| {
             hit(t.kind)
-                && !environment(t)
+                && !source_without_attacker(t)
                 && (t.provenance.source_kind != ConditionSourceKind::Creature
                     || !t
                         .provenance
@@ -539,5 +599,98 @@ mod standing_fact_tests {
             fold_static([fire, Field(Some(Some(DotElement::Energy)))]),
             Some(Some(DotElement::Fire))
         );
+    }
+}
+
+#[cfg(test)]
+mod ajax_source_tests {
+    use super::*;
+    #[test]
+    fn srv7_ajax_source_periodic_accepts_only_the_exact_unattributed_npc_episode()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let before = crate::spell::cast::PlayerSpellState::new(
+            crate::spell::cast::CharacterCastFacts {
+                vocation: crate::spell::Vocation::Knight,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .ok_or("native source actor")?;
+        let after = crate::spell::actor_conditions::stage_ajax_source_fire(&before, 0)
+            .map_err(|error| format!("{error:?}"))?;
+        let cycle = crate::spell::actor_conditions::stage_source_owner_cycle(
+            &after,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000_000),
+            Some(
+                oteryn_gameplay_foundation::foundation::condition::TickFacts {
+                    in_protection_zone: false,
+                    standing_on_field: None,
+                },
+            ),
+            None,
+        )
+        .map_err(|error| format!("{error:?}"))?
+        .ok_or("due native source cycle")?;
+        let tick = cycle.combat_ticks.first().ok_or("actual source tick")?;
+        assert!(ajax_source_fire_tick(after.owned_conditions(), tick));
+        let mut wrong = tick.clone();
+        wrong.provenance.definition_key = "ordinary.self_use.fire".into();
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.provenance.definition_revision = 2;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.provenance.source = Some("player:forged".into());
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.provenance.lineage = Some(
+            oteryn_gameplay_foundation::foundation::condition::ConditionLineage {
+                source_character: [1; 16],
+                source_session: [2; 16],
+                source_lease_generation: 1,
+                source_actor_placement: [3; 16],
+                source_scope_generation: 1,
+                source_content_digest: [4; 32],
+                source_catalog_digest: [5; 32],
+                source_creation_command: 1,
+            },
+        );
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.provenance.source_kind = ConditionSourceKind::Player;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.sequence = wrong.sequence.checked_add(1).ok_or("sequence")?;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.kind = TickKind::Damage {
+            element: DotElement::Fire,
+            amount: 20,
+            refused: false,
+        };
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.kind = TickKind::Damage {
+            element: DotElement::Fire,
+            amount: 10,
+            refused: true,
+        };
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.due = 0;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.due = 22_000_000;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        let mut wrong = tick.clone();
+        wrong.due = 2_000_001;
+        assert!(!ajax_source_fire_tick(after.owned_conditions(), &wrong));
+        assert!(!ajax_source_fire_tick(before.owned_conditions(), tick));
+        Ok(())
     }
 }

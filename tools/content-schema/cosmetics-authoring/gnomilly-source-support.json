@@ -1,0 +1,358 @@
+{
+  "schema": "OTERYN_NPC_COSMETIC_TRANSITIONS/v1",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "source": {
+        "path": "data-global/npc/gnomilly.lua",
+        "sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf"
+      },
+      "transitions": [
+        {
+          "id": "spike-kill-report-offer",
+          "source_lines": [
+            83,
+            85
+          ],
+          "keywords": [
+            "report"
+          ],
+          "topic_before": null,
+          "topic_after": 1,
+          "guards": {
+            "all": []
+          },
+          "effects": [],
+          "reply": "What mission do you want to report about: recharging the ghost {pacifiers}, the {release} of the spiritual anger, about {tracking} an evil presence and the {killing} of demon skeletons?"
+        },
+        {
+          "id": "spike-kill-report-not-started",
+          "source_lines": [
+            125,
+            127
+          ],
+          "keywords": [
+            "killing"
+          ],
+          "topic_before": 1,
+          "topic_after": 0,
+          "guards": {
+            "kind": "track",
+            "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+            "op": "EQ",
+            "value": -1
+          },
+          "effects": [],
+          "reply": "You have not started that mission."
+        },
+        {
+          "id": "spike-kill-report",
+          "source_lines": [
+            125,
+            133
+          ],
+          "keywords": [
+            "killing"
+          ],
+          "topic_before": 1,
+          "topic_after": 0,
+          "guards": {
+            "kind": "track",
+            "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+            "op": "EQ",
+            "value": 7
+          },
+          "effects": [
+            {
+              "kind": "spike_upper_kill_report"
+            }
+          ],
+          "reply": "You have done well. Here, take your reward."
+        },
+        {
+          "id": "spike-kill-report-incomplete",
+          "source_lines": [
+            134,
+            135
+          ],
+          "keywords": [
+            "killing"
+          ],
+          "topic_before": 1,
+          "topic_after": 0,
+          "guards": {
+            "not": {
+              "any": [
+                {
+                  "kind": "track",
+                  "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+                  "op": "EQ",
+                  "value": -1
+                },
+                {
+                  "kind": "track",
+                  "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+                  "op": "EQ",
+                  "value": 7
+                }
+              ]
+            }
+          },
+          "effects": [],
+          "reply": "Gnowful! Just go out to the caves and kill at least seven demon skeletons."
+        },
+        {
+          "id": "spike-kill-report-invalid",
+          "source_lines": [
+            137,
+            141
+          ],
+          "keywords": [],
+          "topic_before": 1,
+          "topic_after": 0,
+          "guards": {
+            "all": []
+          },
+          "effects": [],
+          "reply": "That's not a valid mission name.",
+          "keyword_guard": {
+            "not": {
+              "any": [
+                {
+                  "contains": "pacifiers"
+                },
+                {
+                  "contains": "release"
+                },
+                {
+                  "contains": "tracking"
+                },
+                {
+                  "contains": "killing"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "spike-kill-cooldown",
+          "source_lines": [
+            248,
+            251
+          ],
+          "keywords": [
+            "kill"
+          ],
+          "topic_before": null,
+          "topic_after": 0,
+          "guards": {
+            "kind": "track",
+            "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+            "op": "GE",
+            "value": {
+              "op": "now"
+            }
+          },
+          "effects": [],
+          "reply": "Sorry, you have to wait {source_duration} before this task gets available again.",
+          "reply_template": {
+            "kind": "source_duration",
+            "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+            "subtract": "now",
+            "source_function": "string.diff"
+          }
+        },
+        {
+          "id": "spike-kill-wrong-level",
+          "source_lines": [
+            253,
+            255
+          ],
+          "keywords": [
+            "kill"
+          ],
+          "topic_before": null,
+          "topic_after": 0,
+          "guards": {
+            "all": [
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+                "op": "LT",
+                "value": {
+                  "op": "now"
+                }
+              },
+              {
+                "any": [
+                  {
+                    "not": {
+                      "kind": "level_ge",
+                      "value": 25
+                    }
+                  },
+                  {
+                    "kind": "level_ge",
+                    "value": 50
+                  }
+                ]
+              }
+            ]
+          },
+          "effects": [],
+          "reply": "Sorry, you are not on the required range of levels [25-49]."
+        },
+        {
+          "id": "spike-kill-already-started",
+          "source_lines": [
+            257,
+            263
+          ],
+          "keywords": [
+            "kill"
+          ],
+          "topic_before": null,
+          "topic_after": 0,
+          "guards": {
+            "all": [
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+                "op": "LT",
+                "value": {
+                  "op": "now"
+                }
+              },
+              {
+                "kind": "level_ge",
+                "value": 25
+              },
+              {
+                "not": {
+                  "kind": "level_ge",
+                  "value": 50
+                }
+              },
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+                "op": "NE",
+                "value": -1
+              }
+            ]
+          },
+          "effects": [],
+          "reply": "You have already started that mission."
+        },
+        {
+          "id": "spike-kill-offer",
+          "source_lines": [
+            248,
+            263
+          ],
+          "keywords": [
+            "kill"
+          ],
+          "topic_before": null,
+          "topic_after": 2,
+          "guards": {
+            "all": [
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+                "op": "EQ",
+                "value": -1
+              },
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+                "op": "LT",
+                "value": {
+                  "op": "now"
+                }
+              },
+              {
+                "kind": "level_ge",
+                "value": 25
+              },
+              {
+                "not": {
+                  "kind": "level_ge",
+                  "value": 50
+                }
+              }
+            ]
+          },
+          "effects": [],
+          "reply": "We need someone to reduce the steadily growing number of demon skeletons in the caves. If you are interested, I can give you some more information about it. Are you willing to accept this mission?"
+        },
+        {
+          "id": "spike-kill-accept",
+          "source_lines": [
+            266,
+            271
+          ],
+          "keywords": [
+            "yes"
+          ],
+          "topic_before": 2,
+          "topic_after": 0,
+          "guards": {
+            "all": [
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+                "op": "EQ",
+                "value": -1
+              },
+              {
+                "kind": "track",
+                "storage": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+                "op": "LT",
+                "value": {
+                  "op": "now"
+                }
+              },
+              {
+                "kind": "level_ge",
+                "value": 25
+              },
+              {
+                "not": {
+                  "kind": "level_ge",
+                  "value": 50
+                }
+              }
+            ]
+          },
+          "effects": [
+            {
+              "kind": "spike_upper_kill_accept"
+            }
+          ],
+          "reply": "Gnometastic! Just go out and kill them. You should find more of them than you like."
+        },
+        {
+          "id": "spike-kill-decline",
+          "source_lines": [
+            272,
+            274
+          ],
+          "keywords": [
+            "no"
+          ],
+          "topic_before": 2,
+          "topic_after": 0,
+          "guards": {
+            "all": []
+          },
+          "effects": [],
+          "reply": "Ok then."
+        }
+      ],
+      "greeting": "Hi!",
+      "farewell": "Good bye, |PLAYERNAME|."
+    }
+  ]
+}

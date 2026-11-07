@@ -125,6 +125,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<MovementLocalPosition> {
+        let house = {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .house_player_for_session(session)
+                .ok()
+                .flatten()
+                .and_then(|(_, state)| {
+                    crate::durability::house_scope_handoff::HouseId::new(
+                        self.world_id,
+                        &state.house,
+                    )
+                })
+        };
+        if let Some(house) = house {
+            let Some(map) = self.bundle_map() else {
+                return Some(self.runtime.lock().await.respawn_position());
+            };
+            let table = &map.overlay.base().subareas;
+            if table == &Default::default() {
+                return Some(self.runtime.lock().await.respawn_position());
+            }
+            let fence = self.current_quest_fence(session).await.ok()??;
+            let town = self
+                .root
+                .read_house_death_home_town(self.character, self.holder, &house, fence)
+                .await
+                .ok()??;
+            let temple = table.town(town)?.temple?;
+            return Some(MovementLocalPosition {
+                x: i32::from(temple.x),
+                y: i32::from(temple.y),
+                floor: i16::from(-temple.floor),
+            });
+        }
         let scope = self.runtime.lock().await.binding().runtime_scope();
         if matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
             return self.activity_home_temple(session).await;
@@ -342,6 +376,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(tile) = map.overlay.base().tile(x, y, floor) else {
             return entered;
         };
+        let top_level = tile.depths().iter().filter(|depth| **depth == 0).count();
+        if (0..top_level).any(|ordinal| {
+            u8::try_from(ordinal)
+                .ok()
+                .and_then(|ordinal| {
+                    crate::map::view::placement_key(
+                        crate::map::overlay::TilePos { x, y, floor },
+                        ordinal,
+                    )
+                })
+                .and_then(|key| map.facts.action_at(key))
+                == Some(30032)
+        }) {
+            return self.svargrond_roof_step(actor, session, entered).await;
+        }
         let mut citizens = (0..tile.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|ordinal| tile.unique(u8::try_from(ordinal).ok()?))
             .filter_map(|entry| citizen_town(entry.unique));
@@ -411,6 +460,80 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     session,
                     &format!("You are now a citizen of {}.", area.name),
                 );
+            }
+        }
+        runtime.read_actor_position(actor).unwrap_or(entered)
+    }
+    /// Crystal 201189f8 citizen_svargrond.lua:9-17. This entrance grants roof
+    /// access only at questline 8; the citizenship portal itself allows >=8.
+    async fn svargrond_roof_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        entered: MovementPositionSnapshot,
+    ) -> MovementPositionSnapshot {
+        let Some(map) = self.bundle_map() else {
+            return entered;
+        };
+        let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
+            return entered;
+        };
+        let _slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let Ok(copy) = self
+            .root
+            .read_character_quest_state(self.character, fence.character_id)
+            .await
+        else {
+            return entered;
+        };
+        let allowed = copy.tracks().get("oteryn:quest-progress/storage/41174") == Some(&8);
+        let target = if allowed {
+            MovementLocalPosition {
+                x: 32212,
+                y: 31131,
+                floor: 5,
+            }
+        } else {
+            MovementLocalPosition {
+                x: 32210,
+                y: 31134,
+                floor: 7,
+            }
+        };
+        let mut runtime = self.runtime.lock().await;
+        if runtime.read_actor_position(actor) != Ok(entered)
+            || runtime.player_control_facts(actor, session).is_err()
+            || !runtime
+                .bound_attacker_lease(actor, session)
+                .is_ok_and(|lease| {
+                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                        && lease.generation() == fence.character_lease_generation
+                })
+            || runtime.binding().runtime_scope() != fence.runtime_scope
+            || runtime.binding().scope_generation() != fence.scope_ownership_generation
+        {
+            return entered;
+        }
+        let states = self.states.spell_states.lock().await;
+        let closed = crate::map::floor::BundleDoors(map.facts.doors());
+        let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            &runtime,
+            self.movement_cells,
+            actor,
+            session,
+            entered,
+            target,
+            blocked,
+            &closed,
+        ) && let Ok(landed) = runtime.commit_source_step(proof)
+        {
+            let _ = runtime
+                .borrow_movement_position()
+                .commit_turn(landed, crate::foundation::MovementFacing::East);
+            if !allowed {
+                self.states.chat.push_quest_feedback(session,
+                    "You have to be a honorary barbarian to access the roof. Talk to the Jarl about it.");
             }
         }
         runtime.read_actor_position(actor).unwrap_or(entered)

@@ -1,0 +1,3065 @@
+{
+  "b3_path": "content/world/placements/region-z07-x127-y125.b3",
+  "b3_sha256": "6ca7aa92d56ae6175c091bc8476817e5d8cadfa9ca4bc10af5dc2a8905b6b047",
+  "bounds": [
+    32618,
+    32011,
+    32631,
+    32025,
+    7
+  ],
+  "census": [
+    [
+      32618,
+      32011,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32011,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32618,
+      32012,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32012,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32618,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32014,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32618,
+      32014,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32618,
+      32015,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32618,
+      32015,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32618,
+      32016,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32618,
+      32017,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32618,
+      32018,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32618,
+      32018,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32618,
+      32019,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32020,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32618,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32021,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32618,
+      32022,
+      4526,
+      "oteryn:item.tibia.i4526"
+    ],
+    [
+      32618,
+      32022,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32618,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32618,
+      32023,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32618,
+      32024,
+      4404,
+      "oteryn:item.tibia.i4404"
+    ],
+    [
+      32618,
+      32024,
+      4531,
+      "oteryn:item.tibia.i4531"
+    ],
+    [
+      32618,
+      32024,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32618,
+      32025,
+      4394,
+      "oteryn:item.tibia.i4394"
+    ],
+    [
+      32619,
+      32011,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32619,
+      32012,
+      4527,
+      "oteryn:item.tibia.i4527"
+    ],
+    [
+      32619,
+      32013,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32619,
+      32014,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32619,
+      32014,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32619,
+      32015,
+      4523,
+      "oteryn:item.tibia.i4523"
+    ],
+    [
+      32619,
+      32015,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32619,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32016,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32619,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32018,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32619,
+      32019,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32619,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32021,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32619,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32619,
+      32024,
+      4409,
+      "oteryn:item.tibia.i4409"
+    ],
+    [
+      32619,
+      32024,
+      4540,
+      "oteryn:item.tibia.i4540"
+    ],
+    [
+      32619,
+      32024,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32619,
+      32025,
+      4405,
+      "oteryn:item.tibia.i4405"
+    ],
+    [
+      32619,
+      32025,
+      4536,
+      "oteryn:item.tibia.i4536"
+    ],
+    [
+      32619,
+      32025,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32620,
+      32011,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32011,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32620,
+      32012,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32012,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32620,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32014,
+      4523,
+      "oteryn:item.tibia.i4523"
+    ],
+    [
+      32620,
+      32014,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32620,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32015,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32620,
+      32016,
+      3892,
+      "oteryn:item.tibia.i3892"
+    ],
+    [
+      32620,
+      32016,
+      4524,
+      "oteryn:item.tibia.i4524"
+    ],
+    [
+      32620,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32620,
+      32017,
+      4523,
+      "oteryn:item.tibia.i4523"
+    ],
+    [
+      32620,
+      32018,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32620,
+      32019,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32620,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32021,
+      4519,
+      "oteryn:item.tibia.i4519"
+    ],
+    [
+      32620,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32620,
+      32022,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32620,
+      32023,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32620,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32620,
+      32024,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32620,
+      32024,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32620,
+      32025,
+      4394,
+      "oteryn:item.tibia.i4394"
+    ],
+    [
+      32620,
+      32025,
+      4531,
+      "oteryn:item.tibia.i4531"
+    ],
+    [
+      32620,
+      32025,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32621,
+      32011,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32012,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32621,
+      32012,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32621,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32013,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32621,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32014,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32621,
+      32015,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32621,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32621,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32019,
+      3654,
+      "oteryn:item.tibia.i3654"
+    ],
+    [
+      32621,
+      32019,
+      4524,
+      "oteryn:item.tibia.i4524"
+    ],
+    [
+      32621,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32020,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32621,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32021,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32621,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32022,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32621,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32621,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32621,
+      32024,
+      1894,
+      "oteryn:item.tibia.i1894"
+    ],
+    [
+      32621,
+      32024,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32621,
+      32024,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32621,
+      32025,
+      4394,
+      "oteryn:item.tibia.i4394"
+    ],
+    [
+      32621,
+      32025,
+      4531,
+      "oteryn:item.tibia.i4531"
+    ],
+    [
+      32622,
+      32011,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32011,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32622,
+      32012,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32013,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32622,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32017,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32622,
+      32018,
+      4526,
+      "oteryn:item.tibia.i4526"
+    ],
+    [
+      32622,
+      32018,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32622,
+      32019,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32622,
+      32019,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32622,
+      32020,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32622,
+      32020,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32622,
+      32021,
+      4528,
+      "oteryn:item.tibia.i4528"
+    ],
+    [
+      32622,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32622,
+      32022,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32622,
+      32023,
+      1900,
+      "oteryn:item.tibia.i1900"
+    ],
+    [
+      32622,
+      32023,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32622,
+      32024,
+      3892,
+      "oteryn:item.tibia.i3892"
+    ],
+    [
+      32622,
+      32024,
+      4527,
+      "oteryn:item.tibia.i4527"
+    ],
+    [
+      32622,
+      32025,
+      4409,
+      "oteryn:item.tibia.i4409"
+    ],
+    [
+      32622,
+      32025,
+      4531,
+      "oteryn:item.tibia.i4531"
+    ],
+    [
+      32623,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32623,
+      32011,
+      314,
+      "oteryn:item.tibia.i314"
+    ],
+    [
+      32623,
+      32012,
+      4520,
+      "oteryn:item.tibia.i4520"
+    ],
+    [
+      32623,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32014,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32623,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32015,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32623,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32623,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32018,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32623,
+      32018,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32623,
+      32019,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32019,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32623,
+      32020,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32623,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32021,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32623,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32623,
+      32023,
+      4528,
+      "oteryn:item.tibia.i4528"
+    ],
+    [
+      32623,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32623,
+      32024,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32623,
+      32025,
+      4406,
+      "oteryn:item.tibia.i4406"
+    ],
+    [
+      32623,
+      32025,
+      4531,
+      "oteryn:item.tibia.i4531"
+    ],
+    [
+      32623,
+      32025,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32624,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32624,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32624,
+      32012,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32013,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32624,
+      32013,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32624,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32015,
+      4519,
+      "oteryn:item.tibia.i4519"
+    ],
+    [
+      32624,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32017,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32624,
+      32017,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32624,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32019,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32624,
+      32019,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32624,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32624,
+      32024,
+      1866,
+      "oteryn:item.tibia.i1866"
+    ],
+    [
+      32624,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32624,
+      32025,
+      4408,
+      "oteryn:item.tibia.i4408"
+    ],
+    [
+      32624,
+      32025,
+      4540,
+      "oteryn:item.tibia.i4540"
+    ],
+    [
+      32625,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32625,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32625,
+      32012,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32625,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32013,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32625,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32014,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32625,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32015,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32625,
+      32016,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32625,
+      32016,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32625,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32017,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32625,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32019,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32625,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32020,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32625,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32022,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32625,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32625,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32025,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32625,
+      32025,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32626,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32626,
+      32012,
+      4519,
+      "oteryn:item.tibia.i4519"
+    ],
+    [
+      32626,
+      32013,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32626,
+      32013,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32015,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32626,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32017,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32626,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32018,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32019,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32019,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32021,
+      4523,
+      "oteryn:item.tibia.i4523"
+    ],
+    [
+      32626,
+      32021,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32022,
+      4518,
+      "oteryn:item.tibia.i4518"
+    ],
+    [
+      32626,
+      32022,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32626,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32626,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32626,
+      32024,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32626,
+      32025,
+      1865,
+      "oteryn:item.tibia.i1865"
+    ],
+    [
+      32626,
+      32025,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32627,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32627,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32627,
+      32012,
+      4530,
+      "oteryn:item.tibia.i4530"
+    ],
+    [
+      32627,
+      32013,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32627,
+      32013,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32627,
+      32014,
+      4516,
+      "oteryn:item.tibia.i4516"
+    ],
+    [
+      32627,
+      32014,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32627,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32015,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32627,
+      32016,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32627,
+      32016,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32627,
+      32017,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32627,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32018,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32627,
+      32019,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32019,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32627,
+      32020,
+      4528,
+      "oteryn:item.tibia.i4528"
+    ],
+    [
+      32627,
+      32020,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32627,
+      32021,
+      4530,
+      "oteryn:item.tibia.i4530"
+    ],
+    [
+      32627,
+      32021,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32627,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32627,
+      32025,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32628,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32628,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32628,
+      32012,
+      4528,
+      "oteryn:item.tibia.i4528"
+    ],
+    [
+      32628,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32013,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32014,
+      4524,
+      "oteryn:item.tibia.i4524"
+    ],
+    [
+      32628,
+      32014,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32628,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32015,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32016,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32017,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32017,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32018,
+      4520,
+      "oteryn:item.tibia.i4520"
+    ],
+    [
+      32628,
+      32019,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32628,
+      32019,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32021,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32023,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32628,
+      32023,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32628,
+      32024,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32628,
+      32025,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32629,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32629,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32629,
+      32012,
+      4528,
+      "oteryn:item.tibia.i4528"
+    ],
+    [
+      32629,
+      32013,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32013,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32629,
+      32014,
+      4523,
+      "oteryn:item.tibia.i4523"
+    ],
+    [
+      32629,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32015,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32629,
+      32016,
+      4526,
+      "oteryn:item.tibia.i4526"
+    ],
+    [
+      32629,
+      32017,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32629,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32019,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32019,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32629,
+      32020,
+      3891,
+      "oteryn:item.tibia.i3891"
+    ],
+    [
+      32629,
+      32020,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32629,
+      32021,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32022,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32629,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32629,
+      32025,
+      4519,
+      "oteryn:item.tibia.i4519"
+    ],
+    [
+      32630,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32630,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32630,
+      32012,
+      4516,
+      "oteryn:item.tibia.i4516"
+    ],
+    [
+      32630,
+      32013,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32630,
+      32013,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32630,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32014,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32630,
+      32015,
+      4522,
+      "oteryn:item.tibia.i4522"
+    ],
+    [
+      32630,
+      32015,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32630,
+      32016,
+      4525,
+      "oteryn:item.tibia.i4525"
+    ],
+    [
+      32630,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32630,
+      32017,
+      3892,
+      "oteryn:item.tibia.i3892"
+    ],
+    [
+      32630,
+      32017,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32630,
+      32018,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32018,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32630,
+      32019,
+      4527,
+      "oteryn:item.tibia.i4527"
+    ],
+    [
+      32630,
+      32019,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32630,
+      32020,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32020,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32630,
+      32021,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32630,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32022,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32630,
+      32023,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32024,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32630,
+      32025,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32630,
+      32025,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32631,
+      32011,
+      103,
+      "oteryn:item.tibia.i103"
+    ],
+    [
+      32631,
+      32011,
+      407,
+      "oteryn:item.tibia.i407"
+    ],
+    [
+      32631,
+      32012,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32013,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32631,
+      32013,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32631,
+      32014,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32014,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32631,
+      32015,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32015,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32631,
+      32016,
+      4529,
+      "oteryn:item.tibia.i4529"
+    ],
+    [
+      32631,
+      32016,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32631,
+      32017,
+      4517,
+      "oteryn:item.tibia.i4517"
+    ],
+    [
+      32631,
+      32017,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32631,
+      32018,
+      4521,
+      "oteryn:item.tibia.i4521"
+    ],
+    [
+      32631,
+      32018,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32631,
+      32019,
+      4526,
+      "oteryn:item.tibia.i4526"
+    ],
+    [
+      32631,
+      32020,
+      4519,
+      "oteryn:item.tibia.i4519"
+    ],
+    [
+      32631,
+      32020,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32631,
+      32021,
+      4520,
+      "oteryn:item.tibia.i4520"
+    ],
+    [
+      32631,
+      32021,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ],
+    [
+      32631,
+      32022,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32023,
+      4526,
+      "oteryn:item.tibia.i4526"
+    ],
+    [
+      32631,
+      32023,
+      6217,
+      "oteryn:item.tibia.i6217"
+    ],
+    [
+      32631,
+      32024,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32024,
+      21935,
+      "oteryn:item.tibia.i21935"
+    ],
+    [
+      32631,
+      32025,
+      1900,
+      "oteryn:item.tibia.i1900"
+    ],
+    [
+      32631,
+      32025,
+      4515,
+      "oteryn:item.tibia.i4515"
+    ],
+    [
+      32631,
+      32025,
+      6218,
+      "oteryn:item.tibia.i6218"
+    ]
+  ],
+  "grounds": [
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 110,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 103,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 110,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 103,
+        "xml_attributes": []
+      },
+      "source_id": 103,
+      "source_palette_key": "oteryn:item.tibia.i103"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4394,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4394,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4394,
+      "source_palette_key": "oteryn:item.tibia.i4394"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4404,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4404,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4404,
+      "source_palette_key": "oteryn:item.tibia.i4404"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4405,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4405,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4405,
+      "source_palette_key": "oteryn:item.tibia.i4405"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4406,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4406,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4406,
+      "source_palette_key": "oteryn:item.tibia.i4406"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4408,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4408,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4408,
+      "source_palette_key": "oteryn:item.tibia.i4408"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4409,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 120,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4409,
+        "xml_attributes": [
+          {
+            "key": "primarytype",
+            "value": "natural tiles"
+          }
+        ]
+      },
+      "source_id": 4409,
+      "source_palette_key": "oteryn:item.tibia.i4409"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4515,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4515,
+        "xml_attributes": []
+      },
+      "source_id": 4515,
+      "source_palette_key": "oteryn:item.tibia.i4515"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4516,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4516,
+        "xml_attributes": []
+      },
+      "source_id": 4516,
+      "source_palette_key": "oteryn:item.tibia.i4516"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4517,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4517,
+        "xml_attributes": []
+      },
+      "source_id": 4517,
+      "source_palette_key": "oteryn:item.tibia.i4517"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4518,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4518,
+        "xml_attributes": []
+      },
+      "source_id": 4518,
+      "source_palette_key": "oteryn:item.tibia.i4518"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4519,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4519,
+        "xml_attributes": []
+      },
+      "source_id": 4519,
+      "source_palette_key": "oteryn:item.tibia.i4519"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4520,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4520,
+        "xml_attributes": []
+      },
+      "source_id": 4520,
+      "source_palette_key": "oteryn:item.tibia.i4520"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4521,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4521,
+        "xml_attributes": []
+      },
+      "source_id": 4521,
+      "source_palette_key": "oteryn:item.tibia.i4521"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4522,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4522,
+        "xml_attributes": []
+      },
+      "source_id": 4522,
+      "source_palette_key": "oteryn:item.tibia.i4522"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4523,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4523,
+        "xml_attributes": []
+      },
+      "source_id": 4523,
+      "source_palette_key": "oteryn:item.tibia.i4523"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4524,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4524,
+        "xml_attributes": []
+      },
+      "source_id": 4524,
+      "source_palette_key": "oteryn:item.tibia.i4524"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4525,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4525,
+        "xml_attributes": []
+      },
+      "source_id": 4525,
+      "source_palette_key": "oteryn:item.tibia.i4525"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4526,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4526,
+        "xml_attributes": []
+      },
+      "source_id": 4526,
+      "source_palette_key": "oteryn:item.tibia.i4526"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4527,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4527,
+        "xml_attributes": []
+      },
+      "source_id": 4527,
+      "source_palette_key": "oteryn:item.tibia.i4527"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4528,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4528,
+        "xml_attributes": []
+      },
+      "source_id": 4528,
+      "source_palette_key": "oteryn:item.tibia.i4528"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4529,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4529,
+        "xml_attributes": []
+      },
+      "source_id": 4529,
+      "source_palette_key": "oteryn:item.tibia.i4529"
+    },
+    {
+      "canary": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4530,
+        "xml_attributes": []
+      },
+      "crystal": {
+        "block_pathfind": false,
+        "block_projectile": false,
+        "block_solid": false,
+        "container": false,
+        "dynamic_kind": null,
+        "floor_change": false,
+        "floor_change_kind": null,
+        "ground": true,
+        "ground_speed": 150,
+        "has_height": false,
+        "magic_field": false,
+        "movable": false,
+        "pickupable": false,
+        "server_item_id": 4530,
+        "xml_attributes": []
+      },
+      "source_id": 4530,
+      "source_palette_key": "oteryn:item.tibia.i4530"
+    }
+  ],
+  "schema": "OTERYN_SEASONAL_GROUND_PHYSICS/v1",
+  "scope": "Hare landing, preferred-distance wander and radius3 area envelope; unknown terrain remains projectile-blocking",
+  "sources": [
+    {
+      "path": "data/items/items.xml",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "path": "data/items/items.xml",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    }
+  ]
+}

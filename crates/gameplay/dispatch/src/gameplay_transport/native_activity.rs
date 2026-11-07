@@ -25,6 +25,8 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct ActivityAttemptKey {
+    /// STEP occurrences and client CommandRef numbers are disjoint authorities.
+    source_portal: bool,
     pub(super) session: GameSessionId,
     pub(super) connection_generation: u64,
     pub(super) command: u64,
@@ -250,6 +252,47 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     }
     /// Retry an already retained command before issuing any new server identity.
     /// The command's source connection and content selector remain bound.
+    /// Resolve a retained physical source STEP before accepting another movement.
+    /// The attempt already owns the exact old session and frozen source actor;
+    /// no fresh occurrence, current-room guess or replacement participant is made.
+    pub(super) async fn resume_source_portal_attempt(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<bool, ()> {
+        let attempts: Vec<_> = self
+            .activity_runtimes
+            .attempts
+            .lock()
+            .map_err(|_| ())?
+            .iter()
+            .filter(|(key, _)| key.source_portal && key.session == session)
+            .map(|(_, attempt)| Arc::clone(attempt))
+            .collect();
+        for pending in attempts {
+            let attempt = pending.lock().await;
+            if !attempt.sources.iter().any(|source| {
+                source.game_session_id == session && source.runtime_actor == Some(actor)
+            }) {
+                return Err(());
+            }
+            if matches!(attempt.outcome, Some(NativeActivityOutcome::Refused(_))) {
+                continue;
+            }
+            drop(attempt);
+            let _transition = self.activity_runtimes.transitions.lock().await;
+            match self.finish_native_activity(pending).await? {
+                NativeActivityOutcome::Committed(commit) => {
+                    self.publish_activity_commit(&commit)?;
+                    // Old source input cannot advance after the real scope barrier.
+                    return Ok(false);
+                }
+                NativeActivityOutcome::Refused(_) => {}
+            }
+        }
+        Ok(true)
+    }
+
     pub(super) async fn retry_native_activity(
         &self,
         admitted: AdmittedSession,
@@ -257,6 +300,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         activity_key: &str,
     ) -> Result<Option<NativeActivityOutcome>, ()> {
         let key = ActivityAttemptKey {
+            source_portal: activity_key == "oteryn:boss.rakesh_moonfang",
             session: admitted.game_session_id,
             connection_generation: admitted.continuity.connection_generation,
             command,
@@ -330,6 +374,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             return refuse(ActivityRefusal::InvalidInput);
         };
         let key = ActivityAttemptKey {
+            source_portal: request.activity_key == "oteryn:boss.rakesh_moonfang",
             session: initiator.source.game_session_id,
             connection_generation: initiator.source.connection_generation.get(),
             command: request.command_id,
@@ -494,7 +539,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         if boss_definition
             .as_ref()
-            .is_some_and(|definition| !boss_room_native_ready(&to, definition))
+            .is_some_and(|definition| !boss_room_entry_native_ready(&to, definition))
         {
             return refuse(ActivityRefusal::ContentUnavailable);
         }
@@ -985,6 +1030,38 @@ pub(super) fn boss_room_native_ready(
                 snapshot.state.policy.definition_key == definition.boss_creature_key
             })
     })
+}
+
+/// One current Source STEP may join its already occupied source World+Channel room.
+/// Root independently proves exact source/session/scope and unchanged deadline;
+/// the held destination SpellLane prevents its physical boss changing mid-claim.
+pub(super) fn boss_room_entry_native_ready(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    definition: &crate::durability::activity_handoff::boss_room::BossRoomDefinition,
+) -> bool {
+    if definition.boss_key != "oteryn:boss.rakesh_moonfang" {
+        return boss_room_native_ready(runtime, definition);
+    }
+    let Ok(census) = runtime.positioned_actor_census() else {
+        return false;
+    };
+    if census
+        .iter()
+        .filter(|(_, _, session)| session.is_some())
+        .count()
+        >= 15
+    {
+        return false;
+    }
+    census
+        .iter()
+        .filter(|(_, _, session)| session.is_none())
+        .any(|(actor, _, _)| {
+            runtime.companion_snapshot(*actor).is_ok_and(|snapshot| {
+                snapshot.state.policy.definition_key == definition.boss_creature_key
+                    && snapshot.maximum_health == 25_500
+            })
+        })
 }
 
 fn receipt_matches(request: &ActivityEnterRequest, receipt: &ActivityEnterReceipt) -> bool {

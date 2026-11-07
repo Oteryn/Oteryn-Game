@@ -18,6 +18,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        match self
+            .use_dracoyle_in_place(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         let native = self.active_generation?.native_gameplay()?;
         let fence = command.item_fence?;
         let command_id = CommandId::new(command.command_id).ok()?;
@@ -61,10 +69,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_character_backpack(self.character, fence.character_id)
             .await
             .ok()??;
-        if !backpack.entries.iter().any(|entry| {
-            entry.item.item_instance_id == source_id
-                && entry.item.definition.production_key == RUST_REMOVER
-        }) {
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .ok();
+        let dracoyle = inventory.as_ref().is_some_and(|inventory| {
+            let items = || {
+                inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
+                    .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+            };
+            items().any(|item| {
+                item.item_instance_id == source_id
+                    && item.definition.production_key == "oteryn:item.tibia.i677"
+            }) && items().any(|item| {
+                item.item_instance_id == target_id
+                    && matches!(
+                        item.definition.production_key.as_str(),
+                        "oteryn:item.tibia.i9035" | "oteryn:item.tibia.i9040"
+                    )
+            })
+        });
+        if !dracoyle
+            && !backpack.entries.iter().any(|entry| {
+                entry.item.item_instance_id == source_id
+                    && entry.item.definition.production_key == RUST_REMOVER
+            })
+        {
             return None;
         }
         request.source = target_id;
@@ -88,8 +122,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(outcome(UseDisposition::Rejected));
         }
-        self.root
-            .consume_transform(
+        let result = self
+            .root
+            .consume_transform_detailed(
                 &permit,
                 self.character,
                 self.holder,
@@ -101,8 +136,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()
-            .flatten()
-            .map(outcome)
+            .flatten()?;
+        if result.fresh
+            && result.disposition == UseDisposition::Committed
+            && result.recipe.as_deref() == Some("oteryn:seasonal.dracoyle")
+        {
+            let runtime = self.runtime.lock().await;
+            if runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok()
+                && let Ok(at) = runtime.read_actor_position(actor)
+                && let (Ok(x), Ok(y), Ok(floor)) = (
+                    u16::try_from(at.position().x),
+                    u16::try_from(at.position().y),
+                    i8::try_from(-at.position().floor),
+                )
+                && let Some(map) = self.bundle_map()
+            {
+                let _ = map
+                    .facts
+                    .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 18);
+            }
+        }
+        Some(outcome(result.disposition))
     }
 
     pub(super) async fn use_lottery_ticket(

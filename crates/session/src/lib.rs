@@ -111,7 +111,7 @@ use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::actor_spell::{
-    ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition,
+    ActorVitals, SpellCastDisposition, SpellTarget, SpellTargetPosition, decode_actor_vitals,
 };
 use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 /// The capability-17 attack types a client sends and draws from, re-exported so it needs no
@@ -119,6 +119,7 @@ use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 pub use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
 };
+pub use oteryn_protocol_oteryn::chat::decode_chat_line;
 pub use oteryn_protocol_oteryn::chat::guild_room::{GuildChatLine, GuildRoomState};
 /// Capability-80 channel list and command values used by typed client adapters.
 pub use oteryn_protocol_oteryn::chat::private_channel::{
@@ -183,7 +184,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 /// The capability-6 entity types a client draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
-    EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot,
+    WorldSpatialEntity, decode_world_spatial_entities_snapshot_with_item_handles,
 };
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).
@@ -358,6 +360,7 @@ pub struct Session<S> {
     /// Own-actor vitals; `None` until the server sends the `ACTOR_VITALS` domain (it is optional
     /// in the join snapshot while the server cast gate is closed).
     actor_vitals: Option<ActorVitals>,
+    own_vitals_house_binding: Option<Vec<u8>>,
     world_spatial: WorldSpatialObservation,
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
     join_snapshot: JoinSnapshot,
@@ -427,3 +430,10 @@ pub use error::SessionError;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;
+
+/// Negotiated item-only visual effect codec; activates no casting or audio domain.
+pub mod item_effects {
+    pub use oteryn_protocol_oteryn::presentation::{
+        decode_item_effect_batch, encode_item_effect_batch,
+    };
+}

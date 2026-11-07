@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.appaloosa",
+      "variants": {},
+      "greet": {
+        "text": "Salutations, |PLAYERNAME| I guess you are here for the {horses}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/appaloosa.lua",
+          "line": 231,
+          "sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.palomino",
+      "variants": {},
+      "greet": {
+        "text": "Salutations, |PLAYERNAME| I guess you are here for the {horses}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/palomino.lua",
+          "line": 231,
+          "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    }
+  ],
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

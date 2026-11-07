@@ -29,6 +29,8 @@ use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 mod entry;
+mod summer_portal;
+pub use summer_portal::ExistingSourcePortalRoom;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
 pub(crate) use transfer_recovery::OfflineActivityMismatchRelease;
@@ -141,6 +143,8 @@ pub enum ActivityEnterOutcome {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActivityReturnReason {
     Exit,
+    /// Actual qualified source TP STEP; server occurrence, never a client CommandRef.
+    SourcePortalExit,
     Timeout,
     Defeated,
     OwnerLost,
@@ -166,6 +170,7 @@ impl ActivityReturnReason {
     fn stored(self) -> i16 {
         match self {
             Self::Exit => 1,
+            Self::SourcePortalExit => 10,
             Self::Timeout => 2,
             Self::Defeated => 3,
             Self::OwnerLost => 4,
@@ -329,6 +334,10 @@ impl ActivityHandoffOwner {
                     || request.destination_transport.is_none()
                     || recovering))
             || (request.command_id.is_none() && request.reason == ActivityReturnReason::Exit)
+            || (request.reason == ActivityReturnReason::SourcePortalExit
+                && (request.command_id.is_some()
+                    || request.destination_transport.is_none()
+                    || recovering))
             || matches!(request.reason, ActivityReturnReason::Death { occurrence } if !uuid_v7(&occurrence) || request.command_id.is_some())
             || !uuid_v7(&request.return_id)
             || !uuid_v7(&request.handoff_id)

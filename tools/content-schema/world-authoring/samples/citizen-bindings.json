@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "source": "data-global/startup/tables/teleport.lua",
+  "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "rules": [
+    "data-global/scripts/movements/teleport/citizen.lua:1-49",
+    "data-global/scripts/movements/teleport/citizen_svargrond.lua:3-22"
+  ],
+  "bindings": [
+    {
+      "position": [
+        32208,
+        31134,
+        7
+      ],
+      "item": 1949,
+      "action": 30032,
+      "source_line": 215
+    },
+    {
+      "position": [
+        32214,
+        31133,
+        5
+      ],
+      "item": 1949,
+      "unique": 9066,
+      "source_line": 432
+    },
+    {
+      "position": [
+        32313,
+        32818,
+        7
+      ],
+      "item": 1949,
+      "unique": 9064,
+      "source_line": 422
+    },
+    {
+      "position": [
+        32360,
+        31784,
+        8
+      ],
+      "item": 1949,
+      "unique": 9056,
+      "source_line": 382
+    },
+    {
+      "position": [
+        32369,
+        32246,
+        6
+      ],
+      "item": 1949,
+      "unique": 9057,
+      "source_line": 387
+    },
+    {
+      "position": [
+        32595,
+        32749,
+        6
+      ],
+      "item": 1949,
+      "unique": 9065,
+      "source_line": 427
+    },
+    {
+      "position": [
+        32607,
+        31682,
+        7
+      ],
+      "item": 1949,
+      "unique": 9059,
+      "source_line": 397
+    },
+    {
+      "position": [
+        32642,
+        31925,
+        12
+      ],
+      "item": 1949,
+      "unique": 9060,
+      "source_line": 402
+    },
+    {
+      "position": [
+        32785,
+        31277,
+        7
+      ],
+      "item": 1949,
+      "unique": 9067,
+      "source_line": 437
+    },
+    {
+      "position": [
+        32951,
+        32035,
+        7
+      ],
+      "item": 1949,
+      "unique": 9058,
+      "source_line": 392
+    },
+    {
+      "position": [
+        33008,
+        31493,
+        11
+      ],
+      "item": 1949,
+      "unique": 9068,
+      "source_line": 442
+    },
+    {
+      "position": [
+        33195,
+        32849,
+        6
+      ],
+      "item": 1949,
+      "unique": 9062,
+      "source_line": 412
+    },
+    {
+      "position": [
+        33210,
+        31804,
+        8
+      ],
+      "item": 1949,
+      "unique": 9063,
+      "source_line": 417
+    },
+    {
+      "position": [
+        33216,
+        32455,
+        2
+      ],
+      "item": 1949,
+      "unique": 9061,
+      "source_line": 407
+    },
+    {
+      "position": [
+        33447,
+        31327,
+        9
+      ],
+      "item": 5022,
+      "unique": 9240,
+      "source_line": 457
+    },
+    {
+      "position": [
+        33513,
+        32364,
+        7
+      ],
+      "item": 1949,
+      "unique": 9500,
+      "source_line": 467
+    },
+    {
+      "position": [
+        33587,
+        31899,
+        6
+      ],
+      "item": 1949,
+      "unique": 9510,
+      "source_line": 472
+    },
+    {
+      "position": [
+        33926,
+        31477,
+        5
+      ],
+      "item": 1949,
+      "unique": 9515,
+      "source_line": 477
+    }
+  ]
+}

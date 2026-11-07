@@ -124,6 +124,8 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // P-C04 adds 59 (house move-out), 86 (house transfer) and 99 (guildhall).
     // CP01 adds 54, 55, 115, 150 and the podium prerequisite 49.
     // C88 adds 53 (world-event query) through the admitted raw-command route.
+    // SRV7 adds 371 (seasonal observation), retaining prerequisite 53 and legacy replies.
+    // Explicit native Rotate adds 384 with the existing world-interaction prerequisites.
     // C76 adds 9 (highscores), using the existing selected-session query route.
     // C10 adds counted item movement (61) and refusal details (66).
     // C12 adds item-look (28); world interaction (11) already carries bed support.
@@ -144,7 +146,8 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             31, 36, 37, 39, 40, 42, 43, 49, 51, 53, 54, 55, 57, 59, 60, 61, 62, 63, 64, 66, 67, 68,
             72, 75, 80, 81, 83, 86, 87, 91, 92, 97, 98, 99, 115, 117, 132, 134, 140, 147, 148, 149,
             150, 151, 152, 153, 154, 165, 168, 179, 182, 199, 200, 224, 230, 232, 233, 240, 258,
-            259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370
+            259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286, 287, 288, 370, 371, 384, 385,
+            386
         ]
     );
 }

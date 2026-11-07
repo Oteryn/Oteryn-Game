@@ -34,6 +34,11 @@ pub struct NpcGeneratedReplies {
 
 /// Display name from the NPC key slug (`oteryn:npc.a_seagull` is `A Seagull`).
 pub(super) fn npc_display_name(key: &str) -> String {
+    // SRV7 W16: Crystal 201189f8 data-global/npc/g_ezkho.lua:1,5.
+    // Preserve the literal name of this Summer NPC when deriving its display label.
+    if key == "oteryn:npc.g_ezkho" {
+        return "G'Ezkho".into();
+    }
     let slug = key.rsplit('.').next().unwrap_or(key);
     slug.split('_')
         .filter(|word| !word.is_empty())
@@ -112,5 +117,17 @@ pub(super) fn generate<'a>(
             text: "Farewell.".to_owned(),
         },
         services: lines,
+    }
+}
+
+#[cfg(test)]
+mod srv7_summer_names {
+    #[test]
+    fn summer_npc_names_preserve_source_doctor_and_apostrophe() {
+        assert_eq!(
+            super::npc_display_name("oteryn:npc.doctor_marrow"),
+            "Doctor Marrow"
+        );
+        assert_eq!(super::npc_display_name("oteryn:npc.g_ezkho"), "G'Ezkho");
     }
 }

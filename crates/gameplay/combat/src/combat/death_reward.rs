@@ -430,14 +430,20 @@ fn ground_placement(
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
+    let scope_id = match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => *channel_id.as_bytes(),
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => instance_id,
+    };
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
     let mut corpse_ref = Vec::with_capacity(52);
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
+    if death.channel_id().is_none() {
+        corpse_ref.extend_from_slice(b"summer-instance-v1\0");
+    }
+    corpse_ref.extend_from_slice(&scope_id);
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
@@ -473,13 +479,25 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
+    // The existing ordinary Channel path is unchanged. The sole Instance
+    // extension requires this exact source-pinned Summer native loot/body pair;
+    // no generic Instance MINT, alias body or origin-Channel surrogate is used.
+    let native_loot = to_typed_definition(loot_table_ref);
+    let native_corpse = to_typed_definition(corpse_item);
+    let mint_cause = |table, purpose, ordinal| {
+        if death.channel_id().is_some() {
+            ItemMintCause::from_creature_death(death, table, purpose, ordinal)
+        } else {
+            ItemMintCause::from_summer_instance_death(
+                death,
+                &native_loot,
+                &native_corpse,
+                table,
+                purpose,
+                ordinal,
+            )
+        }
+    };
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
@@ -507,8 +525,7 @@ async fn settle_loot(
     // place of a loot table (D3 §4.1).
     let corpse_definition = to_typed_definition(corpse_item);
     let corpse_request = ItemMintRequest {
-        cause: ItemMintCause::from_creature_death(
-            death,
+        cause: mint_cause(
             corpse_definition.clone(),
             CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
             0,
@@ -542,8 +559,7 @@ async fn settle_loot(
                 ItemMintError::InvalidInput,
             ))?;
             let request = CorpseLootMintRequest {
-                cause: ItemMintCause::from_creature_death(
-                    death,
+                cause: mint_cause(
                     to_typed_definition(&plan.loot_table),
                     entry.purpose_key.clone(),
                     entry.draw_ordinal,
@@ -624,8 +640,7 @@ async fn settle_loot(
     let mut entries = Vec::with_capacity(plan.entries.len());
     for (index, entry) in plan.entries.iter().enumerate() {
         let request = CorpseLootMintRequest {
-            cause: ItemMintCause::from_creature_death(
-                death,
+            cause: mint_cause(
                 to_typed_definition(&plan.loot_table),
                 entry.purpose_key.clone(),
                 entry.draw_ordinal,

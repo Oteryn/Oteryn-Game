@@ -98,13 +98,23 @@ fn catalogue(panel: &mut Panel, value: wire::Catalogue) {
             panel.fields[3] = "0,0,0,0".into();
         }
     }
+    // Availability may expire independently of the persisted selection. Preserve
+    // its raw before-state, but do not keep an unavailable editable mount draft.
+    let draft_mount = panel.fields[2].trim();
+    if !draft_mount.is_empty() && !value.mounts.iter().any(|key| key == draft_mount) {
+        panel.fields[2].clear();
+    }
     panel.confirmed.clone_from(&value.selected);
     panel.summary = if let Some(selected) = &value.selected {
+        let stored_mount = selected.selection.mount_key.as_deref();
+        let unavailable =
+            stored_mount.is_some_and(|key| !value.mounts.iter().any(|mount| mount == key));
         format!(
-            "Current outfit: {}\r\nAddons: {}\r\nMount: {}\r\nColours: {:?}\r\n",
+            "Current outfit: {}\r\nAddons: {}\r\nMount: {}{}\r\nColours: {:?}\r\n",
             selected.selection.outfit_key,
             selected.selection.addons,
-            selected.selection.mount_key.as_deref().unwrap_or("None"),
+            stored_mount.unwrap_or("None"),
+            if unavailable { " (unavailable)" } else { "" },
             selected.selection.colours
         )
     } else {

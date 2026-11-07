@@ -204,7 +204,15 @@ def convert() -> dict[str, str]:
             "source_evidence": "OtsHypothesisOnly",
         }
     )
-    return {name: text + "\n" for name, text in files.items()}
+    sys.path.insert(0, str(ROOT / "tools/content-migration"))
+    from summer_npcs import augment_placements
+    from furniture_npc_placements import augment_placements as augment_furniture_placements
+    summer = augment_placements({name: text + "\n" for name, text in files.items()}, FRAME)
+    from cosmetic_npc_placements import augment_placements as augment_cosmetic_placements
+    furniture = augment_furniture_placements(summer, FRAME)
+    from support_npc_placements import augment_placements as augment_support_placements
+    cosmetic = augment_cosmetic_placements(furniture, FRAME)
+    return augment_support_placements(cosmetic, FRAME)
 
 
 def main() -> None:

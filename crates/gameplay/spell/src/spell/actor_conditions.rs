@@ -1,7 +1,11 @@
 //! Mutators of the real PlayerSpellState condition/vitals successor. The owning
 //! Channel transaction qualifies actors and commits its final revision once.
+mod cupcakes;
 mod item_actions;
+mod source_npc_fire;
+pub use cupcakes::stage_cupcake;
 pub use item_actions::{stage_item_costume, stage_item_health_loss};
+pub use source_npc_fire::stage_ajax_source_fire;
 
 use super::cast::PlayerSpellState;
 use super::combat_batch::OwnerCombatChange;
@@ -721,6 +725,35 @@ pub fn stage_typed_hit_in_world(
     stage_preprocessed_player_hit(state, magnitude, now)
 }
 
+/// Crystal Cake Golem's default undefined component bypasses mana shield while
+/// preserving the same current-position block, incoming reductions and lethal owner.
+pub fn stage_cake_undefined_hit_in_world(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    let bonus = state
+        .wheel_battle_instinct(runtime, actor, now)
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = state
+        .after_player_block(
+            magnitude,
+            crate::player_lethal::PlayerHitKind::Mitigated,
+            bonus.shielding,
+            now,
+        )
+        .ok_or(SpellCastDisposition::Rejected)?;
+    stage_hit_policy(state, magnitude, now, true, true, None, false, true)
+}
+
 /// Same source block/final pipeline, at the destination already qualified by the
 /// existing movement proof. It does not change position or mint movement authority.
 pub fn stage_typed_hit_at_position(
@@ -856,6 +889,38 @@ fn stage_hit(
     ),
     SpellCastDisposition,
 > {
+    stage_hit_policy(
+        state,
+        magnitude,
+        now,
+        mitigated,
+        preprocessed,
+        components,
+        direct_health,
+        false,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "existing typed hit context plus independent mitigation, preprocessing and source mana-shield policy"
+)]
+fn stage_hit_policy(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mitigated: bool,
+    preprocessed: bool,
+    components: Option<(u32, u32)>,
+    direct_health: bool,
+    skip_mana_shield: bool,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
     use oteryn_gameplay_domain::domain::condition::ConflictKey;
     if !state.conditions.accepts_time(now)
         || state.health == 0
@@ -901,7 +966,7 @@ fn stage_hit(
     }
     // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
     // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
-    if mitigated || direct_health {
+    if (mitigated || direct_health) && !skip_mana_shield {
         let capacity = next
             .conditions
             .mana_shield_at(now)

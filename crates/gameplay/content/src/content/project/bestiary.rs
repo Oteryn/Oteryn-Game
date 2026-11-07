@@ -31,14 +31,14 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01862.json",
+        "content/creatures/definitions/creatures-01500-01863.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01862.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01863.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_863;
-const BESTIARY_COUNT: usize = 823;
+const CREATURE_COUNT: usize = 1_864;
+const BESTIARY_COUNT: usize = 824;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -351,7 +351,7 @@ mod tests {
     fn canonical_title_catalogue_retains_all_classes_and_boss_categories() -> TestResult {
         let catalogue = canonical_title_catalogue(limits())?;
         let rows = canonical_bestiary_rows(limits())?;
-        assert_eq!(catalogue.bestiary.len(), 823);
+        assert_eq!(catalogue.bestiary.len(), 824);
         for ((race, class), (existing, _)) in catalogue.bestiary.iter().zip(&rows) {
             assert_eq!(
                 race, existing,
@@ -407,7 +407,7 @@ mod tests {
     }
 
     #[test]
-    fn canonical_projection_retains_all_823_admitted_bestiary_blocks() -> TestResult {
+    fn canonical_projection_retains_all_824_admitted_bestiary_blocks() -> TestResult {
         let rows = canonical_bestiary_rows(limits())?;
         assert_eq!(rows.len(), BESTIARY_COUNT);
         assert!(
@@ -519,7 +519,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_863);
+        assert_eq!(limits().max_reference_records, 1_864);
     }
 
     #[test]

@@ -1,6 +1,27 @@
 use super::*;
+include!("wire_lamp_prelude.rs");
+
+#[derive(Default)]
+pub(super) struct HouseWireCapture {
+    pub(super) move_destination: Option<oteryn_protocol_oteryn::item_view::ItemMoveDestination>,
+    pub(super) move_outcome: Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>,
+    pub(super) map_deltas: Vec<Vec<u8>>,
+    pub(super) timer_before_death: Option<serde_json::Value>,
+    pub(super) wait_for_death: bool,
+    pub(super) exit_after_death: Option<Vec<u8>>,
+    pub(super) exit_after_commit: bool,
+    pub(super) exit_status: Option<CommandStatus>,
+    pub(super) exit_ack: Option<Vec<u8>>,
+    pub(super) effects: Vec<Vec<u8>>,
+    pub(super) vitals: Vec<Vec<u8>>,
+    pub(super) maps: Vec<Vec<u8>>,
+    pub(super) chat_snapshots: Vec<Vec<u8>>,
+    pub(super) chat_lines: Vec<Vec<u8>>,
+}
 
 pub(super) struct HouseExchange<'a> {
+    pub(super) capture: Option<std::sync::Arc<std::sync::Mutex<HouseWireCapture>>>,
+    pub(super) rotate: bool,
     pub(super) current: Option<std::num::NonZeroU32>,
     pub(super) after: Option<std::num::NonZeroU32>,
     pub(super) nested: Option<std::num::NonZeroU32>,
@@ -14,15 +35,64 @@ pub(super) async fn exchange(
     payload: &[u8],
     view: HouseExchange<'_>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>, usize)> {
+    exchange_inner(owner, admitted, command, payload, view, None).await
+}
+
+pub(super) async fn exchange_with_lamp(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+    payload: &[u8],
+    view: HouseExchange<'_>,
+    prelude: HouseLampPrelude<'_>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>, usize)> {
+    exchange_inner(owner, admitted, command, payload, view, Some(prelude)).await
+}
+
+async fn exchange_inner(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+    payload: &[u8],
+    view: HouseExchange<'_>,
+    prelude: Option<HouseLampPrelude<'_>>,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>, usize)> {
     let HouseExchange {
+        rotate,
         current,
         after,
         nested,
         foreign_after_snapshot,
+        capture,
     } = view;
+    let move_destination = capture
+        .as_ref()
+        .and_then(|capture| capture.lock().ok().and_then(|value| value.move_destination));
+    let move_selection = oteryn_protocol_oteryn::item_view::ItemMoveSelection {
+        equip_drop: admitted.continuity.selected_capabilities.contains(12),
+        container_tree: admitted.continuity.selected_capabilities.contains(14),
+        world_interaction: admitted.continuity.selected_capabilities.contains(11),
+    };
+    let wait_for_death = match &capture {
+        Some(capture) => {
+            capture
+                .lock()
+                .map_err(|_| "House capture control")?
+                .wait_for_death
+        }
+        None => false,
+    };
+    let exit_after_commit = capture
+        .as_ref()
+        .and_then(|capture| capture.lock().ok().map(|value| value.exit_after_commit))
+        .unwrap_or(false);
+    let exit_after_death = capture
+        .as_ref()
+        .and_then(|capture| capture.lock().ok()?.exit_after_death.clone());
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
+        let mut lamp = None;
         let mut inner = None;
         let mut binding = None;
         loop {
@@ -33,11 +103,30 @@ pub(super) async fn exchange(
                     oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())
                         .map_err(debug)?;
                 for domain in domains {
+                    if domain.domain_id == oteryn_protocol_oteryn::chat::STATE_DOMAIN_CHAT
+                        && let Some(capture) = &capture
+                    {
+                        capture
+                            .lock()
+                            .map_err(|_| "House chat snapshot capture")?
+                            .chat_snapshots
+                            .push(domain.payload.to_vec());
+                    }
                     if domain.domain_id
                         == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                     {
                         let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(domain.payload,
                             admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_EQUIP_DROP_V1)).map_err(debug)?;
+                        lamp = prelude
+                            .as_ref()
+                            .and_then(|prelude| {
+                                inventory
+                                    .entries
+                                    .iter()
+                                    .find(|entry| entry.item_definition_ref == prelude.definition)
+                                    .map(|entry| entry.handle)
+                            })
+                            .or(lamp);
                         source = inventory
                             .entries
                             .iter()
@@ -54,6 +143,13 @@ pub(super) async fn exchange(
                     if domain.domain_id
                         == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
                     {
+                        if let Some(capture) = &capture {
+                            capture
+                                .lock()
+                                .map_err(|_| "House map capture")?
+                                .maps
+                                .push(domain.payload.to_vec());
+                        }
                         let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
                             domain.payload,
                         )
@@ -145,14 +241,52 @@ pub(super) async fn exchange(
                 }
             }
         }
-        let actual = if current.is_some() {
-            let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-                admitted.continuity.selected_capabilities.as_slice(),
+        if let Some(prelude) = &prelude {
+            use_lamp_before_death(
+                &mut client,
+                admitted,
+                command,
+                lamp.ok_or("actual carried lamp handle")?,
                 payload,
             )
-            .map_err(debug)?;
-            intent.target = UseTarget::Item(source.ok_or("House source handle")?);
-            encode_item_use_intent(&intent).map_err(debug)?
+            .await?;
+            let timer:serde_json::Value=sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(prelude.item.as_slice()).fetch_one(&prelude.harness.pool).await?;
+            assert_eq!(
+                timer["remaining_ms"], 180000,
+                "genuine source lamp USE starts its three minute timer"
+            );
+            if let Some(capture) = &capture {
+                capture
+                    .lock()
+                    .map_err(|_| "actual lamp timer capture")?
+                    .timer_before_death = Some(timer);
+            }
+        }
+        let actual = if current.is_some() {
+            let target = UseTarget::Item(source.ok_or("House source handle")?);
+            if let Some(destination) = move_destination {
+                oteryn_protocol_oteryn::item_view::encode_item_move_intent_for(
+                    &oteryn_protocol_oteryn::item_view::ItemMoveIntent {
+                        source: source.ok_or("actualHousecmd9sourcehandle")?,
+                        destination,
+                    },
+                    move_selection,
+                )
+                .map_err(debug)?
+            } else if rotate {
+                // Rotate has a distinct observed-definition field and cannot be
+                // decoded by the ordinary USE grammar.
+                oteryn_protocol_oteryn::world_rotate::encode_rotate_intent(&target, current)
+                    .map_err(debug)?
+            } else {
+                let mut intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                    admitted.continuity.selected_capabilities.as_slice(),
+                    payload,
+                )
+                .map_err(debug)?;
+                intent.target = target;
+                encode_item_use_intent(&intent).map_err(debug)?
+            }
         } else {
             payload.to_vec()
         };
@@ -163,14 +297,26 @@ pub(super) async fn exchange(
             admitted.continuity.connection_generation,
             &ClientCommandValue {
                 command_id: command,
-                command_type: 2,
+                command_type: if move_destination.is_some() {
+                    9
+                } else if rotate {
+                    oteryn_protocol_oteryn::world_rotate::COMMAND_TYPE_ROTATE_WORLD_ITEM
+                } else {
+                    2
+                },
                 payload: &actual,
             },
         )
         .map_err(debug)?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
+        let mut write_closed = !wait_for_death && exit_after_death.is_none();
+        if write_closed {
+            client.shutdown().await?;
+        }
+        let mut exit_sent = false;
+        let mut exit_accepted = false;
+        let mut dead_observed = false;
         let mut response = None;
         let mut deltas = 0;
         loop {
@@ -184,16 +330,84 @@ pub(super) async fn exchange(
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                if exit_sent && result.command_id == command + 1 {
+                    if let Some(capture) = &capture {
+                        let mut capture = capture.lock().map_err(|_| "House live exit capture")?;
+                        capture.exit_status = Some(result.status);
+                        capture.exit_ack = Some(result.payload.to_vec());
+                    }
+                    exit_accepted = result.status == CommandStatus::Accepted;
+                    if !exit_accepted {
+                        client.shutdown().await?;
+                        write_closed = true;
+                    }
+                    continue;
+                }
                 assert_eq!(result.command_id, command);
-                assert_eq!(result.status, CommandStatus::Accepted);
-                response = Some(
-                    oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
-                        .map_err(debug)?,
+                assert!(
+                    result.status == CommandStatus::Accepted
+                        || (current.is_none() && result.status == CommandStatus::DuplicateReplay),
+                    "fresh request is Accepted; retained exact replay may report DuplicateReplay: actual={:?}",
+                    result.status
                 );
+                response = Some(if move_destination.is_some() {
+                    let moved = oteryn_protocol_oteryn::item_view::decode_item_move_result_for(
+                        result.payload,
+                        move_selection,
+                    )
+                    .map_err(debug)?;
+                    if let Some(capture) = &capture {
+                        capture
+                            .lock()
+                            .map_err(|_| "nativeHouseMOVEcapture")?
+                            .move_outcome = Some(moved);
+                    }
+                    if moved == oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+                        UseDisposition::Committed
+                    } else {
+                        UseDisposition::Rejected
+                    }
+                } else {
+                    oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                        .map_err(debug)?
+                });
             }
             if envelope.message_type() == MessageType::StateDelta {
                 let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
                     .map_err(debug)?;
+                if delta.domain_id == oteryn_protocol_oteryn::chat::STATE_DOMAIN_CHAT
+                    && let Some(capture) = &capture
+                {
+                    capture
+                        .lock()
+                        .map_err(|_| "House speech capture")?
+                        .chat_lines
+                        .push(delta.payload.to_vec());
+                }
+                if delta.domain_id == oteryn_protocol_oteryn::actor_spell::STATE_DOMAIN_ACTOR_VITALS
+                {
+                    let vitals =
+                        oteryn_protocol_oteryn::actor_spell::decode_actor_vitals(delta.payload)
+                            .map_err(debug)?;
+                    dead_observed |= vitals.max_health > 0 && vitals.health == 0;
+                    if let Some(capture) = &capture {
+                        capture
+                            .lock()
+                            .map_err(|_| "House vitals capture")?
+                            .vitals
+                            .push(delta.payload.to_vec());
+                    }
+                }
+                if delta.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS
+                    && let Some(capture) = &capture
+                {
+                    capture
+                        .lock()
+                        .map_err(|_| "House cue capture")?
+                        .effects
+                        .push(delta.payload.to_vec());
+                }
                 if delta.domain_id
                     == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                 {
@@ -231,6 +445,13 @@ pub(super) async fn exchange(
                 }
                 if delta.domain_id == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
                 {
+                    if let Some(capture) = &capture {
+                        capture
+                            .lock()
+                            .map_err(|_| "nativeHousemapdelta")?
+                            .map_deltas
+                            .push(delta.payload.to_vec());
+                    }
                     let map = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
                         &binding.ok_or("map binding")?,
                         delta.payload,
@@ -249,6 +470,39 @@ pub(super) async fn exchange(
                     binding = Some(map.header);
                     deltas += 1;
                 }
+            }
+            if exit_accepted
+                && envelope.message_type() == MessageType::SnapshotCommit
+                && !write_closed
+            {
+                client.shutdown().await?;
+                write_closed = true;
+            }
+            if !exit_sent
+                && (dead_observed || exit_after_commit)
+                && response == Some(UseDisposition::Committed)
+                && let Some(exit_payload) = &exit_after_death
+            {
+                let frame = encode_client_command(
+                    admitted.continuity.connection_generation,
+                    &ClientCommandValue {
+                        command_id: command + 1,
+                        command_type: 102,
+                        payload: exit_payload,
+                    },
+                )
+                .map_err(debug)?;
+                client.write_u32(u32::try_from(frame.len())?).await?;
+                client.write_all(&frame).await?;
+                exit_sent = true;
+            }
+            if !write_closed
+                && !exit_sent
+                && response
+                    .is_some_and(|outcome| outcome != UseDisposition::Committed || dead_observed)
+            {
+                client.shutdown().await?;
+                write_closed = true;
             }
         }
         Ok::<_, Box<dyn std::error::Error>>((response.ok_or("House USE result")?, actual, deltas))

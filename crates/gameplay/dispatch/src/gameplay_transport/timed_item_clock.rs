@@ -55,6 +55,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
         self.drain_corpse_deadlines().await;
         self.refresh_terrain_tools().await;
+        self.drain_ground_furniture_timers().await;
 
         let sessions = {
             let runtime = self.runtime.lock().await;
@@ -80,10 +81,30 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .retain(|session, _| present.contains(session));
+        self.states
+            .timed_items
+            .furniture_inventory_refresh
+            .lock()
+            .await
+            .retain(|session| present.contains(session));
         for (actor, session) in sessions {
             let Some(_permit) = self.spell_lane_permit().await else {
                 return;
             };
+            if let Ok(Some(current)) = self.current_quest_fence(session).await
+                && self
+                    .root
+                    .expire_carried_furniture_timers(self.holder, current.item_fence())
+                    .await
+                    .is_ok_and(|count| count > 0)
+            {
+                self.states
+                    .timed_items
+                    .furniture_inventory_refresh
+                    .lock()
+                    .await
+                    .insert(session);
+            }
             self.checkpoint_timed_equipment(actor, session, false).await;
         }
         let converters: Vec<GameSessionId> = {

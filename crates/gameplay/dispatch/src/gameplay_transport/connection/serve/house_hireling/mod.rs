@@ -1,13 +1,19 @@
 //! The existing item/NPC owners while the real House scope owns the player.
 //! House movement retains native House custody and the existing STEP pacing.
 use super::*;
+mod dracoyle;
+mod house_move;
+mod item_effects;
 mod map;
 mod reply;
 mod snapshot;
+mod source_speech;
 pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    item_effect_cursor: u64,
+    item_effect_revision: u64,
     spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
@@ -62,6 +68,37 @@ impl State {
             self.stash_rows = None;
             return routing::house_podium::route(authority, admitted, command).await;
         }
+        if command.command_type
+            == oteryn_protocol_oteryn::world_rotate::COMMAND_TYPE_ROTATE_WORLD_ITEM
+        {
+            return routing::world_rotate::route(
+                authority,
+                self.actor,
+                admitted,
+                command,
+                &self.items,
+            )
+            .await;
+        }
+        if command.command_type == oteryn_protocol_oteryn::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT
+        {
+            return house_move::route(self, authority, admitted, command).await;
+        }
+        if Some(command.command_type) == oteryn_protocol_oteryn::item_look::ITEM_LOOK_COMMAND_ID {
+            let selected = admitted.continuity.selected_capabilities;
+            return Some(
+                routing::item_look::route(
+                    authority,
+                    self.actor,
+                    admitted,
+                    command,
+                    selected,
+                    &self.visibility,
+                    &self.items,
+                )
+                .await,
+            );
+        }
         // Ordinary item USE and container views keep their existing capability gates
         // in a House without requiring the independent hireling mechanic.
         if !self.enabled
@@ -92,7 +129,8 @@ impl State {
                         && intent.use_with_position.is_none()
                 });
                 if !plain {
-                    return Some(Dispatch::Use(UseOutcome::rejected()));
+                    return dracoyle::route(authority, self.actor, admitted, command, &self.items)
+                        .await;
                 }
                 routing::use_item::route(
                     authority,
@@ -224,6 +262,10 @@ impl State {
                 }
                 self.npc(stream, admitted, &update).await?;
             }
+            Dispatch::ItemMove(outcome, deltas, _) => {
+                self.moved(stream, authority, admitted, outcome, &deltas)
+                    .await?;
+            }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Committed => {
                 self.inventory(stream, authority, admitted).await?;
                 self.vitals(stream, authority, admitted, false).await?;
@@ -264,6 +306,8 @@ impl State {
             }
             _ => {}
         }
+        self.item_effects(stream, authority, admitted).await?;
+        self.chat(stream, authority, admitted).await?;
         self.spatial(stream, authority, admitted).await
     }
 
@@ -422,9 +466,7 @@ impl State {
         authority: &A,
         admitted: &mut AdmittedSession,
     ) -> Result<(), ServeEnd> {
-        if self.enabled {
-            self.vitals(stream, authority, admitted, true).await?;
-        }
+        self.vitals(stream, authority, admitted, true).await?;
         if let Some(catalog) = &mut self.spell_catalog {
             let mut sequence = admitted.continuity.server_sequence;
             catalog
@@ -438,6 +480,8 @@ impl State {
         {
             self.npc(stream, admitted, &update).await?;
         }
+        self.item_effects(stream, authority, admitted).await?;
+        self.chat(stream, authority, admitted).await?;
         self.spatial(stream, authority, admitted).await
     }
 }

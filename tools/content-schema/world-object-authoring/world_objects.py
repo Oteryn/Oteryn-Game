@@ -506,13 +506,26 @@ def validate_record(record):
     if "item_pointer" not in record["provenance"]:
         import grizzly_ground
         import summer_ground
+        import summer_entry_ground
 
-        ground = (
-            grizzly_ground
-            if record["provenance"]["source_item_id"] == grizzly_ground.IDENTIFIER
-            else summer_ground
+        import seasonal_bridge_ground
+        import summer_npc_ground
+
+        identifier = record["provenance"]["source_item_id"]
+        closed_leaf = {
+            48227: seasonal_bridge_ground.qualified_record,
+            43746: summer_npc_ground.qualified_record,
+        }.get(identifier)
+        if closed_leaf is not None:
+            return ([] if record == closed_leaf() else
+                    ["appearance-only Terrain differs from its qualified official source"])
+        qualified = next(
+            (r for r in summer_entry_ground.qualified_records()
+             if r["provenance"]["source_item_id"] == identifier),
+            None,
         )
-        expected = json.loads(ground.outputs()[ground.SHARD])["records"][0]
+        ground = grizzly_ground if identifier == grizzly_ground.IDENTIFIER else summer_ground
+        expected = qualified or json.loads(ground.outputs()[ground.SHARD])["records"][0]
         return (
             []
             if record == expected

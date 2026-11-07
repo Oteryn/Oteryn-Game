@@ -86,7 +86,7 @@ pub async fn read_account_appearance_unlocks(
            LEFT JOIN game_account_appearance_unlock_receipts r \
              ON r.grant_occurrence_id=f.grant_occurrence_id \
             AND r.account_id=f.account_id AND r.unlock_key=f.unlock_key \
-          WHERE f.account_id=encode($1,'hex')::uuid AND f.unlock_key=ANY($2::text[]) ORDER BY f.unlock_key COLLATE \"C\"",
+          WHERE f.account_id=encode($1,'hex')::uuid AND f.unlock_key=ANY($2::text[]) AND f.unlock_key NOT IN ('oteryn:rental.horse.22','oteryn:rental.horse.25','oteryn:rental.horse.26') AND ((r.source_kind IS DISTINCT FROM 'npc_wedding' AND f.unlock_key<>'oteryn:appearance-grant/npc/lynda/newly_wed/base') OR (r.source_kind='npc_wedding' AND game_lynda_wedding_grant_historical(f.account_id,f.unlock_key,r.content_revision,r.granting_character_id,r.source_event_id))) ORDER BY f.unlock_key COLLATE \"C\"",
     )
     .bind(account.as_bytes().as_slice())
     .bind(grant_keys)
@@ -179,7 +179,7 @@ pub async fn verify_character_appearance_integrity(
              lag(colours_after) OVER w AS previous_colours, \
              lag(addons_after) OVER w AS previous_addons, \
              lag(mount_after) OVER w AS previous_mount, \
-             lag(content_revision) OVER w AS previous_content, \
+             lag(COALESCE(cosmetics_revision,content_revision)) OVER w AS previous_content, \
              lag(committed_character_revision) OVER w AS previous_revision, \
              row_number() OVER (PARTITION BY character_id ORDER BY committed_character_revision DESC) AS latest \
            FROM game_character_appearance_receipts a \
@@ -193,7 +193,7 @@ pub async fn verify_character_appearance_integrity(
                AND (p.outfit_key,p.colours,p.addons,p.mount_key,p.content_revision, \
                     p.committed_character_revision,p.last_appearance_occurrence_id) \
                  IS NOT DISTINCT FROM \
-                   (a.outfit_after,a.colours_after,a.addons_after,a.mount_after,a.content_revision, \
+                   (a.outfit_after,a.colours_after,a.addons_after,a.mount_after,COALESCE(a.cosmetics_revision,a.content_revision), \
                     a.committed_character_revision,a.appearance_occurrence_id))) \
          UNION ALL SELECT 1 FROM game_character_appearance p \
            WHERE NOT EXISTS (SELECT 1 FROM ordered a WHERE a.character_id=p.character_id) \

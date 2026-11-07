@@ -109,6 +109,12 @@ impl AppearanceState {
 }
 
 impl<S: SessionStream> Session<S> {
+    /// The bounded RGB palette from the validated current server appearance catalogue.
+    /// Presentation only; colours do not grant outfit or addon ownership.
+    pub fn appearance_palette(&self) -> Option<&[[u8; 3]]> {
+        Some(self.appearance.as_ref()?.catalogue.palette.as_slice())
+    }
+
     pub(crate) fn appearance_delta(
         &mut self,
         sequence: u64,

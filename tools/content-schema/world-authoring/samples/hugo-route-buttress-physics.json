@@ -1,0 +1,559 @@
+{
+  "schema": "OTERYN_HUGO_ROUTE_STATIC_PHYSICS/v2",
+  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "crosscheck_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    }
+  ],
+  "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/1125",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "stone archway"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "1125",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1125",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i1125",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/1634",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "buttress"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "1634",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1634",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i1634",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/1948",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "ladder"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "1948",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i1948",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i1948",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    }
+  ],
+  "crosscheck_physics_fields": [
+    "block_solid",
+    "block_projectile",
+    "has_height",
+    "movable",
+    "pickupable",
+    "floor_change",
+    "floor_change_kind"
+  ],
+  "source_world_physics": [
+    {
+      "server_item_id": 1125,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "portals"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 1634,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 1948,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "type",
+          "value": "ladder"
+        }
+      ],
+      "magic_field": false
+    }
+  ],
+  "source_appearance_flags": {
+    "1125": {
+      "flags.top": true,
+      "flags.unmove": true,
+      "flags.automap": true,
+      "automap.color": 86
+    },
+    "1634": {
+      "flags.top": true,
+      "flags.unmove": true
+    },
+    "1948": {
+      "flags.bottom": true,
+      "flags.usable": true,
+      "flags.forceuse": true,
+      "flags.unmove": true,
+      "flags.automap": true,
+      "automap.color": 210,
+      "flags.lenshelp": true,
+      "lenshelp.id": 1100
+    }
+  },
+  "crosscheck_appearance_flags": {
+    "1125": {
+      "flags.top": true,
+      "flags.unmove": true,
+      "flags.automap": true,
+      "automap.color": 86
+    },
+    "1634": {
+      "flags.top": true,
+      "flags.unmove": true
+    },
+    "1948": {
+      "flags.bottom": true,
+      "flags.usable": true,
+      "flags.forceuse": true,
+      "flags.unmove": true,
+      "flags.automap": true,
+      "automap.color": 210,
+      "flags.lenshelp": true,
+      "lenshelp.id": 1100
+    }
+  }
+}

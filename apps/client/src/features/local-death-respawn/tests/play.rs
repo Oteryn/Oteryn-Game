@@ -212,3 +212,429 @@ fn death_notice_preserves_logout_feedback_and_server_warning() -> Result<(), Str
     assert!(status.contains("Server warning"));
     Ok(())
 }
+
+#[test]
+fn srv7_dead_house_uses_real_exit_intent_before_native_temple_resume()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            use crate::combat_input::{CombatCommand, CombatReport};
+            use crate::play::{PlayView, Stepper, play_channel, run_session};
+            use oteryn_client_runtime::{house_transfer as wire, raw_feature::FeatureCommand};
+            use oteryn_session::{
+                ActorVitals, CommandStatus, GatedCommandResult, LogoutResult, SessionError,
+                SessionEvent, StepDirection, StepOutcome,
+            };
+            use std::sync::{
+                Arc,
+                atomic::{AtomicBool, Ordering},
+            };
+            struct DeadHouse {
+                scope: wire::HouseTransferAck,
+                scope_payload: Vec<u8>,
+                done: Arc<AtomicBool>,
+            }
+            impl Stepper for DeadHouse {
+                fn feature_selected(&self, capability: u32) -> bool {
+                    capability == 86
+                }
+                fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
+                    (domain == wire::STATE_DOMAIN_HOUSE_SCOPE && !self.done.load(Ordering::SeqCst))
+                        .then(|| self.scope_payload.clone())
+                }
+                fn own_house_vitals_current(&self) -> bool {
+                    true
+                }
+                fn actor_vitals(&self) -> Option<ActorVitals> {
+                    Some(ActorVitals {
+                        health: if self.done.load(Ordering::SeqCst) {
+                            150
+                        } else {
+                            0
+                        },
+                        max_health: 150,
+                        ..Default::default()
+                    })
+                }
+                async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
+                    Err(SessionError::SessionUnusable)
+                }
+                async fn serve(
+                    &mut self,
+                    duration: std::time::Duration,
+                ) -> Result<(), SessionError> {
+                    tokio::time::sleep(duration).await;
+                    Ok(())
+                }
+                fn drain(&mut self) -> Vec<SessionEvent> {
+                    Vec::new()
+                }
+                async fn combat(&mut self, _: CombatCommand) -> Result<CombatReport, SessionError> {
+                    Err(SessionError::SessionUnusable)
+                }
+                async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
+                    Ok(None)
+                }
+                async fn feature(
+                    &mut self,
+                    command: &FeatureCommand,
+                ) -> Result<GatedCommandResult, SessionError> {
+                    assert_eq!((command.capability, command.kind), (86, 102));
+                    let intent = wire::decode_house_transfer_intent(&command.payload)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    assert!(intent.exit);
+                    assert_eq!(Some(intent.house.as_str()), self.scope.house.as_deref());
+                    let mut temple = self.scope.clone();
+                    temple.house = None;
+                    temple.position = [32369, 32241, 7];
+                    temple.connection_generation += 1;
+                    temple.lease_generation += 1;
+                    temple.session[15] += 1;
+                    let payload = wire::encode_house_transfer_ack(&temple)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    self.done.store(true, Ordering::SeqCst);
+                    Ok(GatedCommandResult {
+                        command_id: 1,
+                        server_sequence: 1,
+                        status: CommandStatus::Accepted,
+                        payload,
+                    })
+                }
+            }
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                let mut id = [0; 16];
+                id[6] = 0x70;
+                id[8] = 0x80;
+                id[15] = 1;
+                let scope = wire::HouseTransferAck {
+                    transfer: id,
+                    session: id,
+                    world: id,
+                    channel: id,
+                    house: Some("oteryn:content.house.test".into()),
+                    scope_generation: 2,
+                    connection_generation: 1,
+                    lease_generation: 1,
+                    selection: vec![86],
+                    position: [100, 200, 7],
+                };
+                let scope_payload = wire::encode_house_transfer_ack(&scope)
+                    .map_err(|e| format!("House snapshot fixture: {e:?}"))?;
+                let done = Arc::new(AtomicBool::new(false));
+                let (link, commands, outbox) = play_channel();
+                let task = tokio::spawn(run_session(
+                    DeadHouse {
+                        scope,
+                        scope_payload,
+                        done: done.clone(),
+                    },
+                    commands,
+                    outbox,
+                ));
+                let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+                tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                    loop {
+                        // Editable fields are never authority for the internal death exit.
+                        link.house_transfer_edit(0, "oteryn:content.house.forged".into());
+                        assert!(view.tick(&link).is_ok());
+                        if done.load(Ordering::SeqCst) && !view.death.dead {
+                            break;
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await
+                .map_err(|_| "native dead House never issued the existing exit/Temple handoff")?;
+                assert_eq!(link.house_transfer_panel().feedback, "Transfer committed");
+                assert!(
+                    link.house_transfer_panel()
+                        .summary
+                        .contains("32369,32241,7")
+                );
+                assert!(!view.hud_status().contains("You are dead"));
+                task.abort();
+                let _ = task.await;
+                Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+            })
+        })?
+        .join()
+        .map_err(|_| "native House death thread panicked")?
+}
+
+#[test]
+fn srv7_house_death_exit_is_once_and_discards_revived_or_changed_scope()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::house_transfer as wire;
+    let mut id = [0; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    id[15] = 1;
+    let mut ack = wire::HouseTransferAck {
+        transfer: id,
+        session: id,
+        world: id,
+        channel: id,
+        house: Some("oteryn:content.house.test".into()),
+        scope_generation: 2,
+        connection_generation: 1,
+        lease_generation: 1,
+        selection: vec![86],
+        position: [100, 200, 7],
+    };
+    let payload =
+        wire::encode_house_transfer_ack(&ack).map_err(|e| format!("House binding: {e:?}"))?;
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
+    outbox.house_death_scope(false, Some(payload.clone()));
+    outbox.vitals(Some(ActorVitals {
+        health: 0,
+        max_health: 150,
+        ..Default::default()
+    }));
+    outbox.house_death_vitals_current(true);
+    assert!(view.tick(&link).is_ok());
+    assert!(
+        commands.try_recv().is_err(),
+        "an unselected House route never becomes a death exit"
+    );
+    crate::play::mailbox::lock(&outbox.0)
+        .properties
+        .house_transfer
+        .selected = true;
+    outbox.house_death_scope(true, Some(payload));
+    outbox.house_death_vitals_current(true);
+    crate::play::mailbox::lock(&outbox.0).world_context.pending = true;
+    assert!(view.tick(&link).is_ok());
+    assert!(
+        commands.try_recv().is_err(),
+        "the current USE must complete first"
+    );
+    crate::play::mailbox::lock(&outbox.0).world_context.pending = false;
+    assert!(view.tick(&link).is_ok());
+    let PlayCommand::HouseDeathExit {
+        house_session,
+        connection_generation,
+        scope_generation,
+        lease_generation,
+        house,
+        death_generation,
+        ..
+    } = commands.try_recv()?
+    else {
+        return Err("bound House death exit".into());
+    };
+    assert!(view.tick(&link).is_ok());
+    assert!(commands.try_recv().is_err(), "one request per death");
+    outbox.vitals(Some(ActorVitals {
+        health: 150,
+        max_health: 150,
+        ..Default::default()
+    }));
+    outbox.house_death_vitals_current(true);
+    assert!(view.tick(&link).is_ok());
+    assert!(
+        !outbox.house_death_exit_current(
+            house_session,
+            connection_generation,
+            scope_generation,
+            lease_generation,
+            &house,
+            death_generation
+        ),
+        "a revived actor cannot send the obsolete exit"
+    );
+    outbox.vitals(Some(ActorVitals {
+        health: 0,
+        max_health: 150,
+        ..Default::default()
+    }));
+    outbox.house_death_vitals_current(true);
+    assert!(view.tick(&link).is_ok());
+    let PlayCommand::HouseDeathExit {
+        house_session,
+        connection_generation,
+        scope_generation,
+        lease_generation,
+        house,
+        death_generation,
+        ..
+    } = commands.try_recv()?
+    else {
+        return Err("new observed House death".into());
+    };
+    ack.session[15] += 1;
+    ack.connection_generation += 1;
+    outbox.house_death_scope(
+        true,
+        Some(
+            wire::encode_house_transfer_ack(&ack)
+                .map_err(|e| format!("new House binding: {e:?}"))?,
+        ),
+    );
+    assert!(
+        !outbox.house_death_exit_current(
+            house_session,
+            connection_generation,
+            scope_generation,
+            lease_generation,
+            &house,
+            death_generation
+        ),
+        "a new server House session invalidates the older exit"
+    );
+    assert!(
+        !crate::play::mailbox::lock(&outbox.0)
+            .properties
+            .house_transfer
+            .pending
+    );
+    Ok(())
+}
+
+#[path = "house_retry.rs"]
+mod house_retry;
+#[test]
+fn srv7_house_death_exit_cannot_rebind_cached_zero_health_to_new_lease()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::house_transfer as wire;
+    let mut id = [0; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    id[15] = 1;
+    let mut ack = wire::HouseTransferAck {
+        transfer: id,
+        session: id,
+        world: id,
+        channel: id,
+        house: Some("oteryn:content.house.test".into()),
+        scope_generation: 2,
+        connection_generation: 1,
+        lease_generation: 1,
+        selection: vec![86],
+        position: [100, 200, 7],
+    };
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
+    crate::play::mailbox::lock(&outbox.0)
+        .properties
+        .house_transfer
+        .selected = true;
+    outbox.house_death_scope(
+        true,
+        Some(wire::encode_house_transfer_ack(&ack).map_err(|e| format!("ack: {e:?}"))?),
+    );
+    outbox.vitals(Some(ActorVitals {
+        health: 0,
+        max_health: 150,
+        ..Default::default()
+    }));
+    outbox.house_death_vitals_current(true);
+    view.tick(&link)
+        .map_err(|error| format!("native tick: {error:?}"))?;
+    let _old = commands.try_recv()?;
+    ack.session[15] += 1;
+    ack.connection_generation += 1;
+    ack.scope_generation += 1;
+    ack.lease_generation += 1;
+    outbox.house_death_scope(
+        true,
+        Some(wire::encode_house_transfer_ack(&ack).map_err(|e| format!("new ack: {e:?}"))?),
+    );
+    // A cached actor_vitals() poll does not prove this newer House lease is dead.
+    outbox.vitals(Some(ActorVitals {
+        health: 0,
+        max_health: 150,
+        ..Default::default()
+    }));
+    view.tick(&link)
+        .map_err(|error| format!("native tick: {error:?}"))?;
+    assert!(
+        commands.try_recv().is_err(),
+        "old cached zero health must await actual own-vitals in the new House binding"
+    );
+    Ok(())
+}
+
+#[test]
+fn srv7_house_death_exit_rejects_superseded_scope_and_lease_generations()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::house_transfer as wire;
+    for lease in [false, true] {
+        let mut id = [0; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id[15] = 1;
+        let mut ack = wire::HouseTransferAck {
+            transfer: id,
+            session: id,
+            world: id,
+            channel: id,
+            house: Some("oteryn:content.house.test".into()),
+            scope_generation: 2,
+            connection_generation: 1,
+            lease_generation: 1,
+            selection: vec![86],
+            position: [100, 200, 7],
+        };
+        let (link, mut commands, outbox) = play_channel();
+        let mut view = PlayView::new(TileCoord::new(100, 200), 7, &[])?;
+        crate::play::mailbox::lock(&outbox.0)
+            .properties
+            .house_transfer
+            .selected = true;
+        outbox.house_death_scope(
+            true,
+            Some(wire::encode_house_transfer_ack(&ack).map_err(|e| format!("ack: {e:?}"))?),
+        );
+        outbox.vitals(Some(ActorVitals {
+            health: 0,
+            max_health: 150,
+            ..Default::default()
+        }));
+        outbox.house_death_vitals_current(true);
+        view.tick(&link)
+            .map_err(|error| format!("native tick: {error:?}"))?;
+        let PlayCommand::HouseDeathExit {
+            house_session,
+            connection_generation,
+            scope_generation,
+            lease_generation,
+            house,
+            death_generation,
+            ..
+        } = commands.try_recv()?
+        else {
+            return Err("expected automatic House exit".into());
+        };
+        if lease {
+            ack.lease_generation += 1;
+        } else {
+            ack.scope_generation += 1;
+        }
+        outbox.house_death_scope(
+            true,
+            Some(
+                wire::encode_house_transfer_ack(&ack)
+                    .map_err(|e| format!("superseding ack: {e:?}"))?,
+            ),
+        );
+        assert!(
+            !outbox.house_death_exit_current(
+                house_session,
+                connection_generation,
+                scope_generation,
+                lease_generation,
+                &house,
+                death_generation
+            ),
+            "scope/lease generation must cancel old queued exit (lease={lease})"
+        );
+    }
+    Ok(())
+}

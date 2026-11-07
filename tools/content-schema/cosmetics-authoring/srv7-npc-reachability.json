@@ -1,0 +1,653 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npc_files_checked": 1156,
+  "grant_files": 63,
+  "reachable_grant_npcs": [
+    {
+      "npc": "oteryn:npc.a_majestic_warwolf",
+      "path": "data-global/npc/a_majestic_warwolf.lua",
+      "sha256": "9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572",
+      "grant_lines": [
+        72,
+        73
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "path": "data-global/npc/ajax.lua",
+      "sha256": "ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d",
+      "grant_lines": [
+        137,
+        138
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "path": "data-global/npc/amber.lua",
+      "sha256": "00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9",
+      "grant_lines": [
+        86,
+        87
+      ]
+    },
+    {
+      "npc": "oteryn:npc.appaloosa",
+      "path": "data-global/npc/appaloosa.lua",
+      "sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19",
+      "grant_lines": [
+        217
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "path": "data-global/npc/ariella.lua",
+      "sha256": "90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56",
+      "grant_lines": [
+        125,
+        126
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "path": "data-global/npc/avar_tar.lua",
+      "sha256": "2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
+      "grant_lines": [
+        101,
+        102,
+        112,
+        113,
+        123,
+        124
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "path": "data-global/npc/bozo.lua",
+      "sha256": "518f1fd0e427f6d5e66c7d6ba0401db4845978f4bbc75c159d57c6738918bdbd",
+      "grant_lines": [
+        742,
+        743,
+        768,
+        769
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "path": "data-global/npc/bron.lua",
+      "sha256": "81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0",
+      "grant_lines": [
+        178,
+        179
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "path": "data-global/npc/cael.lua",
+      "sha256": "4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+      "grant_lines": [
+        355,
+        356,
+        366,
+        367
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chondur",
+      "path": "data-global/npc/chondur.lua",
+      "sha256": "c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62",
+      "grant_lines": [
+        95,
+        96,
+        111,
+        112,
+        177
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "path": "data-global/npc/cledwyn.lua",
+      "sha256": "915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+      "grant_lines": [
+        180,
+        181,
+        195,
+        196
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cornelia",
+      "path": "data-global/npc/cornelia.lua",
+      "sha256": "421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2",
+      "grant_lines": [
+        78,
+        79
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "path": "data-global/npc/cranky_lizard_crone.lua",
+      "sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+      "grant_lines": [
+        62,
+        63,
+        87,
+        88
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "path": "data-global/npc/dedoras.lua",
+      "sha256": "75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+      "grant_lines": [
+        188,
+        189,
+        204,
+        205,
+        211,
+        212
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "path": "data-global/npc/elane.lua",
+      "sha256": "beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+      "grant_lines": [
+        141,
+        142,
+        206,
+        207
+      ]
+    },
+    {
+      "npc": "oteryn:npc.emperor_kruzak",
+      "path": "data-global/npc/emperor_kruzak.lua",
+      "sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+      "grant_lines": [
+        92,
+        93,
+        114,
+        115,
+        140,
+        141
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "path": "data-global/npc/erayo.lua",
+      "sha256": "dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f",
+      "grant_lines": [
+        110,
+        111
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eruaran",
+      "path": "data-global/npc/eruaran.lua",
+      "sha256": "6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936",
+      "grant_lines": [
+        164,
+        165,
+        189,
+        190
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ezebeth",
+      "path": "data-global/npc/ezebeth.lua",
+      "sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+      "grant_lines": [
+        83,
+        84,
+        95,
+        96,
+        101,
+        102
+      ]
+    },
+    {
+      "npc": "oteryn:npc.flickering_soul",
+      "path": "data-global/npc/flickering_soul.lua",
+      "sha256": "67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405",
+      "grant_lines": [
+        131
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomadness",
+      "path": "data-global/npc/gnomadness.lua",
+      "sha256": "e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+      "grant_lines": [
+        87
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "path": "data-global/npc/gnommander.lua",
+      "sha256": "62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+      "grant_lines": [
+        145,
+        156,
+        167
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "path": "data-global/npc/habdel.lua",
+      "sha256": "0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
+      "grant_lines": [
+        93
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "path": "data-global/npc/hairycles.lua",
+      "sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73",
+      "grant_lines": [
+        454,
+        455
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "path": "data-global/npc/hanna.lua",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "grant_lines": [
+        104,
+        105
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "path": "data-global/npc/henricus.lua",
+      "sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
+      "grant_lines": [
+        296,
+        297,
+        302,
+        303,
+        311,
+        312
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "path": "data-global/npc/hjaern.lua",
+      "sha256": "4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466",
+      "grant_lines": [
+        114,
+        115,
+        143,
+        144,
+        150,
+        151
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "path": "data-global/npc/hugo.lua",
+      "sha256": "60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d",
+      "grant_lines": [
+        195,
+        196
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "path": "data-global/npc/irmana.lua",
+      "sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+      "grant_lines": [
+        82,
+        117,
+        159,
+        191
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "path": "data-global/npc/ishina.lua",
+      "sha256": "9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71",
+      "grant_lines": [
+        94
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jack_springer",
+      "path": "data-global/npc/jack_springer.lua",
+      "sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9",
+      "grant_lines": [
+        85,
+        86
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "path": "data-global/npc/kesar_the_younger_day.lua",
+      "sha256": "5e2f9ad788c3b985c82d2d33abb8a72d4e776b03659d6a6ebe69fbd8ceff1a65",
+      "grant_lines": [
+        120,
+        121
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "path": "data-global/npc/king_tibianus.lua",
+      "sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+      "grant_lines": [
+        142,
+        143,
+        162,
+        163,
+        186,
+        187
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "path": "data-global/npc/legola.lua",
+      "sha256": "26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2",
+      "grant_lines": [
+        107,
+        108
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "path": "data-global/npc/lubo.lua",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+      "grant_lines": [
+        82,
+        83
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "path": "data-global/npc/lugri.lua",
+      "sha256": "51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27",
+      "grant_lines": [
+        163,
+        164
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "path": "data-global/npc/lynda.lua",
+      "sha256": "c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9",
+      "grant_lines": [
+        94,
+        95,
+        188,
+        189,
+        194,
+        195
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "path": "data-global/npc/miraia.lua",
+      "sha256": "7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f",
+      "grant_lines": [
+        155
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "path": "data-global/npc/morgan.lua",
+      "sha256": "fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610",
+      "grant_lines": [
+        64,
+        65,
+        101,
+        102,
+        129,
+        130
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "path": "data-global/npc/muriel.lua",
+      "sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+      "grant_lines": [
+        112,
+        113,
+        123,
+        124
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "path": "data-global/npc/navigator.lua",
+      "sha256": "cc98cf86f238fd1da617e0f77184e63900d5bee6495ba593934974d538b3aca8",
+      "grant_lines": [
+        121,
+        122
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "path": "data-global/npc/norma.lua",
+      "sha256": "c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105",
+      "grant_lines": [
+        115,
+        116
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "path": "data-global/npc/palimuth.lua",
+      "sha256": "643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+      "grant_lines": [
+        257,
+        258,
+        326,
+        327
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palomino",
+      "path": "data-global/npc/palomino.lua",
+      "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+      "grant_lines": [
+        217
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "path": "data-global/npc/percybald.lua",
+      "sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+      "grant_lines": [
+        168,
+        169,
+        184,
+        185,
+        203,
+        204
+      ]
+    },
+    {
+      "npc": "oteryn:npc.queen_eloise",
+      "path": "data-global/npc/queen_eloise.lua",
+      "sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+      "grant_lines": [
+        87,
+        88,
+        109,
+        110,
+        135,
+        136
+      ]
+    },
+    {
+      "npc": "oteryn:npc.raymond_striker",
+      "path": "data-global/npc/raymond_striker.lua",
+      "sha256": "9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+      "grant_lines": [
+        147,
+        148
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "path": "data-global/npc/razan.lua",
+      "sha256": "c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb",
+      "grant_lines": [
+        149
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rock_steady",
+      "path": "data-global/npc/rock_steady.lua",
+      "sha256": "2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1",
+      "grant_lines": [
+        82,
+        83
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "path": "data-global/npc/sam.lua",
+      "sha256": "ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b",
+      "grant_lines": [
+        79,
+        80
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sandra",
+      "path": "data-global/npc/sandra.lua",
+      "sha256": "566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53",
+      "grant_lines": [
+        120,
+        121
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "path": "data-global/npc/simon_the_beggar.lua",
+      "sha256": "7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74",
+      "grant_lines": [
+        107,
+        122,
+        132,
+        217,
+        218
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_first_dragon",
+      "path": "data-global/npc/the_first_dragon.lua",
+      "sha256": "645852a73164653b3ae894eaeba26c31f672ca6802223ee9ac47a35c74a0c8aa",
+      "grant_lines": [
+        62,
+        63
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "path": "data-global/npc/the_queen_of_the_banshees.lua",
+      "sha256": "4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71",
+      "grant_lines": [
+        161,
+        162
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tom",
+      "path": "data-global/npc/tom.lua",
+      "sha256": "5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+      "grant_lines": [
+        249,
+        250
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "path": "data-global/npc/undal.lua",
+      "sha256": "48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+      "grant_lines": [
+        87,
+        142,
+        154
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ustan",
+      "path": "data-global/npc/ustan.lua",
+      "sha256": "441ed6570ee072e3e75ffa98af95aa653b3d6ec8836327f6a5927833c5faed89",
+      "grant_lines": [
+        82,
+        83
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "path": "data-global/npc/vanys.lua",
+      "sha256": "fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a",
+      "grant_lines": [
+        87,
+        142,
+        154
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "path": "data-global/npc/vescu.lua",
+      "sha256": "af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b",
+      "grant_lines": [
+        153,
+        154
+      ]
+    },
+    {
+      "npc": "oteryn:npc.walter_jaeger",
+      "path": "data-global/npc/walter_jaeger.lua",
+      "sha256": "64c5dab0b1e124fba0e9b22b5ce33b2861a3c01afa899fcda78960abf7d1f0f5",
+      "grant_lines": [
+        422,
+        423,
+        434,
+        435,
+        448,
+        449,
+        471
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yalahari",
+      "path": "data-global/npc/yalahari.lua",
+      "sha256": "4a1c2569d797d7a8dac838f7070140c14aaf9103c088f7c663778ffcad02cf5a",
+      "grant_lines": [
+        251,
+        252
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zoltan",
+      "path": "data-global/npc/zoltan.lua",
+      "sha256": "c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
+      "grant_lines": [
+        81,
+        82,
+        98,
+        99
+      ]
+    }
+  ],
+  "unplaced_grant_npcs": [
+    {
+      "npc": "oteryn:npc.testserver_assistant",
+      "path": "data-global/npc/testserver_assistant.lua",
+      "sha256": "158a1e5a84a9c5763cc572f8a990ab38aea4408fc562effe0ad249ebf416480d",
+      "grant_lines": [
+        607,
+        608,
+        619
+      ]
+    }
+  ],
+  "exclusions": [
+    "Testserver Assistant is an OT-only donor source and is never admitted."
+  ]
+}

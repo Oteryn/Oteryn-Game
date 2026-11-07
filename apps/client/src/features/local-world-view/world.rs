@@ -30,7 +30,10 @@ impl World {
         Ok(world)
     }
 
-    fn resolve_live_map(root: &Path, map: &WorldMapViewSnapshot) -> Result<Self, String> {
+    pub(crate) fn resolve_live_map(
+        root: &Path,
+        map: &WorldMapViewSnapshot,
+    ) -> Result<Self, String> {
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
@@ -132,6 +135,11 @@ impl World {
             layers: BTreeMap::new(),
             player,
             atlas: atlas.into_image(),
+            rotatable: index
+                .iter()
+                .filter(|appearance| appearance.rotatable)
+                .filter_map(|appearance| u16::try_from(appearance.id).ok())
+                .collect(),
         };
         for (position, tile) in tiles {
             world.insert_floor_tile(position, tile);

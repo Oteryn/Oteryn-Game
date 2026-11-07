@@ -758,6 +758,56 @@ impl QualifiedNativeEntryRoom {
         Some(view)
     }
 
+    /// A closed activity source projected from actual qualified Bundle cells.
+    /// The child keeps the SourceWorld negative-floor convention with a distinct
+    /// frame; no mutable origin overlay or unqualified cell becomes shared state.
+    pub(in crate::content) fn projected_activity_view(
+        &self,
+        source: super::native_spell_world::QualifiedNativeSpellWorld,
+        start: NativeEntryStart,
+        source_map_digest: [u8; 32],
+    ) -> Option<Self> {
+        let scope = source.scope();
+        if scope.world_id != self.movement_cells.scope().world_id
+            || scope.generation_digest != self.compiled.server_digest()
+            || source
+                .lookup(
+                    scope,
+                    crate::content::LogicalCell {
+                        x: start.x,
+                        y: start.y,
+                        z: i32::from(start.floor),
+                    },
+                )
+                .ok()
+                != Some(crate::content::CollisionClass::Walkable)
+        {
+            return None;
+        }
+        let mut view = self.clone();
+        view.entry_start = start;
+        view.frame_binding.frame.coordinate_frame = scope.coordinate_frame.as_str().into();
+        view.frame_binding.frame.origin = NativeEntryOrigin {
+            x: 0,
+            y: 0,
+            floor: 0,
+        };
+        view.frame_binding.digest =
+            crate::content::digest::sha256(&serde_json::to_vec(&view.frame_binding.frame).ok()?);
+        let mut basis = b"oteryn:srv7-source-portal-map-v1\0".to_vec();
+        basis.extend_from_slice(&source_map_digest);
+        basis.extend_from_slice(&view.frame_binding.digest);
+        view.map_revision_digest = crate::content::digest::sha256(&basis);
+        view.movement_cells = NativeEntryMovementCells {
+            spell_tiles: source.spell_tiles(),
+            house_tiles: self.movement_cells.house_tiles.clone(),
+            scope: scope.clone(),
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(source),
+        };
+        view.spawn_source = None;
+        Some(view)
+    }
+
     /// BUNDLE-COMBAT-ENABLE-1: the qualified room as a bundle World's Channel serves it. The
     /// compiled Content (and so the server and client digests) and the door content stay this
     /// room's own; the cells, frame binding, map revision and start are the bundle's, the same

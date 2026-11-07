@@ -25,16 +25,13 @@ fn identifier(value: &str) -> bool {
 fn parse(text: &str) -> Result<Mechanic, String> {
     let (header, route) = text
         .split_once("[route]\n")
-        .ok_or("missing [route] expression")?;
-    if route.trim().is_empty() {
-        return Err("empty [route] expression".into());
-    }
+        .map_or((text, None), |(header, route)| (header, Some(route)));
     let mut fields = BTreeMap::new();
     for line in header.lines().filter(|line| !line.is_empty()) {
         let (key, value) = line.split_once('=').ok_or("expected key=value")?;
         if !matches!(
             key,
-            "name" | "commands" | "transport" | "composed" | "authority" | "offer"
+            "name" | "commands" | "transport" | "composed" | "authority" | "offer" | "offer_only"
         ) {
             return Err(format!("unknown field {key}"));
         }
@@ -46,17 +43,43 @@ fn parse(text: &str) -> Result<Mechanic, String> {
     if !identifier(name) {
         return Err(format!("invalid mechanic name {name}"));
     }
-    let commands = fields
-        .get("commands")
-        .ok_or("missing commands")?
-        .split(',')
-        .map(|id| {
-            id.parse::<u32>()
-                .ok()
-                .filter(|id| *id != 0)
-                .ok_or_else(|| format!("invalid command id {id}"))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let passive = match fields.get("offer_only").copied() {
+        None => false,
+        Some("true") => true,
+        _ => return Err("offer_only must be true when present".into()),
+    };
+    let commands = if passive {
+        if fields.get("commands").is_none_or(|value| !value.is_empty())
+            || route.is_some()
+            || !fields.contains_key("offer")
+        {
+            return Err(
+                "offer_only requires explicit empty commands, an offer and no route".into(),
+            );
+        }
+        Vec::new()
+    } else {
+        fields
+            .get("commands")
+            .ok_or("missing commands")?
+            .split(',')
+            .map(|id| {
+                id.parse::<u32>()
+                    .ok()
+                    .filter(|id| *id != 0)
+                    .ok_or_else(|| format!("invalid command id {id}"))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    };
+    let route = if passive {
+        ""
+    } else {
+        let route = route.ok_or("missing [route] expression")?;
+        if route.trim().is_empty() {
+            return Err("empty [route] expression".into());
+        }
+        route
+    };
     for key in ["composed", "authority"] {
         if let Some(value) = fields.get(key)
             && !identifier(value)
@@ -211,7 +234,10 @@ fn write_outputs(
         "pub(super) async fn execute<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nroute_registered(stream, authority, session, command, outcome).await\n}\n\nasync fn route_registered<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nOk(match command.command_type {\n",
     );
     let mut table = String::from("#[cfg(test)]\nconst REGISTERED_ROUTES: &[(u32, &str)] = &[\n");
-    for mechanic in mechanics {
+    for mechanic in mechanics
+        .iter()
+        .filter(|mechanic| !mechanic.commands.is_empty())
+    {
         let pattern = mechanic
             .commands
             .chunk_by(|left, right| left.checked_add(1) == Some(*right))
@@ -279,6 +305,27 @@ mod tests {
             .expect_err("invalid registry fixture")
             .contains("duplicate command id")
         );
+    }
+
+    #[test]
+    fn passive_offer_requires_explicit_marker_and_cannot_register_a_command() {
+        let valid = "name=source_speech\noffer_only=true\ncommands=\noffer=641,source_speech::offered,source_speech_available\n";
+        let parsed = parse(valid).expect("explicit passive offer");
+        assert!(parsed.commands.is_empty());
+        assert!(parsed.route.is_empty());
+        for invalid in [
+            valid.replace("offer_only=true\n", ""),
+            valid.replace("commands=\n", ""),
+            valid.replace("commands=\n", "commands=7\n"),
+            format!("{valid}[route]\nbody"),
+            valid.replace("offer_only=true", "offer_only=false"),
+            valid.replace(
+                "offer=641,source_speech::offered,source_speech_available\n",
+                "",
+            ),
+        ] {
+            assert!(parse(&invalid).is_err(), "{invalid}");
+        }
     }
 
     #[test]

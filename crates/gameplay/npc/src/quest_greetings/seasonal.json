@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.messenger_of_santa",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.balduin_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/balduin_the_baker.lua",
+          "line": 104,
+          "sha256": "3d372bb0e99b02bf66bb5ebe4a0c6319730f566e6935467322c40d552dedbe76"
+        }
+      },
+      "farewell": {
+        "text": "Good luck out there!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/balduin_the_baker.lua",
+          "line": 105,
+          "sha256": "3d372bb0e99b02bf66bb5ebe4a0c6319730f566e6935467322c40d552dedbe76"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.benny_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/benny_the_baker.lua",
+          "line": 104,
+          "sha256": "43781aaf77c9b076cae8841412335bb2d62c2f4f3b86a0ef78fcc8759f7e59a0"
+        }
+      },
+      "farewell": {
+        "text": "Good luck out there!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/benny_the_baker.lua",
+          "line": 105,
+          "sha256": "43781aaf77c9b076cae8841412335bb2d62c2f4f3b86a0ef78fcc8759f7e59a0"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.biff_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/biff_the_baker.lua",
+          "line": 104,
+          "sha256": "a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d"
+        }
+      },
+      "farewell": {
+        "text": "Good luck out there!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/biff_the_baker.lua",
+          "line": 105,
+          "sha256": "a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.billy_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/billy_the_baker.lua",
+          "line": 104,
+          "sha256": "f9e98b1042edd5011f95c1ca8779cdad5c30326f5047ca57e2dd764c4294ea4f"
+        }
+      },
+      "farewell": {
+        "text": "Good luck out there!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/billy_the_baker.lua",
+          "line": 105,
+          "sha256": "f9e98b1042edd5011f95c1ca8779cdad5c30326f5047ca57e2dd764c4294ea4f"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.brian_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "I wonder if we will make it this year! Say {substance} if you want to deliver Sweet and Sugary Substances, or ask me about the {mass} of substances delivered or the {base} material lured, if you want to know how the World Quest is going.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/brian_the_baker.lua",
+          "line": 104,
+          "sha256": "a49795eeb75ab6b3b9c7730162156546035e8e5872fb947116714ce8924c0b3a"
+        }
+      },
+      "farewell": {
+        "text": "Good luck out there!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/brian_the_baker.lua",
+          "line": 105,
+          "sha256": "a49795eeb75ab6b3b9c7730162156546035e8e5872fb947116714ce8924c0b3a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.brutus_the_baker",
+      "variants": {},
+      "greet": {
+        "text": "Hello |PLAYERNAME|! Say {help} if you want to help me clean up after the big cake event.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/brutus_the_baker.lua",
+          "line": 139,
+          "sha256": "f81918f6205263762f0604092deb5aff1f78f69c500566cdd33efdd7e1529ae1"
+        }
+      },
+      "farewell": {
+        "text": "Thanks for stopping by!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/brutus_the_baker.lua",
+          "line": 140,
+          "sha256": "f81918f6205263762f0604092deb5aff1f78f69c500566cdd33efdd7e1529ae1"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.santa_claus",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    }
+  ],
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

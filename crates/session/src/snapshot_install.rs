@@ -9,6 +9,7 @@ impl SnapshotState {
             entities: session.entities.clone(),
             world_object_overlay: Some(session.world_object_overlay.clone()),
             actor_vitals: session.actor_vitals,
+            own_vitals_house_binding: session.own_vitals_house_binding.clone(),
             combat_state: session.combat_state,
             combat_revision: session.combat_revision,
             spatial_revision: session.spatial_revision,
@@ -37,6 +38,7 @@ impl SnapshotState {
             session.world_object_overlay = value;
         }
         session.actor_vitals = self.actor_vitals;
+        session.own_vitals_house_binding = self.own_vitals_house_binding;
         session.combat_state = self.combat_state;
         session.combat_revision = self.combat_revision;
         session.spatial_revision = self.spatial_revision;

@@ -69,6 +69,10 @@ pub trait MapFacts {
         false
     }
 
+    /// A source ground replacement may turn a nonwalkable speed0 tile into a bridge.
+    fn ground_speed_override(&self, _pos: TilePos) -> Option<u16> {
+        None
+    }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts>;
     /// The facts of an overlay-added or Ground item, from its item content definition.
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts>;
@@ -216,7 +220,9 @@ pub fn compose_into(
 ) -> Result<u16, ViewError> {
     let mut ground_speed = 0;
     if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
-        ground_speed = tile.stored_ground_speed();
+        ground_speed = facts
+            .ground_speed_override(pos)
+            .unwrap_or_else(|| tile.stored_ground_speed());
         let (ids, depths) = (tile.ids(), tile.depths());
         let mut ordinal: u16 = 0;
         for (at, (id, depth)) in ids.iter().zip(depths).enumerate() {

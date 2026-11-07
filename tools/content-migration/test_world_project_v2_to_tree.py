@@ -134,7 +134,7 @@ assert lock["family_counts"] == {
     "Item": 34111, "Mount": 252,  # E06 minted 68 client-only Crystal market Items.
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
-    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
+    "NPC": 1283, "Dialogue": 837, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
     **{family: value["records"] for family, value in quest_families.items()},
 }
@@ -160,8 +160,8 @@ assert "imports/canary/bindings/creatures.json" in paths
 assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
-assert manifest["families"]["NPC"] == {"records": 1282, "index": "content/npcs/definitions/index.json"}
-assert manifest["families"]["Dialogue"] == {"records": 836, "index": "content/dialogues/definitions/index.json"}
+assert manifest["families"]["NPC"] == {"records": 1283, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Dialogue"] == {"records": 837, "index": "content/dialogues/definitions/index.json"}
 assert manifest["families"]["Service.Trade"] == {"records": 324, "index": "content/services/trade/index.json"}
 assert manifest["families"]["Service.Travel"] == {"records": 56, "index": "content/services/travel/index.json"}
 assert manifest["families"]["Service.Bank"] == {"records": 1, "index": "content/services/bank/index.json"}

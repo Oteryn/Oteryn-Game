@@ -55,6 +55,8 @@ pub mod item_use;
 
 #[path = "features/0288-ambient-sound/mod.rs"]
 pub mod ambient_sound;
+#[path = "features/0385-item-effects/mod.rs"]
+pub mod item_effects;
 #[path = "features/0019-world-light/mod.rs"]
 pub mod world_light;
 #[path = "features/0026-world-weather/mod.rs"]
@@ -121,8 +123,14 @@ pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
 
+#[path = "features/0371-seasonal-events/mod.rs"]
+pub mod seasonal_events;
+
 #[path = "features/0053-world-event/mod.rs"]
 pub mod world_event;
+
+#[path = "features/0384-world-rotate/mod.rs"]
+pub mod world_rotate;
 
 /// Completed species and bounded Animus mastery pages.
 #[path = "features/0168-animus-mastery/mod.rs"]
@@ -272,3 +280,6 @@ pub mod rest_status;
 pub mod skill_display;
 #[path = "features/0279-skill-progress/mod.rs"]
 pub mod skill_progress;
+
+#[path = "features/0386-scripted-item-speech/mod.rs"]
+pub mod scripted_item_speech;

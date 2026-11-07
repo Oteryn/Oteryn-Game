@@ -1,0 +1,30 @@
+{
+  "client_content_generation": "0084c4507a7832812f360e6c935c1362ccc71d57b7405d819d06d9a65672f34c",
+  "items": [
+    {
+      "appearance_id": 2096,
+      "appearance_identity_sha256": "31cfaf1c640fdc0b3d274cc09d6bed1c3d48f4f536a5d76d15f751195c1130a1",
+      "definition_key": "oteryn:item.tibia.i2096",
+      "definition_ref": 10160,
+      "definition_revision": "definition-r1"
+    },
+    {
+      "appearance_id": 6393,
+      "appearance_identity_sha256": "2be20f1949b4121a9720d0f8224d4aec66f976a4c28318b7cb287fe7b79794c2",
+      "definition_key": "oteryn:item.tibia.i6393",
+      "definition_ref": 30204,
+      "definition_revision": "definition-r1"
+    }
+  ],
+  "schema": "OTERYN_SEASONAL_ITEM_APPEARANCE_PROJECTION/v1",
+  "sources": {
+    "aliases_sha256": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
+    "appearance_admission_sha256": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
+    "client_artifact_file_sha256": "0084c4507a7832812f360e6c935c1362ccc71d57b7405d819d06d9a65672f34c",
+    "client_release": "client-15.30",
+    "current_membership_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+    "export_facts_sha256": "16c413fd7962df751664f499582ca82bd33f0277c594b2e810bca9c558affa43",
+    "golem_export_facts_sha256": "24755a131545d20038b0bd312de69f197214973db93e8508203f209dc1e99964",
+    "item_keys_sha256": "bef9cb68d90c3a12fa163d9ec00aa4b7112b5be989feaf160b2de9d5ef97567d"
+  }
+}

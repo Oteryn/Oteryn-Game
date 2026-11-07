@@ -41,6 +41,9 @@ impl State {
             .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
             .then(|| SessionMapView::starting_after(admitted.continuity.world_map_revision));
         let mut payloads = Vec::new();
+        if let Some(chat) = source_speech::snapshot(authority, actor, admitted).await? {
+            payloads.push(chat);
+        }
         let mut containers = None;
         if let Some(view) = items.as_mut() {
             let inventory =
@@ -157,8 +160,7 @@ impl State {
                 window_revision,
             };
         }
-        if enabled
-            && selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
+        if selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
             && let Some((revision, vitals)) = authority
                 .observe_vitals(actor, admitted.game_session_id)
                 .await
@@ -178,8 +180,27 @@ impl State {
             &mut payloads,
         )
         .await?;
+        let item_effect_cursor = if selected
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+        {
+            payloads.push(OwnedDomain {
+                domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
+                revision: 0,
+                snapshot_type: 1,
+                payload: Vec::new(),
+            });
+            authority
+                .observe_house_item_effects(*admitted, u64::MAX)
+                .await
+                .ok_or(ServeEnd::Disconnected)?
+                .0
+        } else {
+            0
+        };
         Ok((
             Self {
+                item_effect_cursor,
+                item_effect_revision: 0,
                 spell_catalog,
                 actor,
                 enabled,

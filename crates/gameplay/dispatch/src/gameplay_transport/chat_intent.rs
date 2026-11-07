@@ -9,7 +9,11 @@
 //! (`super::chat_relay`), which hands every line it receives to [`ChatRuntime::deliver`]. Without
 //! a configured, listening relay they answer `CHAT_UNAVAILABLE`. Nothing here is durable.
 
+mod cupcakes;
+mod house_items;
 mod item_actions;
+mod santa_gifts;
+mod seasonal_cake;
 
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZeroU64;
@@ -54,6 +58,7 @@ mod mount_voices;
 struct ChatSession {
     last_mount_voice: Option<u64>,
     mount_sounds: bool,
+    scripted_item_speech: bool,
     name: String,
     /// The session's CharacterId, the key of the private lines it receives; `None` receives none.
     character: Option<[u8; 16]>,
@@ -191,6 +196,7 @@ impl ChatRuntime {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
                 last_mount_voice: None,
                 mount_sounds: false,
+                scripted_item_speech: false,
                 name: name.to_owned(),
                 character,
                 limiter: ChatLimiter::new(now),
@@ -208,6 +214,7 @@ impl ChatRuntime {
             });
             entry.name = name.to_owned();
             entry.mount_sounds = false;
+            entry.scripted_item_speech = false;
             entry.character = character;
             entry.egress.clear();
             entry.engaged = None;
@@ -1798,6 +1805,54 @@ mod tests {
     }
 
     #[test]
+    fn srv7_scripted_item_speech_projects_per_recipient_without_enabling_ambient() {
+        let (runtime, chat, first, second) = two_players(0);
+        {
+            let mut sessions = chat.sessions.lock().expect("chat session owner");
+            sessions
+                .get_mut(&first.1)
+                .expect("first")
+                .scripted_item_speech = true;
+        }
+        assert!(!chat.mount_voice_due(first.1, BASE.get()));
+        chat.cake_bite_speech(&runtime, first.0, first.1);
+        assert!(
+            matches!(chat.drain(first.1).as_slice(), [ChatLine::Local { mode: ChatSpeechMode::MonsterSay, text, .. }] if text=="Mmmm!")
+        );
+        assert!(
+            matches!(chat.drain(second.1).as_slice(), [ChatLine::Local { mode: ChatSpeechMode::Say, text, .. }] if text=="Mmmm!")
+        );
+        chat.select_mount_sounds(second.1, true);
+        chat.cake_bite_speech(&runtime, first.0, first.1);
+        assert!(matches!(
+            chat.drain(second.1).as_slice(),
+            [ChatLine::Local {
+                mode: ChatSpeechMode::MonsterSay,
+                ..
+            }]
+        ));
+        chat.admit(first.1, "Aela", BASE);
+        assert!(
+            !chat
+                .sessions
+                .lock()
+                .expect("sessions")
+                .get(&first.1)
+                .expect("first")
+                .scripted_item_speech
+        );
+        assert!(!chat.mount_voice_due(first.1, BASE.get()));
+        chat.cake_bite_speech(&runtime, first.0, first.1);
+        assert!(matches!(
+            chat.drain(first.1).as_slice(),
+            [ChatLine::Local {
+                mode: ChatSpeechMode::Say,
+                ..
+            }]
+        ));
+    }
+
+    #[test]
     fn reaudit_mount_sounds() {
         let (runtime, chat, first, second) = two_players(0);
         chat.select_mount_sounds(first.1, true);
@@ -2042,3 +2097,15 @@ mod private_channel;
 #[cfg(test)]
 #[path = "guild_chat/test_support.rs"]
 pub(super) mod guild_test_support;
+
+impl ChatSession {
+    // Only explicit source item publishers call this projection. Ambient voices
+    // retain their independent mount_sounds gate and never consult this flag.
+    fn scripted_item_mode(&self) -> ChatSpeechMode {
+        if self.scripted_item_speech || self.mount_sounds {
+            ChatSpeechMode::MonsterSay
+        } else {
+            ChatSpeechMode::Say
+        }
+    }
+}

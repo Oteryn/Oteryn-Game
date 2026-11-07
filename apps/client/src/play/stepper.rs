@@ -27,6 +27,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
     fn battle_state(&self) -> Option<oteryn_session::ActorCombatState> {
         None
     }
+    fn own_house_vitals_current(&self) -> bool { false }
     fn actor_vitals(&self) -> Option<oteryn_session::ActorVitals> {
         None
     }
@@ -117,6 +118,7 @@ super::feature_0014_container_tree::protocol::session_trait! {
     ) -> Option<Vec<WorldSpatialEntity>> {
         None
     }
+    fn appearance_palette(&self) -> Option<&[[u8;3]]> { None }
     fn visible_appearances(&self) -> Vec<oteryn_session::VisibleAppearance> { Vec::new() }
     fn task_board_selected(&self) -> bool {
         false

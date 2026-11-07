@@ -12,10 +12,16 @@ pub(super) enum Case {
     Outfit,
     Afflicted,
     ConcurrentGrant,
+    OtDollPolicy,
 }
 
 #[path = "race.rs"]
 mod race;
+
+#[test]
+fn srv7_ot_only_cosmetic_dolls_never_unlock_appearance() -> TestResult {
+    run_all(false, false, Some(Case::OtDollPolicy))
+}
 
 #[test]
 fn item_cosmetics_competing_source_grant_prevents_fourth_item_spend() -> TestResult {
@@ -113,6 +119,27 @@ pub(super) async fn execute(
     })
     .map_err(debug)?;
     match case {
+        Case::OtDollPolicy => {
+            let source = reference("oteryn:item.tibia.i6579").ok_or("OT doll source")?;
+            let item: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6579' AND lifecycle=1")
+                .fetch_one(&h.pool).await?;
+            let item: [u8;16] = item.try_into().map_err(|_| "OT doll identity")?;
+            let rule = oteryn_gameplay_items::item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("OT doll rule")?;
+            let stop = (1..=512).find(|command| {
+                oteryn_gameplay_items::item_cosmetics::select_for_command(rule, *admitted.game_session_id.as_bytes(), *command, item)
+                    .is_some_and(|choice| choice.grants.iter().all(|g| g.contains("430-431") || g.contains("514-516")))
+            }).ok_or("bounded admitted OT doll outcome")?;
+            for _ in 0..stop {
+                let command = admitted.continuity.next_command_id;
+                let (next, result, _) = super::super::rust_lottery::exchange(owner, admitted, command, &payload, Some(source), None).await?;
+                admitted = next;
+                assert_eq!(result, UseDisposition::NotPossible, "an OT-only addon-doll rule must not grant on the production caller");
+            }
+            assert_eq!(grant_count(h).await?, 0);
+            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(quantity, 1);
+        }
         Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant => {
             let source = reference("oteryn:item.tibia.i36938").ok_or("source")?;
             assert!(

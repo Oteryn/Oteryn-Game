@@ -108,24 +108,46 @@ impl DurabilityRoot {
             // The admission relation lock also fences reset publication/activation.
             let row = sqlx::query("SELECT a.reset_epoch::text,e.active,e.announcement FROM game_world_reset_active a LEFT JOIN game_world_event_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
                 .bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let state = if let Some(row) = row {
+            let mut state = if let Some(row) = row {
                 let epoch = row.try_get::<String,_>(0)?.parse::<u64>()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 if epoch != expected_epoch {
                     return Ok(Err(CharacterProgressionError::AuthorityRejected));
                 }
                 if epoch == 0 {
-                    WorldEventState { reset_epoch: 0, active: false, announcement: String::new() }
+                    WorldEventState { reset_epoch: 0, active: false, announcement: String::new(), seasonal: Vec::new(), cake: None }
                 } else {
-                    WorldEventState { reset_epoch: epoch, active: row.try_get(1)?, announcement: row.try_get(2)? }
+                    WorldEventState { reset_epoch: epoch, active: row.try_get(1)?, announcement: row.try_get(2)?, seasonal: Vec::new(), cake: None }
                 }
             } else if expected_epoch == 0 {
-                WorldEventState { reset_epoch: 0, active: false, announcement: String::new() }
+                WorldEventState { reset_epoch: 0, active: false, announcement: String::new(), seasonal: Vec::new(), cake: None }
             } else {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             };
             if state.announcement != announcement_for_epoch(state.reset_epoch).unwrap_or_default() {
                 return Err(DurabilityError::InvalidStoredState);
+            }
+            // The observation is immutable with this query receipt, including historical replay.
+            let observed: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM game_daily_effect_now()))::bigint")
+                .fetch_one(&mut *tx).await?;
+            state.seasonal = oteryn_gameplay_foundation::scheduled_events::seasonal_events_at(observed);
+            let cake: Option<(i64,i64,serde_json::Value)> = sqlx::query_as("SELECT event_start,event_end,state FROM game_seasonal_cake_worlds WHERE world_id=encode($1,'hex')::uuid AND event_start<=$2 ORDER BY event_start DESC LIMIT 1")
+                .bind(world.as_bytes().as_slice()).bind(observed).fetch_optional(&mut *tx).await?;
+            if let Some((start,end,value)) = cake {
+                let cake: super::seasonal_cake::CakeWorldState = serde_json::from_value(value)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                cake.validate().map_err(|_| DurabilityError::InvalidStoredState)?;
+                let timestamp = |value: i64| u64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
+                if end <= start { return Err(DurabilityError::InvalidStoredState); }
+                state.cake = Some(oteryn_protocol_oteryn::world_event::CakeProgress {
+                    stage: cake.stage, substances: cake.substances, golems: cake.golems,
+                    layer: cake.layer, layer_progress: cake.layer_progress,
+                    layer_goal: super::seasonal_cake::footprint::layer_goal(cake.layer).ok_or(DurabilityError::InvalidStoredState)?,
+                    occurrence_start: timestamp(start)?, occurrence_end: timestamp(end)?,
+                    window_end: cake.window_end.map(timestamp).transpose()?,
+                    bonus_until: cake.bonus_until.map(timestamp).transpose()?,
+                    observed_unix: timestamp(observed)?,
+                });
             }
             let bytes = encode_world_event_state(&state).map_err(|_| DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_world_event_query_receipts(game_session_id,command_id,character_id,world_id,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5)")

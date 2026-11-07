@@ -30,10 +30,10 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "ce41135b19867a03e20d3ecf98e2e88d076db66101949876fd6e130cd9fbba20"
+        "3f5581ce4025ed14712171f6c69f46288c0462a5d8d42c6021a039834dcde1a0"
     );
-    assert_eq!(catalogue.npc_count(), 1282);
-    assert_eq!(catalogue.dialogue_count(), 836);
+    assert_eq!(catalogue.npc_count(), 1283);
+    assert_eq!(catalogue.dialogue_count(), 837);
     assert_eq!(catalogue.service_count(), 389);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);

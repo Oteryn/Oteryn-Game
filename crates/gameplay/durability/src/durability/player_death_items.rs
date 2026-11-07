@@ -199,8 +199,16 @@ impl DurabilityRoot {
         cause: PlayerDeathDropCause,
         request: PlayerDeathItemRequest,
     ) -> Result<PlayerDeathItemOutcome> {
-        self.commit_player_death_item(permit, authority, node, fence, (cause, false), request)
-            .await
+        self.commit_player_death_item(
+            Some(permit),
+            authority,
+            node,
+            fence,
+            (cause, false),
+            request,
+            None,
+        )
+        .await
     }
     pub async fn commit_player_death_amulet(
         &self,
@@ -212,7 +220,7 @@ impl DurabilityRoot {
         request: PlayerDeathItemRequest,
     ) -> Result<PlayerDeathItemOutcome> {
         self.commit_player_death_item(
-            permit,
+            Some(permit),
             authority,
             node,
             fence,
@@ -224,20 +232,76 @@ impl DurabilityRoot {
                 true,
             ),
             request,
+            None,
         )
         .await
     }
+    pub async fn commit_house_player_death_drop(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        house: &crate::durability::house_scope_handoff::HouseId,
+        fence: CurrentCharacterItemFence,
+        cause: PlayerDeathDropCause,
+        request: PlayerDeathItemRequest,
+    ) -> Result<PlayerDeathItemOutcome> {
+        self.commit_player_death_item(
+            None,
+            authority,
+            node,
+            fence,
+            (cause, false),
+            request,
+            Some(house.clone()),
+        )
+        .await
+    }
+    pub async fn commit_house_player_death_amulet(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        house: &crate::durability::house_scope_handoff::HouseId,
+        fence: CurrentCharacterItemFence,
+        cause: PlayerDeathAmuletCause,
+        request: PlayerDeathItemRequest,
+    ) -> Result<PlayerDeathItemOutcome> {
+        self.commit_player_death_item(
+            None,
+            authority,
+            node,
+            fence,
+            (
+                PlayerDeathDropCause {
+                    death_occurrence: cause.death_occurrence,
+                    item_instance: cause.item_instance,
+                },
+                true,
+            ),
+            request,
+            Some(house.clone()),
+        )
+        .await
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "ordinary item lane or named-House proof composes independent authority, Node, character fence, selected death item and exact custody request"
+    )]
     async fn commit_player_death_item(
         &self,
-        permit: &SpellLanePermit,
+        permit: Option<&SpellLanePermit>,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         operation: (PlayerDeathDropCause, bool),
         request: PlayerDeathItemRequest,
+        house: Option<crate::durability::house_scope_handoff::HouseId>,
     ) -> Result<PlayerDeathItemOutcome> {
         let (cause, burn) = operation;
-        permit.check_scope(fence.runtime_scope)?;
+        match (permit, house.as_ref()) {
+            (Some(permit), None) => permit.check_scope(fence.runtime_scope)?,
+            (None, Some(house)) if house.runtime_scope().ok() == Some(fence.runtime_scope) => {}
+            _ => return Err(PlayerDeathItemError::AuthorityRejected),
+        }
         request.validate(&cause.death_occurrence, &cause.item_instance)?;
         let recovery = authority
             .record_for(self)
@@ -262,7 +326,16 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error)),
                     }
                     // Serialize both kinds of cause and item under the current Character root lock.
-                    let root = match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                    let admitted = match house.as_ref() {
+                        Some(house) => {
+                            crate::durability::character_progression::assert_house_death_fence(
+                                &mut tx, &fence, None, &node, house,
+                            )
+                            .await?
+                        }
+                        None => assert_item_only_fence(&mut tx, &fence, &node).await?,
+                    };
+                    let root = match admitted {
                         Ok(root) => root,
                         Err(_) => return Ok(Err(PlayerDeathItemError::AuthorityRejected)),
                     };
@@ -321,7 +394,7 @@ async fn replay(
 
 async fn write(
     connection: &mut PgConnection,
-    permit: &SpellLanePermit,
+    permit: Option<&SpellLanePermit>,
     fence: &CurrentCharacterItemFence,
     cause: PlayerDeathDropCause,
     request: &PlayerDeathItemRequest,
@@ -347,7 +420,9 @@ async fn write(
             (2_i16, None, Some(instance_id.to_vec()))
         }
     };
-    permit.check_scope(fence.runtime_scope)?;
+    if let Some(permit) = permit {
+        permit.check_scope(fence.runtime_scope)?;
+    }
     let death = sqlx::query("SELECT death_spatial_position, death_map_revision, content_revision FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND death_world_id=encode($3,'hex')::uuid AND death_scope_kind=$4 AND death_channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND death_instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid")
         .bind(cause.death_occurrence.as_slice()).bind(character.as_slice()).bind(world_id.as_bytes().as_slice()).bind(scope_kind).bind(channel_id.as_deref()).bind(instance_id.as_deref()).fetch_optional(&mut *connection).await?.ok_or(PlayerDeathItemError::StaleState)?;
     if death.try_get::<String, _>("content_revision")? != request.content_revision {

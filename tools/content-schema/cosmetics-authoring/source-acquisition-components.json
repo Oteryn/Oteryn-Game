@@ -1,0 +1,55 @@
+{
+  "schema": "OTERYN_NPC_ACQUISITION_COMPONENTS/v1",
+  "quest": "oteryn:quest.npc_cosmetic_acquisition",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "bindings": [
+    {
+      "storage": "72326",
+      "key": "oteryn:quest-progress/npc-cosmetic/rock_steady/storage_72326"
+    },
+    {
+      "storage": "Storage.DreamOutfit",
+      "key": "oteryn:quest-progress/dream_outfit"
+    },
+    {
+      "storage": "Storage.DreamOutfit + 1",
+      "key": "oteryn:quest-progress/dream_outfit_plus_1"
+    },
+    {
+      "storage": "Storage.OutfitQuest.Ref",
+      "key": "oteryn:quest-progress/outfit_quest/ref"
+    },
+    {
+      "storage": "Storage.Quest.U11_80.BattleMageOutfits.Addon1",
+      "key": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1"
+    },
+    {
+      "storage": "Storage.Quest.U11_80.BattleMageOutfits.Addon2",
+      "key": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2"
+    },
+    {
+      "storage": "Storage.Quest.U7_8.BeggarOutfits.BeggarFirstAddonDoor",
+      "key": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door"
+    },
+    {
+      "storage": "Storage.Quest.U7_8.HunterOutfits.Hunter.AddonGlove",
+      "key": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove"
+    },
+    {
+      "storage": "Storage.Quest.U7_8.KnightOutfits.AddonHelmet",
+      "key": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet"
+    },
+    {
+      "storage": "Storage.Quest.U7_8.MageAndSummonerOutfits.AddonHatCloak",
+      "key": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak"
+    },
+    {
+      "storage": "Storage.WayfarerOutfit",
+      "key": "oteryn:quest-progress/wayfarer_outfit"
+    },
+    {
+      "storage": "Storage.WayfarerOutfit + 1",
+      "key": "oteryn:quest-progress/wayfarer_outfit_plus_1"
+    }
+  ]
+}

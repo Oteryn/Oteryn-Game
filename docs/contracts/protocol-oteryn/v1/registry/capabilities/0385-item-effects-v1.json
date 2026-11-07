@@ -1,0 +1,15 @@
+{
+  "id": 385,
+  "name": "ITEM_EFFECTS_V1",
+  "owner_decision": "SRV7 W18 minimal shared item-effect foundation, ported from SV8 813a2d4b1a121e96f807ad2248f77415f37af389",
+  "owner": "current Channel item-effect presentation journal",
+  "requires": [
+    6
+  ],
+  "command_types": [],
+  "state_domains": [
+    105
+  ],
+  "offered": true,
+  "offer_gate": "Only committed item receipt owners publish item effects. No casting, spell words, values, sound or cooldown domain is activated."
+}

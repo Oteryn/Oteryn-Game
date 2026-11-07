@@ -1,0 +1,38 @@
+{
+  "source_path": "data-global/npc/gnomadness.lua",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "source_sha256": "e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+  "helper_path": "data/libs/functions/functions.lua",
+  "helper_lines": [
+    115,
+    122,
+    284,
+    287
+  ],
+  "helper_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+  "qualification": "Actual pinned Lua callback+getMoneyCount executed with explicit external Hazard owner fixture unlocked6/current1; this is source policy, not earned Hazard access or runtime grant proof.",
+  "cases": [
+    {
+      "message": "5",
+      "source_events": [
+        {
+          "text": "Your hazard level has been set to 5. Good luck!",
+          "kind": "reply"
+        }
+      ],
+      "source_topic_after": 1,
+      "expected_compiled_transition": "ripptor-select"
+    },
+    {
+      "message": "not a number",
+      "source_events": [
+        {
+          "text": "I'm sorry, I don't understand. What hazard level would you like to set?",
+          "kind": "reply"
+        }
+      ],
+      "source_topic_after": 2,
+      "expected_compiled_transition": "ripptor-select-invalid"
+    }
+  ]
+}

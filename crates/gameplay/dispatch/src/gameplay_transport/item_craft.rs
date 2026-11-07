@@ -18,6 +18,7 @@ use sha2::{Digest, Sha256};
 pub(super) mod enchanting;
 mod harvest;
 mod planting;
+mod pumpkin_skinning;
 mod rope;
 mod terrain;
 

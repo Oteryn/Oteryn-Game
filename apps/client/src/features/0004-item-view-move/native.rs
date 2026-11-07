@@ -11,7 +11,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
     // SAFETY: userdata points to the live selection flag on this window's thread.
     unsafe {
         if msg == WM_COMMAND
-            && (matches!(w & 0xffff, 102..=104)
+            && (matches!(w & 0xffff, 102..=105)
                 || w & 0xffff == 101 && (w >> 16) & 0xffff == LBN_SELCHANGE as usize)
         {
             let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut u8;
@@ -20,6 +20,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
                     102 => 2,
                     103 => 3,
                     104 => 4,
+                    105 => 5,
                     _ => 1,
                 };
             }
@@ -128,6 +129,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         null_mut(),
                         null(),
                     );
+                    let rotate = CreateWindowExW(
+                        0, wide("BUTTON").as_ptr(), wide("Rotate").as_ptr(),
+                        WS_CHILD | WS_TABSTOP, 180, 364, 120, 30, hwnd,
+                        105_usize as _, null_mut(), null_mut(), null(),
+                    );
                     let status = CreateWindowExW(
                         0,
                         wide("STATIC").as_ptr(),
@@ -199,6 +205,18 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             PlayLink::inventory_use_shared(&shared, &commands, action == 3);
                             mailbox = lock(&shared);
                         }
+                        if action == 1 && selected {
+                            mailbox.rotation_probe.selection_changed();
+                        }
+                        if action == 5 && selected {
+                            drop(mailbox);
+                            PlayLink::inventory_rotate_shared(&shared, &commands);
+                            mailbox = lock(&shared);
+                        }
+                        drop(mailbox);
+                        PlayLink::inventory_rotate_probe_shared(&shared, &commands);
+                        mailbox = lock(&shared);
+                        ShowWindow(rotate, if crate::play::feature_0011_world_interaction::protocol::inventory_rotation_available(&mailbox) { SW_SHOW } else { SW_HIDE });
                         let panel = &mailbox.inventory;
                         let feedback = mailbox
                             .world_context

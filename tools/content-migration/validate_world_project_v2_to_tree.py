@@ -27,12 +27,12 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1282
-NPC_BINDING_COUNT = 2747
+NPC_COUNT = 1283
+NPC_BINDING_COUNT = 2748
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
-DIALOGUE_COUNT = 836
+DIALOGUE_COUNT = 837
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
@@ -414,7 +414,18 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
 def creature_family_counts(reference: Any) -> dict[str, int]:
     counts = {family: sum(row['identity']['family'] == family for row in reference['records'])
               for family in CREATURE_FAMILY_NODES}
-    require(counts['Creature'] == 1863, 'LEGACY_CREATURE_COUNT')
+    # W05d adds exactly the pinned Cake Golem source record; retain the original
+    # population guard and require the actual addition, rather than accepting an
+    # arbitrary larger index merely because its own count agrees.
+    cake = load(ROOT / 'tools/content-migration/cake_golem_stage.json')
+    extra = [row for row in cake['records'] if row['identity']['family'] == 'Creature']
+    require(cake['source']['revision'] == '201189f871d23597b82caf88fd611454a2ddefb8'
+            and len(extra) == 1 and extra[0]['identity']['key'] == 'oteryn:creature.cake_golem',
+            'CAKE_GOLEM_CREATURE_SOURCE')
+    actual = [row for row in reference['records'] if row['identity']['family'] == 'Creature'
+              and row['identity']['key'] == 'oteryn:creature.cake_golem']
+    require(actual == extra, 'CAKE_GOLEM_CREATURE_SOURCE')
+    require(counts['Creature'] == 1863 + len(extra), 'LEGACY_CREATURE_COUNT')
     return counts
 
 

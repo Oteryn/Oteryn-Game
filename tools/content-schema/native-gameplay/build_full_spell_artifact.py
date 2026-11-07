@@ -394,6 +394,23 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
+    import srv7_cosmetic_loot
+    srv7_cosmetic_loot.admit(facts, definitions)
+    import srv7_furniture_loot
+    srv7_furniture_loot.admit(facts, definitions)
+    import srv7_seasonal_toy_loot
+    srv7_seasonal_toy_loot.admit(facts, definitions)
+    import srv7_pumpkin_loot
+    srv7_pumpkin_loot.admit(facts, definitions)
+    import srv7_seasonal_corpse_loot
+    srv7_seasonal_corpse_loot.admit(facts, definitions)
+    import srv7_acquisition_loot_facts
+    srv7_acquisition_loot_facts.admit(facts, definitions)
+    import srv7_summer_instance_loot
+    srv7_summer_instance_loot.admit(facts, definitions)
+    import srv7_pumpkin_death_loot
+    if (definitions / 'spell-native-profiles.json').is_file():
+        srv7_pumpkin_death_loot.admit_stacks(facts, json.loads((definitions / 'spell-native-profiles.json').read_bytes()))
     return facts
 
 
@@ -413,7 +430,8 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     for path in sorted(loot_definitions.glob('loot-*.json')):
         _, shard = read(path)
         for record in shard['records']:
-            definition = record['definition']
+            import srv7_pumpkin_death_loot
+            definition = srv7_pumpkin_death_loot.qualify_table(record['definition'])
             if definition['identity']['key'] in tables:
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition

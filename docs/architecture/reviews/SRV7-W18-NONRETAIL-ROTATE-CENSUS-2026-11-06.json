@@ -1,0 +1,162 @@
+{
+  "index_sha256": "2ca87a456d53985dc3a41dea994438afbc5dace52c172b8c4fe37efff6149953",
+  "regions": 1208,
+  "elapsed_seconds": 41.316,
+  "hits": {
+    "48457": {
+      "total": 3,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z04-x130-y125.b3",
+          "region_sha256": "b1ddb554679fb2789de5d3592f97acdb7253194c7ce58eba8cd8fdd4a6c28394",
+          "x": 33432,
+          "y": 32142,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x130-y125.b3",
+          "region_sha256": "2798be76221d6dc00695258d46d1eb375a64e804a7a84265014e2af0c679b05d",
+          "x": 33349,
+          "y": 32163,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z08-x130-y125.b3",
+          "region_sha256": "9b50ab30b97e3de94b40cfdb11ef277f381d5ec68c76463ee3a050e86e142cd5",
+          "x": 33419,
+          "y": 32188,
+          "z": 8,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "34301": {
+      "total": 9,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z06-x132-y125.b3",
+          "region_sha256": "74e973df24146c10dd199382a9d4044b3c80d9b63d7a0b4620e15f24a914ad7c",
+          "x": 33874,
+          "y": 32111,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x132-y125.b3",
+          "region_sha256": "74e973df24146c10dd199382a9d4044b3c80d9b63d7a0b4620e15f24a914ad7c",
+          "x": 33875,
+          "y": 32111,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x132-y125.b3",
+          "region_sha256": "74e973df24146c10dd199382a9d4044b3c80d9b63d7a0b4620e15f24a914ad7c",
+          "x": 33876,
+          "y": 32111,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "34300": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z06-x132-y125.b3",
+          "region_sha256": "74e973df24146c10dd199382a9d4044b3c80d9b63d7a0b4620e15f24a914ad7c",
+          "x": 33877,
+          "y": 32112,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "10194": {
+      "total": 2,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z07-x130-y121.b3",
+          "region_sha256": "5dfff96a3cd0505d88b1f829a1779f163879959e559560287a1f23fd853413ac",
+          "x": 33281,
+          "y": 31219,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z08-x130-y122.b3",
+          "region_sha256": "483b11aa8bdc5befeed451a742508c5e76b047afdfe1bdcce32385491f278ef1",
+          "x": 33324,
+          "y": 31410,
+          "z": 8,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    }
+  },
+  "not_present": [
+    14002,
+    14003,
+    14004,
+    14005,
+    14006,
+    14007,
+    25103,
+    25104,
+    31955,
+    31956,
+    35161,
+    35162,
+    42271,
+    42272
+  ],
+  "trade_offers": [
+    {
+      "item_id": 14002,
+      "npc": "oteryn:service.trade.gnomission",
+      "direction": "BuyFromPlayer",
+      "price": 3000
+    },
+    {
+      "item_id": 14004,
+      "npc": "oteryn:service.trade.gnomission",
+      "direction": "BuyFromPlayer",
+      "price": 2000
+    },
+    {
+      "item_id": 14006,
+      "npc": "oteryn:service.trade.gnomission",
+      "direction": "BuyFromPlayer",
+      "price": 4000
+    }
+  ],
+  "qualified_reason": "Official appearance flags.rotate=false; no native current-retail Rotate affordance; retain profiles for other actions."
+}

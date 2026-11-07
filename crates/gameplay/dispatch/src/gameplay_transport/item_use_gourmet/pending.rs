@@ -1,14 +1,28 @@
 //! A native USE whose outcome is unknown retains its exact prepared successor.
 //! The shared pending-spell gate freezes conflicting owner writes until replay.
 use super::*;
+use crate::durability::item_use::cupcakes::{CupcakeUseRequest, cupcake_id};
 use crate::spell::cast::PlayerSpellState;
+#[derive(Debug, Clone)]
+enum ConsumableRequest {
+    Gourmet(GourmetUseRequest),
+    Cupcake(CupcakeUseRequest),
+}
+impl ConsumableRequest {
+    fn item(&self) -> &ItemUseRequest {
+        match self {
+            Self::Gourmet(r) => &r.item,
+            Self::Cupcake(r) => &r.item,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(in crate::gameplay_transport) struct PendingUse {
     pub(in crate::gameplay_transport) actor: ExactActorRef,
     pub(in crate::gameplay_transport) session: GameSessionId,
     fence: CurrentCharacterItemFence,
-    request: GourmetUseRequest,
+    request: ConsumableRequest,
     prepared: PlayerSpellState,
     before_revision: u64,
 }
@@ -26,7 +40,25 @@ impl PendingUse {
             actor,
             session,
             fence,
-            request,
+            request: ConsumableRequest::Gourmet(request),
+            prepared,
+            before_revision,
+        }
+    }
+
+    pub(in crate::gameplay_transport) fn new_cupcake(
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterItemFence,
+        request: CupcakeUseRequest,
+        prepared: PlayerSpellState,
+        before_revision: u64,
+    ) -> Self {
+        Self {
+            actor,
+            session,
+            fence,
+            request: ConsumableRequest::Cupcake(request),
             prepared,
             before_revision,
         }
@@ -59,7 +91,7 @@ impl PendingUse {
 
 /// The caller holds the runtime and spell owner locks. Only a known commit
 /// installs the retained successor, exactly once; uncertainty leaves the marker.
-pub(super) fn finish(
+pub(in crate::gameplay_transport) fn finish(
     states: &mut ChannelSpellStates,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -92,7 +124,9 @@ pub(super) fn finish(
         remember(states, actor, session, saved, now_us);
         // If an unknown outcome lasted until expiry, persist the clear rather
         // than abandoning the receipt's older positive duration on disk.
-        if saved == GourmetConditions::default() && pending.request.conditions != saved {
+        if saved == GourmetConditions::default()
+            && matches!(&pending.request, ConsumableRequest::Gourmet(request) if request.conditions != saved)
+        {
             states.gourmet_checkpoints.push((actor, session, saved, 0));
         }
     }
@@ -103,8 +137,8 @@ pub(super) fn finish(
         .find(|(a, s, _)| *a == actor && *s == session)
     {
         gate.unspendable
-            .retain(|id| *id != pending.request.item.source_item_instance_id);
-        gate.settle(pending.request.item.command_id, disposition, &[]);
+            .retain(|id| *id != pending.request.item().source_item_instance_id);
+        gate.settle(pending.request.item().command_id, disposition, &[]);
     }
     Some(disposition)
 }
@@ -144,14 +178,68 @@ pub(in crate::gameplay_transport) async fn resolve(
     // Same CommandRef, immutable source, source quantity and prepared condition
     // snapshot. The native owner first returns any committed receipt; otherwise
     // it rechecks current authority and executes at most one physical burn.
-    let result = owner
-        .root
-        .commit_gourmet_use(
-            owner.character,
-            owner.holder,
-            pending.fence,
-            pending.request,
-        )
-        .await;
-    finish(&mut states, actor, session, result, owner.owner_now().get()).is_some()
+    let result = match pending.request {
+        ConsumableRequest::Gourmet(request) => {
+            owner
+                .root
+                .commit_gourmet_use(owner.character, owner.holder, pending.fence, request)
+                .await
+        }
+        ConsumableRequest::Cupcake(request) => {
+            owner
+                .root
+                .commit_cupcake_use(owner.character, owner.holder, pending.fence, request)
+                .await
+        }
+    };
+    finish_with_cupcake(
+        owner,
+        &runtime,
+        &mut states,
+        actor,
+        session,
+        result,
+        owner.owner_now().get(),
+    )
+    .is_some()
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the retained item owner publishes its exact actor, fence, outcome and clock under existing locks"
+)]
+pub(in crate::gameplay_transport) fn finish_with_cupcake(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    result: Result<ItemUseOutcome, ItemUseError>,
+    now_us: u64,
+) -> Option<UseDisposition> {
+    let source = states
+        .pending_gourmet
+        .iter()
+        .find(|p| p.actor == actor && p.session == session)
+        .and_then(|p| match &p.request {
+            ConsumableRequest::Cupcake(r) => cupcake_id(&r.item.source_definition.production_key)
+                .map(|id| (id, p.fence.connection_generation.get())),
+            _ => None,
+        });
+    let disposition = finish(states, actor, session, result, now_us)?;
+    if let Some((id, connection)) = source {
+        if disposition == UseDisposition::Committed {
+            owner.states.chat.cupcake_speech(runtime, actor, session);
+            owner
+                .states
+                .server_messages
+                .cupcake_status(session, connection, id);
+        } else if disposition == UseDisposition::Exhausted {
+            owner
+                .states
+                .server_messages
+                .cupcake_exhausted(session, connection);
+        }
+    }
+    Some(disposition)
 }

@@ -30,7 +30,11 @@ pub fn apply_result(panel: &mut WorldEventPanel, result: &GatedCommandResult) {
         result.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        panel.state = decode_world_event_state(&result.payload).ok();
+        panel.state = decode_world_event_state(&result.payload)
+            .ok()
+            .filter(|state| {
+                panel.seasonal_selected || (state.seasonal.is_empty() && state.cake.is_none())
+            });
         panel.feedback = panel
             .state
             .is_none()

@@ -30,6 +30,7 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         lease_generation: 2,
         observed_revision: revision,
         active_tasks: active.to_vec(),
+        spike_main: None,
     }
 }
 
@@ -290,4 +291,75 @@ fn grizzly_invalid_revision_or_excess_active_tasks_fail_closed() {
         .recipients
         .is_empty()
     );
+}
+
+// Append to the existing grizzly_kills/tests.rs, whose closed identity helpers
+// and mature source-party tests remain unchanged. Existing snapshot() gains
+// spike_main:None. RED-compatible schema patch keeps spike_recipients empty
+// until the production source capture loop is enabled.
+#[test]
+fn srv7_spike_shared_toggle_captures_assigned_members_without_xp_eligibility_filter() {
+    let mut assigned = snapshot(1, &[], 10);
+    assigned.spike_main = Some(0);
+    let mut almost = snapshot(2, &[], 11);
+    almost.spike_main = Some(6);
+    let mut complete = snapshot(3, &[], 12);
+    complete.spike_main = Some(7);
+    let mut unassigned = snapshot(4, &[], 13);
+    unassigned.spike_main = Some(-1);
+    let death = freeze(
+        Some(party(1, &[1, 2, 3, 4], true)),
+        id(1),
+        true,
+        "oteryn:creature.demon_skeleton",
+        &[assigned, almost, complete, unassigned],
+    );
+    assert!(death.recipients.is_empty(), "not a fabricated Grizzly task");
+    assert_eq!(
+        death
+            .spike_recipients
+            .iter()
+            .map(|r| (r.character, r.observed_revision))
+            .collect::<Vec<_>>(),
+        vec![(id(1), 10), (id(2), 11)]
+    );
+}
+#[test]
+fn srv7_spike_inactive_shared_toggle_counts_only_original_most_damage_player() {
+    let mut first = snapshot(1, &[], 10);
+    first.spike_main = Some(0);
+    let mut second = snapshot(2, &[], 11);
+    second.spike_main = Some(0);
+    for present in [false, true] {
+        let death = freeze(
+            Some(party(1, &[1, 2], false)),
+            id(1),
+            present,
+            "oteryn:creature.demon_skeleton",
+            &[first.clone(), second.clone()],
+        );
+        assert_eq!(
+            death
+                .spike_recipients
+                .iter()
+                .map(|r| r.character)
+                .collect::<Vec<_>>(),
+            if present { vec![id(1)] } else { vec![] }
+        );
+    }
+}
+#[test]
+fn srv7_spike_unassigned_unknown_species_and_missing_party_do_not_invent_counter_credit() {
+    let mut assigned = snapshot(1, &[], 10);
+    assigned.spike_main = Some(0);
+    for (source, creature) in [
+        (None, "oteryn:creature.demon_skeleton"),
+        (Some(party(1, &[], false)), "oteryn:creature.skeleton"),
+    ] {
+        assert!(
+            freeze(source, id(1), true, creature, &[assigned.clone()])
+                .spike_recipients
+                .is_empty()
+        );
+    }
 }

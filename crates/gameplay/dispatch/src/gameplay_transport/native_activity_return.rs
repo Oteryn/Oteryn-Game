@@ -119,6 +119,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         Ok(())
     }
 
+    /// The qualified source return TP supplies an actual committed STEP, not a
+    /// wire command identity. Its native caller checks the exact sealed room.
+    pub(super) async fn return_source_portal_activity(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.prepare_native_activity_return(admitted, None, ActivityReturnReason::SourcePortalExit)
+            .await
+    }
+
     pub(super) async fn return_native_activity(
         &self,
         admitted: AdmittedSession,
@@ -256,6 +266,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 0
             } else {
                 match reason {
+                    ActivityReturnReason::SourcePortalExit => 10,
                     ActivityReturnReason::Timeout => 2,
                     ActivityReturnReason::Defeated => 3,
                     ActivityReturnReason::Death { .. } => 5,

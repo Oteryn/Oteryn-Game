@@ -74,6 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let mut request = MapHarvestRequest {
+            event_unix_seconds: super::super::seasonal_cake::now_seconds(),
             command: CommandRef::new(
                 command.game_session_id,
                 CommandId::new(command.command_id).map_err(|_| ())?,
@@ -81,6 +82,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             operand: None,
         };
+        self.resolve_pending_cake_food(actor, command.game_session_id)
+            .await?;
         let permit = self.spell_lane_permit().await.ok_or(())?;
         if let Some(result) = self
             .root
@@ -96,6 +99,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            self.harvest_feedback(actor, command.game_session_id, result.feedback)
+                .await;
             drop(permit);
             if result.disposition == UseDisposition::Committed {
                 self.refresh_terrain_tools().await;
@@ -193,10 +198,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             for appearance in std::iter::once(plan.after)
                 .chain(plan.decay.and_then(|(id, _)| u16::try_from(id).ok()))
             {
-                if map
-                    .facts
-                    .quest_callback_replacement(key, appearance)
-                    .is_none()
+                if appearance != 0
+                    && map
+                        .facts
+                        .quest_callback_replacement(key, appearance)
+                        .is_none()
                 {
                     return Ok(Some(outcome(UseDisposition::NotPossible)));
                 }
@@ -229,26 +235,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         request.operand = Some(operand);
-        let result = self
-            .root
-            .harvest_map_item(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                native,
-                &NativeItemWeights(native),
-            )
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
+        let cake = request
+            .operand
+            .as_ref()
+            .is_some_and(|operand| matches!(operand.mutation.before, 12085 | 12086));
+        let result = if cake {
+            self.harvest_cake_food_owned(actor, command, fence, request, native, &permit)
+                .await?
+                .ok_or(())?
+        } else {
+            self.root
+                .harvest_map_item(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &NativeItemWeights(native),
+                )
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?
+        };
+        self.harvest_feedback(actor, command.game_session_id, result.feedback)
+            .await;
         drop(permit);
         if result.disposition == UseDisposition::Committed {
             self.states.loop_ground.invalidate();
             self.refresh_terrain_tools().await;
         }
         Ok(Some(outcome(result.disposition)))
+    }
+    async fn harvest_feedback(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        feedback: Option<crate::durability::item_craft::MapHarvestFeedback>,
+    ) {
+        use crate::durability::item_craft::MapHarvestFeedback as Feedback;
+        let Some(feedback) = feedback else {
+            return;
+        };
+        match feedback {
+            Feedback::CakeConsumed=>{
+                let runtime=self.runtime.lock().await;
+                self.states.chat.cake_bite_speech(&runtime,actor,session);
+            },
+            Feedback::CakeTooFull(wait)=>self.states.chat.push_quest_feedback(session,&format!("You're too full! Wait {wait} more second(s) before taking another bite.")),
+            Feedback::CakeWindowLimit=>self.states.chat.push_quest_feedback(session,"You can't eat any more cake this window - you've had your fill! Wait for the next one."),
+            Feedback::CakeNotReady=>self.states.chat.push_quest_feedback(session,"The cake isn't ready to be eaten right now."),
+        }
     }
 }
 

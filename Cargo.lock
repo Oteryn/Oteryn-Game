@@ -2224,6 +2224,7 @@ dependencies = [
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-session",
+ "serde_json",
  "tokio",
 ]
 
@@ -2811,6 +2812,7 @@ dependencies = [
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
  "serde",
  "serde_json",
  "sha2 0.11.1",

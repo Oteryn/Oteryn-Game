@@ -1,0 +1,7 @@
+name=house_wrap_opaque
+offer_only=true
+commands=
+transport=house_wrap_opaque
+composed=house_wrap_opaque
+authority=house_wrap_opaque
+offer=642,house_wrap_opaque::offered,house_wrap_opaque_available

@@ -8,6 +8,8 @@
 mod appearance;
 mod catalog;
 mod error;
+/// Sealed source-body item references; read-only presentation, never item authority.
+pub mod seasonal_item_projection;
 mod sheets;
 mod store;
 /// Bounded map-window appearance loading.
@@ -16,7 +18,8 @@ pub mod window;
 pub mod world;
 
 pub use appearance::{
-    AppearanceIndex, DrawCell, Hook, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,
+    AppearanceIndex, DrawCell, Hook, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, OutfitRgbaCell, Placement,
+    ResolvedEntry,
 };
 pub use catalog::{Catalog, SpriteLayout, SpriteSheetDescriptor};
 pub use error::AssetError;

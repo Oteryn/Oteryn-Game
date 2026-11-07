@@ -1,0 +1,9 @@
+{
+  "mechanic": "0386-scripted-item-speech",
+  "kind": "panels",
+  "id": "0386-scripted-item-speech-chat-line",
+  "status": "supported",
+  "parent": "0007-chat-panels",
+  "entry": "protocol.rs::line_text",
+  "reason": "A real line projection inside the existing native chat panel; no separate window or push domain."
+}

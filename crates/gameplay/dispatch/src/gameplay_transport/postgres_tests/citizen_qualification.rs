@@ -1,5 +1,5 @@
-//! GAP-SV3 W23: all Crystal citizen registrations in a synthetic bundle through paced movement
-//! and PostgreSQL. This does not qualify the shipped World placement bindings.
+//! W23: all Crystal citizen registrations and Svargrond roof access through paced movement
+//! and PostgreSQL. test_citizen_bindings.py separately qualifies the shipped World stamps.
 use super::fixture::{Harness, debug, fence, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{CharacterLease, MovementLocalPosition};
@@ -200,6 +200,70 @@ fn scenario() -> TestResult {
                 );
             }
         }
+        // Crystal citizen_svargrond.lua:9-16: roof access is exactly 8, whereas the
+        // citizenship predicate above permits >=8. The gate never changes citizenship.
+        for progress in [-1_i64, 7, 8, 9] {
+            let started = std::time::Instant::now();
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_quest_tracks SET value=$2 WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/storage/41174'")
+                .bind(id(41).as_slice()).bind(progress).execute(&mut *tx).await?;
+            tx.commit().await?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .place_respawned_player(
+                    actor,
+                    session,
+                    MovementLocalPosition {
+                        x: 32209,
+                        y: 31134,
+                        floor: 7,
+                    },
+                )
+                .map_err(debug)?;
+            let (outcome, _) = owner
+                .ordinary_paced_step(actor, session, StepDirection::West, None, None)
+                .await;
+            let landed = outcome.moved_to.ok_or("roof gate step")?.actor_position;
+            let expected = if progress == 8 {
+                (32212, 31131, 5)
+            } else {
+                (32210, 31134, 7)
+            };
+            assert_eq!(
+                (landed.x, landed.y, landed.floor),
+                expected,
+                "roof progress {progress}"
+            );
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .facing(),
+                Some(crate::foundation::MovementFacing::East)
+            );
+            assert_eq!(owner.home_town(session, None).await, Some(current_town));
+            let messages = owner.states.chat.drain(session);
+            if progress != 8 {
+                assert!(messages.iter().any(|line| matches!(line,
+                    oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. }
+                        if text == "You have to be a honorary barbarian to access the roof. Talk to the Jarl about it.")));
+            }
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(receipts, expected_receipts);
+            eprintln!(
+                "W23_ROOF_POSTGRES_EXECUTED progress={progress} duration={:.3}s",
+                started.elapsed().as_secs_f64()
+            );
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -253,9 +317,9 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         world: Extent {
             min_x: 0,
             min_y: 0,
-            max_x: 32,
-            max_y: 32,
-            floors: vec![-7],
+            max_x: 34000,
+            max_y: 33000,
+            floors: vec![-7, -5],
         },
         palette: vec![PaletteEntry {
             family: Family::Terrain,
@@ -306,17 +370,41 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         }],
     });
     tiles.sort_by_key(|tile| (tile.y, tile.x));
-    let bytes = writer::write(
-        &manifest,
-        &[Sector {
-            floor: -7,
-            sx: 0,
-            sy: 0,
-            tiles,
-        }],
-        &Default::default(),
-    )
-    .map_err(debug)?;
+    let mut sectors = vec![Sector {
+        floor: -7,
+        sx: 0,
+        sy: 0,
+        tiles,
+    }];
+    for (floor, coords) in [
+        (-7, vec![(32208, 31134), (32209, 31134), (32210, 31134)]),
+        (-5, vec![(32212, 31131)]),
+    ] {
+        sectors.push(Sector {
+            floor,
+            sx: 32208 / 32,
+            sy: 31134 / 32,
+            tiles: coords
+                .into_iter()
+                .map(|(x, y)| Tile {
+                    x,
+                    y,
+                    flags: 0,
+                    house: 0,
+                    zones: vec![],
+                    items: vec![Item {
+                        palette: 0,
+                        depth: 0,
+                        attrs: Attrs {
+                            action: (x == 32208).then_some(30032),
+                            ..Attrs::default()
+                        },
+                    }],
+                })
+                .collect(),
+        });
+    }
+    let bytes = writer::write(&manifest, &sectors, &Default::default()).map_err(debug)?;
     let pins = crate::map::BundlePins {
         digest: oteryn_world_bundle::bundle::read(&bytes)
             .map_err(debug)?

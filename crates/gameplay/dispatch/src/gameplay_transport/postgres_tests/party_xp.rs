@@ -54,6 +54,8 @@ pub(super) enum Case {
     TaskBoardPrechange,
     TaskBoardOrdered,
     SoulWarTerminal,
+    CakeActive,
+    CakeExpired,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -77,6 +79,8 @@ impl Case {
         matches!(
             self,
             Self::Shared
+                | Self::CakeActive
+                | Self::CakeExpired
                 | Self::Modifiers
                 | Self::Replay
                 | Self::Rollback
@@ -85,6 +89,15 @@ impl Case {
         )
     }
 }
+#[test]
+fn srv7_cake_real_party_kill_premium_and_free_after_event_cleanup_and_replay() -> TestResult {
+    run(Case::CakeActive)
+}
+#[test]
+fn srv7_cake_real_party_kill_bonus_expires_at_its_own_deadline() -> TestResult {
+    run(Case::CakeExpired)
+}
+
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
     run(Case::Shared)
@@ -242,6 +255,48 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+    let _cake_wall_clock = if matches!(case, Case::CakeActive | Case::CakeExpired) {
+        Some(crate::gameplay_transport::seasonal_cake::test_clock::set(
+            if matches!(case, Case::CakeActive) {
+                1772254800
+            } else {
+                1772341200
+            },
+        ))
+    } else {
+        None
+    };
+
+    if matches!(case, Case::CakeActive | Case::CakeExpired) {
+        // Source-valid completed annual predecessor; cleanup has removed event entities,
+        // while the separately earned seven-day World bonus is still retained.
+        let start = 1_771_650_000_i64;
+        let end = start + 6 * 86_400;
+        let bonus_from = start + 86_400;
+        let bonus_until = bonus_from + 7 * 86_400;
+        let mut seed = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
+        sqlx::query("INSERT INTO game_seasonal_cake_worlds(world_id,event_start,event_end,state) VALUES(encode($1,'hex')::uuid,$2,$3,$4)")
+            .bind(world.as_bytes().as_slice()).bind(start).bind(end)
+            .bind(serde_json::json!({"stage":0,"substances":200,"golems":200,"layer":4,"layer_progress":0,
+                "window_start":null,"window_end":null,"bonus_from":bonus_from,"bonus_until":bonus_until,"revision":12}))
+            .execute(&mut *seed).await?;
+        seed.commit().await?;
+        let at = if matches!(case, Case::CakeActive) {
+            end + 86_400
+        } else {
+            bonus_until
+        };
+        let clock = format!(
+            "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT to_timestamp({at}) $$"
+        );
+        sqlx::raw_sql(sqlx::AssertSqlSafe(clock))
+            .execute(&h.pool)
+            .await?;
+    }
+
     let (controller, pin) = if matches!(case, Case::Eqmod2) {
         super::equipment_mods::activate(world)?
     } else {
@@ -655,6 +710,18 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if case.forge() {
         super::forge_creature::prepare(&owner, h, &players, case).await?;
+    }
+    if matches!(case, Case::CakeActive | Case::CakeExpired) {
+        let runtime = owner.runtime.lock().await;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get_mut(&runtime, players[0].0, players[0].1)
+            .ok_or("Cake Premium recipient")?
+            .apply_owner_premium_transition(true, Some(u64::MAX))
+            .map_err(debug)?;
     }
     if matches!(case, Case::Shared) {
         let mut tx = h.pool.begin().await?;
@@ -1283,7 +1350,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert!(owner.progression_binding(session).is_none());
     }
     let mut forge_replay = None;
-    if matches!(case, Case::Replay) || (case.forge() && !matches!(case, Case::ForgeRollback)) {
+    if matches!(case, Case::Replay | Case::CakeActive)
+        || (case.forge() && !matches!(case, Case::ForgeRollback))
+    {
         let taken = {
             let attack = owner.states.attack.lock().await;
             let session = players
@@ -1307,6 +1376,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .map_err(debug)?;
         drop(first);
         drop(permit);
+        if matches!(case, Case::CakeActive) {
+            // The exact source deadline closes fresh enrichment; historical replay
+            // must retain the already committed per-recipient bonus evidence.
+            sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT to_timestamp(1772341200) $$")
+                .execute(&h.pool).await?;
+        }
         let retained_dust = super::forge_creature::ledger(h).await?;
         let (a, b) = join_two(
             async {
@@ -1457,7 +1532,29 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map(|r| r.1)
         .sum::<i64>();
     // Every Character here is level 1: the Global low-level bonus (+100%) doubles each award.
-    if matches!(case, Case::Inactive) {
+    if matches!(case, Case::CakeActive | Case::CakeExpired) {
+        assert_eq!(
+            (first_award, second_award),
+            if matches!(case, Case::CakeActive) {
+                (18, 8)
+            } else {
+                (12, 8)
+            },
+            "Cake must enrich only its Premium recipient after the existing low-level/stamina calculation"
+        );
+        let bonuses:Vec<(Vec<u8>,i16)>=sqlx::query_as("SELECT uuid_send(character_id),cake_xp_percent FROM game_party_kill_xp_members ORDER BY character_id")
+            .fetch_all(&h.pool).await?;
+        for (character, percent) in bonuses {
+            assert_eq!(
+                percent,
+                if character == first_id.as_bytes() && matches!(case, Case::CakeActive) {
+                    50
+                } else {
+                    0
+                }
+            );
+        }
+    } else if matches!(case, Case::Inactive) {
         assert_eq!((first_award, second_award), (10, 0));
     } else if matches!(case, Case::Concurrent) {
         assert_eq!((first_award, second_award), (22, 22));

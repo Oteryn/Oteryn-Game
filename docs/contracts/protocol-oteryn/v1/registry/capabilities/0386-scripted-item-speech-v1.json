@@ -1,0 +1,13 @@
+{
+  "id": 386,
+  "name": "SCRIPTED_ITEM_SPEECH_V1",
+  "owner_decision": "SRV7 scripted item feedback needs explicit MonsterSay opt-in independent of optional ambient audio.",
+  "owner": "scripted item chat source publication",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "With CHAT_V1 selected, permits server-owned scripted item MonsterSay lines on existing domain 12. Does not enable ambient voices, which still require 288. Legacy CHAT_V1 clients without 386 or 288 receive ordinary Say fallback. No new command, state domain or outer message; mode 4 remains invalid in player intents."
+}

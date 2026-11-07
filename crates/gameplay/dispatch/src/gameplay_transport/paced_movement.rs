@@ -35,6 +35,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected: Option<crate::foundation::MovementPositionSnapshot>,
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
+        if !self
+            .resume_source_portal_attempt(actor, session)
+            .await
+            .unwrap_or(false)
+        {
+            return (StepOutcome::rejected(), None);
+        }
         if !self.resume_dawnport_departure(actor, session).await {
             return (StepOutcome::rejected(), None);
         }
@@ -58,6 +65,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut permit) = self.spell_lane_permit().await else {
             return (StepOutcome::rejected(), None);
         };
+        if !self.resume_pumpkin_portal(&permit, actor, session).await {
+            return (StepOutcome::rejected(), None);
+        }
         if !self.refresh_pvp_locks(actor, session).await {
             return (StepOutcome::rejected(), None);
         }
@@ -119,6 +129,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
         // A field-enabled World reads dynamic Ground Items before committing its step.
         let origin = runtime.read_actor_position(actor).ok();
+        // W16: the captured source arena has no admissible Instance corpse owner.
+        // Hold its real landing while retaining the ordinary door and PvP checks.
+        let deferred = origin.map(|origin| {
+            super::source_portal_hold::DeferredPortal::for_step(
+                self.movement_cells,
+                origin,
+                cardinal,
+                blocking,
+            )
+        });
+        let blocking: &dyn crate::map::floor::CellBlocker =
+            deferred.as_ref().map_or(blocking, |held| held);
+
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
@@ -217,6 +240,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let snapshot = self
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
                             .await;
+                        let snapshot = self
+                            .pumpkin_portal_step(&permit, actor, session, snapshot)
+                            .await;
+                        self.cake_character_step(actor, session, snapshot).await;
                         self.dawnport_trial_step(actor, session, snapshot).await;
                         snapshot
                     }
@@ -225,10 +252,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
+                let moved_to = Self::observation(&runtime, snapshot.position());
+                drop(runtime);
+                // Native activity transfer reserves both source/destination lanes.
+                // It must run after releasing this committed movement turn.
+                drop(permit);
+                if self
+                    .rakesh_source_step(actor, session, snapshot)
+                    .await
+                    .is_err()
+                    || self
+                        .rakesh_source_return_step(actor, session, snapshot)
+                        .await
+                        .is_err()
+                {
+                    super::operator_event("summer_source_portal_pending");
+                }
                 (
                     StepOutcome {
                         disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                        moved_to: Some(moved_to),
                     },
                     Some(duration),
                 )

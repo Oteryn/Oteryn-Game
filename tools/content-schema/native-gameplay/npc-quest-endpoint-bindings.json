@@ -1,0 +1,1449 @@
+{
+  "rows": [
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "source_key": "oteryn:npc-cosmetic/avar_tar/demon-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U7_24.TheAnnihilator.Reward",
+          "binding": {
+            "storage": "Storage.Quest.U7_24.TheAnnihilator.Reward",
+            "key": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward",
+            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+          },
+          "value": {
+            "op": "literal",
+            "value": 2
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "source_key": "oteryn:npc-cosmetic/avar_tar/demon-shield",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
+          "binding": {
+            "storage": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
+            "key": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet",
+            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+          },
+          "value": {
+            "op": "literal",
+            "value": 2
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "source_key": "oteryn:npc-cosmetic/avar_tar/demon-helmet",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_2.TheDemonOak.Done",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheDemonOak.Done",
+            "key": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done",
+            "quest": "oteryn:quest.demon_oak"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 4
+                  },
+                  "from": {
+                    "op": "EQ",
+                    "value": 3
+                  },
+                  "from_exact": false,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/done"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_demon_oak/done/npc_1",
+              "quest": "oteryn:quest.demon_oak",
+              "requested_by": {
+                "keywords": [
+                  "helmet"
+                ],
+                "npc": "canary:npc/avar_tar",
+                "topics": [
+                  2
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_1",
+                "owner": "npc",
+                "script": "npc/avar_tar.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "source_key": "oteryn:npc-cosmetic/dedoras/battle-mage-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+          "binding": {
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+            "quest": "oteryn:quest.the_secret_library_quest"
+          },
+          "value": {
+            "op": "add",
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "amount": 0,
+            "clamp_min": 1
+          },
+          "existing_transitions": []
+        },
+        {
+          "storage": "Storage.Quest.U11_80.TheSecretLibrary.LibraryPermission",
+          "binding": {
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.LibraryPermission",
+            "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+          },
+          "value": {
+            "op": "literal",
+            "value": 7
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "source_key": "oteryn:npc-cosmetic/dedoras/battle-mage-addon-1",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+          "binding": {
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+            "quest": "oteryn:quest.the_secret_library_quest"
+          },
+          "value": {
+            "op": "add",
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "amount": 0,
+            "clamp_min": 1
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "source_key": "oteryn:npc-cosmetic/dedoras/battle-mage-addon-2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+          "binding": {
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+            "quest": "oteryn:quest.the_secret_library_quest"
+          },
+          "value": {
+            "op": "add",
+            "storage": "Storage.Quest.U11_80.TheSecretLibrary.Questlog",
+            "amount": 0,
+            "clamp_min": 1
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_first_dragon",
+      "source_key": "oteryn:npc-cosmetic/the_first_dragon/festive-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U11_02.TheFirstDragon.Feathers",
+          "binding": {
+            "storage": "Storage.Quest.U11_02.TheFirstDragon.Feathers",
+            "key": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+            "quest": "oteryn:quest.the_first_dragon_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 2
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 2
+                  },
+                  "from": {
+                    "op": "LT",
+                    "value": 2
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u11_02/the_first_dragon/feathers/npc_1",
+              "quest": "oteryn:quest.the_first_dragon_quest",
+              "requested_by": {
+                "keywords": [
+                  "reward"
+                ],
+                "npc": "canary:npc/the_first_dragon",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_1",
+                "owner": "npc",
+                "script": "npc/the_first_dragon.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "source_key": "oteryn:npc-cosmetic/henricus/demon-hunter-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Questline",
+            "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+            "quest": "oteryn:quest.the_inquisition_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 17
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 17
+                  },
+                  "from": {
+                    "op": "EQ",
+                    "value": 16
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/questline/npc_15",
+              "quest": "oteryn:quest.the_inquisition_quest",
+              "requested_by": {
+                "keywords": [
+                  "outfit"
+                ],
+                "npc": "canary:npc/henricus",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_15",
+                "owner": "npc",
+                "script": "npc/henricus.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Mission05",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Mission05",
+            "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission05",
+            "quest": "oteryn:quest.the_inquisition_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 3
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 3
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission05"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/mission05/npc_3",
+              "quest": "oteryn:quest.the_inquisition_quest",
+              "requested_by": {
+                "keywords": [
+                  "outfit"
+                ],
+                "npc": "canary:npc/henricus",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_3",
+                "owner": "npc",
+                "script": "npc/henricus.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "source_key": "oteryn:npc-cosmetic/henricus/demon-hunter-addon2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Questline",
+            "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+            "quest": "oteryn:quest.the_inquisition_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 24
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 24
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/questline/npc_16",
+              "quest": "oteryn:quest.the_inquisition_quest",
+              "requested_by": {
+                "keywords": [
+                  "outfit"
+                ],
+                "npc": "canary:npc/henricus",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_16",
+                "owner": "npc",
+                "script": "npc/henricus.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Mission07",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheInquisitionQuest.Mission07",
+            "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission07",
+            "quest": "oteryn:quest.the_inquisition_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 4
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission07"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/mission07/npc_3",
+              "quest": "oteryn:quest.the_inquisition_quest",
+              "requested_by": {
+                "keywords": [
+                  "outfit"
+                ],
+                "npc": "canary:npc/henricus",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_3",
+                "owner": "npc",
+                "script": "npc/henricus.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_2.TheInquisitionQuest.RewardDoor",
+          "binding": {
+            "storage": "Storage.Quest.U8_2.TheInquisitionQuest.RewardDoor",
+            "key": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/reward_door",
+            "quest": "oteryn:quest.the_inquisition_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 1
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 1
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/reward_door"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_2/the_inquisition_quest/reward_door/npc_1",
+              "quest": "oteryn:quest.the_inquisition_quest",
+              "requested_by": {
+                "keywords": [
+                  "outfit"
+                ],
+                "npc": "canary:npc/henricus",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_1",
+                "owner": "npc",
+                "script": "npc/henricus.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "source_key": "oteryn:npc-cosmetic/hjaern/norseman-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 40
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 40
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/questline/npc_5",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_5",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.yakchalDoor",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.yakchalDoor",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/yakchal_door",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 1
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 1
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/yakchal_door"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/yakchal_door/npc_1",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_1",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Mission12",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Mission12",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission12",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 6
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 6
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission12"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission12/npc_2",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_2",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "source_key": "oteryn:npc-cosmetic/hjaern/norseman-shards-pay-1",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 41
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 41
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/questline/npc_11",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": [
+                  3
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_11",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "source_key": "oteryn:npc-cosmetic/hjaern/norseman-reward-1",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 42
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 42
+                  },
+                  "from": {
+                    "op": "EQ",
+                    "value": 41
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/questline/npc_6",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "reward"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_6",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "source_key": "oteryn:npc-cosmetic/hjaern/norseman-shards-pay-2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 43
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 43
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/questline/npc_12",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": [
+                  4
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_12",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "source_key": "oteryn:npc-cosmetic/hjaern/norseman-reward-2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_0.TheIceIslands.Questline",
+            "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+            "quest": "oteryn:quest.the_ice_islands_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 44
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 44
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_0/the_ice_islands/questline/npc_7",
+              "quest": "oteryn:quest.the_ice_islands_quest",
+              "requested_by": {
+                "keywords": [
+                  "reward"
+                ],
+                "npc": "canary:npc/hjaern",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_7",
+                "owner": "npc",
+                "script": "npc/hjaern.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jack_springer",
+      "source_key": "oteryn:npc-cosmetic/jack_springer/inquisition-hand",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U12_20.GraveDanger.QuestLine",
+          "binding": {
+            "storage": "Storage.Quest.U12_20.GraveDanger.QuestLine",
+            "key": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+            "quest": "oteryn:quest.grave_danger_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 5
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.yalahari",
+      "source_key": "oteryn:npc-cosmetic/yalahari/yalaharian-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 53
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 53
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/questline/npc_51",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/yalahari",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_51",
+                "owner": "npc",
+                "script": "npc/yalahari.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.DoorToReward",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.DoorToReward",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 1
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 1
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/door_to_reward/npc_2",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/yalahari",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_2",
+                "owner": "npc",
+                "script": "npc/yalahari.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Mission10",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Mission10",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 4
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/mission10/npc_5",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/yalahari",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_5",
+                "owner": "npc",
+                "script": "npc/yalahari.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "source_key": "oteryn:npc-cosmetic/palimuth/yalaharian-base",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 53
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 53
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/questline/npc_23",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/palimuth",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_23",
+                "owner": "npc",
+                "script": "npc/palimuth.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.DoorToReward",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.DoorToReward",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 1
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 1
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/door_to_reward"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/door_to_reward/npc_1",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/palimuth",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_1",
+                "owner": "npc",
+                "script": "npc/palimuth.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Mission10",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Mission10",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 4
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission10"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/mission10/npc_2",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "mission"
+                ],
+                "npc": "canary:npc/palimuth",
+                "topics": []
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_2",
+                "owner": "npc",
+                "script": "npc/palimuth.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "source_key": "oteryn:npc-cosmetic/palimuth/yalaharian-addon-1",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 55
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 55
+                  },
+                  "from": {
+                    "op": "EQ",
+                    "value": 54
+                  },
+                  "from_exact": false,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/questline/npc_29",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/palimuth",
+                "topics": [
+                  6
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_29",
+                "owner": "npc",
+                "script": "npc/palimuth.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "source_key": "oteryn:npc-cosmetic/palimuth/yalaharian-addon-2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_4.InServiceOfYalahar.Questline",
+            "key": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+            "quest": "oteryn:quest.in_service_of_yalahar_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 55
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 55
+                  },
+                  "from": {
+                    "op": "EQ",
+                    "value": 54
+                  },
+                  "from_exact": false,
+                  "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_4/in_service_of_yalahar/questline/npc_29",
+              "quest": "oteryn:quest.in_service_of_yalahar_quest",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/palimuth",
+                "topics": [
+                  6
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_29",
+                "owner": "npc",
+                "script": "npc/palimuth.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "source_key": "oteryn:npc-cosmetic/navigator/deepling-helmet",
+      "matches": [
+        {
+          "storage": "Storage.Navigator",
+          "binding": {
+            "storage": "Storage.Navigator",
+            "key": "oteryn:quest-progress/navigator",
+            "quest": "oteryn:quest.npc_cosmetic_final_acquisition"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "source_key": "oteryn:npc-cosmetic/bozo/jester-cloth-deliver-3",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+            "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+            "quest": "oteryn:quest.what_a_foolish_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 13
+          },
+          "existing_transitions": [
+            {
+              "completes": false,
+              "effects": [
+                {
+                  "effect": {
+                    "kind": "SET",
+                    "value": 13
+                  },
+                  "from": {
+                    "op": "ANY"
+                  },
+                  "from_exact": true,
+                  "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline"
+                }
+              ],
+              "key": "oteryn:quest-transition/quest/u8_1/what_afoolish_quest/questline/npc_2",
+              "quest": "oteryn:quest.what_a_foolish_quest",
+              "requested_by": {
+                "keywords": [
+                  "yes"
+                ],
+                "npc": "canary:npc/bozo",
+                "topics": [
+                  4
+                ]
+              },
+              "source": {
+                "callback": null,
+                "key": "npc_2",
+                "owner": "npc",
+                "script": "npc/bozo.lua",
+                "servers": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "source_key": "oteryn:npc-cosmetic/bozo/jester-addon-1",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Mission8",
+          "binding": {
+            "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Mission8",
+            "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission8",
+            "quest": "oteryn:quest.what_a_foolish_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 5
+          },
+          "existing_transitions": []
+        },
+        {
+          "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+            "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+            "quest": "oteryn:quest.what_a_foolish_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 25
+          },
+          "existing_transitions": []
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "source_key": "oteryn:npc-cosmetic/bozo/jester-addon-2",
+      "matches": [
+        {
+          "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Mission11",
+          "binding": {
+            "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Mission11",
+            "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/mission11",
+            "quest": "oteryn:quest.what_a_foolish_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 4
+          },
+          "existing_transitions": []
+        },
+        {
+          "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+          "binding": {
+            "storage": "Storage.Quest.U8_1.WhatAFoolishQuest.Questline",
+            "key": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/questline",
+            "quest": "oteryn:quest.what_a_foolish_quest"
+          },
+          "value": {
+            "op": "literal",
+            "value": 36
+          },
+          "existing_transitions": []
+        }
+      ]
+    }
+  ]
+}

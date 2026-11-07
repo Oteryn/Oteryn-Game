@@ -2327,6 +2327,7 @@ fn boot_bundle_items(
             solid: attributes.and_then(|attributes| attributes.blocks_movement),
             blocks_projectile: attributes
                 .and_then(|attributes| attributes.blocks_projectile)
+                .or_else(|| crate::map::spell_tiles::qualified_seasonal_ground_projectile(key))
                 .unwrap_or(true),
             pickupable,
             door,
@@ -2481,8 +2482,8 @@ pub(crate) async fn realize_bundle_spawns(
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
-    let sources = world
-        .activation_spawns(|key| {
+    let plan = world
+        .activation_spawn_plan(|key| {
             let policy = runtime.companion_policy(key).ok()?;
             Some((
                 u64::try_from(policy.maximum_health).ok()?,
@@ -2490,19 +2491,36 @@ pub(crate) async fn realize_bundle_spawns(
             ))
         })
         .ok_or_else(refuse)?;
-    realize_activation_paced(runtime, sources, signalled).await
+    realize_spawn_plan_paced(runtime, plan, signalled).await
 }
 
 /// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
 /// 50 ms owner window (see [`realize_bundle_spawns`]).
+#[cfg(test)]
 async fn realize_activation_paced(
     runtime: &mut ChannelRuntimeV1,
     sources: Vec<crate::map::boot::BundleSpawnFacts>,
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
+    realize_spawn_plan_paced(
+        runtime,
+        crate::map::boot::BundleSpawnPlan {
+            sources,
+            weighted: Vec::new(),
+        },
+        signalled,
+    )
+    .await
+}
+
+async fn realize_spawn_plan_paced(
+    runtime: &mut ChannelRuntimeV1,
+    plan: crate::map::boot::BundleSpawnPlan,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
     runtime
-        .begin_activation_spawn_sources(sources)
+        .begin_activation_spawn_plan(plan.sources, plan.weighted)
         .map_err(|_| refuse())?;
     let origin = tokio::time::Instant::now();
     let mut windows = 0u64;
@@ -3269,6 +3287,7 @@ mod tests {
             period: Period::All,
         };
         let table = Table {
+            weighted: Vec::new(),
             creatures: vec![
                 creature("oteryn:creature/bat"),
                 creature("oteryn:creature/rat"),

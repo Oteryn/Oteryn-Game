@@ -85,6 +85,14 @@ pub struct NpcPlacement {
     pub direction: Direction,
 }
 
+/// Same-cell ordinary creature choices, expressed as positive integer ratios.
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WeightedSpawnChoice {
+    pub creature: String,
+    pub weight: u32,
+}
+
 /// One point of a spawn source: a creature definition, a cell, a direction and a respawn delay.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpawnPoint {
@@ -93,6 +101,7 @@ pub struct SpawnPoint {
     pub direction: Direction,
     pub respawn_ms: u32,
     pub boss_policy: Option<spawn::BossPolicy>,
+    pub weighted: Vec<WeightedSpawnChoice>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -295,6 +304,8 @@ struct PointRecord {
     respawn_ms: u32,
     #[serde(default)]
     boss_policy: Option<spawn::BossPolicy>,
+    #[serde(default)]
+    weighted: Vec<WeightedSpawnChoice>,
 }
 
 #[derive(Deserialize)]
@@ -382,6 +393,7 @@ impl Families {
                     direction,
                     respawn_ms: point.respawn_ms,
                     boss_policy: point.boss_policy,
+                    weighted: point.weighted,
                 });
             }
             self.spawns.push(SpawnSource {

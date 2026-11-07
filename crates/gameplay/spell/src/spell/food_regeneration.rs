@@ -28,6 +28,7 @@ pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zon
         credit_second(state, fed);
     }
     credit_equipment(state, in_protection_zone);
+    credit_cake(state, now, in_protection_zone);
     state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
 }
 
@@ -169,6 +170,84 @@ fn apply(
     state.regen_mana_ms = regeneration.regen_mana_ms;
     state.regen_health_carry = regeneration.regen_health_carry;
     state.regen_mana_carry = regeneration.regen_mana_carry;
+}
+/// One independent source Cake regeneration condition, separate from food/equipment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct CakeRegeneration {
+    source_until: i64,
+    until: u64,
+    clock: oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock,
+}
+impl PlayerSpellState {
+    /// Install optional World enrichment without changing food or worn-item clocks.
+    /// Repeated reads retain this condition's partial native periods.
+    pub fn set_cake_regeneration_until(&mut self, until: Option<(i64, u64)>) {
+        let Some((source_until, until)) = until else {
+            self.cake_regeneration = None;
+            return;
+        };
+        if self
+            .cake_regeneration
+            .as_ref()
+            .is_some_and(|current| current.source_until == source_until)
+        {
+            return;
+        }
+        let rate = rate(effective(self.facts.vocation, self.premium_current));
+        let extra = |gain: u32| if gain == 0 { 0 } else { (gain / 4).max(1) };
+        self.cake_regeneration = Some(CakeRegeneration {
+            source_until,
+            until,
+            clock: oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock {
+                // The shared pure condition-clock arithmetic never reads this label;
+                // this clock is not inserted into equipment or any inventory owner.
+                slot: 0,
+                regeneration: oteryn_gameplay_progression::regeneration::EquipmentRegeneration {
+                    health_gain: extra(rate.health_amount),
+                    health_ticks_ms: rate.health_period_ms,
+                    mana_gain: extra(rate.mana_amount),
+                    mana_ticks_ms: rate.mana_period_ms,
+                },
+                health_ms: 0,
+                mana_ms: 0,
+            },
+        });
+    }
+}
+
+fn credit_cake(state: &mut PlayerSpellState, now: u64, in_protection_zone: bool) {
+    let Some(mut cake) = state.cake_regeneration.take() else {
+        return;
+    };
+    if now >= cake.until {
+        return;
+    }
+    let mut regeneration = RegenerationState {
+        health: state.health,
+        mana: state.mana,
+        regen_health_ms: 0,
+        regen_mana_ms: 0,
+        regen_health_carry: 0,
+        regen_mana_carry: 0,
+    };
+    let streak = if state.premium_current {
+        state.resting_streak
+    } else {
+        state.resting_streak.min(3)
+    };
+    // Crystal201189f condition.cpp:1330-1400: independent native intervals,
+    // PZ health/mana streak gates and corresponding double tiers.
+    oteryn_gameplay_progression::regeneration::credit_equipment_second(
+        &mut regeneration,
+        std::slice::from_mut(&mut cake.clock),
+        state.facts.max_health,
+        state.facts.max_mana,
+        in_protection_zone,
+        streak,
+    );
+    state.health = regeneration.health;
+    state.mana = regeneration.mana;
+    state.cake_regeneration = Some(cake);
 }
 
 #[cfg(test)]
@@ -592,5 +671,56 @@ mod tests {
         assert_eq!(state, before);
         assert!(eat_food(&mut state, 0, 0).is_err());
         assert_eq!(state, before);
+    }
+    #[test]
+    fn cake_bonus_has_independent_hungry_free_native_clocks_and_exact_expiry() {
+        let mut bonus = actor(Vocation::Knight);
+        let mut baseline = bonus.clone();
+        bonus.set_cake_regeneration_until(Some((13, 13_000_000)));
+        for second in 1..=12 {
+            // Re-reading the same absolute World deadline never resets partial periods
+            // or extends the originally installed condition's semantic expiry.
+            bonus.set_cake_regeneration_until(Some((13, 100_000_000)));
+            let now = second * 1_000_000;
+            step_due(&mut bonus, now, false);
+            step_due(&mut baseline, now, false);
+        }
+        assert_eq!(bonus.health - baseline.health, 2);
+        assert_eq!(bonus.mana - baseline.mana, 2);
+        let before = (bonus.health - baseline.health, bonus.mana - baseline.mana);
+        for second in 13..=24 {
+            let now = second * 1_000_000;
+            step_due(&mut bonus, now, false);
+            step_due(&mut baseline, now, false);
+        }
+        assert_eq!(
+            (bonus.health - baseline.health, bonus.mana - baseline.mana),
+            before
+        );
+        assert!(bonus.cake_regeneration.is_none());
+    }
+
+    #[test]
+    fn cake_bonus_reuses_pz_streak_gates_and_does_not_advance_food_clocks() {
+        let mut bonus = actor(Vocation::Knight);
+        let mut baseline = bonus.clone();
+        bonus.set_cake_regeneration_until(Some((60, 60_000_000)));
+        for second in 1..=6 {
+            step_due(&mut bonus, second * 1_000_000, true);
+            step_due(&mut baseline, second * 1_000_000, true);
+        }
+        assert_eq!((bonus.health, bonus.mana), (baseline.health, baseline.mana));
+        assert_eq!(
+            (bonus.regen_health_ms, bonus.regen_mana_ms),
+            (baseline.regen_health_ms, baseline.regen_mana_ms)
+        );
+        step_due(&mut bonus, 7_000_000, false);
+        step_due(&mut baseline, 7_000_000, false);
+        assert_eq!(
+            (bonus.health - baseline.health, bonus.mana - baseline.mana),
+            (1, 1)
+        );
+        bonus.set_cake_regeneration_until(None);
+        assert!(bonus.cake_regeneration.is_none());
     }
 }

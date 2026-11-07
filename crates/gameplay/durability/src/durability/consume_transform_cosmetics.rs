@@ -119,7 +119,7 @@ async fn prepare_with_custody(
         .filter(|fact| {
             matches!(
                 fact.source_kind.as_str(),
-                "quest" | "npc" | "mount_taming" | "task_board" | "item_action"
+                "quest" | "npc" | "npc_wedding" | "mount_taming" | "task_board" | "item_action"
             )
         })
         .map(|fact| (fact.unlock_key, fact.content_revision))
@@ -127,7 +127,8 @@ async fn prepare_with_custody(
     let owned = EarnedCosmetics {
         content,
         facts: &facts,
-    };
+    }
+    .with_sex(sex);
     let component_keys: Vec<_> = rule.components.iter().map(|p| p.key.as_str()).collect();
     let rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT component_key,contributions FROM game_character_item_cosmetic_progress WHERE character_id=encode($1,'hex')::uuid AND component_key=ANY($2::text[]) FOR UPDATE",

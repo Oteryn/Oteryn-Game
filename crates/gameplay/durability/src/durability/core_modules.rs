@@ -18,6 +18,7 @@ mod bank_credit_headroom;
 pub mod bestiary_progress;
 pub mod blessing_purchase;
 pub mod bosstiary;
+pub(crate) mod carried_cost;
 #[allow(
     dead_code,
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
@@ -116,6 +117,7 @@ pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
 pub mod newhaven_travel;
+pub mod npc_cosmetics;
 pub mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;

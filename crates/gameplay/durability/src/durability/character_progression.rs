@@ -629,6 +629,21 @@ async fn assert_fenced_root(
         Ok(account_text) => account_text,
         Err(error) => return Ok(Err(error)),
     };
+    assert_root_after_session_fence(tx, fence, expected_revision, no_key_update, account_text).await
+}
+#[path = "character_progression/house_death.rs"]
+mod house_death;
+pub(in crate::durability) use house_death::assert_house_death_fence;
+async fn assert_root_after_session_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    expected_revision: Option<u64>,
+    no_key_update: bool,
+    account_text: String,
+) -> std::result::Result<
+    std::result::Result<FencedCharacterRoot, CharacterProgressionError>,
+    DurabilityError,
+> {
     let world_id = fence.runtime_scope.world_id();
 
     let root = sqlx::query(if no_key_update {

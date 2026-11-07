@@ -1,0 +1,24 @@
+{
+  "schema": "OTERYN_NPC_FINAL_ACQUISITION_COMPONENT/v1",
+  "quest": "oteryn:quest.npc_cosmetic_final_acquisition",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "qualification": "Four exact source acknowledgements; real claim/entry/quest prerequisites and immutable Quest children remain mandatory. No entitlement or progress is granted by metadata.",
+  "bindings": [
+    {
+      "storage": "Storage.Navigator",
+      "key": "oteryn:quest-progress/navigator"
+    },
+    {
+      "storage": "Storage.Quest.U11_80.TheSecretLibrary.LibraryPermission",
+      "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission"
+    },
+    {
+      "storage": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
+      "key": "oteryn:quest-progress/quest/u6_4/demon_helmet/rewards/demon_helmet"
+    },
+    {
+      "storage": "Storage.Quest.U7_24.TheAnnihilator.Reward",
+      "key": "oteryn:quest-progress/quest/u7_24/the_annihilator/reward"
+    }
+  ]
+}

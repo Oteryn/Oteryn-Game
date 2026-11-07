@@ -9,6 +9,7 @@ INPUT = "tools/content-schema/native-gameplay/summer-source-qualification.json"
 PROVIDER = "content/creatures/definitions/spell-native-profiles.json"
 MANIFEST = "content/spells.manifest.json"
 NOTE = "not verified against Global"
+CURRENT_FIELDS = "tools/content-schema/native-gameplay/summer-current-published-fields.json"
 
 
 def attack_definitions(root, record):
@@ -55,6 +56,7 @@ def apply_native(root, generated, encode):
     by_key = {row["creature"]: row for row in rows}
     if len(by_key) != len(rows) or any(NOTE not in row["qualification"] for row in rows):
         raise ValueError("Summer source qualification must retain every limitation")
+    current = current_published_fields(root)
     provider = json.loads(generated[PROVIDER])
     seen = set()
     for record in provider["records"]:
@@ -115,6 +117,16 @@ def apply_native(root, generated, encode):
                         " W16_ADMISSION_AND_PHASE_SOURCE_MISSING: admission anchors, party gates, "
                         "cooldowns and normal-to-final transitions are unavailable."
                     )
+                if key in current:
+                    record["profile"]["data"]["profile"].update(current[key]["facts"])
+                    record["source_qualification"] += (
+                        " Current pinned Wiki published fields override provisional donor values: "
+                        + ", ".join(sorted(current[key]["facts"]))
+                        + "; source " + current[key]["source"]["revision"]
+                        + "/" + current[key]["source"]["path"]
+                        + " SHA256 " + current[key]["source"]["sha256"]
+                        + ". Unpublished health, attacks, scaling and encounter admission remain unverified."
+                    )
                 if key == "oteryn:creature.phosphorus_final":
                     # The closure keeps decision 22's active HP/XP projection, rather than
                     # reviving the definition's pre-override final-form XP (Crystal final.lua:5).
@@ -128,3 +140,40 @@ def apply_native(root, generated, encode):
     manifest = json.loads(generated[MANIFEST])
     manifest["creature_profiles"]["sha256"] = hashlib.sha256(generated[PROVIDER]).hexdigest()
     generated[MANIFEST] = encode(manifest)
+
+
+def current_published_fields(root):
+    """Only the exact source-captured numeric facts may supersede provisional values."""
+    expected = {
+        "oteryn:creature.mimar_haffar": (
+            "mimar-haffar-87d7d",
+            "13abfd2147b15959c8ece3557ff9eaef8bf0875ef930d618a3f0c18bb474e293",
+            {"health": 460000, "experience": 3500000}),
+        "oteryn:creature.phosphorus_final": (
+            "phosphorus-final-ec835",
+            "d14c1e74e4addc338e2db498fbe2bd20d955ac4c957e578ac026e89fb14cd607",
+            {"experience": 16000000}),
+    }
+    doc = json.loads((root / CURRENT_FIELDS).read_bytes())
+    if doc["schema"] != "OTERYN_CURRENT_SUMMER_PUBLISHED_FIELDS/v1":
+        raise ValueError("Summer published fields schema")
+    rows = {}
+    for row in doc["records"]:
+        key = row["creature"]
+        if key not in expected or key in rows:
+            raise ValueError("Unexpected or duplicate Summer current field")
+        slug, digest, facts = expected[key]
+        source = row["source"]
+        path = "quests/data/wiki/" + slug + ".json"
+        revision = "acc9994e2ad8868696bc10ef08070108e2baba92"
+        if (source != {"repository": "Lavovskii/grimorio", "revision": revision,
+                       "path": path, "sha256": digest,
+                       "url": "https://raw.githubusercontent.com/Lavovskii/grimorio/"
+                              + revision + "/" + path}
+                or row["facts"] != facts
+                or any(type(value) is not int for value in row["facts"].values())):
+            raise ValueError("Summer current fields differ from exact captured source")
+        rows[key] = row
+    if set(rows) != set(expected):
+        raise ValueError("Missing Summer current source fields")
+    return rows

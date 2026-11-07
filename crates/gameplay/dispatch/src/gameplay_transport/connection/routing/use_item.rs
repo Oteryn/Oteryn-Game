@@ -166,6 +166,26 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
+            authority.use_pumpkin_skinning(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+                item_target,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+        if let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
             authority.tame_mount(
                 actor,
                 UseCommand {
@@ -477,7 +497,10 @@ mod fluid_routing_tests {
         let fluid = route.find(".use_fluid_on_map(");
         let imbuement = route.find(".use_imbuement_item(");
         let key = route.find(".use_key_on_door(");
-        assert!(fluid.is_some() && imbuement.is_some() && key.is_some(), "handlers present");
+        assert!(
+            fluid.is_some() && imbuement.is_some() && key.is_some(),
+            "handlers present"
+        );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
     }

@@ -1,0 +1,74 @@
+{
+  "bounds": {
+    "floor": 15,
+    "x": [
+      33312,
+      33322
+    ],
+    "y": [
+      32410,
+      32420
+    ]
+  },
+  "classification": "DERIVED_NATIVE_ROOM",
+  "exit": [
+    33317,
+    32419,
+    15
+  ],
+  "landing": [
+    33317,
+    32417,
+    15
+  ],
+  "portal_appearance": 1949,
+  "protection_zone": "not asserted; copied source floor flags0",
+  "return": [
+    33213,
+    32454,
+    1
+  ],
+  "reward_body": {
+    "cell": [
+      33317,
+      32414,
+      15
+    ],
+    "kind": "MapOwnedBaseObject",
+    "not_corpse_mint": true,
+    "source_item_id": 12816
+  },
+  "room_coordinate_basis": "Explicit native implementation choice; exact official room coordinates/layout unavailable, current pinned donor World has no12816 baseobject. Bounds are verified unused and within existing World frame.",
+  "schema": "OTERYN_SRV7_DERIVED_HALLOWEEN_REWARD_ROOM/v1",
+  "source": {
+    "article": "quests/data/wiki/the-mutated-pumpkin-6a18e.json",
+    "article_sha256": "c5fbb7ddf71779e795806b92038a209770324cb06e6dd610b5335708765ed742",
+    "repository": "Lavovskii/grimorio",
+    "revision": "75eab61ae6b33f735f52027a0ba955d3c77c5e14",
+    "screenshot": "quests/assets/wiki/Mutpam_3cb7a7.png",
+    "screenshot_sha256": "0b02bbbd1f5ad884fe4a9fe5c2497c4e235b514db4892b1df2934252ea3b870d"
+  },
+  "source_entry": [
+    33317,
+    32415,
+    7
+  ],
+  "source_floor": {
+    "cell": [
+      33317,
+      32415,
+      7
+    ],
+    "flags": 0,
+    "house": 0,
+    "item": 231,
+    "zones": []
+  },
+  "source_rules": {
+    "first_visit_ms": 300000,
+    "participant_only": true,
+    "portal_after_actual_death_ms": 1800000,
+    "reentry_preserves_first_deadline": true
+  },
+  "wall": 1112
+}

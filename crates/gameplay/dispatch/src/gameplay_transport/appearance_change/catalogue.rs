@@ -11,7 +11,8 @@ pub(super) fn catalogue(
     let unlocks = EarnedCosmetics {
         content,
         facts: &state.earned,
-    };
+    }
+    .with_sex(state.sex);
     let mut outfits = Vec::new();
     for key in content.outfit_keys() {
         let key = key.to_owned();
@@ -67,20 +68,21 @@ pub(super) fn base(
     let unlocks = EarnedCosmetics {
         content,
         facts: &state.earned,
-    };
-    if let Some(selected) = &state.selected
-        && crate::domain::appearance::validate_selection(
-            &selected.selection,
-            state.sex,
-            content,
-            &unlocks,
-        )
-        .is_ok()
-    {
-        return (
-            selected.selection.clone(),
-            Some(selected.committed_character_revision.get()),
-        );
+    }
+    .with_sex(state.sex);
+    if let Some(selected) = &state.selected {
+        let mut effective = selected.selection.clone();
+        if effective.mount_key.as_deref().is_some_and(|key| {
+            crate::durability::horse_rental::rules::Horse::for_key(key).is_some()
+                && unlocks.mount(&key.to_owned()) != UnlockFact::Compatible
+        }) {
+            effective.mount_key = None;
+        }
+        if crate::domain::appearance::validate_selection(&effective, state.sex, content, &unlocks)
+            .is_ok()
+        {
+            return (effective, Some(selected.committed_character_revision.get()));
+        }
     }
     (content.fallback(state.sex), None)
 }

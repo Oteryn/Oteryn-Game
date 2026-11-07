@@ -5,10 +5,45 @@ use super::*;
 pub(super) enum CreationFixture {
     Historical,
     Own,
+    OwnFemale,
     Observer,
 }
 
 impl Harness {
+    /// Source-bearing creation sex with the caller's actual admission/progression mode.
+    #[allow(
+        dead_code,
+        reason = "used by the auto-mounted native cosmetic acquisition tests"
+    )]
+    pub(crate) async fn create_appearance_with_admission_seed(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+    ) -> TestResult<Self> {
+        Self::create_seeded(admin, tag, initialized, seed_session, true).await
+    }
+
+    #[allow(
+        dead_code,
+        reason = "used by auto-mounted source-bearing female NPC greeting tests"
+    )]
+    pub(crate) async fn create_female_appearance_with_admission_seed(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+    ) -> TestResult<Self> {
+        Self::create_seeded_creation(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            CreationFixture::OwnFemale,
+        )
+        .await
+    }
+
     #[allow(dead_code, reason = "used by the auto-mounted PVP-RT-1 dispatch tests")]
     pub(crate) async fn seed_pvp_target(&self) -> TestResult {
         seed_character(

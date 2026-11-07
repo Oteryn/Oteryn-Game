@@ -4,6 +4,8 @@
 
 pub(super) mod appearance_change;
 mod authority;
+#[cfg(test)]
+pub(in crate::gameplay_transport) mod seasonal_appearance_capture;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};

@@ -225,6 +225,13 @@ fn plan_personal_death_with_slots(
                 &equipment,
             )
             .map_err(PlanError::Loot)?;
+            let loot = oteryn_gameplay_items::loot_plan::pumpkin_common_guarantees(
+                boss_key,
+                &frozen.reward.loot_table_ref,
+                &frozen.reward.loot_table,
+                loot,
+            )
+            .map_err(PlanError::Loot)?;
             materialize_plan(loot, &facts)
         })();
         match planned {

@@ -1,5 +1,7 @@
 //! Boss lever commands compose authored content, native participants and the
 //! shared scope handoff. A client key never supplies an actor, position or grant.
+mod source_portal;
+
 use super::connection::{AdmittedSession, ConnectionIdentifiers};
 use super::native_activity::{NativeActivityOutcome, boss_room_native_ready};
 use super::{ComposedFreshAdmission, SecureIdentifiers};
@@ -39,6 +41,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let Ok(intent) = wire::decode_boss_key(payload) else {
             return malformed();
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER && intent.boss_key == "oteryn:boss.rakesh_moonfang"
+        {
+            // The source has a physical portal, not a client BossLever.
+            return malformed();
+        }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
             admitted.item_fence,

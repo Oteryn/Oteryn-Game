@@ -100,6 +100,10 @@ impl ChatRuntime {
         session: GameSessionId,
         effects: &NoveltyEffects,
     ) {
+        if matches!(effects.source_item_id, 5080 | 5791 | 6511 | 6566) {
+            self.publish_santa_gift_speech(runtime, actor, session, effects);
+            return;
+        }
         if runtime.player_control_facts(actor, session).is_err() {
             return;
         }

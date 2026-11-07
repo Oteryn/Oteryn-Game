@@ -478,3 +478,6 @@ fn existing_unpopulated_outfit_index_and_empty_mount_records_are_not_cosmetics()
     }
     Ok(())
 }
+
+#[path = "source_look_tests.rs"]
+mod source_look_tests;

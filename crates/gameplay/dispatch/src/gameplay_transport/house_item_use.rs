@@ -1,4 +1,8 @@
 //! Ordinary USE of HouseInterior items through the existing named-House actor and map view.
+#[path = "house_santa_gift_use.rs"]
+mod santa_gifts;
+#[path = "house_item_side_use.rs"]
+pub(super) mod side_effects;
 use super::item_view::{ItemKey, SessionItemView};
 use super::world_map::{HouseMapEntry, MapUpdate, MapViewError, MapViewSource, SessionMapView};
 use super::{
@@ -9,6 +13,9 @@ use crate::durability::consume_transform::{ConsumeTransformRequest, HouseActionC
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[path = "house_item_cupcakes.rs"]
+mod cupcakes;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_house_event_item(
         &self,
@@ -16,6 +23,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_house_cupcake(actor, command, intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.act_house_event_item(actor, command, intent, source, false, None)
+            .await
+    }
+
+    pub(super) async fn rotate_house_event_item(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+        observed: Option<std::num::NonZeroU32>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.act_house_event_item(actor, command, intent, source, true, observed)
+            .await
+    }
+
+    async fn act_house_event_item(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+        rotate: bool,
+        observed: Option<std::num::NonZeroU32>,
     ) -> Result<Option<UseOutcome>, ()> {
         let refuse = |disposition| {
             Some(UseOutcome {
@@ -55,6 +93,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return Ok(refuse(UseDisposition::StaleState)),
             }
         };
+        let blocked_furniture_cells = self.door.lock().await.blocking_cells().clone();
+        let context = context.qualify_furniture_cell(self.movement_cells, &blocked_furniture_cells);
+        // Settle a due source clock under the same current named-House fence
+        // before selecting its next source action (the regular tick does this too).
+        self.root
+            .expire_house_furniture(self.holder, fence, context.house().clone())
+            .await
+            .map_err(|_| ())?;
+        let mut bytes =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        // A reconnect cannot replay USE as Rotate when its target bytes happen
+        // to be identical: the immutable command intent includes its purpose.
+        if rotate {
+            bytes = super::world_rotate::bound_intent(intent, observed).map_err(|_| ())?;
+        }
         let request = ConsumeTransformRequest {
             command: CommandRef::new(
                 command.game_session_id,
@@ -66,18 +119,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => [0; 16],
             },
             target: None,
-            intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
-                .map_err(|_| ())?,
+            intent: bytes,
         };
-        let result = self
-            .root
-            .consume_transform_in_house(self.holder, context, request, native)
-            .await
-            .map_err(|_| ())?;
+        let expected = observed
+            .and_then(|reference| native.item_index()?.definition_at(reference))
+            .map(
+                |(key, revision)| crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key.into(),
+                    revision_ref: revision.into(),
+                },
+            );
+        let result = if rotate {
+            self.root
+                .rotate_in_house(
+                    self.holder,
+                    context.clone(),
+                    request.clone(),
+                    native,
+                    expected,
+                )
+                .await
+        } else {
+            self.root
+                .consume_transform_in_house(self.holder, context.clone(), request.clone(), native)
+                .await
+        }
+        .map_err(|_| ())?;
         // A current House source that disappeared or changed custody has a
         // definite refusal. Do not fall through to Channel-only item handlers.
         if result.recipe.is_none() && result.disposition == UseDisposition::NothingToUse {
-            return Ok(None);
+            if !rotate
+                && let Some(outcome) = self
+                    .use_house_santa_gift(actor, command, context.clone(), request.clone(), native)
+                    .await?
+            {
+                return Ok(Some(outcome));
+            }
+            return self
+                .use_house_interactive(actor, command, context, request, native)
+                .await;
         }
         Ok(refuse(result.disposition))
     }
@@ -173,6 +254,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     bound: false,
                     count: item.quantity,
                     sub_type: item.key_number,
+                },
+            });
+        }
+        // Ordinary-death Ground is a separate exact House namespace. Its immutable
+        // receipt proves the root; descendants retain their container parent UUIDs.
+        // Keep the original positive native floor in custody, negating only here.
+        let death_ground = self
+            .root
+            .read_house_death_ground(self.holder, &context)
+            .await
+            .ok()??;
+        for entry in death_ground {
+            let item = entry.item;
+            let cell = crate::durability::spell_items_abi::decode_ground_cell(
+                &item.ground.spatial_position,
+            )
+            .ok()?;
+            let position = crate::map::overlay::TilePos {
+                x: u16::try_from(cell.x).ok()?,
+                y: u16::try_from(cell.y).ok()?,
+                floor: i8::try_from(cell.z).ok()?.checked_neg()?,
+            };
+            let reference = super::item_ref_admission::definition_ref(index, &item.definition)?;
+            let policy = native
+                .item_policy(
+                    &item.definition.production_key,
+                    &item.definition.revision_ref,
+                )?
+                .record();
+            entries.push(HouseMapEntry {
+                position,
+                item: item.item_instance_id,
+                ordinal: entry.stack_ordinal,
+                facts: crate::map::view::EntryFacts {
+                    definition: oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference),
+                    terrain_kind: None,
+                    appearance_id: crate::map::view::appearance_id(
+                        &item.definition.production_key,
+                        None,
+                    ),
+                    blocks_projectile: policy.attributes.blocks_projectile?,
+                    pickupable: true,
+                    bound: false,
+                    count: item.quantity,
+                    sub_type: 0,
                 },
             });
         }

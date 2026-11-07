@@ -23,6 +23,8 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
+mod seasonal;
+
 /// W05c: NPCs that stand only by day or only by night. Donor
 /// `data-global/scripts/world_changes/spawns_npc_by_time.lua:3-130` (zimbadev/crystalserver
 /// @201189f8): a day NPC spawns at `LIGHT_STATE_SUNRISE` and leaves at `LIGHT_STATE_SUNSET`, a
@@ -143,6 +145,7 @@ enum TimedPeriod {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TimedNpcSpawns {
     admitted: [bool; TIMED_NPCS.len()],
+    seasonal: seasonal::SeasonalNpcSpawns,
 }
 
 impl TimedNpcSpawns {
@@ -153,11 +156,14 @@ impl TimedNpcSpawns {
                 admitted[index] = keys.contains(*key);
             }
         }
-        Self { admitted }
+        Self {
+            admitted,
+            seasonal: seasonal::SeasonalNpcSpawns::from_boot(boot),
+        }
     }
 
     pub(super) fn is_empty(self) -> bool {
-        !self.admitted.iter().any(|admitted| *admitted)
+        !self.admitted.iter().any(|admitted| *admitted) && self.seasonal.is_empty()
     }
 
     /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
@@ -172,7 +178,9 @@ impl TimedNpcSpawns {
             crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
         )
         .tibian_minute(now_utc_ms)?;
-        Some(self.reconcile(runtime, minute))
+        let ordinary = self.reconcile(runtime, minute);
+        let seasonal = self.seasonal.tick(runtime, now_utc_ms);
+        Some(ordinary.and(seasonal))
     }
 
     /// Removes the NPCs out of period, then places those in period that are missing. Each NPC
@@ -712,6 +720,134 @@ mod tests {
             .collect();
         keys.sort_unstable();
         keys
+    }
+
+    #[test]
+    fn w05d_christmas_santa_has_all_fifteen_structured_source_placements() {
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.santa_claus"])));
+        let mut runtime = channel_runtime_with(32);
+        // Current Wiki NPC window: Dec12 through Dec31 server save, exclusive.
+        let start = 1797051600000;
+        let end = 1798693200000;
+        timed
+            .tick(&mut runtime, start - 1)
+            .expect("clock")
+            .expect("before");
+        assert!(timed_keys(&runtime).is_empty());
+        timed
+            .tick(&mut runtime, start)
+            .expect("clock")
+            .expect("start");
+        assert_eq!(timed_keys(&runtime), vec!["oteryn:npc.santa_claus"; 15]);
+        let positions: std::collections::BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(positions.len(), 15);
+        assert!(
+            positions.contains(&(32357, 32210, 7)),
+            "Thais Santa is reachable"
+        );
+        timed
+            .tick(&mut runtime, start + 1)
+            .expect("clock")
+            .expect("repeat");
+        assert_eq!(
+            timed_keys(&runtime).len(),
+            15,
+            "retry keeps one actor per source placement"
+        );
+        timed.tick(&mut runtime, end).expect("clock").expect("end");
+        assert!(timed_keys(&runtime).is_empty());
+    }
+
+    #[test]
+    fn w05d_messenger_is_present_near_every_santa_only_in_npc_window() {
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
+            "oteryn:npc.santa_claus",
+            "oteryn:npc.messenger_of_santa",
+        ])));
+        let mut runtime = channel_runtime_with(64);
+        let start = 1797051600000;
+        let end = 1798693200000;
+        timed
+            .tick(&mut runtime, start)
+            .expect("clock")
+            .expect("spawn");
+        let keys = timed_keys(&runtime);
+        assert_eq!(
+            keys.iter()
+                .filter(|key| **key == "oteryn:npc.santa_claus")
+                .count(),
+            15
+        );
+        assert_eq!(
+            keys.iter()
+                .filter(|key| **key == "oteryn:npc.messenger_of_santa")
+                .count(),
+            15
+        );
+        timed
+            .tick(&mut runtime, start + 1)
+            .expect("clock")
+            .expect("replay");
+        assert_eq!(timed_keys(&runtime).len(), 30);
+        timed
+            .tick(&mut runtime, end)
+            .expect("clock")
+            .expect("cleanup");
+        assert!(timed_keys(&runtime).is_empty());
+    }
+
+    /// Crystal 201189f8 a_piece_of_cake_config.lua:230-237,406-429,489-495.
+    #[test]
+    fn w05d_cake_bakers_follow_the_server_save_calendar_and_retry_without_duplicates() {
+        let keys = [
+            "oteryn:npc.balduin_the_baker",
+            "oteryn:npc.benny_the_baker",
+            "oteryn:npc.biff_the_baker",
+            "oteryn:npc.billy_the_baker",
+            "oteryn:npc.brian_the_baker",
+        ];
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
+        let mut runtime = channel_runtime_with(32);
+        // Feb 21/27 2026 06:00 Europe/Berlin; the accepted server-save boundary.
+        let start = 1_771_650_000_000;
+        let end = 1_772_168_400_000;
+        timed
+            .tick(&mut runtime, start - 1)
+            .expect("clock")
+            .expect("before");
+        assert!(timed_keys(&runtime).is_empty());
+        timed
+            .tick(&mut runtime, start)
+            .expect("clock")
+            .expect("start");
+        assert_eq!(timed_keys(&runtime), keys);
+        let actors: Vec<_> = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .map(|npc| npc.actor)
+            .collect();
+        timed
+            .tick(&mut runtime, start + 1)
+            .expect("clock")
+            .expect("repeat");
+        assert_eq!(
+            runtime
+                .visible_entities()
+                .npcs
+                .iter()
+                .map(|npc| npc.actor)
+                .collect::<Vec<_>>(),
+            actors,
+            "same actors on retry"
+        );
+        timed.tick(&mut runtime, end).expect("clock").expect("end");
+        assert!(timed_keys(&runtime).is_empty());
     }
 
     #[test]

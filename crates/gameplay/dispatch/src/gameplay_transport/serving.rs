@@ -102,6 +102,10 @@ pub async fn serve_gameplay(
             .chat
             .install_relay(std::sync::Arc::new(relay));
     }
+    authority
+        .initialize_cake_world()
+        .await
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     // Check every initial boss clock before accepting connections; confirmed claims may wait for a free tile.
     let mut boss_timers = std::collections::BTreeMap::new();
     loop {

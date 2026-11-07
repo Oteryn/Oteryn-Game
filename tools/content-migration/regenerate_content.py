@@ -89,6 +89,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/bestiary_source_roster.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -445,6 +446,22 @@ def literal(length: int, previous: str) -> str:
 def repin_rust_inventory() -> None:
     """Rewrite byte lengths and SHA-256 pins so the test pins exactly the regenerated package."""
     text = PIN_TEST.read_text(encoding="utf-8")
+    declarations = json.loads((WORLD / "definitions/declarations.json").read_bytes())["records"]
+    bindings = json.loads((WORLD / "provenance/sources.json").read_bytes())["source_identity_bindings"]
+    npc_count = sum(row.get("kind") == "NPC" for row in declarations)
+    dialogue_count = sum(row.get("kind") == "Dialogue" for row in declarations)
+    npc_counts = {
+        "NPCS": npc_count,
+        "NPC_RECORDS": 2 * npc_count,
+        "NPC_DECLARATIONS": sum(row.get("kind") in {"NPC", "Dialogue", "Service"} for row in declarations),
+        "NPC_DIALOGUES": dialogue_count,
+        "NPC_BINDINGS": sum(row["target"]["family"] == "NPC" for row in bindings),
+    }
+    for name, total in npc_counts.items():
+        text, count = re.subn(r"(const " + name + r": usize = )[\d_]+(;)",
+                             lambda match: match.group(1) + literal(total, "0") + match.group(2), text)
+        if count != 1:
+            raise SystemExit(f"{PIN_TEST.name}: {name} census pin not found")
     tree = hashlib.sha256()
     for locator in document_locators():
         data = (WORLD / locator).read_bytes()
@@ -476,6 +493,19 @@ def repin_rust_inventory() -> None:
     if count != 1:
         raise SystemExit(f"{PIN_TEST.name}: TREE_SHA256 not found")
     PIN_TEST.write_text(text, encoding="utf-8", newline="\n")
+    # Exact package census, including bounded native Creature/NPC admissions.
+    references = json.loads((WORLD / "definitions/reference.json").read_bytes())["records"]
+    imports = json.loads((WORLD / "provenance/imports.json").read_bytes())["batches"]
+    item_family = ROOT / "crates/gameplay/content/src/content/item_family.rs"
+    match = re.search(r"CW2_B1_FULL_ITEM_FAMILY_COUNT: usize = ([\d_]+)", item_family.read_text())
+    if match is None:
+        raise SystemExit("item family count token absent")
+    core_items = int(match.group(1).replace("_", ""))
+    budget = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
+    budget_text = budget.read_text()
+    budget_text = re.sub(r"max_reference_records: [^\n]+", "max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + " + literal(len(references)-core_items,"0") + ",", budget_text, count=1)
+    budget_text = re.sub(r"max_import_records: [^\n]+", "max_import_records: " + str(len(imports)) + ",", budget_text, count=1)
+    budget.write_text(budget_text)
     # The NPC catalogue proves that it loaded this same complete package.
     npc_test = ROOT / "apps/game-server/tests/content_npc_catalogue.rs"
     npc_text, count = re.subn(
@@ -485,6 +515,11 @@ def repin_rust_inventory() -> None:
     )
     if count != 1:
         raise SystemExit(f"{npc_test.name}: source_tree_digest pin not found")
+    for method, total in [("npc_count", npc_count), ("dialogue_count", dialogue_count)]:
+        npc_text, count = re.subn(r"(assert_eq!\(catalogue\." + method + r"\(\),\s*)[\d_]+(\);)",
+                                 lambda match: match.group(1) + str(total) + match.group(2), npc_text)
+        if count != 1:
+            raise SystemExit(f"{npc_test.name}: {method} census pin not found")
     npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
 
 
@@ -560,6 +595,13 @@ def main() -> int:
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     materialize_world()
+    run(["python3", "tools/content-migration/pumpkin_room.py"])
+    run(["python3", "tools/content-migration/summer_npcs.py"])
+    run(["python3", "tools/content-migration/cake_golem.py"])
+    run(["python3", "tools/content-migration/seasonal_messenger_shop.py"])
+    run(["python3", "tools/content-migration/cake_edible_footprint.py"])
+    run(["python3", "tools/content-migration/seasonal_actor_looks.py"])
+    run(["python3", "tools/content-migration/seasonal_ground_physics.py"])
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])

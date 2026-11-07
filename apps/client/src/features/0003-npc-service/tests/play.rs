@@ -150,3 +150,5 @@ fn npc_pointer_resets_on_focus_and_device_loss() -> Result<(), Box<dyn std::erro
     }
     Ok(())
 }
+
+include!("edvard_play.rs");

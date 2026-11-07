@@ -43,8 +43,16 @@ pub(in crate::gameplay_transport) async fn observe(
     let mut bindings = Vec::new();
     let now = admission.owner_now().get();
     for entity in entities {
-        if let Some(entry) = hirelings.iter().find(|entry| entry.actor.placement_identity() == entity.identity
-            && entry.actor.actor_local_generation() == entity.generation) {
+        if let Some(binding) =
+            super::super::seasonal_appearance::npc_binding(&runtime, entity, context, now)
+        {
+            bindings.push(binding);
+            continue;
+        }
+        if let Some(entry) = hirelings.iter().find(|entry| {
+            entry.actor.placement_identity() == entity.identity
+                && entry.actor.actor_local_generation() == entity.generation
+        }) {
             bindings.push(wire::Binding {
                 context,
                 appearance_ref: 1,
@@ -52,7 +60,11 @@ pub(in crate::gameplay_transport) async fn observe(
                 root_revision: 1,
                 condition_revision: entry.revision,
                 owner_time_us: now,
-                look: wire::Look::Outfit { look_type: u32::from(entry.look_type), colours: entry.colors.map(u16::from), addons: 0 },
+                look: wire::Look::Outfit {
+                    look_type: u32::from(entry.look_type),
+                    colours: entry.colors.map(u16::from),
+                    addons: 0,
+                },
                 selection_revision: None,
                 forge_stacks: None,
             });
@@ -92,7 +104,11 @@ pub(in crate::gameplay_transport) async fn observe(
                 owner_time_us: now,
                 look,
                 selection_revision: None,
-                forge_stacks: creature.forge.map(|f| f.reward_stacks()),
+                forge_stacks: if super::super::seasonal_appearance::creature(&runtime, *actor) {
+                    None
+                } else {
+                    creature.forge.map(|f| f.reward_stacks())
+                },
             });
             continue;
         };
@@ -110,7 +126,11 @@ pub(in crate::gameplay_transport) async fn observe(
         let current = house::read_state(admission, fence, content.earned_grant_keys()).await?;
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
-            states.actors.iter().find(|(held, held_session, _)| *held == *actor && *held_session == target_session).map(|(_, _, state)| state)?
+            states
+                .actors
+                .iter()
+                .find(|(held, held_session, _)| *held == *actor && *held_session == target_session)
+                .map(|(_, _, state)| state)?
         } else {
             states.get(&runtime, *actor, target_session)?
         };
@@ -121,9 +141,13 @@ pub(in crate::gameplay_transport) async fn observe(
             addons: base.addons,
         };
         let owned = if in_house {
-            runtime.house_actor_conditions_at(*actor, target_session, now).ok()?
+            runtime
+                .house_actor_conditions_at(*actor, target_session, now)
+                .ok()?
         } else {
-            runtime.actor_conditions_at(*actor, Some(target_session), now).ok()?
+            runtime
+                .actor_conditions_at(*actor, Some(target_session), now)
+                .ok()?
         };
         let spell = player.owned_conditions();
         if !spell.accepts_time(now) || !owned.accepts_time(now) {
@@ -163,9 +187,7 @@ pub(in crate::gameplay_transport) async fn observe(
         // invisible player remains observable, but other players receive no outfit.
         if empty_outfit
             && target_session != session
-            && (player.equipped_invisible()
-                || spell.invisible_at(now)
-                || owned.invisible_at(now))
+            && (player.equipped_invisible() || spell.invisible_at(now) || owned.invisible_at(now))
         {
             look = wire::Look::EmptyOutfit;
         } else if let Some(temporary) = spell_look.or(owned_look) {
@@ -173,8 +195,7 @@ pub(in crate::gameplay_transport) async fn observe(
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
         // incarnation and condition state stay locked through this bounded DB read.
-        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current
-        {
+        if house::read_state(admission, fence, content.earned_grant_keys()).await? != current {
             return None;
         }
         bindings.push(wire::Binding {

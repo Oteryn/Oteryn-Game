@@ -12,7 +12,7 @@ pub enum Sex {
 
 #[path = "appearance/earned_cosmetics.rs"]
 mod earned_cosmetics;
-pub use earned_cosmetics::EarnedCosmetics;
+pub use earned_cosmetics::{EarnedCosmetics, SexBoundEarnedCosmetics};
 
 /// Head, body, legs and feet palette indices.
 pub type Colours = [u16; 4];
@@ -69,6 +69,27 @@ pub trait AppearanceContent<K> {
         _grant_key: &str,
         _provenance: &str,
         _target: EarnedCosmetic<'_>,
+    ) -> UnlockFact {
+        UnlockFact::Absent
+    }
+    /// Resolve an exact source look only under the real Character's creation sex.
+    /// Legacy content delegates; exact-look mappings must be absent from unscoped resolution.
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        _sex: Sex,
+    ) -> UnlockFact {
+        self.earned_unlock(grant_key, provenance, target)
+    }
+    /// Exact source ownership predicate, not permission to display or select another sex's look.
+    fn earned_source_look_addon(
+        &self,
+        _grant_key: &str,
+        _provenance: &str,
+        _look: u32,
+        _addon: u8,
     ) -> UnlockFact {
         UnlockFact::Absent
     }

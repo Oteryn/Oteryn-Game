@@ -1,0 +1,123 @@
+{
+  "npcs": [
+    {
+      "default_greeting": "Interesting. A human who can speak the language of wolves.",
+      "npc": "oteryn:npc.a_majestic_warwolf",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/a_majestic_warwolf.lua",
+      "source_sha256": "9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572",
+      "top_level_setters": [
+        {
+          "line": 83,
+          "text": "Interesting. A human who can speak the language of wolves."
+        }
+      ]
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.ajax",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/ajax.lua",
+      "source_sha256": "ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.bozo",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/bozo.lua",
+      "source_sha256": "518f1fd0e427f6d5e66c7d6ba0401db4845978f4bbc75c159d57c6738918bdbd",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Welcome to my humble hut, |PLAYERNAME|.",
+      "npc": "oteryn:npc.bron",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/bron.lua",
+      "source_sha256": "81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0",
+      "top_level_setters": [
+        {
+          "line": 188,
+          "text": "Welcome to my humble hut, |PLAYERNAME|."
+        }
+      ]
+    },
+    {
+      "default_greeting": "Greetings seekers of knowledge. You seem to be just the person I'm {looking} for.",
+      "npc": "oteryn:npc.dedoras",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/dedoras.lua",
+      "source_sha256": "75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+      "top_level_setters": [
+        {
+          "line": 309,
+          "text": "Greetings seekers of knowledge. You seem to be just the person I'm {looking} for."
+        }
+      ]
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.emperor_kruzak",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/emperor_kruzak.lua",
+      "source_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.eruaran",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/eruaran.lua",
+      "source_sha256": "6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.hugo",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/hugo.lua",
+      "source_sha256": "60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.jack_springer",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/jack_springer.lua",
+      "source_sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.king_tibianus",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/king_tibianus.lua",
+      "source_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.queen_eloise",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/queen_eloise.lua",
+      "source_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+      "top_level_setters": []
+    },
+    {
+      "default_greeting": "Greetings, |PLAYERNAME|.",
+      "npc": "oteryn:npc.vescu",
+      "qualification": "Actual pinned Lua executed through source initialization only; no Greet callback or message callback dispatched. Conditional/nested setters excluded naturally.",
+      "source_path": "data-global/npc/vescu.lua",
+      "source_sha256": "af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b",
+      "top_level_setters": []
+    }
+  ],
+  "schema": "OTERYN_SOURCE_TOPLEVEL_GREET_CAPTURE/v1",
+  "shared_default": {
+    "line": 81,
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+    "value": "Greetings, |PLAYERNAME|."
+  },
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+}

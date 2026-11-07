@@ -28,7 +28,11 @@ use {
 };
 fn actual_content() -> (NativeGameplayState, ChannelContentPin) {
     let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
-        .expect("explicit actual source artifact manifest");
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json")
+        });
     let input = NativeGameplayInput::from_manifest(std::path::Path::new(&path)).unwrap();
     let world = crate::content::native_gameplay_test_world_id().unwrap();
     let room = crate::content::qualify_selected_native_gameplay_room(world, &input).unwrap();
@@ -152,6 +156,24 @@ fn fixture<'a>(
     ScopeRuntimeFence,
     RuntimeWorkStamp,
 ) {
+    fixture_from_packet(native, pin, name, index, defense, packet())
+}
+fn fixture_from_packet<'a>(
+    native: &'a NativeGameplayState,
+    pin: ChannelContentPin,
+    name: &str,
+    index: usize,
+    defense: bool,
+    v: serde_json::Value,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    SpellSource,
+    ProfileAbilityProposal,
+    World<'a>,
+    ScopeRuntimeFence,
+    RuntimeWorkStamp,
+) {
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         pin.world_id(),
@@ -170,7 +192,6 @@ fn fixture<'a>(
     let target = r.commit_fresh_session(slot).unwrap();
     r.initialize_first_entry_position(target).unwrap();
     let at = r.read_actor_position(target).unwrap().position();
-    let v = packet();
     let records: Vec<ProjectReferenceRecord> =
         serde_json::from_value(v["records"].clone()).unwrap();
     let profiles: Vec<ProjectV2AuthoringProfile> =
@@ -981,5 +1002,184 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
             )
             .unwrap(),
         out
+    );
+}
+
+#[test]
+fn srv7_halloween_hare_all_fifteen_native_transformations_expire_and_replay() {
+    let (native, pin) = actual_content();
+    for index in 1..=15 {
+        let (mut runtime, mut states, source, proposal, mut world, fence, stamp) =
+            fixture(&native, pin.clone(), "the_halloween_hare", index, false);
+        let before = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .vitals();
+        let mut owner = DamageSpellOwner::default();
+        let outcome = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(1),
+            )
+            .unwrap();
+        let player = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap();
+        assert_eq!(player.vitals(), before);
+        assert!(
+            player
+                .owned_conditions()
+                .displayed_temporary_appearance_at(1)
+                .is_some()
+        );
+        assert!(
+            player
+                .owned_conditions()
+                .displayed_temporary_appearance_at(6_000_001)
+                .is_none()
+        );
+        assert_eq!(
+            owner
+                .execute(
+                    &mut runtime,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(1)
+                )
+                .unwrap(),
+            outcome
+        );
+    }
+}
+
+#[test]
+fn srv7_cake_golem_undefined_damage_bypasses_real_owned_mana_shield_and_replays() {
+    use crate::player_lethal::PlayerLethalVitals;
+    let (native, pin) = actual_content();
+    let source: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/seasonal-cake-creature.json"
+    )))
+    .unwrap();
+    let packet = serde_json::json!({"records":source["stage"]["records"],"authoring_profiles":source["stage"]["profiles"]});
+    let (mut runtime, mut states, source, proposal, mut world, fence, stamp) =
+        fixture_from_packet(&native, pin, "cake_golem", 1, false, packet);
+    let mut state = states
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+        .unwrap()
+        .clone();
+    crate::spell::actor_conditions::apply_combat_change(
+        &mut state,
+        &crate::spell::combat_batch::OwnerCombatChange::ManaShield(
+            crate::spell::combat_batch::ManaShieldState {
+                capacity: 90,
+                expires_ms: 10000,
+            },
+        ),
+        0,
+    )
+    .unwrap();
+    assert!(states.replace_owned_player_state_test_fixture(
+        &runtime,
+        proposal.target,
+        world.session,
+        state
+    ));
+    let before = states
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+        .unwrap()
+        .vitals();
+    assert!(before.mana >= 40);
+    let now = SemanticTimeMicros::from_micros(1000);
+    let result = states
+        .apply_cake_undefined_attack_damage(
+            &mut runtime,
+            proposal.target,
+            world.session,
+            40,
+            proposal.issuer,
+            "srv7:cake-source-undefined:1",
+            now,
+        )
+        .expect("qualified undefined damage owner must commit");
+    let after = states
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+        .unwrap()
+        .vitals();
+    assert_eq!(after.health, before.health - 40);
+    assert_eq!(after.mana, before.mana);
+    assert_eq!(
+        states.apply_cake_undefined_attack_damage(
+            &mut runtime,
+            proposal.target,
+            world.session,
+            40,
+            proposal.issuer,
+            "srv7:cake-source-undefined:1",
+            now
+        ),
+        Some(result)
+    );
+    assert_eq!(
+        states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .vitals(),
+        after
+    );
+    let mut source_owner = DamageSpellOwner::default();
+    let receipt = source_owner
+        .execute(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            now,
+        )
+        .expect("actual native Cake attack-2 classification and damage dispatch");
+    assert!(!receipt.targets.is_empty());
+    let after_native = states
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+        .unwrap()
+        .vitals();
+    assert_eq!(
+        after_native.mana, after.mana,
+        "actual source undefined attack also bypasses mana shield"
+    );
+    assert!(after_native.health <= after.health);
+    assert_eq!(
+        source_owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                now
+            )
+            .unwrap(),
+        receipt
+    );
+    assert_eq!(
+        states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .vitals(),
+        after_native
     );
 }

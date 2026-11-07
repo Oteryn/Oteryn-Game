@@ -84,7 +84,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::Committed)));
             }
             Ok(None) => {}
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                let _ = error;
+                return Err(());
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         }
         let pending = {
@@ -143,7 +146,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(inventory) => inventory,
-            Err(ItemUseError::Unavailable(_)) => return Err(()),
+            Err(ItemUseError::Unavailable(error)) => {
+                let _ = error;
+                return Err(());
+            }
             Err(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
         };
         let Some(bag) = inventory.backpack.as_ref() else {

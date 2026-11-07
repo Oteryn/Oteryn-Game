@@ -1,9 +1,9 @@
-"""TUTORIAL-1 movement overlay; fail closed on the exact record set and walkability."""
+"""Tutorial and W23 civic movement overlay; enforce its exact set and walkability."""
 import hashlib
 import json
 
 PATH = 'tools/content-schema/native-gameplay/movement-item-profiles.json'
-IDS = {3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
+IDS = {3892, 3893, 5022, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

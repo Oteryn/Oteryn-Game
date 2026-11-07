@@ -71,7 +71,7 @@ pub(super) fn valid_request(r: &ActivityEnterRequest, boss_room: bool) -> bool {
     has_initiator
 }
 
-fn binding(r: &ActivityEnterRequest) -> [u8; 32] {
+pub(super) fn binding(r: &ActivityEnterRequest) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-enter-v1");
     for text in [&r.activity_key, &r.template_revision, &r.content_revision] {
@@ -180,10 +180,44 @@ pub(super) async fn enter_in_transaction(
                 ActivityRefusal::AuthorityRejected,
             ));
         }
-        return Ok(ActivityEnterOutcome::Replayed(
-            load_receipt(tx, bytes16(handoff)?).await?,
-        ));
+        let handoff = bytes16(handoff)?;
+        let receipt = if boss_room && r.activity_key == summer_portal::RAKESH {
+            if handoff != r.handoff_id {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            // Later independent source entries cannot alter the first actor's
+            // retained physical handoff receipt or its replay participant set.
+            summer_portal::one_receipt(tx, r).await?
+        } else {
+            load_receipt(tx, handoff).await?
+        };
+        return Ok(ActivityEnterOutcome::Replayed(receipt));
     }
+    let source_portal = boss_room && r.activity_key == summer_portal::RAKESH;
+    if source_portal {
+        if r.participants.len() != 1 {
+            return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
+        }
+        if let Some(replay) = summer_portal::replay_join(tx, root, node, r, request_binding).await?
+        {
+            return Ok(replay);
+        }
+    }
+    let source_group = if source_portal {
+        let Some(group) = summer_portal::current_group(tx, node, initiator.source).await? else {
+            return Ok(ActivityEnterOutcome::Refused(
+                ActivityRefusal::AuthorityRejected,
+            ));
+        };
+        Some(group)
+    } else {
+        None
+    };
+    let source_join = if let Some(group) = &source_group {
+        summer_portal::matches_join(tx, r, group).await?
+    } else {
+        false
+    };
     let guards = AdmissionGuardStore::from_root(root.clone());
     if guards
         .load_locked(
@@ -200,10 +234,10 @@ pub(super) async fn enter_in_transaction(
     let exact: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_runtime_scope_assignments a \
          WHERE a.scope_key=$1 AND a.source_revision=$2::text::numeric \
-           AND NOT EXISTS (SELECT 1 FROM game_activity_handoff_groups g WHERE g.world_id=a.world_id AND g.instance_id=a.activity_instance_id) \
+           AND ($3::boolean OR (NOT EXISTS (SELECT 1 FROM game_activity_handoff_groups g WHERE g.world_id=a.world_id AND g.instance_id=a.activity_instance_id) \
            AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.runtime_scope_world_id=a.world_id \
-             AND s.runtime_scope_instance_id=a.activity_instance_id))")
-        .bind(assignment_scope_key(r.destination_scope).as_slice()).bind(r.destination_assignment_source_revision.to_string())
+             AND s.runtime_scope_instance_id=a.activity_instance_id))))")
+        .bind(assignment_scope_key(r.destination_scope).as_slice()).bind(r.destination_assignment_source_revision.to_string()).bind(source_join)
         .fetch_one(&mut **tx).await?;
     if !exact {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
@@ -253,6 +287,12 @@ pub(super) async fn enter_in_transaction(
         }
     }
     let now = now_ms(tx).await?;
+    if let Some(group) = &source_group {
+        summer_portal::arm(tx, node, r, group, request_binding).await?;
+        if source_join {
+            return summer_portal::join(tx, root, r, now).await;
+        }
+    }
     let boss_plan = if boss_room {
         match super::boss_room::prepare_in_transaction(tx, r, now).await? {
             Ok(plan) => Some(plan),
@@ -315,12 +355,17 @@ pub(super) async fn enter_in_transaction(
     if let Some(plan) = boss_plan {
         super::boss_room::commit_in_transaction(tx, r, plan).await?;
     }
+    if source_group.is_some() {
+        sqlx::query("SELECT game_summer_portal_commit()")
+            .execute(&mut **tx)
+            .await?;
+    }
     Ok(ActivityEnterOutcome::Entered(
         load_receipt(tx, r.handoff_id).await?,
     ))
 }
 
-async fn insert_participant(
+pub(super) async fn insert_participant(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
     p: &ActivityParticipant,

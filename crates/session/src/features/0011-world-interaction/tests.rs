@@ -1,5 +1,5 @@
 use super::*;
-use oteryn_protocol_oteryn::{bed, item_look};
+use oteryn_protocol_oteryn::{bed, item_look, world_rotate};
 
 #[test]
 fn world_context_existing_look_and_bed_commands_cross_the_session() -> Result<(), BoxError> {
@@ -16,9 +16,9 @@ fn world_context_existing_look_and_bed_commands_cross_the_session() -> Result<()
                     let container = item_view::encode_open_container(&OpenContainer::default()).map_err(|e| format!("{e:?}"))?;
                     vec![(9, 0, 1, inventory), (11, 0, 1, container), (17, 0, 1, map)]
                 } else { vec![] };
-                join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES, if selected { &[4, 6, 11, 15, 18, 28] } else { &[] }, &[], if selected { item_snapshot(vec![])? } else { (1, spatial(0)) }, &raw).await?;
+                join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES, if selected { &[4, 6, 11, 15, 18, 28, 384] } else { &[] }, &[], if selected { item_snapshot(vec![])? } else { (1, spatial(0)) }, &raw).await?;
                 if selected {
-                    for (id, kind) in [(7, 30), (8, 31)] {
+                    for (id, kind) in [(7, 30), (8, 31), (9, 669)] {
                         let frame = read_frame(&mut server).await?;
                         let envelope = decode_wire_envelope(&frame)?;
                         let command = envelope.client_command(1)?;
@@ -27,6 +27,11 @@ fn world_context_existing_look_and_bed_commands_cross_the_session() -> Result<()
                             let intent = item_look::decode_item_look_intent(command.payload).map_err(|e| format!("{e:?}"))?;
                             assert_eq!(intent.target, item_look::ItemLookTarget::Item(std::num::NonZeroU64::MIN));
                             item_look::encode_item_look_result(&item_look::ItemLookResult::Text("You see a bed.".into())).map_err(|e| format!("{e:?}"))?
+                        } else if kind == 669 {
+                            let (intent, observed) = world_rotate::decode_rotate_intent(command.payload).map_err(|e| format!("{e:?}"))?;
+                            assert_eq!(observed, Some(std::num::NonZeroU32::MIN));
+                            assert_eq!(intent.target, world_rotate::UseTarget::Item(std::num::NonZeroU64::MIN));
+                            world_rotate::encode_rotate_result(UseDisposition::Committed, None).map_err(|e| format!("{e:?}"))?
                         } else {
                             let intent = bed::decode_bed_sleep_intent(command.payload).map_err(|e| format!("{e:?}"))?;
                             assert_eq!((intent.target.get(), intent.skill), (1, 6));
@@ -40,9 +45,15 @@ fn world_context_existing_look_and_bed_commands_cross_the_session() -> Result<()
             let mut admission = admission()?;
             admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
             let mut session = Session::admit(client, admission).await?;
-            for (capability, kind, payload) in [(28, 30, vec![8, 1]), (11, 31, vec![10, 2, 8, 1, 16, 6])] {
+            for (capability, kind, payload) in [(28, 30, vec![8, 1]), (11, 31, vec![10, 2, 8, 1, 16, 6]), (384, 669, vec![18, 2, 8, 1, 24, 1])] {
                 let result = session.gated_command(capability, kind, &payload).await;
-                if selected { assert!(!result?.payload.is_empty()); }
+                if selected {
+                    let payload = result?.payload;
+                    assert!(!payload.is_empty());
+                    if capability == 384 {
+                        assert_eq!(world_rotate::decode_rotate_result(&payload).map_err(|e| format!("{e:?}"))?.0, UseDisposition::Committed);
+                    }
+                }
                 else { assert!(matches!(result, Err(SessionError::CapabilityNotSelected { capability: id }) if id == capability)); }
             }
             peer.await??;

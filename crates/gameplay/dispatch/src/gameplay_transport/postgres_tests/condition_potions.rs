@@ -17,6 +17,19 @@ use oteryn_protocol_oteryn::world_object::{
 use std::time::Duration;
 
 #[test]
+fn srv7_pumpkin_and_worm_native_food_burn_and_exact_current_durations() -> TestResult {
+    run_case(ConditionPotion::Bullseye, Vocation::Paladin, "paladin", "srv7_pumpkin_food")
+}
+#[test]
+fn srv7_cupcake_native_channel_carried_use_and_exhaustion() -> TestResult {
+    run_case(
+        ConditionPotion::Bullseye,
+        Vocation::Paladin,
+        "paladin",
+        "srv7_cupcake_channel",
+    )
+}
+#[test]
 fn condition_potions_postgres_berserk_buff_expiry_receipt_and_refusals() -> TestResult {
     run_case(
         ConditionPotion::Berserk,
@@ -150,46 +163,48 @@ fn scenario(
                     .initialize_first_entry_position(deps.actor)
                     .map_err(debug)?;
             }
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            let bag_key = "oteryn:item.tibia.i2854";
-            for (source, key, amount) in std::iter::once((id(70), bag_key, 1_i64)).chain(
-                [
+            if !matches!(tag, "srv7_cupcake_channel" | "srv7_pumpkin_food") {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                let bag_key = "oteryn:item.tibia.i2854";
+                for (source, key, amount) in std::iter::once((id(70), bag_key, 1_i64)).chain(
+                    [
+                        ConditionPotion::Berserk,
+                        ConditionPotion::Mastermind,
+                        ConditionPotion::Bullseye,
+                        ConditionPotion::Transcendence,
+                    ]
+                    .into_iter()
+                    .map(|p| (source_id(p), p.key(), 5_i64)),
+                ) {
+                    let revision = index.revision(key).ok_or("admitted source item")?;
+                    assert!(
+                        native.item_policy(key, revision).is_some(),
+                        "condition potion content must be materializable"
+                    );
+                    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,$5,1,encode($1,'hex')::uuid)")
+                    .bind(source.as_slice()).bind(id(42).as_slice()).bind(key).bind(revision).bind(amount).execute(&mut *tx).await?;
+                }
+                sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+                for (ordinal, p) in [
                     ConditionPotion::Berserk,
                     ConditionPotion::Mastermind,
                     ConditionPotion::Bullseye,
                     ConditionPotion::Transcendence,
                 ]
                 .into_iter()
-                .map(|p| (source_id(p), p.key(), 5_i64)),
-            ) {
-                let revision = index.revision(key).ok_or("admitted source item")?;
-                assert!(
-                    native.item_policy(key, revision).is_some(),
-                    "condition potion content must be materializable"
-                );
-                sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,$5,1,encode($1,'hex')::uuid)")
-                    .bind(source.as_slice()).bind(id(42).as_slice()).bind(key).bind(revision).bind(amount).execute(&mut *tx).await?;
-            }
-            sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($2,'hex')::uuid)")
-                .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
-            for (ordinal, p) in [
-                ConditionPotion::Berserk,
-                ConditionPotion::Mastermind,
-                ConditionPotion::Bullseye,
-                ConditionPotion::Transcendence,
-            ]
-            .into_iter()
-            .enumerate()
-            {
-                sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($1,'hex')::uuid)")
+                .enumerate()
+                {
+                    sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($1,'hex')::uuid)")
                     .bind(source_id(p).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind((ordinal + 1).to_string()).execute(&mut *tx).await?;
-            }
-            sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress) VALUES(encode($1,'hex')::uuid,$2,98)")
+                }
+                sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress) VALUES(encode($1,'hex')::uuid,$2,98)")
                 .bind(id(41).as_slice()).bind(potion.achievement().key).execute(&mut *tx).await?;
-            tx.commit().await?;
+                tx.commit().await?;
+            }
 
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
@@ -244,168 +259,175 @@ fn scenario(
                 &[4, 15],
             )
             .ok_or("use capabilities")?;
-            let payload = |p: ConditionPotion| -> TestResult<Vec<u8>> {
-                let definition = index
-                    .definition_ref("Item", p.key(), index.revision(p.key()).ok_or("revision")?)
-                    .ok_or("item index")?;
-                encode_item_use_intent(&UseIntent {
-                    target: UseTarget::ItemByDefinition(definition),
-                    use_with: None,
-                    use_with_map_item: None,
-                    use_with_position: None,
-                })
-                .map_err(debug)
-            };
-            let valid = payload(potion)?;
-            let (status, reply) =
-                exchange(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &valid).await?;
-            assert_eq!(status, CommandStatus::Accepted);
-            assert_eq!(
-                decode_use_result(&reply).map_err(debug)?,
-                UseDisposition::Committed,
-                "the real command must apply the condition before counting this use"
-            );
-            assert_eq!(progress(&h, potion).await?, 99);
-            assert_eq!(quantity(&h, potion).await?, 4);
-            assert_eq!(awards(&h, potion).await?, 0);
-            assert_effect(&owner, deps.actor, admitted.game_session_id, potion, &h).await?;
-            let (status, replay) =
-                exchange(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &valid).await?;
-            assert_eq!(status, CommandStatus::DuplicateReplay);
-            assert_eq!(reply, replay);
-            assert_eq!(
-                progress(&h, potion).await?,
-                99,
-                "replay cannot count a use twice"
-            );
-            assert_eq!(quantity(&h, potion).await?, 4);
-
-            let forbidden = if potion == ConditionPotion::Berserk {
-                ConditionPotion::Mastermind
-            } else {
-                ConditionPotion::Berserk
-            };
-            let (_, reply) = exchange(
-                &owner,
-                &mut admitted,
-                2,
-                COMMAND_TYPE_USE_INTENT,
-                &payload(forbidden)?,
-            )
-            .await?;
-            assert_eq!(
-                decode_use_result(&reply).map_err(debug)?,
-                UseDisposition::RequirementNotMet
-            );
-            assert_eq!(quantity(&h, forbidden).await?, 5);
-            assert_eq!(progress(&h, forbidden).await?, 0);
-            assert_eq!(progress(&h, potion).await?, 99);
-            let command = |id, item_fence| UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: id,
-                item_fence: Some(item_fence),
-            };
-            let mut stale = fence;
-            stale.connection_generation = ConnectionGeneration::new(999).map_err(debug)?;
-            assert_ne!(
-                owner
-                    .use_backpack_item(
-                        deps.actor,
-                        command(3, stale),
-                        ItemKey::Instance(source_id(potion))
-                    )
-                    .await
-                    .disposition,
-                UseDisposition::Committed
-            );
-            assert_eq!(progress(&h, potion).await?, 99);
-            assert_eq!(quantity(&h, potion).await?, 4);
-
-            // A cancelled operation before COMMIT retains the reservation until an independently
-            // fenced absence read proves rollback. Neither the unit nor progress was consumed.
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(2))
-                .ok_or("clock")?;
-            inject_fault(1);
-            assert_eq!(
-                owner
-                    .use_backpack_item(
-                        deps.actor,
-                        command(9, fence),
-                        ItemKey::Instance(source_id(potion))
-                    )
-                    .await
-                    .disposition,
-                UseDisposition::Rejected
-            );
-            assert!(deps.runtime.lock().await.actor_spell_reserved(deps.actor));
-            assert_eq!(progress(&h, potion).await?, 99);
-            let permit = owner
-                .spell_lane_permit()
-                .await
-                .ok_or("resolve definite absence")?;
-            drop(permit);
-            assert!(!deps.runtime.lock().await.actor_spell_reserved(deps.actor));
-            assert_eq!(quantity(&h, potion).await?, 4);
-
-            // Lost acknowledgement after COMMIT: the receipt is durable, the actual actor is
-            // reserved, and a later production lane pass installs the ORIGINAL condition.
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(2))
-                .ok_or("clock")?;
-            inject_fault(2);
-            assert_eq!(
-                owner
-                    .use_backpack_item(
-                        deps.actor,
-                        command(10, fence),
-                        ItemKey::Instance(source_id(potion))
-                    )
-                    .await
-                    .disposition,
-                UseDisposition::Rejected
-            );
-            assert!(deps.runtime.lock().await.actor_spell_reserved(deps.actor));
-            assert_eq!(progress(&h, potion).await?, 100);
-            assert_eq!(quantity(&h, potion).await?, 3);
-            assert_eq!(awards(&h, potion).await?, 1);
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(Duration::from_secs(45))
-                .ok_or("clock")?;
-            let permit = owner
-                .spell_lane_permit()
-                .await
-                .ok_or("resolve committed receipt")?;
-            drop(permit);
-            assert!(!deps.runtime.lock().await.actor_spell_reserved(deps.actor));
-            assert_effect(&owner, deps.actor, admitted.game_session_id, potion, &h).await?;
-            assert_eq!(
-                owner
-                    .use_backpack_item(
-                        deps.actor,
-                        command(10, fence),
-                        ItemKey::Instance(source_id(potion))
-                    )
-                    .await
-                    .disposition,
-                UseDisposition::Committed
-            );
-            assert_eq!(progress(&h, potion).await?, 100);
-            assert_eq!(quantity(&h, potion).await?, 3);
-            assert_eq!(awards(&h, potion).await?, 1);
-            let receipts: i64 =
-                sqlx::query_scalar("SELECT count(*) FROM game_item_condition_potion_receipts")
-                    .fetch_one(&h.pool)
+            if tag == "srv7_pumpkin_food" {
+                super::hireling_lifecycle::pumpkin_food::scenario(&h, &owner, admitted, deps.actor).await?;
+            } else if tag == "srv7_cupcake_channel" {
+                super::hireling_lifecycle::cupcakes::scenario(&h, &owner, admitted, deps.actor)
                     .await?;
-            assert_eq!(receipts, 2);
-            let wrong_counter: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/potion_addict'").fetch_one(&h.pool).await?;
-            assert_eq!(
-                wrong_counter, 0,
-                "condition potions do not enter the HP/MP Potion Addict branch"
-            );
+            } else {
+                let payload = |p: ConditionPotion| -> TestResult<Vec<u8>> {
+                    let definition = index
+                        .definition_ref("Item", p.key(), index.revision(p.key()).ok_or("revision")?)
+                        .ok_or("item index")?;
+                    encode_item_use_intent(&UseIntent {
+                        target: UseTarget::ItemByDefinition(definition),
+                        use_with: None,
+                        use_with_map_item: None,
+                        use_with_position: None,
+                    })
+                    .map_err(debug)
+                };
+                let valid = payload(potion)?;
+                let (status, reply) =
+                    exchange(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &valid).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(
+                    decode_use_result(&reply).map_err(debug)?,
+                    UseDisposition::Committed,
+                    "the real command must apply the condition before counting this use"
+                );
+                assert_eq!(progress(&h, potion).await?, 99);
+                assert_eq!(quantity(&h, potion).await?, 4);
+                assert_eq!(awards(&h, potion).await?, 0);
+                assert_effect(&owner, deps.actor, admitted.game_session_id, potion, &h).await?;
+                let (status, replay) =
+                    exchange(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &valid).await?;
+                assert_eq!(status, CommandStatus::DuplicateReplay);
+                assert_eq!(reply, replay);
+                assert_eq!(
+                    progress(&h, potion).await?,
+                    99,
+                    "replay cannot count a use twice"
+                );
+                assert_eq!(quantity(&h, potion).await?, 4);
+
+                let forbidden = if potion == ConditionPotion::Berserk {
+                    ConditionPotion::Mastermind
+                } else {
+                    ConditionPotion::Berserk
+                };
+                let (_, reply) = exchange(
+                    &owner,
+                    &mut admitted,
+                    2,
+                    COMMAND_TYPE_USE_INTENT,
+                    &payload(forbidden)?,
+                )
+                .await?;
+                assert_eq!(
+                    decode_use_result(&reply).map_err(debug)?,
+                    UseDisposition::RequirementNotMet
+                );
+                assert_eq!(quantity(&h, forbidden).await?, 5);
+                assert_eq!(progress(&h, forbidden).await?, 0);
+                assert_eq!(progress(&h, potion).await?, 99);
+                let command = |id, item_fence| UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: id,
+                    item_fence: Some(item_fence),
+                };
+                let mut stale = fence;
+                stale.connection_generation = ConnectionGeneration::new(999).map_err(debug)?;
+                assert_ne!(
+                    owner
+                        .use_backpack_item(
+                            deps.actor,
+                            command(3, stale),
+                            ItemKey::Instance(source_id(potion))
+                        )
+                        .await
+                        .disposition,
+                    UseDisposition::Committed
+                );
+                assert_eq!(progress(&h, potion).await?, 99);
+                assert_eq!(quantity(&h, potion).await?, 4);
+
+                // A cancelled operation before COMMIT retains the reservation until an independently
+                // fenced absence read proves rollback. Neither the unit nor progress was consumed.
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(Duration::from_secs(2))
+                    .ok_or("clock")?;
+                inject_fault(1);
+                assert_eq!(
+                    owner
+                        .use_backpack_item(
+                            deps.actor,
+                            command(9, fence),
+                            ItemKey::Instance(source_id(potion))
+                        )
+                        .await
+                        .disposition,
+                    UseDisposition::Rejected
+                );
+                assert!(deps.runtime.lock().await.actor_spell_reserved(deps.actor));
+                assert_eq!(progress(&h, potion).await?, 99);
+                let permit = owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("resolve definite absence")?;
+                drop(permit);
+                assert!(!deps.runtime.lock().await.actor_spell_reserved(deps.actor));
+                assert_eq!(quantity(&h, potion).await?, 4);
+
+                // Lost acknowledgement after COMMIT: the receipt is durable, the actual actor is
+                // reserved, and a later production lane pass installs the ORIGINAL condition.
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(Duration::from_secs(2))
+                    .ok_or("clock")?;
+                inject_fault(2);
+                assert_eq!(
+                    owner
+                        .use_backpack_item(
+                            deps.actor,
+                            command(10, fence),
+                            ItemKey::Instance(source_id(potion))
+                        )
+                        .await
+                        .disposition,
+                    UseDisposition::Rejected
+                );
+                assert!(deps.runtime.lock().await.actor_spell_reserved(deps.actor));
+                assert_eq!(progress(&h, potion).await?, 100);
+                assert_eq!(quantity(&h, potion).await?, 3);
+                assert_eq!(awards(&h, potion).await?, 1);
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(Duration::from_secs(45))
+                    .ok_or("clock")?;
+                let permit = owner
+                    .spell_lane_permit()
+                    .await
+                    .ok_or("resolve committed receipt")?;
+                drop(permit);
+                assert!(!deps.runtime.lock().await.actor_spell_reserved(deps.actor));
+                assert_effect(&owner, deps.actor, admitted.game_session_id, potion, &h).await?;
+                assert_eq!(
+                    owner
+                        .use_backpack_item(
+                            deps.actor,
+                            command(10, fence),
+                            ItemKey::Instance(source_id(potion))
+                        )
+                        .await
+                        .disposition,
+                    UseDisposition::Committed
+                );
+                assert_eq!(progress(&h, potion).await?, 100);
+                assert_eq!(quantity(&h, potion).await?, 3);
+                assert_eq!(awards(&h, potion).await?, 1);
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_item_condition_potion_receipts")
+                        .fetch_one(&h.pool)
+                        .await?;
+                assert_eq!(receipts, 2);
+                let wrong_counter: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/potion_addict'").fetch_one(&h.pool).await?;
+                assert_eq!(
+                    wrong_counter, 0,
+                    "condition potions do not enter the HP/MP Potion Addict branch"
+                );
+            }
         }
         eprintln!("Q6 POSTGRES_CASE_COMPLETED {tag}");
         h.cleanup().await

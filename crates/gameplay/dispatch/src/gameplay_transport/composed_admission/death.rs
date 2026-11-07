@@ -17,6 +17,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        // Named-House death moves only through the genuine HouseExit handshake.
+        // The House actor retains its origin Channel identity, so test its owner
+        // state before the ordinary Channel/Activity death branches.
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            return None;
+        }
         if self.runtime.lock().await.is_tibiadrome(actor) {
             return self.drome_death(actor, session, death).await;
         }
@@ -115,6 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         return DeathCommit::Unavailable;
                     }
+
                     let (commit, after) = self.commit_death(session, &progression, death).await;
                     *lowered_slot = after;
                     commit
@@ -124,7 +137,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Instance equipment is refreshed by complete_activity_death_return
         // after the genuine Channel handoff, before the actor is respawned.
         // The existing equipment owner cannot read an Instance as a Channel.
+        let actual_house = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok();
         if matches!(settled, SessionDeath::Durable)
+            && !actual_house
             && !releasing
             && matches!(
                 actor.runtime_scope(),

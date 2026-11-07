@@ -19,10 +19,25 @@ pub(super) struct SessionAppearance {
     bindings: BTreeMap<WireEntityRef, wire::Binding>,
     /// Actual Hirelings selected by the scoped House view; static NPCs stay unchanged.
     hirelings: std::collections::BTreeSet<WireEntityRef>,
+    seasonal: std::collections::BTreeSet<WireEntityRef>,
     snapshot: Option<std::sync::Arc<[u8]>>,
 }
 impl SessionAppearance {
     fn select_hirelings(&mut self, channel: &ChannelEntities) {
+        self.seasonal = channel
+            .entities
+            .iter()
+            .filter(|e| {
+                matches!(
+                    e.kind,
+                    VisibleKind::SeasonalCreature | VisibleKind::SeasonalNpc
+                )
+            })
+            .map(|e| WireEntityRef {
+                identity: e.identity,
+                generation: e.generation,
+            })
+            .collect();
         self.hirelings = channel
             .entities
             .iter()
@@ -51,6 +66,7 @@ impl SessionAppearance {
             .filter(|e| {
                 e.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
                     || self.hirelings.contains(&e.entity)
+                    || self.seasonal.contains(&e.entity)
                     || (self.forge
                         && e.kind
                             == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
@@ -121,6 +137,7 @@ impl SessionAppearance {
         for entity in entities {
             if entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
                 || self.hirelings.contains(&entity.entity)
+                || self.seasonal.contains(&entity.entity)
                 || (self.forge
                     && entity.kind
                         == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)

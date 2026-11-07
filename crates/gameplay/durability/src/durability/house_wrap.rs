@@ -10,7 +10,12 @@ use oteryn_protocol_oteryn::house_wrap::{Refusal, Reply, Request};
 use sqlx::Row;
 
 mod purchased_kit;
+mod royal_kit;
 pub(crate) use purchased_kit::record_purchased_kit;
+pub use purchased_kit::{
+    FurnitureKitDescriptionKind, FurnitureKitDescriptionSource, HouseFurnitureKitSource,
+};
+pub(crate) use royal_kit::mint_royal_kit;
 
 pub struct HouseWrapCommand {
     pub house: HouseId,

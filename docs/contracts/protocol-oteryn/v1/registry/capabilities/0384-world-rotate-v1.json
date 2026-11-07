@@ -1,0 +1,15 @@
+{
+  "id": 384,
+  "name": "WORLD_ROTATE_V1",
+  "owner_decision": "SRV7 W18: explicit native Rotate, separately negotiated from USE",
+  "owner": "world and House Item action owners",
+  "requires": [
+    11
+  ],
+  "command_types": [
+    669
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; selected peers may send explicit Rotate. Existing USE and legacy clients retain their original behavior."
+}

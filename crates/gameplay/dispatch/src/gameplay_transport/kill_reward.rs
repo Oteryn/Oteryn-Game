@@ -2040,13 +2040,27 @@ pub fn bind_settled_corpse(
         return CorpseBind::NoCorpse;
     };
     let corpse = &row.corpse_item;
-    match runtime.bind_corpse_item(
-        entry.target,
-        committed.item_instance_id,
-        &corpse.family,
-        &corpse.production_key,
-        &corpse.revision_ref,
+    let binding = if matches!(
+        entry.target.runtime_scope(),
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
     ) {
+        runtime.bind_summer_instance_corpse_item(
+            entry.target,
+            committed.item_instance_id,
+            &corpse.family,
+            &corpse.production_key,
+            &corpse.revision_ref,
+        )
+    } else {
+        runtime.bind_corpse_item(
+            entry.target,
+            committed.item_instance_id,
+            &corpse.family,
+            &corpse.production_key,
+            &corpse.revision_ref,
+        )
+    };
+    match binding {
         Ok(()) => CorpseBind::Bound,
         Err(error) => CorpseBind::Refused(error),
     }

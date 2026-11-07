@@ -34,7 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let (fence, request, cosmetic) = {
+        let (fence, request, cosmetic, cupcake) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             let Some(memo) = states.pending_item_effects.iter().find(|memo| {
@@ -68,25 +68,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 memo.fence,
                 memo.request.clone(),
                 memo.effects.kind == NoveltyKind::Cosmetic,
+                matches!(memo.effects.source_item_id, 28484..=28486),
             )
         };
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // The existing owner takes the original command's transaction advisory
         // lock before reading history. Absence therefore proves that its former
         // writer has ended without a commit; it is safe to release the memo.
-        let result = self
-            .root
-            .consume_transform_detailed(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                true,
-            )
-            .await;
+        let result = if cupcake {
+            self.root
+                .probe_cupcake_transform_receipt(self.character, fence, request.clone())
+                .await
+        } else {
+            self.root
+                .consume_transform_detailed(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    true,
+                )
+                .await
+        };
         match result {
             Ok(Some(receipt)) => {
                 // History establishes the outcome, never current permission to install

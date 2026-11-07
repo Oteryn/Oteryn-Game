@@ -31,16 +31,19 @@ pub(super) fn check_kit(trade:&OneItemNpcTradeV1)->Result<(),AuditError> {
     check_uuid_v7(&kit.item_instance_id)?;
     let target=kit.target.as_ref().ok_or(AuditError::InvalidInput)?;
     check_definition(Some(target))?;
-    let source=crate::domain::hireling::catalogue::wrapped_buy(kit.source_row as usize)
-        .ok_or(AuditError::InvalidInput)?;
     let cause=trade.cause.as_ref().ok_or(AuditError::InvalidInput)?;
+    let (item_id,price,source_matches)=if let Some(source)=crate::domain::hireling::catalogue::wrapped_buy(kit.source_row as usize) {
+        (source.item_id,source.buy,crate::durability::house_hireling::npc_identity(&cause.npc_key).is_some())
+    } else if let Some(source)=oteryn_gameplay_items::furniture::npc_offer_for_row(kit.source_row) {
+        (source.item_id,source.price,source.npc_key==cause.npc_key&&trade.house_key.is_none())
+    } else {return Err(AuditError::InvalidInput)};
     let minted=trade.lines.iter().find(|line|line.kind==LINE_ITEM_MINT)
         .and_then(|line|line.after.as_ref()).ok_or(AuditError::InvalidInput)?;
     if trade.hireling_package.is_some() || trade.sell_all || cause.side!=SIDE_BUY
-        || crate::durability::house_hireling::npc_identity(&cause.npc_key).is_none()
-        || trade.quantity!=1 || trade.unit_price!=source.buy || minted.quantity!=1
+        || !source_matches
+        || trade.quantity!=1 || trade.unit_price!=price || minted.quantity!=1
         || minted.item_instance_id!=kit.item_instance_id || target.family!="Item"
-        || target.production_key!=format!("oteryn:item.tibia.i{}",source.item_id)
+        || target.production_key!=format!("oteryn:item.tibia.i{}",item_id)
         || target.revision_ref!="definition-r1"
         || minted.definition.as_ref().is_none_or(|definition|definition.family!="Item"
             || definition.production_key!="oteryn:item.tibia.i23398"

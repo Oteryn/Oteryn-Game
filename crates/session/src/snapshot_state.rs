@@ -7,6 +7,7 @@ pub(super) struct SnapshotState {
     pub(super) entities: Option<WorldEntities>,
     pub(super) world_object_overlay: Option<Vec<WorldObjectOverlayEntry>>,
     pub(super) actor_vitals: Option<ActorVitals>,
+    pub(super) own_vitals_house_binding: Option<Vec<u8>>,
     pub(super) combat_state: Option<ActorCombatState>,
     pub(super) combat_revision: u64,
     pub(super) spatial_revision: u64,
@@ -319,6 +320,114 @@ impl SnapshotState {
         {
             return Err(SessionError::ContentGenerationMismatch { domain_id: 1 });
         }
+        if domains
+            .iter()
+            .any(|domain| domain.domain_id == actor_spell::STATE_DOMAIN_ACTOR_VITALS)
+        {
+            state.own_vitals_house_binding = state
+                .gated_snapshots
+                .iter()
+                .find(|snapshot| snapshot.domain_id == 51)
+                .map(|snapshot| snapshot.payload.clone());
+        }
         Ok(state)
+    }
+}
+#[cfg(test)]
+mod house_vitals_provenance_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::{
+        DomainSnapshot, decode_snapshot_chunk_framing, decode_wire_envelope,
+        encode_single_chunk_snapshot,
+    };
+
+    fn replacement(
+        previous: &SnapshotState,
+        domains: &[DomainSnapshot<'_>],
+    ) -> Result<SnapshotState, String> {
+        let frames = encode_single_chunk_snapshot(1, 1, 1, domains)
+            .map_err(|error| format!("valid actual snapshot encoding: {error:?}"))?;
+        let envelope = decode_wire_envelope(&frames[1])
+            .map_err(|error| format!("actual snapshot frame: {error:?}"))?;
+        let (_, body) = decode_snapshot_chunk_framing(envelope.payload())
+            .map_err(|error| format!("actual snapshot body: {error:?}"))?;
+        SnapshotState::decode(body, 1, &[86], None, Some(previous))
+            .map_err(|error| format!("atomic replacement: {error:?}"))
+    }
+
+    #[test]
+    fn srv7_own_house_vitals_provenance_requires_actual_domain_and_ignores_domain_order()
+    -> Result<(), String> {
+        use oteryn_protocol_oteryn::house_transfer::{HouseTransferAck, encode_house_transfer_ack};
+        let mut id = [0; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id[15] = 1;
+        let mut ack = HouseTransferAck {
+            transfer: id,
+            session: id,
+            world: id,
+            channel: id,
+            house: Some("oteryn:content.house.test".into()),
+            scope_generation: 1,
+            connection_generation: 1,
+            lease_generation: 1,
+            selection: vec![86],
+            position: [100, 200, 7],
+        };
+        let old_payload = encode_house_transfer_ack(&ack)
+            .map_err(|error| format!("actual valid House ACK: {error:?}"))?;
+        ack.lease_generation += 1;
+        let next_payload = encode_house_transfer_ack(&ack)
+            .map_err(|error| format!("actual successor House ACK: {error:?}"))?;
+        let old = GatedSnapshot {
+            domain_id: 51,
+            snapshot_type: 1,
+            revision: 1,
+            payload: old_payload.clone(),
+        };
+        let previous = SnapshotState {
+            actor_vitals: Some(ActorVitals {
+                health: 0,
+                max_health: 150,
+                ..Default::default()
+            }),
+            gated_snapshots: vec![old],
+            own_vitals_house_binding: Some(old_payload.clone()),
+            ..Default::default()
+        };
+        let house = DomainSnapshot {
+            domain_id: 51,
+            snapshot_type: 1,
+            revision: 2,
+            payload: &next_payload,
+        };
+        let retained = replacement(&previous, &[house])?;
+        assert_eq!(
+            retained.own_vitals_house_binding,
+            Some(old_payload),
+            "replacing House ACK alone cannot rebind retained HP0"
+        );
+        let payload = actor_spell::encode_actor_vitals(&ActorVitals {
+            health: 0,
+            max_health: 150,
+            ..Default::default()
+        })
+        .map_err(|error| format!("valid own vitals: {error:?}"))?;
+        let vitals = DomainSnapshot {
+            domain_id: 3,
+            snapshot_type: 1,
+            revision: 2,
+            payload: &payload,
+        };
+        for domains in [[vitals, house], [house, vitals]] {
+            let fresh = replacement(&previous, &domains)?;
+            assert_eq!(
+                fresh.own_vitals_house_binding,
+                Some(next_payload.clone()),
+                "atomic snapshot binds actual own-vitals to its final House witness regardless of domain order"
+            );
+        }
+        Ok(())
     }
 }

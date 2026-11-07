@@ -6,6 +6,18 @@ use oteryn_session::{
 };
 
 pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command) -> bool {
+    if let (super::Action::Rotate(Some(expected)), Target::Item(handle)) =
+        (command.action, &command.target)
+        && command.selection.is_none()
+    {
+        return session.inventory().is_some_and(|inventory| {
+            inventory
+                .main_backpack
+                .iter()
+                .chain(&inventory.entries)
+                .any(|item| item.handle == *handle && item.item_definition_ref == expected)
+        });
+    }
     if let super::Action::UseOn(source) = command.action {
         if !item_current(session, source) {
             return false;
@@ -36,8 +48,17 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
     if let Target::Creature(reference) = command.target {
         return session.world_entities().is_some_and(|entities| {
             entities.others().any(|entity| {
+                let mut position = entity.position;
+                // The native live map uses negative floors; the server observation
+                // retains its positive runtime floor and its exact entity identity.
+                if selection.binding.is_some()
+                    && map.as_ref().is_some_and(|map| map.header.origin.floor <= 0)
+                    && (1..=15).contains(&position.floor)
+                {
+                    position.floor = -position.floor;
+                }
                 entity.entity == reference
-                    && entity.position == selection.position
+                    && position == selection.position
                     && matches!(
                         entity.detail,
                         EntityDetail::Actor {

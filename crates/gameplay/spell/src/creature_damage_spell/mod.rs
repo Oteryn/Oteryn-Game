@@ -756,7 +756,12 @@ impl SpellSource {
         let known_none_source = creature.key == "oteryn:creature.angry_sugar_fairy"
             && matches!(index, 1 | 2)
             && ep.damage_type == "untyped";
+        let cake_undefined_source = creature.key == "oteryn:creature.cake_golem"
+            && list == ScheduleList::Attack
+            && index == 1
+            && ep.damage_type == "untyped";
         if !known_none_source
+            && !cake_undefined_source
             && !matches!(
                 ep.damage_type.as_str(),
                 "physical"
@@ -808,6 +813,17 @@ impl SpellSource {
         }
         let minimum = u32::try_from(minimum).map_err(|_| AttackError::NumericOverflow)?;
         let maximum = u32::try_from(maximum).map_err(|_| AttackError::NumericOverflow)?;
+        if cake_undefined_source
+            && ((minimum, maximum) != (0, 40)
+                || e.interval_ms != 2000
+                || e.chance_ppm != 150000
+                || ep.affects.is_some()
+                || !ep.mitigated_by.is_empty()
+                || d.chain.is_some()
+                || !conditions.is_empty())
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
         if known_none_source {
             let expected = if index == 1 { (100, 230) } else { (130, 280) };
             if (minimum, maximum) != expected
@@ -2629,7 +2645,21 @@ impl DamageSpellOwner {
                 result.targets.push((target, outcome));
                 continue;
             }
-            let receipt = if source.conditions.is_empty() {
+            let receipt = if source.creature_key == "oteryn:creature.cake_golem"
+                && source.list == ScheduleList::Attack
+                && source.entry_index == 1
+                && source.element.as_deref() == Some("untyped")
+            {
+                vitals.apply_cake_undefined_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    amount,
+                    proposal.issuer,
+                    &occurrence,
+                    now,
+                )
+            } else if source.conditions.is_empty() {
                 vitals.apply_typed_attack_damage(
                     runtime,
                     target,

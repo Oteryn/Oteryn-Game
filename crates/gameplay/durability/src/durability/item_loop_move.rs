@@ -70,6 +70,7 @@ const KIND_CORPSE: i16 = 5;
 const KIND_INBOX: i16 = 6;
 /// A depot-search retrieval of an entry nested under a depot or Inbox root.
 const KIND_CUSTODY_NESTED: i16 = 7;
+mod house_death_pickup;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
 pub use quick_loot::is_loot_coin;
@@ -929,6 +930,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     depot: Option<DepotMove>,
     quick: Option<quick_loot::MoveContext>,
     search: Option<i16>,
+    house: Option<&super::consume_transform::HouseActionContext>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let scope = fence.runtime_scope;
@@ -943,8 +945,15 @@ async fn apply_loop_move<C: ItemLoopContent>(
         RuntimeScopeRefV1::Instance { .. } => {
             assert_recovery_fence(tx, record).await?;
             super::db::lock_admission_relations(tx).await?;
-            if !super::item_transfer::assert_activity_item_content(tx, node, fence, command, digest)
-                .await?
+            if let Some(house) = house {
+                house_death_pickup::assert_house_death_pickup(
+                    tx, node, fence, command, content, request, house,
+                )
+                .await?;
+            } else if !super::item_transfer::assert_activity_item_content(
+                tx, node, fence, command, digest,
+            )
+            .await?
             {
                 return refuse(LoopMoveRefusal::Rejected);
             }
@@ -1163,7 +1172,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
             .bind(channel.map(|id| id.to_vec())).bind(scope_kind).bind(instance.map(|id| id.to_vec()))
             .fetch_one(&mut **tx)
             .await?;
-            if dropped + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?) > ITEM_LOOP_CHANNEL_DROPS_MAX {
+            if dropped
+                + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?)
+                > ITEM_LOOP_CHANNEL_DROPS_MAX
+            {
                 return refuse(LoopMoveRefusal::Blocked);
             }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();
@@ -1446,6 +1458,18 @@ async fn apply_loop_move<C: ItemLoopContent>(
             }
         }
     }
+    // Only the six source-qualified active decorations start their existing
+    // absolute clock on a direct move; containing bags never recurse into children.
+    sqlx::query("SELECT game_house_furniture_movement_start(encode($1,'hex')::uuid)")
+        .bind(transaction_id.as_slice())
+        .execute(&mut **tx)
+        .await?;
+    // The three Santa toys start their existing absolute source deadline only
+    // when that exact instance moves, never when their containing bag moves.
+    sqlx::query("SELECT game_santa_toy_movement_start(encode($1,'hex')::uuid)")
+        .bind(transaction_id.as_slice())
+        .execute(&mut **tx)
+        .await?;
     // Run the deferred proofs inside the attempt, so a violation is a refusal, not a commit error.
     // A quick-loot or depot-search batch proves each exact line before the next child may top
     // it up. Its terminal parent receipt and all other deferred guards still run at batch commit.
@@ -1618,7 +1642,7 @@ impl DurabilityRoot {
                             }
                             apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
-                                &request, &intent, depot, None, None,
+                                &request, &intent, depot, None, None, None,
                             )
                             .await
                             .map(Ok)

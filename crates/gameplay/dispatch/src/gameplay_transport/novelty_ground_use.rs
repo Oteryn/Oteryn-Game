@@ -43,7 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(room) = self.rooms.gate_ground_item_action() else {
             return Ok(Some(outcome(UseDisposition::NotPossible)));
         };
-        let context = {
+        let (context, cupcake) = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let definition = source.definition().clone();
@@ -111,6 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            let now_us = self.owner_now().get();
             if let Err(disposition) = states.prepare_novelty_effect(
                 &runtime,
                 native,
@@ -120,29 +121,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     request,
                     effects,
                     target,
-                    now_us: self.owner_now().get(),
+                    now_us,
                 },
             ) {
                 return Ok(Some(outcome(disposition)));
             }
-            context
+            let cupcake =
+                states.cupcake_transform_context(actor, request, native.source_digest(), now_us)?;
+            (context, cupcake)
         };
         let content = NativeItemWeights(native);
-        let receipt = self
-            .root
-            .consume_transform_on_ground(
-                permit,
-                self.character,
-                self.holder,
-                fence,
-                request.clone(),
-                native,
-                &content,
-                &context,
-            )
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
+        let receipt = if let Some(cupcake) = cupcake.as_ref() {
+            self.root
+                .consume_transform_on_ground_with_cupcake(
+                    permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    &context,
+                    cupcake,
+                )
+                .await
+        } else {
+            self.root
+                .consume_transform_on_ground(
+                    permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request.clone(),
+                    native,
+                    &content,
+                    &context,
+                )
+                .await
+        }
+        .map_err(|error| {
+            let _ = error;
+        })?
+        .ok_or(())?;
         self.finish_novelty_item(actor, request, receipt)
             .await
             .map(Some)

@@ -80,11 +80,11 @@ fn summer_population_boss_values_use_the_selected_pinned_fallback() -> TestResul
     for (name, hp, xp) in [
         ("maior_domus", 50_000, 3_500_000),
         ("maior_domus_final", 65_000, 0),
-        ("mimar_haffar", 50_000, 3_500_000),
+        ("mimar_haffar", 460_000, 3_500_000),
         ("mimar_haffar_final", 65_000, 0),
         ("moonspawn_juggernaut", 6_000, 10_000),
         ("phosphorus", 70_000, 16_000_000),
-        ("phosphorus_final", 90_000, 0),
+        ("phosphorus_final", 90_000, 16_000_000),
         ("rakesh_moonfang", 25_500, 25_500),
         ("the_moonsnow_magnolia", 52_000, 240_000),
     ] {
@@ -127,10 +127,10 @@ fn w16_crystal_summer_boss_parity() -> TestResult {
     for (name, crystal) in [
         ("maior_domus", (50_000, 3_500_000, 180, 85, 90)),
         ("maior_domus_final", (65_000, 0, 190, 95, 100)),
-        ("mimar_haffar", (50_000, 3_500_000, 180, 85, 90)),
+        ("mimar_haffar", (460_000, 3_500_000, 180, 85, 90)),
         ("mimar_haffar_final", (65_000, 0, 190, 95, 100)),
         ("phosphorus", (70_000, 16_000_000, 190, 90, 95)),
-        ("phosphorus_final", (90_000, 0, 200, 100, 105)),
+        ("phosphorus_final", (90_000, 16_000_000, 200, 100, 105)),
         ("rakesh_moonfang", (25_500, 25_500, 180, 85, 90)),
         ("the_moonsnow_magnolia", (52_000, 240_000, 190, 105, 110)),
     ] {
@@ -499,5 +499,163 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await?;
         Ok(())
+    })
+}
+#[test]
+fn srv7_summer_all_twenty_source_npc_placements_open_native_dialogue() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("summer-all-npc-pg", || {
+        run(async |admin| {
+            let h =
+                Harness::create_with_admission_seed(admin, "summer_all_npc", false, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let started = std::time::Instant::now();
+            let content =
+                std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content"));
+            let catalogue = NpcDataCatalogue::load(
+                content,
+                std::ffi::OsStr::new("world"),
+                npc_catalogue_preproduction_limits(),
+            )
+            .map_err(debug)?;
+            let model = catalogue.service_model_for_project().map_err(debug)?;
+            let book = Arc::new(NpcTalkBook::from_model(&model));
+            let sources: serde_json::Value = serde_json::from_slice(&std::fs::read(
+                content.join("../tools/content-migration/summer_npcs.json"),
+            )?)?;
+            let rows = sources["positions"]
+                .as_array()
+                .ok_or("Summer NPC source cells")?;
+            assert_eq!(rows.len(), 20);
+            for row in rows {
+                let key = row["npc"].as_str().ok_or("NPC key")?;
+                assert!(
+                    book.get(key).is_some(),
+                    "{key} must have native source dialogue"
+                );
+                assert!(
+                    !book
+                        .display_name(key)
+                        .ok_or("native display name")?
+                        .is_empty()
+                );
+                if key == "oteryn:npc.doctor_marrow" {
+                    assert_eq!(book.display_name(key), Some("Doctor Marrow"));
+                }
+                if key == "oteryn:npc.g_ezkho" {
+                    assert_eq!(book.display_name(key), Some("G'Ezkho"));
+                }
+                let cell = &row["cell"];
+                let x = u16::try_from(cell["x"].as_u64().ok_or("x")?)?;
+                let y = u16::try_from(cell["y"].as_u64().ok_or("y")?)?;
+                let z = i8::try_from(cell["floor"].as_i64().ok_or("floor")?)?;
+                let deps = Dependencies::new()?;
+                let mut owner = deps.owner(&h, &authority);
+                let actor = deps.actor;
+                let session = deps.admitted.game_session_id;
+                owner.states.chat.install_npc_talk(Arc::clone(&book));
+                owner
+                    .states
+                    .chat
+                    .admit(session, "Summer Traveller", owner.owner_now());
+                owner.states.chat.set_npc_service(session);
+                let npc = {
+                    let mut runtime = deps.runtime.lock().await;
+                    runtime
+                        .initialize_pinned_test_position(
+                            actor,
+                            MovementLocalPosition {
+                                x: i32::from(x) - 1,
+                                y: i32::from(y),
+                                floor: i16::from(z),
+                            },
+                        )
+                        .map_err(debug)?;
+                    runtime
+                        .place_npcs(
+                            &NpcPlacementTable {
+                                npcs: vec![NpcPlacements {
+                                    key: key.into(),
+                                    placements: vec![NpcPlacement {
+                                        x,
+                                        y,
+                                        floor: -z,
+                                        direction: MovementFacing::North,
+                                    }],
+                                }],
+                            },
+                            |candidate| book.get(candidate).is_some(),
+                            true,
+                        )
+                        .map_err(debug)?;
+                    let visible = runtime.visible_entities().npcs[0];
+                    EntityRef {
+                        identity: visible.actor.placement_identity(),
+                        generation: visible.generation,
+                    }
+                };
+                for (command_id, text) in [(1, "hi"), (2, "bye")] {
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(Duration::from_secs(2))
+                        .ok_or("NPC clock")?;
+                    let reply = owner
+                        .npc_talk(
+                            actor,
+                            UseCommand {
+                                game_session_id: session,
+                                command_id,
+                                item_fence: None,
+                            },
+                            NpcTalkIntent {
+                                npc_actor: npc,
+                                text: text.into(),
+                            },
+                        )
+                        .await;
+                    assert_eq!(reply.disposition, NpcIntentDisposition::Ok, "{key}:{text}");
+                    assert!(!reply.unknown, "{key}:{text}");
+                    let conversation = reply
+                        .conversation
+                        .ok_or_else(|| format!("{key}:{text} native conversation"))?;
+                    assert!(!conversation.lines.is_empty(), "{key}:{text}");
+                    let source = sources["greetings"]
+                        .as_array()
+                        .ok_or("Summer greetings")?
+                        .iter()
+                        .find(|entry| entry["npc"] == key)
+                        .ok_or("source NPC greeting")?;
+                    let message = if text == "hi" { "greet" } else { "farewell" };
+                    let expected = source[message]["text"]
+                        .as_str()
+                        .ok_or("source message")?
+                        .replace("|PLAYERNAME|", "Summer Traveller");
+                    assert_eq!(
+                        conversation.lines,
+                        vec![expected],
+                        "{key}:{text} exact pinned source message"
+                    );
+                    assert!(
+                        conversation
+                            .lines
+                            .iter()
+                            .all(|line| !line.contains("|PLAYERNAME|")),
+                        "{key}: qualified template renders native actor name"
+                    );
+                }
+            }
+            eprintln!(
+                "SRV7_SUMMER_TWENTY_NATIVE_NPC_POSTGRES_COMPLETED elapsed={:?}",
+                started.elapsed()
+            );
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
     })
 }

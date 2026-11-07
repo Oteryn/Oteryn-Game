@@ -30,14 +30,18 @@ pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+pub mod lynda_wedding;
 pub mod monk_shrines;
 pub mod native_rules;
+mod npc_cosmetic_final_acquisition;
+pub mod npc_cosmetics;
 #[cfg(test)]
 pub mod npc_rules;
 mod quests_2_focus;
 pub mod rotten_blood;
 pub mod soul_war;
 pub mod soul_war_dialogue;
+pub mod spike_fame_acquisition;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod unnatural_selection;

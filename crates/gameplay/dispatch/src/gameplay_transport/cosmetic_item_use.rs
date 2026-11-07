@@ -93,7 +93,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 true,
             )
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                let _ = error;
+            })?;
         if let Some(receipt) = replay.as_ref()
             && receipt.effects.get("cosmetic").is_some()
         {
@@ -106,7 +108,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                let _ = error;
+            })?;
         let item = inventory
             .backpack
             .iter()
@@ -120,12 +124,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .root
                 .read_ground_action_source(self.character, fence, source)
                 .await
-                .map_err(|_| ())?
+                .map_err(|error| {
+                    let _ = error;
+                })?
             else {
                 return Ok(None);
             };
             (ground.definition().clone(), Some(ground))
         };
+        if crate::content::native_gameplay::mount_taming::rules()
+            .iter()
+            .any(|rule| {
+                rule.item_key == definition.production_key && rule.target_item_key.is_some()
+            })
+        {
+            // The delegated owner independently acquires and proves this lane.
+            // Keeping this read/probe permit would recursively lock the same lane.
+            drop(permit);
+            return self
+                .use_mount_kit(
+                    actor,
+                    command,
+                    &intent,
+                    Some(ItemKey::Instance(source)),
+                    None,
+                )
+                .await;
+        }
         let Some(rule) = oteryn_gameplay_items::item_cosmetics::rule(&definition.production_key)
         else {
             return Ok(None);
@@ -288,7 +313,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && memo.request.target == request.target
                 && memo.request.intent == request.intent
         });
-        if let Some(effects) = states.settle_novelty_effect(&runtime, actor, request, &receipt)? {
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        if let Some(effects) =
+            states.settle_novelty_effect(&runtime, actor, request, &receipt, native, self.holder)?
+        {
             self.states.chat.publish_item_speech(
                 &runtime,
                 actor,

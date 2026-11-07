@@ -474,7 +474,8 @@ mod tests {
         // RAIDS-GLOBAL 2026-11-01 replaces the former single-Badger catalogue:
         // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities.
         assert_eq!(catalogue.records().len(), 239);
-        assert_eq!(catalogue.active().count(), 135);
+        // SRV7 admits the retained current-Tibia Halloween Hare annual wave.
+        assert_eq!(catalogue.active().count(), 136);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

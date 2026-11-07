@@ -1,0 +1,13 @@
+{
+  "id": 371,
+  "name": "SEASONAL_EVENTS_V1",
+  "owner_decision": "SRV7 W05d: negotiated seasonal extension of world-event observations",
+  "owner": "seasonal event owner",
+  "requires": [
+    53
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected together with WORLD_EVENT_V1; only selected peers receive WorldEventStateV1 fields 4 and 5. Legacy command 64 result bytes retain the original schema and 144-byte bound."
+}

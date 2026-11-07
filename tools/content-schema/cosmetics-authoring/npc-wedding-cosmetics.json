@@ -1,0 +1,22 @@
+{
+  "schema": "OTERYN_NPC_WEDDING_COSMETICS/v1",
+  "source": {
+    "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lynda.lua#L166-L210",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "sha256": "c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9"
+  },
+  "looks": {
+    "male": 328,
+    "female": 329
+  },
+  "grant_mapping": {
+    "grant_key": "oteryn:appearance-grant/npc/lynda/newly_wed/base",
+    "target": {
+      "kind": "Outfit",
+      "outfit_key": "oteryn:content.outfit.newly_wed_outfits"
+    },
+    "compatible_provenance": [
+      "crystal-201189f-npc-cosmetics-v1"
+    ]
+  }
+}

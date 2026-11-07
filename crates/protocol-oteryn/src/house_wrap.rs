@@ -1,6 +1,12 @@
 //! HOUSE-ITEM-WIRE-1: explicit furniture wrapping, separate from ordinary item use.
 pub const CAPABILITY_HOUSE_FURNITURE_WRAP_V1: u32 = 207;
 pub const COMMAND_WRAP: u32 = 402;
+#[path = "house_wrap_opaque.rs"]
+mod opaque;
+pub use opaque::{
+    CAPABILITY_HOUSE_FURNITURE_WRAP_OPAQUE_V1, OpaqueWrapRequest, decode_opaque_wrap_affordance,
+    encode_opaque_wrap_affordance,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]

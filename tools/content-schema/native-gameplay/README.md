@@ -71,7 +71,8 @@ reject loading. There are no invisible global defaults or profile lookups.
 
 Candidate limits: 56 MiB outer server artifact; baseline server bounds unchanged;
 32 MiB catalogue; 256 KiB source selections; 8 MiB each creature/presentation section;
-4096 records per profile section; provisioning manifest 16 KiB. Reads enforce bounds
+4096 Creature/Presentation records; Item providers have a separate 16 MiB / 8192-record
+bound (SRV7 furniture population); provisioning manifest 16 KiB. Reads enforce bounds
 before allocating the full input, including file growth between metadata and open.
 These are explicitly candidate limits and require the delivery owner's contract
 registration before production admission. The baseline single-staged/two-resident

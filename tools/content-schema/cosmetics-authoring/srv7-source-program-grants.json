@@ -1,0 +1,1194 @@
+{
+  "schema": "OTERYN_NPC_SOURCE_GRANT_MAPPINGS/v1",
+  "records": [
+    {
+      "grant_key": "oteryn:appearance-grant/npc/a_majestic_warwolf/druid/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.druid_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ajax/barbarian/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.barbarian_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ariella/pirate/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.pirate_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/avar_tar/demon/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.demon_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/avar_tar/demon/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.demon_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/avar_tar/demon/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.demon_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/bozo/jester/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.jester_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/bozo/jester/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.jester_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/bozo/jester/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.jester_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/bron/barbarian/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.barbarian_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cael/warmaster/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.warmaster_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cael/warmaster/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.warmaster_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/chondur/shaman/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.shaman_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/chondur/shaman/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.shaman_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cornelia/warrior/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.warrior_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cranky_lizard_crone/wayfarer/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.wayfarer_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/cranky_lizard_crone/wayfarer/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.wayfarer_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/dedoras/battle_mage/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.battle_mage_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/dedoras/battle_mage/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.battle_mage_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/dedoras/battle_mage/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.battle_mage_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/elane/hunter/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "female",
+        "look_type": 137,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/elane/hunter/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "female",
+        "look_type": 137,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/elane/hunter/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "male",
+        "look_type": 129,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/elane/hunter/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "male",
+        "look_type": 129,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/emperor_kruzak/golden/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/emperor_kruzak/golden/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/emperor_kruzak/golden/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.golden_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/erayo/assassin/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.assassin_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/eruaran/dream_warden/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warden_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/eruaran/dream_warden/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warden_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ezebeth/glooth_engineer/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.glooth_engineer_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ezebeth/glooth_engineer/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.glooth_engineer_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ezebeth/glooth_engineer/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.glooth_engineer_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "female",
+        "look_type": 575,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "female",
+        "look_type": 575,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/female/base",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "female",
+        "look_type": 575,
+        "addon": 0
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "male",
+        "look_type": 574,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "male",
+        "look_type": 574,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnommander/cave_explorer/male/base",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.cave_explorer_outfits",
+        "sex": "male",
+        "look_type": 574,
+        "addon": 0
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/habdel/oriental/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.oriental_outfits",
+        "sex": "male",
+        "look_type": 146,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hanna/citizen/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.citizen_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/henricus/demon_hunter/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.demon_hunter_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/henricus/demon_hunter/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.demon_hunter_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/henricus/demon_hunter/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.demon_hunter_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hjaern/norseman/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.norseman_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hjaern/norseman/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.norseman_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hjaern/norseman/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.norseman_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/hugo/beggar/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.beggar_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/irmana/nobleman/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.nobleman_outfits",
+        "sex": "female",
+        "look_type": 140,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/irmana/nobleman/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.nobleman_outfits",
+        "sex": "female",
+        "look_type": 140,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/irmana/nobleman/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.nobleman_outfits",
+        "sex": "male",
+        "look_type": 132,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/irmana/nobleman/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.nobleman_outfits",
+        "sex": "male",
+        "look_type": 132,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ishina/oriental/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.oriental_outfits",
+        "sex": "female",
+        "look_type": 150,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/jack_springer/hand_of_the_inquisition/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/king_tibianus/golden/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/king_tibianus/golden/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/king_tibianus/golden/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.golden_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/legola/hunter/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "female",
+        "look_type": 137,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/legola/hunter/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.hunter_outfits",
+        "sex": "male",
+        "look_type": 129,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/lubo/citizen/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.citizen_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/lugri/wizard/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.wizard_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/lynda/mage/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.mage_outfits",
+        "sex": "male",
+        "look_type": 130,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/lynda/summoner/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.summoner_outfits",
+        "sex": "female",
+        "look_type": 141,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/miraia/oriental/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.oriental_outfits",
+        "sex": "female",
+        "look_type": 150,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/morgan/knight/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.knight_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/morgan/pirate/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.pirate_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/morgan/warrior/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.warrior_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/muriel/festive/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.festive_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/muriel/festive/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.festive_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/navigator/deepling/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.deepling_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/palimuth/yalaharian/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.yalaharian_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/palimuth/yalaharian/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.yalaharian_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/palimuth/yalaharian/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.yalaharian_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/percybald/royal_costume/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.royal_costume_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/percybald/royal_costume/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.royal_costume_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/percybald/royal_costume/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.royal_costume_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/queen_eloise/golden/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/queen_eloise/golden/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.golden_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/queen_eloise/golden/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.golden_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/raymond_striker/pirate/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.pirate_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/razan/oriental/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.oriental_outfits",
+        "sex": "male",
+        "look_type": 146,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/rock_steady/deepling/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.deepling_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/sam/knight/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.knight_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/sandra/mage/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.mage_outfits",
+        "sex": "female",
+        "look_type": 138,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/sandra/summoner/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.summoner_outfits",
+        "sex": "male",
+        "look_type": 133,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/simon_the_beggar/beggar/female/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.beggar_outfits",
+        "sex": "female",
+        "look_type": 157,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/simon_the_beggar/beggar/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.beggar_outfits",
+        "sex": "female",
+        "look_type": 157,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/simon_the_beggar/beggar/male/addon1",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.beggar_outfits",
+        "sex": "male",
+        "look_type": 153,
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/simon_the_beggar/beggar/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.beggar_outfits",
+        "sex": "male",
+        "look_type": 153,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/the_first_dragon/festive/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.festive_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/the_queen_of_the_banshees/wizard/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.wizard_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/undal/dream_warrior/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/undal/dream_warrior/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/undal/dream_warrior/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/ustan/druid/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.druid_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/vanys/dream_warrior/addon1",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits",
+        "addon": 1
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/vanys/dream_warrior/addon2",
+      "target": {
+        "kind": "Addon",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits",
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/vanys/dream_warrior/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.dream_warrior_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/vescu/assassin/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.assassin_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/yalahari/yalaharian/base",
+      "target": {
+        "kind": "Outfit",
+        "outfit_key": "oteryn:content.outfit.yalaharian_outfits"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/zoltan/mage/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.mage_outfits",
+        "sex": "female",
+        "look_type": 138,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/zoltan/mage/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.mage_outfits",
+        "sex": "male",
+        "look_type": 130,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/zoltan/summoner/female/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.summoner_outfits",
+        "sex": "female",
+        "look_type": 141,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/zoltan/summoner/male/addon2",
+      "target": {
+        "kind": "LookAddon",
+        "outfit_key": "oteryn:content.outfit.summoner_outfits",
+        "sex": "male",
+        "look_type": 133,
+        "addon": 2
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    }
+  ]
+}

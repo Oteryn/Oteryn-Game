@@ -27,6 +27,31 @@ fn monster_mount_voice_requires_the_negotiated_capability() -> Result<(), BoxErr
 }
 
 #[test]
+fn scripted_item_monster_speech_requires_explicit_chat_opt_in() -> Result<(), BoxError> {
+    let line = ChatLine::Local {
+        speaker: ChatSpeaker {
+            identity: [1; 16],
+            generation: std::num::NonZeroU64::new(1).ok_or("generation")?,
+        },
+        speaker_name: "Citizen".into(),
+        mode: ChatSpeechMode::MonsterSay,
+        text: "Mmmm!".into(),
+        position: ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+    };
+    let bytes = chat::encode_chat_line(&line).map_err(|error| format!("{error:?}"))?;
+    assert!(crate::guild_chat::decode_line(&bytes, &[7]).is_err());
+    assert!(crate::guild_chat::decode_line(&bytes, &[6, 7, 385]).is_err());
+    assert!(crate::guild_chat::decode_line(&bytes, &[386]).is_err());
+    assert_eq!(crate::guild_chat::decode_line(&bytes, &[7, 386])?, line);
+    assert_eq!(crate::guild_chat::decode_line(&bytes, &[6, 7, 288])?, line);
+    Ok(())
+}
+
+#[test]
 fn guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status() -> Result<(), BoxError>
 {
     block_on(async {

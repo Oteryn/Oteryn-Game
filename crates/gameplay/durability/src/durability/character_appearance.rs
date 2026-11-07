@@ -156,8 +156,8 @@ mod earned_unlocks;
 mod grant_lock;
 pub(crate) use grant_lock::{item_action_sex, lock_account_grants};
 mod quest_grants;
-pub(crate) use quest_grants::{QuestOutfitGrant, grant_quest_outfit};
 pub use current_appearance::CurrentCharacterAppearance;
+pub(crate) use quest_grants::{QuestOutfitGrant, grant_quest_outfit};
 
 impl DurabilityRoot {
     /// Commit the selection under the native Character fence. The owner supplies its current
@@ -218,7 +218,7 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some(state) = state else { return Ok(Err(CharacterProgressionError::MissingProgressionState.into())); };
             if numeric_u64(&state, "character_revision")? != root.revision { return Err(DurabilityError::InvalidStoredState); }
-            if !state_matches_root(&state, &root) || state.try_get::<String,_>("content_revision")? != request.content_revision || content_revision != root.content_revision {
+            if !state_matches_root(&state, &root) || content_revision != request.content_revision {
                 return Ok(Err(CharacterProgressionError::ProgressionContextMismatch.into()));
             }
             let before = read_selected_appearance(&mut tx, fence.character_id).await.map_err(read_storage_error)?;
@@ -228,7 +228,7 @@ impl DurabilityRoot {
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if pending { return Ok(Err(CharacterProgressionError::RespawnPending.into())); }
             let facts = earned_unlocks::read(&mut tx, fence.character_id, &content.earned_grant_keys()).await.map_err(read_storage_error)?;
-            let unlocks = crate::domain::appearance::EarnedCosmetics { content: &content, facts: &facts };
+            let unlocks = crate::domain::appearance::EarnedCosmetics { content: &content, facts: &facts }.with_sex(sex);
             if let Err(rejection) = validate_selection(&request.after, sex, &content, &unlocks) {
                 return Ok(Err(AppearanceWriteError::Rejected(rejection)));
             }
@@ -242,13 +242,13 @@ impl DurabilityRoot {
             let before = request.before.as_ref();
             let before_colours = before.map(|before| before.selection.colours.map(i32::from).to_vec());
             let after_colours = request.after.colours.map(i32::from).to_vec();
-            let inserted = sqlx::query("INSERT INTO game_character_appearance_receipts(appearance_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,outfit_before,colours_before,addons_before,mount_before,content_before,selection_revision_before,outfit_after,colours_after,addons_after,mount_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT encode($1,'hex')::uuid,$2,s.character_id,$3::text::numeric(20,0),$4::text::numeric(20,0),s.level,s.level,s.total_experience,s.total_experience,$5,$6,$7,$8,$9,$10::text::numeric(20,0),$11,$12,$13,$14,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE s.character_id=encode($15,'hex')::uuid")
+            let inserted = sqlx::query("INSERT INTO game_character_appearance_receipts(appearance_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,outfit_before,colours_before,addons_before,mount_before,content_before,selection_revision_before,outfit_after,colours_after,addons_after,mount_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,cosmetics_revision,committed_at) SELECT encode($1,'hex')::uuid,$2,s.character_id,$3::text::numeric(20,0),$4::text::numeric(20,0),s.level,s.level,s.total_experience,s.total_experience,$5,$6,$7,$8,$9,$10::text::numeric(20,0),$11,$12,$13,$14,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$16,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE s.character_id=encode($15,'hex')::uuid")
                 .bind(request.occurrence.0.as_slice()).bind(&binding).bind(root.revision.to_string()).bind(next.to_string())
                 .bind(before.map(|b| b.selection.outfit_key.as_str())).bind(before_colours).bind(before.map(|b| i16::from(b.selection.addons)))
                 .bind(before.and_then(|b| b.selection.mount_key.as_deref())).bind(before.map(|b| b.content_revision.as_str()))
                 .bind(before.map(|b| b.committed_character_revision.get().to_string()))
                 .bind(&request.after.outfit_key).bind(&after_colours).bind(i16::from(request.after.addons)).bind(request.after.mount_key.as_deref())
-                .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+                .bind(fence.character_id.as_bytes().as_slice()).bind(&request.content_revision).execute(&mut *tx).await?;
             if inserted.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
             let updated = sqlx::query("INSERT INTO game_character_appearance(character_id,outfit_key,colours,addons,mount_key,content_revision,committed_character_revision,last_appearance_occurrence_id) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7::text::numeric(20,0),encode($8,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET outfit_key=EXCLUDED.outfit_key,colours=EXCLUDED.colours,addons=EXCLUDED.addons,mount_key=EXCLUDED.mount_key,content_revision=EXCLUDED.content_revision,committed_character_revision=EXCLUDED.committed_character_revision,last_appearance_occurrence_id=EXCLUDED.last_appearance_occurrence_id")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(&request.after.outfit_key).bind(after_colours).bind(i16::from(request.after.addons))
@@ -337,13 +337,18 @@ pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
     let facts = earned_unlocks::read(connection, character, &content.earned_grant_keys())
         .await
         .map_err(read_storage_error)?;
-    let unlocks = EarnedCosmetics { content, facts: &facts };
+    let unlocks = EarnedCosmetics {
+        content,
+        facts: &facts,
+    };
     Ok(match target {
         EarnedCosmetic::Outfit(key) => {
             let key = key.to_owned();
             content.outfit_addon_count(&key).is_some()
                 && (sex.is_some_and(|sex| content.outfit_is_starter(&key, sex))
-                    || unlocks.outfit(&key) == UnlockFact::Compatible)
+                    || sex.is_some_and(|sex| {
+                        unlocks.with_sex(sex).outfit(&key) == UnlockFact::Compatible
+                    }))
         }
         EarnedCosmetic::Mount(key) => {
             let key = key.to_owned();
@@ -377,7 +382,7 @@ async fn load_appearance_receipt(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     occurrence: AppearanceChangeOccurrence,
 ) -> Result<Option<PgRow>, DurabilityError> {
-    Ok(sqlx::query("SELECT appearance_occurrence_id::text,command_binding,character_id::text,original_character_revision::text,committed_character_revision::text,outfit_before,colours_before,addons_before,mount_before,content_before,selection_revision_before::text,outfit_after,colours_after,addons_after,mount_after,content_revision FROM game_character_appearance_receipts WHERE appearance_occurrence_id=encode($1,'hex')::uuid")
+    Ok(sqlx::query("SELECT appearance_occurrence_id::text,command_binding,character_id::text,original_character_revision::text,committed_character_revision::text,outfit_before,colours_before,addons_before,mount_before,content_before,selection_revision_before::text,outfit_after,colours_after,addons_after,mount_after,COALESCE(cosmetics_revision,content_revision) AS content_revision FROM game_character_appearance_receipts WHERE appearance_occurrence_id=encode($1,'hex')::uuid")
         .bind(occurrence.0.as_slice()).fetch_optional(&mut **tx).await?)
 }
 fn decode_appearance_receipt(row: &PgRow) -> Result<CommittedCharacterAppearance, DurabilityError> {

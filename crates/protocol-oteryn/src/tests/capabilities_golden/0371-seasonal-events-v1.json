@@ -1,0 +1,17 @@
+{
+  "id": 371,
+  "name": "SEASONAL_EVENTS_V1",
+  "constant": "world_event::CAPABILITY_SEASONAL_EVENTS_V1",
+  "requires": [
+    53
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

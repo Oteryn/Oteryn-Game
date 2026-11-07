@@ -44,6 +44,19 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_house_item_effects(
+        &self,
+        _admitted: AdmittedSession,
+        _after: u64,
+    ) -> impl Future<
+        Output = Option<(
+            u64,
+            Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+        )>,
+    > {
+        async { None }
+    }
+
     /// Native movement effects committed by special-tile entry after `after`.
     fn observe_movement_effects(
         &self,
@@ -134,6 +147,12 @@ pub trait FreshAdmissionAuthority {
 
     fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
+    }
+    fn take_furniture_inventory_refresh(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
     }
     fn observe_house_map(
         &self,
@@ -581,6 +600,27 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    /// Closed paid677 enchantment under the actual named-House owner.
+    /// Stable BASE House fixtures reuse the current native House and map owners.
+    fn use_house_static(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::world_object::UseIntent,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
+    fn use_house_dracoyle(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        _source: Option<super::super::item_view::ItemKey>,
+        _target: Option<super::super::item_view::ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
     fn use_consume_transform(
         &self,
         _actor: ExactActorRef,
@@ -626,6 +666,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// Closed source5908/BASE12816 claim; historical replay precedes current handles.
+    fn use_pumpkin_skinning(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// MOUNTTAME: replay is resolved before current item and creature visibility.
@@ -840,6 +892,19 @@ pub trait FreshAdmissionAuthority {
         _intent: oteryn_protocol_oteryn::depot::DepotIntent,
         _item: Option<ItemKey>,
     ) -> impl Future<Output = Option<DepotObservation>> {
+        async { None }
+    }
+
+    /// Native plain House custody, including immutable replay before opaque-handle lookup.
+    fn native_house_item_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _payload: &[u8],
+        _source: Option<ItemKey>,
+        _destination: oteryn_protocol_oteryn::item_view::ItemMoveDestination,
+        _count: Option<u32>,
+    ) -> impl Future<Output = Option<LoopMoveResult>> {
         async { None }
     }
 

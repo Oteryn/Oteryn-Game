@@ -11,7 +11,12 @@ struct MovementDecay {
 pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) hidden: BTreeSet<u64>,
-    passable: BTreeMap<u64, bool>,
+    pub(super) gathering_hidden: BTreeSet<u64>,
+    pub(super) cake_hidden: BTreeSet<u64>,
+    pub(super) pumpkin_hidden: BTreeSet<u64>,
+    pub(super) cake_blocked: BTreeSet<u64>,
+    pub(super) passable: BTreeMap<u64, bool>,
+    pub(super) cake_ground_speeds: BTreeMap<TilePos, u16>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
     movement_sequence: u64,
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
@@ -31,7 +36,7 @@ impl CallbackStates {
             })
         })
     }
-    fn has_capacity(&self, additional: usize) -> bool {
+    pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.changed.len()
             + self.hidden.len()
             + self.movement_decays.len()

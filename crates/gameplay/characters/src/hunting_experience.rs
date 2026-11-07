@@ -46,3 +46,37 @@ pub fn hunting_experience(
 #[cfg(test)]
 #[path = "hunting_experience_tests.rs"]
 mod tests;
+/// Crystal201189f `world_bonus.lua:5-9`: the Premium Cake bonus is applied
+/// independently after the existing recipient modifiers, with its own floor.
+pub fn cake_world_experience(
+    amount: i64,
+    percent: i16,
+    premium: bool,
+) -> Result<i64, InvalidHuntingExperience> {
+    if amount < 0 || !matches!(percent, 0 | 50) {
+        return Err(InvalidHuntingExperience);
+    }
+    if !premium || percent == 0 {
+        return Ok(amount);
+    }
+    amount
+        .checked_add(amount / 2)
+        .ok_or(InvalidHuntingExperience)
+}
+
+#[cfg(test)]
+mod cake_tests {
+    #[test]
+    fn source_cake_bonus_is_premium_only_separate_and_checked() {
+        for amount in [0, 1, 2, 3, 101] {
+            assert_eq!(
+                super::cake_world_experience(amount, 50, true),
+                Ok(amount + amount / 2)
+            );
+            assert_eq!(super::cake_world_experience(amount, 50, false), Ok(amount));
+            assert_eq!(super::cake_world_experience(amount, 0, true), Ok(amount));
+        }
+        assert!(super::cake_world_experience(i64::MAX, 50, true).is_err());
+        assert!(super::cake_world_experience(10, 25, true).is_err());
+    }
+}

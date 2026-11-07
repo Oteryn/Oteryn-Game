@@ -243,3 +243,29 @@ fn every_balloon_has_exactly_one_source_authored_reverse_mapping() {
     );
     assert!(!is_ground_action("oteryn:item.tibia.i6578"));
 }
+
+#[test]
+fn srv7_santa_gift_sources_enter_the_native_use_classifier() {
+    for id in [2995, 5080, 6566] {
+        assert!(
+            is_novelty(&format!("oteryn:item.tibia.i{id}")),
+            "Santa gift {id} has no native USE owner"
+        );
+    }
+}
+
+#[test]
+fn srv7_santa_gift_current_official_doll_enters_native_use() {
+    assert!(
+        is_novelty("oteryn:item.tibia.i6511"),
+        "current Santa gift Santa Doll lacks native USE owner"
+    );
+}
+
+#[test]
+fn srv7_santa_gift_current_stuffed_dragon_base_enters_native_use() {
+    assert!(
+        is_novelty("oteryn:item.tibia.i5791"),
+        "current usable Stuffed Dragon base lacks native USE owner"
+    );
+}

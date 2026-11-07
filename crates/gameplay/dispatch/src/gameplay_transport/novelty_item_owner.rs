@@ -1,6 +1,10 @@
 //! Existing condition owner retains one item command until its durable outcome is known.
 //! Donor visual cues stay in the receipt while capability23 has no live consumer.
 use super::*;
+#[path = "novelty_cupcake_owner.rs"]
+mod cupcakes;
+#[path = "novelty_portable_receipt.rs"]
+mod portable_receipt;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::gameplay_transport::novelty_item_use::PendingItemEffect;
@@ -25,6 +29,15 @@ impl ChannelSpellStates {
         native: &crate::content::native_gameplay::NativeGameplayState,
         preparation: NoveltyEffectRequest<'_>,
     ) -> Result<(), UseDisposition> {
+        if matches!(
+            preparation.effects.source_item_id,
+            2995 | 5080 | 5791 | 6511 | 6566
+        ) {
+            return self.prepare_scoped_gift_effect(runtime, native, preparation);
+        }
+        if matches!(preparation.effects.source_item_id, 28484..=28486) {
+            return self.prepare_cupcake_effect(runtime, native, preparation);
+        }
         let NoveltyEffectRequest {
             actor,
             fence,
@@ -136,7 +149,26 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         request: &ConsumeTransformRequest,
         receipt: &ConsumeTransformResult,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
     ) -> Result<Option<NoveltyEffects>, ()> {
+        if self.pending_item_effects.iter().any(|memo| {
+            memo.actor == actor
+                && memo.request.command == request.command
+                && matches!(
+                    memo.effects.source_item_id,
+                    2995 | 5080 | 5791 | 6511 | 6566
+                )
+        }) {
+            return self.settle_scoped_gift_effect(runtime, actor, request, receipt);
+        }
+        if self.pending_item_effects.iter().any(|memo| {
+            memo.actor == actor
+                && memo.request.command == request.command
+                && matches!(memo.effects.source_item_id, 28484..=28486)
+        }) {
+            return self.settle_cupcake_effect(runtime, actor, request, receipt);
+        }
         let Some(index) = self
             .pending_item_effects
             .iter()
@@ -183,7 +215,9 @@ impl ChannelSpellStates {
             return Ok(None);
         }
         let expected = serde_json::to_value(&memo.effects).map_err(|_| ())?;
-        if !effect_receipt_matches(&expected, &receipt.effects) {
+        if !portable_receipt::matches(&expected, receipt, native, node)
+            .unwrap_or_else(|| effect_receipt_matches(&expected, &receipt.effects))
+        {
             return Err(());
         }
         let memo = self.pending_item_effects.remove(index);

@@ -96,7 +96,8 @@ def independent_crystal_membership(proof: tuple[str, bytes]) -> set[int]:
 
 
 def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidate: dict | None = None,
-                  *, independent_crystal_source: tuple[str, bytes] | None = None) -> dict:
+                  *, independent_crystal_source: tuple[str, bytes] | None = None,
+                  summer_amulet_candidate: dict | None = None) -> dict:
     if document.get("schema") != "OTERYN_NATIVE_ITEM_PROFILES/v1" or not isinstance(document.get("records"), list):
         raise ValueError("Invalid native Item profile document")
     result = copy.deepcopy(document)
@@ -117,6 +118,20 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
             if external in bindings:
                 raise ValueError("Candidate identity conflicts with existing binding")
             bindings[external] = binding
+    summer_profiles = {}
+    if summer_amulet_candidate is not None:
+        from summer_amulet_identity import PACKET as SUMMER_PACKET, IDS as SUMMER_IDS
+        packet_bytes = (ROOT / SUMMER_PACKET).read_bytes()
+        pin = (ROOT / Path(SUMMER_PACKET).with_suffix('.sha256')).read_text().strip()
+        if hashlib.sha256(packet_bytes).hexdigest() != pin or summer_amulet_candidate != json.loads(packet_bytes):
+            raise ValueError("Unqualified Summer amulet candidate packet")
+        if len(summer_amulet_candidate['bindings']) != 5 or {int(row['external_id']) for row in summer_amulet_candidate['bindings']} != SUMMER_IDS:
+            raise ValueError("Summer amulet identity exceeds exact five")
+        for row in summer_amulet_candidate['bindings']:
+            if row['external_id'] in bindings:
+                raise ValueError("Summer amulet identity conflicts with existing binding")
+            bindings[row['external_id']] = row
+        summer_profiles = {row['production_binding']['external_id']: row for row in summer_amulet_candidate['profiles']}
     seen = set()
     for record in result["records"]:
         item = record["authoring"]["item"]
@@ -132,7 +147,13 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
         seen.add(external)
         binding = bindings[external]
         generic = external == "40450" and candidate is not None
-        if (not generic and binding["source_revision"] != CRYSTAL_PIN
+        summer = external in summer_profiles
+        if summer:
+            exact_record = copy.deepcopy(record)
+            exact_record.pop("production_binding_qualification", None)
+            if exact_record != summer_profiles[external]:
+                raise ValueError("Summer amulet exceeds exact physical-only source policy")
+        if (not generic and not summer and binding["source_revision"] != CRYSTAL_PIN
             and (int(external) not in independent_ids or admitted_bindings.get(external) != binding)):
             raise ValueError("Selected Item identity requires independently qualified source revision")
         if generic:
@@ -148,12 +169,12 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
                 or any(record["attributes"].get(flag) is not False for flag in
                     ("blocks_movement", "blocks_projectile", "immovable_block_solid"))):
                 raise ValueError("Generic source Item attributes exceed exact loader defaults")
-        elif record["admission"]["materializable"] and int(external) not in source_ids:
+        elif not summer and record["admission"]["materializable"] and int(external) not in source_ids:
             raise ValueError(f"Item {external} has no qualified XML materialization policy")
         target = binding["target"]
         definition = {"family": "Item", "production_key": target["key"], "revision_ref": target["revision"]}
         for field, value in (("production_binding", binding), ("production_definition", definition),
-            ("production_binding_qualification", candidate if generic else None)):
+            ("production_binding_qualification", candidate if generic else summer_amulet_candidate if summer else None)):
             if field in record and record[field] != value:
                 raise ValueError("Conflicting existing production binding")
             record[field] = copy.deepcopy(value)

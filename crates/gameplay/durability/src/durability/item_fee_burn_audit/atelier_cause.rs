@@ -176,6 +176,13 @@ pub(super) fn coin_sources(
     }
     let proof: Value =
         serde_json::from_slice(&cause.atelier_proof).map_err(|_| AuditError::InvalidInput)?;
+    coin_sources_from_proof(value, &proof)
+}
+/// Existing typed physical source validator, independent of any Gem mutation.
+pub(super) fn coin_sources_from_proof(
+    value: &OneItemFeeBurnV1,
+    proof: &Value,
+) -> Result<Option<Vec<CoinSource>>, AuditError> {
     let Some(sources) = proof.get("coin_inputs") else {
         return Ok(None);
     };

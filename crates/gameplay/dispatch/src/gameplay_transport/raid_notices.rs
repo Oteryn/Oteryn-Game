@@ -1,6 +1,8 @@
 //! Transient raid announcements use the existing Channel session owner and
 //! selected server-message domain. A durable step is acknowledged only after
 //! one atomic publication to the currently connected recipient snapshot.
+#[path = "raid_notices/cupcakes.rs"]
+mod cupcakes;
 use super::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, FreshAdmissionAuthority},

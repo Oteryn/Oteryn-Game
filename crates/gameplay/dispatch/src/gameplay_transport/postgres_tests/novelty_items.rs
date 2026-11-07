@@ -14,6 +14,20 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Case {
+    ToyDragonMove,
+    ToySantaMove,
+    ToyPandaMove,
+    PortableLamp,
+    GroundPortableLamp,
+    PortableMusic,
+    RotateDracoyleWest,
+    RotateDracoyleEast,
+    DracoyleWest,
+    DracoyleEast,
+    SantaDoll,
+    GroundSantaDoll,
+    SantaPanda,
+    GroundSantaPanda,
     Costume,
     Dice,
     DiceStreak,
@@ -25,6 +39,9 @@ enum Case {
     VoodooFailure,
     VoodooWithoutTarget,
     Present,
+    GroundCupcakeBlueberry,
+    GroundCupcakeStrawberry,
+    GroundCupcakeLemon,
     GroundDice,
     GroundRocket,
     GroundTrumpet,
@@ -38,6 +55,20 @@ enum Case {
 impl Case {
     fn key(self) -> &'static str {
         match self {
+            Self::ToyDragonMove => "oteryn:item.tibia.i6566",
+            Self::ToySantaMove => "oteryn:item.tibia.i6567",
+            Self::ToyPandaMove => "oteryn:item.tibia.i6568",
+            Self::PortableLamp | Self::GroundPortableLamp => "oteryn:item.tibia.i2914",
+            Self::PortableMusic => "oteryn:item.tibia.i2948",
+            Self::RotateDracoyleWest => "oteryn:item.tibia.i9035",
+            Self::RotateDracoyleEast => "oteryn:item.tibia.i9040",
+            Self::DracoyleWest => "oteryn:item.tibia.i9035",
+            Self::DracoyleEast => "oteryn:item.tibia.i9040",
+            Self::SantaDoll | Self::GroundSantaDoll => "oteryn:item.tibia.i6511",
+            Self::SantaPanda | Self::GroundSantaPanda => "oteryn:item.tibia.i5080",
+            Self::GroundCupcakeBlueberry => "oteryn:item.tibia.i28484",
+            Self::GroundCupcakeStrawberry => "oteryn:item.tibia.i28485",
+            Self::GroundCupcakeLemon => "oteryn:item.tibia.i28486",
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
@@ -53,13 +84,31 @@ impl Case {
     fn ground(self) -> bool {
         matches!(
             self,
-            Self::GroundDice
+            Self::GroundPortableLamp
+                | Self::RotateDracoyleWest
+                | Self::RotateDracoyleEast
+                | Self::DracoyleWest
+                | Self::DracoyleEast
+                | Self::GroundSantaDoll
+                | Self::GroundSantaPanda
+                | Self::GroundCupcakeBlueberry
+                | Self::GroundCupcakeStrawberry
+                | Self::GroundCupcakeLemon
+                | Self::GroundDice
                 | Self::GroundRocket
                 | Self::GroundTrumpet
                 | Self::GroundCostume
                 | Self::GroundPresent
                 | Self::GroundVoodoo
         )
+    }
+    fn cupcake(self) -> Option<u32> {
+        match self {
+            Self::GroundCupcakeBlueberry => Some(28484),
+            Self::GroundCupcakeStrawberry => Some(28485),
+            Self::GroundCupcakeLemon => Some(28486),
+            _ => None,
+        }
     }
     fn nested(self) -> bool {
         matches!(self, Self::NestedCostume | Self::NestedTrumpet)
@@ -177,3 +226,92 @@ fn run_case(case: Case) -> TestResult {
 #[path = "novelty_items/scenario.rs"]
 mod scenario;
 use scenario::scenario;
+
+#[path = "novelty_items/cupcakes.rs"]
+mod cupcakes;
+#[test]
+fn srv7_ground_blueberry_cupcake_native_use_replay_and_cooldown() -> TestResult {
+    run_case(Case::GroundCupcakeBlueberry)
+}
+#[test]
+fn srv7_ground_strawberry_cupcake_native_use_replay_and_cooldown() -> TestResult {
+    run_case(Case::GroundCupcakeStrawberry)
+}
+#[test]
+fn srv7_ground_lemon_cupcake_native_use_replay_and_cooldown() -> TestResult {
+    run_case(Case::GroundCupcakeLemon)
+}
+
+#[test]
+fn srv7_santa_panda_carried_native_use_preserves_toy_and_replays() -> TestResult {
+    run_case(Case::SantaPanda)
+}
+#[test]
+fn srv7_santa_panda_ground_native_use_preserves_toy_and_replays() -> TestResult {
+    run_case(Case::GroundSantaPanda)
+}
+
+#[test]
+fn srv7_santa_doll_carried_native_use_preserves_toy_and_replays() -> TestResult {
+    run_case(Case::SantaDoll)
+}
+#[test]
+fn srv7_santa_doll_ground_native_use_preserves_toy_and_replays() -> TestResult {
+    run_case(Case::GroundSantaDoll)
+}
+
+#[path = "novelty_items/dracoyle.rs"]
+mod dracoyle;
+#[test]
+fn srv7_ground_dracoyle_west_native_gem_use_preserves_uuid_and_replays() -> TestResult {
+    run_case(Case::DracoyleWest)
+}
+#[test]
+fn srv7_ground_dracoyle_east_native_gem_use_preserves_uuid_and_replays() -> TestResult {
+    run_case(Case::DracoyleEast)
+}
+
+#[path = "novelty_items/ground_rotate.rs"]
+mod ground_rotate;
+#[test]
+fn srv7_ground_inactive_dracoyle_west_explicit_rotate_retains_custody_and_replays() -> TestResult {
+    run_case(Case::RotateDracoyleWest)
+}
+#[test]
+fn srv7_ground_inactive_dracoyle_east_explicit_rotate_retains_custody_and_replays() -> TestResult {
+    run_case(Case::RotateDracoyleEast)
+}
+
+#[path = "novelty_items/portable_furniture.rs"]
+mod portable_furniture;
+#[test]
+fn srv7_channel_portable_lamp_native_use_preserves_instance_and_starts_clock() -> TestResult {
+    run_case(Case::PortableLamp)
+}
+#[test]
+fn srv7_channel_all_fifteen_portable_instruments_publish_native_cues_once() -> TestResult {
+    run_case(Case::PortableMusic)
+}
+
+#[path = "novelty_items/toy_first_move.rs"]
+mod toy_first_move;
+
+#[test]
+fn srv7_santa_dragon_individual_native_move_starts_three_second_source_clock() -> TestResult {
+    run_case(Case::ToyDragonMove)
+}
+
+#[test]
+fn srv7_santa_santa_individual_native_move_starts_three_second_source_clock() -> TestResult {
+    run_case(Case::ToySantaMove)
+}
+
+#[test]
+fn srv7_santa_panda_individual_native_move_starts_three_second_source_clock() -> TestResult {
+    run_case(Case::ToyPandaMove)
+}
+
+#[test]
+fn srv7_ground_portable_lamp_native_use_preserves_uuid_custody_and_clock() -> TestResult {
+    run_case(Case::GroundPortableLamp)
+}

@@ -16,7 +16,7 @@ pub struct CharacterConditionSnapshot {
     pub conditions: serde_json::Value,
 }
 impl CharacterConditionSnapshot {
-    fn valid(&self) -> bool {
+    pub(crate) fn valid(&self) -> bool {
         self.lease_generation > 0
             && self
                 .conditions
@@ -73,23 +73,58 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            let current = match fence.runtime_scope {
-                crate::foundation::RuntimeScopeRefV1::Instance { .. } => super::house_hireling::fence::assert_house_custody_fence(&mut tx, &node, &fence, origin_channel).await?.is_some(),
-                _ => super::house_hireling::fence::assert_inventory_fence(&mut tx, &node, &fence, origin_channel).await?,
-            };
-            if !current { return Ok(Err(ItemUseError::AuthorityRejected)); }
-            sqlx::query("INSERT INTO game_character_condition_snapshots(character_id,character_lease_generation,content_digest,snapshot) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT(character_id) DO UPDATE SET character_lease_generation=EXCLUDED.character_lease_generation,content_digest=EXCLUDED.content_digest,snapshot=EXCLUDED.snapshot,saved_at=clock_timestamp()")
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let current = match fence.runtime_scope {
+                        crate::foundation::RuntimeScopeRefV1::Instance { .. } => {
+                            super::house_hireling::fence::assert_house_custody_fence(
+                                &mut tx,
+                                &node,
+                                &fence,
+                                origin_channel,
+                            )
+                            .await?
+                            .is_some()
+                        }
+                        _ => {
+                            super::house_hireling::fence::assert_inventory_fence(
+                                &mut tx,
+                                &node,
+                                &fence,
+                                origin_channel,
+                            )
+                            .await?
+                        }
+                    };
+                    if !current {
+                        return Ok(Err(ItemUseError::AuthorityRejected));
+                    }
+                    write_in_transaction(&mut tx, &fence, &saved).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(()))
+                })
+            })
+            .await?
+    }
+}
+
+pub(crate) async fn write_in_transaction(
+    connection: &mut sqlx::PgConnection,
+    fence: &CurrentCharacterItemFence,
+    saved: &CharacterConditionSnapshot,
+) -> Result<(), DurabilityError> {
+    if !saved.valid() || saved.lease_generation != fence.character_lease_generation {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query("INSERT INTO game_character_condition_snapshots(character_id,character_lease_generation,content_digest,snapshot) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT(character_id) DO UPDATE SET character_lease_generation=EXCLUDED.character_lease_generation,content_digest=EXCLUDED.content_digest,snapshot=EXCLUDED.snapshot,saved_at=clock_timestamp()")
                 .bind(fence.character_id.as_bytes().as_slice())
                 .bind(saved.lease_generation.to_string())
-                .bind(saved.content_digest.as_slice()).bind(saved.conditions).execute(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(()))
-        })).await?
-    }
+                .bind(saved.content_digest.as_slice()).bind(&saved.conditions).execute(connection).await?;
+    Ok(())
 }
 
 #[cfg(test)]

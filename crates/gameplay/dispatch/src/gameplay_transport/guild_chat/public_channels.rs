@@ -106,6 +106,10 @@ impl ChatRuntime {
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1);
+        entry.scripted_item_speech = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::chat::CAPABILITY_SCRIPTED_ITEM_SPEECH_V1);
         entry.public_rooms.known = true;
         entry.public_rooms.selected = admitted
             .continuity

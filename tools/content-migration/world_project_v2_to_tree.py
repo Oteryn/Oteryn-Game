@@ -402,7 +402,7 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1282:
+    if len(npc_declarations) != 1283:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -482,7 +482,7 @@ def main() -> int:
     })
 
     dialogue_declarations = [row for row in declarations["records"] if row.get("kind") == "Dialogue"]
-    if len(dialogue_declarations) != 836:
+    if len(dialogue_declarations) != 837:
         raise RuntimeError(f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}")
 
     # No source bindings exist for Dialogue declarations (WorldProject/v2 NPC admission wave A).
@@ -679,6 +679,8 @@ def main() -> int:
     })
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
+    import bestiary_source_roster
+    bestiary_source_roster.regenerate(ROOT)
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.

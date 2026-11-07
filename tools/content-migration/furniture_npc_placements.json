@@ -1,0 +1,827 @@
+{
+  "schema": 1,
+  "rows": [
+    {
+      "npc": "oteryn:npc.allen",
+      "cell": {
+        "x": 32990,
+        "y": 32062,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 733,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "515b0efdd681a6764856f1ec146be1ffe7ccb06912c6c77338214cc038564ce7",
+      "wiki": {
+        "article_id": 5259,
+        "title": "Allen",
+        "name": "Allen",
+        "x": 32991,
+        "y": 32062,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2025-07-26T09:37:44+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.asphota",
+      "cell": {
+        "x": 33777,
+        "y": 32844,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1052,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "83434f16310ee4beaba56d376ecd4940eeefc16ebbd9892438c050f2e6b16b7c",
+      "wiki": {
+        "article_id": 98787,
+        "title": "Asphota",
+        "name": "Asphota",
+        "x": 33778,
+        "y": 32844,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-07-18T14:23:27+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.borkas",
+      "cell": {
+        "x": 32993,
+        "y": 32068,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 739,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "db260ecf9820fe5bc7df7eadded69b2c40fc6f67f9be4a8bb87eb29667633e3f",
+      "wiki": {
+        "article_id": 5260,
+        "title": "Borkas",
+        "name": "Borkas",
+        "x": 32992,
+        "y": 32068,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T18:15:25+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.dorbin",
+      "cell": {
+        "x": 32783,
+        "y": 31236,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1256,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "2114eb1d8e720cb2b26cc19c0dce850607587c1784f634833811184b59727dfd",
+      "wiki": {
+        "article_id": 30843,
+        "title": "Dorbin",
+        "name": "Dorbin",
+        "x": 32783,
+        "y": 31236,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2026-02-25T21:12:07+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.eddy",
+      "cell": {
+        "x": 32168,
+        "y": 32428,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2108,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "482e5ab6266516db54f98167407a296041b645ab3681a2d78b61d96ef0c6362d",
+      "wiki": {
+        "article_id": 5107,
+        "title": "Eddy",
+        "name": "Eddy",
+        "x": 32168,
+        "y": 32431,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:49:22+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.edvard",
+      "cell": {
+        "x": 33229,
+        "y": 31832,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1679,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "39d1eb6c2a33c2fd17b2567420a05fa1f0125a682667995856504c1300042ed5",
+      "wiki": {
+        "article_id": 5212,
+        "title": "Edvard",
+        "name": "Edvard",
+        "x": 33229,
+        "y": 31831,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:49:34+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.fayla",
+      "cell": {
+        "x": 33640,
+        "y": 31898,
+        "floor": 4
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 205,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "c897bed7095d86ce3818e485b1313626a5d9afd897b53e5794453dc1470e56f9",
+      "wiki": {
+        "article_id": 68009,
+        "title": "Fayla",
+        "name": "Fayla",
+        "x": 33640,
+        "y": 31898,
+        "z": 4,
+        "status": "active",
+        "timestamp": "2024-07-29T16:41:24+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.feizuhl",
+      "cell": {
+        "x": 33066,
+        "y": 32886,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2374,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3a6f308d860294288adc9abf4b4e677988b5a549b69167d6966fa16138a8e9a5",
+      "wiki": {
+        "article_id": 5190,
+        "title": "Feizuhl",
+        "name": "Feizuhl",
+        "x": 33066,
+        "y": 32886,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:51:07+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.florentine",
+      "cell": {
+        "x": 32363,
+        "y": 31796,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1637,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "65fe714fd0b14c62e0dc2049c182b3b8e028f9374b6dcaa59b4eabec70a3e5b1",
+      "wiki": {
+        "article_id": 30568,
+        "title": "Florentine",
+        "name": "Florentine",
+        "x": 32362,
+        "y": 31796,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2023-08-19T13:27:17+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.gamon",
+      "cell": {
+        "x": 32408,
+        "y": 32170,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1862,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83",
+      "wiki": {
+        "article_id": 5083,
+        "title": "Gamon",
+        "name": "Gamon",
+        "x": 32408,
+        "y": 32170,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:51:59+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.haani",
+      "cell": {
+        "x": 33811,
+        "y": 32771,
+        "floor": 4
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 268,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "5fe5035a7006c5a2e2acb2345a3c93bb80bdea85dff7f800863d6f924f515258",
+      "wiki": {
+        "article_id": 98779,
+        "title": "Haani",
+        "name": "Haani",
+        "x": 33811,
+        "y": 32772,
+        "z": 4,
+        "status": "active",
+        "timestamp": "2022-07-18T14:27:07+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "cell": {
+        "x": 32826,
+        "y": 32574,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 977,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73",
+      "wiki": {
+        "article_id": 5366,
+        "title": "Hairycles",
+        "name": "Hairycles",
+        "x": 32826,
+        "y": 32574,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2026-09-13T19:24:31+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.hofech",
+      "cell": {
+        "x": 33270,
+        "y": 32440,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2126,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "db977293f58866b23e914a6f282e6834efc9a0831e4516e59d369acca35a96ce",
+      "wiki": {
+        "article_id": 4581,
+        "title": "Hofech",
+        "name": "Hofech",
+        "x": 33270,
+        "y": 32441,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:54:28+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.inkaef",
+      "cell": {
+        "x": 33904,
+        "y": 31518,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1391,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "537546828c2c46d2dcf92a50bce12122f78e6f3503eea80e1238a0ebccf28023",
+      "wiki": {
+        "article_id": 92244,
+        "title": "Inkaef",
+        "name": "Inkaef",
+        "x": 33904,
+        "y": 31518,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:54:52+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.isika",
+      "cell": {
+        "x": 33773,
+        "y": 32840,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1049,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "35c94b70e1f74e7acc37f1cd808abe6cfa85f77a2352494de25c1fd48a3ac89c",
+      "wiki": {
+        "article_id": 98783,
+        "title": "Isika",
+        "name": "Isika",
+        "x": 33773,
+        "y": 32840,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-07-18T14:27:32+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.iwar",
+      "cell": {
+        "x": 32619,
+        "y": 31917,
+        "floor": 8
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2504,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "4ff86ac54af2810de86f41ea0b5a9841794f7889bf0a7605eaf9b98c22d310ad",
+      "wiki": {
+        "article_id": 5356,
+        "title": "Iwar",
+        "name": "Iwar",
+        "x": 32618,
+        "y": 31917,
+        "z": 8,
+        "status": "active",
+        "timestamp": "2022-03-07T18:55:28+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.janz",
+      "cell": {
+        "x": 32279,
+        "y": 31131,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1169,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3d6b22ecc0c5280d42fe2370220a74cd58d4deae6907e6b3a4418dc652e05f86",
+      "wiki": {
+        "article_id": 17125,
+        "title": "Janz",
+        "name": "Janz",
+        "x": 32279,
+        "y": 31132,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T18:55:48+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.john_bounac",
+      "cell": {
+        "x": 32443,
+        "y": 32487,
+        "floor": 3
+      },
+      "direction": "north",
+      "source": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/world/otservbr-npc.xml",
+        "line": 115,
+        "sha256": "a02d95945d73c1f5c24f9b0446d3f63102d2bfa2d4c2d4a59bb40c1ea3fd2fe9"
+      },
+      "definition_sha256": "a155f6229a198d0d7ad288de997413b39359c41e3121b085fdf058b12c4388bb",
+      "wiki": {
+        "article_id": 94870,
+        "title": "John (Bounac)",
+        "name": "John",
+        "x": 32442,
+        "y": 32487,
+        "z": 3,
+        "status": "active",
+        "timestamp": "2025-07-26T13:13:12+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.julian",
+      "cell": {
+        "x": 32883,
+        "y": 32076,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 745,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "8972dad4c9a79fb91725e1a8389d8f7ba3109fe823c10bf8b75e25af17b31cd7",
+      "wiki": {
+        "article_id": 5309,
+        "title": "Julian",
+        "name": "Julian",
+        "x": 32883,
+        "y": 32076,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T18:56:20+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.nicholas",
+      "cell": {
+        "x": 33640,
+        "y": 31898,
+        "floor": 5
+      },
+      "direction": "north",
+      "definition_sha256": "cff0a007b514026863d96f1cae704430e9f628c338a164bf0243eafee5ef58b1",
+      "source": {
+        "repository": "tibia-sh/tibiawiki-data",
+        "revision": "31748fd6abc1a18378ecade240c805a7aab6bf20",
+        "path": "npc/article_id/68008",
+        "line": 1,
+        "article_id": 68008,
+        "timestamp": "2025-07-26T13:10:19+00:00",
+        "url": "https://tibia.fandom.com/wiki/Nicholas"
+      },
+      "wiki": {
+        "article_id": 68008,
+        "title": "Nicholas",
+        "name": "Nicholas",
+        "x": 33640,
+        "y": 31898,
+        "z": 5,
+        "status": "active",
+        "timestamp": "2025-07-26T13:10:19+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.nydala",
+      "cell": {
+        "x": 32327,
+        "y": 31828,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1670,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "bba7eca0b1333a14a74856281abb77283234502c0840f41e27363a300fd72d0e",
+      "wiki": {
+        "article_id": 4628,
+        "title": "Nydala",
+        "name": "Nydala",
+        "x": 32327,
+        "y": 31827,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T19:00:29+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.peggy",
+      "cell": {
+        "x": 32294,
+        "y": 32807,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2302,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3ce56e375cde9420e4384e87bae116467a2c0df699dfdcb4559a9f0f9a8f28df",
+      "wiki": {
+        "article_id": 9163,
+        "title": "Peggy",
+        "name": "Peggy",
+        "x": 32295,
+        "y": 32806,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T19:01:17+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.rose",
+      "cell": {
+        "x": 32970,
+        "y": 32034,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 715,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "e05909a154c869a1741edd911a809b8a3a7f211c1f105a495d007dcc133cd104",
+      "wiki": {
+        "article_id": 5266,
+        "title": "Rose",
+        "name": "Rose",
+        "x": 32971,
+        "y": 32034,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T19:03:14+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.shiantis",
+      "cell": {
+        "x": 32890,
+        "y": 32085,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 766,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "e702a6b2c8beebb612822e1b75a30ffe23cb8d25f1c16ab85a869aee9549be2f",
+      "wiki": {
+        "article_id": 4981,
+        "title": "Shiantis",
+        "name": "Shiantis",
+        "x": 32890,
+        "y": 32086,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T19:04:15+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.ukea",
+      "cell": {
+        "x": 32652,
+        "y": 31666,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 577,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3b65f818cca7e9bce1d1fbfb8546d7a085369aa038bb781b7c0003d8815d1937",
+      "wiki": {
+        "article_id": 5211,
+        "title": "Ukea",
+        "name": "Ukea",
+        "x": 32651,
+        "y": 31665,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T19:06:41+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.vera",
+      "cell": {
+        "x": 32140,
+        "y": 31671,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1484,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "0090fca065eb21344d0d42dcd8ee3b3bd353ab9b494bf94f8a6755e681dd7924",
+      "wiki": {
+        "article_id": 5372,
+        "title": "Vera",
+        "name": "Vera",
+        "x": 32138,
+        "y": 31672,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T19:07:18+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.yoem",
+      "cell": {
+        "x": 33304,
+        "y": 31965,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1745,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "965941151ef81aa22c6014a986a7c7a62e2c8e7c666646a9188a29af80397ab2",
+      "wiki": {
+        "article_id": 5344,
+        "title": "Yoem",
+        "name": "Yoem",
+        "x": 33305,
+        "y": 31966,
+        "z": 7,
+        "status": "active",
+        "timestamp": "2022-03-07T19:08:15+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.yulas",
+      "cell": {
+        "x": 33000,
+        "y": 32065,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 736,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "5b4d5f806f51ba1d403b9d2ec50b94478b691a99f228df488408928209002e26",
+      "wiki": {
+        "article_id": 5261,
+        "title": "Yulas",
+        "name": "Yulas",
+        "x": 33000,
+        "y": 32065,
+        "z": 6,
+        "status": "active",
+        "timestamp": "2022-03-07T19:08:23+00:00"
+      }
+    },
+    {
+      "npc": "oteryn:npc.zaidal",
+      "cell": {
+        "x": 32622,
+        "y": 32746,
+        "floor": 5
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 454,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3e9843d3345a69b6ea21a9196ac38b313a11003f57a1bf6c09257459de861de5",
+      "wiki": {
+        "article_id": 5159,
+        "title": "Zaidal",
+        "name": "Zaidal",
+        "x": 32622,
+        "y": 32746,
+        "z": 5,
+        "status": "active",
+        "timestamp": "2022-03-07T19:08:26+00:00"
+      }
+    }
+  ],
+  "coverage_offer_rows": 904,
+  "excluded_donor_cells": [
+    {
+      "npc": "oteryn:npc.dorbin",
+      "cell": {
+        "x": 13944,
+        "y": 14036,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1109,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "2114eb1d8e720cb2b26cc19c0dce850607587c1784f634833811184b59727dfd"
+    },
+    {
+      "npc": "oteryn:npc.dorbin",
+      "cell": {
+        "x": 13944,
+        "y": 14036,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data-otservbr-global/world/otservbr-npc.xml",
+        "line": 961,
+        "sha256": "a02d95945d73c1f5c24f9b0446d3f63102d2bfa2d4c2d4a59bb40c1ea3fd2fe9"
+      },
+      "definition_sha256": "2114eb1d8e720cb2b26cc19c0dce850607587c1784f634833811184b59727dfd"
+    }
+  ]
+}

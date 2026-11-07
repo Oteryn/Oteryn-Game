@@ -17,6 +17,8 @@ use tokio::sync::Mutex;
 
 #[path = "mount_taming/fixture.rs"]
 mod fixture;
+#[path = "mount_taming/kits.rs"]
+mod kits;
 #[path = "mount_taming/outcomes.rs"]
 mod outcomes;
 #[path = "mount_taming/pairs.rs"]
@@ -127,7 +129,7 @@ fn cosmetics() -> TestResult<Vec<u8>> {
     author["document"]["mounts"] = mount_rows.into();
     let mappings: Vec<_> = mounts.iter().map(|key| {
         let rule = crate::content::native_gameplay::mount_taming::rules().iter().find(|r| r.mount_key==**key).expect("rule");
-        serde_json::json!({"grant_key":rule.grant_key,"target":{"kind":"Mount","mount_key":rule.mount_key},"compatible_provenance":[crate::content::native_gameplay::mount_taming::PROVENANCE]})
+        serde_json::json!({"grant_key":rule.grant_key,"target":{"kind":"Mount","mount_key":rule.mount_key},"compatible_provenance":[crate::content::native_gameplay::mount_taming::PROVENANCE, oteryn_gameplay_items::item_cosmetics::PROVENANCE]})
     }).collect();
     author["document"]["grant_mappings"] = mappings.into();
     let mut template_promotion = author["promotions"][0].clone();
@@ -295,6 +297,8 @@ enum Cases {
     Outcomes,
     Items,
     MusicBox,
+    ProductionItems,
+    ProductionMusicBox,
 }
 
 #[test]
@@ -322,4 +326,24 @@ fn run_pairs(cases: Cases) -> TestResult {
         .join()
         .map_err(|_| "mount taming e2e panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn srv7_taming_all_creature_sources_use_production_cosmetics() -> TestResult {
+    run_pairs(Cases::ProductionItems)
+}
+
+#[test]
+fn srv7_music_box_sources_use_production_cosmetics() -> TestResult {
+    run_pairs(Cases::ProductionMusicBox)
+}
+
+#[test]
+fn srv7_mount_kits_require_actual_targets_all_components_and_replay() -> TestResult {
+    kits::case()
+}
+
+#[test]
+fn srv7_carried_furniture_rotate_preserves_instances_children_and_replay() -> TestResult {
+    kits::carried_furniture_case()
 }

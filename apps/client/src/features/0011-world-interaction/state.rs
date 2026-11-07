@@ -4,6 +4,23 @@ use oteryn_client_runtime::world_interaction::{Target, world_object::WorldObject
 use oteryn_renderer::TileCoord;
 use oteryn_session::world_map::MapOrigin;
 impl PlayView {
+    pub(in crate::play) fn world_context_rotation(
+        &self,
+        tile: TileCoord,
+    ) -> (bool, Option<std::num::NonZeroU32>) {
+        match self.scene.target_at(tile).and_then(|target| target.item) {
+            Some(GroundItem::Map { item, .. }) => (
+                self.local.world().appearance_rotatable(item.appearance_id),
+                match item.definition {
+                    oteryn_session::world_map::MapDefinition::Item(definition) => Some(definition),
+                    oteryn_session::world_map::MapDefinition::Terrain(_) => None,
+                },
+            ),
+            // An opaque entity definition is not an official appearance affordance.
+            Some(GroundItem::Entity { .. }) | None => (false, None),
+        }
+    }
+
     pub(in crate::play) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
         // NPCs and players carry look identities even though primary clicks cannot attack them.
         if let Some(entity) = self.entities.iter().rev().find(|entity| {

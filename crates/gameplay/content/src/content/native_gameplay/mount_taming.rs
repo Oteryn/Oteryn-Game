@@ -32,6 +32,14 @@ pub struct TamingRule {
     pub achievement_key: Option<String>,
     #[serde(default)]
     pub required_equipment: Option<String>,
+    /// Blueprint construction uses the source itself and the listed six carried pieces.
+    #[serde(default)]
+    pub self_use: bool,
+    #[serde(default)]
+    pub required_items: Vec<String>,
+    /// Wind-up Loco consumes its actual item target; static machines remain on the map.
+    #[serde(default)]
+    pub consume_target: bool,
     pub source: String,
 }
 
@@ -80,6 +88,19 @@ pub fn rules() -> &'static [TamingRule] {
             if !pairs.insert((&rule.item_key, target))
                 || (rule.creature_key.is_empty() == rule.target_item_key.is_none())
                 || !(1..=100).contains(&rule.chance)
+                || rule.required_items.len() > 6
+                || rule.required_items.iter().any(|key| key == &rule.item_key)
+                || rule
+                    .required_items
+                    .iter()
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+                    != rule.required_items.len()
+                || (rule.self_use
+                    && (rule.target_item_key.as_deref() != Some(rule.item_key.as_str())
+                        || !rule.creature_key.is_empty()
+                        || rule.consume_target))
+                || (rule.consume_target && rule.target_item_key.is_none())
                 || rule.failures.len() > 3
                 || (rule.chance != 100 && rule.failures.is_empty())
                 || rule.failures.iter().any(|f| !(1..=4).contains(&f.action))

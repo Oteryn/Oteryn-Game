@@ -151,7 +151,7 @@ pub(crate) async fn validate_retiring_activity_in_transaction(
     // replacement ACTIVE generation is deliberately not this cleanup's scope.
     let origin_owned = current_retirement_origin(tx, node, proof).await?;
     let fact = node.fact();
-    let valid:Option<bool>=sqlx::query_scalar("SELECT g.participant_count=(SELECT count(*) FROM game_activity_handoff_participants p WHERE p.handoff_id=g.handoff_id) \
+    let valid:Option<bool>=sqlx::query_scalar("SELECT game_summer_portal_expected_members(g.handoff_id,g.participant_count)=(SELECT count(*) FROM game_activity_handoff_participants p WHERE p.handoff_id=g.handoff_id) \
         AND NOT EXISTS(SELECT 1 FROM game_activity_handoff_participants p \
             LEFT JOIN game_activity_runtime_returns r ON (r.handoff_id,r.character_id)=(p.handoff_id,p.character_id) \
             LEFT JOIN game_durability_reconnect_sessions s ON s.game_session_id=p.destination_game_session_id \

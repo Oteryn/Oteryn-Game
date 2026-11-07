@@ -37,9 +37,17 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // A runtime projection alone never proves a committed Item MINT in
-        // Instance custody. That durable owner is not implemented yet.
-        self.channel_id()?;
+        self.bind_corpse_item_with_scope(actor, item, false)
+    }
+    fn bind_corpse_item_with_scope(
+        &mut self,
+        actor: ExactActorRef,
+        item: RuntimeCorpseItem,
+        summer_instance: bool,
+    ) -> Result<(), CarrierError> {
+        if !summer_instance {
+            self.channel_id()?;
+        }
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self
@@ -138,6 +146,56 @@ impl ChannelRuntimeV1 {
                 revision_ref: revision_ref.to_owned(),
             },
         )
+    }
+
+    /// W16's closed Instance descendant. The actual retained native actor,
+    /// rather than caller-supplied boss names, determines the source identity.
+    /// The caller supplies only the physical Item returned by the durable MINT.
+    pub fn bind_summer_instance_corpse_item(
+        &mut self,
+        actor: ExactActorRef,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        if !matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        let item = RuntimeCorpseItem {
+            item_instance_id,
+            family: family.into(),
+            production_key: production_key.into(),
+            revision_ref: revision_ref.into(),
+        };
+        // A previously source-checked binding remains replayable after the
+        // native actor slot was retired; the immutable original Item still
+        // has to match in the common binding owner below.
+        if !self
+            .carrier
+            .corpse_item_bindings
+            .iter()
+            .any(|binding| binding.actor == actor)
+        {
+            let source = self
+                .companion_snapshot_including_dead(actor)
+                .map_err(|_| CarrierError::CommittedLethalUnavailable)?;
+            let body = match source.state.policy.definition_key.as_str() {
+                "oteryn:creature.rakesh_moonfang" => 43758,
+                "oteryn:creature.maior_domus" | "oteryn:creature.maior_domus_final" => 54433,
+                "oteryn:creature.mimar_haffar" | "oteryn:creature.mimar_haffar_final" => 54346,
+                "oteryn:creature.phosphorus" | "oteryn:creature.phosphorus_final" => 54352,
+                "oteryn:creature.the_moonsnow_magnolia" => 54670,
+                _ => return Err(CarrierError::CommittedLethalUnavailable),
+            };
+            if family != "Item"
+                || revision_ref != "definition-r1"
+                || production_key != format!("oteryn:item.tibia.i{body}")
+            {
+                return Err(CarrierError::CorpseProjectionConflict);
+            }
+        }
+        self.carrier.bind_corpse_item_with_scope(actor, item, true)
     }
 
     /// Codex 4248192466 (LOOT-LIVE-1): keep `actor`'s retained corpse projection from eviction

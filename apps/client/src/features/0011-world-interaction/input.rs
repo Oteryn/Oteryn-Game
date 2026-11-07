@@ -47,12 +47,14 @@ impl PlayView {
         if mailbox.world_context.pending {
             return None;
         }
+        let (rotatable, definition) = self.world_context_rotation(tile);
         let mut menu = Menu::new(
             target,
             mailbox.world_context.look,
             mailbox.world_context.bed,
         )
-        .with_targeting(mailbox.world_context.use_with);
+        .with_targeting(mailbox.world_context.use_with)
+        .with_rotation(mailbox.world_context.rotate && rotatable, definition);
         menu.tile = Some(tile);
         if let Some(crate::play::GroundItem::Map { header, .. }) =
             self.scene.target_at(tile).and_then(|target| target.item)
@@ -93,12 +95,17 @@ impl PlayView {
         if mailbox.world_context.pending {
             return false;
         }
+        let (rotatable, definition) = menu
+            .tile
+            .map(|tile| self.world_context_rotation(tile))
+            .unwrap_or((false, None));
         let current = Menu::new(
             menu.target.clone(),
             mailbox.world_context.look,
             mailbox.world_context.bed,
         )
-        .with_targeting(mailbox.world_context.use_with);
+        .with_targeting(mailbox.world_context.use_with)
+        .with_rotation(mailbox.world_context.rotate && rotatable, definition);
         if !current.entries.iter().any(|(_, entry)| *entry == action) {
             return false;
         }
@@ -110,22 +117,35 @@ impl PlayView {
             mailbox.world_context.rune_targeting = action == Action::UseRune;
             return true;
         }
-        if link
-            .commands
-            .send(crate::combat_input::PlayCommand::WorldContext(Command {
+        let selection = menu
+            .tile
+            .map(|tile| oteryn_client_runtime::world_interaction::Selection {
+                position: oteryn_session::ActorPosition {
+                    x: tile.x,
+                    y: tile.y,
+                    floor: self.floor,
+                },
+                binding: menu.binding,
+            });
+        let command = if let Action::Rotate(observed_definition) = action {
+            let Some(command) = oteryn_client_ui::world_rotate::request(
+                menu.target.clone(),
+                observed_definition,
+                selection,
+            ) else {
+                return false;
+            };
+            command
+        } else {
+            Command {
                 target: menu.target.clone(),
                 action,
-                selection: menu.tile.map(|tile| {
-                    oteryn_client_runtime::world_interaction::Selection {
-                        position: oteryn_session::ActorPosition {
-                            x: tile.x,
-                            y: tile.y,
-                            floor: self.floor,
-                        },
-                        binding: menu.binding,
-                    }
-                }),
-            }))
+                selection,
+            }
+        };
+        if link
+            .commands
+            .send(crate::combat_input::PlayCommand::WorldContext(command))
             .is_err()
         {
             return false;

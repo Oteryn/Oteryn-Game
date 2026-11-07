@@ -275,8 +275,21 @@ async fn read_definition(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let maximum_players = usize::try_from(row.try_get::<i16, _>("maximum_players")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let source_portal = key == "oteryn:boss.rakesh_moonfang";
+    if source_portal
+        && !rakesh_source_portal_definition(
+            &row,
+            &template_revision,
+            &lever_positions,
+            &entry_positions,
+            exit_position,
+            boss_position,
+        )?
+    {
+        return Ok(None);
+    }
     if lever_positions.len() != entry_positions.len()
-        || entry_positions.len() < maximum_players
+        || (!source_portal && entry_positions.len() < maximum_players)
         || !revision_valid(&template_revision)
     {
         return Ok(None);
@@ -306,6 +319,32 @@ async fn read_definition(
         boss_position,
         after_kill_ms: milliseconds(row.try_get("after_kill_seconds")?)?,
     }))
+}
+fn rakesh_source_portal_definition(
+    row: &sqlx::postgres::PgRow,
+    revision: &str,
+    origins: &[LastPositionCell],
+    destinations: &[LastPositionCell],
+    exit: LastPositionCell,
+    boss: LastPositionCell,
+) -> Result<bool> {
+    let cell = |x, y, floor| LastPositionCell { x, y, floor };
+    Ok(
+        revision == "source-portal-b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105"
+        && row.try_get::<String,_>("room_template_key")? == "oteryn:room.rakesh_moonfang_source_portal"
+        && row.try_get::<String,_>("boss_creature_key")? == "oteryn:creature.rakesh_moonfang"
+        && row.try_get::<i16,_>("minimum_players")? == 1
+        && usize::try_from(row.try_get::<i16,_>("maximum_players")?).ok() == Some(ACTIVITY_PARTICIPANTS_MAX)
+        // Level1 is the Character/storage floor, not an invented published gate.
+        && row.try_get::<i64,_>("minimum_level")? == 1
+        && row.try_get::<i64,_>("cooldown_seconds")? == 7200
+        && row.try_get::<i64,_>("time_limit_seconds")? == 600
+        && row.try_get::<i64,_>("after_kill_seconds")? == 0
+        && origins == [cell(33039,32964,8)]
+        && destinations == [cell(33045,32988,-8)]
+        && exit == cell(33040,32962,8)
+        && boss == cell(33042,32993,-8),
+    )
 }
 fn milliseconds(seconds: i64) -> Result<u64> {
     u64::try_from(seconds)
@@ -382,11 +421,13 @@ pub(super) async fn prepare_in_transaction(
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         });
     }
-    if let Err(reason) = plan_fresh_room(
-        &definition.policy,
-        &facts,
-        u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?,
-    ) {
+    let now_unsigned = u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let plan = if r.activity_key == summer_portal::RAKESH {
+        summer_portal::plan_source_step(&definition.policy, &facts, now_unsigned)
+    } else {
+        plan_fresh_room(&definition.policy, &facts, now_unsigned)
+    };
+    if let Err(reason) = plan {
         return Ok(Err(match reason {
             AdmissionRefusal::Count => ActivityRefusal::PartyCount,
             AdmissionRefusal::Level => ActivityRefusal::Level,
@@ -409,10 +450,10 @@ pub(super) async fn prepare_in_transaction(
     }))
 }
 
-pub(super) async fn commit_in_transaction(
+async fn commit_cooldown(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
-    plan: BossAdmissionPlan,
+    plan: &BossAdmissionPlan,
 ) -> Result<()> {
     let keys = r
         .participants
@@ -436,6 +477,32 @@ pub(super) async fn commit_in_transaction(
     if result != BossCooldownChange::Applied {
         return Err(DurabilityError::InvalidStoredState);
     }
+    Ok(())
+}
+
+pub(super) async fn commit_source_join(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    plan: BossAdmissionPlan,
+) -> Result<()> {
+    commit_cooldown(tx, r, &plan).await?;
+    let participant = r
+        .participants
+        .first()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    sqlx::query("INSERT INTO game_boss_room_participants(admission,character_id,origin_game_session_id,origin_lease_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric)")
+        .bind(r.handoff_id.as_slice()).bind(participant.source.character_id.as_bytes().as_slice())
+        .bind(participant.source.game_session_id.as_bytes().as_slice()).bind(participant.source.character_lease_generation.to_string())
+        .execute(&mut **tx).await?;
+    Ok(())
+}
+
+pub(super) async fn commit_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+    plan: BossAdmissionPlan,
+) -> Result<()> {
+    commit_cooldown(tx, r, &plan).await?;
     let RuntimeScopeRefV1::Instance {
         world_id,
         instance_id,

@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "rows": [
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "cell": {
+        "x": 32242,
+        "y": 32599,
+        "floor": 9
+      },
+      "direction": "north",
+      "definition_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2743,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SUPPORT_SOURCE_CELL_ONLY_SPIKE_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.norbert",
+      "cell": {
+        "x": 32952,
+        "y": 32103,
+        "floor": 6
+      },
+      "direction": "north",
+      "definition_sha256": "09cb462274e88e74a1b8008f1b073504500f9531695ca0717baef4233aeb2954",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 792,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "WEDDING_BOX_RETAIL_MERCHANT_SOURCE_CELL_AND_PUBLIC_TALK_RANGE"
+    },
+    {
+      "npc": "oteryn:npc.captain_fearless",
+      "cell": {
+        "x": 32957,
+        "y": 32021,
+        "floor": 6
+      },
+      "direction": "north",
+      "definition_sha256": "5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 706,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SIMON_ACQUISITION_SUPPORT_SOURCE_CAPTAIN_PUBLIC_TRAVEL_CELL_ONLY_FACING_EXISTING_OWNER_NORTH_DEFAULT_NOT_XML_FACT"
+    }
+  ]
+}

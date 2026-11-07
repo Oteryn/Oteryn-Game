@@ -2672,3 +2672,57 @@ fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult 
         harness.cleanup().await
     })
 }
+
+/// A source-qualified first movement must not derive its physical deadline from
+/// the caller-controlled audit occurrence. Uses real Root MINT/admission and a
+/// complete runtime-role TRANSFER with matching reservation/audit/custody proofs.
+#[test]
+fn srv7_first_transfer_clock_uses_physical_time_even_with_future_audit_occurrence() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness=Harness::create(admin,"srv7_transfer_clock_authority").await?;
+        let seal=harness.recovery.seal_current().map_err(debug)?;
+        let authority=harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let backpack=harness.mint(&authority,BACKPACK,1).await?;
+        harness.committed(&authority,to_slot(command(1)?,backpack,backpack_facts())).await?;
+        let source=harness.mint(&authority,"oteryn:item.tibia.i9034",1).await?;
+        let source_id=source;let source=uuid_text(source); let parent=uuid_text(backpack);
+        let session=uuid_text(id(SESSION));let character=uuid_text(id(CHARACTER));let world=uuid_text(id(WORLD));let channel=uuid_text(id(CHANNEL));
+        let transaction=uuid_text(id(230));let event=uuid_text(id(231));
+        let future=4_102_444_800_000_i64;
+        use crate::durability::item_mint_audit as mint_audit;
+        let state=mint_audit::OneItemStateV1{item_instance_id:source_id.to_vec(),world_id:id(WORLD).to_vec(),definition:Some(mint_audit::OneItemTypedDefinitionRevisionV1{family:"Item".into(),production_key:"oteryn:item.tibia.i9034".into(),revision_ref:"definition-r1".into()}),quantity:1,lifecycle:1,key_number:0};
+        let tuple_row:(i64,String)=sqlx::query_as("SELECT schema_revision,retention_profile_id FROM game_item_audit_outbox WHERE event_type_id=2 ORDER BY occurred_at DESC LIMIT 1").fetch_one(&harness.pool).await?;
+        let tuple=mint_audit::Type2EventTuple::of(u32::try_from(tuple_row.0)?,&tuple_row.1).ok_or("current type2 tuple")?;
+        let envelope=audit::encode_transfer_event(audit::TransferEventIdentity{event_id:id(231),transaction_id:id(230),occurred_at_unix_ms:future,server_build_id:"srv7.clock.case"},audit::OneItemTransferV1{
+            before:Some(state.clone()),after:Some(state),source:Some(mint_audit::OneItemGroundV1{world_id:id(WORLD).to_vec(),channel_id:id(CHANNEL).to_vec(),spatial_position:vec![0,0,0,1,0,0,0,2,0,3],corpse_ref:id(3).to_vec(),map_revision:"map-1".into(),content_revision:"content-1".into(),native_room_placement_context:id(6).to_vec(),runtime_scope_ownership_generation:1,instance_id:None}),
+            destination:Some(audit::OneItemInventoryV1{character_id:id(CHARACTER).to_vec(),expected_session_generation:1,expected_game_session_id:id(SESSION).to_vec(),expected_character_lease_generation:1,container_entry:Some(audit::OneItemContainerEntryV1{parent_item_instance_id:backpack.to_vec(),placement_ordinal:1}),equipment_container_slot:false}),
+            cause:Some(audit::OneItemTransferCauseV1{typed_cause:audit::GROUND_PICKUP_TYPED_CAUSE.into(),content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into(),command_ref:Some(audit::OneItemCommandRefV1{game_session_id:id(SESSION).to_vec(),command_id:900})}),receiver:None,corpse_source:None,
+        },tuple).map_err(debug)?;
+        let encoded:String=envelope.iter().map(|byte|format!("{byte:02x}")).collect();
+        let schema=tuple.schema_revision();let retention=tuple.retention_profile_id();
+
+        let physical_lower:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&harness.pool).await?;
+        let mut tx=harness.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let statements=[
+          format!("INSERT INTO game_item_transfer_reservations(game_session_id,command_id,character_id,world_id,channel_id,source_item_instance_id,destination_kind,intent_binding,transaction_id,event_id,occurred_at,work_units_used,reserved_at) VALUES('{session}',900,'{character}','{world}','{channel}','{source}',2,decode(repeat('ab',33),'hex'),'{transaction}','{event}',{future},1,900)"),
+          format!("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES('{event}','{transaction}',1,1,2,{schema},'{retention}','{source}',{future},{future}+7776000000,decode('{encoded}','hex'),sha256(decode('{encoded}','hex')),1)"),
+          format!("DELETE FROM game_item_ground_locations WHERE item_instance_id='{source}'"),
+          format!("UPDATE game_item_instances SET last_transaction_id='{transaction}' WHERE item_instance_id='{source}' AND lifecycle=1 AND quantity=1"),
+          format!("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES('{source}','{world}','{character}','{parent}',1,'{transaction}')"),
+          format!("INSERT INTO game_item_transfer_receipts(game_session_id,command_id,character_id,intent_binding,transaction_id,event_id,shape,source_item_instance_id,source_quantity_before,source_quantity_after,destination_parent_item_instance_id,destination_ordinal,occurred_at,envelope_sha256,committed_at,furniture_content_digest) VALUES('{session}',900,'{character}',decode(repeat('ab',33),'hex'),'{transaction}','{event}',2,'{source}',1,1,'{parent}',1,{future},sha256(decode('{encoded}','hex')),floor(extract(epoch FROM statement_timestamp())*1000)::bigint,decode(repeat('33',32),'hex'))"),
+          format!("SELECT game_house_furniture_transfer_start('{transaction}'::uuid)"),
+        ];
+        for statement in statements{sqlx::query(sqlx::AssertSqlSafe(statement)).execute(&mut *tx).await?;}
+        tx.commit().await?;
+        // Reaching this assertion proves all deferred conservation/receipt/audit
+        // guards actually accepted the full current-node custody transition.
+        let (deadline,now,occurrence):(i64,i64,i64)=sqlx::query_as("SELECT p.expires_at_unix_ms,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,r.occurred_at FROM game_spell_item_temporal_schedules p JOIN game_item_transfer_receipts r ON r.transaction_id=p.source_transaction_id WHERE p.item_instance_id=$1::uuid").bind(&source).fetch_one(&harness.pool).await?;
+        assert_eq!(occurrence,future,"audit history is preserved");
+        assert!(deadline<=now+604800000 && deadline>=physical_lower+604800000,"TRANSFER_PHYSICAL_CLOCK_RUNTIME_TIME_FORGERY deadline={deadline} now={now}");
+        drop(authority);drop(seal);harness.cleanup().await
+    })
+}

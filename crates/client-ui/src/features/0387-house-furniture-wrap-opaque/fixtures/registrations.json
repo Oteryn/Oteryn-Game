@@ -1,0 +1,17 @@
+[
+  {
+    "mechanic": "0387-house-furniture-wrap-opaque",
+    "kind": "handlers",
+    "id": "0387-house-furniture-wrap-opaque-unsupported",
+    "status": "unsupported",
+    "reason": "Opaque House furniture Wrap input is awaiting its real framed native baseline and integration.",
+    "commands": [],
+    "not_applicable": {
+      "state": "Existing House and inventory owners retain authority.",
+      "protocol": "Strict opaque command402 extensions are owned by protocol-oteryn::house_wrap.",
+      "view": "Existing world and inventory views will display wrapping.",
+      "input": "Native opaque Wrap action is not enabled.",
+      "settings": "No client setting."
+    }
+  }
+]

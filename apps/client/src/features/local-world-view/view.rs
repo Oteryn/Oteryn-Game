@@ -1,3 +1,5 @@
+#[path = "native_floor.rs"]
+mod native_floor;
 use crate::input::{TargetKind, Targetable};
 use crate::map::World;
 use crate::play::{PlayView, Pushed};
@@ -55,6 +57,7 @@ impl PlayView {
     }
 
     pub(in crate::play) fn rebuild(&mut self) -> Result<(), BatchError> {
+        self.project_native_positions();
         let markers = self.drawn_markers().collect::<Vec<_>>();
         let target = self.scene.target();
         let entities = self
@@ -90,7 +93,7 @@ impl PlayView {
         )?;
         self.apply_preference_scale()?;
         self.scene
-            .set_presentations(&self.appearances, self.floor)?;
+            .set_presentations_with_palette(&self.appearances, self.floor, &self.appearance_palette)?;
         self.scene.retain_target(target)?;
         self.light_scene()?;
         self.weather_scene();
@@ -113,6 +116,7 @@ impl PlayView {
         if let Some(position) = pushed.own {
             self.place(position);
         }
+        if let Some(palette)=&pushed.appearance_palette {self.appearance_palette.clone_from(palette);}
         if let Some(entries) = &pushed.appearances {
             self.appearances.clone_from(entries);
         }

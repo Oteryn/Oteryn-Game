@@ -81,6 +81,22 @@
           }
         }
       ]
+    },
+    {
+      "event": "christmas",
+      "source": "Current Tibia Christmas season, December 1 through December 31 at server save; Santa dialogue and present pools: Crystal 201189f8 data-global/npc/santa_claus.lua:48-148; wiki-pending Santa_Claus (Fandom API 402, BR API 403).",
+      "windows": [
+        {
+          "start": {
+            "month": 12,
+            "day": 1
+          },
+          "end_exclusive": {
+            "month": 1,
+            "day": 1
+          }
+        }
+      ]
     }
   ]
 }

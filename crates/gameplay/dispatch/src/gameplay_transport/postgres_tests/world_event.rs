@@ -35,6 +35,11 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
 }
 
 fn scenario(epochs: u64) -> TestResult {
+    let _clock = oteryn_gameplay_foundation::scheduled_events::test_clock::set(
+        oteryn_gameplay_foundation::scheduled_events::content_schedule().clone(),
+        1_793_422_800,
+    );
+    let started = std::time::Instant::now();
     run(async move |admin| {
         reset();
         let h =
@@ -105,8 +110,24 @@ fn scenario(epochs: u64) -> TestResult {
                 .any(|c| c.id == wire::CAPABILITY_WORLD_EVENT_V1)
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(offered, &[6, 53]).ok_or("capability 53")?;
+            SelectedCapabilities::select(offered, &[6, 53, 371])
+                .ok_or("seasonal capability 371")?;
         let fresh = admitted;
+
+        // A completed, source-valid February occurrence remains observable after cleanup.
+        // The existing database-domain test clock matches the calendar observation here.
+        sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT to_timestamp(1793422800) $$")
+            .execute(&h.pool).await?;
+        let mut cake_seed = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *cake_seed)
+            .await?;
+        sqlx::query("INSERT INTO game_seasonal_cake_worlds(world_id,event_start,event_end,state) VALUES(encode($1,'hex')::uuid,1771650000,1772168400,$2)")
+            .bind(world.as_bytes().as_slice())
+            .bind(serde_json::json!({"stage":0,"substances":200,"golems":200,"layer":4,"layer_progress":0,
+                "window_start":null,"window_end":null,"bonus_from":1771736400_i64,"bonus_until":1772341200_i64,"revision":12}))
+            .execute(&mut *cake_seed).await?;
+        cake_seed.commit().await?;
 
         // Malformed query never reaches storage. A valid query commits its exact result.
         let results = exchange(&owner, &mut admitted, &[(1, &[0]), (2, &[])]).await?;
@@ -117,6 +138,38 @@ fn scenario(epochs: u64) -> TestResult {
         assert_eq!(state.reset_epoch, epochs);
         assert_eq!(state.active, epochs == 1);
         assert_eq!(state.announcement.is_empty(), epochs == 2);
+        assert_eq!(
+            state.seasonal.len(),
+            3,
+            "SRV7: committed annual gameplay windows reach the wire"
+        );
+        assert!(
+            state
+                .seasonal
+                .iter()
+                .any(|event| event.event == wire::SeasonalEventKind::Halloween && event.active)
+        );
+        for event in &state.seasonal {
+            assert!(event.start_unix < event.end_unix);
+        }
+        assert_eq!(
+            state.cake,
+            Some(wire::CakeProgress {
+                stage: 0,
+                substances: 200,
+                golems: 200,
+                layer: 4,
+                layer_progress: 0,
+                layer_goal: 1116,
+                occurrence_start: 1771650000,
+                occurrence_end: 1772168400,
+                window_end: None,
+                bonus_until: Some(1772341200),
+                observed_unix: 1793422800,
+            }),
+            "cap371 carries the retained Cake timeline even after cleanup and bonus expiry"
+        );
+
         let stored: Vec<u8> = sqlx::query_scalar(
             "SELECT result FROM game_world_event_query_receipts WHERE command_id=2",
         )
@@ -124,6 +177,27 @@ fn scenario(epochs: u64) -> TestResult {
         .await?;
         assert_eq!(stored, results[1].1);
         assert_eq!(receipt_count(&h).await?, 1);
+
+        // Capability 53 predates strict field 4. The same durable receipt is
+        // projected to its original schema for a peer without extension 371.
+        let mut legacy_owner = deps.owner(&h, &authority);
+        legacy_owner.active_generation = controller.active();
+        legacy_owner.reset_epoch = epochs;
+        let mut legacy = fresh;
+        legacy.continuity.selected_capabilities =
+            SelectedCapabilities::select(offered, &[6, 53]).ok_or("legacy capability 53")?;
+        let legacy_reply = exchange(&legacy_owner, &mut legacy, &[(1, &[0]), (2, &[])]).await?;
+        assert_eq!(legacy_reply[1].0, CommandStatus::Accepted);
+        let legacy_state = wire::decode_world_event_state(&legacy_reply[1].1).map_err(debug)?;
+        assert!(legacy_state.seasonal.is_empty());
+        assert!(
+            legacy_state.cake.is_none(),
+            "legacy cap53 projection removes strict field5"
+        );
+        assert_eq!(legacy_state.reset_epoch, state.reset_epoch);
+        assert_eq!(legacy_state.announcement, state.announcement);
+        assert_eq!(receipt_count(&h).await?, 1);
+        drop(legacy_owner);
 
         // No negotiated capability => no event bytes or receipt, even for a valid query.
         let mut unsupported = admitted;
@@ -302,11 +376,53 @@ fn scenario(epochs: u64) -> TestResult {
             .bind(epochs.to_string())
             .execute(&h.pool)
             .await?;
+        // The occurrence is live data for new queries; replay retains the exact
+        // committed calendar even when the event ends between commands.
+        let _closed_clock = oteryn_gameplay_foundation::scheduled_events::test_clock::set(
+            oteryn_gameplay_foundation::scheduled_events::content_schedule().clone(),
+            1_793_682_000,
+        );
+        let old = h
+            .root
+            .query_world_event(&authority, &h.node, item_fence, 2, epochs)
+            .await?;
+        assert_eq!(old, results[1].1);
+        sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT to_timestamp(1793682000) $$")
+            .execute(&h.pool).await?;
+        let current = h
+            .root
+            .query_world_event(&authority, &h.node, item_fence, 99, epochs)
+            .await?;
+        let current = wire::decode_world_event_state(&current).map_err(debug)?;
+        assert!(
+            current
+                .seasonal
+                .iter()
+                .all(|event| event.event != wire::SeasonalEventKind::Halloween || !event.active)
+        );
+        assert_ne!(current.seasonal, state.seasonal);
+        assert_eq!(
+            current
+                .cake
+                .as_ref()
+                .ok_or("retained Cake observation")?
+                .observed_unix,
+            1793682000
+        );
+        assert_eq!(
+            current.cake.as_ref().and_then(|cake| cake.bonus_until),
+            Some(1772341200)
+        );
+
+        assert_eq!(receipt_count(&h).await?, 4);
         deps.loss(&h, 60).await?;
         assert!(matches!(h.root.query_world_event(&authority, &h.node, item_fence, 4, epochs).await,
             Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
-        assert_eq!(receipt_count(&h).await?, 3);
-        eprintln!("WORLD-EVENT-PG: real reset epoch={epochs}, wire/receipt/restart/fences passed");
+        assert_eq!(receipt_count(&h).await?, 4);
+        eprintln!(
+            "WORLD-EVENT-PG: real reset epoch={epochs}, wire/receipt/restart/fences/calendar passed elapsed={:?}",
+            started.elapsed()
+        );
         drop(restarted);
         drop(authority);
         drop(seal);

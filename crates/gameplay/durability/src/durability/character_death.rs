@@ -156,6 +156,8 @@ pub struct ConsumedRespawn {
 
 mod adventurer;
 mod commit;
+#[path = "character_death/house.rs"]
+mod house;
 pub mod items;
 pub mod promotion;
 mod settlement;
@@ -196,7 +198,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
     ) -> Result<CharacterDeathOutcome> {
-        self.commit_character_death_inner(authority, node, fence, request, None, None, None)
+        self.commit_character_death_inner(authority, node, fence, request, None, None, None, None)
             .await
     }
 
@@ -217,6 +219,7 @@ impl DurabilityRoot {
             fence,
             request,
             Some(formula),
+            None,
             None,
             None,
         )

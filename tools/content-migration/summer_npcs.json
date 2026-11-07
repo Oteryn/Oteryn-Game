@@ -1,0 +1,1299 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "positions": [
+    {
+      "npc": "oteryn:npc.udu",
+      "cell": {
+        "x": 33849,
+        "y": 32788,
+        "floor": 2
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 87,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+    },
+    {
+      "npc": "oteryn:npc.saraki",
+      "cell": {
+        "x": 33722,
+        "y": 32764,
+        "floor": 4
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 261,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+    },
+    {
+      "npc": "oteryn:npc.sundara",
+      "cell": {
+        "x": 33822,
+        "y": 32773,
+        "floor": 4
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 270,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "a60833cdd7193b0cc6299662f7e84d6cc809dd8e79683d4e90114cf6769e3255"
+    },
+    {
+      "npc": "oteryn:npc.sharai",
+      "cell": {
+        "x": 33874,
+        "y": 32661,
+        "floor": 5
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 444,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "cell": {
+        "x": 32961,
+        "y": 32076,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 750,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+    },
+    {
+      "npc": "oteryn:npc.captain_corsarah",
+      "cell": {
+        "x": 34010,
+        "y": 32475,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 955,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+    },
+    {
+      "npc": "oteryn:npc.mayor_pocaro",
+      "cell": {
+        "x": 34073,
+        "y": 32504,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 961,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+    },
+    {
+      "npc": "oteryn:npc.zofia_bolter",
+      "cell": {
+        "x": 34079,
+        "y": 32514,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 964,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+    },
+    {
+      "npc": "oteryn:npc.doctor_marrow",
+      "cell": {
+        "x": 34010,
+        "y": 32641,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 985,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "cell": {
+        "x": 33955,
+        "y": 32642,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 988,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+    },
+    {
+      "npc": "oteryn:npc.tarisu",
+      "cell": {
+        "x": 33799,
+        "y": 32860,
+        "floor": 6
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1054,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+    },
+    {
+      "npc": "oteryn:npc.g_ezkho",
+      "cell": {
+        "x": 34052,
+        "y": 32485,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2152,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+    },
+    {
+      "npc": "oteryn:npc.omar",
+      "cell": {
+        "x": 34037,
+        "y": 32487,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2158,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+    },
+    {
+      "npc": "oteryn:npc.thorim",
+      "cell": {
+        "x": 34022,
+        "y": 32495,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2166,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+    },
+    {
+      "npc": "oteryn:npc.goldro",
+      "cell": {
+        "x": 34055,
+        "y": 32503,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2172,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+    },
+    {
+      "npc": "oteryn:npc.pescadu",
+      "cell": {
+        "x": 34020,
+        "y": 32505,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2178,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+    },
+    {
+      "npc": "oteryn:npc.nekaret",
+      "cell": {
+        "x": 34034,
+        "y": 32506,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2181,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+    },
+    {
+      "npc": "oteryn:npc.dhira",
+      "cell": {
+        "x": 33726,
+        "y": 32861,
+        "floor": 7
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2361,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+    },
+    {
+      "npc": "oteryn:npc.javala",
+      "cell": {
+        "x": 33889,
+        "y": 32654,
+        "floor": 8
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2590,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+    },
+    {
+      "npc": "oteryn:npc.niral",
+      "cell": {
+        "x": 33028,
+        "y": 32911,
+        "floor": 9
+      },
+      "direction": "north",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2746,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "definition_sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+    }
+  ],
+  "greetings": [
+    {
+      "npc": "oteryn:npc.captain_corsarah",
+      "variants": {},
+      "greet": {
+        "text": "Welcome on board, |PLAYERNAME|. You want to sail to {Venore}?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 77,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      },
+      "farewell": {
+        "text": "Good bye. Recommend us if you were satisfied with our service.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 78,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye then.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 79,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.mayor_pocaro",
+      "variants": {},
+      "greet": {
+        "text": "Ah, another one drawn here by the promise of moonsilver, I presume. I am the mayor of what remains of this {settlement}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 153,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down out there.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 154,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down out there.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 155,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.zofia_bolter",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 63,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 64,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 65,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.doctor_marrow",
+      "variants": {},
+      "greet": {
+        "text": "Ah... Visitors. How convenient. I was beginning to wonder how long it would take until someone {capable} found their way here.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 94,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      },
+      "farewell": {
+        "text": "Do come back once the majordomo is dealt with.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 95,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      },
+      "walkaway": {
+        "text": "Do come back once the majordomo is dealt with.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 96,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "variants": {},
+      "greet": {
+        "text": "Ah, a visitor. Allow me to introduce myself. Wayland Smythers, in service of science. I am here in search of esteemed heroes, such as yourself, to avert a grave {danger}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 117,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      },
+      "farewell": {
+        "text": "Farewell, and do be careful.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 118,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      },
+      "walkaway": {
+        "text": "Farewell, and do be careful.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 119,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.g_ezkho",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 63,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 64,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 65,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.omar",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 63,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 64,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 65,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.thorim",
+      "variants": {},
+      "greet": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      },
+      "farewell": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      },
+      "walkaway": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.goldro",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 63,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 64,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 65,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.pescadu",
+      "variants": {},
+      "greet": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      },
+      "farewell": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      },
+      "walkaway": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.nekaret",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 63,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 64,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 65,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.saraki",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, traveller. May the Moon Goddess bless you.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 93,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      },
+      "farewell": {
+        "text": "May the Moon Goddess light your path.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 94,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      },
+      "walkaway": {
+        "text": "May the Moon Goddess light your path.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 95,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.sundara",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.tarisu",
+      "variants": {},
+      "greet": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 78,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      },
+      "farewell": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 79,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      },
+      "walkaway": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 80,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.dhira",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 86,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      },
+      "farewell": {
+        "text": "Mind the beavers on your way out.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 87,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      },
+      "walkaway": {
+        "text": "Mind the beavers on your way out.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 88,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.udu",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 82,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      },
+      "farewell": {
+        "text": "Mind the sky once in a while.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 83,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      },
+      "walkaway": {
+        "text": "Mind the sky once in a while.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 84,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.sharai",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 93,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      },
+      "farewell": {
+        "text": "The sea remembers everything, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 94,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      },
+      "walkaway": {
+        "text": "The sea remembers everything, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 95,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.javala",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, little mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 83,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      },
+      "farewell": {
+        "text": "Go quietly, mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 84,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      },
+      "walkaway": {
+        "text": "Go quietly, mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 85,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.niral",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, traveller!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 107,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      },
+      "farewell": {
+        "text": "Walk in balance, traveller.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 108,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      },
+      "walkaway": {
+        "text": "Walk in balance, traveller.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 109,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      }
+    }
+  ],
+  "doctor": {
+    "source": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/doctor_marrow.lua",
+      "line": 1,
+      "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+    },
+    "records": [
+      {
+        "kind": "NPC",
+        "identity": {
+          "key": "oteryn:npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "services": [],
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          }
+        ]
+      },
+      {
+        "kind": "Dialogue",
+        "identity": {
+          "key": "oteryn:dialogue.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "greet": [
+          "Ah... Visitors. How convenient. I was beginning to wonder how long it would take until someone {capable} found their way here."
+        ],
+        "farewell": [
+          "Do come back once the majordomo is dealt with."
+        ],
+        "walkaway": [
+          "Do come back once the majordomo is dealt with."
+        ],
+        "keywords": [
+          {
+            "key": "capable",
+            "triggers": [
+              "capable"
+            ],
+            "reply": [
+              "Now that you have arrived: Welcome to my rather opulent {prison}, my reluctant allies. You may wonder what all of this is about."
+            ]
+          },
+          {
+            "key": "prison",
+            "triggers": [
+              "prison"
+            ],
+            "reply": [
+              "A pity you cannot reach me. I imagine that would be tempting. I suppose I cannot deny that I had a hand in the mess we are currently facing. Unfortunate, really. But let me {explain}."
+            ]
+          },
+          {
+            "key": "explain",
+            "triggers": [
+              "explain"
+            ],
+            "reply": [
+              "Before that delightful chunk of moonrock graced Thalassara with its presence, smaller fragments had already fallen. I managed to acquire a few {samples} before the less capable minds even took interest."
+            ]
+          },
+          {
+            "key": "samples",
+            "triggers": [
+              "samples"
+            ],
+            "reply": [
+              "Fascinating material. Truly fascinating. The properties of moonsilver are... extensive. I have only begun to scratch the surface. Yet one aspect stood out above all: its {interaction} with the mind."
+            ]
+          },
+          {
+            "key": "interaction",
+            "triggers": [
+              "interaction"
+            ],
+            "reply": [
+              "Moonsilver does not respond to just anyone. It requires focus. Simplicity. A certain... purity of purpose. Something most people sorely lack. I found it, however, in the minds of devoted {believers}."
+            ]
+          },
+          {
+            "key": "believers",
+            "triggers": [
+              "believers"
+            ],
+            "reply": [
+              "So I located a most convenient cult. Infiltrated it. Improved it. Elevated it. In time, I became its prophet and guided it toward a more useful {purpose}."
+            ]
+          },
+          {
+            "key": "purpose",
+            "triggers": [
+              "purpose"
+            ],
+            "reply": [
+              "When the larger fragment fell upon Thalassara, I was, naturally, among the first to act. I led my followers there, secured the site, and began to harvest the moonsilver. What followed was {CREATION}!"
+            ]
+          },
+          {
+            "key": "creation",
+            "triggers": [
+              "creation"
+            ],
+            "reply": [
+              "Marvels. Wonders. This palace of air, moonsilver and belief you see around you was merely the beginning. I was on the verge of something truly extraordinary, until {failure} struck."
+            ]
+          },
+          {
+            "key": "failure",
+            "triggers": [
+              "failure"
+            ],
+            "reply": [
+              "I miscalculated one variable. The devotion of my followers. Their belief was not merely useful, it was absolute. And in that blind certainty, they achieved something I had not intended. They gave form to their very own {god}."
+            ]
+          },
+          {
+            "key": "god",
+            "triggers": [
+              "god"
+            ],
+            "reply": [
+              "Yes. An actual manifestation of a being that was never meant to exist. A construct of belief, now very real, and utterly convinced that all of Tibia belongs to it. Its ambitions can only be described as {unpleasant} at best."
+            ]
+          },
+          {
+            "key": "unpleasant",
+            "triggers": [
+              "unpleasant"
+            ],
+            "reply": [
+              "It has imprisoned me, deeming me 'useful'. The audacity of that insolent construct. But this is no longer about me. If this entity is not stopped, its influence will spread far beyond this place. It must be {stopped}."
+            ]
+          },
+          {
+            "key": "stopped",
+            "triggers": [
+              "stopped"
+            ],
+            "reply": [
+              "I can guide you. Its defences are not impenetrable. You must confront its most devoted servant, the majordomo. A {traitor} of the highest order towards my cause."
+            ]
+          },
+          {
+            "key": "abomination",
+            "triggers": [
+              "abomination"
+            ],
+            "reply": [
+              "Do not {hesitate}. This is a perversion of will and reality alike. End it, and perhaps we can still salvage what remains of this unfortunate... experiment."
+            ]
+          },
+          {
+            "key": "hesitate",
+            "triggers": [
+              "hesitate"
+            ],
+            "reply": [
+              "Fear not, as I blinded his perception towards your intrusion, I will shield you from his supposedly all seeing eye while you venture through his palace. God or not, he is no match for my scientific genius.",
+              "As you see, we will be {helping} each other for our mutual benefit."
+            ]
+          },
+          {
+            "key": "name",
+            "triggers": [
+              "name"
+            ],
+            "reply": [
+              "Doctor Marrow. The name tends to precede me, usually accompanied by unflattering adjectives."
+            ]
+          },
+          {
+            "key": "job",
+            "triggers": [
+              "job"
+            ],
+            "reply": [
+              "Science. Unfettered, unapologetic science."
+            ]
+          },
+          {
+            "key": "wayland",
+            "triggers": [
+              "wayland"
+            ],
+            "reply": [
+              "My assistant. A nervous little man with an admirable talent for finding capable people."
+            ]
+          },
+          {
+            "key": "moonsilver",
+            "triggers": [
+              "moonsilver"
+            ],
+            "reply": [
+              "The most promising material I have ever held, and the single worst decision I have ever made. Both statements are true."
+            ]
+          },
+          {
+            "key": "helping",
+            "triggers": [
+              "helping"
+            ],
+            "reply": [
+              "Let us not confuse this situation with a plea. You need me just as much as I require your mobility and your talent for savage destructiveness. Our cooperation is simply the most efficient outcome."
+            ]
+          }
+        ],
+        "fields": []
+      }
+    ],
+    "profiles": [
+      {
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/1611",
+            "palette_bindings": [
+              {
+                "slot": "Head",
+                "asset_binding": "canary.appearance:palette/57"
+              },
+              {
+                "slot": "Body",
+                "asset_binding": "canary.appearance:palette/0"
+              },
+              {
+                "slot": "Legs",
+                "asset_binding": "canary.appearance:palette/0"
+              },
+              {
+                "slot": "Feet",
+                "asset_binding": "canary.appearance:palette/95"
+              }
+            ],
+            "light_level": 0
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.doctor_marrow",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": false,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": false,
+              "sense_invisible": false,
+              "target_distance_tiles": 0,
+              "static_attack_chance_ppm": 0,
+              "flee_health": 0
+            }
+          }
+        }
+      }
+    ]
+  },
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

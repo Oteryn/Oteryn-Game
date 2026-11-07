@@ -45,6 +45,35 @@ impl ChannelRuntimeV1 {
             )
             .map(MovementPositionSnapshot)
     }
+    /// Bounded fixture staging between two real source regions; this proves no
+    /// travel route and retains the real player/session/context and position CAS.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn stage_pinned_player_test_position(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .player_slot_index(&self.continuity, actor.0, session)?;
+        let expected = self.carrier.read_position(&self.continuity, actor.0)?;
+        let context = self.pinned_position_context();
+        if expected.version.context != context {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        self.carrier
+            .compare_commit_position(
+                &self.continuity,
+                expected,
+                context,
+                LocalPosition {
+                    x: next.x,
+                    y: next.y,
+                    floor: next.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
     #[cfg(any(test, feature = "test-support"))]
     const fn test_position_context(&self) -> PreProductionPositionContext {
         PreProductionPositionContext {

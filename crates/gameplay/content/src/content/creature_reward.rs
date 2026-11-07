@@ -614,9 +614,7 @@ fn row(
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
     admitted(&corpse)
         .and_then(|facts| facts.container_capacity)
-        .filter(|capacity| {
-            (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(*capacity))
-        })
+        .filter(|capacity| corpse_physical_capacity_admitted(&corpse, *capacity))
         .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     let corpse_item = corpse.lower();
     let (loot_table_ref, loot_table) = match loot {
@@ -653,6 +651,18 @@ fn row(
         race,
         boss: None,
     })
+}
+
+fn corpse_physical_capacity_admitted(corpse: &SectionRef, capacity: u32) -> bool {
+    // Exact pinned Hellspawn/Stampor body physical capacities; the independent combat/MINT
+    // direct-entry budget remains GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX (30).
+    (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(capacity))
+        || (corpse.family == "Item"
+            && corpse.revision == "definition-r1"
+            && matches!(
+                (corpse.key.as_str(), capacity),
+                ("oteryn:item.tibia.i9009", 44) | ("oteryn:item.tibia.i12325", 32)
+            ))
 }
 
 fn boss_metadata(profile: &ProjectV2CreatureAuthoring, key: &str) -> Option<BosstiaryBoss> {
@@ -711,5 +721,69 @@ mod encounter_source_tests {
             );
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod finite_hellspawn_capacity_tests {
+    use super::*;
+    #[test]
+    fn hellspawn_source_physical_capacity_44_keeps_entry_budget_thirty() {
+        let corpse = SectionRef {
+            family: "Item".into(),
+            key: "oteryn:item.tibia.i9009".into(),
+            revision: "definition-r1".into(),
+        };
+        assert_eq!(
+            GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30,
+            "physical44mustnotwidenaccepted30entrybudget"
+        );
+        assert!(
+            corpse_physical_capacity_admitted(&corpse, 44),
+            "pinnedHellspawnphysical44mustremain44"
+        );
+        let other = SectionRef {
+            key: "oteryn:item.tibia.i8133".into(),
+            ..corpse.clone()
+        };
+        assert!(!corpse_physical_capacity_admitted(&other, 44));
+        assert!(!corpse_physical_capacity_admitted(&corpse, 43));
+        assert!(!corpse_physical_capacity_admitted(&corpse, 45));
+    }
+}
+
+#[cfg(test)]
+mod finite_stampor_capacity_tests {
+    use super::*;
+    #[test]
+    fn srv7_stampor_source_physical_capacity32_preserves_direct_entry_budget30() {
+        let corpse = SectionRef {
+            family: "Item".into(),
+            key: "oteryn:item.tibia.i12325".into(),
+            revision: "definition-r1".into(),
+        };
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+        assert!(
+            corpse_physical_capacity_admitted(&corpse, 32),
+            "exactpinnedStamporphysicalcapacity32 mustremain32"
+        );
+        for capacity in [31, 33, 44] {
+            assert!(!corpse_physical_capacity_admitted(&corpse, capacity));
+        }
+        let other = SectionRef {
+            key: "oteryn:item.tibia.i5963".into(),
+            ..corpse.clone()
+        };
+        assert!(!corpse_physical_capacity_admitted(&other, 32));
+        let wrong_revision = SectionRef {
+            revision: "definition-r2".into(),
+            ..corpse.clone()
+        };
+        assert!(!corpse_physical_capacity_admitted(&wrong_revision, 32));
+        let wrong_family = SectionRef {
+            family: "Creature".into(),
+            ..corpse
+        };
+        assert!(!corpse_physical_capacity_admitted(&wrong_family, 32));
     }
 }

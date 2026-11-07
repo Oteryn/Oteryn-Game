@@ -6,6 +6,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.observe_horse_contract_expiry(actor, game_session_id)
+            .await;
         self.load_wheel_gift(actor, game_session_id).await;
         if self
             .runtime
@@ -141,6 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let party_vitals = self
             .refresh_source_party_serene(actor, game_session_id)
             .await;
+        self.refresh_cake_regeneration(actor, game_session_id).await;
         // PKG-P3/P10 UNVERIFIED: map evidence currently identifies PZ tiles, not
         // Global's narrower resting-area subset. This preserves the existing tile gate.
         {

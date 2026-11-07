@@ -137,11 +137,18 @@ impl SpellLanePermit {
     pub async fn of_fresh_scope(
         scope: crate::foundation::RuntimeScopeRefV1,
     ) -> Result<Self, DurabilityError> {
+        Ok(Self::of_fresh_scoped_lane(scope).await)
+    }
+
+    /// Infallible test-support allocation of an empty lane in its actual typed
+    /// scope. This performs no admission or I/O and never substitutes a Channel.
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) async fn of_fresh_scoped_lane(scope: crate::foundation::RuntimeScopeRefV1) -> Self {
         let lane = SpellLane::for_scope(scope);
-        Ok(Self {
+        Self {
             scope,
             guard: Arc::clone(&lane.state).lock_owned().await,
-        })
+        }
     }
 
     #[cfg(any(test, feature = "test-support"))]

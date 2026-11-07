@@ -47,6 +47,11 @@ mod boss_activity_scope_tests;
 #[path = "carrier/area_heal_batch_native_tests.rs"]
 mod area_heal_batch_native_tests;
 
+// The exact source policy decoder is the existing test-support fixture owner.
+#[cfg(all(test, feature = "test-support"))]
+#[path = "carrier/summer_magnolia_health_tests.rs"]
+mod summer_magnolia_health_tests;
+
 mod activity_boss_spawn;
 mod boss_spawns;
 pub use boss_spawns::BossSpawn;
@@ -229,6 +234,7 @@ pub use spawn_realization::SpawnDriveReport;
 use spawn_realization::SpawnDriveWindow;
 use spawn_realization::SpawnRealization;
 pub use spawn_realization::SpawnSourceId;
+pub use spawn_realization::{ActivationSpawnAlternative, ActivationWeightedSpawnPoint};
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
@@ -1526,6 +1532,7 @@ impl ChannelRuntimeV1 {
                             SpawnSourceId(point.source),
                             usize::from(point.ordinal),
                             context,
+                            pending.successor,
                         ) {
                             Ok(actor) => actor,
                             Err(error) => {

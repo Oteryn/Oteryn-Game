@@ -5,6 +5,9 @@
 //! varints unless noted. The writer and the reader apply the same [`validate`], so the writer
 //! never writes what the reader rejects.
 
+mod weighted;
+pub use weighted::{WeightedChoice, WeightedPoint, validate_weighted};
+
 use crate::Error;
 use crate::bundle::Extent;
 use crate::sector::{Reader, TileLimits, put, put_text};
@@ -142,6 +145,8 @@ pub struct Table {
     pub creatures: Vec<Creature>,
     /// Strictly ascending by key; the points of a source keep their authored order.
     pub sources: Vec<Source>,
+    /// Optional same-cell identity choices; ordinary encodings omit the trailer.
+    pub weighted: Vec<WeightedPoint>,
 }
 
 impl Table {
@@ -224,7 +229,7 @@ pub fn validate(table: &Table, world: &Extent) -> Result<(), Error> {
             }
         }
     }
-    Ok(())
+    validate_weighted(table)
 }
 
 fn zigzag(delta: i32) -> u64 {
@@ -271,6 +276,7 @@ pub fn encode(table: &Table) -> Vec<u8> {
             }
         }
     }
+    weighted::encode(table, &mut out);
     out
 }
 
@@ -348,8 +354,13 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
             points: list,
         });
     }
+    let weighted = weighted::decode(&mut r)?;
     check(r.pos == raw.len(), "bytes after the spawn payload")?;
-    let table = Table { creatures, sources };
+    let table = Table {
+        creatures,
+        sources,
+        weighted,
+    };
     validate(&table, world)?;
     Ok(table)
 }

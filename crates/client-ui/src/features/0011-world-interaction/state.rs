@@ -8,6 +8,22 @@ pub struct Menu {
     pub entries: Vec<(&'static str, Action)>,
 }
 impl Menu {
+    pub fn with_rotation(mut self, enabled: bool, definition: Option<std::num::NonZeroU32>) -> Self {
+        if !enabled {
+            return self;
+        }
+        let observed = match self.target {
+            Target::Item(_) => match definition {
+                Some(definition) => Some(definition),
+                None => return self,
+            },
+            Target::Object(_) => None,
+            _ => return self,
+        };
+        self.entries.push(("Rotate", Action::Rotate(observed)));
+        self
+    }
+
     pub fn with_targeting(mut self, enabled: bool) -> Self {
         if enabled && matches!(self.target, Target::Item(_)) {
             self.entries.push(("Use with…", Action::UseWith));
@@ -85,6 +101,7 @@ pub struct State {
     pub targeting: Option<oteryn_client_runtime::inventory::ItemHandle>,
     pub rune_targeting: bool,
     pub use_with: bool,
+    pub rotate: bool,
     pub look: bool,
     pub bed: bool,
     pub pending: bool,

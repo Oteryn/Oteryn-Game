@@ -4,6 +4,18 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 
+mod furniture;
+mod horse_rental;
+mod seasonal;
+/// Immutable source-qualified literal furniture-shop messages.
+pub const FURNITURE_SOURCE: &str = furniture::SOURCE;
+/// Existing canonical Ape City track used by Hairycles greeting and shop access.
+pub const FURNITURE_TRADE_TRACK: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/questline";
+/// Whether the NPC belongs to the closed source furniture-shop census.
+pub fn is_furniture(npc: &str) -> bool {
+    furniture::get(npc).is_some()
+}
+
 const PIN: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 
 #[derive(Deserialize)]
@@ -54,10 +66,14 @@ fn valid_source(source: &Source) -> bool {
 }
 
 fn parse(text: &str) -> Option<Vec<Greeting>> {
+    parse_with_count(text, 23)
+}
+
+pub(crate) fn parse_with_count(text: &str, expected: usize) -> Option<Vec<Greeting>> {
     let data: Document = serde_json::from_str(text).ok()?;
     if data.schema != 1
         || data.source_revision != PIN
-        || data.npcs.len() != 23
+        || data.npcs.len() != expected
         || !valid_source(&data.placeholder_source)
     {
         return None;
@@ -89,21 +105,36 @@ pub fn get(npc: &str) -> Option<&'static Greeting> {
             "../../../../content/dialogues/quests-2/npc-greetings.json"
         ))
     });
-    DATA.as_ref()?.iter().find(|entry| entry.npc == npc)
+    DATA.as_ref()?
+        .iter()
+        .find(|entry| entry.npc == npc)
+        .or_else(|| horse_rental::get(npc))
+        .or_else(|| seasonal::get(npc))
+        .or_else(|| furniture::get(npc))
 }
 
-/// Existing canonical tracks for the two source-owned conditional greetings.
+pub fn is_horse_rental(npc: &str) -> bool {
+    horse_rental::get(npc).is_some()
+}
+
+pub fn is_seasonal(npc: &str) -> bool {
+    seasonal::get(npc).is_some()
+}
+
+/// Existing canonical tracks for the three source-owned conditional greetings.
 /// zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:
-/// data-global/npc/a_sleeping_dragon.lua:50-53; data-global/npc/jack_springer.lua:64-67.
-pub const CONDITIONAL_QUEST_TRACKS: [&str; 2] = [
+/// data-global/npc/a_sleeping_dragon.lua:50-53; data-global/npc/jack_springer.lua:64-67;
+/// data-global/npc/hairycles.lua:55-59.
+pub const CONDITIONAL_QUEST_TRACKS: [&str; 3] = [
     "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
     "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+    FURNITURE_TRADE_TRACK,
 ];
 
 pub fn uses_quest_progress(npc: &str) -> bool {
     matches!(
         npc,
-        "oteryn:npc.a_sleeping_dragon" | "oteryn:npc.jack_springer"
+        "oteryn:npc.a_sleeping_dragon" | "oteryn:npc.jack_springer" | "oteryn:npc.hairycles"
     )
 }
 
@@ -119,6 +150,9 @@ pub fn select(npc: &str, tracks: Option<&BTreeMap<String, i64>>) -> Option<&'sta
             .get(CONDITIONAL_QUEST_TRACKS[1])
             .is_some_and(|value| *value >= 1)
             .then_some("started"),
+        "oteryn:npc.hairycles" => {
+            (tracks?.get(FURNITURE_TRADE_TRACK).copied().unwrap_or(0) >= 12).then_some("ape_friend")
+        }
         // Sea of Light is not a batch-2 track and grants no greeting authority here.
         "oteryn:npc.spectulus" => return None,
         _ => None,

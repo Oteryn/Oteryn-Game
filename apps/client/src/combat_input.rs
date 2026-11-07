@@ -17,6 +17,16 @@ pub enum PlayCommand {
     LoyaltySkills(Vec<u8>),
     Wheel(oteryn_client_runtime::wheel_allocation::WheelCommand),
     Feature(oteryn_client_runtime::raw_feature::FeatureCommand),
+    /// An existing House exit bound to one observed native death, not a new wire command.
+    HouseDeathExit {
+        command: oteryn_client_runtime::raw_feature::FeatureCommand,
+        house_session: [u8; 16],
+        connection_generation: u64,
+        scope_generation: u64,
+        lease_generation: u64,
+        house: String,
+        death_generation: u64,
+    },
     ServerMechanic(oteryn_client_runtime::server_mechanic::ServerMechanicCommand),
     Step(StepDir),
     TargetWalk(oteryn_session::ActorPosition),

@@ -259,7 +259,28 @@ pub(super) async fn trade(
         production_key: offer.item_key.clone(),
         revision_ref: offer.item_revision.clone(),
     };
-    let materialized = if let Some(selection) = &mut hireling
+    let furniture = if hireling.is_none()
+        && offer.side == NpcTradeSide::Buy
+        && offer.quantity == 1
+        && offer.count == 1
+    {
+        oteryn_gameplay_items::furniture::npc_wrapped_offer(
+            &offer.npc_key,
+            &offer.item_key,
+            u64::from(offer.unit_price),
+        )
+        .map(|source| npc_trade::NpcFurnitureSelection {
+            source_row: source.source_row,
+        })
+    } else {
+        None
+    };
+    let materialized = if furniture.is_some() {
+        TypedDefinitionRef {
+            production_key: "oteryn:item.tibia.i23398".into(),
+            ..target
+        }
+    } else if let Some(selection) = &mut hireling
         && offer.side == NpcTradeSide::Buy
         && crate::domain::hireling::catalogue::wrapped_buy(selection.source_row).is_some()
     {
@@ -373,6 +394,17 @@ pub(super) async fn trade(
         admission
             .root
             .commit_npc_sell_all(admission.character, admission.holder, fence, request)
+            .await
+    } else if let Some(selection) = furniture {
+        admission
+            .root
+            .commit_npc_furniture_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                selection,
+            )
             .await
     } else {
         admission

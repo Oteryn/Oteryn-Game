@@ -1,0 +1,1009 @@
+{
+  "index_sha256": "2ca87a456d53985dc3a41dea994438afbc5dace52c172b8c4fe37efff6149953",
+  "regions": 1208,
+  "elapsed_seconds": 41.945,
+  "hits": {
+    "2949": {
+      "total": 10,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z02-x127-y123.b3",
+          "region_sha256": "51bee3701540f7504a90864e7a6c8192975c6673251b7d579d148574e56916fe",
+          "x": 32699,
+          "y": 31717,
+          "z": 2,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33641,
+          "y": 31897,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x128-y123.b3",
+          "region_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903",
+          "x": 32799,
+          "y": 31582,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2959": {
+      "total": 2,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z02-x130-y127.b3",
+          "region_sha256": "afc909d4c82f56e2fcdc773792358a48f11a5afa8b1c4b1fc41e3e96e980b2d2",
+          "x": 33393,
+          "y": 32657,
+          "z": 2,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x127-y126.b3",
+          "region_sha256": "2727d7c7d9d354dcec65101e6d6477c75109ff693787b93e4acba3f6a692feea",
+          "x": 32571,
+          "y": 32500,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2633": {
+      "total": 101,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z02-x131-y127.b3",
+          "region_sha256": "bfe7920df57b03fed8d6dab8b09ad2e346c5245b7d6ab6be8dae5d7448853588",
+          "x": 33725,
+          "y": 32758,
+          "z": 2,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33841,
+          "y": 32341,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x130-y122.b3",
+          "region_sha256": "dd3afea8451d9acea98649a26fd6258c8cbffbfef717ae250322a427004c82fd",
+          "x": 33375,
+          "y": 31344,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2636": {
+      "total": 114,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32964,
+          "y": 31452,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32970,
+          "y": 31452,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33844,
+          "y": 32341,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2630": {
+      "total": 113,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32963,
+          "y": 31456,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x131-y127.b3",
+          "region_sha256": "3691aacc7b1cacd2f56a0ec099a0c0d36ddf93d3a97774d72d6b66f22eb2cd9c",
+          "x": 33725,
+          "y": 32758,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x131-y127.b3",
+          "region_sha256": "3691aacc7b1cacd2f56a0ec099a0c0d36ddf93d3a97774d72d6b66f22eb2cd9c",
+          "x": 33726,
+          "y": 32758,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2631": {
+      "total": 139,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32969,
+          "y": 31458,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32969,
+          "y": 31464,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33840,
+          "y": 32342,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2634": {
+      "total": 111,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32969,
+          "y": 31461,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32969,
+          "y": 31463,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33840,
+          "y": 32343,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2604": {
+      "total": 173,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y122.b3",
+          "region_sha256": "d74e8d8c0f3ef91560f795b4645fd2fb84fefef5cc6dd8ed6937cd5629f9642e",
+          "x": 32969,
+          "y": 31466,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x128-y125.b3",
+          "region_sha256": "9a17bdacfa4c05f1033a9af17f5f8b794779bbc78b26c09c05c3d078536aae79",
+          "x": 32986,
+          "y": 32062,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x128-y125.b3",
+          "region_sha256": "9a17bdacfa4c05f1033a9af17f5f8b794779bbc78b26c09c05c3d078536aae79",
+          "x": 32941,
+          "y": 32102,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2963": {
+      "total": 9,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y128.b3",
+          "region_sha256": "8d4903a4bb71543af360cdfa24f6394d1d0a1ee20ff6cc29049ba7131f064839",
+          "x": 33001,
+          "y": 32922,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z03-x132-y123.b3",
+          "region_sha256": "1ba90691fd1270d67cbccfa34f0ac4d7b4ce3ad9a90543b129c2728b6c09c6fe",
+          "x": 33871,
+          "y": 31490,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33638,
+          "y": 31894,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2948": {
+      "total": 6,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x128-y128.b3",
+          "region_sha256": "8d4903a4bb71543af360cdfa24f6394d1d0a1ee20ff6cc29049ba7131f064839",
+          "x": 32994,
+          "y": 32940,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33641,
+          "y": 31896,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x125-y127.b3",
+          "region_sha256": "d34b0062c5ff595a28996a4db2d5c6c1f9db6c948398cb34585f2b0ca103044b",
+          "x": 32129,
+          "y": 32682,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2976": {
+      "total": 6,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x132-y123.b3",
+          "region_sha256": "1ba90691fd1270d67cbccfa34f0ac4d7b4ce3ad9a90543b129c2728b6c09c6fe",
+          "x": 33868,
+          "y": 31491,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x126-y128.b3",
+          "region_sha256": "e2ecce9264e0442ea4079ac624930a2ba4f57aece24bb524f619c6d74f3c213f",
+          "x": 32336,
+          "y": 32768,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x130-y127.b3",
+          "region_sha256": "ea7a4231fb886612fe9bc1903530f01769e34857296ccdd46710e30b20060d75",
+          "x": 33405,
+          "y": 32661,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2603": {
+      "total": 171,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33842,
+          "y": 32341,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x128-y125.b3",
+          "region_sha256": "9a17bdacfa4c05f1033a9af17f5f8b794779bbc78b26c09c05c3d078536aae79",
+          "x": 32980,
+          "y": 32038,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x128-y125.b3",
+          "region_sha256": "9a17bdacfa4c05f1033a9af17f5f8b794779bbc78b26c09c05c3d078536aae79",
+          "x": 32886,
+          "y": 32074,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2637": {
+      "total": 83,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z03-x132-y126.b3",
+          "region_sha256": "c74653ef3717d449622c073c4cb5b6170bcf3bab2ebe4539cdd9395d3686b1bc",
+          "x": 33840,
+          "y": 32346,
+          "z": 3,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z04-x126-y128.b3",
+          "region_sha256": "0e08843304fe90f0140effd0ec38f4b797ec7b9027924434a3b3372a437d0ac9",
+          "x": 32409,
+          "y": 32829,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z11-x129-y124.b3",
+          "region_sha256": "2e8ca03b436d5bb7f75ea01f209b646d369d4ff1cd0e0bf67a0dc45ef0ff49ce",
+          "x": 33032,
+          "y": 31766,
+          "z": 11,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2961": {
+      "total": 3,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33636,
+          "y": 31895,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x126-y127.b3",
+          "region_sha256": "aff474bac9e1407d2d94694a852c9073240749c74e4e701618ce37f48c4a2ba2",
+          "x": 32325,
+          "y": 32762,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x130-y121.b3",
+          "region_sha256": "5dfff96a3cd0505d88b1f829a1779f163879959e559560287a1f23fd853413ac",
+          "x": 33461,
+          "y": 31024,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2953": {
+      "total": 4,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33641,
+          "y": 31896,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x127-y123.b3",
+          "region_sha256": "93272106bd1722a1f1af27b4233b2fe1670d31aa5f4024258b2615fd934325b3",
+          "x": 32669,
+          "y": 31605,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x128-y125.b3",
+          "region_sha256": "eff31f4acba42b5703e12e0baa90847cc203238953e702340df24336d5608a96",
+          "x": 32949,
+          "y": 32024,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2950": {
+      "total": 8,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33641,
+          "y": 31898,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z05-x129-y124.b3",
+          "region_sha256": "2002ad1ebbadd4e3d0a885b2705107953e094319ba6b29a90629227b1655662d",
+          "x": 33193,
+          "y": 31813,
+          "z": 5,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x126-y125.b3",
+          "region_sha256": "d9301e1cf2bf6c896ecbfe066372c1d9c0860747ab63cef3d2757c10d1b338b9",
+          "x": 32309,
+          "y": 32190,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2952": {
+      "total": 9,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z04-x131-y124.b3",
+          "region_sha256": "124a12fa80e96e376fb8df583fdd22180babd14e50b050f8081bc8c8d3fc7385",
+          "x": 33641,
+          "y": 31899,
+          "z": 4,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z06-x128-y125.b3",
+          "region_sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa",
+          "x": 32883,
+          "y": 32077,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x126-y127.b3",
+          "region_sha256": "f8386392700b328c86a3f15d72d178dbbb5f09b7d04a39551e2d7b58c55d0d66",
+          "x": 32361,
+          "y": 32547,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2965": {
+      "total": 2,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z06-x127-y127.b3",
+          "region_sha256": "3312d12ac36eec82dc7ec8626854e098c03293106722f86ed4e2ab368769e400",
+          "x": 32672,
+          "y": 32728,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x128-y125.b3",
+          "region_sha256": "eff31f4acba42b5703e12e0baa90847cc203238953e702340df24336d5608a96",
+          "x": 32947,
+          "y": 32024,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2964": {
+      "total": 4,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z06-x130-y122.b3",
+          "region_sha256": "35044029335277d7466623676b0f0cd35616053e119bc1d4506bd6902adeeaa6",
+          "x": 33368,
+          "y": 31349,
+          "z": 6,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z07-x128-y125.b3",
+          "region_sha256": "eff31f4acba42b5703e12e0baa90847cc203238953e702340df24336d5608a96",
+          "x": 32946,
+          "y": 32024,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z11-x125-y128.b3",
+          "region_sha256": "1863d1b5f009ad0784d8d835bad2b474d0a2017ac7c17aa2da91bef44db7a285",
+          "x": 32080,
+          "y": 32778,
+          "z": 11,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2955": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z07-x128-y125.b3",
+          "region_sha256": "eff31f4acba42b5703e12e0baa90847cc203238953e702340df24336d5608a96",
+          "x": 32949,
+          "y": 32025,
+          "z": 7,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "2966": {
+      "total": 2,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z10-x128-y122.b3",
+          "region_sha256": "b86ec881af128148efb54f4c63d1fe265296f3bf74b6e4fbeadb48abdf1c3430",
+          "x": 32847,
+          "y": 31446,
+          "z": 10,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        },
+        {
+          "region": "content/world/placements/region-z10-x128-y122.b3",
+          "region_sha256": "b86ec881af128148efb54f4c63d1fe265296f3bf74b6e4fbeadb48abdf1c3430",
+          "x": 32847,
+          "y": 31448,
+          "z": 10,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3255": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33188,
+          "y": 32660,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3259": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33189,
+          "y": 32660,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3258": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33190,
+          "y": 32660,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3256": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33188,
+          "y": 32669,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3260": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33189,
+          "y": 32669,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    },
+    "3261": {
+      "total": 1,
+      "house_total": 0,
+      "house_samples": [],
+      "samples": [
+        {
+          "region": "content/world/placements/region-z15-x129-y127.b3",
+          "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864",
+          "x": 33190,
+          "y": 32669,
+          "z": 15,
+          "house": 0,
+          "depth": 0,
+          "attrs": null
+        }
+      ]
+    }
+  },
+  "not_present": [
+    2951,
+    2954,
+    2956,
+    2957,
+    2958,
+    2962,
+    3219,
+    12602,
+    22736,
+    22737,
+    23431,
+    23432,
+    23433,
+    23453,
+    23454,
+    23455,
+    23536,
+    23537,
+    23691,
+    23707,
+    23710,
+    23711,
+    23712,
+    23713,
+    23714,
+    23715,
+    23716,
+    23717,
+    23718,
+    23719,
+    23720,
+    23725,
+    24416,
+    24417,
+    24418,
+    24419,
+    24420,
+    24421,
+    24422,
+    24423,
+    24424,
+    24425,
+    24426,
+    24427,
+    24428,
+    24429,
+    24430,
+    24431,
+    26077,
+    26114,
+    26115,
+    26116,
+    26117,
+    26118,
+    26119,
+    26120,
+    26121,
+    26122,
+    26123,
+    26150,
+    26151,
+    26152,
+    26153,
+    26154,
+    26155,
+    31466,
+    31467,
+    31468,
+    31469,
+    35887,
+    35888,
+    35889,
+    35890,
+    35891,
+    35892,
+    35893,
+    35894,
+    35895,
+    35896,
+    35897,
+    35898,
+    35899,
+    35900,
+    35941,
+    35942,
+    36496,
+    36838,
+    36939,
+    36940,
+    36941,
+    36942,
+    36943,
+    36944,
+    36945,
+    36946,
+    36947,
+    36948,
+    36949,
+    36950,
+    36951,
+    36952,
+    36953,
+    36954,
+    36955,
+    36956,
+    37019,
+    37020,
+    37353,
+    37354,
+    37355,
+    37356,
+    37357,
+    37358,
+    37359,
+    37360,
+    37361,
+    37362,
+    37363,
+    37364,
+    37365,
+    37366,
+    37367,
+    37368,
+    37369,
+    37370,
+    37371,
+    37372,
+    37373,
+    37374,
+    37375,
+    37376,
+    37377,
+    37378,
+    37379,
+    37380,
+    37381,
+    37382,
+    37383,
+    37384,
+    37385,
+    37386,
+    37387,
+    37388,
+    37389,
+    37390,
+    37391,
+    37392,
+    37393,
+    37394,
+    37395,
+    37396,
+    37763,
+    37764,
+    37765,
+    37766,
+    37767,
+    37768,
+    37769,
+    37770,
+    37771,
+    37772,
+    37773,
+    37774,
+    39797,
+    39798,
+    42336,
+    42337,
+    42338,
+    42339,
+    42340,
+    42341
+  ]
+}

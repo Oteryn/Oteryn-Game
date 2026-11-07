@@ -6,6 +6,15 @@ pub(super) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],
 ) -> Result<(), SessionError> {
+    if selected.contains(&CAPABILITY_ITEM_EFFECTS_V1) {
+        let row = snapshots
+            .iter()
+            .find(|r| r.domain_id == STATE_DOMAIN_ITEM_EFFECTS)
+            .ok_or(SessionError::MissingDomain(STATE_DOMAIN_ITEM_EFFECTS))?;
+        if row.snapshot_type != 1 || row.revision != 0 || !row.payload.is_empty() {
+            return Err(SessionError::SessionUnusable);
+        }
+    }
     if selected.contains(&CAPABILITY_AMBIENT_SOUND_V1) {
         let row = snapshots
             .iter()
@@ -46,10 +55,13 @@ pub(super) fn apply<S: SessionStream>(
 ) -> Result<SessionEvent, SessionError> {
     let delta = decode_state_delta(payload)?;
     let ambient = delta.domain_id == STATE_DOMAIN_AMBIENT_SOUND;
+    let item = delta.domain_id == STATE_DOMAIN_ITEM_EFFECTS;
     if ambient && delta.payload.len() > MAX_PRESENTATION_EVENT_BYTES {
         return Err(SessionError::SessionUnusable);
     }
-    if !session.is_selected(if ambient {
+    if !session.is_selected(if item {
+        CAPABILITY_ITEM_EFFECTS_V1
+    } else if ambient {
         CAPABILITY_AMBIENT_SOUND_V1
     } else {
         CAPABILITY_PRESENTATION_V1
@@ -64,7 +76,15 @@ pub(super) fn apply<S: SessionStream>(
         .find(|(id, _)| *id == delta.domain_id)
         .ok_or(SessionError::MissingDomain(delta.domain_id))?;
     check_delta(&delta, 1, row.1)?;
-    let event = if ambient || delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+    let event = if item {
+        SessionEvent::ItemEffects(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: decode_item_effect_batch(delta.payload)
+                .map_err(|_| SessionError::SessionUnusable)?,
+        })
+    } else if ambient || delta.domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
         let value =
             decode_presentation_batch(delta.payload).map_err(|_| SessionError::SessionUnusable)?;
         if ambient

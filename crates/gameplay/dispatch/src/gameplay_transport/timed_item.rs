@@ -15,6 +15,8 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub(super) struct TimedRuntime {
+    pub(super) furniture_inventory_refresh:
+        tokio::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     pub(super) imbuements:
         tokio::sync::Mutex<HashMap<GameSessionId, super::imbuement_clock::ImbuementClock>>,
     pub(super) magic_converters: tokio::sync::Mutex<HashMap<GameSessionId, MagicConverterClock>>,

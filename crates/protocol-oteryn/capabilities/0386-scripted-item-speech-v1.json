@@ -1,0 +1,17 @@
+{
+  "id": 386,
+  "name": "SCRIPTED_ITEM_SPEECH_V1",
+  "constant": "chat::CAPABILITY_SCRIPTED_ITEM_SPEECH_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

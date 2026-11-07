@@ -1,0 +1,1044 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.allen",
+      "variants": {},
+      "greet": {
+        "text": "Welcome to the Plank and Treasurechest Market, |PLAYERNAME|! Best trades in town!.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/allen.lua",
+          "line": 116,
+          "sha256": "515b0efdd681a6764856f1ec146be1ffe7ccb06912c6c77338214cc038564ce7"
+        }
+      },
+      "farewell": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/allen.lua",
+          "line": 114,
+          "sha256": "515b0efdd681a6764856f1ec146be1ffe7ccb06912c6c77338214cc038564ce7"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/allen.lua",
+          "line": 113,
+          "sha256": "515b0efdd681a6764856f1ec146be1ffe7ccb06912c6c77338214cc038564ce7"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.asphota",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.borkas",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.dorbin",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.eddy",
+      "variants": {},
+      "greet": {
+        "text": "Hello |PLAYERNAME|! Do you need some equipment for your house?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/eddy.lua",
+          "line": 61,
+          "sha256": "482e5ab6266516db54f98167407a296041b645ab3681a2d78b61d96ef0c6362d"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.edvard",
+      "variants": {},
+      "greet": {
+        "text": "Welcome to Edron Furniture Store, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/edvard.lua",
+          "line": 61,
+          "sha256": "39d1eb6c2a33c2fd17b2567420a05fa1f0125a682667995856504c1300042ed5"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.fayla",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.feizuhl",
+      "variants": {},
+      "greet": {
+        "text": "Be mourned pilgrim in flesh and welcome to the furniture store.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/feizuhl.lua",
+          "line": 59,
+          "sha256": "3a6f308d860294288adc9abf4b4e677988b5a549b69167d6966fa16138a8e9a5"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.florentine",
+      "variants": {},
+      "greet": {
+        "text": "Welcome, |PLAYERNAME|. What can I do for you?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/florentine.lua",
+          "line": 59,
+          "sha256": "65fe714fd0b14c62e0dc2049c182b3b8e028f9374b6dcaa59b4eabec70a3e5b1"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.gamon",
+      "variants": {},
+      "greet": {
+        "text": "Nice to meet you, Mister |PLAYERNAME|! Looking for furniture? You've come to the right place!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/gamon.lua",
+          "line": 75,
+          "sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+        }
+      },
+      "farewell": {
+        "text": "You'll come back. They all do.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/gamon.lua",
+          "line": 76,
+          "sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/gamon.lua",
+          "line": 77,
+          "sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.haani",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "variants": {
+        "ape_friend": {
+          "text": "Be greeted, friend of the ape people. If you want to {trade}, just ask for my offers. If you are injured, ask for healing.",
+          "source": {
+            "repository": "zimbadev/crystalserver",
+            "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "path": "data-global/npc/hairycles.lua",
+            "line": 58,
+            "sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+          }
+        }
+      },
+      "greet": {
+        "text": "Oh! Hello! Hello! Did not notice!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/hairycles.lua",
+          "line": 56,
+          "sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.hofech",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.inkaef",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.isika",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.iwar",
+      "variants": {},
+      "greet": {
+        "text": "Hiho Storm Killer! Welcome to Kazordoon furniture store.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/iwar.lua",
+          "line": 84,
+          "sha256": "4ff86ac54af2810de86f41ea0b5a9841794f7889bf0a7605eaf9b98c22d310ad"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Well, bye then.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/iwar.lua",
+          "line": 85,
+          "sha256": "4ff86ac54af2810de86f41ea0b5a9841794f7889bf0a7605eaf9b98c22d310ad"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.janz",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.john_bounac",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.julian",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.messenger_of_santa",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.nicholas",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.nydala",
+      "variants": {},
+      "greet": {
+        "text": "Welcome to Carlin Furniture Store, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nydala.lua",
+          "line": 57,
+          "sha256": "bba7eca0b1333a14a74856281abb77283234502c0840f41e27363a300fd72d0e"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.peggy",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.rose",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.shiantis",
+      "variants": {},
+      "greet": {
+        "text": "Oh, please come in, |PLAYERNAME|. What can I do for you? If you need adventure equipment, ask me for a {trade}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/shiantis.lua",
+          "line": 86,
+          "sha256": "e702a6b2c8beebb612822e1b75a30ffe23cb8d25f1c16ab85a869aee9549be2f"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/shiantis.lua",
+          "line": 87,
+          "sha256": "e702a6b2c8beebb612822e1b75a30ffe23cb8d25f1c16ab85a869aee9549be2f"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/shiantis.lua",
+          "line": 88,
+          "sha256": "e702a6b2c8beebb612822e1b75a30ffe23cb8d25f1c16ab85a869aee9549be2f"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.ukea",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/ukea.lua",
+          "line": 57,
+          "sha256": "3b65f818cca7e9bce1d1fbfb8546d7a085369aa038bb781b7c0003d8815d1937"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.vera",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.yoem",
+      "variants": {},
+      "greet": {
+        "text": "Hello |PLAYERNAME|! Do you need some equipment for your house?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/yoem.lua",
+          "line": 61,
+          "sha256": "965941151ef81aa22c6014a986a7c7a62e2c8e7c666646a9188a29af80397ab2"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.yulas",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.zaidal",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    }
+  ],
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

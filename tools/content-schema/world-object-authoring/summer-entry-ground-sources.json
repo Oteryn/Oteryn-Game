@@ -1,0 +1,723 @@
+{
+  "schema": "OTERYN_SRV7_SUMMER_ENTRY_GROUNDS/v1",
+  "area": {
+    "x": [
+      33800,
+      34250
+    ],
+    "y": [
+      32400,
+      32800
+    ],
+    "floors": [
+      0,
+      15
+    ]
+  },
+  "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+  "grounds": [
+    {
+      "id": 5404,
+      "speed": 250,
+      "automap_color": 51,
+      "summer_placements": 25
+    },
+    {
+      "id": 32859,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 10
+    },
+    {
+      "id": 32860,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 4
+    },
+    {
+      "id": 32861,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 20
+    },
+    {
+      "id": 32862,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 19
+    },
+    {
+      "id": 32942,
+      "speed": 95,
+      "automap_color": 0,
+      "summer_placements": 2
+    },
+    {
+      "id": 33150,
+      "speed": 850,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 35072,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 50
+    },
+    {
+      "id": 35073,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 21
+    },
+    {
+      "id": 35074,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 10
+    },
+    {
+      "id": 39812,
+      "speed": 200,
+      "automap_color": 129,
+      "summer_placements": 20
+    },
+    {
+      "id": 39948,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 101
+    },
+    {
+      "id": 40196,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 120
+    },
+    {
+      "id": 40197,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 96
+    },
+    {
+      "id": 40198,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 79
+    },
+    {
+      "id": 40199,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 78
+    },
+    {
+      "id": 40200,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 66
+    },
+    {
+      "id": 40201,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 68
+    },
+    {
+      "id": 40202,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 67
+    },
+    {
+      "id": 40203,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 64
+    },
+    {
+      "id": 40230,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 81
+    },
+    {
+      "id": 40231,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 61
+    },
+    {
+      "id": 40232,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 65
+    },
+    {
+      "id": 40233,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 54
+    },
+    {
+      "id": 40234,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 51
+    },
+    {
+      "id": 40235,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 41
+    },
+    {
+      "id": 40236,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 53
+    },
+    {
+      "id": 40237,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 4
+    },
+    {
+      "id": 40239,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 1
+    },
+    {
+      "id": 40240,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 3
+    },
+    {
+      "id": 40241,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 2
+    },
+    {
+      "id": 44577,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 11
+    },
+    {
+      "id": 44578,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 16
+    },
+    {
+      "id": 44579,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 44580,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 5
+    },
+    {
+      "id": 44581,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 5
+    },
+    {
+      "id": 44582,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 4
+    },
+    {
+      "id": 45728,
+      "speed": 115,
+      "automap_color": 12,
+      "summer_placements": 2
+    },
+    {
+      "id": 50100,
+      "speed": 100,
+      "automap_color": 0,
+      "summer_placements": 185
+    },
+    {
+      "id": 50815,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 2
+    },
+    {
+      "id": 50816,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 1
+    },
+    {
+      "id": 50817,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 2
+    },
+    {
+      "id": 50818,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 2
+    },
+    {
+      "id": 50819,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 2
+    },
+    {
+      "id": 50820,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 3
+    },
+    {
+      "id": 52067,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 241
+    },
+    {
+      "id": 52068,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 284
+    },
+    {
+      "id": 52069,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 220
+    },
+    {
+      "id": 52071,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 237
+    },
+    {
+      "id": 52072,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 138
+    },
+    {
+      "id": 52073,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 141
+    },
+    {
+      "id": 52074,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 91
+    },
+    {
+      "id": 52075,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 83
+    },
+    {
+      "id": 52076,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 82
+    },
+    {
+      "id": 52077,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 48
+    },
+    {
+      "id": 52078,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 53
+    },
+    {
+      "id": 52079,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 33
+    },
+    {
+      "id": 52080,
+      "speed": 100,
+      "automap_color": 129,
+      "summer_placements": 62
+    },
+    {
+      "id": 53234,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 392
+    },
+    {
+      "id": 53235,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 11
+    },
+    {
+      "id": 53239,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 2
+    },
+    {
+      "id": 53240,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 3
+    },
+    {
+      "id": 53254,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 4855
+    },
+    {
+      "id": 53257,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 24
+    },
+    {
+      "id": 53259,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 20
+    },
+    {
+      "id": 53260,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 21
+    },
+    {
+      "id": 53274,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 9
+    },
+    {
+      "id": 53283,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 3
+    },
+    {
+      "id": 53284,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 3
+    },
+    {
+      "id": 53285,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 3
+    },
+    {
+      "id": 53286,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 3
+    },
+    {
+      "id": 53289,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 30
+    },
+    {
+      "id": 53290,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 1
+    },
+    {
+      "id": 53291,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 1
+    },
+    {
+      "id": 53294,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 1
+    },
+    {
+      "id": 53295,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 1
+    },
+    {
+      "id": 53298,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 53299,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 53300,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 53301,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 8
+    },
+    {
+      "id": 53687,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 14
+    },
+    {
+      "id": 53688,
+      "speed": 150,
+      "automap_color": 86,
+      "summer_placements": 14
+    },
+    {
+      "id": 53910,
+      "speed": 100,
+      "automap_color": 215,
+      "summer_placements": 227
+    },
+    {
+      "id": 54049,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 126
+    },
+    {
+      "id": 54050,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 45
+    },
+    {
+      "id": 54051,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 38
+    },
+    {
+      "id": 54052,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 41
+    },
+    {
+      "id": 54053,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 41
+    },
+    {
+      "id": 54054,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 52
+    },
+    {
+      "id": 54055,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 40
+    },
+    {
+      "id": 54056,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 42
+    },
+    {
+      "id": 54057,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 43
+    },
+    {
+      "id": 54058,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 8
+    },
+    {
+      "id": 54059,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 4
+    },
+    {
+      "id": 54060,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 7
+    },
+    {
+      "id": 54061,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 7
+    },
+    {
+      "id": 54062,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 7
+    },
+    {
+      "id": 54063,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 4
+    },
+    {
+      "id": 54064,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 5
+    },
+    {
+      "id": 54065,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 6
+    },
+    {
+      "id": 54066,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 3
+    },
+    {
+      "id": 54067,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 35
+    },
+    {
+      "id": 54068,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 15
+    },
+    {
+      "id": 54070,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 4
+    },
+    {
+      "id": 54072,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 4
+    },
+    {
+      "id": 54074,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 12
+    },
+    {
+      "id": 54075,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 35
+    },
+    {
+      "id": 54080,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 2
+    },
+    {
+      "id": 54081,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 2
+    },
+    {
+      "id": 54082,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 2
+    },
+    {
+      "id": 54083,
+      "speed": 100,
+      "automap_color": 121,
+      "summer_placements": 2
+    },
+    {
+      "id": 54143,
+      "speed": 100,
+      "automap_color": 51,
+      "summer_placements": 858
+    },
+    {
+      "id": 54585,
+      "speed": 115,
+      "automap_color": 12,
+      "summer_placements": 4
+    },
+    {
+      "id": 54586,
+      "speed": 115,
+      "automap_color": 12,
+      "summer_placements": 4
+    },
+    {
+      "id": 54637,
+      "speed": 150,
+      "automap_color": 129,
+      "summer_placements": 88
+    }
+  ],
+  "refused_spawn_points": [
+    {
+      "cell": [
+        34161,
+        32684,
+        6
+      ],
+      "creature": "oteryn:creature.moonstone_excavator",
+      "appearance_id": 53854,
+      "reason": "official_bank_unpass",
+      "speed": 1
+    }
+  ]
+}

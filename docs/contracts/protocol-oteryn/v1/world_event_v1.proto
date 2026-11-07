@@ -2,6 +2,10 @@ syntax = "proto3";
 package oteryn.protocol.v1;
 
 // Capability 53, command 64. Empty query; World and session are admission facts.
+// Capability 371 SEASONAL_EVENTS_V1 (requires 53) gates fields 4 and 5. A peer without
+// 371 receives precisely the original fields 1–3 and original 144-byte ceiling.
+// Client build/schema artifact equality is not a compatibility identity (FND-02).
+// Selection is immutable across receipt replay and reconnect.
 message WorldEventQueryV1 {}
 
 // Immutable reset-selected Oteryn gathering, returned only after a durable
@@ -9,10 +13,44 @@ message WorldEventQueryV1 {}
 // even epochs inactive. Epoch zero is inactive before the first planned reset.
 // Active state ends at the next reset; no client-selected time or activation.
 // ACTIVE requires a nonempty announcement (<=128 UTF-8 bytes); INACTIVE requires
-// an empty announcement. Maximum encoded result: 144 bytes. Strict decoding
-// rejects unknown/repeated fields, invalid booleans and control characters.
+// an empty announcement. Maximum encoded result: 256 bytes. Strict decoding
+// rejects unknown/repeated singular fields, invalid booleans and control characters.
 message WorldEventStateV1 {
   uint64 reset_epoch = 1;
   bool active = 2;
   string announcement = 3;
+  // At most three unique event kinds. Server-authoritative annual windows; active
+  // is independent of reset_epoch. Replayed queries retain their original windows.
+  repeated SeasonalEventStateV1 seasonal = 4;
+  optional CakeProgressV1 cake = 5;
 }
+
+message SeasonalEventStateV1 {
+  // 1 Halloween, 2 Christmas (Santa/presents), 3 Birthday Cake (A Piece of Cake).
+  uint32 event = 1;
+  bool active = 2;
+  // Unix UTC seconds, start inclusive and end exclusive; 0 < start < end <=
+  // 253402300799 (9999-12-31T23:59:59Z). These dates are supplied by the server.
+  uint64 start_unix = 3;
+  uint64 end_unix = 4;
+}
+
+// Specific A Piece of Cake occurrence and durable progress, independent of the
+// next annual calendar. Absent if neither this occurrence nor earned bonus remains.
+// stage0 may retain an earned bonus beyond calendar cleanup. Maximum nested48bytes.
+message CakeProgressV1 {
+  uint32 stage = 1; // 0 finished,1 preparation,2 cake layers,3 celebration.
+  uint32 substances = 2; // 0..200
+  uint32 golems = 3; // 0..200
+  uint32 layer = 4; // 1..4
+  uint32 layer_progress = 5; // 0..1116 bites
+  uint64 occurrence_start = 6;
+  uint64 occurrence_end = 7;
+  optional uint64 window_end = 8; // layer window start=end-1800
+  optional uint64 bonus_until = 9; // earned bonus start=end-604800
+  uint64 observed_unix = 10; // authoritative query observation, immutable on replay
+}
+// All dates positive and <=253402300799; occurrence_end>occurrence_start.
+// window_end>=1800 and bonus_until>=604800 when present. Clients label explicit
+// server-observed timestamps; replayed observations never reset a local countdown.
+// Maximum combined legacy+three calendar events+Cake progress result:254bytes.

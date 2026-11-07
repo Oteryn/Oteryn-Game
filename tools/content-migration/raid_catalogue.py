@@ -18,6 +18,9 @@ import sys
 from pathlib import Path
 from xml.parsers import expat
 
+from seasonal_raids import admit_halloween_hare
+from seasonal_pumpkin_raid import admit_mutated_pumpkin
+
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 REPOSITORY = "zimbadev/crystalserver"
@@ -528,6 +531,8 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             if any(not entry["area"]["regions"] for entry in record["donor_cycle"]["areas"]):
                 record["inactive_reasons"].append("donor_flower_area_unbound")
             record["inactive_reasons"].append("dryad_wave_conflict:wiki_five_waves_in_one_hour_vs_donor_indefinite_four_area_cycle")
+        admit_halloween_hare(record, observed)
+        admit_mutated_pumpkin(record, observed)
         qualify(record, creatures, placements)
         records.append(record)
     sugar = lua_sugar(sources["data-global/scripts/raids/bosses/sugar_mommy.lua"], creatures)

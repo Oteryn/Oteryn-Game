@@ -104,7 +104,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 true,
             )
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                let _ = error;
+            })?;
         if let Some(receipt) = replay.as_ref() {
             if receipt.disposition == UseDisposition::Committed {
                 if serde_json::from_value::<NoveltyEffects>(receipt.effects.clone()).is_ok() {
@@ -236,13 +238,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<UseOutcome, ()> {
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if let Some(effects) = states.settle_novelty_effect(&runtime, actor, request, &receipt)? {
-            self.states.chat.publish_item_speech(
-                &runtime,
-                actor,
-                request.command.game_session_id(),
-                &effects,
-            );
+        let cupcake = states
+            .pending_item_effects
+            .iter()
+            .find(|memo| {
+                memo.actor == actor
+                    && memo.request.command == request.command
+                    && matches!(memo.effects.source_item_id, 28484..=28486)
+            })
+            .map(|memo| {
+                (
+                    memo.effects.source_item_id,
+                    memo.fence.connection_generation.get(),
+                )
+            });
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        if let Some(effects) =
+            states.settle_novelty_effect(&runtime, actor, request, &receipt, native, self.holder)?
+        {
+            if receipt.fresh
+                && (matches!(effects.source_item_id, 2995 | 5080 | 5791 | 6511 | 6566)
+                    || oteryn_gameplay_items::furniture::is_portable_effect(&format!(
+                        "oteryn:item.tibia.i{}",
+                        effects.source_item_id
+                    )))
+            {
+                let actor_position = runtime
+                    .read_actor_position(actor)
+                    .map_err(|_| ())?
+                    .position();
+                let position =
+                    if matches!(effects.source_item_id, 5791 | 6566) && effects.damage == Some(1) {
+                        actor_position
+                    } else {
+                        effects.ground.as_ref().map_or(actor_position, |ground| {
+                            crate::foundation::MovementLocalPosition {
+                                x: ground.x,
+                                y: ground.y,
+                                floor: ground.floor,
+                            }
+                        })
+                    };
+                for cue in &effects.cues {
+                    states.sounds.record_item_effect(
+                        &runtime,
+                        actor,
+                        position,
+                        cue.effect_id,
+                        effects.private_speech,
+                    );
+                }
+            }
+            if let Some((item, generation)) = cupcake {
+                self.states
+                    .chat
+                    .cupcake_speech(&runtime, actor, request.command.game_session_id());
+                self.states.server_messages.cupcake_status(
+                    request.command.game_session_id(),
+                    generation,
+                    item,
+                );
+            } else {
+                self.states.chat.publish_item_speech(
+                    &runtime,
+                    actor,
+                    request.command.game_session_id(),
+                    &effects,
+                );
+            }
+        }
+        if receipt.disposition == UseDisposition::Exhausted
+            && let Some((_, generation)) = cupcake
+        {
+            self.states
+                .server_messages
+                .cupcake_exhausted(request.command.game_session_id(), generation);
         }
         Ok(outcome(receipt.disposition))
     }

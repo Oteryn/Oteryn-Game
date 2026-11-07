@@ -20,6 +20,39 @@ pub(super) fn rotate(
     actor: TilePos,
     target: &WorldObjectTarget,
 ) -> Option<UseDisposition> {
+    rotate_impl(map, native, generation, actor, target, false, false)
+}
+
+pub(super) fn rotate_explicit(
+    map: &BundleMap,
+    native: &NativeGameplayState,
+    generation: [u8; 32],
+    actor: TilePos,
+    target: &WorldObjectTarget,
+) -> Option<UseDisposition> {
+    rotate_impl(map, native, generation, actor, target, true, false)
+}
+
+/// The caller holds the actual named-House target-tile read lock through CAS.
+pub(super) fn use_house_static(
+    map: &BundleMap,
+    native: &NativeGameplayState,
+    generation: [u8; 32],
+    actor: TilePos,
+    target: &WorldObjectTarget,
+) -> Option<UseDisposition> {
+    rotate_impl(map, native, generation, actor, target, false, true)
+}
+
+fn rotate_impl(
+    map: &BundleMap,
+    native: &NativeGameplayState,
+    generation: [u8; 32],
+    actor: TilePos,
+    target: &WorldObjectTarget,
+    explicit: bool,
+    house_use: bool,
+) -> Option<UseDisposition> {
     let facts = map.facts.pinned();
     let source = MapViewSource {
         overlay: &map.overlay,
@@ -46,20 +79,37 @@ pub(super) fn rotate(
     let policy = native
         .item_policy(&definition.production_key, &definition.revision_ref)?
         .record();
-    let ReferenceItemField::Known(transforms) = &policy.semantics.use_transform else {
-        return None;
-    };
-    let to = transforms
-        .targets
-        .iter()
-        .find(|entry| entry.kind == ReferenceTransformKind::Rotate)?;
-    let ReferenceItemField::Known(to) = &to.target else {
-        return None;
+    let (to_key, to_revision) = if house_use {
+        let id = oteryn_gameplay_items::furniture::transform_to(&definition.production_key)?;
+        let record = native.item_policy_for_source_id(id)?.record();
+        (
+            record.production_definition.production_key.as_str(),
+            record.production_definition.revision_ref.as_str(),
+        )
+    } else if explicit {
+        let id = oteryn_gameplay_items::furniture::rotate_to(&definition.production_key)?;
+        let record = native.item_policy_for_source_id(id)?.record();
+        (
+            record.production_definition.production_key.as_str(),
+            record.production_definition.revision_ref.as_str(),
+        )
+    } else {
+        let ReferenceItemField::Known(transforms) = &policy.semantics.use_transform else {
+            return None;
+        };
+        let to = transforms
+            .targets
+            .iter()
+            .find(|entry| entry.kind == ReferenceTransformKind::Rotate)?;
+        let ReferenceItemField::Known(to) = &to.target else {
+            return None;
+        };
+        (to.key.as_str(), to.revision.as_str())
     };
     if !super::map_door::reachable(actor, resolved.pos) {
         return Some(UseDisposition::TooFar);
     }
-    let output = native.item_policy(&to.key, &to.revision)?.record();
+    let output = native.item_policy(to_key, to_revision)?.record();
     // Rotation in this slice preserves every collision fact. Containers, beds, doors, floor
     // changes and other special types need their own owner and cannot be used as furniture.
     let plain = |record: &crate::content::native_gameplay::ItemProfileRecord| {
@@ -73,7 +123,7 @@ pub(super) fn rotate(
             && record.semantics.charges == ReferenceItemField::NotApplicable
             && record.semantics.temporal == ReferenceItemField::NotApplicable
     };
-    if facts.house_tile(resolved.pos)
+    if facts.house_tile(resolved.pos) != house_use
         || before.bound
         || !plain(policy)
         || !plain(output)
@@ -82,19 +132,28 @@ pub(super) fn rotate(
         || policy.attributes.blocks_projectile.is_none()
         || policy.attributes.blocks_projectile != output.attributes.blocks_projectile
         || policy.attributes.has_height != output.attributes.has_height
-        || crate::map::floor::palette_mask(oteryn_world_bundle::bundle::Family::Item, &to.key) != 0
+        || crate::map::floor::palette_mask(oteryn_world_bundle::bundle::Family::Item, to_key) != 0
     {
         return Some(UseDisposition::NothingToUse);
     }
     let after = view::EntryFacts {
-        definition: MapDefinition::Item(index.definition_ref("Item", &to.key, &to.revision)?),
-        appearance_id: view::appearance_id(&to.key, None),
+        definition: MapDefinition::Item(index.definition_ref("Item", to_key, to_revision)?),
+        appearance_id: view::appearance_id(to_key, None),
         ..before
     };
-    Some(map.facts.rotate_base(
-        resolved.placement_key,
-        target.expected_revision,
-        before,
-        after,
-    ))
+    Some(if house_use {
+        map.facts.transform_house_base(
+            resolved.placement_key,
+            target.expected_revision,
+            before,
+            after,
+        )
+    } else {
+        map.facts.rotate_base(
+            resolved.placement_key,
+            target.expected_revision,
+            before,
+            after,
+        )
+    })
 }

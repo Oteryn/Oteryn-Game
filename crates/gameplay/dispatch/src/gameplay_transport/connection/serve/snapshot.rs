@@ -551,6 +551,16 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
     selected_capabilities: SelectedCapabilities,
     baseline: WorldSpatialObservation,
 ) -> Result<WorldSnapshot, ServeEnd> {
+    if selected_capabilities
+        .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
+            revision: 0,
+            snapshot_type: 1,
+            payload: Vec::new(),
+        });
+    }
     // MAP-WIRE-2: with capability 18 (which requires 4), domain 17 above every revision the
     // session has seen, with fresh map handles. It uses the bounded snapshot transfer.
     let mut world_map = None;

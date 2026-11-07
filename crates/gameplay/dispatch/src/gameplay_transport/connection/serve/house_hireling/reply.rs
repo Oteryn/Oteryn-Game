@@ -40,6 +40,7 @@ pub(in super::super) fn result(
         Dispatch::Reply(status, payload) | Dispatch::NpcShop(status, payload, _, _) => {
             (*status, payload.clone())
         }
+        Dispatch::ItemMove(outcome, _, refusal) => house_move::reply(selected, *outcome, *refusal)?,
         Dispatch::Use(outcome) => {
             let (disposition, gate) = negotiated_use_disposition(
                 UseCapabilities {
@@ -102,6 +103,11 @@ pub(in super::super) fn result(
             }
             (CommandStatus::Accepted, payload)
         }
+        Dispatch::Look(result, selection) => (
+            CommandStatus::Accepted,
+            oteryn_protocol_oteryn::item_look::encode_item_look_result_for(result, *selection)
+                .map_err(|_| ServeEnd::Disconnected)?,
+        ),
         Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         _ => return Err(ServeEnd::Disconnected),
     })

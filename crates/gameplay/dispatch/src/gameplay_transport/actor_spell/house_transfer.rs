@@ -16,6 +16,7 @@ pub(in crate::gameplay_transport) struct HouseTransferViews {
     lease: CharacterLease,
     scope: RuntimeScopeRefV1,
     revision: Option<u64>,
+    death: Option<PlayerDeathOccurrence>,
 }
 
 fn current_owner(
@@ -58,8 +59,23 @@ impl ChannelSpellStates {
         source: GameSessionId,
         destination: GameSessionId,
     ) -> bool {
+        self.house_transfer_data_ready_for_death(attack, actor, source, destination, None)
+    }
+    fn house_transfer_data_ready_for_death(
+        &self,
+        attack: &ChannelAttackStates,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+        death: Option<PlayerDeathOccurrence>,
+    ) -> bool {
         source != destination
-            && !self.is_dead(actor)
+            && (!self.is_dead(actor)
+                || death.is_some_and(|occurrence| {
+                    self.deaths
+                        .iter()
+                        .any(|(a, s, d)| *a == actor && *s == source && d.occurrence == occurrence)
+                }))
             && !self.has_pending_spell_commit(actor, source)
             && !self
                 .actors
@@ -98,6 +114,7 @@ impl ChannelSpellStates {
             destination,
             lease,
             scope,
+            death: None,
             revision: self
                 .actors
                 .iter()
@@ -109,6 +126,44 @@ impl ChannelSpellStates {
     /// Only the authenticated native recovery caller can supply this committed
     /// edge. A retained source is historical data, possibly carrying the exact
     /// pre-COMMIT transition fence, not renewed source write authority.
+    pub(in crate::gameplay_transport) fn prepare_house_death_transfer_views(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        attack: &ChannelAttackStates,
+        actor: ExactActorRef,
+        source: GameSessionId,
+        destination: GameSessionId,
+        death: PlayerDeath,
+    ) -> Option<HouseTransferViews> {
+        let (lease, scope) = current_owner(runtime, actor, source)?;
+        runtime.house_actor_state(actor, source).ok()?;
+        if self
+            .player_death(runtime, actor, source)
+            .is_none_or(|held| held.occurrence != death.occurrence || held.cell != death.cell)
+            || !self.house_transfer_data_ready_for_death(
+                attack,
+                actor,
+                source,
+                destination,
+                Some(death.occurrence),
+            )
+        {
+            return None;
+        }
+        Some(HouseTransferViews {
+            actor,
+            source,
+            destination,
+            lease,
+            scope,
+            death: Some(death.occurrence),
+            revision: self
+                .actors
+                .iter()
+                .find(|(a, s, _)| *a == actor && *s == source)
+                .map(|(_, _, state)| state.revision()),
+        })
+    }
     pub(in crate::gameplay_transport) fn prepare_recovered_house_transfer_views(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -155,7 +210,16 @@ impl ChannelSpellStates {
                 // their existing read-only restore path. Never invent a source.
                 return Some(None);
             };
-        if !self.house_transfer_data_ready(attack, actor, source, destination) {
+        let death =
+            if recovered.ack.house.is_none() && runtime.house_actor_state(actor, source).is_ok() {
+                self.deaths
+                    .iter()
+                    .find(|(a, s, _)| *a == actor && *s == source)
+                    .map(|(_, _, d)| d.occurrence)
+            } else {
+                None
+            };
+        if !self.house_transfer_data_ready_for_death(attack, actor, source, destination, death) {
             return None;
         }
         Some(Some(HouseTransferViews {
@@ -164,6 +228,7 @@ impl ChannelSpellStates {
             destination,
             lease,
             scope,
+            death,
             revision: self
                 .actors
                 .iter()
@@ -185,6 +250,7 @@ impl ChannelSpellStates {
             lease,
             scope,
             revision,
+            death,
         } = prepared;
         let (next_lease, next_scope) = current_owner(runtime, actor, destination)?;
         if next_lease.character_id() != lease.character_id()
@@ -202,7 +268,7 @@ impl ChannelSpellStates {
                 )
             )
             || current_owner(runtime, actor, source).is_some()
-            || !self.house_transfer_data_ready(attack, actor, source, destination)
+            || !self.house_transfer_data_ready_for_death(attack, actor, source, destination, death)
             || self
                 .actors
                 .iter()
@@ -214,6 +280,13 @@ impl ChannelSpellStates {
         }
         // All checks precede the infallible in-place moves under the same owner
         // locks. No durable occurrence, timer, epoch or remaining time is reset.
+        if let Some(occurrence) = death {
+            for (a, s, d) in &mut self.deaths {
+                if *a == actor && *s == source && d.occurrence == occurrence {
+                    *s = destination;
+                }
+            }
+        }
         for (a, s, _) in &mut self.actors {
             if *a == actor && *s == source {
                 *s = destination;

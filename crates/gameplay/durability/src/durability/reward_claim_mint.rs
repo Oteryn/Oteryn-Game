@@ -119,6 +119,11 @@ pub mod boss_reward;
 mod contents;
 mod grizzly;
 mod monk;
+pub mod pumpkin_skinning;
+pub(crate) mod seasonal;
+pub(crate) mod npc_source;
+#[path="reward_claim_mint/npc_source_facts.rs"]
+pub(crate) mod npc_source_facts;
 mod soul_war;
 mod tibiadrome;
 

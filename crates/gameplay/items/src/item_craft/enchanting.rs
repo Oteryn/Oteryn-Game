@@ -93,6 +93,51 @@ pub fn output(native: &NativeGameplayState, rule: EnchantingRule) -> Option<Type
     })
 }
 
+/// Crystal201189f enchanting.lua:107-112. The statue is the primary
+/// operand so the mature consume/transform owner preserves its custody slot.
+pub fn dracoyle_conversion(
+    native: &NativeGameplayState,
+    gem: &TypedDefinitionRef,
+    statue: &TypedDefinitionRef,
+) -> Option<super::CookingConversion> {
+    if gem.family != "Item"
+        || statue.family != "Item"
+        || gem.production_key != "oteryn:item.tibia.i677"
+        || !matches!(
+            statue.production_key.as_str(),
+            "oteryn:item.tibia.i9035" | "oteryn:item.tibia.i9040"
+        )
+        || native
+            .item_policy(&gem.production_key, &gem.revision_ref)
+            .is_none()
+        || native
+            .item_policy(&statue.production_key, &statue.revision_ref)
+            .is_none()
+    {
+        return None;
+    }
+    let output_id = if statue.production_key == "oteryn:item.tibia.i9035" {
+        9034
+    } else {
+        9039
+    };
+    let output = native.item_policy_for_source_id(output_id)?.record();
+    if !output.admission.materializable {
+        return None;
+    }
+    Some(super::CookingConversion {
+        recipe: "oteryn:seasonal.dracoyle".into(),
+        outputs: vec![(
+            TypedDefinitionRef {
+                family: output.production_definition.family.clone(),
+                production_key: output.production_definition.production_key.clone(),
+                revision_ref: output.production_definition.revision_ref.clone(),
+            },
+            1,
+        )],
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

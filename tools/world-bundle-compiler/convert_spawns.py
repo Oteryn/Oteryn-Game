@@ -233,7 +233,8 @@ def convert(xml: bytes) -> dict[str, str]:
                                     "record_count": len(chances)}],
         }
     )
-    return {name: text + "\n" for name, text in files.items()}
+    from summer_weighted import augment
+    return augment({name: text + "\n" for name, text in files.items()})
 
 
 def main() -> None:

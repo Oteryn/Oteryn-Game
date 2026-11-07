@@ -19,7 +19,16 @@ pub async fn schedule_minted_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
     if !definition.decay_chain.is_empty() {
-        return schedule_field_chain_in_transaction(tx, authority, request, definition, item, ordinal, occurred_at).await;
+        return schedule_field_chain_in_transaction(
+            tx,
+            authority,
+            request,
+            definition,
+            item,
+            ordinal,
+            occurred_at,
+        )
+        .await;
     }
     let Some(decay) = &definition.decay else {
         return Ok(());
@@ -59,14 +68,25 @@ pub(super) async fn schedule_action_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), super::DurabilityError> {
     use super::DurabilityError;
-    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else { return Ok(()); };
-    let duration = decay.get("duration_millis").and_then(serde_json::Value::as_u64)
+    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else {
+        return Ok(());
+    };
+    let duration = decay
+        .get("duration_millis")
+        .and_then(serde_json::Value::as_u64)
         .filter(|value| (1..=u64::from(u32::MAX)).contains(value))
         .ok_or(DurabilityError::InvalidStoredState)?;
     let duration = i64::try_from(duration).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let expires = occurred_at.checked_add(duration).ok_or(DurabilityError::InvalidStoredState)?;
-    let target = decay.get("target").ok_or(DurabilityError::InvalidStoredState)?;
-    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1) || ordinal == 0 || content_digest == [0; 32] {
+    let expires = occurred_at
+        .checked_add(duration)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let target = decay
+        .get("target")
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1)
+        || ordinal == 0
+        || content_digest == [0; 32]
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(($1->>'item')::uuid,$2::uuid,$3,$4,$5,'Item',$1->>'key',$1->>'revision',$6->>'family',$6->>'key',$6->>'revision',$7)")
@@ -119,6 +139,7 @@ pub async fn drain_due_items_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id)
+       AND NOT EXISTS(SELECT 1 FROM game_house_furniture_absolute_expiries done WHERE done.item_instance_id=i.item_instance_id)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)

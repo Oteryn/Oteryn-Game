@@ -375,6 +375,9 @@ pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 /// SPAWN-1b (Codex P1 on #1981): one bundle spawn source as the Channel runtime realizes it
 /// (the carrier's `ActivationSpawnSourceFacts`): its points in authored order, each its
 /// placement cell `(x, y, z)`, respawn delay (ms), creature key, initial health and creature
+mod weighted;
+pub use weighted::{BundleSpawnPlan, table_activation_spawn_plan};
+
 /// profile `blocked_by_nearby_players`, and the source's occupancy retry interval (ms).
 pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
 
@@ -401,37 +404,10 @@ pub fn table_activation_spawns(
     table: &oteryn_world_bundle::spawn::Table,
     profile: impl Fn(&str) -> Option<(u64, bool)>,
 ) -> Option<Vec<BundleSpawnFacts>> {
-    use oteryn_world_bundle::spawn::Period;
-    // Each creature's profile is resolved once, on its first active point.
-    let mut profiles: Vec<Option<(u64, bool)>> = vec![None; table.creatures.len()];
-    let mut out = Vec::with_capacity(table.sources.len());
-    for source in &table.sources {
-        let z = i16::from(source.floor).checked_neg()?;
-        let mut points = Vec::with_capacity(source.points.len());
-        for point in &source.points {
-            let index = usize::try_from(point.creature).ok()?;
-            let creature = table.creatures.get(index)?;
-            if creature.period != Period::All || point.boss_policy.is_some() {
-                continue;
-            }
-            let resolved = profiles.get_mut(index)?;
-            let (health, blockable) = match *resolved {
-                Some(known) => known,
-                None => *resolved.insert(profile(&creature.key)?),
-            };
-            points.push((
-                (i32::from(point.x), i32::from(point.y), z),
-                u64::from(point.respawn_ms),
-                creature.key.clone(),
-                health,
-                blockable,
-            ));
-        }
-        if !points.is_empty() {
-            out.push((points, BUNDLE_OCCUPANCY_RETRY_MS));
-        }
+    if !table.weighted.is_empty() {
+        return None;
     }
-    Some(out)
+    Some(table_activation_spawn_plan(table, profile)?.sources)
 }
 
 impl BundleWorld {
@@ -446,6 +422,20 @@ impl BundleWorld {
             sources.extend(super::daily::grimvale_spawns(self, daily, profile)?);
         }
         Some(sources)
+    }
+
+    /// The production boot path consumes the complete physical-point plan, including
+    /// weighted choices; the legacy scalar adapter refuses weighted payloads.
+    pub fn activation_spawn_plan(
+        &self,
+        profile: impl Fn(&str) -> Option<(u64, bool)>,
+    ) -> Option<BundleSpawnPlan> {
+        let mut plan = table_activation_spawn_plan(&self.spawns, &profile)?;
+        if let Some(daily) = &self.daily {
+            plan.sources
+                .extend(super::daily::grimvale_spawns(self, daily, profile)?);
+        }
+        Some(plan)
     }
 
     /// Boss placements are kept separate from ordinary activation/respawn sources.
@@ -703,6 +693,7 @@ pub mod tests {
             points,
         };
         let table = Table {
+            weighted: Vec::new(),
             creatures: vec![
                 creature("oteryn:creature.bat", Period::Night),
                 creature("oteryn:creature.rat", Period::All),
@@ -799,6 +790,7 @@ pub mod tests {
             period: Period::All,
         };
         let table = Table {
+            weighted: Vec::new(),
             creatures: vec![
                 creature("oteryn:creature.bat"),
                 creature("oteryn:creature.rat"),
@@ -1849,6 +1841,7 @@ mod boss_spawn_tests {
             BossPolicy, Creature, Direction, Period, Point, Source, Table,
         };
         let table = Table {
+            weighted: Vec::new(),
             creatures: vec![Creature {
                 key: "oteryn:creature.boss".into(),
                 period: Period::All,

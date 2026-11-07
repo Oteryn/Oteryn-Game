@@ -1,0 +1,1201 @@
+{
+  "schema": 1,
+  "classification": "CURRENT_REPOSITORY_SOURCE_REACHABILITY_AUDIT",
+  "scope": "native natural loot, ordinary spawn authoring and active/inactive raids; no test rat override and no inferred boss Instance admission",
+  "sources": [
+    {
+      "path": "tools/content-schema/native-gameplay/loot-tables.json",
+      "sha256": "a4bf9f6bd7b5348b321af80303f02e148188ae0a01c06a5bbe5500579381014e"
+    },
+    {
+      "path": "content/encounters/raids/catalogue.json",
+      "sha256": "0679fcc8e27efbb2a600bf758fd962d48f55c0c515bf3a2ff3229546d3b85852"
+    },
+    {
+      "path": "content/world/spawns/spawns-00000-01999.json",
+      "sha256": "624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66"
+    },
+    {
+      "path": "content/world/spawns/spawns-02000-03999.json",
+      "sha256": "00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a"
+    },
+    {
+      "path": "content/world/spawns/spawns-04000-05999.json",
+      "sha256": "75a12158f6aaa5100f36a7844fdc00d51907a0c485969af4fb110eef3c5fa190"
+    },
+    {
+      "path": "content/world/spawns/spawns-06000-07999.json",
+      "sha256": "a6ecb2df0063d75f5634caae3a1e7251f6e10b94af64906ef53e910bb964aa0b"
+    },
+    {
+      "path": "content/world/spawns/spawns-08000-09999.json",
+      "sha256": "e43579cbdc23610bc06f9dd03edf6c29ea6bf7039c7c4a1dbf17211f999948ca"
+    },
+    {
+      "path": "content/world/spawns/spawns-10000-11999.json",
+      "sha256": "a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051"
+    },
+    {
+      "path": "content/world/spawns/spawns-12000-13999.json",
+      "sha256": "2343cb0a419fd7cbae284ac3240c0116e3f1386ed184c682ab28708feddfc10d"
+    },
+    {
+      "path": "content/world/spawns/spawns-14000-15999.json",
+      "sha256": "bb2aab074b8b4a9ecb207a0891df3eaf157924f79185a2946189603a97a5180b"
+    },
+    {
+      "path": "content/world/spawns/spawns-16000-17999.json",
+      "sha256": "ccfb3faeba59090847dde5f439bb13f1da753cce39d6cc07924676465a194535"
+    },
+    {
+      "path": "content/world/spawns/spawns-18000-19999.json",
+      "sha256": "8abe425ddd2c5c36da2d7fdc01fa9d744d19665f783a7173b71f3b8a297f94fd"
+    },
+    {
+      "path": "content/world/spawns/spawns-20000-21999.json",
+      "sha256": "dac7fb57e93803e5ffc9ee7485a5a129cd1a04708c72ca7cb645450d574a8b98"
+    },
+    {
+      "path": "content/world/spawns/spawns-22000-23999.json",
+      "sha256": "b3e92daf3ffd47daee21894fe00c0f6da2847fc77ff96667c572edbe9cd928a7"
+    },
+    {
+      "path": "content/world/spawns/spawns-24000-25999.json",
+      "sha256": "4535edfb7b9377cf7fad2653a02ab55f973a53636bc5ab7d6059350de14898c7"
+    },
+    {
+      "path": "content/world/spawns/spawns-26000-27999.json",
+      "sha256": "ca992a88a630bd3a4aba3100443c4668d9b04551dae9d816acad54044e4b0f7a"
+    },
+    {
+      "path": "content/world/spawns/spawns-28000-29999.json",
+      "sha256": "6d35476d6cb761b0e4eecc7abe1a32835cbdf20c34529e7534b6574c82701d03"
+    },
+    {
+      "path": "content/world/spawns/spawns-30000-31999.json",
+      "sha256": "b3447bdc05b0fce15debe777b49c7a759304154cdf5bf161cf29e869326120b4"
+    },
+    {
+      "path": "content/world/spawns/spawns-32000-33999.json",
+      "sha256": "72b523bbc7e4cbaaddfd5482841969211e291ddc1965f7bf17f53bee45e8cc49"
+    },
+    {
+      "path": "content/world/spawns/spawns-34000-35999.json",
+      "sha256": "b1a9de667ffebaed9f8b9e4b5c216f259a965b3e70541690580d7b3fc0f8be36"
+    },
+    {
+      "path": "content/world/spawns/spawns-36000-37999.json",
+      "sha256": "0d4342519e5871f4b0f40fb7bd36f2f4f9e2dfec1ce5b641fc1536ec9773a52b"
+    },
+    {
+      "path": "content/world/spawns/spawns-38000-39999.json",
+      "sha256": "87f93e70df873a4a8f215f4758807d1b305a3b4eed1f82be62c1ad318ec58334"
+    },
+    {
+      "path": "content/world/spawns/spawns-40000-41999.json",
+      "sha256": "a5cf575f1fbe00991da140bb751f2069e5b81610c865b3e12df04abb5c3e9aca"
+    },
+    {
+      "path": "content/world/spawns/spawns-42000-43999.json",
+      "sha256": "24f0fe60b6a2ca98097792aaecf20ffac79216c8b69437d4f23261695711d5dc"
+    },
+    {
+      "path": "content/world/spawns/spawns-44000-45999.json",
+      "sha256": "a268979be2ef8aeb83aeecdee627446992665c9a1ad341ab9fef5a6afcbe3cca"
+    },
+    {
+      "path": "content/world/spawns/spawns-46000-47999.json",
+      "sha256": "de6e1ddd2d8af9a9b01122f411c042e4ddd83052fe8bec944f4ea59430d60fb2"
+    },
+    {
+      "path": "content/world/spawns/spawns-48000-49999.json",
+      "sha256": "8670baad206c50a06d89461b1bfddeaccd12bb3ff5ea188527acbec4466c62b3"
+    },
+    {
+      "path": "content/world/spawns/spawns-50000-51999.json",
+      "sha256": "80b8bc1375772485c6195cc9fa7f00f7263e672427a075f177ea2f9519b87678"
+    },
+    {
+      "path": "content/world/spawns/spawns-52000-53999.json",
+      "sha256": "e6dc3a9a16e769338d8852150031f4d3f93499a11e7bc8505a9db27cc7c8b07a"
+    },
+    {
+      "path": "content/world/spawns/spawns-54000-54673.json",
+      "sha256": "32a78064db4627081cadde881395289f25237b472dbf1169f5487bbca22211bf"
+    },
+    {
+      "path": "content/world/spawns/spawns-boss-spawn1.json",
+      "sha256": "40cdd87440885bc9cb240d6c96ccb20e2922887b0c927361c6f6f04b6700b629"
+    },
+    {
+      "path": "content/world/spawns/spawns-srv7-summer-weighted.json",
+      "sha256": "3d83e3e9b95e45eb2d80d875b9145100b5263ebd68c0c6427484eebb638fe8ba"
+    }
+  ],
+  "records": [
+    {
+      "item_id": 12551,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 12552,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 12553,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 12554,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 12555,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 12556,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.feverish_citizen"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.feverish_citizen",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": [
+            {
+              "raid": "raid:venore.feverishcitizens",
+              "active": true,
+              "inactive_reasons": [],
+              "json_path": "$.records[224].variants[0].waves[0].entries[0]",
+              "entry": {
+                "amount": {
+                  "max": 120,
+                  "min": 120
+                },
+                "area": {
+                  "binding_source": "content/world/placements/index.json",
+                  "coordinate_frame": "global-target-2026-09-27",
+                  "from": {
+                    "floor": 6,
+                    "x": 32861,
+                    "y": 32052
+                  },
+                  "regions": [
+                    {
+                      "path": "content/world/placements/region-z06-x128-y125.b3",
+                      "sha256": "be13f2a3b44ccf04d0a8f9bf09c463beb5d2d3880014c476eaddffe7761d38aa"
+                    }
+                  ],
+                  "to": {
+                    "floor": 6,
+                    "x": 33012,
+                    "y": 32126
+                  },
+                  "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                },
+                "area_anchor": "raid-anchor:32861_32052_6-33012_32126_6",
+                "boss": false,
+                "boss_source": null,
+                "creature": "oteryn:creature.feverish_citizen",
+                "source": {
+                  "evidence": "OTS_HYPOTHESIS_ONLY",
+                  "line": 5,
+                  "path": "data-global/raids/venore/feverish_citizens.xml",
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                  "sha256": "cd8dd6b7812b160ae3a4b68891ad04f2f9f8bc1d1687a7667d7be884b6902d25"
+                },
+                "source_name": "feverish citizen",
+                "spawn_mode": "area"
+              },
+              "schedule": {
+                "interval_s": 86400,
+                "kind": "legacy_xml",
+                "margin_ms": 10800000,
+                "repeat": false,
+                "source_order": 145
+              }
+            }
+          ]
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 1,
+      "status": "CURRENT_STATIC_OR_ACTIVE_RAID"
+    },
+    {
+      "item_id": 23684,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.world_devourer"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.world_devourer",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 23685,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.world_devourer"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.world_devourer",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 27655,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ancient_spawn_of_morgathla",
+        "oteryn:loot.creature.the_baron_from_below"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ancient_spawn_of_morgathla",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_baron_from_below",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 27656,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ancient_spawn_of_morgathla",
+        "oteryn:loot.creature.the_count_of_the_core"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ancient_spawn_of_morgathla",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_count_of_the_core",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 27657,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ancient_spawn_of_morgathla",
+        "oteryn:loot.creature.the_duke_of_the_depths"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ancient_spawn_of_morgathla",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_duke_of_the_depths",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 32629,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.the_pale_worm"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.the_pale_worm",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 32630,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.brain_head",
+        "oteryn:loot.creature.the_dread_maiden",
+        "oteryn:loot.creature.the_fear_feaster",
+        "oteryn:loot.creature.the_pale_worm",
+        "oteryn:loot.creature.the_unwelcome"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.brain_head",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_dread_maiden",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_fear_feaster",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_pale_worm",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_unwelcome",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 32631,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.brain_head",
+        "oteryn:loot.creature.the_dread_maiden",
+        "oteryn:loot.creature.the_fear_feaster",
+        "oteryn:loot.creature.the_pale_worm",
+        "oteryn:loot.creature.the_unwelcome"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.brain_head",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_dread_maiden",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_fear_feaster",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_pale_worm",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.the_unwelcome",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 34072,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.goshnar_s_greed",
+        "oteryn:loot.creature.goshnar_s_hatred",
+        "oteryn:loot.creature.goshnar_s_malice"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.goshnar_s_greed",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_hatred",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_malice",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 34073,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.goshnar_s_cruelty"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.goshnar_s_cruelty",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 34074,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.goshnar_s_cruelty",
+        "oteryn:loot.creature.goshnar_s_hatred"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.goshnar_s_cruelty",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_hatred",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 34075,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.goshnar_s_greed",
+        "oteryn:loot.creature.goshnar_s_malice",
+        "oteryn:loot.creature.goshnar_s_spite"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.goshnar_s_greed",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_malice",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_spite",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 34076,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.goshnar_s_hatred",
+        "oteryn:loot.creature.goshnar_s_malice"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.goshnar_s_hatred",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.goshnar_s_malice",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 35595,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ratmiral_blackwhiskers"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ratmiral_blackwhiskers",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 35695,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ratmiral_blackwhiskers"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ratmiral_blackwhiskers",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 36938,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.the_abomination"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.the_abomination",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 37604,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.lord_retro"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.lord_retro",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 37605,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.lord_retro"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.lord_retro",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 39544,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.magma_bubble"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.magma_bubble",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 39545,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.magma_bubble"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.magma_bubble",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 43899,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.ichgahal",
+        "oteryn:loot.creature.murcion"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.ichgahal",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.murcion",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 43900,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.chagorz",
+        "oteryn:loot.creature.vemiath"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.chagorz",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.vemiath",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 44048,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.bakragore",
+        "oteryn:loot.creature.murcion"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.bakragore",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        },
+        {
+          "creature": "oteryn:creature.murcion",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 50060,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.arbaziloth"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.arbaziloth",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 50061,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.arbaziloth"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.arbaziloth",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 50064,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.arbaziloth"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.arbaziloth",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    },
+    {
+      "item_id": 50067,
+      "native_item_materializable": true,
+      "natural_loot_tables": [
+        "oteryn:loot.creature.arbaziloth"
+      ],
+      "source_creatures": [
+        {
+          "creature": "oteryn:creature.arbaziloth",
+          "placement_count": 0,
+          "first_placement": null,
+          "raid_sources": []
+        }
+      ],
+      "placed_source_creatures": 0,
+      "active_raid_source_creatures": 0,
+      "status": "NO_STATIC_OR_RAID_SOURCE_INSTANCE_ADMISSION_REQUIRED"
+    }
+  ]
+}

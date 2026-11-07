@@ -101,6 +101,7 @@ fn selected_mechanic_panels_have_raw_command_routes() -> Result<(), BoxError> {
                     (199, 387),
                     (225, 431),
                     (230, 440),
+                    (384, 669),
                 ] {
                     assert!(
                         gated_routes().any(|(id, commands, _)| id == capability
@@ -349,6 +350,8 @@ fn world_event_query_uses_selected_session_and_empty_payload() -> Result<(), Box
                             reset_epoch: 9,
                             active: true,
                             announcement: "Fair".into(),
+                            seasonal: Vec::new(),
+                            cake: None,
                         })
                         .map_err(|_| "world-event encode failed")?;
                     write_frame(

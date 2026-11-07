@@ -1,0 +1,1019 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "rows": [
+    {
+      "npc": "oteryn:npc.emperor_kruzak",
+      "cell": {
+        "x": 32626,
+        "y": 31923,
+        "floor": 3
+      },
+      "direction": "north",
+      "definition_sha256": "be8ed468050218e4486d879f8f4fdc6416f5c14bce8c4718fb52d46376470e08",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 133,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.zoltan",
+      "cell": {
+        "x": 33266,
+        "y": 31847,
+        "floor": 4
+      },
+      "direction": "north",
+      "definition_sha256": "c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 178,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "cell": {
+        "x": 33710,
+        "y": 32113,
+        "floor": 4
+      },
+      "direction": "north",
+      "definition_sha256": "48ff00f79ac6a7e89a4be2ae03e863a86a6349162634a68f940dfe9f0dfe18cc",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 223,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.ezebeth",
+      "cell": {
+        "x": 33677,
+        "y": 31884,
+        "floor": 5
+      },
+      "direction": "north",
+      "definition_sha256": "280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 361,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "cell": {
+        "x": 32950,
+        "y": 32102,
+        "floor": 5
+      },
+      "direction": "north",
+      "definition_sha256": "60069ed647e4379a2e1177d32652602d86d8d50ad8da066f7dc65529b92fa55d",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 400,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "cell": {
+        "x": 32952,
+        "y": 32109,
+        "floor": 5
+      },
+      "direction": "north",
+      "definition_sha256": "08e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 406,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.eruaran",
+      "cell": {
+        "x": 33618,
+        "y": 32372,
+        "floor": 5
+      },
+      "direction": "north",
+      "definition_sha256": "6da2bd991078e0b7ac9cf96f855f4e931800e5609ba82280ea19bd749ae49936",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 427,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "cell": {
+        "x": 33192,
+        "y": 31044,
+        "floor": 6
+      },
+      "direction": "north",
+      "definition_sha256": "8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 490,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "cell": {
+        "x": 32311,
+        "y": 32172,
+        "floor": 6
+      },
+      "direction": "north",
+      "definition_sha256": "e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 838,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.ustan",
+      "cell": {
+        "x": 32580,
+        "y": 32757,
+        "floor": 6
+      },
+      "direction": "north",
+      "definition_sha256": "441ed6570ee072e3e75ffa98af95aa653b3d6ec8836327f6a5927833c5faed89",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1013,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "cell": {
+        "x": 32351,
+        "y": 31026,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1124,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.yalahari",
+      "cell": {
+        "x": 32801,
+        "y": 31188,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "4a1c2569d797d7a8dac838f7070140c14aaf9103c088f7c663778ffcad02cf5a",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1208,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "cell": {
+        "x": 32801,
+        "y": 31223,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1238,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.rock_steady",
+      "cell": {
+        "x": 33453,
+        "y": 31330,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1319,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.ajax",
+      "cell": {
+        "x": 32417,
+        "y": 31583,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "ae0ffccf94c5a9353da66f9357d0a72b9d17acc7441bc642e81b707ee1eda67d",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1412,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.bron",
+      "cell": {
+        "x": 32366,
+        "y": 31628,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "81bb5e8c48cccd1824c15124301aa8ed33774cab386b85a8575f27ebad9dd7d0",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1445,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.queen_eloise",
+      "cell": {
+        "x": 32314,
+        "y": 31754,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "6d20d616a1472fcacecaee7724bb870766c6f6328f45b6f2fbcb69b58f56a32e",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1553,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "cell": {
+        "x": 33251,
+        "y": 31763,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "2262a6867b3a8260696ca9e08cc556ebb6362bfa28a601eede7cc7e9a89aeea3",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1571,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "cell": {
+        "x": 32302,
+        "y": 31782,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "26084a8748e9d3a01d59745bb30e67fb3610924430ce86034828c893c9b8dfc2",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1592,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "cell": {
+        "x": 32380,
+        "y": 31786,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1613,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.cornelia",
+      "cell": {
+        "x": 32335,
+        "y": 31794,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "421600da97cb55bf1b5e5fb9a54df0c7cd36f10c1b383f2b84a8bdd2f7bd89e2",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1631,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.sandra",
+      "cell": {
+        "x": 33257,
+        "y": 31839,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "566fd1c69a69ed447fbf6f56d08603631983cfbc9f203a11c41b71b9bd47ae53",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1685,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "cell": {
+        "x": 33336,
+        "y": 32014,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1796,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "cell": {
+        "x": 32489,
+        "y": 32119,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1841,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.appaloosa",
+      "cell": {
+        "x": 32852,
+        "y": 32124,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "2972dcf9913edd16f693bf265a97acbdec9acde1de8487141ee776ed98efce19",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1844,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.bozo",
+      "cell": {
+        "x": 32313,
+        "y": 32183,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "518f1fd0e427f6d5e66c7d6ba0401db4845978f4bbc75c159d57c6738918bdbd",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1880,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "cell": {
+        "x": 32361,
+        "y": 32198,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1901,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "cell": {
+        "x": 32331,
+        "y": 32199,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "c02b3072ac121d52ccd9e4e6d911942633bddbd9489c9325f66e375e8f5207a9",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1907,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.walter_jaeger",
+      "cell": {
+        "x": 32379,
+        "y": 32207,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "64c5dab0b1e124fba0e9b22b5ce33b2861a3c01afa899fcda78960abf7d1f0f5",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1925,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "cell": {
+        "x": 32408,
+        "y": 32220,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1952,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.palomino",
+      "cell": {
+        "x": 32450,
+        "y": 32226,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1961,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "cell": {
+        "x": 32342,
+        "y": 32235,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 1976,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "cell": {
+        "x": 32295,
+        "y": 32263,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2006,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "cell": {
+        "x": 33238,
+        "y": 32404,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2081,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "cell": {
+        "x": 33231,
+        "y": 32423,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "9eb2e869db4d0dfad8f04fc171773dcf9045e35647bd4069f9e9b18dc0513c71",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2102,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "cell": {
+        "x": 33225,
+        "y": 32434,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "0666e7207a7fd9565f5311ffc3d87f9b138c858117d802c089a7d00c727c7b78",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2117,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "cell": {
+        "x": 32186,
+        "y": 32471,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2147,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "cell": {
+        "x": 33238,
+        "y": 32482,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "7114cc53c7119cd7a42947a5be07611956e11e7f7c8833f68197f136be5e353f",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2150,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.chondur",
+      "cell": {
+        "x": 32361,
+        "y": 32550,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "c68f518fdef95b3162032cd73a2380df057b7df0d24ee8408e50dbe91ebc0f62",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2200,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.raymond_striker",
+      "cell": {
+        "x": 32350,
+        "y": 32588,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2212,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "cell": {
+        "x": 32336,
+        "y": 32593,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "90cd51edf9d8829e054e2bfa38cbf61aa3bece945b56ceb60e9cb9a346c95a56",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2215,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "cell": {
+        "x": 32324,
+        "y": 32599,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "fbef2b0d61842368915e506ff5d2e1e96f00a3f55bb3cad4ee97178824832610",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2218,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "cell": {
+        "x": 32565,
+        "y": 32651,
+        "floor": 7
+      },
+      "direction": "north",
+      "definition_sha256": "af26eb8e9e31d41d3d00f08d03a971cf3136c4c2ffc83317af414e1dcb40262b",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2239,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.a_majestic_warwolf",
+      "cell": {
+        "x": 33355,
+        "y": 31991,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "9fa8cee3622cacee85aec7770960d7d1bf46d25569f3a6ef857d0605bc842572",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2519,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.lugri",
+      "cell": {
+        "x": 32389,
+        "y": 32118,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2534,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "cell": {
+        "x": 33685,
+        "y": 32180,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "fbc0bb272ed67594e0d385ae0baf41271c81aca511b28455bd896c51f083e59a",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2543,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.henricus",
+      "cell": {
+        "x": 32316,
+        "y": 32267,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2567,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.gnommander",
+      "cell": {
+        "x": 32248,
+        "y": 32604,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2588,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "cell": {
+        "x": 32518,
+        "y": 32911,
+        "floor": 8
+      },
+      "direction": "north",
+      "definition_sha256": "dc6c54417c8bfdd32abcea9f068322f17d029c4d7722f1acfdeb6cd795a4c48f",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2600,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "cell": {
+        "x": 33639,
+        "y": 31377,
+        "floor": 9
+      },
+      "direction": "north",
+      "definition_sha256": "cc98cf86f238fd1da617e0f77184e63900d5bee6495ba593934974d538b3aca8",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2642,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.jack_springer",
+      "cell": {
+        "x": 32326,
+        "y": 32261,
+        "floor": 9
+      },
+      "direction": "north",
+      "definition_sha256": "d46ee3fb0eb74faa94fb69557fab846ace961fa500d1a79e5c99090a0801cdf9",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2723,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.flickering_soul",
+      "cell": {
+        "x": 33621,
+        "y": 31419,
+        "floor": 10
+      },
+      "direction": "north",
+      "definition_sha256": "67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2756,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "cell": {
+        "x": 33028,
+        "y": 31513,
+        "floor": 10
+      },
+      "direction": "north",
+      "definition_sha256": "4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 2771,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.the_first_dragon",
+      "cell": {
+        "x": 33617,
+        "y": 31017,
+        "floor": 13
+      },
+      "direction": "north",
+      "definition_sha256": "645852a73164653b3ae894eaeba26c31f672ca6802223ee9ac47a35c74a0c8aa",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 3081,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "cell": {
+        "x": 32260,
+        "y": 31866,
+        "floor": 14
+      },
+      "direction": "north",
+      "definition_sha256": "4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 3177,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    },
+    {
+      "npc": "oteryn:npc.gnomadness",
+      "cell": {
+        "x": 33527,
+        "y": 32865,
+        "floor": 14
+      },
+      "direction": "north",
+      "definition_sha256": "e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "line": 3255,
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "qualification": "SOURCE_CELL_ONLY_ENTRY_AND_QUEST_GATES_NOT_ASSERTED"
+    }
+  ],
+  "owner_exclusions": [
+    "Dawnport",
+    "Testserver Assistant",
+    "developer-map aliases12072/12043,13962/13988,13962/14023"
+  ]
+}

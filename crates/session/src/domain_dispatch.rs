@@ -71,7 +71,7 @@ impl<S: SessionStream> Session<S> {
             52 => crate::pvp_expert::apply(self, server_sequence, payload),
             18 => crate::world_light::apply(self, server_sequence, payload),
             22 => crate::weather::apply(self, server_sequence, payload),
-            19 | 20 | 101 => crate::presentation::apply(self, server_sequence, payload),
+            19 | 20 | 101 | oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS => crate::presentation::apply(self, server_sequence, payload),
             14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             40 => crate::server_save_countdown::apply(self, server_sequence, payload),
@@ -186,6 +186,8 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let vitals = actor_spell::decode_actor_vitals(delta.payload)?;
                 self.actor_vitals = Some(vitals);
+                self.own_vitals_house_binding = self.gated_snapshot(51)
+                    .map(|snapshot| snapshot.payload.clone());
                 self.vitals_revision = new_revision;
                 Ok(SessionEvent::ActorVitals(applied(
                     server_sequence,

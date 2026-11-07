@@ -144,6 +144,20 @@ pub(super) async fn run(
             attempts += 1;
         }
         let (target, entity) = spawn(owner, actor, &rule.creature_key, 1).await?;
+        if rule.creature_key == "oteryn:creature.foxmouse" {
+            curse(owner, actor, session, true).await?;
+            let before = item_quantity(h, &rule.item_key).await?;
+            let (results, next) = wire::exchange(
+                owner, retained, &[payload(index, &rule.item_key, entity)?],
+            ).await?;
+            assert_eq!(results, [UseDisposition::RequirementNotMet]);
+            retained = next;
+            assert_eq!(item_quantity(h, &rule.item_key).await?, before);
+            assert_eq!(h.count("game_mount_taming_attempts").await?, attempts);
+            feedback(owner, session,
+                "The foxmouse senses your curse and refuses to be tamed. Consume Purple Nightshade Blossoms to cure it first.");
+            curse(owner, actor, session, false).await?;
+        }
         let success_payload = payload(index, &rule.item_key, entity)?;
         let before = item_quantity(h, &rule.item_key).await?;
         crate::gameplay_transport::mount_taming::test_draw::set(if music { u64::MAX } else { 0 });
@@ -244,5 +258,36 @@ pub(super) async fn run(
         h.count("game_account_achievements").await?,
         successes + i64::from(music)
     );
+    Ok(())
+}
+
+async fn curse(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    enabled: bool,
+) -> TestResult {
+    use oteryn_gameplay_domain::domain::condition::{ConditionType, ConditionValues, DotElement};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let conditions = &mut states.get_mut(&runtime, actor, session).ok_or("condition owner")?.conditions;
+    if !enabled {
+        conditions.remove_type(ConditionType::DamageOverTime(DotElement::Cursed));
+        return Ok(());
+    }
+    let definition = ConditionDefinition::new("srv7.foxmouse.curse", 1,
+        ConditionValues::DamageOverTime { element: DotElement::Cursed,
+            total_min: 100, total_max: 100, per_tick: 1, interval_ms: 10_000, delayed: true },
+    ).ok_or("curse definition")?;
+    let root = GameplayDecisionRoot::from_bytes([7; 32]);
+    conditions.apply(&definition, Some("creature".into()), ConditionSourceKind::Creature, &[],
+        &ApplicationFacts { now: owner.owner_now().get(), base_speed: 220, mana_shield_capacity: 0,
+            target_reentry_protected: false, source_reentry_protected: false, target_is_player: true,
+            decision_root: &root, occurrence: DecisionOccurrenceId::from_bytes([8; 16]) },
+    ).map_err(debug)?;
     Ok(())
 }

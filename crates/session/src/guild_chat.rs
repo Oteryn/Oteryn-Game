@@ -77,6 +77,8 @@ pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, 
             ..
         }
     ) && !selected.contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+        && !(selected.contains(&chat::CAPABILITY_CHAT_V1)
+            && selected.contains(&chat::CAPABILITY_SCRIPTED_ITEM_SPEECH_V1))
     {
         return Err(SessionError::SessionUnusable);
     }
@@ -107,6 +109,16 @@ pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, 
 }
 
 impl ChatLog {
+    /// Decode a negotiated chat snapshot using the same bounded decoder as admission.
+    /// This exposes presentation state only, without granting a room or membership.
+    pub fn decode_snapshot(
+        snapshot_type: u32,
+        payload: &[u8],
+        selected_capabilities: &[u32],
+    ) -> Result<Self, SessionError> {
+        guild_chat::load_snapshot(snapshot_type, payload, selected_capabilities)
+    }
+
     #[must_use]
     pub const fn guild_room(&self) -> &guild_room::GuildRoomState {
         &self.guild

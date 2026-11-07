@@ -14,6 +14,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         death: actor_spell::PlayerDeath,
         releasing: bool,
     ) -> bool {
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            // House admission rejects pending training and House gameplay has no
+            // training writer. Prove the carried predecessor clean; never drop it.
+            return self.house_death_training_clean(actor, session, death).await;
+        }
         if !self.reconcile_pending_item_effects(actor, session).await
             || !self.stop_timed_actor(actor, session).await
         {

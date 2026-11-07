@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_CURRENT_SUMMER_PUBLISHED_FIELDS/v1",
+  "records": [
+    {
+      "creature": "oteryn:creature.mimar_haffar",
+      "source": {
+        "repository": "Lavovskii/grimorio",
+        "revision": "acc9994e2ad8868696bc10ef08070108e2baba92",
+        "path": "quests/data/wiki/mimar-haffar-87d7d.json",
+        "sha256": "13abfd2147b15959c8ece3557ff9eaef8bf0875ef930d618a3f0c18bb474e293",
+        "url": "https://raw.githubusercontent.com/Lavovskii/grimorio/acc9994e2ad8868696bc10ef08070108e2baba92/quests/data/wiki/mimar-haffar-87d7d.json"
+      },
+      "facts": {
+        "health": 460000,
+        "experience": 3500000
+      }
+    },
+    {
+      "creature": "oteryn:creature.phosphorus_final",
+      "source": {
+        "repository": "Lavovskii/grimorio",
+        "revision": "acc9994e2ad8868696bc10ef08070108e2baba92",
+        "path": "quests/data/wiki/phosphorus-final-ec835.json",
+        "sha256": "d14c1e74e4addc338e2db498fbe2bd20d955ac4c957e578ac026e89fb14cd607",
+        "url": "https://raw.githubusercontent.com/Lavovskii/grimorio/acc9994e2ad8868696bc10ef08070108e2baba92/quests/data/wiki/phosphorus-final-ec835.json"
+      },
+      "facts": {
+        "experience": 16000000
+      }
+    }
+  ]
+}

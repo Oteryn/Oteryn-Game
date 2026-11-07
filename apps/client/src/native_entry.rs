@@ -3,6 +3,8 @@ mod admitted;
 mod authorize;
 mod config;
 #[cfg(test)]
+mod initial_palette_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;
@@ -124,7 +126,13 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
             Admission {
-                appearance_items: None,
+                appearance_items:
+                    oteryn_client_assets::seasonal_item_projection::seasonal_item_projection().map(
+                        |projection| oteryn_session::AppearanceItemDictionary {
+                            content_generation: projection.content_generation,
+                            definition_refs: &projection.definition_refs,
+                        },
+                    ),
                 schema_revision: SCHEMA_REVISION,
                 character_id: self.character_id,
                 admission_material: self.grant.grant_bytes(),

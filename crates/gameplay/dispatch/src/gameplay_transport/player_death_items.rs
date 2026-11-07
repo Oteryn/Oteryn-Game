@@ -1,4 +1,5 @@
 //! C20b: drive receipt-selected one-item operations before any player respawn.
+mod house;
 use super::ComposedFreshAdmission;
 use crate::durability::character_death::{CommittedCharacterDeath, PlayerDeathOccurrence};
 use crate::durability::character_progression::{

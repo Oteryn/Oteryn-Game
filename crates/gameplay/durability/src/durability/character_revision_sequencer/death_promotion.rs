@@ -31,6 +31,43 @@ impl RevisionSlot {
                     formula,
                     premium,
                     selection_root,
+                    None,
+                )
+            },
+        )
+        .await
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the existing death writer and its per-use Premium input"
+    )]
+    pub(in crate::durability) async fn commit_house_premium_death<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: Option<&dyn BuildFormula>,
+        original: Option<CharacterRevision>,
+        premium: Option<&dyn crate::durability::character_death::promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
+        house: &crate::durability::house_scope_handoff::HouseId,
+    ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_character_death_inner(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    formula,
+                    premium,
+                    selection_root,
+                    Some(house.clone()),
                 )
             },
         )

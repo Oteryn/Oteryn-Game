@@ -17,7 +17,8 @@ enum ChatSpeechMode {
   CHAT_SPEECH_MODE_SAY = 1;
   CHAT_SPEECH_MODE_WHISPER = 2;
   CHAT_SPEECH_MODE_YELL = 3;
-  // Server-owned; only with capability 288 selected. Invalid in ChatSayV1 intents.
+  // Server-owned: capability 288 for ambient, or 386 + CHAT_V1 for scripted item speech.
+  // Legacy CHAT_V1-only item feedback uses ordinary Say. Invalid in ChatSayV1 intents.
   CHAT_SPEECH_MODE_MONSTER_SAY = 4;
 }
 

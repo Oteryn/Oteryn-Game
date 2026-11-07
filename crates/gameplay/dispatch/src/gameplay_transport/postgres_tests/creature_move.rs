@@ -31,6 +31,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
         let world =
             crate::map::spell_tiles::tests::movement_arena::world().with_spawns_for_test(Table {
+                weighted: Vec::new(),
                 creatures: vec![Creature {
                     key: "canary:creature/rat".into(),
                     period: Period::All,

@@ -33,7 +33,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .read_event_container_command_source(self.character, fence, command_ref)
             .await
-            .map_err(|_| ())?;
+            .map_err(|error| {
+                let _ = error;
+            })?;
         let id = if let Some(id) = historical {
             id
         } else {

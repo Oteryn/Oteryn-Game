@@ -34,8 +34,10 @@ mod market_catalogue;
 
 pub mod mount_taming;
 
+mod cosmetic_item_qualification;
 mod native_cosmetics;
 mod starting_loadout_input;
+mod summer_amulet_qualification;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -74,6 +76,8 @@ const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
+// SRV7: 5,478 admitted Item records (including 1,912 furniture profiles).
+const MAX_ITEM_RECORDS: usize = 8192;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -715,7 +719,9 @@ impl NativeGameplayInput {
         };
         let cosmetics = match manifest.cosmetics {
             Some(pin) => {
+                let locator = directory.join(&pin.path);
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                let pin = native_cosmetics::materialize(pin, &locator)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
                 }
@@ -1119,7 +1125,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     let items = if is_v2 {
         let items: ItemProfilesDocument = serde_json::from_slice(sections[5])
             .map_err(|_| invalid("native gameplay item profiles"))?;
-        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1" || items.records.len() > MAX_RECORDS {
+        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1"
+            || items.records.len() > MAX_ITEM_RECORDS
+        {
             return Err(invalid(
                 "native gameplay item profile discriminator or bounds",
             ));
@@ -1170,6 +1178,8 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay candidate Item binding conflict"));
             }
         }
+        let cosmetic_candidate = cosmetic_item_qualification::admit(&mut admitted)?;
+        let summer_amulet_candidate = summer_amulet_qualification::admit(&mut admitted)?;
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding
@@ -1222,6 +1232,10 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                         "native gameplay40450 closed candidate source policy",
                     ));
                 }
+            } else if binding.external_id == "44048" {
+                cosmetic_item_qualification::validate(record, &cosmetic_candidate)?;
+            } else if summer_amulet_qualification::owns(&binding.external_id) {
+                summer_amulet_qualification::validate(record, &summer_amulet_candidate)?;
             } else if record.production_binding_qualification.is_some() {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }

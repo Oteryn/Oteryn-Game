@@ -1,0 +1,659 @@
+{
+  "schema": 1,
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.captain_corsarah",
+      "variants": {},
+      "greet": {
+        "text": "Welcome on board, |PLAYERNAME|. You want to sail to {Venore}?",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 77,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      },
+      "farewell": {
+        "text": "Good bye. Recommend us if you were satisfied with our service.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 78,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye then.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_corsarah.lua",
+          "line": 79,
+          "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.mayor_pocaro",
+      "variants": {},
+      "greet": {
+        "text": "Ah, another one drawn here by the promise of moonsilver, I presume. I am the mayor of what remains of this {settlement}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 153,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down out there.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 154,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down out there.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mayor_pocaro.lua",
+          "line": 155,
+          "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.zofia_bolter",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 63,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 64,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/zofia_bolter.lua",
+          "line": 65,
+          "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.doctor_marrow",
+      "variants": {},
+      "greet": {
+        "text": "Ah... Visitors. How convenient. I was beginning to wonder how long it would take until someone {capable} found their way here.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 94,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      },
+      "farewell": {
+        "text": "Do come back once the majordomo is dealt with.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 95,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      },
+      "walkaway": {
+        "text": "Do come back once the majordomo is dealt with.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/doctor_marrow.lua",
+          "line": 96,
+          "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "variants": {},
+      "greet": {
+        "text": "Ah, a visitor. Allow me to introduce myself. Wayland Smythers, in service of science. I am here in search of esteemed heroes, such as yourself, to avert a grave {danger}.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 117,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      },
+      "farewell": {
+        "text": "Farewell, and do be careful.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 118,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      },
+      "walkaway": {
+        "text": "Farewell, and do be careful.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/wayland_smythers.lua",
+          "line": 119,
+          "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.g_ezkho",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 63,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 64,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/g_ezkho.lua",
+          "line": 65,
+          "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.omar",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 63,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 64,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/omar.lua",
+          "line": 65,
+          "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.thorim",
+      "variants": {},
+      "greet": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      },
+      "farewell": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      },
+      "walkaway": {
+        "text": "Go bother someone else. I have no patience for spies.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/thorim.lua",
+          "line": 61,
+          "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.goldro",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 63,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 64,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/goldro.lua",
+          "line": 65,
+          "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.pescadu",
+      "variants": {},
+      "greet": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      },
+      "farewell": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      },
+      "walkaway": {
+        "text": "I'm just a fisherman. I want no trouble. Please, leave me alone.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/pescadu.lua",
+          "line": 62,
+          "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.nekaret",
+      "variants": {},
+      "greet": {
+        "text": "Hello there, |PLAYERNAME|. Another one off the boat, I see.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 63,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      },
+      "farewell": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 64,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      },
+      "walkaway": {
+        "text": "Keep your head down.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/nekaret.lua",
+          "line": 65,
+          "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.saraki",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, traveller. May the Moon Goddess bless you.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 93,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      },
+      "farewell": {
+        "text": "May the Moon Goddess light your path.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 94,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      },
+      "walkaway": {
+        "text": "May the Moon Goddess light your path.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/saraki.lua",
+          "line": 95,
+          "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.sundara",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 81,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "farewell": {
+        "text": "Good bye, |PLAYERNAME|.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 82,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      },
+      "walkaway": {
+        "text": "Good bye.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/npclib/npc_system/npc_handler.lua",
+          "line": 90,
+          "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.tarisu",
+      "variants": {},
+      "greet": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 78,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      },
+      "farewell": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 79,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      },
+      "walkaway": {
+        "text": "May the tides always guide you safely.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/tarisu.lua",
+          "line": 80,
+          "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.dhira",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 86,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      },
+      "farewell": {
+        "text": "Mind the beavers on your way out.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 87,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      },
+      "walkaway": {
+        "text": "Mind the beavers on your way out.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/dhira.lua",
+          "line": 88,
+          "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.udu",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 82,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      },
+      "farewell": {
+        "text": "Mind the sky once in a while.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 83,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      },
+      "walkaway": {
+        "text": "Mind the sky once in a while.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/udu.lua",
+          "line": 84,
+          "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.sharai",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 93,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      },
+      "farewell": {
+        "text": "The sea remembers everything, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 94,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      },
+      "walkaway": {
+        "text": "The sea remembers everything, two-leg.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/sharai.lua",
+          "line": 95,
+          "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.javala",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, little mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 83,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      },
+      "farewell": {
+        "text": "Go quietly, mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 84,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      },
+      "walkaway": {
+        "text": "Go quietly, mortal.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/javala.lua",
+          "line": 85,
+          "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304"
+        }
+      }
+    },
+    {
+      "npc": "oteryn:npc.niral",
+      "variants": {},
+      "greet": {
+        "text": "Greetings, traveller!",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 107,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      },
+      "farewell": {
+        "text": "Walk in balance, traveller.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 108,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      },
+      "walkaway": {
+        "text": "Walk in balance, traveller.",
+        "source": {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/niral.lua",
+          "line": 109,
+          "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86"
+        }
+      }
+    }
+  ],
+  "placeholder_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/npclib/npc_system/npc_handler.lua",
+    "line": 383,
+    "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+  }
+}

@@ -1019,3 +1019,81 @@ fn runtime_item_look_names_a_visible_npc_and_refuses_stale_or_out_of_view_target
         Err(ItemLookRefusal::NotVisible)
     ));
 }
+// Append to npc_command_tests.rs only after the actual source baseline.
+#[test]
+fn srv7_fresh_greet_is_the_actual_join_once_not_the_word_hi() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = chat_of(session);
+    // "hello" is accepted by the actual TalkBook, rather than matching a
+    // synthetic source callback keyword in dispatch.
+    let (outcome, fresh) = conversations.talk_with_fresh_greet(
+        &chat,
+        &runtime,
+        (actor, session),
+        &intent(npc, "hello"),
+        at(BASE),
+        None,
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(fresh.is_some());
+    let generation = chat.npc_conversation_generation(session);
+    let (outcome, repeated) = conversations.talk_with_fresh_greet(
+        &chat,
+        &runtime,
+        (actor, session),
+        &intent(npc, "hi"),
+        at(BASE + 300_000),
+        None,
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(repeated.is_none());
+    assert_eq!(chat.npc_conversation_generation(session), generation);
+    conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "bye"),
+        at(BASE + 600_000),
+    );
+    let (_, second) = conversations.talk_with_fresh_greet(
+        &chat,
+        &runtime,
+        (actor, session),
+        &intent(npc, "hello"),
+        at(BASE + 900_000),
+        None,
+    );
+    assert!(second.is_some());
+    assert_ne!(chat.npc_conversation_generation(session), generation);
+}
+
+#[test]
+fn srv7_stale_or_unengaged_talk_cannot_witness_a_source_greet() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = chat_of(session);
+    let (_, missing) = conversations.talk_with_fresh_greet(
+        &chat,
+        &runtime,
+        (actor, session),
+        &intent(npc, "job"),
+        at(BASE),
+        None,
+    );
+    assert!(missing.is_none());
+    let stale = EntityRef {
+        generation: npc.generation + 1,
+        ..npc
+    };
+    let (_, rejected) = conversations.talk_with_fresh_greet(
+        &chat,
+        &runtime,
+        (actor, session),
+        &intent(stale, "hello"),
+        at(BASE + 300_000),
+        None,
+    );
+    assert!(rejected.is_none());
+}

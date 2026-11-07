@@ -86,3 +86,89 @@ fn w19_house_base_facts_exclude_channel_door_rotation_and_callback_overrides() {
     assert_eq!(facts.pinned().object_revision(key), 3);
     check_base(&facts);
 }
+
+#[test]
+fn w18_house_base_projection_retains_qualified_house_cas_and_excludes_channel_changes()
+-> Result<(), &'static str> {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let channel = TilePos {
+        x: 6,
+        y: 0,
+        floor: -7,
+    };
+    let house = TilePos {
+        x: 7,
+        y: 0,
+        floor: -7,
+    };
+    let channel_key = placement_key(channel, 0).ok_or("Channel placement")?;
+    let house_key = placement_key(house, 0).ok_or("House placement")?;
+    let before = EntryFacts {
+        definition: MapDefinition::Item(NonZeroU32::MIN),
+        terrain_kind: None,
+        appearance_id: 2929,
+        blocks_projectile: false,
+        pickupable: false,
+        bound: false,
+        count: 1,
+        sub_type: 0,
+    };
+    let after = EntryFacts {
+        definition: MapDefinition::Item(NonZeroU32::new(2).ok_or("after definition")?),
+        appearance_id: 2928,
+        ..before
+    };
+    let mut facts = BundleFacts::default();
+    facts.palette.push(PaletteFacts {
+        family: Family::Item,
+        id: 17,
+        facts: before,
+        solid: false,
+        door: PaletteDoor::No,
+    });
+    for key in [channel_key, house_key] {
+        facts.placements.push((
+            key,
+            Placement {
+                palette: 0,
+                bound: false,
+                dropped: false,
+                count: 1,
+                sub_type: 0,
+                attrs: Attrs::default(),
+                pickup: Err(pickup::Ineligible::NotPickupable),
+            },
+        ));
+    }
+    facts.placements.sort_by_key(|(key, _)| *key);
+    facts.houses.push((house, 77));
+    assert_eq!(
+        facts.rotate_base(channel_key, 0, before, after),
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        facts.rotate_base(house_key, 0, before, after),
+        UseDisposition::NothingToUse,
+        "Channel owner remains excluded from House mutations"
+    );
+    assert_eq!(
+        facts.transform_house_base(house_key, 0, before, after),
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        facts.pinned().base_entry(channel, 0, 17),
+        Some(after),
+        "the excluded Channel change really committed"
+    );
+    let projected = facts.base_only();
+    assert_eq!(projected.base_entry(channel, 0, 17), Some(before));
+    assert_eq!(projected.object_revision(channel_key), 0);
+    assert_eq!(projected.base_entry(house, 0, 17), Some(after));
+    assert_eq!(projected.object_revision(house_key), 1);
+    assert_eq!(
+        facts.transform_house_base(house_key, 0, before, after),
+        UseDisposition::StaleState,
+        "stale House replay cannot transform a second time"
+    );
+    Ok(())
+}

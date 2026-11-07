@@ -49,3 +49,8 @@ proves membership and order of the replaced routes; its test projects out future
 names, so adding a mechanic does not edit the fixture. Add the mechanic's real dispatch
 tests in the existing automatically mounted test directories. Run `--lib registry`, the
 relevant capability tests and only that mechanic's PostgreSQL filter through the cargo wrapper.
+
+A passive presentation capability uses `offer_only=true`, an explicit empty
+`commands=` header and an `offer=...` hook, with no `[route]` section. The builder
+rejects a passive fragment with commands or a route, and ordinary fragments still
+require their command table and route. Passive entries cannot add wire commands.

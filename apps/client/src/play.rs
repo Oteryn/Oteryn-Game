@@ -47,6 +47,7 @@ pub struct PlayView {
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
     appearances: Vec<oteryn_session::VisibleAppearance>,
+    appearance_palette: Vec<[u8; 3]>,
     ground_items: Vec<crate::input::Targetable>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
@@ -58,6 +59,16 @@ pub struct PlayView {
 }
 
 impl PlayView {
+    #[cfg(test)]
+    pub(crate) fn captured_appearance(
+        &self,
+        identity: [u8; 16],
+    ) -> Option<&oteryn_session::VisibleAppearance> {
+        self.appearances
+            .iter()
+            .find(|entry| entry.entity.entity.identity == identity)
+    }
+
     pub fn new(
         own: TileCoord,
         floor: i16,
@@ -92,6 +103,7 @@ impl PlayView {
             cursor_spell: None,
             entities: Vec::new(),
             appearances: Vec::new(),
+            appearance_palette: Vec::new(),
             ground_items: Vec::new(),
             combat_line: None,
             action_line: None,

@@ -120,7 +120,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
-        if case.ground() {
+        if case.ground()
+            || matches!(
+                case,
+                Case::ToyDragonMove | Case::ToySantaMove | Case::ToyPandaMove
+            )
+        {
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         }
         deps.initialize(&owner).await;
@@ -134,10 +139,26 @@ pub(super) fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        if case.nested() {
+        if case == Case::PortableMusic {
+            super::super::item_look::seed_main_backpack(
+                &harness,
+                &super::portable_furniture::music_contents(),
+            )
+            .await?;
+        } else if case.nested() {
             super::super::item_look::seed_main_backpack(&harness, &[(key, 1), (bag, 1)]).await?;
+        } else if matches!(case, Case::DracoyleWest | Case::DracoyleEast) {
+            super::super::item_look::seed_main_backpack(
+                &harness,
+                &[(key, 1), ("oteryn:item.tibia.i677", 2)],
+            )
+            .await?;
         } else {
-            super::super::item_look::seed_main_backpack(&harness, &[(key, 1)]).await?;
+            super::super::item_look::seed_main_backpack(
+                &harness,
+                &[(key, if case.cupcake().is_some() { 2 } else { 1 })],
+            )
+            .await?;
         }
         let used = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -237,7 +258,169 @@ pub(super) fn scenario(case: Case) -> TestResult {
             }
             tx.commit().await?;
         }
-        let expected = if case.ground() {
+        if matches!(
+            case,
+            Case::ToyDragonMove | Case::ToySantaMove | Case::ToyPandaMove
+        ) {
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(fence);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[
+                    4,
+                    6,
+                    11,
+                    12,
+                    14,
+                    15,
+                    18,
+                    oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
+                ],
+            )
+            .ok_or("toy MOVE capabilities")?;
+            super::toy_first_move::exercise(&harness, &owner, admitted, source, case).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if matches!(
+            case,
+            Case::PortableLamp | Case::GroundPortableLamp | Case::PortableMusic
+        ) {
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(fence);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 11, 12, 15, 18, 385],
+            )
+            .ok_or("portable furniture offers")?;
+            super::portable_furniture::exercise(&harness, &owner, admitted, source, case).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if matches!(case, Case::RotateDracoyleWest | Case::RotateDracoyleEast) {
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(fence);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 11, 12, 15, 18, 384],
+            )
+            .ok_or("Ground Rotate offers")?;
+            super::ground_rotate::exercise(
+                &harness,
+                &owner,
+                admitted,
+                source,
+                reference(key).ok_or("Ground Rotate source")?,
+                if case == Case::RotateDracoyleWest {
+                    "oteryn:item.tibia.i9040"
+                } else {
+                    "oteryn:item.tibia.i9035"
+                },
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if matches!(case, Case::DracoyleWest | Case::DracoyleEast) {
+            let mut admitted = deps.admitted;
+            admitted.runtime_actor = Some(deps.actor);
+            admitted.item_fence = Some(fence);
+            admitted.first_entry = FirstEntryOutcome::Positioned;
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 12, 15, 18])
+                    .ok_or("Ground enchant offers")?;
+            super::dracoyle::exercise(
+                &harness,
+                &owner,
+                admitted,
+                source,
+                reference(key).ok_or("statue ref")?,
+                if case == Case::DracoyleWest {
+                    "oteryn:item.tibia.i9034"
+                } else {
+                    "oteryn:item.tibia.i9039"
+                },
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if let Some(item) = case.cupcake() {
+            super::cupcakes::exercise(
+                &harness,
+                &owner,
+                deps.admitted,
+                deps.actor,
+                fence,
+                source,
+                reference(key).ok_or("Cupcake ref")?,
+                item,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        let expected = if matches!(
+            case,
+            Case::SantaPanda | Case::GroundSantaPanda | Case::SantaDoll | Case::GroundSantaDoll
+        ) {
+            let mut gift_effects = serde_json::json!({"kind":"consume_effect","source_item_id":5080,"donor":"crystal-201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/items/dolls.lua:2,15-21,111-149","cues":[],"speech":"Hug me!","private_speech":false,"require_head":false,"require_player_target":false,"achievement_progress":[]});
+            if matches!(case, Case::SantaDoll | Case::GroundSantaDoll) {
+                const VOICES: [&str; 6] = [
+                    "Ho ho ho",
+                    "Jingle bells, jingle bells...",
+                    "Have you been naughty?",
+                    "Have you been nice?",
+                    "Merry Christmas!",
+                    "Can you stop squeezing me now... I'm starting to feel a little sick.",
+                ];
+                let draw = oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *fence.game_session_id.as_bytes(),
+                    command_id,
+                    source,
+                    212,
+                    6,
+                )
+                .ok_or("Santa Doll source voice draw")?;
+                gift_effects["source_item_id"] = serde_json::json!(6511);
+                gift_effects["donor"] = serde_json::json!(
+                    "crystal-201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/items/dolls.lua:23-30,111-149"
+                );
+                gift_effects["speech"] = serde_json::json!(VOICES[usize::try_from(draw)?]);
+            }
+            if case.ground() {
+                gift_effects["ground"] = serde_json::json!({"x":6,"y":0,"floor":7});
+            }
+            novelty_items::NoveltyPlan {
+                recipe: format!(
+                    "oteryn:novelty-item.i{}.v1",
+                    if matches!(case, Case::SantaDoll | Case::GroundSantaDoll) {
+                        6511
+                    } else {
+                        5080
+                    }
+                ),
+                outputs: Vec::new(),
+                consume_source: false,
+                effects: gift_effects,
+            }
+        } else if case.ground() {
             novelty_items::plan_ground(
                 native,
                 &used,
@@ -353,7 +536,22 @@ pub(super) fn scenario(case: Case) -> TestResult {
             );
             let (recipe, retained, hash_matches): (String, serde_json::Value, bool) = sqlx::query_as("SELECT r.recipe,r.effects,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id)").fetch_one(&harness.pool).await?;
             assert_eq!(recipe, expected.recipe);
-            assert_eq!(retained, expected.effects);
+            if matches!(
+                case,
+                Case::SantaPanda | Case::GroundSantaPanda | Case::SantaDoll | Case::GroundSantaDoll
+            ) {
+                let mut donor = retained.clone();
+                assert!(
+                    donor
+                        .as_object_mut()
+                        .ok_or("gift effect object")?
+                        .remove("gift_node")
+                        .is_some()
+                );
+                assert_eq!(donor, expected.effects);
+            } else {
+                assert_eq!(retained, expected.effects);
+            }
             assert!(hash_matches);
             let durable = harness
                 .root

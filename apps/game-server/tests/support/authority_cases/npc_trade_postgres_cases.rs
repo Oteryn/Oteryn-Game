@@ -699,7 +699,14 @@ fn sell_all_sells_every_stack_once_replays_and_then_finds_nothing() -> TestResul
                 0,
                 4,
             ),
-            (NpcTradeLineKind::CoinMint, id(15), 5, Some(Coin::Gold), 0, 28),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(15),
+                5,
+                Some(Coin::Gold),
+                0,
+                28,
+            ),
         ];
         assert_eq!(shape(&sold), expected);
         assert_eq!(
@@ -838,5 +845,76 @@ fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing(
         drop(authority);
         drop(seal);
         harness.cleanup().await
+    })
+}
+
+#[test]
+fn srv7_hairycles_shop_rechecks_current_ape_city_trade_stage_atomically() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+  let h=Harness::create(admin,"srv7_hairycles_shop").await?;
+  let seal=h.recovery.seal_current().map_err(debug)?;
+  let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+  let backpack=equip(&h,&authority).await?;
+  give(&h,&authority,Coin::Gold.production_key(),10,201).await?;
+  let mut request=trade(30,NpcTradeSide::Buy,1,1)?;
+  request.cause.npc_key="oteryn:npc.hairycles".into();
+  for stage in [None,Some(17_i64)] {
+   if let Some(stage)=stage {
+    let mut tx=h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u7_6/the_ape_city/questline','oteryn:quest.the_ape_city_quest',$2,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
+     .bind(id(CHARACTER).as_slice()).bind(stage).execute(&mut *tx).await?;
+    tx.commit().await?;
+   }
+   let before=footprint(&h).await?;let started=std::time::Instant::now();
+   assert!(matches!(commit(&h,&authority,request.clone()).await,Err(NpcTradeError::RequirementNotMet)),"Hairycles exact source trade stage must be18");
+   assert_eq!(footprint(&h).await?,before,"rejected shop attempt spends/mints nothing");
+   eprintln!("SRV7_HAIRYCLES_TRADE_PG_EXECUTED stage={stage:?} accepted=false duration={:?}",started.elapsed());
+  }
+  let mut tx=h.pool.begin().await?;
+  sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+  sqlx::query("UPDATE game_character_quest_tracks SET value=18 WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u7_6/the_ape_city/questline'")
+   .bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+  tx.commit().await?;
+  let started=std::time::Instant::now();
+  let purchase=commit(&h,&authority,request.clone()).await.map_err(debug)?;
+  assert!(matches!(purchase,NpcTradeOutcome::Committed(_)));
+  let after=entries(&h,backpack).await?;
+  let replay=commit(&h,&authority,request).await.map_err(debug)?;
+  assert!(matches!(replay,NpcTradeOutcome::AlreadyCommitted(_)));
+  assert_eq!(entries(&h,backpack).await?,after,"same native purchase replays without a second cost/output");
+  assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u7_6/the_ape_city/questline'").bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?,18,"shop never writes the quest");
+  eprintln!("SRV7_HAIRYCLES_TRADE_PG_EXECUTED stage=18 accepted=true replay=true duration={:?}",started.elapsed());
+  drop(authority);drop(seal);h.cleanup().await
+ })
+}
+
+#[test]
+fn srv7_santa_leaf_preserves_ordinary_root_mint_and_transfer() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let started=std::time::Instant::now();
+        let h=Harness::create(admin,"srv7_santa_ordinary_item_guard").await?;
+        let seal=h.recovery.seal_current().map_err(debug)?;
+        let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+        // Both are mature Root MINT then TRANSFER calls. The first installs a
+        // main slot (whose trigger NEW has no parent_item_instance_id); the
+        // second places an ordinary gold stack into its container entry.
+        let backpack=equip(&h,&authority).await?;
+        let coin=give(&h,&authority,Coin::Gold.production_key(),10,201).await?;
+        let root_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid")
+            .bind(id(CHARACTER).as_slice()).bind(backpack.as_slice()).fetch_one(&h.pool).await?;
+        let child_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id,world_id) WHERE e.character_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=encode($2,'hex')::uuid AND e.item_instance_id=encode($3,'hex')::uuid AND i.definition_production_key=$4 AND i.quantity=10")
+            .bind(id(CHARACTER).as_slice()).bind(backpack.as_slice()).bind(coin.as_slice()).bind(Coin::Gold.production_key()).fetch_one(&h.pool).await?;
+        assert_eq!((root_count,child_count),(1,1));
+        eprintln!("SRV7_ORDINARY_MINT_TRANSFER_PG_EXECUTED elapsed={:?} backpack=1 coin_stack=10",started.elapsed());
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }

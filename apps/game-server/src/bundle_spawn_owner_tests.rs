@@ -56,6 +56,7 @@ fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
 
     // One bundle source with one rat point on an open Thalom cell (native floor 7 is z -7).
     let table = Table {
+        weighted: Vec::new(),
         creatures: vec![Creature {
             key: "oteryn:creature.rat".into(),
             period: Period::All,

@@ -1,4 +1,6 @@
 use super::*;
+mod weighted;
+pub use weighted::{ActivationSpawnAlternative, ActivationWeightedSpawnPoint};
 
 /// A content-authored spawn source's small stable ordinal within its scope (content input,
 /// §4.8; never decoded from a client handle).
@@ -26,6 +28,7 @@ pub struct SpawnDefinition {
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SpawnPointDefinition {
+    weighted: Option<weighted::WeightedDefinition>,
     /// Oteryn default, not Reference-qualified: standalone area factor (no event composition).
     /// Assigned only by the admitted map owner.
     cyclopedia_improved: bool,
@@ -71,6 +74,7 @@ impl SpawnDefinition {
                     (
                         cell,
                         SpawnPointDefinition {
+                            weighted: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros,
                             creature_target_identity: creature_target_identity.clone(),
@@ -144,6 +148,7 @@ impl SpawnDefinition {
                     Ok((
                         cell,
                         SpawnPointDefinition {
+                            weighted: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros: activation_micros(respawn_delay_ms)?,
                             creature_target_identity: creature,
@@ -754,6 +759,25 @@ impl ChannelRuntimeV1 {
         let definition = &self.spawn_realization(point)?.definition;
         let ordinal = usize::from(point.ordinal);
         let mut timing = definition.timing(ordinal)?;
+        let live = self
+            .spawn_realization(point)?
+            .cells
+            .get(ordinal)
+            .and_then(|cell| cell.live);
+        let cycle = self
+            .spawn_schedule
+            .pending(point)
+            .map_or(0, |pending| pending.successor);
+        timing.blockable = definition.points[ordinal]
+            .selected(
+                self.binding().runtime_scope(),
+                self.binding().scope_generation().get(),
+                SpawnSourceId(point.source),
+                ordinal,
+                live,
+                cycle,
+            )?
+            .2;
         if self.daily_boost.as_ref().is_some_and(|choice| {
             choice.creature == definition.points[ordinal].creature_target_identity
         }) {
@@ -920,13 +944,21 @@ impl ChannelActorCarrier {
         self.spawns
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        for (cell, point) in definition.placement_cells.iter().zip(&definition.points) {
-            let actor = self.admit_creature(
-                continuity,
-                ActorState(0),
-                &point.creature_target_identity,
-                point.creature_initial_health,
+        for (ordinal, (cell, point)) in definition
+            .placement_cells
+            .iter()
+            .zip(&definition.points)
+            .enumerate()
+        {
+            let (identity, health, _) = point.selected(
+                self.runtime_scope,
+                self.scope_generation.get(),
+                source,
+                ordinal,
+                None,
+                0,
             )?;
+            let actor = self.admit_creature(continuity, ActorState(0), identity, health)?;
             self.initialize_position(continuity, actor, position_context, *cell)?;
             cells.push(SpawnCellState {
                 live: Some(ExactActorRef(actor)),
@@ -1000,8 +1032,15 @@ impl ChannelActorCarrier {
             .get(ordinal)
             .ok_or(CarrierError::PlanConflict)?;
         let spawned = realization.definition.point(ordinal)?;
-        let health = spawned.creature_initial_health;
-        let identity = spawned.creature_target_identity.clone();
+        let (identity, health, _) = spawned.selected(
+            self.runtime_scope,
+            self.scope_generation.get(),
+            source,
+            ordinal,
+            None,
+            0,
+        )?;
+        let identity = identity.to_owned();
         let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
         // Reserved exactly at point 0: the push never reallocates.
         self.spawns[index].cells.push(SpawnCellState {
@@ -1146,8 +1185,16 @@ impl ChannelActorCarrier {
         }
 
         let point = self.spawns[spawn_index].definition.point(cell_index)?;
-        let target_identity = point.creature_target_identity.clone();
-        let initial_health = point.creature_initial_health;
+        let current = self.spawns[spawn_index].cells[cell_index];
+        let (target_identity, initial_health, _) = point.selected(
+            self.runtime_scope,
+            self.scope_generation.get(),
+            source,
+            cell_index,
+            current.live,
+            current.successor,
+        )?;
+        let target_identity = target_identity.to_owned();
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
         let occupied_before = self.occupied.clone();
@@ -1196,6 +1243,7 @@ impl ChannelActorCarrier {
         source: SpawnSourceId,
         cell_index: usize,
         position_context: PreProductionPositionContext,
+        selection_cycle: u32,
     ) -> Result<ExactActorRef, CarrierError> {
         self.validate_current_continuity(continuity)?;
         self.validate_position_context(position_context)?;
@@ -1214,11 +1262,18 @@ impl ChannelActorCarrier {
             .ok_or(CarrierError::UnknownSpawnCell)?
             .live;
         let point = realization.definition.point(cell_index)?;
-        let initial_health = point.creature_initial_health;
+        let (identity, initial_health, _) = point.selected(
+            self.runtime_scope,
+            self.scope_generation.get(),
+            source,
+            cell_index,
+            dead_actor,
+            selection_cycle,
+        )?;
         if initial_health <= 0 {
             return Err(CarrierError::InvalidCreatureHealth);
         }
-        let target_identity = creature_target_binding(&point.creature_target_identity)?;
+        let target_identity = creature_target_binding(identity)?;
         if let Some(dead_actor) = dead_actor {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);

@@ -71,3 +71,6 @@ fn world_event_query_and_projection_follow_server_results() -> Result<(), Box<dy
     assert!(panel_text(&panel).contains("refused"));
     Ok(())
 }
+
+#[path = "tests/cake.rs"]
+mod cake;

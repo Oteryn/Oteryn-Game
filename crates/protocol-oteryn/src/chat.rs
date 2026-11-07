@@ -30,6 +30,8 @@ use crate::world_spatial_entities::ENTITY_IDENTITY_BYTES;
 
 /// Registered capability `CHAT_V1`: command type 13, state domain 12.
 pub const CAPABILITY_CHAT_V1: u32 = 7;
+/// Explicit scripted item speech opt-in; optional ambient voices remain capability 288.
+pub const CAPABILITY_SCRIPTED_ITEM_SPEECH_V1: u32 = 386;
 /// Registered command type `CHAT_INTENT` (capability 7).
 pub const COMMAND_TYPE_CHAT_INTENT: u32 = 13;
 /// Registered state domain `CHAT` (capability 7).

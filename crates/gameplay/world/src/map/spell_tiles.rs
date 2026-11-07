@@ -19,6 +19,8 @@
 //!   Terrain record, or to a `border` the terrain catalogue proves walkable), or a sealed door ([`super::facts::BundleFacts::push`]).
 //! - **`block_projectile`.** A `wall` Terrain, or a top-level Item whose served definition blocks
 //!   projectiles; a definition that does not say blocks (`boot_bundle_items` in `node/serve.rs`).
+//!   The closed seasonal ground capture supplies this fact for 23 actual Terrain ground keys;
+//!   it does not create an Item profile. Every other unknown Terrain still blocks projectiles.
 //! - **`floor_change`.** A top-level entry with a catalogue `floor_change` fact
 //!   ([`super::floor::palette_mask`], MAP-FLOOR-1). The rope spots (ground 386 and 21965) carry
 //!   no such fact: the genuine Canary capture (`canary-thalom-world.json`, item policy 386) records them
@@ -53,6 +55,14 @@ use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
 mod immovable;
+mod seasonal_ground;
+
+/// Exact captured ground physics for a Terrain-owned palette source key.
+/// Callers use this only when their served Item profile has no projectile fact;
+/// it grants no Item definition, materialization or custody destination.
+pub fn qualified_seasonal_ground_projectile(source_key: &str) -> Option<bool> {
+    seasonal_ground::blocks_projectile(source_key)
+}
 
 pub use crate::content::bundle_spell_tiles::BundleSpellTiles;
 use crate::content::bundle_spell_tiles::UNKNOWN;
@@ -172,7 +182,14 @@ impl SpellTilesBuilder {
                             .terrain
                             .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
                         blocks_projectile: definition
-                            .is_none_or(|definition| definition.blocks_projectile),
+                            .map(|definition| definition.blocks_projectile)
+                            .or_else(|| {
+                                entry
+                                    .terrain
+                                    .filter(|terrain| terrain.kind == TerrainKind::Ground)
+                                    .and_then(|_| seasonal_ground::blocks_projectile(&entry.key))
+                            })
+                            .unwrap_or(true),
                         pickupable: definition.is_some_and(|definition| definition.pickupable),
                     }
                 })
@@ -301,6 +318,7 @@ pub mod tests {
     use std::num::NonZeroU32;
 
     pub mod movement_arena;
+    mod seasonal_ground_tests;
     pub mod vertical_movement;
     mod admit_cap_2 {
         include!("admit_cap_2_bundle_zones_tests.rs");

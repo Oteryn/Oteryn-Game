@@ -108,6 +108,8 @@ pub struct PlayerSpellState {
     pub(super) regeneration_next_tick_us: Option<u64>,
     /// Owner-qualified daily streak for the current resting tile; runtime-only.
     pub(super) resting_streak: u32,
+    /// Optional source Cake condition; independent of food and worn item clocks.
+    pub(super) cake_regeneration: Option<super::food_regeneration::CakeRegeneration>,
     /// I05-r1: one runtime regeneration condition per worn regenerating item; runtime-only.
     pub(super) equipped_regeneration:
         Vec<oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock>,
@@ -211,6 +213,7 @@ impl PlayerSpellState {
                 regen_mana_carry: 0,
                 regeneration_next_tick_us: None,
                 resting_streak: 0,
+                cake_regeneration: None,
                 equipped_regeneration: Vec::new(),
                 learned: Default::default(),
                 premium_current: false,

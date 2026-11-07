@@ -13,7 +13,7 @@ use tokio::io::AsyncWriteExt;
 
 /// Capability 3 is offered only on a bundle World. Keep the native NPC test on
 /// that production route, with a tiny source-qualified ground plane and no items.
-pub(super) fn world(
+pub(in super::super) fn world(
     world: crate::foundation::WorldId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -50,7 +50,7 @@ pub(super) fn world(
 
 /// Keep one conversation for a complete choice/confirmation sequence. A new connection
 /// greets again; session command receipts still deduplicate repeated command ids.
-pub(super) async fn talk(
+pub(in super::super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -62,6 +62,26 @@ pub(super) async fn talk(
         npc,
         commands,
         Some(NpcIntentDisposition::Ok),
+        None,
+    )
+    .await
+}
+
+/// A longer native source dialogue on one real connection, paced at its
+/// existing four-utterance monotonic admission window.
+pub(in super::super) async fn talk_paced(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    commands: &[(u64, &str)],
+) -> TestResult {
+    conversation_captured(
+        owner,
+        admitted,
+        npc,
+        commands,
+        Some(NpcIntentDisposition::Ok),
+        (None, true),
         None,
     )
     .await
@@ -123,6 +143,117 @@ async fn conversation(
     expected_last: Option<NpcIntentDisposition>,
     park_before: Option<u64>,
 ) -> TestResult {
+    conversation_captured(
+        owner,
+        admitted,
+        npc,
+        commands,
+        expected_last,
+        (park_before, false),
+        None,
+    )
+    .await
+}
+
+pub(in super::super) async fn talk_effects(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    commands: &[(u64, &str)],
+) -> TestResult<Vec<Vec<u8>>> {
+    let capture = std::sync::Mutex::new(Vec::new());
+    conversation_captured(
+        owner,
+        admitted,
+        npc,
+        commands,
+        Some(NpcIntentDisposition::Ok),
+        (None, false),
+        Some(NpcFrameCapture::Effects(&capture)),
+    )
+    .await?;
+    capture
+        .into_inner()
+        .map_err(|_| "NPC effects capture".into())
+}
+#[derive(Clone, Copy)]
+enum NpcFrameCapture<'a> {
+    Effects(&'a std::sync::Mutex<Vec<Vec<u8>>>),
+    Appearance(&'a std::sync::Mutex<Vec<Vec<u8>>>),
+}
+
+/// Complete bootstrap frames plus actual appearance catalogue deltas. Keeping
+/// raw framing preserves snapshot identity/chunk order for the client decoder.
+pub(in super::super) async fn talk_appearance(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    commands: &[(u64, &str)],
+) -> TestResult<Vec<Vec<u8>>> {
+    let frames = std::sync::Mutex::new(Vec::new());
+    conversation_captured(
+        owner,
+        admitted,
+        npc,
+        commands,
+        Some(NpcIntentDisposition::Ok),
+        (None, false),
+        Some(NpcFrameCapture::Appearance(&frames)),
+    )
+    .await?;
+    frames
+        .into_inner()
+        .map_err(|_| "NPC appearance capture".into())
+}
+
+fn capture_effect(frame: &[u8], capture: Option<NpcFrameCapture<'_>>) -> TestResult {
+    let Some(capture) = capture else {
+        return Ok(());
+    };
+    let envelope = decode_wire_envelope(frame).map_err(debug)?;
+    match capture {
+        NpcFrameCapture::Effects(output) => {
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                    .map_err(debug)?;
+                if delta.domain_id
+                    == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS
+                {
+                    output
+                        .lock()
+                        .map_err(|_| "NPC effects capture")?
+                        .push(delta.payload.to_vec());
+                }
+            }
+        }
+        NpcFrameCapture::Appearance(output) => {
+            let keep = matches!(
+                envelope.message_type(),
+                MessageType::SnapshotBegin
+                    | MessageType::SnapshotChunk
+                    | MessageType::SnapshotCommit
+                    | MessageType::StateDelta
+            );
+            if keep {
+                output
+                    .lock()
+                    .map_err(|_| "NPC appearance capture")?
+                    .push(frame.to_vec());
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn conversation_captured(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    commands: &[(u64, &str)],
+    expected_last: Option<NpcIntentDisposition>,
+    (park_before, paced_windows): (Option<u64>, bool),
+    capture: Option<NpcFrameCapture<'_>>,
+) -> TestResult {
     let fresh = commands
         .iter()
         .filter(|(id, _)| *id >= admitted.continuity.next_command_id)
@@ -130,7 +261,11 @@ async fn conversation(
         .collect::<std::collections::BTreeSet<_>>();
     // Retained command replay exits ingress before NPC dispatch and does not consume
     // the four-utterance source window.
-    assert!(fresh.len() <= 4, "source NPC talk window");
+    if !paced_windows {
+        assert!(fresh.len() <= 4, "source NPC talk window");
+    } else {
+        assert!(fresh.len() <= 16, "bounded paced source conversation");
+    }
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -147,16 +282,29 @@ async fn conversation(
         let mut expected_next = before.continuity.next_command_id;
         loop {
             let frame = read_frame(&mut client).await?;
+            capture_effect(&frame, capture)?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
                 break;
             }
         }
+        let mut fresh_in_window = 0_u8;
         for (offset, (command_id, text)) in commands.iter().enumerate() {
             let last = offset + 1 == commands.len();
             let replay = *command_id < expected_next;
             if !replay {
+                if paced_windows && fresh_in_window == 4 {
+                    // Keep this actual connection/conversation open while the real
+                    // monotonic source rate window elapses. No synthetic topic or
+                    // bypass of the production four-utterance gate is involved.
+                    tokio::time::sleep(std::time::Duration::from_micros(
+                        oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS + 1,
+                    ))
+                    .await;
+                    fresh_in_window = 0;
+                }
+                fresh_in_window += 1;
                 expected_next = command_id.checked_add(1).ok_or("command exhaustion")?;
             }
             if let Some((target, lane)) = parked_lane.as_ref()
@@ -193,6 +341,7 @@ async fn conversation(
                     }
                     result => result?,
                 };
+                capture_effect(&frame, capture)?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
@@ -224,6 +373,15 @@ async fn conversation(
             }
         }
         client.shutdown().await?;
+        if capture.is_some() {
+            loop {
+                match read_frame(&mut client).await {
+                    Ok(frame) => capture_effect(&frame, capture)?,
+                    Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => break,
+                    Err(error) => return Err(error.into()),
+                }
+            }
+        }
         Ok(())
     };
     let (ended, result): (_, TestResult) = tokio::time::timeout(
@@ -241,7 +399,7 @@ async fn conversation(
 
 /// Real command 8 after command 7 opens the standard window. A fixture-only point change
 /// between those commands proves that the display cache is never mutation authority.
-pub(super) async fn trade(
+pub(in super::super) async fn trade(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,

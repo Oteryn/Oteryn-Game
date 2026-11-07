@@ -16,6 +16,9 @@ from convert_world_metadata import SCRIPT_TELEPORTS
 from jsonschema import Draft202012Validator
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[2] / "tools/content-migration"))
+import pumpkin_room
+
 SCHEMA = json.loads((HERE / "world-metadata.schema.json").read_text(encoding="utf-8"))
 SUMMARY = "tools/content-schema/world-authoring/samples/source-capture-v1.json"
 HUNTING_SUMMARY = (
@@ -125,6 +128,12 @@ def family_records(
         errors.append(
             f"{index_path}: record_count differs from shards or capture summary"
         )
+    if family == "Transition.Teleport":
+        derived = [r for r in records if r.get("declaration", {}).get("identity", {}).get("key") == pumpkin_room.TRANSITION_KEY]
+        if derived:
+            ledger = [pumpkin_room.transition_ledger()]
+            if not all(pumpkin_room.qualified_transition(root, r) for r in derived) or index.get("native_derived_transitions") != ledger or summary.get("native_derived_transitions") != ledger:
+                errors.append("derived Pumpkin Transition lacks its exact source-qualified ledger")
     keys = [r.get("declaration", {}).get("identity", {}).get("key") for r in records]
     if keys != sorted(keys) or len(set(keys)) != len(keys):
         errors.append(f"{family}: keys must be unique and sorted")
@@ -142,6 +151,7 @@ def family_records(
                 family not in OWN_SOURCE_REVISION
                 and bound.get("identity_namespace") != WIKI_NAMESPACE
                 and bound.get("source_revision") != summary["source"].get("revision")
+                and not pumpkin_room.qualified_transition(root, record)
             ):
                 errors.append(
                     f"{key}: source binding revision differs from the pinned source"

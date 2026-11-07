@@ -44,11 +44,33 @@ impl Scene {
         )
     }
 
+    pub(crate) fn set_presentations_with_palette(
+        &mut self,
+        entries: &[VisibleAppearance],
+        floor: i16,
+        palette: &[[u8; 3]],
+    ) -> Result<(), BatchError> {
+        self.set_presentations_resolved(
+            entries,
+            floor,
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+            (!palette.is_empty()).then_some(palette),
+        )
+    }
     fn set_presentations_from(
         &mut self,
         entries: &[VisibleAppearance],
         floor: i16,
         root: Option<std::path::PathBuf>,
+    ) -> Result<(), BatchError> {
+        self.set_presentations_resolved(entries, floor, root, None)
+    }
+    fn set_presentations_resolved(
+        &mut self,
+        entries: &[VisibleAppearance],
+        floor: i16,
+        root: Option<std::path::PathBuf>,
+        palette: Option<&[[u8; 3]]>,
     ) -> Result<(), BatchError> {
         self.actor_draws.clear();
         self.own_draws = None;
@@ -88,7 +110,7 @@ impl Scene {
                     _ => 0,
                 }
             };
-            let draws = self.cache.outfit(entry.look.as_ref(), direction);
+            let draws = self.cache.outfit(entry.look.as_ref(), direction, palette);
             if is_own {
                 self.own_draws = Some(draws);
             } else {

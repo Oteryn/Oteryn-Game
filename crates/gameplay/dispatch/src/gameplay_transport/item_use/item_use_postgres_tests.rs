@@ -92,6 +92,18 @@ fn run_scenario_items(
     case: Option<item_use_view_refresh_tests::Case>,
     crystal: bool,
 ) -> TestResult {
+    run_scenario_selected(case, crystal, false)
+}
+
+pub(crate) fn run_santa_candy_cane() -> TestResult {
+    run_scenario_selected(None, true, true)
+}
+
+fn run_scenario_selected(
+    case: Option<item_use_view_refresh_tests::Case>,
+    crystal: bool,
+    candy: bool,
+) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -100,7 +112,7 @@ fn run_scenario_items(
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case, crystal))
+                .block_on(scenario(admin, case, crystal, candy))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -112,9 +124,11 @@ async fn scenario(
     admin: String,
     case: Option<item_use_view_refresh_tests::Case>,
     crystal: bool,
+    candy: bool,
 ) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
+        None if candy => "santa_candy_wire",
         None if crystal => "crystal_use_wire",
         None => "bags_use_wire",
         Some(Case::LastCharge) => "bags_use_last",
@@ -139,7 +153,9 @@ async fn scenario(
     let native = active.native_gameplay().expect("native content");
     let index = native.item_index().expect("item index");
     let room = pin.qualified_room().clone();
-    let food_key = if crystal {
+    let food_key = if candy {
+        "oteryn:item.tibia.i3599"
+    } else if crystal {
         "oteryn:item.tibia.i3578"
     } else {
         "oteryn:item.tibia.i3577"

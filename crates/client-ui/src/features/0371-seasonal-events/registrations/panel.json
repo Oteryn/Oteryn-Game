@@ -1,0 +1,7 @@
+{
+  "mechanic": "0371-seasonal-events",
+  "kind": "panels",
+  "id": "0371-seasonal-events-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

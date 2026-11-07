@@ -1,0 +1,37 @@
+{
+  "schema": "OTERYN_SRV7_COSMETIC_GRANT_SOURCES/v1",
+  "sources": [
+    {
+      "path": "tools/content-schema/native-gameplay/item-cosmetic-actions.json",
+      "sha256": "485fbdfc2a1672dd80ebe44e47077a03a55776b5e37e03d7adb6f1eebe987da2"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs",
+      "sha256": "cccded8da320144ebc72dd227d7559817d202a377de90b10910cb61439f21709"
+    },
+    {
+      "path": "content/cosmetics/taming.json",
+      "sha256": "888a4f9064ade9e76608fec63bbea8baffdbce8db34415896427690b0b2d0298"
+    },
+    {
+      "path": "content/cosmetics/npc-acquisitions.json",
+      "sha256": "52adaa68d627a923eefc80bc60b014f9a4e43578a9b9926c6a506def10b3caa7"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/srv7-source-program-grants.json",
+      "sha256": "5b9b303651a10cb3014c117dd5f2b5b423d82eb34ff02b7c8289312befc16e0c"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/srv7-npc-grants.json",
+      "sha256": "1a7b97cffcb0c654daeae573a94c93a9b11e2497e355ca1115c52f187a819e31"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs",
+      "sha256": "068b725ec267c9c9d94542b23303489940ce8f90401aa6a68cf37d9507eb30b3"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/tibiadrome.rs",
+      "sha256": "9500e3c6b4540a02e6389b9f4e8a9bc539a08979ecb1ddb10e341e1477b82b34"
+    }
+  ]
+}

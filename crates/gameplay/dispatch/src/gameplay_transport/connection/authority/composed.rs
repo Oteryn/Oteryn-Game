@@ -49,6 +49,41 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         sounds.observe(&runtime, actor, session, after, true)
     }
 
+    async fn observe_house_item_effects(
+        &self,
+        admitted: AdmittedSession,
+        after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        let actor = admitted.runtime_actor?;
+        let runtime = self.runtime.lock().await;
+        crate::durability::consume_transform::HouseActionContext::from_native_owner(
+            &runtime,
+            actor,
+            admitted.game_session_id,
+            admitted.item_fence?,
+        )
+        .ok()?;
+        crate::gameplay_transport::item_ref_admission::pinned_index(
+            &runtime,
+            self.active_generation,
+        )?;
+        let map = self.bundle_map()?;
+        self.states.house_item_effects.lock().ok()?.observe(
+            &runtime,
+            actor,
+            admitted.game_session_id,
+            after,
+            (
+                runtime.content_pin().client_artifact_digest(),
+                map.overlay.base().digest(),
+                self.reset_epoch,
+            ),
+        )
+    }
+
     fn observe_movement_effects(
         &self,
         after: u64,
@@ -139,6 +174,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
         self.note_house_input(admitted).await
+    }
+    async fn take_furniture_inventory_refresh(&self, session: GameSessionId) -> bool {
+        self.states
+            .timed_items
+            .furniture_inventory_refresh
+            .lock()
+            .await
+            .remove(&session)
     }
     async fn observe_house_map(
         &self,
@@ -583,6 +626,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         depot::execute(self, actor, command, intent, item).await
     }
 
+    async fn native_house_item_move(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        payload: &[u8],
+        source: Option<item_view::ItemKey>,
+        destination: oteryn_protocol_oteryn::item_view::ItemMoveDestination,
+        count: Option<u32>,
+    ) -> Option<item_move::LoopMoveResult> {
+        ComposedFreshAdmission::native_house_item_move(
+            self,
+            actor,
+            command,
+            payload,
+            source,
+            destination,
+            count,
+        )
+        .await
+    }
+
     async fn committed_loop_move(
         &self,
         _actor: ExactActorRef,
@@ -796,6 +860,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_backpack_item(actor, command, item).await
     }
 
+    async fn use_pumpkin_skinning(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        ComposedFreshAdmission::use_pumpkin_skinning(self, actor, command, &intent, source, target)
+            .await
+    }
+
     async fn tame_mount(
         &self,
         actor: ExactActorRef,
@@ -930,6 +1006,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_house_static(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+    ) -> Result<Option<connection::UseOutcome>, ()> {
+        self.use_house_static_item(actor, command, &intent).await
+    }
+
+    async fn use_house_dracoyle(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if !command.item_fence.is_some_and(|fence| {
+            matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        }) {
+            return Ok(None);
+        }
+        self.use_dracoyle_in_place(actor, command, &intent, source, target)
+            .await
+    }
     async fn use_consume_transform(
         &self,
         actor: ExactActorRef,

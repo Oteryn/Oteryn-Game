@@ -1,0 +1,7 @@
+name=scripted_item_speech
+offer_only=true
+commands=
+transport=scripted_item_speech
+composed=scripted_item_speech
+authority=scripted_item_speech
+offer=641,scripted_item_speech::offered,scripted_item_speech_available

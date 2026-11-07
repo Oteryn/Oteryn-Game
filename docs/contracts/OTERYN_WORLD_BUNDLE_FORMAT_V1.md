@@ -662,3 +662,43 @@ pending respawn, and consumes it through the existing fenced placement path;
 the placed temple also becomes the saved last position. Citizen ingress uses
 placement unique ids from Crystal/Canary `citizen.lua`, including Svargrond's
 Barbarian Test storage 41174 threshold 8. No wire protocol change is required.
+
+## Weighted ordinary spawn points (SRV7 W16; runtime compatibility 5)
+
+A bounded optional `WSP1` trailer follows the existing scalar spawn payload. Ordinary
+payloads omit it and retain their exact previous bytes. Weighted bundles require
+`identity.min_runtime_version >= 5`; old nodes refuse them. This adds no network command,
+message or capability bit. Format v6, the sector/NPC grammars and ordinary/boss point bytes
+are unchanged.
+
+The trailer is ASCII `WSP1`, a canonical LEB128 selection count, then selections strictly
+ascending by `(source ordinal, point ordinal)`. Each selection writes source ordinal,
+point ordinal, choice count, and pairs `(creature-table index, positive integer weight)`.
+Choice indices are strictly ascending and unique. Counts are checked against remaining
+bytes before allocation. A selection has 2..64 choices; total selections and total choice
+entries are each bounded by `CREATUREAI0-RL-01` 131,072, while the unchanged 16 MiB raw spawn
+payload limit also applies. Weight sum must fit positive u32. Invalid indices, duplicate
+references, zero weights, overflow, Night alternatives, bosses, trailing data and unknown
+trailer markers fail closed.
+
+One selection qualifies exactly one existing physical point. The scalar creature must be
+one of its alternatives and retains ownership of shared timing/rate qualification. The
+runtime chooses the admitted actor identity, native maximum health and blockable profile
+at initial realization and each genuine respawn occurrence. It retains one physical home,
+one live actor and one cooldown. Occupancy retries do not create another point or actor.
+Selection uses existing deterministic decisions with purpose
+`world.spawn.weighted-point.v1`, scoped by the authoritative ownership generation, source,
+point and previous actor lifetime/successor; integer rejection sampling avoids modulo bias.
+
+The first qualified source is Crystal 201189f
+`data-global/world/world-monster.xml:103974–103978`: Sentinel 25 and True Frost Flower
+Asura 25 share `(33866,32698,9)`. Crystal `spawn_monster.cpp:461–492` merges equal cells;
+the final same-cell child owns the nominal interval and direction. Thus the shared native
+interval is 47,104,000 ms, timing owner Asura, and the alternatives are 50/50. The south
+Asura `(33866,32699,9)` remains an independent 60,000 ms point. The normalized source input
+retains all three XML children and exact pinned SHA; a closed generator qualifies only
+this group, retaining other held import evidence.
+
+The accepted fixed-cell/no-search policy is unchanged: CREATURE-AI0 decision 2026-10-01
+§6.1 lines 364–378 explicitly keeps accepted first-slice §4.3 (2026-09-28 lines 123–137),
+accepted in batch 2026-10-15. No adjacent-cell search or guessed relocation is introduced.

@@ -72,7 +72,7 @@ impl DurabilityRoot {
                 let payload = encode_house_transfer_ack(&request.ack).map_err(|_| DurabilityError::Unavailable)?;
                 // 0703 verifies the committed fresh receipt and exact old LastPosition key
                 // in addition to every original 0215 source/assignment/admission guard.
-                apply(&mut tx, &root, &node, &request, &payload, &capabilities, Some(&saved)).await?;
+                apply(&mut tx, &root, &node, &request, &payload, &capabilities, Some(&saved), None).await?;
                 let fence = CurrentCharacterItemFence {
                     game_session_id: GameSessionId::decode(&request.ack.session).map_err(|_| DurabilityError::InvalidStoredState)?,
                     connection_generation: crate::foundation::ConnectionGeneration::new(1).map_err(|_| DurabilityError::InvalidStoredState)?,

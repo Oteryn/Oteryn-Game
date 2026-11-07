@@ -58,12 +58,26 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if matches!(
+        route.service.as_str(),
+        "oteryn:service.travel.appaloosa" | "oteryn:service.travel.palomino"
+    ) {
+        let escaped:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_horse_station_worlds WHERE world_id=encode($1,'hex')::uuid AND NOT ended AND expires_seconds>floor(extract(epoch FROM public.game_daily_effect_now()))::bigint)")
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+        if escaped {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+    }
     if route.yalahar_gate || route.yalahar_town_gate.is_some() {
         let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
-        let track = format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}");
+        let track = format!(
+            "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}"
+        );
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND ((track_key=$2 AND value=1) OR (track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter' AND value>=5)))")
             .bind(fence.character_id.as_bytes().as_slice()).bind(track).fetch_one(&mut ***tx).await?;
-        if !permitted { return Ok(Err(TravelRefusal::UnavailableRoute)); }
+        if !permitted {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
     }
     if let Some(track) = &route.quest_gate {
         let permitted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value>=1)")

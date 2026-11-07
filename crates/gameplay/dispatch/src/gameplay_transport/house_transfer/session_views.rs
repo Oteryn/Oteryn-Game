@@ -82,6 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(AdmissionRefusal::Rejected);
         }
         let in_house = current_destination(self, destination).await?;
+        self.states.horse_expiry.forget(source);
         self.move_house_source_progression(source, destination.game_session_id)?;
         let account = destination
             .controller

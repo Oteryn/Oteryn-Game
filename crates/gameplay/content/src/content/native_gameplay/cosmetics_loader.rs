@@ -197,6 +197,22 @@ pub struct CosmeticsCandidate {
 }
 
 impl CosmeticsCandidate {
+    /// Content-addressed acquisition source metadata; never an earned entitlement.
+    pub fn npc_acquisition_program_digest(&self) -> Option<[u8; 32]> {
+        let mut result = None;
+        for outfit in &self.document.outfits {
+            for source in &outfit.unlock_sources {
+                if source.reference == "content/cosmetics/npc-acquisitions.json" {
+                    let digest = hash(&source.sha256)?;
+                    if result.is_some_and(|prior| prior != digest) {
+                        return None;
+                    }
+                    result = Some(digest);
+                }
+            }
+        }
+        result
+    }
     pub fn content_revision(&self) -> &str {
         &self.document.content_revision
     }
@@ -251,6 +267,39 @@ impl AppearanceContent<String> for CosmeticsCandidate {
                 .map(|index| &self.document.grant_mappings[*index]),
             provenance,
             target,
+        )
+    }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: crate::domain::appearance::EarnedCosmetic<'_>,
+        sex: Sex,
+    ) -> UnlockFact {
+        grant_mappings::resolve_for_sex(
+            self.grants
+                .get(grant_key)
+                .map(|i| &self.document.grant_mappings[*i]),
+            provenance,
+            target,
+            sex,
+        )
+    }
+    fn earned_source_look_addon(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        look: u32,
+        addon: u8,
+    ) -> UnlockFact {
+        grant_mappings::resolve_source_look(
+            self.grants
+                .get(grant_key)
+                .map(|i| &self.document.grant_mappings[*i]),
+            provenance,
+            look,
+            addon,
+            &self.document.outfits,
         )
     }
     fn palette_size(&self) -> u16 {

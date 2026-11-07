@@ -114,11 +114,16 @@ pub enum FeeBurnCauseV1 {
     ArenaEntry(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "473")]
+    HorseRental(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "474")]
+    NpcCosmeticPurchase(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
 pub(super) mod atelier_cause;
 pub(super) mod imbuement_cause;
+mod npc_cash_cause;
 mod purchase_cause;
 pub(super) mod repair_cause;
 pub use imbuement_cause::{OneItemImbuementMaterialV1, OneItemImbuementV1};
@@ -149,6 +154,8 @@ pub struct OneItemFeeBurnCauseV1 {
             16, // Bosstiary slot removal
             17, // Svargrond arena entry
             472, // HirelingService
+            473, // HorseRental
+            474, // NpcCosmeticPurchase
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -339,7 +346,11 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
-    let coin_sources = atelier_cause::coin_sources(value)?;
+    let coin_sources = if npc_cash_cause::cause(value).is_some() {
+        npc_cash_cause::coin_sources(value)?
+    } else {
+        atelier_cause::coin_sources(value)?
+    };
     // The Atelier proof can bind an equipped/nested source without a main backpack.
     if !(value.backpack_item_instance_id.is_empty()
         && (value.lines.is_empty() || coin_sources.is_some()))
@@ -461,7 +472,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         Some(FeeBurnCauseV1::NpcRepair(_))
     ) {
         repair_cause::check_usage(&usage)
-    } else if atelier_cause::cause(value).is_some() {
+    } else if atelier_cause::cause(value).is_some() || npc_cash_cause::cause(value).is_some() {
         atelier_cause::check_usage(&usage)
     } else {
         check_fee_usage(&usage)
@@ -746,7 +757,7 @@ pub fn encode_fee_burn_event_with(
 }
 
 fn fee_byte_limits(value: &OneItemFeeBurnV1) -> (usize, usize) {
-    if atelier_cause::cause(value).is_some() {
+    if atelier_cause::cause(value).is_some() || npc_cash_cause::cause(value).is_some() {
         (
             atelier_cause::PAYLOAD_BYTES_MAX,
             atelier_cause::ENVELOPE_BYTES_MAX,
@@ -1856,5 +1867,67 @@ mod tests {
             encode_fee_burn_event(identity(), with_change()).unwrap(),
             golden("fee_change")
         );
+    }
+    #[test]
+    fn srv7_npc_cash_508_source_coin_lines_roundtrip_with_measured_closed_bounds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut lines = Vec::new();
+        let mut sources = Vec::new();
+        for n in 0..508_u64 {
+            let mut item = uuid(1);
+            item[8..16].copy_from_slice(&((1_u64 << 63) | (1000 + n)).to_be_bytes());
+            let quantity = if n < 400 { 49 } else { 50 };
+            let mut before = coin_state(Coin::Crystal, 1, "definition-r1", quantity);
+            before.item_instance_id = item.clone();
+            let mut after = coin_state(Coin::Crystal, 1, "definition-r1", 0);
+            after.item_instance_id = item.clone();
+            let ordinal = u64::MAX - n;
+            lines.push(OneItemFeeBurnLineV1 {
+                before: Some(before),
+                after: Some(after),
+                placement_ordinal: ordinal,
+            });
+            sources.push(serde_json::json!({"item":sqlx::types::Uuid::from_slice(&item)?.to_string(),"surface":2,"parent":sqlx::types::Uuid::from_slice(&uuid(50))?.to_string(),"ordinal":ordinal,"slot":0,"selection_order":n+1}));
+        }
+        let mut value = burn(lines, 250_000_000);
+        value.cause = Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::NpcCosmeticPurchase(OneItemNpcPurchaseV1 {
+                service_key: "oteryn:service.npc-cosmetic.king_tibianus.golden-buy-helmet".into(),
+                occurrence: uuid(70),
+                atelier_proof: serde_json::to_vec(
+                    &serde_json::json!({"kind":"npc_carried_cash_v1","character":value.character_id,"occurrence":uuid(70),"coin_inputs":sources}),
+                )?,
+            })),
+        });
+        check_fee_burn(&value).map_err(|e| format!("508sourcecodec:{e:?}"))?;
+        let usage = fee_burn_usage(&value);
+        assert_eq!(usage.touched_item_instances, 508);
+        assert_eq!(usage.effect_work_units, 1524);
+        let encoded = encode_fee_burn_event(identity(), value.clone())
+            .map_err(|e| format!("508sourceenvelope:{e:?}"))?;
+        assert!(encoded.len() <= 262144);
+        assert_eq!(
+            decode_fee_burn_envelope(&encoded)
+                .map_err(|e| format!("508sourcedecode:{e:?}"))?
+                .1,
+            value
+        );
+        eprintln!(
+            "SRV7_NPC_CASH_CODEC_BOUNDARY coin_lines=508 envelope_bytes={} work_units={} golden_source_price=250000000",
+            encoded.len(),
+            usage.effect_work_units
+        );
+        // A changed source-kind proof cannot borrow the otherwise valid large
+        // Atelier/Gem budget; both namespaces retain their separate decoders.
+        let mut forged = value.clone();
+        if let Some(FeeBurnCauseV1::NpcCosmeticPurchase(cause)) =
+            forged.cause.as_mut().and_then(|c| c.cause.as_mut())
+        {
+            let mut proof: serde_json::Value = serde_json::from_slice(&cause.atelier_proof)?;
+            proof["kind"] = "atelier".into();
+            cause.atelier_proof = serde_json::to_vec(&proof)?;
+        }
+        assert_eq!(check_fee_burn(&forged), Err(AuditError::InvalidInput));
+        Ok(())
     }
 }

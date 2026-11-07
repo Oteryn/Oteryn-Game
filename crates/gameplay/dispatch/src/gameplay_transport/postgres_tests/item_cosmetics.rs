@@ -69,7 +69,10 @@ fn scenario(ground: bool, afflicted: bool, case: Option<positive::Case>) -> Test
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let cosmetic_packet = case.map(|_| packet::cosmetics_packet()).transpose()?;
+        let cosmetic_packet = Some(match case {
+            Some(_) => packet::cosmetics_packet()?,
+            None => crate::content::native_gameplay::NativeGameplayInput::unavailable_cosmetics().bytes,
+        });
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 deps.admitted.world_id, None, cosmetic_packet.as_deref(),
@@ -79,7 +82,7 @@ fn scenario(ground: bool, afflicted: bool, case: Option<positive::Case>) -> Test
         if case.is_none() {
             assert!(
                 native.cosmetics().is_none(),
-                "current READY_UNPOPULATED catalogue"
+                "explicit unavailable-section fixture"
             );
         } else {
             assert!(

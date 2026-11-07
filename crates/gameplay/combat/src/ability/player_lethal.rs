@@ -328,6 +328,22 @@ pub trait PlayerLethalVitals {
         }
     }
 
+    /// Closed Crystal Cake Golem attack2: undefined damage retains incoming
+    /// mitigation but bypasses mana shields. Owners without this seam refuse.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_cake_undefined_attack_damage(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _magnitude: u32,
+        _source: ExactActorRef,
+        _occurrence: &str,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        None
+    }
+
     /// Element-aware forwarding through the same damage/receipt owner.
     #[allow(clippy::too_many_arguments)]
     fn apply_typed_attack_damage(

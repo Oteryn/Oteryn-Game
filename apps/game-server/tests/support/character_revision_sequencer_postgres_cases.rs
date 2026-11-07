@@ -118,6 +118,11 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
+        // Explicit diagnostic opt-in for exactly the bounded native cash fixture.
+        // Configuration precedes EVERY connection to its new private database;
+        // no existing pool/Node holder or other database is signalled or changed.
+        let profile_cash = name == "srv7_horse_rental"
+            && std::env::var("OTERYN_SRV7_CASH_SQL_PROFILE").as_deref() == Ok("1");
         let suffix = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
@@ -128,6 +133,30 @@ impl Database {
                 "CREATE DATABASE {name}"
             ))))
             .await?;
+        if profile_cash {
+            for (setting, value) in [
+                ("session_preload_libraries", "auto_explain"),
+                ("log_min_duration_statement", "20ms"),
+                ("log_parameter_max_length", "0"),
+                ("log_parameter_max_length_on_error", "0"),
+                ("auto_explain.log_min_duration", "20ms"),
+                ("auto_explain.log_nested_statements", "on"),
+                ("auto_explain.log_analyze", "off"),
+                ("auto_explain.log_verbose", "off"),
+                ("auto_explain.log_parameter_max_length", "0"),
+            ] {
+                // Static setting/value pairs and this exact fixture's generated
+                // ASCII database name; no user SQL or credential interpolation.
+                admin
+                    .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                        "ALTER DATABASE {name} SET {setting}='{value}'"
+                    ))))
+                    .await?;
+            }
+            eprintln!(
+                "SRV7_NATIVE_CASH_PREPOOL_PROFILE database={name} parameter_logging=off transaction_timeout_unchanged=true"
+            );
+        }
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -225,6 +254,26 @@ impl Harness {
         seed_session: bool,
         appearance: bool,
     ) -> TestResult<Self> {
+        Self::create_seeded_creation(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            if appearance {
+                CreationFixture::Own
+            } else {
+                CreationFixture::Historical
+            },
+        )
+        .await
+    }
+    async fn create_seeded_creation(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        creation: CreationFixture,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -240,19 +289,7 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = registered_node(&root, 1).await?;
-        seed_character(
-            &pool,
-            &root,
-            &node,
-            initialized,
-            seed_session,
-            if appearance {
-                CreationFixture::Own
-            } else {
-                CreationFixture::Historical
-            },
-        )
-        .await?;
+        seed_character(&pool, &root, &node, initialized, seed_session, creation).await?;
         Ok(Self {
             database,
             root,
@@ -315,6 +352,20 @@ fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
     binding.extend_from_slice(name.as_bytes());
     if appearance {
         binding.push(2);
+    }
+    binding
+}
+
+fn creation_bootstrap_binding(
+    creation: CreationFixture,
+    appearance: bool,
+    observer: bool,
+) -> Vec<u8> {
+    let mut binding = bootstrap_binding(appearance, observer);
+    if creation == CreationFixture::OwnFemale {
+        // Version3's final byte is authenticated creation sex. Construct it
+        // before inserting matching Root/operation/floor, never rewrite history.
+        *binding.last_mut().expect("appearance creation has sex") = 1;
     }
     binding
 }
@@ -429,7 +480,7 @@ async fn seed_character(
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
-    .bind(if appearance { Some(2_i16) } else { None })
+    .bind(if appearance { Some(if creation==CreationFixture::OwnFemale {1_i16} else {2_i16}) } else { None })
     .bind(name)
     .execute(pool)
     .await?;
@@ -443,7 +494,7 @@ async fn seed_character(
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(creation_bootstrap_binding(creation, appearance, observer))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
@@ -458,7 +509,7 @@ async fn seed_character(
          (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(creation_bootstrap_binding(creation, appearance, observer))
     .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;

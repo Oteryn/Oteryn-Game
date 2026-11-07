@@ -1,0 +1,8 @@
+-- Ordinary condition snapshots and each native Cake action must find only their
+-- own transaction's receipts rather than scan accumulated event history.
+CREATE INDEX game_seasonal_cake_food_character_xact ON game_seasonal_cake_food_uses(character_id,created_xact_id);
+CREATE INDEX game_seasonal_cake_bite_world_event_xact ON game_seasonal_cake_bite_receipts(world_id,event_start,created_xact_id);
+CREATE INDEX game_seasonal_cake_extraction_world_event_xact ON game_seasonal_cake_extractions(world_id,event_start,created_xact_id);
+CREATE INDEX game_seasonal_cake_delivery_world_event_xact ON game_seasonal_cake_deliveries(world_id,event_start,created_xact_id);
+CREATE INDEX game_seasonal_cake_poll_world_event_xact ON game_seasonal_cake_stage_polls(world_id,event_start,created_xact_id);
+CREATE INDEX game_seasonal_cake_windows_world_event_xact ON game_seasonal_cake_windows(world_id,event_start,created_xact_id);

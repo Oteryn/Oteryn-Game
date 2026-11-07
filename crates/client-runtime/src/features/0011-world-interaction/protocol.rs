@@ -1,7 +1,7 @@
 //! Context actions use the existing session commands and codecs.
 use item_look::{ItemLookIntent, ItemLookSelection, ItemLookTarget};
 pub use oteryn_session::EntityRef;
-pub use oteryn_session::world_context::{item_look, world_object};
+pub use oteryn_session::world_context::{item_look, world_object, world_rotate};
 use oteryn_session::{ItemHandle, Session, SessionError, SessionStream};
 use world_object::WorldObjectTarget;
 
@@ -19,6 +19,7 @@ pub enum Action {
     UseOn(ItemHandle),
     Look,
     Use,
+    Rotate(Option<std::num::NonZeroU32>),
     Open,
     BedInteract,
     Bed(u8),
@@ -47,6 +48,19 @@ pub fn look_payload(target: &Target) -> Result<Vec<u8>, SessionError> {
         ItemLookSelection { extended: true },
     )
     .map_err(|_| SessionError::SessionUnusable)
+}
+
+pub fn rotate_payload(
+    target: &Target,
+    observed_definition: Option<std::num::NonZeroU32>,
+) -> Result<Vec<u8>, SessionError> {
+    let target = match target {
+        Target::Item(handle) => world_rotate::UseTarget::Item(*handle),
+        Target::Object(object) => world_rotate::UseTarget::WorldObject(object.clone()),
+        Target::Creature(_) | Target::Position(_) => return Err(SessionError::SessionUnusable),
+    };
+    world_rotate::encode_rotate_intent(&target, observed_definition)
+        .map_err(|_| SessionError::SessionUnusable)
 }
 
 pub fn bed_payload(handle: ItemHandle, skill: u8) -> Result<Vec<u8>, SessionError> {
@@ -86,10 +100,26 @@ pub async fn send<S: SessionStream>(
         Action::UseWith | Action::UseRune | Action::UseOn(_) => "Use with",
         Action::Look => "Look",
         Action::Use => "Use",
+        Action::Rotate(_) => "Rotate",
         Action::Open => "Open",
         Action::BedInteract | Action::Bed(_) => "Bed",
     };
     let result = match (&command.target, command.action) {
+        (_, Action::Rotate(observed_definition)) => {
+            if !session.is_selected(world_rotate::CAPABILITY_WORLD_ROTATE_V1) {
+                return Ok("Rotate unavailable".into());
+            }
+            let Ok(payload) = rotate_payload(&command.target, observed_definition) else {
+                return Ok("Rotate: invalid target".into());
+            };
+            session
+                .gated_command(
+                    world_rotate::CAPABILITY_WORLD_ROTATE_V1,
+                    world_rotate::COMMAND_TYPE_ROTATE_WORLD_ITEM,
+                    &payload,
+                )
+                .await?
+        }
         (_, Action::UseOn(source)) => {
             if !session.is_selected(15)
                 || matches!(command.target, Target::Position(_)) && !session.is_selected(22)
@@ -276,3 +306,7 @@ mod refusal_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "native_floor_tests.rs"]
+mod native_floor_tests;

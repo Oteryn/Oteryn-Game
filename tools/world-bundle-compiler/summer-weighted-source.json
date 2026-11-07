@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/world/world-monster.xml",
+  "sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+  "source_lines": [
+    103974,
+    103978
+  ],
+  "key": "oteryn:spawn.x33866_y32698_z9",
+  "centre": {
+    "x": 33866,
+    "y": 32698,
+    "floor": 9
+  },
+  "points": [
+    {
+      "name": "Silverfrost Sentinel",
+      "x": "0",
+      "y": "0",
+      "z": "9",
+      "spawntime": "60",
+      "weight": "25"
+    },
+    {
+      "name": "True Frost Flower Asura",
+      "x": "0",
+      "y": "0",
+      "z": "9",
+      "spawntime": "47104",
+      "weight": "25"
+    },
+    {
+      "name": "True Frost Flower Asura",
+      "x": "0",
+      "y": "1",
+      "z": "9",
+      "spawntime": "60"
+    }
+  ]
+}

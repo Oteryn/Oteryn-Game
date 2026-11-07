@@ -11,6 +11,31 @@ use crate::foundation::fnd04_verifier::{
     RecoveryCurrentEvidence, RecoveryDurabilityTrustContextV2, VerifiedRecoveryDurabilityFactsV2,
 };
 
+/// Derived from a locked pending row and its immutable, committed named-House exit.
+/// The source checkpoint key stays historical; only actual placement may write a destination key.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PendingHouseDeathPlacement {
+    occurrence: super::super::character_death::PlayerDeathOccurrence,
+    source_checkpoint: super::super::character_last_position::LastPositionKey,
+}
+impl PendingHouseDeathPlacement {
+    pub const fn occurrence(&self) -> super::super::character_death::PlayerDeathOccurrence {
+        self.occurrence
+    }
+    fn matches_source(
+        &self,
+        stored: &super::super::character_last_position::StoredLastPosition,
+        destination_lease: u64,
+    ) -> bool {
+        stored.key == self.source_checkpoint
+            && self.source_checkpoint.write_sequence > 0
+            && self
+                .source_checkpoint
+                .character_lease_generation
+                .checked_add(1)
+                == Some(destination_lease)
+    }
+}
 #[derive(Clone)]
 pub struct HouseTransferRecovery {
     pub ack: HouseTransferAck,
@@ -23,6 +48,8 @@ pub struct HouseTransferRecovery {
     pub started: bool,
     pub placement: super::super::character_last_position::StoredLastPosition,
     pub house_position: Option<super::super::character_last_position::HouseLastPosition>,
+    /// Routing projection only. The DB checkpoint and pending obligation remain untouched.
+    pub pending_death: Option<PendingHouseDeathPlacement>,
     /// True only for the closed native fresh-admission restore source (command 0).
     pub admission_restore: bool,
 }
@@ -165,14 +192,18 @@ impl DurabilityRoot {
                     {
                         return Err(DurabilityError::Unavailable);
                     }
-                    // A pending death/arrival or a newer checkpoint belongs to
-                    // ordinary placement recovery, not this committed transfer.
-                    let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)")
+                    // Ordinary handoffs retain the original pending/lease restrictions.
+                    // Only the independently reloaded exact death exit may carry its historical
+                    // SOURCE checkpoint through this one placement-obligation recovery.
+                    let pending:(bool,bool)=sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid), EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)")
                         .bind(audit.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                    if pending || current.placement != candidate.placement
-                        || current.house_position != candidate.house_position
-                        || current.placement.key.character_lease_generation != current.ack.lease_generation
-                        || current.placement.key.write_sequence == 0 {
+                    if pending.1 || pending.0!=current.pending_death.is_some()
+                        || current.pending_death!=candidate.pending_death
+                        || current.placement!=candidate.placement || current.house_position!=candidate.house_position
+                        || current.pending_death.as_ref().map_or(
+                            current.placement.key.character_lease_generation!=current.ack.lease_generation,
+                            |proof|!proof.matches_source(&current.placement,current.ack.lease_generation))
+                        || current.placement.key.write_sequence==0 {
                         return Err(DurabilityError::Unavailable);
                     }
                     let row = sqlx::query("SELECT attempt_count FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND account_id=$2::uuid AND prepared_attempt_ref IS NULL FOR UPDATE")
@@ -275,17 +306,60 @@ async fn load(
     started_key.extend_from_slice(&id("session")?);
     let started: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_admission_lifecycle_receipts WHERE operation_key=$1)")
         .bind(started_key).fetch_one(&mut **tx).await?;
-    let placement = super::super::character_last_position::load_scoped_last_position(
+    let mut placement = super::super::character_last_position::load_scoped_last_position(
         tx,
         crate::domain::CharacterId::from_bytes(*character.as_bytes())
             .map_err(|_| DurabilityError::InvalidStoredState)?,
     )
     .await?
     .ok_or(DurabilityError::Unavailable)?;
+    let mut pending_death = None;
+    if row.try_get::<i16, _>("direction")? == 2 && placement.house.is_some() {
+        let x: i32 = row.try_get("tile_x")?;
+        let y: i32 = row.try_get("tile_y")?;
+        let floor: i16 = row.try_get("tile_floor")?;
+        let position: Vec<u8> = x
+            .to_be_bytes()
+            .into_iter()
+            .chain(y.to_be_bytes())
+            .chain(floor.to_be_bytes())
+            .collect();
+        let occurrence:Option<Vec<u8>>=sqlx::query_scalar("SELECT uuid_send(p.death_occurrence_id) FROM game_character_pending_respawns p JOIN game_character_death_receipts d USING(death_occurrence_id) JOIN game_character_roots r ON r.character_id=d.character_id JOIN game_house_transfer_receipts t ON t.transfer_id=encode($1,'hex')::uuid WHERE t.state=2 AND t.direction=2 AND t.character_id=p.character_id AND d.character_id=p.character_id AND d.death_scope_kind=2 AND d.death_world_id=t.world_id AND d.death_instance_id=game_house_scope_instance_id(t.world_id,t.house_key) AND d.death_scope_generation=t.source_scope_generation AND d.committed_character_revision=r.character_revision AND p.respawn_position=$2 AND d.respawn_position=$2 AND t.source_character_lease_generation=$4::text::numeric AND NOT EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($3,'hex')::uuid) FOR SHARE OF p,r")
+       .bind(id("transfer")?.as_slice()).bind(position).bind(character.as_bytes().as_slice())
+       .bind(placement.position.key.character_lease_generation.to_string()).fetch_optional(&mut **tx).await?;
+        if let Some(occurrence) = occurrence {
+            let metadata = placement
+                .house
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            if placement.position.record.world_id != world
+                || metadata.house.world_id() != world
+                || metadata.house.house_key() != row.try_get::<String, _>("house_key")?
+                || metadata.origin_channel != channel
+            {
+                return Err(DurabilityError::Unavailable);
+            }
+            pending_death = Some(PendingHouseDeathPlacement {
+                occurrence: super::super::character_death::PlayerDeathOccurrence::from_bytes(
+                    occurrence
+                        .try_into()
+                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                )
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                source_checkpoint: placement.position.key,
+            });
+            // Do not fabricate a lease/write key. This is an ACK-temple routing view of
+            // the source checkpoint; actual current placement still consumes pending.
+            placement.position.record.cell =
+                super::super::character_last_position::LastPositionCell { x, y, floor };
+            placement.house = None;
+        }
+    }
     Ok(Some(HouseTransferRecovery {
         started,
         placement: placement.position,
         house_position: placement.house,
+        pending_death,
         admission_restore: row.try_get("admission_restore")?,
         ack: HouseTransferAck {
             transfer: id("transfer")?,

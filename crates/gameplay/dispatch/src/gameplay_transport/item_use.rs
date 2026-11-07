@@ -6,6 +6,7 @@
 #[path = "drome_cube_use.rs"]
 pub(super) mod drome_cube;
 
+mod cupcakes;
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 
@@ -112,7 +113,9 @@ impl ItemUseGate {
         let (ready, cooldown) = match kind {
             ItemUseKind::Food => (&mut self.food_ready_ms, FOOD_COOLDOWN_MS),
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
-            ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. } => {
+            ItemUseKind::HirelingLamp { .. }
+            | ItemUseKind::HirelingFood { .. }
+            | ItemUseKind::Cupcake { .. } => {
                 return Err(UseDisposition::Rejected);
             }
             // The concoction cooldown is durable; the writer refuses inside it.
@@ -416,6 +419,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        if let Some(result) = cupcakes::use_cupcake(self, actor, command, &source).await {
+            return result;
+        }
         if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
             return result;
         }
@@ -607,6 +613,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             gate.start(kind, self.owner_ms())?;
         }
+        let santa_candy = request.source_definition.production_key == "oteryn:item.tibia.i3599"
+            && matches!(effect, Effect::Food(24));
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
         let commit = self
@@ -642,6 +650,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &effect,
                 self.owner_ms(),
             );
+            if santa_candy {
+                self.states
+                    .chat
+                    .santa_candy_speech(&runtime, actor, session);
+            }
         }
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
             gate.settle(

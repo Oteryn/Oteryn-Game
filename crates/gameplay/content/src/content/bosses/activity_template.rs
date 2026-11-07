@@ -9,6 +9,9 @@ use crate::content::{
 };
 use serde::{Deserialize, Serialize};
 
+mod source_geometry;
+mod source_portal;
+
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -71,7 +74,14 @@ pub struct ActivityTemplateDiagnostic {
 /// row. Its bounded room keeps the original frame/map/artifact identity and only
 /// exposes the admitted encounter region. Entry/exit facts retain authored order.
 #[derive(Debug)]
+struct SourcePortalOrigin {
+    frame_digest: [u8; 32],
+    map_digest: [u8; 32],
+}
+
+#[derive(Debug)]
 pub struct QualifiedActivityRoomTemplate {
+    source_portal_origin: Option<SourcePortalOrigin>,
     boss_key: String,
     template_key: String,
     template_revision: String,
@@ -135,7 +145,26 @@ impl QualifiedActivityRoomTemplate {
         self.minimum_players
     }
     pub fn maximum_players(&self) -> usize {
-        self.entries.len()
+        if self.source_portal_origin.is_some() {
+            15
+        } else {
+            self.entries.len()
+        }
+    }
+    pub fn source_portal(&self) -> bool {
+        self.source_portal_origin.is_some()
+    }
+    pub fn origin_frame_digest(&self) -> [u8; 32] {
+        self.source_portal_origin.as_ref().map_or_else(
+            || self.room.frame_binding().digest(),
+            |source| source.frame_digest,
+        )
+    }
+    pub fn origin_map_digest(&self) -> [u8; 32] {
+        self.source_portal_origin.as_ref().map_or_else(
+            || self.room.map_revision_digest(),
+            |source| source.map_digest,
+        )
     }
     pub fn minimum_level(&self) -> u32 {
         self.minimum_level
@@ -444,6 +473,7 @@ impl ContentActivationController {
             .strip_prefix("oteryn:creature.")
             .ok_or(R::InvalidSourceCapture)?;
         Ok(QualifiedActivityRoomTemplate {
+            source_portal_origin: None,
             boss_key: format!("oteryn:boss.{suffix}"),
             template_key: format!("oteryn:room.boss.{suffix}"),
             template_revision: format!("crystal-{}", candidate.sha256),

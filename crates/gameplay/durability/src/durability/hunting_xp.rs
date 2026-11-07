@@ -10,6 +10,8 @@ pub struct HuntingXpModifiers {
     pub prey_grade: Option<i16>,
     pub prey_percent: i16,
     pub xp_boost_percent: i16,
+    /// Separate source Cake World bonus, frozen independently for this recipient.
+    pub cake_xp_percent: i16,
     pub stamina_minutes: i32,
     /// Level before this kill, for the Global low-level bonus.
     pub level: u32,
@@ -39,6 +41,7 @@ pub(super) async fn read_in_transaction(
         prey_percent: 0,
         xp_boost_percent: sqlx::query_scalar("SELECT coalesce(max(percent),0)::smallint FROM (SELECT l.xp_boost_percent AS percent FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND l.kind='XP_BOOST' AND l.status='DELIVERED' AND l.effect_started_at<=public.game_daily_effect_now() AND l.effect_expires_at>public.game_daily_effect_now() UNION ALL SELECT percent FROM public.game_character_store_xp_boosts WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND starts_at<=public.game_daily_effect_now() AND expires_at>public.game_daily_effect_now()) active")
             .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0),
+        cake_xp_percent: super::seasonal_cake::bonus::xp_percent(tx,fence.runtime_scope.world_id(),premium).await,
         stamina_minutes: stamina.unwrap_or(2520),
         level: level
             .map(u32::try_from)

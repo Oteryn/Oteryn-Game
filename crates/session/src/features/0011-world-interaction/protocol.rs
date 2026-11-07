@@ -1,6 +1,6 @@
 //! Existing world-context codecs exposed at the client session boundary.
 pub use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
-pub use oteryn_protocol_oteryn::{bed, item_look, world_object};
+pub use oteryn_protocol_oteryn::{bed, item_look, world_object, world_rotate};
 
 impl<S: crate::SessionStream> crate::Session<S> {
     /// World-context Use keeps its payload decoding local to the UI flow. Only exchange

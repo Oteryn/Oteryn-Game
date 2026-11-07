@@ -117,6 +117,33 @@ impl<S: SessionStream> Session<S> {
         self.selected_capabilities.contains(&capability)
     }
 
+    /// Whether own vitals were actually decoded in the current committed House binding.
+    /// Polling a retained vitals cache cannot promote it into a newer House lease.
+    pub fn own_house_vitals_current(&self) -> bool {
+        let decode =
+            |bytes: &[u8]| property_services::house_transfer::decode_house_transfer_ack(bytes).ok();
+        let Some(current) = self
+            .gated_snapshot(51)
+            .and_then(|value| decode(&value.payload))
+        else {
+            return false;
+        };
+        let Some(observed) = self.own_vitals_house_binding.as_deref().and_then(decode) else {
+            return false;
+        };
+        current.house.is_some()
+            && GameSessionId::decode(&current.session).ok()
+                == Some(self.join_snapshot.game_session_id)
+            && current.connection_generation == self.connection_generation
+            && current.session == observed.session
+            && current.world == observed.world
+            && current.channel == observed.channel
+            && current.house == observed.house
+            && current.connection_generation == observed.connection_generation
+            && current.scope_generation == observed.scope_generation
+            && current.lease_generation == observed.lease_generation
+    }
+
     /// The latest full snapshot of a selected capability's domain, if the server sent it.
     pub fn gated_snapshot(&self, domain_id: u32) -> Option<&GatedSnapshot> {
         self.gated_snapshots

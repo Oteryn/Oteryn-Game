@@ -1,7 +1,7 @@
 //! System controls stay on their creating thread; the weak mailbox follows session lifetime.
 #![allow(unsafe_code)] // Win32 controls require FFI; all HWNDs are confined to this thread.
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::world_event::panel_text;
+use oteryn_client_ui::seasonal_events::panel_text;
 use std::ptr::{null, null_mut};
 use std::sync::Arc;
 use std::time::Duration;
@@ -50,7 +50,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     540,
-                    240,
+                    450,
                     null_mut(),
                     null_mut(),
                     null_mut(),
@@ -64,11 +64,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         0,
                         wide("EDIT").as_ptr(),
                         wide("").as_ptr(),
-                        WS_CHILD | WS_VISIBLE | ES_MULTILINE as u32 | ES_READONLY as u32,
+                        WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
                         12,
                         12,
                         500,
-                        130,
+                        335,
                         hwnd,
                         null_mut(),
                         null_mut(),
@@ -80,7 +80,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         wide("Refresh").as_ptr(),
                         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON as u32,
                         12,
-                        155,
+                        355,
                         120,
                         28,
                         hwnd,

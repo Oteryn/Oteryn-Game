@@ -10,6 +10,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.item_count_selected = counted;
         mailbox.inventory.apply(inventory);
+        mailbox.rotation_probe.inventory_changed();
     }
 
     pub(in crate::play) fn inventory_events(&self, events: &[SessionEvent]) {
@@ -17,6 +18,7 @@ impl Outbox {
         for event in events {
             if let SessionEvent::Inventory(delta) = event {
                 mailbox.inventory.apply(Some(delta.value.clone()));
+                mailbox.rotation_probe.inventory_changed();
             }
         }
     }
@@ -26,6 +28,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         mailbox.world_context.targeting = None;
         mailbox.inventory = Default::default();
+        mailbox.rotation_probe.disable();
         mailbox.item_movement = Default::default();
         mailbox.item_count_selected = false;
         mailbox.inventory_shutdown = true;

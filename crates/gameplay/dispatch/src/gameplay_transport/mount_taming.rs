@@ -50,6 +50,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_mount_kit(actor, command, &intent, source, item_target)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
         match self
             .tame(actor, command, intent, source, item_target, visible)
             .await
@@ -240,6 +246,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.states.spell_states.lock().await;
         if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id) {
             return Err(reject);
+        }
+        // Crystal 201189f data-global/scripts/actions/mounts/mounts.lua:182-185:
+        // a cursed player cannot tame Foxmouse; neither operand is spent.
+        if rule.creature_key == "oteryn:creature.foxmouse" {
+            use oteryn_gameplay_domain::domain::condition::{ConditionType, DotElement};
+            let cursed = ConditionType::DamageOverTime(DotElement::Cursed);
+            let now = self.owner_now().get();
+            let owned = states
+                .get(&runtime, actor, command.game_session_id)
+                .is_some_and(|state| {
+                    state
+                        .owned_conditions()
+                        .visible_statuses(now)
+                        .any(|(kind, _)| kind == cursed)
+                });
+            let native = runtime
+                .actor_conditions_at(actor, Some(command.game_session_id), now)
+                .is_ok_and(|store| store.visible_statuses(now).any(|(kind, _)| kind == cursed));
+            if owned || native {
+                self.states.chat.push_quest_feedback(command.game_session_id,
+                    "The foxmouse senses your curse and refuses to be tamed. Consume Purple Nightshade Blossoms to cure it first.");
+                return Err(Some(UseDisposition::RequirementNotMet));
+            }
         }
         drop(states);
         if let Some((_, target)) = creature_target {

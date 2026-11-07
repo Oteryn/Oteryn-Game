@@ -1,0 +1,16 @@
+{
+  "id": 387,
+  "name": "HOUSE_FURNITURE_WRAP_OPAQUE_V1",
+  "owner_decision": "SRV7 native House Wrap uses server-issued handles and observed definitions, retaining existing command402 owner.",
+  "owner": "House furniture wrapping",
+  "requires": [
+    11,
+    86,
+    207,
+    385
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: Existing command402: strict13-byte marker3 placed, marker4 carried, marker5 read-only affordance, each opaque handle and observed definition. Existing20745-byte format remains unchanged. All mutations recheck current House authority."
+}

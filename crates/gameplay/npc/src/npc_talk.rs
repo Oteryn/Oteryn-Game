@@ -7,8 +7,10 @@
 
 use std::collections::HashMap;
 
+mod cosmetics;
 mod dark_trails;
 mod isle_of_evil;
+mod summer;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -155,18 +157,25 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}",
+                "{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
+                cosmetics::SOURCE,
+                cosmetics::PROGRAM_SOURCE,
+                summer::SOURCE,
+                include_str!("quest_greetings/seasonal.json"),
+                include_str!("quest_greetings/horse_rental.json"),
+                crate::quest_greetings::FURNITURE_SOURCE,
             )),
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
+            let cosmetic_messages = cosmetics::messages(&reference.key);
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
@@ -208,6 +217,45 @@ impl NpcTalkBook {
                     "May your path lead to enlightenment.".into(),
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
+                )
+            } else if let Some(greeting) = summer::get(&reference.key) {
+                // Source literals open every admitted Summer NPC. Only canonical,
+                // stateless single-line lore keywords reach this talk owner.
+                let keywords = if npc.services.is_empty() {
+                    npc.bank_dialogue
+                        .as_ref()
+                        .map(|dialogue| {
+                            dialogue
+                                .keywords
+                                .iter()
+                                .filter(|keyword| literal_keyword(keyword))
+                                .cloned()
+                                .collect()
+                        })
+                        .unwrap_or_default()
+                } else {
+                    Vec::new()
+                };
+                let topic_reply = if let Some(replies) = &npc.generated_replies {
+                    let mut lines = Vec::new();
+                    for (_, line) in &replies.services {
+                        if !lines.contains(&line.text.as_str()) {
+                            lines.push(line.text.as_str());
+                        }
+                    }
+                    (!lines.is_empty()).then(|| lines.join(" "))
+                } else if !travel_routes.is_empty() {
+                    Some("Ask me for a passage to your destination.".into())
+                } else if !premium_services.is_empty() {
+                    Some("Ask me about promotion or a blessing.".into())
+                } else {
+                    None
+                };
+                (
+                    greeting.greet.text.clone(),
+                    greeting.farewell.text.clone(),
+                    topic_reply,
+                    keywords,
                 )
             } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
                 .filter(|_| reference.key != "oteryn:npc.spectulus")
@@ -273,32 +321,8 @@ impl NpcTalkBook {
                     None,
                     dialogue.keywords.clone(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-            ) && npc.services.is_empty()
-            {
-                // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                // literal, single-line lore is qualified here. Quest callbacks and
-                // multipart/stateful branches remain outside the talk consumer.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
-                    continue;
-                }
-                (
-                    dialogue.greet[0].clone(),
-                    dialogue.farewell[0].clone(),
-                    None,
-                    dialogue
-                        .keywords
-                        .iter()
-                        .filter(|keyword| literal_keyword(keyword))
-                        .cloned()
-                        .collect(),
-                )
+            } else if let Some((greet, farewell)) = cosmetic_messages {
+                (greet.into(), farewell.into(), None, Vec::new())
             } else if let Some((greet, farewell)) = &dark_messages {
                 (greet.clone(), farewell.clone(), None, Vec::new())
             } else if let Some(messages) = &isle_messages {
@@ -328,9 +352,17 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: dark_messages.is_some() || isle_messages.is_some(),
+                    source_name_templates: cosmetic_messages.is_some()
+                        || dark_messages.is_some()
+                        || isle_messages.is_some()
+                        || crate::quest_greetings::is_furniture(&reference.key)
+                        || crate::quest_greetings::is_seasonal(&reference.key)
+                        || crate::quest_greetings::is_horse_rental(&reference.key)
+                        || summer::get(&reference.key).is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
+                    } else if let Some(messages) = summer::get(&reference.key) {
+                        Some(messages.walkaway.text.clone())
                     } else {
                         isle_messages.map(|messages| messages.walkaway)
                     },
@@ -957,3 +989,7 @@ mod dark_trails_admission_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "npc_talk/furniture_tests.rs"]
+mod furniture_tests;

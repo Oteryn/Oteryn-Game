@@ -291,6 +291,31 @@ fn scenario_with_creature_observed(
     analyser: bool,
 ) -> TestResult {
     let (charm, boss_policy, daily_target) = settings;
+    let portal = super::pumpkin_skinning::portal_active();
+    let natural = super::cosmetic_source_loot::natural_active();
+    let natural_positions = super::cosmetic_natural_source::positions()?;
+    let open_player = if let Some((player, _)) = natural_positions {
+        player
+    } else if portal {
+        MovementLocalPosition {
+            x: 33316,
+            y: 32415,
+            floor: 7,
+        }
+    } else {
+        OPEN_PLAYER
+    };
+    let open_creature = if let Some((_, creature)) = natural_positions {
+        creature
+    } else if portal {
+        MovementLocalPosition {
+            x: 33315,
+            y: 32415,
+            floor: 7,
+        }
+    } else {
+        OPEN_RAT
+    };
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
@@ -320,7 +345,18 @@ fn scenario_with_creature_observed(
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
-        let room = pin.qualified_room().clone();
+        let room = if natural {
+            super::cosmetic_natural_source::source_room(
+                pin.qualified_room(),
+                native,
+                world,
+                channel,
+            )?
+        } else if portal {
+            super::pumpkin_skinning::source_room(pin.qualified_room(), native, world, channel)?
+        } else {
+            pin.qualified_room().clone()
+        };
         // The Thalom entry start is a protection-zone cell, where no swing is legal: enter the
         // Channel on the open cell beside it instead (as the owner auto-attack tests do).
         let channel_pin = ChannelContentPin::from_activation(
@@ -328,9 +364,9 @@ fn scenario_with_creature_observed(
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            room.frame_binding().digest(),
             room.map_revision_digest(),
-            (OPEN_PLAYER.x, OPEN_PLAYER.y, OPEN_PLAYER.floor),
+            (open_player.x, open_player.y, open_player.floor),
         );
 
         // ATTACK-2: the swing weapon is read from the equipment owner, which checks the
@@ -346,7 +382,7 @@ fn scenario_with_creature_observed(
             .bind(pin.activation_sequence().to_string())
             .bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice())
-            .bind(pin.frame_binding().digest().as_slice())
+            .bind(room.frame_binding().digest().as_slice())
             .execute(&harness.pool)
             .await?;
 
@@ -384,9 +420,14 @@ fn scenario_with_creature_observed(
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
+        let pumpkin = super::pumpkin_skinning::active();
         let creature_key = radiant.map_or_else(
             || {
-                if charm.is_some() {
+                if natural {
+                    super::cosmetic_source_loot::natural_creature_key()
+                } else if pumpkin {
+                    "oteryn:creature.the_mutated_pumpkin"
+                } else if charm.is_some() {
                     "oteryn:creature.cave_rat"
                 } else {
                     "oteryn:creature.rat"
@@ -397,7 +438,9 @@ fn scenario_with_creature_observed(
         );
         let expected_xp = if daily_target == Some("creature") {
             10
-        } else if settle_radiant {
+        } else if super::acquisition_natural::creature().is_some() {
+            super::acquisition_natural::source_xp(native, &creature_key)?
+        } else if settle_radiant || pumpkin || natural {
             native
                 .reward_table()
                 .row(&creature_key)
@@ -427,7 +470,10 @@ fn scenario_with_creature_observed(
         // that bonus (`scheduled_events::test_clock` sets one on this thread).
         let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
         let expected_xp = 2 * (expected_xp * i64::from(event_rates.experience) / 100);
-        if settle_radiant {
+        if (settle_radiant || pumpkin || natural)
+            && (super::acquisition_natural::creature().is_none()
+                || native.reward_table().row(&creature_key).is_ok())
+        {
             // Select a positive real occurrence without changing a drop probability.
             // Roll back unused player reservations to advance the reusable creature
             // slot's generation (player slot 1, creature slot 2), then spawn and kill that actual native creature.
@@ -446,7 +492,7 @@ fn scenario_with_creature_observed(
                     &reward.loot_table_ref,
                     &reward.loot_table,
                 )?;
-                if !plan.entries.is_empty() {
+                if super::cosmetic_source_loot::natural_plan_accepts(&plan) {
                     generation = Some(candidate);
                     break;
                 }
@@ -477,6 +523,7 @@ fn scenario_with_creature_observed(
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
             use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
             let table = Table {
+                weighted: Vec::new(),
                 creatures: vec![Creature {
                     key: creature_key.clone(),
                     period: Period::All,
@@ -534,7 +581,7 @@ fn scenario_with_creature_observed(
             let before = runtime.read_actor_position(actor).map_err(debug)?;
             runtime
                 .borrow_movement_position()
-                .commit_cardinal(before, OPEN_RAT)
+                .commit_cardinal(before, open_creature)
                 .map_err(debug)?;
             assert!(
                 runtime
@@ -547,7 +594,7 @@ fn scenario_with_creature_observed(
             let before = runtime.read_actor_position(actor).map_err(debug)?;
             runtime
                 .borrow_movement_position()
-                .commit_cardinal(before, OPEN_PLAYER)
+                .commit_cardinal(before, open_player)
                 .map_err(debug)?;
             assert!(
                 runtime
@@ -562,7 +609,7 @@ fn scenario_with_creature_observed(
             );
         } else {
             runtime
-                .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
+                .realize_native_qualification_spawn(channel_pin, &creature_key, open_creature)
                 .map_err(debug)?;
         }
         if ranged_spell {
@@ -583,7 +630,7 @@ fn scenario_with_creature_observed(
             let boss = runtime.boss_spawns()[0].actor.ok_or("boss actor")?;
             assert_eq!(
                 runtime.creature_spawn_cell(boss),
-                Some(OPEN_RAT),
+                Some(open_creature),
                 "boss AI retains its authored home without an ordinary respawn source"
             );
         }
@@ -749,7 +796,7 @@ fn scenario_with_creature_observed(
                             // Level 50 overcomes the rat's defence and armor. A high-level
                             // attacker kills the real Radiant in bounded swings;
                             // its native HP, defence, loot and corpse facts stay unchanged.
-                            level: if settle_radiant {
+                            level: if settle_radiant || pumpkin || natural {
                                 1_000_000
                             } else if charm.is_some() {
                                 30
@@ -784,14 +831,14 @@ fn scenario_with_creature_observed(
                     100,
                     MovementLocalPosition {
                         x: if holy_target { 3 } else { 1 },
-                        ..OPEN_PLAYER
+                        ..open_player
                     },
                 ),
                 (
                     101,
                     MovementLocalPosition {
                         x: 5,
-                        ..OPEN_PLAYER
+                        ..open_player
                     },
                 ),
             ] {
@@ -916,7 +963,10 @@ fn scenario_with_creature_observed(
                         .commit_creature_relocation(
                             caster,
                             before,
-                            MovementLocalPosition { x: 0, ..OPEN_RAT },
+                            MovementLocalPosition {
+                                x: 0,
+                                ..open_creature
+                            },
                         )
                         .map_err(debug)?;
                 }
@@ -1047,7 +1097,10 @@ fn scenario_with_creature_observed(
                         .commit_creature_relocation(
                             target,
                             before,
-                            MovementLocalPosition { x: -2, ..OPEN_RAT },
+                            MovementLocalPosition {
+                                x: -2,
+                                ..open_creature
+                            },
                         )
                         .map_err(debug)?;
                 }
@@ -1370,6 +1423,23 @@ fn scenario_with_creature_observed(
                 .checked_sub(PASS)
                 .expect("a monotonic clock older than the passes");
         }
+        if super::acquisition_natural::creature().is_some()
+            && native.reward_table().row(&creature_key).is_err()
+        {
+            // Data RED must follow a genuine attributed native lethal hit and the real
+            // production settlement attempt. Never replace missing corpse/loot admission.
+            let outcome = owner.drain_kill_rewards(session).await;
+            let actual = corpse_receipts(&harness).await?;
+            eprintln!(
+                "SRV7_NATURAL_PRODUCTION_DEATH_ATTEMPT creature={creature_key} native_reward={:?} drain={outcome:?} corpse_mints={actual}",
+                native.reward_table().row(&creature_key).err()
+            );
+            assert_eq!(
+                actual, 1,
+                "actual native lethal/settlement must materialize its source corpse before source operand checks"
+            );
+            return Err("missing native source row after actual death".into());
+        }
         let mut daily_expected_loot = None;
         if let Some(target) = daily_target {
             let attack = owner.states.attack.lock().await;
@@ -1480,21 +1550,26 @@ fn scenario_with_creature_observed(
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        let replay =
-            if analyser || settle_radiant || boss_policy.is_some() || daily_target.is_some() {
-                let attack = owner.states.attack.lock().await;
-                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
-                    attack.kills().take(session, 2)
-                else {
-                    return Err("queued real kill".into());
-                };
-                let entry = taken.entry().ok_or("captured kill")?;
-                let replay = (entry.facts, entry.target, entry.activity_observed_at);
-                taken.requeue();
-                Some(replay)
-            } else {
-                None
+        let replay = if analyser
+            || settle_radiant
+            || pumpkin
+            || natural
+            || boss_policy.is_some()
+            || daily_target.is_some()
+        {
+            let attack = owner.states.attack.lock().await;
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                attack.kills().take(session, 2)
+            else {
+                return Err("queued real kill".into());
             };
+            let entry = taken.entry().ok_or("captured kill")?;
+            let replay = (entry.facts, entry.target, entry.activity_observed_at);
+            taken.requeue();
+            Some(replay)
+        } else {
+            None
+        };
         if boss_policy.is_some() {
             let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
             assert!(
@@ -1542,11 +1617,24 @@ fn scenario_with_creature_observed(
         );
 
         // XP: exactly one committed receipt for the native amount on the fenced Character.
-        assert_eq!(xp_receipts(&harness).await?, 1);
-        let experience: i64 =
+        assert_eq!(
+            xp_receipts(&harness).await?,
+            if super::acquisition_natural::creature() == Some("chicken") {
+                0
+            } else {
+                1
+            }
+        );
+        let experience: i64 = if super::acquisition_natural::creature() == Some("chicken") {
+            sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
+                .fetch_optional(&harness.pool)
+                .await?
+                .unwrap_or(0)
+        } else {
             sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
                 .fetch_one(&harness.pool)
-                .await?;
+                .await?
+        };
         assert_eq!(experience, expected_xp);
         // Corpse: one materialized corpse minted for this Character's kill, and its loot rows
         // are children of that very corpse.
@@ -1558,7 +1646,7 @@ fn scenario_with_creature_observed(
         .fetch_one(&harness.pool)
         .await?;
         assert!(
-            children >= 1,
+            children >= 1 || pumpkin,
             "{creature_key} commits a positive native loot plan"
         );
 
@@ -1622,6 +1710,7 @@ fn scenario_with_creature_observed(
             assert!(owner.analyser_next(admitted).await.is_none());
         }
         super::w22a_loot::qualify(&mut owner, &harness).await?;
+        super::cosmetic_source_loot::qualify(&harness, &owner, admitted).await?;
         if let Some(expected) = daily_expected_loot {
             let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
             assert_eq!(
@@ -1663,7 +1752,14 @@ fn scenario_with_creature_observed(
                 owner.drain_kill_rewards(session).await,
                 DrainOutcome::Drained
             );
-            assert_eq!(xp_receipts(&harness).await?, 1);
+            assert_eq!(
+                xp_receipts(&harness).await?,
+                if super::acquisition_natural::creature() == Some("chicken") {
+                    0
+                } else {
+                    1
+                }
+            );
             assert_eq!(corpse_receipts(&harness).await?, 1);
             let replay_children: i64 =
                 sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries")
@@ -1691,6 +1787,9 @@ fn scenario_with_creature_observed(
                 );
                 eprintln!("S_ANALYSER_LIVE_REPLAY_PASS kills=1 retry_facts=0");
             }
+        }
+        if pumpkin {
+            super::pumpkin_skinning::qualify(&harness, &owner, admitted).await?;
         }
         if settle_radiant {
             qualify_summer_settlement(

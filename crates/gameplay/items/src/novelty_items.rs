@@ -6,6 +6,7 @@ use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_domain::domain::item_definition::TypedDefinitionRef;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
+pub mod santa_gifts;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -220,7 +221,13 @@ pub fn rule_for_key(key: &str) -> Option<&'static NoveltyRule> {
 }
 
 pub fn is_novelty(key: &str) -> bool {
-    rule_for_key(key).is_some()
+    crate::furniture::portable_use_to(key).is_some()
+        || crate::furniture::is_portable_effect(key)
+        || rule_for_key(key).is_some()
+        || key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())
+            .is_some_and(santa_gifts::recognizes)
 }
 
 /// The draw callback is bounded and independently domain-separated from reward tables.
@@ -330,6 +337,19 @@ pub fn plan(
     command: u64,
     source: [u8; 16],
 ) -> Option<NoveltyPlan> {
+    if let Some(plan) = crate::furniture::plan_portable_use(native, used)
+        .or_else(|| crate::furniture::plan_portable_effect(native, used, session, command, source))
+    {
+        return Some(plan);
+    }
+    if used
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u32>().ok())
+        .is_some_and(santa_gifts::recognizes)
+    {
+        return santa_gifts::plan(native, used, session, command, source, None);
+    }
     let record = native
         .item_policy(&used.production_key, &used.revision_ref)?
         .record();
@@ -433,7 +453,14 @@ pub fn house_transform_for_key(key: &str) -> Option<&'static HouseTransformRule>
 }
 
 pub fn is_ground_action(key: &str) -> bool {
-    crate::event_items::is_event_reward(key)
+    crate::furniture::portable_use_to(key).is_some()
+        || crate::furniture::is_portable_effect(key)
+        || crate::seasonal_cupcakes::source_id(key).is_some()
+        || key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())
+            .is_some_and(santa_gifts::recognizes)
+        || crate::event_items::is_event_reward(key)
         || house_transform_for_key(key).is_some()
         || rule_for_key(key).is_some_and(|rule| rule.kind != NoveltyKind::EquippedEffect)
 }
@@ -486,6 +513,23 @@ pub fn plan_ground(
     ground: GroundEffect,
     in_house: bool,
 ) -> Option<NoveltyPlan> {
+    if let Some(mut plan) = crate::furniture::plan_portable_use(native, used)
+        .or_else(|| crate::furniture::plan_portable_effect(native, used, session, command, source))
+    {
+        plan.effects["ground"] = serde_json::to_value(ground).ok()?;
+        return Some(plan);
+    }
+    if crate::seasonal_cupcakes::source_id(&used.production_key).is_some() {
+        return crate::seasonal_cupcakes::plan(native, used);
+    }
+    if used
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u32>().ok())
+        .is_some_and(santa_gifts::recognizes)
+    {
+        return santa_gifts::plan(native, used, session, command, source, Some(ground));
+    }
     let id = used
         .production_key
         .strip_prefix("oteryn:item.tibia.i")?

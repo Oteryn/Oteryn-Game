@@ -1,0 +1,1208 @@
+{
+  "schema": "OTERYN_SRV7_SUMMER_AMULET_IDENTITIES/v1",
+  "family": "Item",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "bindings": [
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "identity_namespace": "ots/item_server_id",
+      "external_id": "53197",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53197",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "identity_namespace": "ots/item_server_id",
+      "external_id": "53199",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53199",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "identity_namespace": "ots/item_server_id",
+      "external_id": "53201",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53201",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "identity_namespace": "ots/item_server_id",
+      "external_id": "53203",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53203",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    },
+    {
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "identity_namespace": "ots/item_server_id",
+      "external_id": "53205",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i53205",
+        "revision": "definition-r1"
+      },
+      "disposition": "EXACT"
+    }
+  ],
+  "profiles": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/53197",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "enchanted flamingo amulet of valor"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 510
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "ots/item_server_id",
+        "external_id": "53197",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53197",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i53197",
+        "revision_ref": "definition-r1"
+      }
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/53199",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "enchanted flamingo amulet of precision"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 460
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "ots/item_server_id",
+        "external_id": "53199",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53199",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i53199",
+        "revision_ref": "definition-r1"
+      }
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/53201",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "enchanted flamingo amulet of destruction"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 470
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "ots/item_server_id",
+        "external_id": "53201",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53201",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i53201",
+        "revision_ref": "definition-r1"
+      }
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/53203",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "enchanted flamingo amulet of nature"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 430
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "ots/item_server_id",
+        "external_id": "53203",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53203",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i53203",
+        "revision_ref": "definition-r1"
+      }
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/53205",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "enchanted swan amulet of balance"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 530
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "ots/item_server_id",
+        "external_id": "53205",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i53205",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i53205",
+        "revision_ref": "definition-r1"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    },
+    {
+      "path": "src/items/items.cpp",
+      "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d"
+    },
+    {
+      "path": "src/items/items.hpp",
+      "sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca"
+    },
+    {
+      "path": "src/items/item.cpp",
+      "sha256": "e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b"
+    }
+  ],
+  "loot_source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua",
+    "sha256": "aae1c55aad1328c02d4220f0e06dccfb6027510d02262d997000aead96f7abae",
+    "lines": [
+      119,
+      123
+    ]
+  },
+  "wiki_source_sha256": "e832defe33249751e68c8d2ab4c3e39eb79a90abf530a9d57db86283bb88c870",
+  "wiki_source": {
+    "schema": "OTERYN_SRV7_SUMMER_WIKI_ITEM_SOURCE/v1",
+    "repository": "tibia-sh/tibiawiki-data",
+    "revision": "31748fd6abc1a18378ecade240c805a7aab6bf20",
+    "path": "index.db",
+    "source_blob_git_sha1": "a8298e4951d2bc3427f89c407e08da67d41b8a1a",
+    "rows": [
+      {
+        "article_id": 110756,
+        "title": "Enchanted Flamingo Amulet of Valor",
+        "name": "Enchanted Flamingo Amulet of Valor",
+        "actual_name": "enchanted flamingo amulet of valor",
+        "plural": null,
+        "article": "an",
+        "is_marketable": 1,
+        "is_stackable": 0,
+        "is_pickupable": 1,
+        "is_immobile": 0,
+        "is_usable": null,
+        "value_sell": 0,
+        "value_buy": 0,
+        "value_buy_currency": null,
+        "weight": 5.1,
+        "item_class": "Body Equipment",
+        "item_type": "Amulets and Necklaces",
+        "type_secondary": null,
+        "slot": "neck",
+        "flavor_text": null,
+        "light_color": null,
+        "light_radius": null,
+        "version": "15.30.a30dad",
+        "client_id": 53197,
+        "location": null,
+        "trade_value_note": "Negotiable",
+        "image": null,
+        "status": "active",
+        "timestamp": "2026-07-13T14:39:38+00:00",
+        "attributes": [
+          {
+            "name": "armor",
+            "value": "4"
+          },
+          {
+            "name": "axe",
+            "value": "+4"
+          },
+          {
+            "name": "club",
+            "value": "+4"
+          },
+          {
+            "name": "duration",
+            "value": "180 minutes"
+          },
+          {
+            "name": "required_level",
+            "value": "270"
+          },
+          {
+            "name": "required_vocation",
+            "value": "knights"
+          },
+          {
+            "name": "resistance_fire",
+            "value": "12"
+          },
+          {
+            "name": "resistance_physical",
+            "value": "7"
+          },
+          {
+            "name": "shielding",
+            "value": "+1"
+          },
+          {
+            "name": "sword",
+            "value": "+4"
+          }
+        ],
+        "appearance_id": 53197
+      },
+      {
+        "article_id": 110758,
+        "title": "Enchanted Flamingo Amulet of Precision",
+        "name": "Enchanted Flamingo Amulet of Precision",
+        "actual_name": "enchanted flamingo amulet of precision",
+        "plural": null,
+        "article": "an",
+        "is_marketable": 1,
+        "is_stackable": 0,
+        "is_pickupable": 1,
+        "is_immobile": 0,
+        "is_usable": null,
+        "value_sell": 0,
+        "value_buy": 0,
+        "value_buy_currency": null,
+        "weight": 4.6,
+        "item_class": "Body Equipment",
+        "item_type": "Amulets and Necklaces",
+        "type_secondary": null,
+        "slot": "neck",
+        "flavor_text": null,
+        "light_color": null,
+        "light_radius": null,
+        "version": "15.30.a30dad",
+        "client_id": 53199,
+        "location": null,
+        "trade_value_note": "Negotiable",
+        "image": null,
+        "status": "active",
+        "timestamp": "2026-07-20T18:05:38+00:00",
+        "attributes": [
+          {
+            "name": "armor",
+            "value": "4"
+          },
+          {
+            "name": "distance",
+            "value": "+4"
+          },
+          {
+            "name": "duration",
+            "value": "180 minutes"
+          },
+          {
+            "name": "magic_level_holy",
+            "value": "+1"
+          },
+          {
+            "name": "required_level",
+            "value": "270"
+          },
+          {
+            "name": "required_vocation",
+            "value": "paladins"
+          },
+          {
+            "name": "resistance_fire",
+            "value": "14"
+          },
+          {
+            "name": "resistance_physical",
+            "value": "5"
+          }
+        ],
+        "appearance_id": 53199
+      },
+      {
+        "article_id": 110760,
+        "title": "Enchanted Flamingo Amulet of Destruction",
+        "name": "Enchanted Flamingo Amulet of Destruction",
+        "actual_name": "enchanted flamingo amulet of destruction",
+        "plural": null,
+        "article": "an",
+        "is_marketable": 1,
+        "is_stackable": 0,
+        "is_pickupable": 1,
+        "is_immobile": 0,
+        "is_usable": null,
+        "value_sell": 0,
+        "value_buy": 0,
+        "value_buy_currency": null,
+        "weight": 4.7,
+        "item_class": "Body Equipment",
+        "item_type": "Amulets and Necklaces",
+        "type_secondary": null,
+        "slot": "neck",
+        "flavor_text": null,
+        "light_color": 65280,
+        "light_radius": 5,
+        "version": "15.30.a30dad",
+        "client_id": 53201,
+        "location": null,
+        "trade_value_note": "Negotiable",
+        "image": null,
+        "status": "active",
+        "timestamp": "2026-07-13T14:39:34+00:00",
+        "attributes": [
+          {
+            "name": "armor",
+            "value": "3"
+          },
+          {
+            "name": "duration",
+            "value": "180 minutes"
+          },
+          {
+            "name": "magic_level",
+            "value": "+3"
+          },
+          {
+            "name": "magic_level_energy",
+            "value": "+1"
+          },
+          {
+            "name": "required_level",
+            "value": "270"
+          },
+          {
+            "name": "required_vocation",
+            "value": "sorcerers"
+          },
+          {
+            "name": "resistance_fire",
+            "value": "11"
+          },
+          {
+            "name": "resistance_physical",
+            "value": "3"
+          }
+        ],
+        "appearance_id": 53201
+      },
+      {
+        "article_id": 110762,
+        "title": "Enchanted Flamingo Amulet of Nature",
+        "name": "Enchanted Flamingo Amulet of Nature",
+        "actual_name": "enchanted flamingo amulet of nature",
+        "plural": null,
+        "article": "an",
+        "is_marketable": 1,
+        "is_stackable": 0,
+        "is_pickupable": 1,
+        "is_immobile": 0,
+        "is_usable": null,
+        "value_sell": 0,
+        "value_buy": 0,
+        "value_buy_currency": null,
+        "weight": 4.3,
+        "item_class": "Body Equipment",
+        "item_type": "Amulets and Necklaces",
+        "type_secondary": null,
+        "slot": "neck",
+        "flavor_text": null,
+        "light_color": 65280,
+        "light_radius": 5,
+        "version": "15.30.a30dad",
+        "client_id": 53203,
+        "location": null,
+        "trade_value_note": "Negotiable",
+        "image": null,
+        "status": "active",
+        "timestamp": "2026-07-13T14:39:36+00:00",
+        "attributes": [
+          {
+            "name": "armor",
+            "value": "3"
+          },
+          {
+            "name": "duration",
+            "value": "180 minutes"
+          },
+          {
+            "name": "magic_level",
+            "value": "+3"
+          },
+          {
+            "name": "magic_level_ice",
+            "value": "+1"
+          },
+          {
+            "name": "required_level",
+            "value": "270"
+          },
+          {
+            "name": "required_vocation",
+            "value": "druids"
+          },
+          {
+            "name": "resistance_fire",
+            "value": "11"
+          },
+          {
+            "name": "resistance_physical",
+            "value": "3"
+          }
+        ],
+        "appearance_id": 53203
+      },
+      {
+        "article_id": 110764,
+        "title": "Enchanted Swan Amulet of Balance",
+        "name": "Enchanted Swan Amulet of Balance",
+        "actual_name": "enchanted swan amulet of balance",
+        "plural": null,
+        "article": "an",
+        "is_marketable": 1,
+        "is_stackable": 0,
+        "is_pickupable": 1,
+        "is_immobile": 0,
+        "is_usable": null,
+        "value_sell": 0,
+        "value_buy": 0,
+        "value_buy_currency": null,
+        "weight": 5.3,
+        "item_class": "Body Equipment",
+        "item_type": "Amulets and Necklaces",
+        "type_secondary": null,
+        "slot": "neck",
+        "flavor_text": null,
+        "light_color": null,
+        "light_radius": null,
+        "version": "15.30.a30dad",
+        "client_id": 53205,
+        "location": null,
+        "trade_value_note": "Negotiable",
+        "image": null,
+        "status": "active",
+        "timestamp": "2026-07-13T14:39:40+00:00",
+        "attributes": [
+          {
+            "name": "duration",
+            "value": "180 minutes"
+          },
+          {
+            "name": "fist",
+            "value": "+4"
+          },
+          {
+            "name": "magic_level",
+            "value": "+2"
+          },
+          {
+            "name": "mantra",
+            "value": "4"
+          },
+          {
+            "name": "required_level",
+            "value": "270"
+          },
+          {
+            "name": "required_vocation",
+            "value": "monks"
+          },
+          {
+            "name": "resistance_ice",
+            "value": "12"
+          },
+          {
+            "name": "resistance_physical",
+            "value": "4"
+          }
+        ],
+        "appearance_id": 53205
+      }
+    ]
+  },
+  "appearance_facts": [
+    {
+      "id": 53197,
+      "name": "enchanted flamingo amulet of valor",
+      "flags": {
+        "flags.take": true,
+        "flags.clothes": true,
+        "clothes.slot": 2,
+        "flags.market": true,
+        "market.category": 2,
+        "market.trade_as_object_id": 53197,
+        "market.show_as_object_id": 53197,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 53197,
+        "flags.expirestop": true
+      }
+    },
+    {
+      "id": 53199,
+      "name": "enchanted flamingo amulet of precision",
+      "flags": {
+        "flags.take": true,
+        "flags.clothes": true,
+        "clothes.slot": 2,
+        "flags.market": true,
+        "market.category": 2,
+        "market.trade_as_object_id": 53199,
+        "market.show_as_object_id": 53199,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 53199,
+        "flags.expirestop": true
+      }
+    },
+    {
+      "id": 53201,
+      "name": "enchanted flamingo amulet of destruction",
+      "flags": {
+        "flags.take": true,
+        "flags.light": true,
+        "light.brightness": 5,
+        "light.color": 30,
+        "flags.clothes": true,
+        "clothes.slot": 2,
+        "flags.market": true,
+        "market.category": 2,
+        "market.trade_as_object_id": 53201,
+        "market.show_as_object_id": 53201,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 53201,
+        "flags.expirestop": true
+      }
+    },
+    {
+      "id": 53203,
+      "name": "enchanted flamingo amulet of nature",
+      "flags": {
+        "flags.take": true,
+        "flags.light": true,
+        "light.brightness": 5,
+        "light.color": 30,
+        "flags.clothes": true,
+        "clothes.slot": 2,
+        "flags.market": true,
+        "market.category": 2,
+        "market.trade_as_object_id": 53203,
+        "market.show_as_object_id": 53203,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 53203,
+        "flags.expirestop": true
+      }
+    },
+    {
+      "id": 53205,
+      "name": "enchanted swan amulet of balance",
+      "flags": {
+        "flags.take": true,
+        "flags.clothes": true,
+        "clothes.slot": 2,
+        "flags.market": true,
+        "market.category": 2,
+        "market.trade_as_object_id": 53205,
+        "market.show_as_object_id": 53205,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 53205,
+        "flags.expirestop": true
+      }
+    }
+  ],
+  "scope": "Exactly five literal Magnolia loot IDs; materializable nonstackable inventory/Ground custody only. No equipment, resistance, modifier, charge or timer activation; those fields remain UNKNOWN."
+}

@@ -1,6 +1,7 @@
 //! The existing carried-container reader projected under a current named-House actor.
 //! Command 21 and container USE keep the shared view/handle owner; this child grants no
 //! Channel Ground or HouseInterior container custody through a carried observation.
+mod death_ground;
 use super::super::ComposedFreshAdmission;
 use super::super::container_view::ContainerObservation;
 use super::super::item_ref_admission::{definition_ref, generation_item_facts, pinned_index};
@@ -56,8 +57,13 @@ pub(super) async fn observe(
         .read_item_loop_container(admission.character, fence.character_id, container)
         .await
         .ok()?;
-    let Some(read) = read else {
-        return Some(ContainerObservation::Gone);
+    let is_carried = read.is_some();
+    let read = match read {
+        Some(read) => read,
+        None => match death_ground::external(admission, &context, fence, container).await {
+            Some(read) => read,
+            None => return Some(ContainerObservation::Gone),
+        },
     };
     if !admission
         .root
@@ -69,8 +75,8 @@ pub(super) async fn observe(
     }
     {
         let runtime = admission.runtime.lock().await;
-        if HouseActionContext::from_native_owner(&runtime, actor, fence.game_session_id, fence)
-            .is_err()
+        if !HouseActionContext::from_native_owner(&runtime, actor, fence.game_session_id, fence)
+            .is_ok_and(|current| is_carried || current.position() == context.position())
             || pinned_index(&runtime, admission.active_generation).is_none()
         {
             return Some(ContainerObservation::Gone);

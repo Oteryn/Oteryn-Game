@@ -56,7 +56,7 @@ pub(super) async fn prepare_channel(
     let qualified_room = content.qualified_room().clone();
     let candidates = crate::content::bosses::activity_template::captured_boss_levers()
         .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
-    let (activity_templates, activity_diagnostics) = active_content
+    let (mut activity_templates, activity_diagnostics) = active_content
         .qualify_initial_activity_template(
             &qualified_room,
             &config.readiness.content_revision,
@@ -133,6 +133,22 @@ pub(super) async fn prepare_channel(
         Some(world) => bundle_combat_room(&qualified_room, world, material.world, &movement_cells),
         None => Some(qualified_room.clone()),
     };
+    // Source portals are qualified against the actual composed bundle view,
+    // after the ordinary source-world movement masks and frame are known.
+    // Qualification alone neither allocates an Instance nor admits a player.
+    if let (Some(world), Some(room)) = (&bundle, &combat_room) {
+        match active_content.qualify_rakesh_source_portal_template(
+            room,
+            &movement_cells,
+            world.map_revision_digest(),
+            &config.readiness.content_revision,
+        ) {
+            Ok(template) => activity_templates.push(template),
+            Err(reason) => event(&format!(
+                "event=activity_template state=unavailable source=rakesh_source_portal reason={reason:?}"
+            )),
+        }
+    }
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()

@@ -39,15 +39,21 @@
   },
   {
     "item_key": "oteryn:item.tibia.i12305",
-    "target_item_key": "oteryn:item.tibia.i12305",
+    "target_item_key": "oteryn:item.tibia.i12319",
     "creature_key": "",
     "mount_key": "oteryn:content.mount.tin_lizzard",
     "grant_key": "oteryn:taming.tin_lizzard",
-    "chance": 100,
-    "break_item": false,
-    "failures": [],
-    "success_text": "You have tamed the tin lizzard.",
-    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:16"
+    "chance": 61,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The key broke inside."
+      }
+    ],
+    "success_text": "You wind up the tin lizzard.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:40,234-250",
+    "achievement_key": "oteryn:achievement/knock_on_wood"
   },
   {
     "item_key": "oteryn:item.tibia.i12306",
@@ -320,15 +326,25 @@
   },
   {
     "item_key": "oteryn:item.tibia.i12801",
-    "target_item_key": "oteryn:item.tibia.i12801",
+    "target_item_key": "oteryn:item.tibia.i12800",
     "creature_key": "",
     "mount_key": "oteryn:content.mount.uniwheel",
     "grant_key": "oteryn:taming.uniwheel",
-    "chance": 100,
-    "break_item": false,
-    "failures": [],
-    "success_text": "You have assembled the uniwheel.",
-    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:31"
+    "chance": 61,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 3,
+        "text": "The oil have no effect."
+      },
+      {
+        "action": 2,
+        "text": "Splosh! It looks like most of the special oil this can was holding was spilt without any effect."
+      }
+    ],
+    "success_text": "Vroooomratatatatatatat. The strange wheel seems to vibrate and slowly starts turning continuously.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:41,234-250",
+    "achievement_key": "oteryn:achievement/stuntman"
   },
   {
     "item_key": "oteryn:item.tibia.i12802",
@@ -698,8 +714,18 @@
     "chance": 100,
     "break_item": false,
     "failures": [],
-    "success_text": "You have assembled the Glooth Glider.",
-    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:71"
+    "success_text": "You successfully constructed a Glooth Glider!",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:20-36,111-140",
+    "self_use": true,
+    "required_items": [
+      "oteryn:item.tibia.i21898",
+      "oteryn:item.tibia.i21906",
+      "oteryn:item.tibia.i21902",
+      "oteryn:item.tibia.i21899",
+      "oteryn:item.tibia.i21905",
+      "oteryn:item.tibia.i21901"
+    ],
+    "achievement_key": "oteryn:achievement/fabled_construction"
   },
   {
     "item_key": "oteryn:item.tibia.i24960",
@@ -843,15 +869,17 @@
   },
   {
     "item_key": "oteryn:item.tibia.i37397",
-    "target_item_key": "oteryn:item.tibia.i37397",
+    "target_item_key": "oteryn:item.tibia.i37398",
     "creature_key": "",
-    "mount_key": "oteryn:content.mount.wind_up_loco",
+    "mount_key": "oteryn:content.mount.gloothomotive",
     "grant_key": "oteryn:taming.wind_up_loco",
     "chance": 100,
     "break_item": false,
     "failures": [],
-    "success_text": "You have assembled the wind-up loco.",
-    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:48"
+    "success_text": "You wind the small locomotive up. It starts to move ... and grows!",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:70,240-250",
+    "consume_target": true,
+    "achievement_key": "oteryn:achievement/engine_driver"
   },
   {
     "item_key": "oteryn:item.tibia.i39548",

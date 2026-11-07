@@ -13,6 +13,7 @@ use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellE
 use crate::content::{CollisionClass, LogicalCell};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+mod activity_projection;
 pub const SOURCE_WORLD_PROFILE: &str = "native-source-spell-world-qualification-3";
 pub const SOURCE_WORLD_FRAME: &str = "oteryn:frame/canary-thalom-spell-r3";
 pub const SOURCE_WORLD_MAP: &str = "oteryn:map/canary-thalom-spell-r3";
@@ -168,6 +169,8 @@ impl QualifiedMutableSourcePlacement {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedNativeSpellWorld {
+    activity_start: Option<super::NativeEntryStart>,
+    wheel_removal_allowed: bool,
     scope: EngineeringStaticCellScope,
     temple: LogicalCell,
     cells: BTreeMap<LogicalCell, Option<QualifiedSpellTile>>,
@@ -178,6 +181,14 @@ pub struct QualifiedNativeSpellWorld {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 impl QualifiedNativeSpellWorld {
+    pub(in crate::content) fn activity_from_bundle(
+        origin: &super::NativeEntryMovementCells,
+        bounds: [i32; 6],
+        start: super::NativeEntryStart,
+    ) -> Option<Self> {
+        activity_projection::project(origin, bounds, start)
+    }
+
     /// A bounded view of this already qualified source. It cannot add a tile,
     /// alter the source frame or expose another encounter's mutable placement.
     pub(in crate::content) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
@@ -226,7 +237,8 @@ impl QualifiedNativeSpellWorld {
         horizontal_range: u32,
         vertical_range: u32,
     ) -> bool {
-        cell.x.abs_diff(self.temple.x) <= horizontal_range
+        self.wheel_removal_allowed
+            && cell.x.abs_diff(self.temple.x) <= horizontal_range
             && cell.y.abs_diff(self.temple.y) <= vertical_range
             && self
                 .immutable_tiles
@@ -266,6 +278,9 @@ impl QualifiedNativeSpellWorld {
         &self.scope
     }
     pub const fn entry_start(&self) -> super::NativeEntryStart {
+        if let Some(start) = self.activity_start {
+            return start;
+        }
         super::NativeEntryStart {
             x: 0,
             y: 0,
@@ -594,6 +609,8 @@ pub fn qualify(
         return Err(invalid());
     }
     Ok(QualifiedNativeSpellWorld {
+        activity_start: None,
+        wheel_removal_allowed: true,
         scope,
         temple: LogicalCell {
             x: doc.source_town.temple[0] - doc.native_frame.origin_x,

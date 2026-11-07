@@ -672,7 +672,8 @@ async fn exercise_source_schedule(h: &Harness, case: SourceScheduleCase) -> Test
         }
         // UTC epoch starts on January 1 at 01:00 Berlin; next UTC midnight
         // is January 2 at 01:00, inside the exact reset-owner civil window.
-        SourceScheduleCase::Calendar => request.now_ms = 86_400_000,
+        // SRV7: January2 begins at the Berlin06:00 save, not wall midnight.
+        SourceScheduleCase::Calendar => request.now_ms = 104_400_000,
     }
     let started = h.root.check_raid_schedules(&authority, &h.node, request.clone()).await?;
     assert_eq!(started.firings.len(), 1);

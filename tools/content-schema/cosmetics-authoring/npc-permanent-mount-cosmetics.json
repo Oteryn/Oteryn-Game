@@ -1,0 +1,57 @@
+{
+  "mounts": [
+    {
+      "key": "oteryn:content.mount.stampor",
+      "revision": "srv7-r1",
+      "look": {
+        "id": 378,
+        "source_record_sha256": "b4be117365e0b70577160c3df4b184704f46cb049ded3d883127c3cceb8b518b"
+      },
+      "speed_bonus": 10,
+      "premium": true,
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L40",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "key": "oteryn:content.mount.noxious_ripptor",
+      "revision": "srv7-r1",
+      "look": {
+        "id": 1577,
+        "source_record_sha256": "767b2596095b0c92498634eed39ff93bd2a94a229f9e59adee0917d16f82e6e9"
+      },
+      "speed_bonus": 10,
+      "premium": true,
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L231",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    }
+  ],
+  "schema": "OTERYN_NPC_SOURCE_PERMANENT_MOUNT_METADATA/v1",
+  "grant_mappings": [
+    {
+      "grant_key": "oteryn:appearance-grant/npc/chondur/stampor/mount",
+      "target": {
+        "kind": "Mount",
+        "mount_key": "oteryn:content.mount.stampor"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    },
+    {
+      "grant_key": "oteryn:appearance-grant/npc/gnomadness/noxious_ripptor/mount",
+      "target": {
+        "kind": "Mount",
+        "mount_key": "oteryn:content.mount.noxious_ripptor"
+      },
+      "compatible_provenance": [
+        "crystal-201189f-npc-cosmetics-v1"
+      ]
+    }
+  ]
+}

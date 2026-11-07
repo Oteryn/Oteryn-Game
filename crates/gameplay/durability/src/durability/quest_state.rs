@@ -243,7 +243,10 @@ impl QuestStateCopy {
     pub fn meets_door_storage(&self, action: u16) -> bool {
         // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
         if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
-            return self.tracks.get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK) == Some(&1);
+            return self
+                .tracks
+                .get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
+                == Some(&1);
         }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
@@ -537,6 +540,18 @@ pub(super) fn report_refused_experience(
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
+
+mod native_final_endpoints;
+mod npc_child_persistence;
+mod npc_child_prepare;
+mod npc_endpoints;
+mod persistence;
+mod pins;
+pub(in crate::durability) use npc_child_persistence::persist as persist_npc_source_child;
+pub(in crate::durability) use npc_child_prepare::SourceQuestPlanInput;
+pub(in crate::durability) use npc_child_prepare::prepare as prepare_npc_source_children;
+pub(in crate::durability) use npc_endpoints::preload as preload_npc_source_bindings;
+
 pub mod grizzly;
 pub mod grizzly_boss;
 pub mod rotten_blood;

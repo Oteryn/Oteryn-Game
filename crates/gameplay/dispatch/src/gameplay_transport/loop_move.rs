@@ -15,6 +15,7 @@
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
 mod house_container;
+mod house_death_ground;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
 mod seed_drop;
@@ -516,6 +517,9 @@ pub(super) async fn move_loop_item(
     command: UseCommand,
     request: LoopMove,
 ) -> LoopMoveResult {
+    if let Some(result) = house_death_ground::try_move(admission, actor, command, request).await {
+        return result;
+    }
     let refused = LoopMoveResult::Refused;
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.

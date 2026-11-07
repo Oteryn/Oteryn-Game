@@ -1,0 +1,8 @@
+-- SRV7 child-side foreign keys use complete leading B-tree keys.
+CREATE INDEX game_seasonal_cake_receipts_character_world_event ON game_seasonal_cake_character_receipts(character_id,world_id,event_start);
+CREATE INDEX game_seasonal_cake_restores_bite ON game_seasonal_cake_terrain_restores(source_game_session_id,source_command_id);
+CREATE INDEX game_seasonal_cake_restores_world_event ON game_seasonal_cake_terrain_restores(world_id,event_start);
+CREATE INDEX game_seasonal_cake_window_starts_character ON game_seasonal_cake_window_starts(character_id);
+CREATE INDEX game_seasonal_cake_raid_slots_world_event ON game_seasonal_cake_raid_slots(world_id,event_start);
+CREATE INDEX game_seasonal_cupcake_uses_use_receipt ON game_seasonal_cupcake_uses(use_transaction_id);
+CREATE INDEX game_seasonal_cupcake_uses_transform_receipt ON game_seasonal_cupcake_uses(transform_transaction_id);

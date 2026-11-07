@@ -190,6 +190,7 @@ pub(super) async fn return_in_transaction(
     }
     let now = now_ms(tx).await?;
     let due = match r.reason {
+        ActivityReturnReason::SourcePortalExit => summer_portal::arm_exit(tx,node,r).await?,
         ActivityReturnReason::Exit | ActivityReturnReason::OwnerLost | ActivityReturnReason::Death { .. } => true,
         ActivityReturnReason::Abandoned { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
             WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")

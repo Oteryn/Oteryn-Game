@@ -48,6 +48,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        if !self.extract_arrived_station_horses(&permit).await {
+            return;
+        }
+        if !self.extract_arrived_cake_golems(&permit).await {
+            return;
+        }
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.

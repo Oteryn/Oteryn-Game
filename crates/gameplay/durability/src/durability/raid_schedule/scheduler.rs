@@ -191,7 +191,8 @@ impl DurabilityRoot {
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = candidate.definition.despawn_after_ms.is_none()
+                    let persistent_fired = candidate.key.as_str() != "oteryn:raid.northern_darama_raids.the_mutated_pumpkin"
+                        && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,

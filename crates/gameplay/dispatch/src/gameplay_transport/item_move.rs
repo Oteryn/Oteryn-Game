@@ -270,6 +270,26 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
     let Ok((intent, count)) = decoded else {
         return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
     };
+    if let Some(result) = authority
+        .native_house_item_move(
+            actor,
+            command,
+            payload,
+            view.resolve(intent.source),
+            intent.destination,
+            count,
+        )
+        .await
+    {
+        return match result {
+            LoopMoveResult::Committed => moved(authority, actor, command, view).await,
+            LoopMoveResult::Unknown => ItemMoveStep::Disconnect,
+            LoopMoveResult::TooFar => ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new()),
+            LoopMoveResult::Refused(reason) => {
+                ItemMoveStep::Result(loop_outcome(reason), Vec::new())
+            }
+        };
+    }
     match authority.committed_item_move(actor, command).await {
         Ok(Some(_)) => return moved(authority, actor, command, view).await,
         Ok(None) => {}

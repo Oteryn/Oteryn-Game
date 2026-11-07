@@ -5,7 +5,9 @@
 use sha2::{Digest, Sha256};
 
 mod boss;
+mod pumpkin;
 pub use boss::{plan_boss_loot, plan_boss_loot_with_bonus};
+pub use pumpkin::pumpkin_common_guarantees;
 
 /// Source entries per death, including descendants (the native section record bound).
 pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 4096;

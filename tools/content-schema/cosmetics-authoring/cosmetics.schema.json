@@ -475,6 +475,44 @@
                   "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
                 }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "outfit_key",
+                "addon",
+                "sex",
+                "look_type"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "LookAddon"
+                },
+                "outfit_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+                },
+                "addon": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8
+                },
+                "sex": {
+                  "enum": [
+                    "female",
+                    "male"
+                  ]
+                },
+                "look_type": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              }
             }
           ]
         },

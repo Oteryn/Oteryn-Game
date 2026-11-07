@@ -10,7 +10,7 @@ use oteryn_client_assets::window::{ResolvedWindow, within_draw_cap};
 use oteryn_client_simulation::world::{project_cell, project_tile};
 use oteryn_renderer::world::{BUILTIN_CELLS, WorldAtlas, atlas_from_cells, builtin_rgba};
 use oteryn_renderer::{AtlasImage, BatchError};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 
 /// Names the local asset root.
@@ -37,6 +37,8 @@ pub struct World {
     layers: BTreeMap<i16, HashMap<(i32, i32), MapTile>>,
     /// The own player's cells per facing, in [`FACINGS`] order.
     player: [Vec<Draw>; 4],
+    /// Verified official appearance flags, independent of server placement authority.
+    rotatable: BTreeSet<u16>,
 }
 
 impl World {
@@ -48,6 +50,7 @@ impl World {
             atlas,
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
+            rotatable: BTreeSet::new(),
             player: FACINGS.map(|_| {
                 vec![Draw {
                     cell: MARKER_CELL,
@@ -117,7 +120,12 @@ impl World {
             tiles,
             layers: BTreeMap::new(),
             player,
+            rotatable: BTreeSet::new(),
         })
+    }
+
+    pub(crate) fn appearance_rotatable(&self, id: u16) -> bool {
+        self.rotatable.contains(&id)
     }
 
     #[must_use]

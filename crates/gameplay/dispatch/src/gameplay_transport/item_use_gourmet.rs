@@ -12,6 +12,7 @@ pub(in crate::gameplay_transport) use recovery::restore_house;
 #[path = "item_use_gourmet/pending.rs"]
 mod pending;
 pub(in crate::gameplay_transport) use pending::PendingUse;
+pub(in crate::gameplay_transport) use pending::finish_with_cupcake;
 pub(in crate::gameplay_transport) use pending::resolve;
 
 pub(in crate::gameplay_transport) fn remember(
@@ -48,7 +49,7 @@ fn binding(source: &UseSource) -> Option<[u8; 32]> {
     Some(hash.finalize().into())
 }
 
-fn current(
+pub(super) fn current(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -86,7 +87,7 @@ fn current(
 
 /// Reuse the same item-use rate and in-flight gate after independent House proof.
 /// The generic gate still refuses Instance actors for every unrelated consumer.
-fn gate<'a>(
+pub(super) fn gate<'a>(
     states: &'a mut ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,

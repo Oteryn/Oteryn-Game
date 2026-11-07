@@ -15,7 +15,7 @@ pub const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.j
 /// The sha256 of `content/world/placements/index.json`, which pins every region file. A
 /// regenerated placement index must update it; a test compares it with the repository.
 pub const PLACEMENT_INDEX_SHA256: &str =
-    "245f6eb6dec4687b047d9fc860beb34a3c8d93231b1b65eb20809013eadb7cd1";
+    "b2e5b2850618b8781410d0ee5e6734661670df9058f297584c327e079ce24e05";
 pub const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
 pub const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;
