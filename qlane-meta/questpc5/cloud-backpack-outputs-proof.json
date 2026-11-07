@@ -1,0 +1,56 @@
+{
+  "status": "GREEN",
+  "scope": "Reusable independent native backpack MINT outputs; not whole Nomads Mini qualification",
+  "source": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc8",
+    "implementation_commit": "eb196696c7d2606656f07cc72bf850ecdec81e10",
+    "migration": "1300_questpc8_reward_backpack_outputs.sql",
+    "policy": "Canonical source reused; no lane-owned variant"
+  },
+  "red": {
+    "log": "/tmp/questpc5-backpack-outputs-red.log",
+    "postgres": "18.6",
+    "duration_seconds": 3.7,
+    "error": "unknown field backpack_outputs"
+  },
+  "green": {
+    "log": "/tmp/questpc5-backpack-outputs-green3.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "duration_seconds": 51.634868574,
+    "marker": "POSTGRES_CASE_COMPLETED questpc5_backpack_outputs",
+    "assertions": [
+      "exact flat root and two child outputs; no nested entries",
+      "native silver amulet default200; no partial timed overrides or charge transfer",
+      "same-command replay has no extra items, receipts, timed states or audits",
+      "same command cannot rebind flat output layout as nested contents",
+      "whole set over-capacity refuses without any durable effects",
+      "same once-only claim succeeds after refused attempt"
+    ]
+  },
+  "fixture_corrections": [
+    "Weighted admission needs initialized progression; bootstrap-only fixture invalid",
+    "Absent timed override means full native charges; explicit partial charge mechanism unchanged"
+  ],
+  "schema_test": "PASS1 bounded/exclusive shape test",
+  "duplicate_migrations": "PASS staged candidate tree",
+  "checks": {
+    "fmt": "PASS cargo fmt --all --check",
+    "cargo_check": "PASS five changed crates all targets/features,5m19s including lock wait",
+    "strict_clippy": "PASS five changed crates all targets/features -D warnings,4m34s including lock wait",
+    "rust_units": "PASS layout1 and reward callbacks2",
+    "schema_units": "PASS1",
+    "canonical_shared_migrations": "PASS15 byte-for-byte comparisons",
+    "installed_sqlx_checksums": "PASS18 on PostgreSQL18.6 in5.1073583s",
+    "pins": {
+      "status": "PASS independent repository compiler pin-check",
+      "inputs_digest": "20986f4e0c2d5f077fb3c5b1742153f169a9c2679d77e5a1ffa5003246a9c330",
+      "pins": [
+        {
+          "bytes": 31101933,
+          "digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b",
+          "world": "oteryn"
+        }
+      ]
+    }
+  }
+}

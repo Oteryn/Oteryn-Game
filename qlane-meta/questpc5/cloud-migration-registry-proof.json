@@ -1,5 +1,5 @@
 {
-  "owner_registry": "QENGINE2 0999\u20131006; QBASE1200\u20131205; questpc5 1270\u20131279",
+  "owner_registry": "QENGINE2 0999\u20131006; QBASE1200\u20131205; questpc5 1270\u20131279; questpc8 shared1300",
   "qengine2_source_commit": "69609ef781c4e66d9c25fa61392c1ec0b6680033",
   "qengine2_policy": "All eight canonical files consumed byte-for-byte. No own variant retained in0999\u20131006.",
   "qbase_policy": "Six shared files renamed with git mv and preserved byte-for-byte against shared peer source. Father local-variable repair is an additive1272 function transformation; eleven-track write remains unchanged.",
@@ -12,22 +12,33 @@
   "checks": {
     "duplicates": "PASS .claude/skills/oteryn-dev/scripts/dup-migrations.sh on staged candidate tree",
     "old_filename_references": "NONE, including protected workflows/repository tools (unmodified)",
-    "canonical_bytes": "PASS8QENGINE2+6QBASE",
+    "canonical_bytes": "PASS8QENGINE2+6QBASE+1questpc8",
     "focused_postgres": {
       "nimmersatt_whole": 104.657881932,
       "father_atomic_eleven_acceptance": 103.899473728,
       "father_eight_handins_cape_xp": 95.887413256,
       "static_field_rune": 57.148004662,
-      "installed_numbers_sqlx_checksums_canonical_guards": 5.134153648
+      "installed_numbers_sqlx_checksums_canonical_guards": 5.1073583,
+      "independent_backpack_outputs": 51.634868574
     },
-    "fmt": "PASS final",
-    "cargo_check_clippy": "pending",
-    "pins": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b independent final pin-check; inputs20986f4e0c2d5f077fb3c5b1742153f169a9c2679d77e5a1ffa5003246a9c330",
-    "cargo_check": "PASS16.78s dispatch+server",
-    "strict_clippy": "PASS87s all targets/features -D warnings dispatch+server",
-    "installed_registry_log": "/tmp/questpc5-migration-registry-installed2.log",
-    "checksum_scope": "Actual PostgreSQL _sqlx_migrations success/checksum rows equal SHA384 of all17 exact installed SQL files.",
-    "final_new_test_lint": "PASS check203s/clippy190s dispatch+server all targets/features -D warnings CARGO_INCREMENTAL=0"
+    "fmt": "PASS cargo fmt --all --check",
+    "cargo_check_clippy": "PASS final five changed crates all targets/features; strict -D warnings",
+    "pins": {
+      "status": "PASS independent repository compiler pin-check",
+      "inputs_digest": "20986f4e0c2d5f077fb3c5b1742153f169a9c2679d77e5a1ffa5003246a9c330",
+      "pins": [
+        {
+          "bytes": 31101933,
+          "digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "cargo_check": "PASS final five changed crates",
+    "strict_clippy": "PASS final five changed crates",
+    "installed_registry_log": "/tmp/questpc5-registry-18-green.log",
+    "checksum_scope": "Actual PostgreSQL _sqlx_migrations success/checksum rows equal SHA384 of all18 exact installed SQL files.",
+    "final_new_test_lint": "PASS final check5m19s/clippy4m34s including lock waits; five changed crates all targets/features -D warnings"
   },
   "migrations": [
     {
@@ -114,8 +125,14 @@
       "path": "apps/game-server/migrations/1272_fathers_burden_xp_guard.sql",
       "sha256": "edc0c8faf83982724ced90a7130caa04aac7de39e87d93247676c47487d9c1e8",
       "sqlx_sha384": "e226637b5305a6acdf6419d46c1a17de98cae3852f806a51425c3cfadfa3cb8ca24f960ce8abe49962d742163541e914"
+    },
+    {
+      "path": "apps/game-server/migrations/1300_questpc8_reward_backpack_outputs.sql",
+      "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f",
+      "sqlx_sha384": "c3d63ddd0a7a927dcaa33b0d9bd0f817c424963337db661d4b4774e0545e4dc93b371d0ce1d291dae3e49c341fab0298"
     }
   ],
   "checksum_policy": "SQLx compile-time migrator embeds the renamed/replaced files and recomputes checksums. No checked-in SQLx checksum cache or explicit migration filename registry exists outside the updated reference.",
-  "status": "QUALIFIED_MIGRATION_REGISTRY"
+  "status": "GREEN",
+  "shared_backpack_source": "questpc8 4724cec37; implementation eb196696c7d2606656f07cc72bf850ecdec81e10; migration1300 consumed byte-for-byte"
 }

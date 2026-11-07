@@ -204,11 +204,28 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 charged,
                 vec![
                     ("oteryn:item.tibia.i3032".into(), None),
-                    ("oteryn:item.tibia.i3054".into(), Some(200)),
+                    ("oteryn:item.tibia.i3054".into(), None),
                     ("oteryn:item.tibia.i7343".into(), None)
                 ],
-                "charges belong only to the exact charged Item"
+                "full native rewards need no partial-charge override"
             );
+            use crate::content::ReferenceItemField::Known;
+            let silver = native
+                .item_policy("oteryn:item.tibia.i3054", "definition-r1")
+                .ok_or("Silver Amulet")?;
+            assert!(
+                matches!(&silver.record().semantics.charges, Known(charges) if charges.count == Known(200)),
+                "exact Silver Amulet retains its full native 200 charges"
+            );
+            for key in ["oteryn:item.tibia.i3032", "oteryn:item.tibia.i7343"] {
+                let policy = native
+                    .item_policy(key, "definition-r1")
+                    .ok_or("reward policy")?;
+                assert!(
+                    !matches!(&policy.record().semantics.charges, Known(charges) if matches!(charges.count, Known(_))),
+                    "charges cannot transfer to another reward item"
+                );
+            }
             let before = snapshot(&h).await?;
             let (replay, _) = owner
                 .root

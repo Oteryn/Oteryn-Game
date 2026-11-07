@@ -219,7 +219,7 @@
     "title": "Nomads Mini World Change",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Active shared-engine reuse: fresh questpc8 implements atomic independent backpack outputs (eb196696c, canonical shared migration1300). Actual PostgreSQL RED3.70s confirms current ItemReward rejects backpack_outputs. Reuse engine first, then author selected three-camp once route with separate rewards; global daily camp state belongs to world lanes.",
+    "blocker": "Active whole-route implementation: reusable independent native backpack output mechanism now PG GREEN51.634868574s on18.6. Next author and prove three ordered personal camp exploration/cache USE stages and terminal Chest Robber achievement. Global daily camp variants remain owned by world lanes.",
     "from_lanes": [
       "questpc2"
     ],
@@ -251,7 +251,8 @@
       "integration_state": "COMPILES_PG_FACTORY_RED_INVALID_STORED_STATE_51_32S",
       "integration_red_log": "/tmp/questpc5-backpack-outputs-green.log"
     },
-    "active_checkpoint": "Independent backpack outputs compile and commit on PostgreSQL 18.6; current test RED at charge-state assertion after 50.30s. Investigating implicit native default versus explicit partial charge initialization; no qualification claimed."
+    "active_checkpoint": "Reusable independent backpack outputs GREEN: actual PG18.6 in51.634868574s; all18 installed migration checksums/guards actual PG5.1073583s; schema1/layout1/callback2 units; fmt/check/strict clippy five changed crates PASS. Whole selected Nomads route remains active; continue six physical exploration/cache callbacks and atomic terminal achievement.",
+    "backpack_output_component_proof": "cloud-backpack-outputs-proof.json"
   },
   {
     "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
