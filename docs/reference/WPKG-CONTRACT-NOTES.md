@@ -1290,3 +1290,10 @@ and World transaction; it does not bypass the reward owner.
 ## WEVENTS packaging checkpoint — validation pending
 
 Source 033791043 is being merged after the WVAR and WCONTRIB reverts. The retained WORLDCHG qualification set remains intact (12 titles); WEVENTS adds nine titles. Canonical QENGINE 0999 is consumed unchanged. Lane migrations are 1340–1344, with related source statements consolidated in original order; duplicate 1130 is omitted in favor of identical 1331. Real PostgreSQL 18.6 replay executed all 326 migrations in 4.211 seconds, preserving callback proof arms. Main cosmetics identities, palette, mounts and grants are unioned through producer tooling. Rust, pins, focused gameplay PG, content integration and authoring verification must complete before this lane is green.
+
+
+### WEVENTS owner PostgreSQL proof (2026-11-07)
+
+All four focused owner PostgreSQL tests executed and passed on PostgreSQL 18.6 (47.42 seconds test runtime). Actual logged subcase durations: Chyllfroest 14.163s, Flower 6.906s, Mummy 5.081s, Spring 5.669s, Kingsday 5.514s, Bank 4.818s, Insect binding 5.260s; insect restoration 14.279s, timed ownership/rewards/replay/calendar/reset 14.336s, Devovorga native stages 16.816s. The merged libraries previously passed all-feature Cargo check in 119.127s. The 95-module authoring run passed 94 modules, with only stale Grizzly-room hashes failing; regeneration and its focused test passed in 3.887s. Sixteen raid producer tests pass in 22.741s, four WEVENTS producer tests in 6.649s, twenty cosmetics compiler tests in 6.464s, and twelve reward producer tests passed within the authoring run.
+
+This is still a compiling WIP: final native/tree generation, pins, all-target Clippy, native dispatch PG cases, content integration and final composed regressions are pending. No qualification is claimed from compilation alone.
