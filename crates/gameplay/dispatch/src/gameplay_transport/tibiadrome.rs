@@ -189,6 +189,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if after == Record::default() {
             after.progress.rotation = rotation;
         }
+        if !read.rotation_points_eligible {
+            after.progress.waves = 0;
+        }
         after.progress.rotate(rotation);
         let mut disposition = 1;
         let premium = self
