@@ -761,7 +761,34 @@
     {
       "title": "An Uneasy Alliance",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        {
+          "postgres_test": "questl2_knowledge_batch_uneasy_alliance_full_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 2.938600806,
+            "log": "/tmp/l2-knowledge-red.log",
+            "result": "native journey bindings absent"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-alliance",
+            "duration_seconds": 78.178533641,
+            "passed": 1,
+            "failed": 0,
+            "log": "/tmp/l2-alliance-native-pg8.log"
+          },
+          "proves": [
+            "Curos refuses missing provisions and water in place of milk without partial consumption",
+            "Exact milk, steak and flute hand-in issues mission atomically and returns an empty bucket",
+            "Real native Renegade Orc attack, death, corpse settlement and damaging-player quest credit",
+            "Curos issues the scrying-device mission through native dialogue",
+            "Crystal transforms and restores at its exact Channel deadline without resetting quest progress",
+            "Source tower chest and Curos each grant one Tome; repeated rewards refuse"
+          ],
+          "sources": "CONTRACT-NOTES.md; immutable source file:line and SHA256 witnesses in shared-reward-callbacks.json, shared-kill-callbacks.json and world-callbacks.json",
+          "fixture_scope": "Only unrelated combat strength, map travel compression, ordinary provisions and the foreign New Frontier prerequisite are arranged; no Alliance progress/death/tome reward is seeded."
+        }
+      ]
     },
     {
       "title": "Annual Autumn Vintage",
@@ -2853,7 +2880,7 @@
       "An Uneasy Alliance",
       "Tomes of Knowledge"
     ],
-    "phase": "Kilmaresh QUALIFIED; Alliance full native journey composed, type-checking before PG; Tomes remains RED.",
+    "phase": "Kilmaresh QUALIFIED; Alliance native PG GREEN final checks pending; Tomes remains RED.",
     "postgres_log": "/tmp/l2-knowledge-red.log",
     "postgres_version": "18.6",
     "red_durations_seconds": {
@@ -2869,7 +2896,7 @@
     ],
     "source_contract": "CONTRACT-NOTES.md: next L2 batch source contract",
     "shared_fluid_progress": {
-      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "status": "PG_GREEN_INPUT_AND_EMPTY_RETURN",
       "migration": 1217,
       "compile_log": "/tmp/l2-fluid-compile-check2.log",
       "compile_duration": "2m29s",
@@ -2883,7 +2910,8 @@
         "duration_seconds": 2.616503,
         "log": "/tmp/l2-fluid-schema-pg.log"
       },
-      "remaining": "Compose source NPC/world journeys and prove actual typed-fluid issue and hand-in before qualification."
+      "remaining": "Filled NPC reward outputs will receive their source entry proof; exact fluid inputs, native filled material MINT and empty bucket return are proved.",
+      "postgres_log": "/tmp/l2-alliance-native-pg8.log"
     },
     "stateless_exchange_progress": {
       "status": "QUALIFIED",
@@ -2915,7 +2943,7 @@
       }
     },
     "shared_kill_progress": {
-      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "status": "PG_GREEN_FINAL_CHECKS_PENDING",
       "domain_tests": {
         "passed": 1,
         "failed": 0,
@@ -2927,10 +2955,11 @@
         "duration": "2m34s",
         "log": "/tmp/l2-kill-compile.log"
       },
-      "remaining": "Native Alliance mission issuance -> Renegade Orc death -> source tower device -> two tomes."
+      "remaining": "Native Alliance mission issuance -> Renegade Orc death -> source tower device -> two tomes.",
+      "postgres_log": "/tmp/l2-alliance-native-pg8.log"
     },
     "alliance_progress": {
-      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "status": "PG_GREEN_FINAL_CHECKS_PENDING",
       "production_callback_sources": "Curos source mission sequence; explicit documented provision restoration; native Renegade Orc callback and source tower chest",
       "compile_log": "/tmp/l2-alliance-compile2.log",
       "remaining": "Run the full native PG journey, then focused Clippy and official pin checks.",
@@ -2977,7 +3006,9 @@
         "shared_authoring_tests": 27,
         "lane_authoring_tests": 21,
         "pin_refresh": "/tmp/l2-corpse-pin-refresh.log"
-      }
+      },
+      "green_log": "/tmp/l2-alliance-native-pg8.log",
+      "green_duration_seconds": 78.178533641
     }
   }
 }
