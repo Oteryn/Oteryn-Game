@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Existing party encounter/reward owners reused; source reward door and four real captured startup chest selectors are PG verified. Continuous native source-room entry/combat/earned-reward route remains active implementation; no invented escape timer or all-six-kill storage.",
+      "blocker": "Source entry door, actual captured map walk, exact four-person lever and native entry now composed with genuine Fresh/D88 facts and PG verified. Continue actual native combat clearance, earned reward, exit and sealed re-entry; no invented escape timer or all-six-kill storage.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -619,6 +619,15 @@
         "selectors": 4,
         "postgres_version": 180006,
         "duration_seconds": 43.95
+      },
+      "native_source_entry_slice": {
+        "status": "PG_VERIFIED",
+        "record": "BATCH-annihilator-native-source-entry-2026-11-07.json",
+        "server_version": 180006,
+        "duration_seconds": 86.21,
+        "genuine_fresh_participants": 4,
+        "source_level": 100,
+        "native_demons": 6
       }
     },
     {
@@ -1637,10 +1646,10 @@
     }
   },
   "current_batch": {
-    "id": "door-startup-integration-2026-11-07",
-    "record": "BATCH-door-startup-integration-2026-11-07.json",
-    "state": "GREEN",
-    "whole_quest_qualifications": 0
+    "id": "annihilator-native-source-entry-2026-11-07",
+    "record": "BATCH-annihilator-native-source-entry-2026-11-07.json",
+    "whole_quest_qualifications": 0,
+    "next": "Extend the same real route through native combat clearance, physical earned chest, source exit and sealed re-entry; reuse existing owners, no invented kill-storage gate or escape timer."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1656,7 +1665,8 @@
     "BATCH-group-authoring-integration-2026-11-07.json",
     "BATCH-annihilator-reward-door-2026-11-07.json",
     "BATCH-annihilator-startup-selectors-2026-11-07.json",
-    "BATCH-door-startup-integration-2026-11-07.json"
+    "BATCH-door-startup-integration-2026-11-07.json",
+    "BATCH-annihilator-native-source-entry-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
@@ -1691,6 +1701,11 @@
       "record": "BATCH-group-authoring-integration-2026-11-07.json",
       "python_cases_passed": 3,
       "whole_quest_qualifications": 0
+    },
+    "annihilator_native_source_entry_2026_11_07": {
+      "record": "BATCH-annihilator-native-source-entry-2026-11-07.json",
+      "postgres_cases_passed": 1,
+      "whole_quest_qualifications": 0
     }
   },
   "engine_reuse_note": "qengine2@5a6de28c is already merged locally. effects.encounter and execute_quest_encounter/commit_quest_encounter_entry implement the exact four-player/six-demon atomic entry; do not create a second group_encounter engine. Existing PG entry evidence remains scoped entry evidence, not whole quest.",
@@ -1718,6 +1733,7 @@
     },
     "latest_attempt": "Native linker bus error at disk exhaustion; retained latest257 link objects and removed319 older objects. Same scoped PG test retry running.",
     "whole_quest_qualifications": 0,
-    "next": "Finish genuine source-region entry PG, check/clippy/fmt and push its fixture immediately; continue native combat, earned chest, actual exit and sealed re-entry."
+    "next": "Finish genuine source-region entry PG, check/clippy/fmt and push its fixture immediately; continue native combat, earned chest, actual exit and sealed re-entry.",
+    "superseded_by_verified_entry_slice": "BATCH-annihilator-native-source-entry-2026-11-07.json"
   }
 }

@@ -1,3 +1,34 @@
+# Latest verified slice — genuine native source Annihilator entry
+
+BATCH-annihilator-native-source-entry-2026-11-07.json: actual PG18.6 marker,
+RED70.11s/72.55s/72.88s -> GREEN86.21s, one positive test. Four genuine Fresh
+authorities, real D88 level100 awards, actual Character facts/monk state, actual
+source region129,123/all floors/registry/geometry, source bundle combat view,
+literal door USE and paced corridor walk to distinct staging cells, existing
+lever owner -> four actual destinations and six native demons. No fake levels,
+quest progress injection or post-admission placement bypass. Check4.23s,
+clippy dispatch+entities all-targets/all-features -Dwarnings26.19s,fmt and merged
+source-step rollback/retry unit (test-support,1case) pass. No content/pin changes.
+
+CONTINUE IMMEDIATELY: extend the same route through native combat clearance,
+physical earned chest, source exit33236,31655,z13 ->33213,31671,z13, and sealed
+re-entry. Source native finite XP table ends at2000: any stronger genuine
+combat precondition must use that existing D88 policy; never extrapolate or
+override actor facts. A13 vocation/build and normal inventory owners are
+available if combat needs them. No all-six-kill storage gate or escape timer.
+Whole scope remains0qualified/35unfinished/0external blockers.
+
+Disk rule learned: archive an INACTIVE prior executable before the next changed
+native test build; verify no /proc actor executes it and verify SHA before
+unlink. Retain latest complete native cache. Old root .rcgu.o copies leaked
+between changed builds;514 are losslessly retained/verified in
+/tmp/questpc2-route-retained-link-objects.tar.gz (ledger JSON alongside).
+Removing their temporary copies let the unchanged test relink29.88s and run.
+Prune only unlocked superseded READY sessions after compilation; retain newest.
+Native/check/clippy/durability caches have verified original-path symlinks into
+/tmp. No broad clean, profile/RUSTFLAGS or incremental disable. Avoid parallel
+Cargo checks until the native link completes; monitor both root and /tmp.
+
 # Latest integrated green slice — source door and captured startup selectors
 
 BATCH-door-startup-integration-2026-11-07.json records fresh local checks against
