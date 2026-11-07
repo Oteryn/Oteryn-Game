@@ -1638,13 +1638,17 @@
       "postgres_cases_passed": 1,
       "unit_cases_passed": 6,
       "whole_quest_qualifications": 0
+    },
+    "corpse_authoring_tools_2026_11_07": {
+      "record": "BATCH-corpse-authoring-tools-2026-11-07.json",
+      "python_cases_passed": 14,
+      "runtime_changes": false
     }
   },
   "current_batch": {
-    "id": "native-corpse-binding-2026-11-07",
-    "record": "BATCH-native-corpse-binding-2026-11-07.json",
+    "id": "corpse-authoring-tools-2026-11-07",
+    "record": "BATCH-corpse-authoring-tools-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "entries_with_verified_shared_slice": 1,
-    "next": "Immediately admit the missing exact Spite/Bakragore corpse definitions with repository tooling, separate declared container capacity from actual unchanged count budgets, prove native draining for both, and then compose qualified source rooms/callbacks. Continue all remaining L3 entries."
+    "next": "Continue native provider regeneration and source corpse PG qualification immediately; do not stop or defer missing mechanisms."
   }
 }

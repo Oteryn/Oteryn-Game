@@ -8,6 +8,7 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -161,6 +162,56 @@ def capture(source_root, root=ROOT):
             'canonical_inputs': inputs, 'records': records, 'rejected': rejected}
 
 
+def refresh_canonical_inputs(base_ref='HEAD', root=ROOT):
+    """Rebind shard hashes only when every selected shop definition is unchanged.
+
+    The retained descriptor must match an actual Git base blob; a changed shop
+    fact still requires full source qualification. No profile or rejection changes.
+    """
+    overlay = json.loads((root / PATH).read_bytes())
+    keys, catalogue_sha = selected(root)
+    if overlay['catalogue'] != {'path': CATALOGUE, 'sha256': catalogue_sha}:
+        raise ValueError('GRIZZLY_SHOP_CATALOGUE_SET')
+    base = subprocess.run(
+        ['git', '-C', str(root), 'rev-parse', '--verify', '--end-of-options', base_ref + '^{commit}'],
+        check=True, capture_output=True, text=True).stdout.strip()
+    baseline = json.loads(subprocess.run(
+        ['git', '-C', str(root), 'show', base + ':' + PATH],
+        check=True, capture_output=True).stdout)
+    if ({k: v for k, v in overlay.items() if k != 'canonical_inputs'}
+            != {k: v for k, v in baseline.items() if k != 'canonical_inputs'}):
+        raise ValueError('GRIZZLY_SHOP_SOURCE_CAPTURE_DRIFT')
+    if [d['path'] for d in overlay['canonical_inputs']] != [d['path'] for d in baseline['canonical_inputs']]:
+        raise ValueError('GRIZZLY_SHOP_CANONICAL_INPUT_SET')
+    expected = {d['path']: d['sha256'] for d in baseline['canonical_inputs']}
+
+    def selected_definitions(raw):
+        rows = [r['definition'] for r in json.loads(raw)['records']
+                if r['definition']['identity']['key'] in keys]
+        indexed = {d['identity']['key']: d for d in rows}
+        if len(indexed) != len(rows):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_DUPLICATE')
+        return indexed
+
+    for descriptor in overlay['canonical_inputs']:
+        path = descriptor['path']
+        parts = Path(path).parts
+        if len(parts) != 4 or parts[:3] != ('content', 'items', 'definitions') or not path.endswith('.json'):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_PATH')
+        current_path = root / path
+        if current_path.is_symlink() or not current_path.resolve().is_relative_to(root.resolve()):
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_PATH')
+        before = subprocess.run(['git', '-C', str(root), 'show', base + ':' + path],
+                                check=True, capture_output=True).stdout
+        if hashlib.sha256(before).hexdigest() != expected[path]:
+            raise ValueError('GRIZZLY_SHOP_CANONICAL_BASE_DRIFT')
+        current = current_path.read_bytes()
+        if selected_definitions(before) != selected_definitions(current):
+            raise ValueError('GRIZZLY_SHOP_SELECTED_CANONICAL_DRIFT')
+        descriptor['sha256'] = hashlib.sha256(current).hexdigest()
+    return overlay
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     keys, catalogue_sha = selected(root)
@@ -201,10 +252,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-root', type=Path, required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--source-root', type=Path)
+    mode.add_argument('--refresh-canonical-inputs', action='store_true')
+    parser.add_argument('--base-ref', default='HEAD')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    raw = encode(capture(args.source_root))
+    raw = encode(refresh_canonical_inputs(args.base_ref) if args.refresh_canonical_inputs
+                 else capture(args.source_root))
     target = ROOT / PATH
     if args.check:
         if target.read_bytes() != raw:

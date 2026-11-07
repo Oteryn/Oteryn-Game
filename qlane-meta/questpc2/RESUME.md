@@ -6,7 +6,39 @@ requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
 
-Latest green batch: native combat corpse MINT and actual projection binding.
+Latest green publication: corpse-authoring tools only, recorded in
+BATCH-corpse-authoring-tools-2026-11-07.json. Four Primal, three encounter-corpse
+and seven Grizzly refresh tests pass. No active Item/data/runtime grant is in
+that tooling commit. The last runtime green is1ee1efc2a (native Primal corpse
+MINT plus exact visible projection;72.18s actual PG, six pure units).
+
+Active Item-admission batch is LOCAL AND UNCOMMITTED: seven canonical Spite/
+Bakragore decay stages, materializer hook, positive-capacity Content loader,
+and new Soul/Rotten native corpse assertions. Keep this work. Spite RED is
+73.07s on PG18.6 with native roots=0. Finish generation and PG GREEN, then push.
+The standalone encounter_corpse_items.py is delivered and source-pinned; do not
+redo the already admitted Primal definitions.
+
+Regeneration hit GRIZZLY_SHOP_CANONICAL_DRIFT because an unrelated corpse shares
+a whole-shard fingerprint with Grizzly. The new --refresh-canonical-inputs
+--base-ref HEAD mode verifies unchanged retained source/profile/refusal data and
+selected shop definitions against actual Git base blobs before rehashing only
+canonical descriptors. Do not skip the native admission guard or hand-edit pins.
+Current working packet hashes are already refreshed; source records unchanged.
+Next blocker to FIX, not defer: PREY_MODEL_STALE. Run the existing repository
+prey_difficulty.py --simulate, then regenerate_content.py --native-only, refresh
+loot tables with build_full_spell_artifact.py --refresh-loot-tables, register and
+pin through tooling. Only selected tests; no full workspace or PG suites.
+
+The simulation build filled the32GB overlay. Sandbox commands failed exactly:
+bwrap: Can't create file /workspace/.git: No space left on device. No compiler
+remained active. Archived and verified two obsolete/incomplete incremental states
+in /tmp/questpc2-obsolete-incremental.tgz before removing their originals;
+source, latest cache, completed binaries and PostgreSQL are intact. Overlay now
+has1.9GB free; /tmp7.9GB. If more space is needed, preserve current caches and
+archive only demonstrably obsolete task compiler sessions; no broad clean.
+
+Last runtime green batch: native combat corpse MINT and actual projection binding.
 BATCH-native-corpse-binding-2026-11-07.json records RED zero native roots
 (70.57s), then RED unbound projection (74.11s), and final real Primal PG GREEN
 (72.18s). Native draining creates the already admitted corpse39530, binds its

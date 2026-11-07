@@ -36,3 +36,11 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
 - Content room qualification still requires the full native creature, map and
   callback closure. Lift the obsolete physical-corpse refusal only with native
   dispatch proof; a generic root fixture does not qualify a quest or source room.
+
+- Shared canonical-shard fingerprints may be rebound only when the retained
+  source/profile/refusal snapshot and every selected shop definition match an
+  actual Git base. An unrelated corpse record in the same shard is not a new
+  shop qualification. Changed selected facts still require full source capture.
+- Filesystem recovery preserves source/PG and latest ready compiler outputs.
+  Obsolete task incremental states may be archived and verified in /tmp before
+  reclaiming their originals; never broadly clean or disable incremental builds.
