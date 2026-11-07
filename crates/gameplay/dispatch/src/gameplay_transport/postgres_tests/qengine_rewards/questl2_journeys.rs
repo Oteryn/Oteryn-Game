@@ -24,6 +24,8 @@ pub(crate) fn world(
     let sam = name.ends_with("sam");
     let (x, y, floor, door, action, chest, unique) = if botany {
         (33007, 31536, -10, 7721, 42965, 2469, None)
+    } else if name.ends_with("vampire") {
+        (32953, 31460, -9, 8259, 41731, 2469, None)
     } else if bone {
         (32408, 32107, -10, 103, 4205, 3133, None)
     } else if sam {

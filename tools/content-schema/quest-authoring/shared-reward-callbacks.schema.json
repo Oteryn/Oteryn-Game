@@ -385,6 +385,19 @@
           "items": {
             "$ref": "#/$defs/stateOperation"
           }
+        },
+        "carried_item": {
+          "type": "string",
+          "pattern": "^oteryn:item[.]tibia[.]i[0-9]+$"
+        },
+        "forbids_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^oteryn:outfit[.][a-z0-9_]+$"
+          }
         }
       }
     },

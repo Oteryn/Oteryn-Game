@@ -130,7 +130,7 @@ mod quest_bulk;
 mod quest_requirements;
 pub use quest_requirements::RewardClaimQuestRequirement;
 mod quest_decay;
-pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
 mod viola_book;
 mod tibiadrome;

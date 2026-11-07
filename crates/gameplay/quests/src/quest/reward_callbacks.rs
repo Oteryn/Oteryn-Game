@@ -127,6 +127,11 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Exact carried instance USE binding; never executable through NPC text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carried_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub forbids_outfits: Vec<String>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -364,6 +369,22 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || c.carried_item.as_ref().is_some_and(|item| {
+                c.take
+                    != [ItemAmount {
+                        item: item.clone(),
+                        count: 1,
+                    }]
+                    || c.storage.is_empty()
+                    || c.give.is_some()
+                    || c.fee.is_some()
+                    || c.bulk.is_some()
+            })
+            || c.forbids_outfits.len() > 8
+            || c.forbids_outfits.iter().collect::<BTreeSet<_>>().len() != c.forbids_outfits.len()
+            || c.forbids_outfits
+                .iter()
+                .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || c.storage.is_empty()
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()

@@ -828,6 +828,7 @@ pub(super) async fn exercise(
                         native,
                         weights: &weights,
                         fee_payment: None,
+                        carried_use: None,
                     },
                 )
                 .await

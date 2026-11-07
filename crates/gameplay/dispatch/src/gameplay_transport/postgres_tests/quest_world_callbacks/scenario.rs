@@ -110,6 +110,7 @@ fn scenario_case(
             | "qengine-rewards-l2-outfox"
             | "qengine-rewards-l2-bone"
             | "qengine-rewards-l2-botany"
+            | "qengine-rewards-l2-vampire"
     ) {
         None
     } else {

@@ -52,6 +52,25 @@ class QuestRewards(unittest.TestCase):
         with self.assertRaises(ValueError):
             q.validate_callbacks(document)
 
+    def test_vampire_source_tiers_preserve_exact_costs_xp_and_final_outputs(self):
+        tiers=[c for c in self.callbacks['callbacks'] if '/l2-vampire-tier-' in c['key']]
+        self.assertEqual([c['take'][0]['count'] for c in tiers],[1,4,5,10,30,50])
+        self.assertEqual([c['experience'] for c in tiers],[1000,5000,10000,20000,50000,100000])
+        self.assertTrue(all(c['requires'][0]['minimum']==11 for c in tiers))
+        self.assertTrue(all(c['give'] is None and c['achievement'] is None for c in tiers[:-1]))
+        self.assertEqual(tiers[-1]['give']['item'],'oteryn:item.tibia.i8191')
+        self.assertEqual(tiers[-1]['achievement'],'oteryn:achievement/razing')
+        self.assertEqual(tiers[-1]['storage'][-1]['set'],1)
+
+    def test_carried_use_rejects_wrong_input_and_duplicate_ownership_guards(self):
+        original=next(c for c in self.callbacks['callbacks'] if c.get('carried_item'))
+        for patch in [{'take':[]},{'take':[{'item':original['carried_item'],'count':2}]},{'fee':{'gold':1,'include_bank':False}},{'forbids_outfits':['oteryn:outfit.brotherhood','oteryn:outfit.brotherhood']}]:
+            document=copy.deepcopy(self.callbacks)
+            row=next(c for c in document['callbacks'] if c['key']==original['key'])
+            row.update(patch)
+            with self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks(document)
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
@@ -194,10 +213,10 @@ class QuestRewards(unittest.TestCase):
                     and c['key'].split('/')[-1] not in ('sam-kroox', 'outfox-start')}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),36)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),37)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 13 + 3 + 2 + 3)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 13 + 3 + 2 + 3 + 6 + 1)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

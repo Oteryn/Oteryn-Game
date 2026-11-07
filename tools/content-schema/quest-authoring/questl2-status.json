@@ -591,6 +591,40 @@
         "The issued container transforms in place and collection removes the target",
         "The next NPC action sees committed world progress immediately"
       ]
+    },
+    {
+      "name": "native selected carried quest USE and exact ingress recovery",
+      "status": "QUALIFIED",
+      "migration": 1149,
+      "reused_engine_commit": "97cb9db79",
+      "postgres_test": "questl2_selected_carried_use_native_journey",
+      "postgres_version": "18.6",
+      "red": {
+        "duration_seconds": 2.848735053,
+        "result": "carried_item binding absent"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-engine-carried",
+        "duration_seconds": 75.748456857,
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "NPC issues the actual source document from unstarted membership",
+        "NPC text cannot execute a carried USE callback",
+        "A missing selected UUID refuses without consuming either matching document",
+        "Native USE consumes exactly its selected instance",
+        "Exact literal USE replay preserves the original result",
+        "Immutable recovery rejects modified ingress bytes",
+        "Duplicate document survives after the outfit is owned",
+        "Native outfit grant has the exact source unlock key"
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua",
+        "lines": "27-65",
+        "sha256": "1e3d15bb73efa6f3b26bdd1d0882a579279c0cff39c2fb166d98d03b3ed6be16"
+      }
     }
   ],
   "entries": [
@@ -1363,8 +1397,38 @@
     },
     {
       "title": "Vampire Hunter",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_vampire_six_token_tiers_full_player_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 2.843872718,
+            "result": "all six token-tier bindings absent"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-vampire",
+            "duration_seconds": 90.22600048,
+            "passed": 1,
+            "failed": 0
+          },
+          "proves": [
+            "Unranked character completes all six actual NPC token hand-ins",
+            "Every tier refuses without the required tokens",
+            "Consumes exactly 100 source tokens and grants exactly 186000 XP",
+            "Ranks advance in order to six",
+            "Final hand-in grants one Vampire Doll and one Razing achievement",
+            "Existing native source access door locks before journey and opens after completion"
+          ],
+          "source": {
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "file": "data-global/npc/storkus.lua",
+            "lines": "99-199",
+            "sha256": "8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+          },
+          "contract_notes": "CONTRACT-NOTES.md: Vampire Hunter source and requested Razing restoration; only separate Inquisition prerequisite is arranged through a fenced transition."
+        }
+      ]
     }
   ],
   "validation": {
@@ -1444,12 +1508,12 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b",
-      "bytes": 31102495,
-      "reason": "Includes admitted Cyclops and Marina deployments",
+      "digest": "9027a1839ba9ed7d4df66e05c4c85a9037dea932829a7e18a4e30b951d07da17",
+      "bytes": 31102605,
+      "reason": "Includes the source document issuing NPC in the shared carried-use proof",
       "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "log": "/tmp/l2-exchanges-postmerge-pin-check.log",
-      "regeneration_log": "/tmp/l2-exchanges-merge-regen.log",
+      "log": "/tmp/l2-carried-pin-check.log",
+      "regeneration_log": "/tmp/l2-carried-pin-refresh.log",
       "pin_check_log": "/tmp/l2-priests-merged-pin-check.log"
     },
     "formatting": "cargo fmt --all --check passed after priest-journey merge",
@@ -2395,6 +2459,34 @@
       ],
       "binary_changes": 0,
       "excluded_path_changes": 0
+    },
+    "vampire_slice": {
+      "postgres_log": "/tmp/l2-vampire-green.log",
+      "authoring_passed": 24,
+      "placements_passed": 11,
+      "clippy_log": "/tmp/l2-vampire-clippy.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "pin_refresh": "/tmp/l2-vampire-pin-refresh.log",
+      "pin_check": "/tmp/l2-vampire-pin-check.log"
+    },
+    "carried_use_slice": {
+      "postgres_log": "/tmp/l2-carried-green5.log",
+      "clippy_log": "/tmp/l2-carried-clippy-last.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "authoring_passed": 25,
+      "placement_tests_passed": 11,
+      "migration_allocation": "1149 unused across all seventy freshly fetched remote heads",
+      "pin_refresh": "/tmp/l2-carried-pin-refresh.log",
+      "pin_check": "/tmp/l2-carried-pin-check.log"
+    },
+    "replacement_thread_handoff": {
+      "validated_parent": "ee6334a20",
+      "remote_parent": "d668338be",
+      "combined_postgres_validation": "not run; owner requested immediate stop for r2",
+      "unrun_test_patch": "/tmp/l2-r2-unverified-vampire-tests.patch",
+      "pending_build_log": "/tmp/l2-merged668-check.log"
     }
   },
   "cross_lane_inspection": {
@@ -2484,7 +2576,10 @@
     "entries": [
       "Kilmaresh",
       "Krailos",
-      "The Repenters"
+      "The Repenters",
+      "Barbarian Test",
+      "Unnatural Selection",
+      "Tomes of Knowledge"
     ],
     "rule": "Inspect and reuse published shared-engine and lane mechanisms, then source-author and prove complete fresh PostgreSQL journeys.",
     "dependency_order": "Complete New Frontier before An Uneasy Alliance, which requires New Frontier Mission06 at least 5."
