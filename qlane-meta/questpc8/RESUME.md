@@ -1,3 +1,18 @@
+# PREPUSH-2 checkpoint
+
+Merged main e1ca3e003 cleanly in40c63fb32. Regenerated binding evidence,
+completion list, mint audit tags and world pins; final world digest unchanged
+52b6c4243dc9774d0bb5a875881e6df7cb62a3909ec24507b5881efe6e01629c.
+Workspace all-target check PASS5m51s and fmt PASS with latest fixture changes.
+Nail adapter tests2/2PASS0.568s; duplicate migrations PASS.
+Latest native Wrath PG executed99.213228266s and still rejects command1 hi,
+even after real lease binding and collision-checked source landing. Do not
+claim the lease change fixed it. Diagnose book admission/range/capability next.
+Four-crate unit run queued/running in /tmp/questpc8-prepush2-unit-final.log:
+dispatch, durability, quests, npc (broad PG groups excluded; own PG above).
+Publishing compiling WIP under PREPUSH-2 cadence exception; no quest count
+increment and no weakened assertions. Full Wrath remains unqualified.
+
 # Active checkpoint: Wrath opening source admission
 
 WIP scaffold pushed4b624995b167c7d14dd7171adf9274041ebb46ed.

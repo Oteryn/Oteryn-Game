@@ -46,6 +46,8 @@ pub(super) async fn exercise(
 ) -> TestResult {
     eprintln!("POSTGRES_CASE_STARTED questpc8_wrath_opening after PostgreSQL fixture initialization");
     let npc = install(owner, admitted).await?;
+    super::questpc8_mystery_geometry::arrive(owner, admitted,
+        TilePos { x: 33353, y: 31410, floor: -8 }).await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
     super::grizzly_npc::wire::talk(owner, admitted, npc, &[(1, "hi"), (2, "wrath mission")]).await?;
     assert_eq!(stage(h).await?, 0, "real NPC starts the chosen mission");
@@ -90,7 +92,16 @@ async fn install(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &Admitted
     owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model_with_native_quests(&model, &[NPC])));
     owner.states.chat.admit(admitted.game_session_id, "Rebel helper", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "fence")?.ok_or("fence")?;
     let mut runtime = owner.runtime.lock().await;
+    runtime.bind_attacker_lease(
+        admitted.runtime_actor.ok_or("actor")?, admitted.game_session_id,
+        crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?,
+    ).map_err(debug)?;
     runtime.place_npcs(&NpcPlacementTable { npcs: vec![NpcPlacements {
         key: NPC.into(), placements: vec![NpcPlacement { x:33354, y:31410, floor:-8, direction:MovementFacing::North }],
     }] }, |_| true, true).map_err(debug)?;

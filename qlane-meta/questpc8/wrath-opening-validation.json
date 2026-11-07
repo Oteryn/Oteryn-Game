@@ -1,5 +1,5 @@
 {
-  "state": "WIP: native RED recorded, opening authoring underway",
+  "state": "WIP: authoring compiles; native first greeting remains RED",
   "scope": "Opening hand-in only; full Wrath remains unqualified",
   "test": "questpc8_wrath_native_opening_exact_materials_crate_and_replay",
   "red": {
@@ -19,5 +19,37 @@
     "canonical_mutated": false,
     "source_packet_sha256": "75d32d5a109da7c9c5e51c3d977d8e02dc7682bab01216892d600881fbe11b42",
     "test_file": "tools/content-migration/test_questpc8_nail_custody.py"
+  },
+  "latest_red": {
+    "postgres": true,
+    "duration_seconds": 99.213228266,
+    "point": "Command1 hi still Rejected after live lease binding and native landing validation",
+    "log_sha256": "86a06f54ecc075b215f4b4655f561d0e5bb9bda00dabc5d69c71088695b170a2"
+  },
+  "prepush2": {
+    "main": "e1ca3e003",
+    "merge": "40c63fb321f518c562344b60d08d2fcc6276e83c",
+    "conflicts": 0,
+    "generated": [
+      "native item provider",
+      "NPC placements",
+      "quest binding evidence including npc/quest-npc-dialogue-links.json",
+      "completion list",
+      "item-mint audit operation tags",
+      "world pins and deployment topology"
+    ],
+    "pin": "52b6c4243dc9774d0bb5a875881e6df7cb62a3909ec24507b5881efe6e01629c",
+    "post_merge_pin_refresh": "PASS; unchanged digest",
+    "duplicate_migrations": "PASS",
+    "unit_crates": [
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-npc"
+    ],
+    "unit_state": "running; four crates; cadence exception",
+    "own_pg": "RED99.213s; command1 hi Rejected",
+    "latest_workspace_check": "PASS5m51s with final fixture edits",
+    "fmt": "PASS"
   }
 }

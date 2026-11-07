@@ -1688,7 +1688,7 @@
     "active_validation": {
       "scope": "Opening hand-in native qualification in progress; no whole-quest qualification",
       "proof": "wrath-opening-validation.json",
-      "red": "Actual PostgreSQL101.964s, first Zalamon greeting Rejected",
+      "red": "PostgreSQL99.213s: first hi still Rejected after lease binding/native landing; opening remains WIP",
       "engine_boundary": "Item-look disguise remains assigned to qengine2; no generic feature implemented locally"
     }
   },
