@@ -22,8 +22,7 @@
     "RewardClaim",
     "StarterKit",
     "Quest",
-    "item_conversion",
-    "Encounter.Raid"
+    "item_conversion"
   ],
   "next_population_families": [
     "Achievement",

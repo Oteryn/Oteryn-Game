@@ -16,7 +16,7 @@ impl NpcRuleCatalog {
         {
             for guard in &rule.guards {
                 match guard {
-                    NpcRuleGuard::Storage { .. } => {}
+                    NpcRuleGuard::Storage { .. } | NpcRuleGuard::CalendarMonth { .. } => {}
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,
@@ -34,7 +34,8 @@ impl NpcRuleCatalog {
                     NpcRuleEffect::Set { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
-                    | NpcRuleEffect::EndConversation { delay_ms: 0 } => {}
+                    | NpcRuleEffect::EndConversation { .. }
+                    | NpcRuleEffect::Experience { .. } => {}
                     NpcRuleEffect::TakeItem {
                         item,
                         count: 1..=100,
@@ -89,6 +90,14 @@ impl NpcRuleCatalog {
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.item_exchange_keys(input.npc)
             .ok_or_else(|| NpcRuleError::MissingNativeResolution("plain item exchange".into()))?;
-        evaluate::plan(self, input, &BTreeMap::new(), false)
+        // Keep storage-only branches on their existing owner, including the
+        // exact eleven-track Father acceptance. Only inventory-owned guards
+        // and effects select the plain item planner with its ordinary cap.
+        match self.plan_storage(input) {
+            Err(NpcRuleError::MissingNativeResolution(_)) => {
+                evaluate::plan(self, input, &BTreeMap::new(), false)
+            }
+            result => result,
+        }
     }
 }

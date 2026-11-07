@@ -167,7 +167,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:101:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:102:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hanna.lua:103:sha256:cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
-      ]
+      ],
+      "failure_next_topic": 0
     },
     {
       "key": "oteryn:quest-reward/questpc-citizen-backpack-topic1",

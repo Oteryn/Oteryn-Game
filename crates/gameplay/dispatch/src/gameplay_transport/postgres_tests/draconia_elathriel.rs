@@ -318,7 +318,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let installed: bool = sqlx::query_scalar(
-        "SELECT count(*)=18 FROM _sqlx_migrations WHERE version IN (999,1000,1001,1002,1003,1004,1005,1006,1007,1008,1290,1291,1292,1293,1294,1295,1296,1297) AND success",
+        "SELECT count(*)=21 FROM _sqlx_migrations WHERE version IN (999,1000,1001,1002,1003,1004,1005,1006,1007,1008,1290,1292,1293,1295,1296,1310,1311,1312,1313,1314,1315) AND success",
     )
     .fetch_one(&h.pool)
     .await?;

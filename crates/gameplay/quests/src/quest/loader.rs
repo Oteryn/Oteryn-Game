@@ -566,19 +566,26 @@ mod tests {
     #[test]
     fn a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings() {
         // The source capture retains its exact 0..=1 bounds. The executable
-        // catalogue additionally accepts the native NPC storage domain while
-        // preserving the legacy absent-track default.
+        // catalogue preserves it when the programme only writes within those
+        // bounds; source read observations do not widen the write domain.
         let lowered = parse_quest_state(EMBEDDED, "content-1").expect("source catalogue");
         let track = lowered.catalogue().track(QUEST_LOG).expect("track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        // Keep the observed completion domain and the pre-existing wider
+        // integer counter domain; the source sentinel must not lower either min.
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = lowered.catalogue().track(&key).expect("Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
         let native = embedded();
         let track = native.catalogue().track(QUEST_LOG).expect("native track");
         assert_eq!(
             (track.quest.as_str(), track.initial, track.min, track.max),
-            (QUEST, 0, -1, i64::from(i32::MAX))
+            (QUEST, 0, 0, 1)
         );
         for lowered in [&lowered, &native] {
             assert_eq!(

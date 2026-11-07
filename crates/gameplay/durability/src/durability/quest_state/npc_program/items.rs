@@ -7,7 +7,14 @@ use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
 pub(super) fn ends(plan: &NpcRulePlan) -> bool {
     plan.effects
         .iter()
-        .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { delay_ms: 0 }))
+        .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { .. }))
+}
+
+pub(super) fn end_delay(plan: &NpcRulePlan) -> u64 {
+    plan.effects.iter().filter_map(|effect| match effect {
+        NpcRuleEffect::EndConversation { delay_ms } => Some(*delay_ms),
+        _ => None,
+    }).min().unwrap_or(0)
 }
 
 pub(super) fn changes_items(plan: &NpcRulePlan) -> bool {

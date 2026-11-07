@@ -51,6 +51,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod questpc_citizen_intro;
 mod raid_tokens;
 mod reward_callbacks;
 mod service_context;
@@ -82,6 +83,7 @@ struct SessionNpc {
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
     catalogue: Option<catalogue::Pending>,
+    delayed_end: Option<catalogue::DelayedEnd>,
     raid_tokens: Option<raid_tokens::Conversation>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
@@ -259,6 +261,7 @@ impl NpcConversations {
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
+        catalogue::follow_end(self, chat, session);
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
             if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
@@ -744,6 +747,13 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
+    if let Some(step) =
+        questpc_citizen_intro::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
@@ -779,6 +789,11 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         return viola::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
     {
         drop(runtime);
@@ -809,11 +824,7 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
-    }
+
     if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);

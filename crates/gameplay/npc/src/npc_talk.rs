@@ -423,24 +423,21 @@ impl NpcTalkBook {
                     Vec::new(),
                 )
             } else if native_quest && npc.dialogue.is_some() {
-                // The closed native caller supplies conditional replies and writes
-                // after this existing conversation owner admits the speaker.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                let Some(greeting) = dialogue.greet.first() else {
-                    continue;
-                };
-                (
-                    greeting.clone(),
-                    dialogue
-                        .farewell
-                        .first()
-                        .cloned()
-                        .unwrap_or_else(|| "Farewell.".into()),
-                    None,
-                    Vec::new(),
-                )
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else {
                 continue;
             };
@@ -776,8 +773,15 @@ mod tests {
             assert!(entry.dialogue_keywords.is_empty());
             assert!(entry.source_name_templates);
         }
-        assert!(book.get("oteryn:npc.palimuth").is_none());
-        assert!(book.get("oteryn:npc.spectulus").is_none());
+        // Existing reward greetings remain available without gaining native rules.
+        assert_eq!(
+            book.get("oteryn:npc.palimuth"),
+            old.get("oteryn:npc.palimuth")
+        );
+        assert_eq!(
+            book.get("oteryn:npc.spectulus"),
+            old.get("oteryn:npc.spectulus")
+        );
         Ok(())
     }
 

@@ -1,11 +1,7 @@
 //! Exact append-only definition predecessors, reconstructed from ordered source cohorts.
 use super::*;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct DefinitionPredecessor {
-    pub hash: [u8; 32],
-    pub defaults: BTreeMap<String, i64>,
-}
+pub(super) type DefinitionPredecessor = super::NpcDefinitionPredecessor;
 
 impl QuestStateCatalogue {
     /// Admit only additions: every previous track and transition must remain identical.

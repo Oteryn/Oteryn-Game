@@ -1,3 +1,39 @@
+## QNPCFX batch ready for cadence push
+Main f641d8d6c reused; canonical1310–1315 byte-identical. Final own migrations:
+1290 source-contracts,1292 raid-token,1293 map-key,1295 paid-receipts,1296 paid-MINT.
+Native/content-tree/binding/matrix/audit generation and duplicate check PASS.
+Workspace all-targets PASS5m17s; strict all-targets Clippy four changed gameplay
+crates PASS3m35s; fmt PASS. World pin9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988
+and independent pin-check PASS; inputsed849904fae644c04fb2c8120f22880c2d86aa1b95c0cdd4cf2b6e775a4a8dec.
+Pushing compiling integration under PREPUSH-2 tests-pending cadence exception.
+Own Citizen PG retry building after disk-full linker failure; no new PG success
+claimed. Full quest+NPC run342/346; expectation corrections pending focused rerun,
+historical NPC13 pin8c649465 remains RED/requested and was not changed.
+Dispatch/durability full unit suites still pending. No quest promoted.
+Next finish own PG +remaining unit validation and then continue owned Hot Cuisine
+with main's actual UTC calendar and delayed-end support. Do not rebuild generic
+NPC/XP/item features: QNPCFX main now supplies them. Local Citizen adapter24lines.
+
+## Current QNPCFX continuation after fallback push
+PUSHED6082b569920b4580766324a8d3e8e9280f333399 (fully generated/compiled E1
+checkpoint). Resumed unpublished recovery2d0044d58 on the SAME lane branch.
+Main f641d8d6c now ancestor. Canonical NPC admission/bounds/runtime/MINT/delayed
+end reused. Lane duplicates1291/1294/1297 and NPC/Father portions of1290 removed;
+main1310–1315 exact. Atomic eleven-track Father acceptance stays in1290.
+Merged callback history uses canonical NpcDefinitionPredecessor; no historic hash
+was replaced. Both old/new NPC PG test variants retained under separate scopes.
+A23-line Citizen-only adapter selects guarded native introductions before reward
+fallback; source yes/topic guards unchanged. Hanna refusal resets topic0.
+Full quest+NPC units first300pass/46fail; duplicate NPC installer fixed. Second
+342pass/4fail. Activation sets/counts and exact source-only bounds expectations
+corrected; rerun pending. Historical NPC13 hash remains RED/requested from qengine2.
+Canonical-main own PG attempts: missing local imports fixed; subsequent test
+link hit disk-full bus error. No PG credit. Freed4GB stale lane executables.
+World/data generators complete; final world pins, workspace, clippy, fmt running.
+Do not overlap dispatch test codegen (~11GB) with world pin compiler (~8GB).
+Next push deadline22:40UTC. PREPUSH-2 allows units/own PG pending at cadence once
+main/gen/compile/fmt pass; report red/pending honestly. No quest promoted.
+
 ## Compiling checkpoint before latest QNPCFX integration
 Main e1ca3e003 merge: full generator +native-only, final binding evidence/matrix,
 world metadata from pinned53MB source, placements, audit/client registration

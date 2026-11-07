@@ -57,6 +57,10 @@ fn scenario_case(
             name,
             "nx6-wayfarer"
                 | "catalogue-npc"
+                | "catalogue-npc-qnpcfx"
+                | "catalogue-npc-end"
+                | "catalogue-npc-calendar"
+                | "catalogue-npc-xp"
                 | "catalogue-npc-father"
                 | "fathers-burden-handins"
                 | "hunting-for-tokens"
@@ -626,7 +630,13 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
-        } else if lever_fixture || target_swap || object_mutation || mintwallin || failure_landing || name.ends_with("-expiry") {
+        } else if lever_fixture
+            || target_swap
+            || object_mutation
+            || mintwallin
+            || failure_landing
+            || name.ends_with("-expiry")
+        {
             assert!(
                 owner
                     .states
@@ -682,7 +692,23 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if outfit_world {
+        if name == "catalogue-npc-xp" {
+            super::super::npc_program::qnpcfx::exercise_xp(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "catalogue-npc-calendar" {
+            super::super::npc_program::qnpcfx::exercise_calendar(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if name == "catalogue-npc-end" {
+            super::super::npc_program::qnpcfx::exercise_end(&mut owner, &mut admitted).await?;
+        } else if name == "catalogue-npc-qnpcfx" {
+            super::super::npc_program::qnpcfx::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,

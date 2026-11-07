@@ -10833,5 +10833,39 @@
     "fmt": "PASS cargo fmt --all --check plus mounted touched files",
     "world_pin": "9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988",
     "pin_check": "PASS independent compiler pin-check"
+  },
+  "qnpcfx_integration": {
+    "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+    "state": "compiling integration batch; push authorized under PREPUSH-2 tests-pending cadence exception",
+    "lane_migrations": [
+      "1290_questpc_source_contracts.sql",
+      "1292_raid_token_exchange.sql",
+      "1293_map_key_binding.sql",
+      "1295_quest_stateless_paid_receipts.sql",
+      "1296_quest_paid_sale_mint_occurrences.sql"
+    ],
+    "canonical_npc_migrations": "1310\u20131315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
+    "atomic_father": "exact eleven-track acceptance retained in1290; value/XP proof consumed from main1315",
+    "unit_run2": {
+      "total": 346,
+      "passed": 342,
+      "failed": 4,
+      "remaining": "historical NPC13 hash; two activation expectations and source-only bound expectation corrected, rerun pending"
+    },
+    "own_pg": "canonical-main stories rebuilt; import error fixed; latest link failed when disk filled (bus error); 4GB recovered; rerun pending",
+    "local_helper": "24-line Citizen-only source-priority adapter reuses canonical NPC planner; no generic engine capability added",
+    "generated": "native providers, content tree, binding evidence, matrix, audit tags and duplicate check regenerated; final world pins pending",
+    "workspace_check": "PASS workspace all-targets5m17s",
+    "clippy": "PASS strict all-targets quests/npc/durability/dispatch3m35s",
+    "fmt": "PASS workspace and explicit mounted touched files",
+    "world_pin": "9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988",
+    "pin_verification": "PASS independent compiler check; current inputs ed849904fae644c04fb2c8120f22880c2d86aa1b95c0cdd4cf2b6e775a4a8dec",
+    "tests_pending": [
+      "corrected exact activation/predecessor assertion focused rerun",
+      "full changed dispatch/durability unit suites",
+      "Citizen PostgreSQL retry after recovered disk-full linker failure"
+    ],
+    "known_red": "historical NPC13 predecessor8c649465; unchanged and requested from qengine2",
+    "qualification_credit": false
   }
 }

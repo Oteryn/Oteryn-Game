@@ -1,6 +1,8 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+mod admission;
+mod bounds;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
@@ -355,6 +357,14 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    /// Resolve only programmes explicitly bound into this catalogue for this NPC.
+    pub fn admitted_for_npc(
+        &self,
+        npc: &str,
+        native: &super::QuestStateCatalogue,
+    ) -> Result<Option<Self>, NpcRuleError> {
+        admission::for_npc(self, npc, native)
+    }
     pub fn from_json_documents(documents: &[&str]) -> Result<Self, NpcRuleError> {
         let mut programs = Vec::with_capacity(documents.len());
         for source in documents {
@@ -379,6 +389,7 @@ impl NpcRuleCatalog {
         native: &super::QuestStateCatalogue,
     ) -> Result<Self, NpcRuleError> {
         for program in &mut self.programs {
+            let writes = bounds::literal_write_bounds(program);
             for track in &mut program.document.tracks {
                 let definition = native
                     .track(&track.key)
@@ -391,8 +402,9 @@ impl NpcRuleCatalog {
                                 .npc_legacy
                                 .get(&track.quest)
                                 .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
-                    || definition.min > track.min
-                    || definition.max < track.max
+                    || writes
+                        .get(&track.key)
+                        .is_some_and(|&(min, max)| definition.min > min || definition.max < max)
                 {
                     return Err(NpcRuleError::Invalid(format!(
                         "native NPC track refinement: {}",
@@ -449,6 +461,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                         )
                 });
@@ -551,7 +564,7 @@ impl NpcRuleCatalog {
     }
 }
 
-/// Refine only original source-qualified tracks; preserve every wider native bound.
+/// Extend native bounds only for source writes; preserve existing absent values.
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
     source_tracks: &BTreeMap<String, String>,
@@ -580,6 +593,7 @@ pub(super) fn extend(
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
     for program in source.programs() {
+        let writes = bounds::literal_write_bounds(program);
         for track in &program.document.tracks {
             if let Some(native) = tracks.get_mut(&track.key) {
                 let original = track
@@ -595,8 +609,10 @@ pub(super) fn extend(
                 }
                 // Keep the old catalogue's absent value for every existing native
                 // consumer. Only source NPC planning uses its donor absent value.
-                native.min = native.min.min(track.min);
-                native.max = native.max.max(track.max);
+                if let Some(&(min, max)) = writes.get(&track.key) {
+                    native.min = native.min.min(min);
+                    native.max = native.max.max(max);
+                }
             } else {
                 tracks.insert(
                     track.key.clone(),
@@ -617,12 +633,7 @@ pub(super) fn extend(
             .tracks
             .first()
             .ok_or("NPC program has no tracks")?;
-        let digest = program
-            .digest
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        let key = format!("oteryn:quest-npc-pin/{digest}");
+        let key = admission::binding_key(program);
         if transitions
             .insert(
                 key.clone(),

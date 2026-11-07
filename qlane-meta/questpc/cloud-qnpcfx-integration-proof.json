@@ -1,0 +1,32 @@
+{
+  "main": "f641d8d6c1b7b800db28103f9a5f4e48972d051d",
+  "canonical_npc_migrations": "1310\u20131315 exact main bytes",
+  "lane_migrations": [
+    "1290_questpc_source_contracts.sql",
+    "1292_raid_token_exchange.sql",
+    "1293_map_key_binding.sql",
+    "1295_quest_stateless_paid_receipts.sql",
+    "1296_quest_paid_sale_mint_occurrences.sql"
+  ],
+  "workspace_all_targets": "PASS5m17s",
+  "strict_clippy": "PASS four changed gameplay crates all-targets3m35s",
+  "fmt": "PASS",
+  "generated": "native providers/content-tree/binding/matrix/audit/client lists/world metadata/placements/duplicate-migrations regenerated or checked",
+  "world_pin": "9764e52f4d0f6276a3ca31360dbc3d430360d6bbe4b163ff36a11959df32e988",
+  "pin_check": "PASS",
+  "unit2": {
+    "total": 346,
+    "passed": 342,
+    "failed": 4,
+    "skipped": 0
+  },
+  "pending": [
+    "corrected exact activation/predecessor assertion focused rerun",
+    "full changed dispatch/durability unit suites",
+    "Citizen PostgreSQL retry after recovered disk-full linker failure"
+  ],
+  "known_red": "historical NPC13 predecessor8c649465; unchanged and requested from qengine2",
+  "own_postmerge_pg": "no executed success yet; build retry follows recovered disk-full linker failure",
+  "qualification_credit": false,
+  "owner_gate": "PREPUSH-2 tests-pending cadence exception"
+}

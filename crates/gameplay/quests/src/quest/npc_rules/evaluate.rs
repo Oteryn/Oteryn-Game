@@ -46,7 +46,11 @@ impl<'a> Staged<'a> {
             .copied()
             .or_else(|| definition.map(|track| track.initial))
             .ok_or_else(|| NpcRuleError::MissingTrack(key.to_owned()))?;
-        if definition.is_some_and(|track| !(track.min..=track.max).contains(&original)) {
+        // A source's absent sentinel is a read default, not permission to store
+        // that value outside the native owner's range. Explicit rows stay strict.
+        if self.original.contains_key(key)
+            && definition.is_some_and(|track| !(track.min..=track.max).contains(&original))
+        {
             return Err(NpcRuleError::Invalid(format!(
                 "track outside bounds: {key}"
             )));
@@ -321,7 +325,9 @@ pub(super) fn plan(
                 if storage_only
                     && !matches!(
                         guard,
-                        NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
+                        NpcRuleGuard::Storage { .. }
+                            | NpcRuleGuard::StorageTime { .. }
+                            | NpcRuleGuard::CalendarMonth { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
@@ -355,6 +361,8 @@ pub(super) fn plan(
                             | NpcRuleEffect::Add { .. }
                             | NpcRuleEffect::SetNowPlus { .. }
                             | NpcRuleEffect::SetTopic { .. }
+                            | NpcRuleEffect::EndConversation { .. }
+                            | NpcRuleEffect::Experience { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));

@@ -29,6 +29,11 @@ fn citizen_regular_source_costs_clock_and_addons_are_distinct_from_rook() -> Res
     );
     let hat = find("hat")?;
     assert_eq!(hat.npc, "oteryn:npc.hanna");
+    assert_eq!(
+        hat.failure_next_topic,
+        Some(0),
+        "source refusal ends the material question"
+    );
     assert_eq!(hat.outfit.as_ref().ok_or("hat addon")?.addons, 2);
     let amounts: std::collections::BTreeMap<_, _> = hat
         .take
