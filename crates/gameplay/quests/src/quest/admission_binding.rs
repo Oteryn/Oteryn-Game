@@ -168,4 +168,35 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn room_progress_is_bound_while_source_timer_keeps_its_owner() -> Result<(), String> {
+        let callback = world_callbacks::load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-callback/ancient-tombs-diprath-room")
+            .ok_or("room owner")?;
+        let room = world_callbacks::primary_transition(&callback)?;
+        assert!(matches!(
+            room.effects[0].effect,
+            QuestEffectKind::RaiseToWithBinding { value: 3, .. }
+        ));
+        assert!(
+            validate(&room, false).is_err(),
+            "room progress requires physical context"
+        );
+        validate(&room, true)?;
+        let mut shadow = room.clone();
+        shadow.key.push_str("-shadow");
+        shadow.effects[0].effect = QuestEffectKind::RaiseTo(3);
+        assert!(
+            validate(&shadow, true).is_err(),
+            "renaming and stripping cannot release timer track ownership"
+        );
+        let timer =
+            super::super::timers::recipe("oteryn:quest-timer/ancient-tombs-diprath-treasure")
+                .ok_or("timer owner")?
+                .transition();
+        assert_eq!(room.effects[0].track, timer.effects[0].track);
+        validate(&timer, false)?;
+        Ok(())
+    }
 }

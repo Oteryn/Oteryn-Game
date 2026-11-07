@@ -159,7 +159,7 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
         Callback {
             key:gate.key.into(),quest:gate.quest.into(),trigger:Trigger::StepIn,actor_kind:Default::default(),
             selector:Selector { native: None,position:None,unique:Some(gate.unique),action:None,appearance:None},
-            lever:None,reversible:false,opening_only:false,requires_world_admission:false,passages:Vec::new(),teleport:Some(gate.destination),facing:None,effects,
+            lever:None,reversible:false,opening_only:false,requires_world_admission:gate.progress.is_some(),passages:Vec::new(),teleport:Some(gate.destination),facing:None,effects,
             storage:gate.progress.into_iter().map(|p| Storage {track:p.track.into(),minimum:p.minimum,maximum:p.maximum,set:p.target,preserve:false,increment:false,at_least:true}).collect(),world_requirements:Vec::new(),minimum_level:None,experience:None,monk_reward:None,
             offerings:Vec::new(),item_on_target:None,return_on_failure:true,failure_message:None,success_message:None,native_rule:None,
             sources:vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/{}:{}",gate.source_file,gate.source_line)],
