@@ -680,3 +680,31 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## SEASON lane, 2026-11-07: exact completion boundaries
+
+Base `9668e0a04`, audit fetched from
+`origin/claude/happy-davinci-ijz3wy-aud1107`; branch
+`claude/happy-davinci-ijz3wy-season`. No gameplay behavior is promoted to DONE.
+
+- W05d: Cake bridge Item 48227 remains canonically unavailable under the live
+  identity/map-owner answer 6549960114. Crystal
+  `data-global/scripts/lib/a_piece_of_cake_config.lua:249-292` is the producer;
+  source facts cannot grant an Item reference. Details and fresh reachable wiki
+  revisions: `docs/reference/content-prep/season-20261107/W05d.md`.
+- W12: the real pacing consumer has no source-qualified discovery contribution.
+  Crystal `data/scripts/discovery_system.lua:528-563,605-615` and
+  `src/creatures/players/player.cpp:7222-7231` supply no formula; fresh BR wiki
+  revision 443653 supplies only the 100–195 envelope. Mapping, units and stacking
+  need an exact source or authored compatibility rule. Details: `W12.md` beside
+  the note above.
+- W18: full furniture rotation closure contains unavailable targets 34277,
+  37883 and 23397 in both donors. Crystal `data/items/items.xml:65377,70954,51370`;
+  Canary `data/items/items.xml:65175,70749,51180`. The source checker rejects
+  substituted donor snapshots and reports absent identities without repairing
+  them. Generated evidence and reproduction: `W18.md` beside the note above.
+
+Donor pins: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`, Canary
+`47dfd51f45280a59a1d3e50ba7edd573d7234446` (`OTS_HYPOTHESIS_ONLY`).
+No migration, command ID, capability bit, mechanic ordinal or registry entry is
+allocated. Migration range 1160–1169 and lane offset +60 remain unused.
