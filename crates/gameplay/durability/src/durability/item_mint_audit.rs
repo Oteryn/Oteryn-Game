@@ -784,7 +784,11 @@ pub fn decode_payload(wire: &[u8]) -> Result<OneItemMintV1, AuditError> {
 pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), AuditError> {
     let value = decode_common_envelope(wire)?;
     let mint = decode_payload(&value.payload)?;
-    let (world_id, channel_id, instance_id) = mint_scope(&mint)?;
+    let MintScopeFields {
+        world_id,
+        channel_id,
+        instance_id,
+    } = mint_scope(&mint)?;
     if value.world_id.as_deref() != Some(world_id.as_slice())
         || value.channel_id.as_deref() != channel_id.as_deref()
         || value.instance_id.as_deref() != instance_id.as_deref()
@@ -800,20 +804,24 @@ pub fn decode_envelope(wire: &[u8]) -> Result<(EventEnvelopeV1, OneItemMintV1), 
 /// The event's exact runtime scope: the death's own scope, which a Ground
 /// destination repeats exactly ([`check_mint`]) and a corpse-container
 /// destination leaves implicit.
-fn mint_scope(
-    mint: &OneItemMintV1,
-) -> Result<(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>), AuditError> {
+struct MintScopeFields {
+    world_id: Vec<u8>,
+    channel_id: Option<Vec<u8>>,
+    instance_id: Option<Vec<u8>>,
+}
+
+fn mint_scope(mint: &OneItemMintV1) -> Result<MintScopeFields, AuditError> {
     let death = mint
         .source
         .as_ref()
         .and_then(|source| source.death_occurrence.as_ref())
         .ok_or(AuditError::InvalidInput)?;
     death.runtime_scope()?;
-    Ok((
-        death.world_id.clone(),
-        (!death.channel_id.is_empty()).then(|| death.channel_id.clone()),
-        death.instance_id.clone(),
-    ))
+    Ok(MintScopeFields {
+        world_id: death.world_id.clone(),
+        channel_id: (!death.channel_id.is_empty()).then(|| death.channel_id.clone()),
+        instance_id: death.instance_id.clone(),
+    })
 }
 
 /// Operation-independent RL-07 envelope gate shared by MINT and TRANSFER:
@@ -887,7 +895,11 @@ pub fn encode_mint_event(
         return Err(AuditError::InvalidInput);
     }
     check_mint(&mint)?;
-    let (world_id, channel_id, instance_id) = mint_scope(&mint)?;
+    let MintScopeFields {
+        world_id,
+        channel_id,
+        instance_id,
+    } = mint_scope(&mint)?;
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: INTERPRETATION_REVISION,

@@ -921,8 +921,14 @@ No command, capability, mechanic or registry number was allocated.
 ran red with `InvalidInput` (0.007s; build/run 80.561s), then passed (0.016s).
 The 30 audit tests passed in 0.390s (build/run 80.243s), including the existing
 Channel compatibility and resource-bound cases. The audit tag/golden generator
-produced no changes. Architecture checking passed. The complete durability
-crate checks and the 25-package dependent PostgreSQL run are still running.
+produced no changes. Architecture checking passed. All 708 durability tests
+passed, with no skipped tests, in 451.420s (build/run 533.000s), including
+`boss_activity_item_consumers_postgres` (6.061s). Cargo check passed in 94.176s.
+Clippy identified one complex return type; named scope fields resolved it and
+clippy passed with warnings denied in 1m05s. The 30 audit tests passed again in
+0.432s after that correction. The 25-package dependent PostgreSQL run at
+`2f291e493` is still collecting all failures; it has reported the guild-war
+test transport-gate race described by its `pending` assertion.
 
 This checkpoint covers wire validation. The production death-mint owner still
 requires Channel identity; Instance corpse custody and native Primal hook
