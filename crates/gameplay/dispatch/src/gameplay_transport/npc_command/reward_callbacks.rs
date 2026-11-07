@@ -51,6 +51,7 @@ pub(super) fn prepare(
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut guard = None;
+    let mut refusal_topic = None;
     let dialogue = quest_dialogue::prepare(
         admission,
         actor,
@@ -75,6 +76,7 @@ pub(super) fn prepare(
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
+                refusal_topic = callback.refusal_topic.map(Topic::from);
                 if selected.next().is_some() {
                     return None;
                 }
@@ -105,7 +107,10 @@ pub(super) fn prepare(
             })
         },
     )?;
-    Some(Step { dialogue, guard })
+    Some(Step {
+        dialogue: dialogue.on_refusal_topic(refusal_topic),
+        guard,
+    })
 }
 
 /// Clock advice is a fresh read; the value writer independently rechecks every grant.

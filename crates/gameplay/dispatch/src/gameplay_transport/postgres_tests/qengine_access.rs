@@ -830,6 +830,7 @@ async fn wardrobe(
         achievement_once: false,
         reply: vec![],
         cooldown_reply: vec![],
+        refusal_topic: None,
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

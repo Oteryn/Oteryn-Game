@@ -814,5 +814,13 @@
       ],
       "any_topic": true
     }
-  ]
+  ],
+  "refusal_topics": {
+    "oteryn:quest-reward/npcfix/altar-bag": 0,
+    "oteryn:quest-reward/npcfix/koshei-submit": 0,
+    "oteryn:quest-reward/exchange-cyclops-gold-melt": 0,
+    "oteryn:quest-reward/exchange-cyclops-gear-wheel": 0,
+    "oteryn:quest-reward/exchange-cyclops-soul-orbs": 0,
+    "oteryn:quest-reward/exchange-cyclops-skirts": 3
+  }
 }
