@@ -1,3 +1,18 @@
+## Curos partial PG / generated deployment mirror checkpoint — 2026-11-07
+Productionstrict4crates PASS8m16s, newsourcegreet/sourceplacement nativePG
+missingprereq124.181213218s andbranchprecedence120.191585836s PASS.
+Positive115.021323239s gotemptyreply: test seededforeignprereq butleftcached
+NPCreadcopy stale. Onlyfixture changed: refreshQuestSession +assertcopiedNF6=5.
+Productionunchanged; correctedstartalone pending. No weakenedassertions.
+DraconiaDragonlordexchange/flag/replay regression actualPG PASS106.606954443s
+withnewpin9096. Generateddeploytopologymirror included; no deployment.
+Pin-check running (8GB) then correctedstartbuild/run; avoidoverlapwithtestbuild.
+Proof cloud-uneasy-curos-progress.json retainsfullintermediate/strictlogs.
+Thischeckpoint excludeslocaltestfixturefix untilverified. NEXT exactstartPG,
+finaldispatchlintafterfixturechange, finishpincheck/fmt andpublishGREEN. Then
+Curoslatermissions/nativequestdoor/boss/crystal10srevert/10217reward.
+Everypush fetchexacttarget+mergeFETCH_HEAD; max15min; noforce/rebase/main/PR.
+
 ## Curos compiled bindings / regenerated pin WIP — 2026-11-07
 Curosstart-only sourceprogramme nowregistered, exactgreet118 throughreusable
 closedstatic parser (base23unchanged), sourceNPCscope47 placements. Fourcrate

@@ -8666,9 +8666,9 @@
     },
     "multi_player_proof": "cloud-source-death-multi-validation.json",
     "curos_baseline": {
-      "status": "WIP_SOURCE_BINDINGS_COMPILE_PINNED_FINAL_PG_PENDING",
+      "status": "WIP_PRODUCTION_STRICT_PASS_ACCEPTANCE_FIXTURE_REFRESH_PENDING",
       "proof": "cloud-uneasy-curos-progress.json",
-      "red_point": "native Curos placement missing from committed world source table",
+      "red_point": "Positive start probe used stale fixture read copy; refresh + explicit copied-prerequisite assertion added locally, rerun pending.",
       "runtime_change": true
     },
     "curos_static_checks": {
@@ -8689,7 +8689,11 @@
           }
         ]
       },
-      "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet."
+      "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet.",
+      "production_strict_clippy": "PASS four changed crates all-targets/all-features -D warnings 8m16s; before test-only copy-refresh addition",
+      "dragonlord_regression": "PASS actualPG106.606954443s under new world pin",
+      "deployment_pin_mirror": "Compiler-generated topology fields included; no deployment performed",
+      "pin_check": "Running before corrected acceptance rerun"
     }
   },
   "engine_progress": {

@@ -1,5 +1,5 @@
 {
-  "status": "WIP_SOURCE_BINDINGS_COMPILE_PINNED_FINAL_PG_PENDING",
+  "status": "WIP_PRODUCTION_STRICT_PASS_ACCEPTANCE_FIXTURE_REFRESH_PENDING",
   "runtime_change": true,
   "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua",
   "source_sha256": "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
@@ -19,7 +19,7 @@
     "Completed prerequisite accepts two flags in one receipt, exact command replay once.",
     "Preceding New Frontier branch suppresses Uneasy start."
   ],
-  "published_code": "Compiling WIP source bindings; whole quest remains unqualified.",
+  "published_code": "Production source bindings unchanged; this checkpoint retains partial PG evidence and generated deployment pin mirror. Corrected acceptance test remains local pending compile/run.",
   "reuse_checked": {
     "npcfix": "c6caad19153b23400d6f750d208ff7cffa5f006b",
     "qnpcfx": "51d175bfbf23c25f7b8371fb2c6a841b1a609fd7",
@@ -55,6 +55,31 @@
         }
       ]
     },
-    "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet."
+    "actual_pg": "Final three cases pending; original actual RED retained, no positive qualification yet.",
+    "production_strict_clippy": "PASS four changed crates all-targets/all-features -D warnings 8m16s; before test-only copy-refresh addition",
+    "dragonlord_regression": "PASS actualPG106.606954443s under new world pin",
+    "deployment_pin_mirror": "Compiler-generated topology fields included; no deployment performed",
+    "pin_check": "Running before corrected acceptance rerun"
+  },
+  "intermediate_pg": {
+    "missing_seconds": 124.181213218,
+    "precedence_seconds": 120.191585836,
+    "start_failed_seconds": 115.021323239,
+    "start_error": "Curos source start reply: []",
+    "cause": "Fixture wrote foreign prerequisite through the fenced writer but did not refresh the session copy used by NPC preview. Test now refreshes and asserts copied mission06=5; corrected start rerun pending."
+  },
+  "intermediate_logs": {
+    "cloud-uneasy-curos-intermediate.log": {
+      "raw_sha256": "d20ce936e00cc1c68d7e0586a3a6582df29d8e652301a72520ee77ac2745a4bf",
+      "stored_sha256": "d20ce936e00cc1c68d7e0586a3a6582df29d8e652301a72520ee77ac2745a4bf"
+    },
+    "cloud-uneasy-curos-dragonlord.log": {
+      "raw_sha256": "30a252063336e29db4ce244b47c6fe0272bfbc239034f7e66caf60a653440e69",
+      "stored_sha256": "60c3df92c45acf1a3987d6d4ff853dedc82a4c019d32fb11fcdf3c7d3da3c01d"
+    },
+    "cloud-uneasy-curos-production-clippy.log": {
+      "raw_sha256": "d3b2af365110eb24e0850cefd225fa4648f7859d742904fac4bc5a51dca742e0",
+      "stored_sha256": "d3b2af365110eb24e0850cefd225fa4648f7859d742904fac4bc5a51dca742e0"
+    }
   }
 }
