@@ -1,3 +1,25 @@
+# Latest integrated green slice — source door and captured startup selectors
+
+BATCH-door-startup-integration-2026-11-07.json records fresh local checks against
+published97c922c33/e0aca5741 plus retained exact retry/stale-proof assertions.
+Four focused PG regressions plus captured selector PG passed on PostgreSQL18.6;
+123content,5World,19Python,carrier/collision units, five-crate check,
+all-targets/all-features clippy-Dwarnings,fmt and pin-check passed. The superseded
+local prototype is retained only in Git/checkpoint evidence; direct immutable
+reward claims and native door/encounter owners are the sole runtime path.
+
+ACTIVE NEXT: Desert Dungeon four-station party/offering rite. Source facts and
+mechanism draft /tmp/questpc2-desert-mechanism-plan.json. Implement generically;
+no engine-owner deferral. Lever UID30030 at32673,32086,z8 exists without startup
+UID; exact staging/destination cells exist. Source checks all four base vocations
+and consumes exact altar stacks before teleport; initiator need not be a member.
+Use genuine current Fresh players and native Character build owner. Existing
+immutable offering receipt and sealed group movement owner are reusable. Check
+source/fence/geometry before mutation, preserve pending/replay atomicity, then
+compose both already-qualified source rewards. No whole qualification yet.
+
+Previous source-route notes (Annihilator remains a whole-route obligation):
+
 # Current authoring checkpoint — continuous source-region Annihilator
 
 This checkpoint publishes verified contract facts and state only. The new Rust
@@ -115,9 +137,8 @@ Disk recovery: the main leak was failed linker .tmp executables and thousands
 of superseded .rcgu.o files, not needed current cache state. Removed only task
 failed temporaries/old object outputs with no compiler active, retaining latest
 objects/cache/source/PG. Ledger /tmp/questpc2-failed-link-artifact-recovery.json.
-Native incremental0clhrjm82foyu, clippy098tcw7aevych and durability380dn26icaqbh
-are losslessly retained behind original-path symlinks into /tmp; SHA256 ledgers
-record verification. One superseded regular dispatch rlib is retained the same
+Native incremental/clippy/current durability caches are on disk following byte-verified
+restoration; historical ledgers describe their earlier temporary relocations. One superseded regular dispatch rlib is retained the same
 way. /tmp is RAM-backed; prune only unlocked superseded sessions and obsolete
 archives at batch boundaries. No broad clean/profile/RUSTFLAGS/incremental
 changes, downloads or PostgreSQL data changes. A pre-reuse parallel group

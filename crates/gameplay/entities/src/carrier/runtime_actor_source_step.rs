@@ -178,6 +178,7 @@ mod tests {
     fn source_step_projection_refusal_restores_the_entire_carrier() {
         let (mut runtime, actors) = fixture();
         let before = runtime.carrier.clone();
+        let initial = runtime.read_actor_position(actors[0]).unwrap();
         let proof = proofs(&runtime, actors).remove(0);
         assert!(
             runtime
@@ -190,6 +191,25 @@ mod tests {
             .commit_source_step_and_project(proof, || true)
             .unwrap();
         assert_eq!(snapshot.position().x, 10);
+        assert_eq!(snapshot.revision(), initial.revision() + 1);
+        let mut projected = false;
+        assert_eq!(
+            runtime.commit_source_step_and_project(
+                Proof {
+                    actor: actors[0],
+                    expected: initial,
+                    destination: snapshot.position(),
+                    guard: None,
+                },
+                || {
+                    projected = true;
+                    true
+                },
+            ),
+            Err(CarrierError::PositionSnapshotMismatch)
+        );
+        assert!(!projected);
+        assert_eq!(runtime.read_actor_position(actors[0]).unwrap(), snapshot);
         assert_eq!(
             runtime.read_actor_position(actors[1]).unwrap().position().x,
             5

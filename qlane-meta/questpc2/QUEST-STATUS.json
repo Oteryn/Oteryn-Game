@@ -1637,10 +1637,10 @@
     }
   },
   "current_batch": {
-    "id": "annihilator-startup-selectors-2026-11-07",
-    "record": "BATCH-annihilator-startup-selectors-2026-11-07.json",
-    "whole_quest_qualifications": 0,
-    "next": "Implement the continuous native Annihilator route against real source-region geometry and genuine current player/progression fences: entry door, exact four-person lever, source combat clearance, physical earned chest and sealed re-entry. Reuse encounter/reward owners; no invented kill flag or escape timer."
+    "id": "door-startup-integration-2026-11-07",
+    "record": "BATCH-door-startup-integration-2026-11-07.json",
+    "state": "GREEN",
+    "whole_quest_qualifications": 0
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1653,16 +1653,19 @@
     "BATCH-source-corpse-integration-2026-11-07.json",
     "BATCH-group-source-authoring-2026-11-07.json",
     "BATCH-group-source-key-2026-11-07.json",
-    "BATCH-group-authoring-integration-2026-11-07.json"
+    "BATCH-group-authoring-integration-2026-11-07.json",
+    "BATCH-annihilator-reward-door-2026-11-07.json",
+    "BATCH-annihilator-startup-selectors-2026-11-07.json",
+    "BATCH-door-startup-integration-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Push integrated green head FF, then complete owned whole encounter/escape/door/reward paths; no entry-only whole qualification.",
+    "task": "Implement source Desert Dungeon four-vocation/four-offering atomic party transfer with genuine Fresh/Character owner proof; reuse native encounter movement and existing immutable offering receipts. Continue owned whole quests without deferral.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
-    "sha": "c63c6cc71234772960bebb68d0e9bf5fa62d8a6c",
+    "sha": "e0aca57413e36818be5406052ac656d240236b15",
     "records": [
       "BATCH-instance-corpse-root-2026-11-06.json",
       "BATCH-native-corpse-binding-2026-11-07.json",
