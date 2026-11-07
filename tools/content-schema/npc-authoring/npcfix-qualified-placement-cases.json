@@ -2529,6 +2529,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-39",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Historical ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb 33-placement tree proves the selected cohort absent. Retain exact current audited retail positions and pinned promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; source-qualified names unchanged.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.maria",
+          "name": "Maria",
+          "expected": {
+            "x": 32912,
+            "y": 32082,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nathaniel",
+          "name": "Nathaniel",
+          "expected": {
+            "x": 32953,
+            "y": 32054,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nelliem",
+          "name": "Nelliem",
+          "expected": {
+            "x": 32883,
+            "y": 32086,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.oldrak",
+          "name": "Oldrak",
+          "expected": {
+            "x": 32816,
+            "y": 32260,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chuckles",
+          "name": "Chuckles",
+          "expected": {
+            "x": 32789,
+            "y": 31236,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.emperor_rehal",
+          "name": "Emperor Rehal",
+          "expected": {
+            "x": 32584,
+            "y": 31402,
+            "floor": -8
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
