@@ -101,8 +101,15 @@ pub(super) async fn write(
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
             y: u16::try_from(participant.try_get::<i32, _>("entry_y")?)
                 .map_err(|_| SoulpitError::NotOnEntryTile)?,
-            floor: i8::try_from(participant.try_get::<i16, _>("entry_floor")?)
-                .map_err(|_| SoulpitError::NotOnEntryTile)?,
+            // Runtime/LastPosition floors retain source z; map TilePos uses
+            // -source_z (ADR-0021), as bundle_map_position does at USE ingress.
+            floor: i8::try_from(
+                participant
+                    .try_get::<i16, _>("entry_floor")?
+                    .checked_neg()
+                    .ok_or(SoulpitError::NotOnEntryTile)?,
+            )
+            .map_err(|_| SoulpitError::NotOnEntryTile)?,
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
         let level = u32::try_from(participant.try_get::<i64, _>("level")?)
