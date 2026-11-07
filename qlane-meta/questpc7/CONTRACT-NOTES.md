@@ -458,3 +458,53 @@ advance or qualify the subject quest. Full selected programme remains ACTIVE.
 PG RED41.1128287s reaches PostgreSQL18.6 and refuses absent Rhargu placement.
 The same test will require both published contacts, distinct real runtime
 actors, and unchanged absent Grimvale programme state after native admission.
+
+## Whole selected Grimvale programme — 2026-11-07
+
+The frozen13-stage personal recipe remains the contract. No global full-moon
+calendar, world bloom, original party/raid lifecycle, source Feroxa form chain
+or optional boss loot is claimed by this finite selected programme. Native
+Feroxa is a real bounded death objective at the retained room(33390,31540,-11);
+the four other named leaders retain their source arena centres.
+
+The static Grimvale surface region has no22063/22064 plants. The conservative
+personal harvesting rule selects five clear native botanical survey plots:
+(33329,31690,-7),(33331,31687,-7),(33335,31685,-7),
+(33338,31682,-7),(33340,31680,-7). Each grants one actual native22082 purple
+nightshade blossom through a different once-only receipt; all five are required
+in carried custody when preparing the trap. These are authored collection
+plots, not a claim of original source plant placement or global bloom timing.
+Source XML confirms22082 weight200 and official client flags mark it cumulative.
+Native22074 is a closed silvered trap; its source description confirms silver
+coating. Preparation grants that physical trap; deployment consumes exactly
+one carried22074 through existing item_on_target on a native arena ground.
+The separate timed liquid-silver vial22058 is not used or misrepresented.
+Retained trap source: actions_closed_silvered_trap.lua:1-19, Crystal9f5a72c6,
+SHA256cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94.
+
+Repository area anchors bind the later selected investigation to real regions:
+content/world/areas/islands/islands-00000-00059.json:1#/records/18 (Grimvale),
+#/records/41 (Oskayaat,33068,32917,-7);
+content/world/areas/hunting-places/hunting-places-00000-00444.json:1#/records/203
+(Hyaena Lairs,33212,32359,-8) and#/records/311
+(Oskayaat Undercity,32999,32933,-8). Nearby clear native ground is chosen for
+the cursed site, mosaics, moon-symbol survey and ritual. These are selected
+inspection locations, not asserted original source clue coordinates. Every
+callback appearance is checked against the actual native B3 cell.
+
+Ten afflicted kills admit Werewolf/Werebear/Wereboar to one bounded shared
+counter; all four distinct leaders require their own death. Twenty Werehyaena
+kills precede Domizian. Rhargu and Domizian use their existing canonical NPCs,
+chosen contact placements and new personal phase advances. Missing individual
+Lua greetings fall back to exact retained common npc_handler defaults, citing
+that library rather than inventing NPC source bytes.
+
+Ritual completion atomically gives27565 Foxtail Amulet, Over the Moon, Drama
+in Darama and typed investigation access. Two receipt-bearing native transports preserve the earned flag and
+check earned access and fresh Premium for actual exit and reentry. No foreign
+quest is completed or seeded. Physical item facts come from pinned source XML
+47dfd51f and official client appearances; native profiles are repo-generated.
+
+Earned travel reuses the existing preserve-state quest receipt owner so fresh
+requirements run inside the normal fenced transaction. The legacy read-only
+transport contract still refuses requirements; that guard is not relaxed.

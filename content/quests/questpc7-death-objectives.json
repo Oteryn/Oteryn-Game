@@ -687,6 +687,294 @@
         "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
         "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werewolf",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werewolf",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33324,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33340,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33332,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werebear",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werebear",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33328,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33344,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33336,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-wereboar",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.wereboar",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+      "required": 10,
+      "minimum": {
+        "x": 33332,
+        "y": 31667,
+        "floor": -7
+      },
+      "maximum": {
+        "x": 33348,
+        "y": 31683,
+        "floor": -7
+      },
+      "guardian": {
+        "position": {
+          "x": 33340,
+          "y": 31675,
+          "floor": -7
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-feroxa",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.feroxa",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/feroxa",
+      "required": 1,
+      "minimum": {
+        "x": 33382,
+        "y": 31532,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 33398,
+        "y": 31548,
+        "floor": -11
+      },
+      "guardian": {
+        "position": {
+          "x": 33390,
+          "y": 31540,
+          "floor": -11
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-bloodback",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.bloodback",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/bloodback",
+      "required": 1,
+      "minimum": {
+        "x": 33176,
+        "y": 32008,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 33192,
+        "y": 32024,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 33184,
+          "y": 32016,
+          "floor": -8
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y125.b3:1:sha256:af1d716e857c9384d6581a8381ddc5592dee7f4103bf3f6f19b41d59aa540337",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-darkfang",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.darkfang",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/darkfang",
+      "required": 1,
+      "minimum": {
+        "x": 33054,
+        "y": 31882,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33070,
+        "y": 31898,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33062,
+          "y": 31890,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-sharpclaw",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.sharpclaw",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/sharpclaw",
+      "required": 1,
+      "minimum": {
+        "x": 33112,
+        "y": 31994,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33128,
+        "y": 32010,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33120,
+          "y": 32002,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x129-y125.b3:1:sha256:20c173ef95a7c45b2fd030fc5c5eb1b20f925d445687ebd3ee484befb45baa73",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-black_vixen",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.black_vixen",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/black_vixen",
+      "required": 1,
+      "minimum": {
+        "x": 33442,
+        "y": 32026,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 33458,
+        "y": 32042,
+        "floor": -9
+      },
+      "guardian": {
+        "position": {
+          "x": 33450,
+          "y": 32034,
+          "floor": -9
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grimvale-werehyaena",
+      "quest": "oteryn:quest.grimvale_quest",
+      "creature": "oteryn:creature.werehyaena",
+      "stage": "oteryn:quest-progress/questpc7/grimvale/programme",
+      "stage_value": 8,
+      "counter": "oteryn:quest-progress/questpc7/grimvale/werehyaena",
+      "required": 20,
+      "minimum": {
+        "x": 33203,
+        "y": 32351,
+        "floor": -8
+      },
+      "maximum": {
+        "x": 33219,
+        "y": 32367,
+        "floor": -8
+      },
+      "guardian": {
+        "position": {
+          "x": 33211,
+          "y": 32359,
+          "floor": -8
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
     }
   ]
 }

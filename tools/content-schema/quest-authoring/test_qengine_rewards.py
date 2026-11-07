@@ -388,5 +388,45 @@ class QuestRewards(unittest.TestCase):
                 self.assertTrue(row['admission']['materializable'])
                 self.assertIn('CharacterInventory',row['admission']['legal_destinations'])
 
+class GrimvaleProgramme(unittest.TestCase):
+    def test_personal_harvesting_and_exact_trap_input_keep_global_event_separate(self):
+        import questpc7_grimvale_programme as grim
+        worlds, objectives, contacts=grim.build(q.ROOT)
+        plots=[c for c in worlds if '-nightshade-' in c['key']]
+        self.assertEqual(len(plots),5)
+        self.assertEqual(len({tuple(c['selector']['position'].values()) for c in plots}),5)
+        for i,c in enumerate(plots):
+            self.assertEqual(c['item_reward'],{'item':'oteryn:item.tibia.i22082','count':1,'contents':[]})
+            self.assertEqual(c['activation'],{'track':grim.FLOWERS,'minimum':i,'maximum':i})
+            self.assertTrue(c['requirements']['premium'])
+        trap=next(c for c in worlds if c['key'].endswith('/questpc7-grimvale-deploy-trap'))
+        self.assertEqual(trap['item_on_target'],{'item':'oteryn:item.tibia.i22074','count':1,'replacement':None,'target_replacement':None})
+        afflicted=[o for o in objectives if o['counter'].endswith('/afflicted')]
+        self.assertEqual({o['creature'] for o in afflicted},{'oteryn:creature.'+n for n in ['werewolf','werebear','wereboar']})
+        self.assertTrue(all(o['required']==10 for o in afflicted))
+        self.assertEqual(next(o for o in objectives if o['creature']=='oteryn:creature.werehyaena')['required'],20)
+        self.assertEqual({c['npc'] for c in contacts},{'oteryn:npc.rhargu','oteryn:npc.domizian'})
+
+    def test_real_native_sites_and_once_only_rewards_have_two_earned_travel_directions(self):
+        import questpc7_grimvale_programme as grim
+        import sys
+        sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
+        import world_region_codec as codec
+        worlds,_,_=grim.build(q.ROOT)
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        cache={}
+        for c in worlds:
+            p=c['selector']['position'];x,y,z=p['x'],p['y'],p['floor']
+            path=f'content/world/placements/region-z{-z:02}-x{x//256}-y{y//256}.b3'
+            if path not in cache:cache[path]=codec.decode_region((q.ROOT/path).read_bytes())[3]
+            native=[palette[i]['source_item_id'] for _,cells in cache[path] for tx,ty,_,_,_,items in cells if (tx,ty)==(x,y) for i,depth,_ in items if depth==0]
+            self.assertIn(c['selector']['appearance'],native,c['key'])
+        reward=next(c for c in worlds if c.get('completes'))
+        self.assertEqual(reward['item_reward']['item'],'oteryn:item.tibia.i27565')
+        self.assertEqual(set(reward['achievements']),{'oteryn:achievement/over_the_moon','oteryn:achievement/drama_in_darama'})
+        travel=[c for c in worlds if '/questpc7-grimvale-earned-access-' in c['key']]
+        self.assertEqual(len(travel),2)
+        self.assertTrue(all(c['storage']==[{'track':grim.ACCESS,'minimum':1,'maximum':1,'set':1,'preserve':True}] and c['teleport'] and c['requirements']['premium'] for c in travel))
+
 if __name__=='__main__':
     unittest.main()

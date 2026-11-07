@@ -2898,6 +2898,1481 @@
         "minimum": 3,
         "maximum": 3
       }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-entry",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33328,
+          "y": 31690,
+          "floor": -7
+        },
+        "appearance": 18463,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Investigate five nightshade plots on Grimvale.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-nightshade-0",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33329,
+          "y": 31690,
+          "floor": -7
+        },
+        "appearance": 18464,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33331,
+        "y": 31686,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22082",
+        "count": 1,
+        "contents": []
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+        "minimum": 0,
+        "maximum": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-nightshade-1",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33331,
+          "y": 31687,
+          "floor": -7
+        },
+        "appearance": 486,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33335,
+        "y": 31684,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22082",
+        "count": 1,
+        "contents": []
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+        "minimum": 1,
+        "maximum": 1
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-nightshade-2",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33335,
+          "y": 31685,
+          "floor": -7
+        },
+        "appearance": 18459,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33337,
+        "y": 31682,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22082",
+        "count": 1,
+        "contents": []
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+        "minimum": 2,
+        "maximum": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-nightshade-3",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33338,
+          "y": 31682,
+          "floor": -7
+        },
+        "appearance": 18462,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33341,
+        "y": 31680,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22082",
+        "count": 1,
+        "contents": []
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+        "minimum": 3,
+        "maximum": 3
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-nightshade-4",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33340,
+          "y": 31680,
+          "floor": -7
+        },
+        "appearance": 486,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33332,
+        "y": 31678,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You gather a purple nightshade blossom. Follow the investigation trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22082",
+        "count": 1,
+        "contents": []
+      },
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/flowers",
+        "minimum": 4,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-prepare-trap",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33331,
+          "y": 31678,
+          "floor": -7
+        },
+        "appearance": 18459,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33390,
+        "y": 31543,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/afflicted",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": [],
+        "owned_items": [
+          {
+            "item": "oteryn:item.tibia.i22082",
+            "count": 5
+          }
+        ]
+      },
+      "success_message": "You prepare the silvered trap for Feroxa.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y123.b3:1:sha256:694e5e9f3a6c3678dbb74f0925453b0f25f04100b2b773e808c96c0e24db29a9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i22074",
+        "count": 1,
+        "contents": []
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-deploy-trap",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33389,
+          "y": 31543,
+          "floor": -11
+        },
+        "appearance": 104,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/feroxa",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i22074",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The silvered trap is deployed. Confront Feroxa.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+        "minimum": 2,
+        "maximum": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-feroxa-passage",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33389,
+          "y": 31543,
+          "floor": -11
+        },
+        "appearance": 104,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33166,
+        "y": 31978,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/feroxa",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/sites",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Feroxa is defeated. Trace the curse to Edron.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z11-x130-y123.b3:1:sha256:d2d37319a334a62251391ffdb9901a3ccdadfc4fed047ec06934a0c595436a18",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-survey-edron",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33166,
+          "y": 31977,
+          "floor": -8
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33441,
+        "y": 32052,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/sites",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You investigate the curse in Edron.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y124.b3:1:sha256:a3fdfadb42b96372256f5672fbbcdd4de109501da834741e1c004747af1f7014",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-survey-cormaya",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33441,
+          "y": 32051,
+          "floor": -9
+        },
+        "appearance": 9707,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33184,
+        "y": 32017,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/sites",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/passages",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/bloodback",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You investigate the curse in Cormaya.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-leader-passage-0",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33183,
+          "y": 32017,
+          "floor": -8
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33062,
+        "y": 31893,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/passages",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/bloodback",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/darkfang",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The were-beast leader is defeated.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y125.b3:1:sha256:af1d716e857c9384d6581a8381ddc5592dee7f4103bf3f6f19b41d59aa540337",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-leader-passage-1",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33061,
+          "y": 31893,
+          "floor": -9
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33120,
+        "y": 32005,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/passages",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/darkfang",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/sharpclaw",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The were-beast leader is defeated.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x129-y124.b3:1:sha256:54c43306cd0fa522c1edc7a359fcee0723cd83930a915f901dd7a0b831cfb1f1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-leader-passage-2",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33119,
+          "y": 32005,
+          "floor": -9
+        },
+        "appearance": 1020,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33450,
+        "y": 32037,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/passages",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/sharpclaw",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/black_vixen",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The were-beast leader is defeated.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x129-y125.b3:1:sha256:20c173ef95a7c45b2fd030fc5c5eb1b20f925d445687ebd3ee484befb45baa73",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-leader-passage-3",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33449,
+          "y": 32037,
+          "floor": -9
+        },
+        "appearance": 22355,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33138,
+        "y": 32354,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/passages",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/black_vixen",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The were-beast leader is defeated.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x130-y125.b3:1:sha256:2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-rhargu-passage",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33139,
+          "y": 32354,
+          "floor": -5
+        },
+        "appearance": 4408,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33210,
+        "y": 32359,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/rhargu_passage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The investigation continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-domizian-passage",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33141,
+          "y": 32354,
+          "floor": -5
+        },
+        "appearance": 4397,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33066,
+        "y": 32917,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/domizian_passage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The investigation continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-hyaena-evil-site",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33211,
+          "y": 32359,
+          "floor": -8
+        },
+        "appearance": 19273,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33211,
+        "y": 32362,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/werehyaena",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You destroy the influence at the cursed site. Defeat twenty Werehyaenas.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-hyaena-passage",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33210,
+          "y": 32362,
+          "floor": -8
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33140,
+        "y": 32354,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/werehyaena",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The lairs are cleared. Request Domizian's pardon.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y126.b3:1:sha256:e73385a52c60b93692c715a21e8a7fd1f80bfb7ca6c468a8e43e4cfaccb95e0d",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-oskayaat_mosaic",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33067,
+          "y": 32917,
+          "floor": -7
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32998,
+        "y": 32933,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/oskayaat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You investigate the island's ancient symbols.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x129-y128.b3:1:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-oskayaat_moon",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32999,
+          "y": 32933,
+          "floor": -8
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33001,
+        "y": 32933,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/oskayaat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You investigate the island's ancient symbols.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x128-y128.b3:1:sha256:7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-ritual",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33002,
+          "y": 32933,
+          "floor": -8
+        },
+        "appearance": 38069,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/oskayaat",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/investigation_access",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The ancient ritual stills the local curse. You earn the Foxtail Amulet, Over the Moon and Drama in Darama.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x128-y128.b3:1:sha256:7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ],
+      "completes": true,
+      "item_reward": {
+        "item": "oteryn:item.tibia.i27565",
+        "count": 1,
+        "contents": []
+      },
+      "achievements": [
+        "oteryn:achievement/over_the_moon",
+        "oteryn:achievement/drama_in_darama"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+        "minimum": 11,
+        "maximum": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-earned-access-oskayaat_mosaic",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33067,
+          "y": 32917,
+          "floor": -7
+        },
+        "appearance": 231,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32998,
+        "y": 32933,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/investigation_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Your completed investigation opens the island route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x129-y128.b3:1:sha256:7f335f791c1f5ac47e8f080a22d4428ca1bbacc552c7fd8c2ffdcd039cf17495",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grimvale-earned-access-oskayaat_ritual",
+      "quest": "oteryn:quest.grimvale_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33002,
+          "y": 32933,
+          "floor": -8
+        },
+        "appearance": 38069,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33066,
+        "y": 32917,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/investigation_access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Your completed investigation opens the island route.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x128-y128.b3:1:sha256:7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
     }
   ]
 }

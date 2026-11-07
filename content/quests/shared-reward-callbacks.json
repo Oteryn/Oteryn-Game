@@ -2197,6 +2197,82 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-grimvale-domizian",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.domizian",
+      "keywords": [
+        "pardon"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/oskayaat",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have earned the pardon. Investigate Oskayaat's symbols."
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-grimvale-rhargu",
+      "quest": "oteryn:quest.grimvale_quest",
+      "npc": "oteryn:npc.rhargu",
+      "keywords": [
+        "feud"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Investigate the cursed site in the Hyaena Lairs."
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-hunter-intro",
       "quest": "oteryn:quest.hunter_outfits_quest",
       "npc": "oteryn:npc.elane",

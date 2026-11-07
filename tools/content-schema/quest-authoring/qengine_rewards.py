@@ -309,6 +309,10 @@ def build():
     grave = load_module('questpc7_grave_programme','tools/content-schema/quest-authoring/questpc7_grave_programme.py')
     grave_worlds, grave_objectives = grave.build(ROOT)
     formal_worlds.extend(grave_worlds)
+    grimvale = load_module('questpc7_grimvale_programme','tools/content-schema/quest-authoring/questpc7_grimvale_programme.py')
+    grimvale_worlds, grimvale_objectives, grimvale_callbacks = grimvale.build(ROOT)
+    formal_worlds.extend(grimvale_worlds)
+    callbacks.extend(grimvale_callbacks)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -321,7 +325,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
-    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives})
+    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives})
     generated['content/quests/native-world-callback-bindings.json'] = encoded({'schema':1,'bindings':hoist_bindings})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
@@ -329,7 +333,7 @@ def build():
         messages={}
         citations=[]
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
-            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs[path].decode()))
+            matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs.get(path,b'').decode()))
             origin=path
             if not matches:
                 origin='data/npclib/npc_system/npc_handler.lua'

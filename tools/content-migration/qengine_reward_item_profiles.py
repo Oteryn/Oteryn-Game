@@ -17,7 +17,7 @@ import grizzly_shop_profiles as accepted
 # Reused from qengine2 5a6de28c1. Tereban's fixed eight source materials use
 # the same physical qualifier; XML item type never activates a USE/teleport rule.
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       12599, 12601, 12803, 19083, 19151, 21897, 22516, 28792, 28793, 3560, 5941, 5886} | set(range(11545, 11553))
+       12599, 12601, 12803, 19083, 19151, 21897, 22074, 22082, 22516, 27565, 28792, 28793, 3560, 5941, 5886} | set(range(11545, 11553))
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

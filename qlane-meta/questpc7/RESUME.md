@@ -1,3 +1,44 @@
+# Whole Grimvale compiling WIP — 2026-11-07
+
+Push now under owner15-minute rule. Source compiles;27 authoring tests pass.
+Actual PG18.6 RED42.299587316s before entry implementation. Expanded PG
+RED45.058490792s earns all five real carried22082 blossoms and exact native
+plot travel; Premium entry/harvest refusals pass. Exact current red point:
+missing active native werewolf at first hunt. Diagnose native guardian policy,
+source-cell admission and requested objective; implement missing admission
+from verified source, without weakening guards or seeding subject progress.
+Log /tmp/questpc7-grimvale-story-green3.log; source test fully expanded.
+
+Read-only transport requirements were correctly rejected before PG(11ms, not
+PG evidence). Earned access now uses existing receipt-bearing preserve-state
+transitions so fresh Premium is checked in the normal Root transaction; old
+read-only contract and negative cases remain unchanged. Two earned directions
+and Premium-refusal assertions remain in the whole test.
+After guardians pass, continue all13 stages/35 native deaths, physical trap,
+NPC conversations, atomic final rewards/replay/access. Then strict/generation/
+pin gates and qualification. Seven ACTIVE remain. Keep pushes within15m.
+
+# Whole Grimvale programme RED; integrated, GREEN compiling — 2026-11-07
+
+Contacts fully verified/pushed1eb71ca5e. Actual PG18.6 whole-route
+RED42.299587316s proved missing native entry. Source producer now generates
+24 world interactions,9 native death objectives(total31),2 NPC conversations
+and generic common-library greeting fallback when individual Lua is absent.
+Actual22082 blossoms,22074 closed silvered trap and27565 Foxtail Amulet are
+qualified from pinned XML/client sources by repo item generator. No new SQL.
+Full route test expands to35 native deaths, quota gates, physical items, NPC
+phases, final atomic rewards, exact replay and real earned exit/reentry.
+Compile-only missing FreshAdmissionAuthority import fixed; expanded test is
+55975, /tmp/questpc7-grimvale-story-green2.log. No GREEN yet claimed.
+Two authoring tests check every selected appearance in the actual native B3.
+CONTRACT-NOTES.md records all conservative choices and source boundaries.
+
+Next: resolve actual PG failures, keep compiling checkpoints pushed within15m
+of last12:22 push, then all focused strict/generation/pin gates, qualify and
+push Grimvale. Update world-callback unit's exact lane count47→71; do not
+weaken its negative cases. Full programme producer and test are now product
+source, not only /tmp drafts. Never redo completed contact/migration work.
+
 # Grimvale contact mechanism fully verified — 2026-11-07
 
 Generic pinned recipe placement support is complete. Actual PG18.6
