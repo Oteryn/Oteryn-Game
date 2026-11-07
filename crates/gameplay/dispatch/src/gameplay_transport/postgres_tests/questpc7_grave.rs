@@ -317,9 +317,19 @@ pub(super) async fn exercise(
     assert_eq!(counts, (1, 1));
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(super::fixture::id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert!(completed);
+    let before:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(super::fixture::id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert_eq!(
         use_at(owner, a, p, appearance).await?,
-        UseDisposition::Rejected
+        UseDisposition::NothingToUse,
+        "completed phase removes the selected overlay and preserves native armour behaviour"
+    );
+    let after:String=sqlx::query_scalar("SELECT completed_character_revision::text FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(super::fixture::id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
+    assert_eq!(after, before, "inactive repeat cannot advance completion");
+    let repeated:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE 'oteryn:outfit.hand_of_the_inquisition/quest-grant/%'),(SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/inquisition_s_hand')").fetch_one(&h.pool).await?;
+    assert_eq!(
+        repeated,
+        (1, 1),
+        "inactive repeat creates no additional grants or addons"
     );
     let observed = owner
         .appearance_observation(actor, a.game_session_id, vec![])

@@ -1084,3 +1084,30 @@ one commanded step, retaining each caller's exact destination assertion.
 Then run full GREEN,14 focused gates, mark QUALIFIED/push. Still8 ACTIVE;
 no completion claim, no engine deferral. Keep pushing each green step and
 at most15minutes. No binaries or raw reference copies in this WIP.
+
+## Grave short teleport and inactive-repeat corrections
+
+Compiling product WIP dfcc63f80 is pushed under owner's15-minute rule.
+Reusable walking helper now detects any displacement beyond the commanded
+cardinal step, preserving exact story destination assertions. Actual PG
+54.294620025s then reaches rewards, achievement, completion and exact replay.
+Final expected Rejected was incorrect: phase3→4 intentionally removes the
+selected armour overlay, and native armour returns NothingToUse. Assert that
+exact result plus unchanged completion revision and grant/addon counts; no
+product guard or earlier Premium refusal assertion is weakened. Expanded
+full story green4.log is active; actual appearance command is the final check.
+When GREEN, push this tested step immediately, then14 focused validation gates
+and qualification commit.8 ACTIVE. Last push dfcc63f80; next deadline11:42UTC.
+
+## Grave full native story GREEN; push tested step now
+
+Actual PG18.6 GREEN56.924504294s proves twelve actual grave visits, five Lich
+Knight encounters including BOTH Sirs, Zelos/door access, retained real Cobra
+STEP plus selected USE investigation, Scarlett, atomic base outfit/achievement/
+completion, exact command replay, unchanged grants/revision on inactive repeat
+and real appearance command selecting the earned outfit. No subject seeds.
+Walking helper detects short teleports exactly; no movement/destination check
+relaxed. Native armour after completion returns exact NothingToUse; repeat
+assertions now also verify no extra addons/grants/completion advance.
+Push tested step immediately under owner's rule, then14 focused gates via
+/tmp/questpc7-grave-validation.py. Still8 ACTIVE until all gates pass.

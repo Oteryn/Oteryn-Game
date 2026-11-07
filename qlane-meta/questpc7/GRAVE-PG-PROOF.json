@@ -1,0 +1,46 @@
+{
+  "quest": "oteryn:quest.grave_danger_quest",
+  "test": "questpc7_grave_whole_native_journey_and_reward",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 40.799342316,
+    "log": "/tmp/questpc7-grave-red.log",
+    "reason": "missing complete selected native journey after real PG harness creation"
+  },
+  "pre_pg_authoring_error": {
+    "milliseconds": 7.966186,
+    "reason": "STEP activation is unsupported; not counted as PG evidence. Reuse retained Cobra access STEP followed by phase-specific USE inspection."
+  },
+  "expanded_red": [
+    {
+      "seconds": 54.06573,
+      "log": "/tmp/questpc7-grave-green2.log",
+      "reason": "all12 graves and8 native deaths reached; helper continued after valid short reward teleport"
+    },
+    {
+      "seconds": 54.294620025,
+      "log": "/tmp/questpc7-grave-green3.log",
+      "reason": "rewards/completion/exact replay pass; final inactive overlay returns native NothingToUse, not test-assumed Rejected. Test now asserts exact native result plus unchanged completion revision and grant counts."
+    }
+  ],
+  "green": {
+    "seconds": 56.924504294,
+    "log": "/tmp/questpc7-grave-green4.log",
+    "marker": "QUESTPC7_GRAVE POSTGRES_CASE_COMPLETED duration=56.924504294s success=true",
+    "passed": 1,
+    "failed": 0
+  },
+  "state": "Full story GREEN; required14 focused gates pending, qualification remains ACTIVE.",
+  "assertions": [
+    "fresh native level250/Premium subject; no quest progress seeds",
+    "12 distinct retained physical grave sites, exact native journey destinations",
+    "current Premium refusal at first grave and final reward",
+    "five Lich Knight encounters with both Sirs mandatory",
+    "King Zelos and typed native Zelos-door entitlement earned",
+    "retained Cobra access STEP and flag, selected investigation USE, native Scarlett death",
+    "base Hand of Inquisition, Inquisition's Hand and canonical completion in one transaction",
+    "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
+    "ordinary appearance command selects earned base outfit"
+  ],
+  "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof."
+}

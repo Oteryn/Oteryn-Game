@@ -155,8 +155,16 @@ pub(super) async fn walk(
         } else {
             StepDirection::North
         };
+        let mut expected = p;
+        match d {
+            StepDirection::East => expected.x += 1,
+            StepDirection::West => expected.x -= 1,
+            StepDirection::South => expected.y += 1,
+            StepDirection::North => expected.y -= 1,
+        }
         step(owner, a, d).await?;
-        // Earned passages intentionally end this walk in the next admitted arena.
+        // Every passage displacement, including a short same-floor teleport,
+        // ends this walk; the story separately asserts its exact destination.
         let p = owner
             .runtime
             .lock()
@@ -164,10 +172,7 @@ pub(super) async fn walk(
             .read_actor_position(a.runtime_actor.ok_or("actor")?)
             .map_err(debug)?
             .position();
-        if p.floor != -i16::from(target.floor)
-            || (p.x - i32::from(target.x)).abs() > 8
-            || (p.y - i32::from(target.y)).abs() > 8
-        {
+        if p != expected {
             return Ok(());
         }
     }

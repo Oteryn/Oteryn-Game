@@ -75,6 +75,31 @@ class QuestRewards(unittest.TestCase):
             self.assertTrue(client_flags.get('flags.bank'))
             self.assertFalse(client_flags.get('flags.unpass',False))
 
+    def test_grave_twelve_sites_and_both_sirs_have_exact_native_bindings(self):
+        programme=q.load_module('questpc7_grave_test_programme','tools/content-schema/quest-authoring/questpc7_grave_programme.py')
+        self.assertEqual(len(programme.GRAVES),12)
+        codec=q.load_module('questpc7_grave_test_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        cache={}
+        for name,p,appearance,arrival,_ in programme.GRAVES:
+            path=f'content/world/placements/region-z{-p[2]:02}-x{p[0]//256}-y{p[1]//256}.b3'
+            if path not in cache:
+                region=codec.decode_region((q.ROOT/path).read_bytes())
+                cache[path]={(x,y):(house,[palette[i]['source_item_id'] for i,d,_ in es if d==0]) for _,cells in region[3] for x,y,_,house,_,es in cells}
+            house,items=cache[path][p[:2]]
+            self.assertEqual(house,0,name)
+            self.assertIn(appearance,items,name)
+            self.assertLessEqual(max(abs(arrival[0]-p[0]),abs(arrival[1]-p[1])),1,name)
+        rows=[r for r in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if r['quest']==programme.QUEST]
+        self.assertEqual(len(rows),22)
+        self.assertTrue(all(len(r['storage'])<=8 for r in rows))
+        pair=next(r for r in rows if r['key'].endswith('knight-passage-4'))
+        required={r['track'] for r in pair['storage'] if r.get('preserve') and r['minimum']==1}
+        self.assertTrue({programme.counter(4),programme.counter(5)}<=required)
+        cobra=next(r for r in rows if r['key'].endswith('-cobra'))
+        self.assertEqual(cobra['trigger'],'use')
+        self.assertIn({'track':programme.COBRA,'minimum':1,'maximum':1,'set':1,'preserve':True},cobra['storage'])
+
     def test_hero_selected_bindings_exist_in_unchanged_source_map(self):
         rows=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
         rows=[r for r in rows if r['quest']=='oteryn:quest.hero_of_rathleton_quest']
