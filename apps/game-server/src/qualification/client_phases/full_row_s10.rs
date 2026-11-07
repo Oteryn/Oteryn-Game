@@ -19,6 +19,7 @@
 //! attempted the first NPC speech command that can be reached.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
+use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
 use oteryn_protocol_oteryn::npc_service as wire;
 
 const TRAVEL_NPCS: &[(&str, &str, &str, u64)] = &[
@@ -196,6 +197,15 @@ fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
         .sum())
 }
 
+fn utc_rashid_destination() -> TestResult<RashidDestination> {
+    let elapsed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| format!("step rashid-gate: server clock before epoch: {error}"))?;
+    Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(
+        i64::try_from(elapsed.as_millis())?,
+    ))
+}
+
 async fn earn(
     client: &mut DevClientSession,
     world: &crate::map::boot::BundleWorld,
@@ -304,8 +314,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.step("travel", &travelled);
     let rashid = metadata.npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.rashid").ok_or("step rashid-gate: compiled world omitted today's Rashid placement; need the node boot weekday rotation to retain it")?;
-    if rashid.placements.len() != 1 {
-        return Err(format!("step rashid-gate: observed {} compiled placements; need exactly today's UTC weekday placement", rashid.placements.len()).into());
+    let expected_rashid = utc_rashid_destination()?;
+    let observed_rashid = rashid
+        .placements
+        .iter()
+        .map(|placement| (placement.x, placement.y, placement.floor))
+        .collect::<Vec<_>>();
+    let expected_placement = expected_rashid.placement;
+    let expected_rashid_position = (
+        expected_placement.x,
+        expected_placement.y,
+        expected_placement.floor,
+    );
+    if observed_rashid.as_slice() != [expected_rashid_position] {
+        return Err(format!("step rashid-gate: observed compiled placements={observed_rashid:?}; need UTC {} placement={expected_rashid_position:?}", expected_rashid.city).into());
     }
     let rashid_actor = approach(&mut client, &world, rashid).await?;
     let _ = talk(&mut client, rashid_actor, "hi").await?;
@@ -313,7 +335,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if trade.is_empty() || !shop_opened {
         return Err("step rashid-gate: trade command returned no conversation/shop delta; need weekday destination shop availability".into());
     }
-    row.step("rashid-gate", &trade);
+    row.step(
+        "rashid-gate",
+        (
+            expected_rashid.city,
+            expected_rashid_position,
+            client.world_spatial().actor_position,
+            &trade,
+        ),
+    );
     let saved_position = client.world_spatial().actor_position;
     let saved_gold = carried_gold(&client)?;
     if client.session_mut().logout().await?.result

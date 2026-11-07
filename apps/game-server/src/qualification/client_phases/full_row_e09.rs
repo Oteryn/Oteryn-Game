@@ -233,9 +233,6 @@ async fn acquire(
     count: u32,
 ) -> TestResult {
     use oteryn_dev_client::client_runtime::npc_shop;
-    if units(client, definition) >= u64::from(count) {
-        return Ok(());
-    }
     for npc in &npcs.npcs {
         let Some(path) = route(world, tile(client.world_spatial().actor_position)?, |at| {
             npc.placements
@@ -293,8 +290,14 @@ async fn acquire(
             }) else {
                 break;
             };
-            let missing = u64::from(count).saturating_sub(units(client, definition));
-            let quantity = u32::try_from(missing.div_ceil(u64::from(offer.count)))?;
+            if !count.is_multiple_of(offer.count) {
+                return Err(format!(
+                    "step=buy-mail-items observed=definition-{definition}-offer-count-{}-requested-{count} need=exact-purchased-unit-count",
+                    offer.count
+                )
+                .into());
+            }
+            let quantity = count / offer.count;
             let before = units(client, definition);
             let observed = npc_shop::buy(
                 client.session_mut(),

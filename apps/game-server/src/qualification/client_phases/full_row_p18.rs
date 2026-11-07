@@ -72,7 +72,10 @@ async fn command(
     pair: Option<(NonZeroU64, NonZeroU64)>,
     history_limit: u8,
 ) -> TestResult<Observation> {
-    let before = client.inventory().cloned().ok_or("inventory frame missing")?;
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("inventory frame missing")?;
     let payload = Request {
         operation,
         occurrence,
@@ -127,6 +130,41 @@ fn validate(observation: &Observation) -> TestResult<bool> {
     Ok(applied)
 }
 
+fn validate_history(step: &str, observation: &Observation, applied: &[&Observation]) -> TestResult {
+    if observation.status != CommandStatus::Accepted {
+        return Err(format!(
+            "{step} HISTORY observed status={:?} payload={}",
+            observation.status, observation.body
+        )
+        .into());
+    }
+    let entries = observation.body.as_array().ok_or_else(|| {
+        format!(
+            "{step} HISTORY payload was not an array: {}",
+            observation.body
+        )
+    })?;
+    if entries.len() != applied.len() {
+        return Err(format!(
+            "{step} HISTORY receipt count mismatch expected={} observed={} payload={}",
+            applied.len(),
+            entries.len(),
+            observation.body
+        )
+        .into());
+    }
+    for (entry, expected) in entries.iter().zip(applied.iter().rev()) {
+        if entry["receipt"] != expected.body {
+            return Err(format!(
+                "{step} HISTORY receipt mismatch for {:?}: observed={} expected={}",
+                expected.operation, entry, expected.body
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
 async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -138,13 +176,14 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xd8).await?;
-    let initial = client.inventory().cloned().ok_or("step-1 inventory absent")?;
+    let initial = client
+        .inventory()
+        .cloned()
+        .ok_or("step-1 inventory absent")?;
     let session = client.join_snapshot().game_session_id;
     let pair = handles(&client)?;
     let first_history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    if first_history.status != CommandStatus::Accepted || !first_history.body.is_object() {
-        return Err(format!("step-2 HISTORY observed {first_history:?}").into());
-    }
+    validate_history("step-2", &first_history, &[])?;
 
     let mut applied = Vec::new();
     let operations = [
@@ -173,10 +212,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         observations.push(observed);
     }
     let history = command(&mut client, Operation::QueryHistory, [0; 16], None, 50).await?;
-    if history.status != CommandStatus::Accepted || !history.body.is_object() {
-        return Err(format!("step-6 HISTORY observed {history:?}").into());
-    }
-    let retained = client.inventory().cloned().ok_or("step-6 inventory absent")?;
+    let applied_observations = observations
+        .iter()
+        .filter(|observation| observation.body["applied"] == true)
+        .collect::<Vec<_>>();
+    validate_history("step-6", &history, &applied_observations)?;
+    let retained = client
+        .inventory()
+        .cloned()
+        .ok_or("step-6 inventory absent")?;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xd9).await?;
@@ -185,7 +229,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let fresh_history = command(&mut fresh, Operation::QueryHistory, [0; 16], None, 50).await?;
     logout(&mut fresh).await?;
-    if fresh_history.status != CommandStatus::Accepted || fresh_history.body != history.body {
+    validate_history("step-7", &fresh_history, &applied_observations)?;
+    if fresh_history.body != history.body {
         return Err(format!("step-7 fresh HISTORY mismatch: {fresh_history:?}").into());
     }
     if applied.len() != 7 {

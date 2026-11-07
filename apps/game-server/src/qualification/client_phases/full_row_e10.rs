@@ -16,6 +16,8 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::store as wire;
 
 const CATEGORY: &str = "consumables.exercise-weapons";
+const CURRENCY: &str = "TIBIA_COIN";
+const EXERCISE_WEAPON_PRICES: [u64; 3] = [25, 90, 720];
 
 struct Row {
     started: std::time::Instant,
@@ -36,10 +38,17 @@ impl Row {
 
     fn finish(self, result: TestResult) {
         let (status, detail) = match result {
-            Ok(()) => ("PASS", "catalogue-purchase-refusal-history-relog".to_owned()),
+            Ok(()) => (
+                "PASS",
+                "catalogue-purchase-refusal-history-relog".to_owned(),
+            ),
             Err(error) => (
                 "FAIL",
-                format!("step-{}-observed-{}", self.step, evidence_token(&error.to_string())),
+                format!(
+                    "step-{}-observed-{}",
+                    self.step,
+                    evidence_token(&error.to_string())
+                ),
             ),
         };
         evidence(&format!(
@@ -69,7 +78,12 @@ async fn command(
         .gated_command(capability, kind, payload)
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("reply-status-{:?}-payload-{}-bytes", reply.status, reply.payload.len()).into());
+        return Err(format!(
+            "reply-status-{:?}-payload-{}-bytes",
+            reply.status,
+            reply.payload.len()
+        )
+        .into());
     }
     Ok(reply.payload)
 }
@@ -92,9 +106,16 @@ async fn catalogue(client: &mut DevClientSession) -> TestResult<wire::StoreCatal
     if page.offers.is_empty()
         || page.offers.len() > wire::MAX_STORE_PAGE_ENTRIES
         || page.catalog_revision.is_empty()
-        || page.transferable_coins > page.total_coins
+        || page.transferable_coins != page.total_coins
     {
         return Err(format!("invalid-catalogue-page-{page:?}").into());
+    }
+    if let Some(offer) = page
+        .offers
+        .iter()
+        .find(|offer| offer.currency != CURRENCY || !EXERCISE_WEAPON_PRICES.contains(&offer.price))
+    {
+        return Err(format!("unexpected-catalogue-offer-{offer:?}").into());
     }
     Ok(page)
 }
@@ -112,7 +133,8 @@ async fn purchase(
         &payload,
     )
     .await?;
-    wire::decode_purchase_result(&bytes).map_err(|error| format!("purchase-decode-{error:?}").into())
+    wire::decode_purchase_result(&bytes)
+        .map_err(|error| format!("purchase-decode-{error:?}").into())
 }
 
 async fn history(client: &mut DevClientSession) -> TestResult<wire::StoreHistoryPage> {
@@ -160,6 +182,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("purchase-reply-{accepted:?}").into());
     }
+    let balance_after_purchase = catalogue(&mut client).await?;
+    if page.total_coins.checked_sub(accepted_request.price)
+        != Some(balance_after_purchase.total_coins)
+    {
+        return Err(format!(
+            "purchase-balance-before-{}-price-{}-after-{}",
+            page.total_coins, accepted_request.price, balance_after_purchase.total_coins
+        )
+        .into());
+    }
 
     row.at("stale-quote-refusal");
     let stale_price = offer.price.checked_add(1).ok_or("offer-price-overflow")?;
@@ -177,7 +209,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     row.at("history");
     let first = history(&mut client).await?;
-    assert_history(&first, &accepted_request, accepted.order_id.ok_or("accepted-order-absent")?)?;
+    assert_history(
+        &first,
+        &accepted_request,
+        accepted.order_id.ok_or("accepted-order-absent")?,
+    )?;
 
     row.at("logout");
     logout(&mut client).await?;
@@ -190,7 +226,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.at("relog-history");
     let restored = history(&mut fresh).await?;
-    assert_history(&restored, &accepted_request, accepted.order_id.ok_or("accepted-order-absent")?)?;
+    assert_history(
+        &restored,
+        &accepted_request,
+        accepted.order_id.ok_or("accepted-order-absent")?,
+    )?;
     row.at("final-logout");
     logout(&mut fresh).await
 }
@@ -226,7 +266,11 @@ fn assert_history(
             && entry.currency == request.currency
             && entry.purchased_at_unix_ms > 0
     }) {
-        return Err(format!("accepted-purchase-missing-from-{}-history-rows", page.entries.len()).into());
+        return Err(format!(
+            "accepted-purchase-missing-from-{}-history-rows",
+            page.entries.len()
+        )
+        .into());
     }
     Ok(())
 }
@@ -235,7 +279,8 @@ fn evidence_token(value: &str) -> String {
     value
         .chars()
         .map(|character| {
-            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.' | ':' | '/') {
+            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.' | ':' | '/')
+            {
                 character
             } else {
                 '-'

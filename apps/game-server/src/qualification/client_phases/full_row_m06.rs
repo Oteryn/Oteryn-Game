@@ -19,8 +19,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::world_object::{
-    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
-    encode_item_use_intent,
+    MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -35,13 +34,30 @@ fn doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     let mut found = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
-            let at = TilePos { x: tile.x, y: tile.y, floor: sector.floor };
+            let at = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
-                let Some(action) = item.attrs.action.filter(|action| *action != 0) else { continue };
-                let Ok(ordinal) = u8::try_from(ordinal) else { continue };
-                let Some(appearance) = crate::map::palette_appearance(&manifest.palette[item.palette as usize].key) else { continue };
+                let Some(action) = item.attrs.action.filter(|action| *action != 0) else {
+                    continue;
+                };
+                let Ok(ordinal) = u8::try_from(ordinal) else {
+                    continue;
+                };
+                let Some(appearance) =
+                    crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
+                else {
+                    continue;
+                };
                 if world.facts().doors().at(at) {
-                    found.push(Door { at, ordinal, appearance, action });
+                    found.push(Door {
+                        at,
+                        ordinal,
+                        appearance,
+                        action,
+                    });
                 }
             }
         }
@@ -55,24 +71,39 @@ fn target(world: &BundleWorld, door: Door, revision: u64) -> TestResult<WorldObj
     let key = crate::map::view::placement_key(door.at, door.ordinal).ok_or("M06 placement key")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    Ok(WorldObjectTarget { placement, expected_revision: revision })
+    Ok(WorldObjectTarget {
+        placement,
+        expected_revision: revision,
+    })
 }
 
 async fn approach(client: &mut DevClientSession, world: &BundleWorld, door: Door) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
         at.floor == door.at.floor && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
-    }).ok_or_else(|| format!("M06 no walking route to door {:?}", door.at))?;
+    })
+    .ok_or_else(|| format!("M06 no walking route to door {:?}", door.at))?;
     walk(client, world, &path).await
 }
 
-async fn use_door(client: &mut DevClientSession, world: &BundleWorld, door: Door) -> TestResult<UseDisposition> {
+async fn use_door(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    door: Door,
+) -> TestResult<UseDisposition> {
     let target = target(world, door, 0)?;
     Ok(client.use_object(&target.placement, 0).await?.disposition)
 }
 
-async fn use_carried_on_door(client: &mut DevClientSession, world: &BundleWorld, door: Door) -> TestResult<(CommandStatus, UseDisposition)> {
-    let carried = client.inventory().and_then(|view| view.entries.first()).copied()
+async fn use_carried_on_door(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    door: Door,
+) -> TestResult<(CommandStatus, UseDisposition)> {
+    let carried = client
+        .inventory()
+        .and_then(|view| view.entries.first())
+        .copied()
         .ok_or("M06 player has no ordinarily carried item for key USE-WITH attempt")?;
     let intent = UseIntent {
         target: UseTarget::Item(carried.handle),
@@ -80,24 +111,45 @@ async fn use_carried_on_door(client: &mut DevClientSession, world: &BundleWorld,
         use_with_map_item: Some(MapUseTarget::Object(target(world, door, 0)?)),
         use_with_position: None,
     };
-    let payload = encode_item_use_intent(&intent).map_err(|error| format!("M06 USE-WITH encode: {error:?}"))?;
-    let reply = client.session_mut().gated_command(
-        oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-        oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
-        &payload,
-    ).await?;
+    let payload = encode_item_use_intent(&intent)
+        .map_err(|error| format!("M06 USE-WITH encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
+            oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT,
+            &payload,
+        )
+        .await?;
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("M06 USE-WITH reply {:?}: {error:?}", reply.status))?;
     Ok((reply.status, disposition))
 }
 
+fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
+    client
+        .world_object_overlay()
+        .iter()
+        .find(|entry| entry.placement == placement)
+        .map_or(0, |entry| entry.revision)
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -> TestResult {
     let authored = doors(bytes, world)?;
-    let level = authored.iter().copied().find(|door| door.action > 1000)
+    let level = authored
+        .iter()
+        .copied()
+        .find(|door| door.action > 1000)
         .ok_or("step-3 observed=no-authored-level-door")?;
-    let key = authored.iter().copied().find(|door| door.appearance == 1628)
+    let key = authored
+        .iter()
+        .copied()
+        .find(|door| door.appearance == 1628)
         .ok_or("step-1 observed=no-authored-locked-key-door")?;
-    let quest = authored.iter().copied().find(|door| door.action <= 1000 && door.appearance != 1628)
+    let quest = authored
+        .iter()
+        .copied()
+        .find(|door| door.action <= 1000 && door.appearance != 1628)
         .ok_or("step-4 observed=no-authored-quest-predicate-candidate")?;
     let mut client = connect_world(clients, 0xb6).await?;
 
@@ -105,44 +157,71 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
     let before = client.world_spatial().actor_position;
     let direct = use_door(&mut client, world, key).await?;
     evidence(&format!("M06_CHECK step=1 action=USE observed={direct:?}"));
-    let direct_ok = direct == UseDisposition::Locked && client.world_spatial().actor_position == before;
-    let (status, keyed) = use_carried_on_door(&mut client, world, key).await?;
-    evidence(&format!("M06_CHECK step=2 action=USE-WITH status={status:?} observed={keyed:?}"));
+    let direct_ok =
+        direct == UseDisposition::Locked && client.world_spatial().actor_position == before;
+    let key_placement = target(world, key, 0)?.placement;
+    let key_revision_before = overlay_revision(&client, &key_placement);
+    let keyed = use_carried_on_door(&mut client, world, key).await;
+    let key_revision_after = overlay_revision(&client, &key_placement);
+    evidence(&format!(
+        "M06_CHECK step=2 action=USE-WITH observed={keyed:?} revision={key_revision_before}->{key_revision_after}"
+    ));
 
     approach(&mut client, world, level).await?;
     let level_reply = use_door(&mut client, world, level).await?;
-    evidence(&format!("M06_CHECK step=3 action=USE level_required={} observed={level_reply:?}", level.action.saturating_sub(1000)));
+    evidence(&format!(
+        "M06_CHECK step=3 action=USE-before-progression level_required={} observed={level_reply:?}",
+        level.action.saturating_sub(1000)
+    ));
 
     approach(&mut client, world, quest).await?;
     let quest_reply = use_door(&mut client, world, quest).await?;
-    evidence(&format!("M06_CHECK step=4 action=USE storage_action={} observed={quest_reply:?}", quest.action));
+    evidence(&format!(
+        "M06_CHECK step=4 action=USE-before-transition storage_action={} observed={quest_reply:?}",
+        quest.action
+    ));
 
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
         return Err("step-5 observed=logout-refused".into());
     }
     drop(client);
     let mut fresh = connect_world(clients, 0xb7).await?;
     approach(&mut fresh, world, level).await?;
     let replay = use_door(&mut fresh, world, level).await?;
-    evidence(&format!("M06_CHECK step=5 action=fresh-admission-USE observed={replay:?}"));
+    evidence(&format!(
+        "M06_CHECK step=5 action=fresh-admission-USE observed={replay:?}"
+    ));
     approach(&mut fresh, world, quest).await?;
     let quest_replay = use_door(&mut fresh, world, quest).await?;
-    evidence(&format!("M06_CHECK step=5 action=fresh-admission-quest-USE observed={quest_replay:?}"));
+    evidence(&format!(
+        "M06_CHECK step=5 action=fresh-admission-quest-USE observed={quest_replay:?}"
+    ));
     let _ = fresh.session_mut().logout().await?;
 
     if !direct_ok {
         return Err(format!("step-1 observed={direct:?}; expected Locked without movement").into());
     }
-    if keyed != UseDisposition::Committed {
-        return Err(format!("step-2 observed=status:{status:?}/disposition:{keyed:?}; need an ordinarily obtainable matching key in node-boot content").into());
+    let (status, keyed) = keyed.map_err(|error| {
+        format!("step-2 observed=USE-WITH-not-sent:{error}; expected matching-key commit and map-state revision or explicit refusal")
+    })?;
+    if status != CommandStatus::Accepted
+        || keyed != UseDisposition::Committed
+        || key_revision_after <= key_revision_before
+    {
+        return Err(format!("step-2 observed=status:{status:?}/disposition:{keyed:?}/revision:{key_revision_before}->{key_revision_after}; need an ordinarily obtainable matching key and committed map-state revision").into());
     }
-    if level_reply != UseDisposition::Committed || replay != UseDisposition::Committed {
-        return Err(format!("step-3/5 observed=initial:{level_reply:?}/fresh:{replay:?}; need ordinary reachable progression to required level {}", level.action.saturating_sub(1000)).into());
+    if level_reply != UseDisposition::Locked {
+        return Err(format!("step-3 refusal observed={level_reply:?}; expected Locked before ordinary progression to level {} (the required below-level refusal did not run against a below-level character)", level.action.saturating_sub(1000)).into());
     }
-    if quest_reply != UseDisposition::Committed || quest_replay != UseDisposition::Committed {
-        return Err(format!("step-4/5 observed=initial:{quest_reply:?}/fresh:{quest_replay:?}; need an ordinary reachable quest transition for authored storage action {}", quest.action).into());
+    if quest_reply != UseDisposition::Locked {
+        return Err(format!("step-4 refusal observed={quest_reply:?}; expected Locked before ordinary quest/storage transition {} (the required pre-transition refusal did not run against a pre-transition character)", quest.action).into());
     }
-    Ok(())
+    Err(format!(
+        "step-3 progression observed=initial:{level_reply:?}/fresh:{replay:?}; no ordinary level-earning action was executed before the required committed USE; step-4 transition observed=initial:{quest_reply:?}/fresh:{quest_replay:?}; no ordinary dialogue/combat/item storage transition was executed before the required committed USE"
+    )
+    .into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -150,11 +229,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result: TestResult = async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-        let world = load_world(bytes.clone(), &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+        let world = load_world(
+            bytes.clone(),
+            &pin,
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+        )?;
         journey(clients, &world, &bytes).await
-    }.await;
-    if let Err(error) = &result { evidence(&format!("M06_GAP {error}")); }
-    evidence(&format!("e2e_all scenario=M06.full status={} seconds={:.3}", if result.is_ok() { "PASS" } else { "FAIL" }, started.elapsed().as_secs_f64()));
+    }
+    .await;
+    if let Err(error) = &result {
+        evidence(&format!("M06_GAP {error}"));
+    }
+    evidence(&format!(
+        "e2e_all scenario=M06.full status={} seconds={:.3}",
+        if result.is_ok() { "PASS" } else { "FAIL" },
+        started.elapsed().as_secs_f64()
+    ));
 }
 
 #[cfg(test)]

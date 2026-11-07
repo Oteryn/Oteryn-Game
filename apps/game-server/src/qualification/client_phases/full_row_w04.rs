@@ -158,6 +158,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(175);
     let mut noticed = false;
     let mut running = None;
+    let mut spawned = None;
     let completed = loop {
         if let Some(notice) = take_raid_notice(&mut client) {
             noticed = true;
@@ -175,18 +176,45 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             row.pass("schedule-fired", &format!("state={state:?}"));
             running = Some(state.clone());
         }
-        if running.is_some() && state.active_creatures > 0 {
-            if !row.passed.contains("wave-spawn") {
-                row.pass("wave-spawn", &format!("state={state:?}"));
+        if let Some(started) = &running
+            && state.running
+            && state.committed_steps > started.committed_steps
+            && state.active_creatures > 0
+            && spawned.is_none()
+        {
+            row.pass(
+                "wave-spawn",
+                &format!("started={started:?} advanced={state:?}"),
+            );
+            spawned = Some(state.clone());
+        }
+        if running.is_some() && !state.running {
+            let Some(spawned) = &spawned else {
+                return Err(format!(
+                    "step=wave-spawn observed=raid-completed-without-observed-step-advance:{state:?} server-needed=committed-steps-advance-and-active-creatures"
+                )
+                .into());
+            };
+            if state.raid_key != "raid:badger"
+                || state.committed_steps < spawned.committed_steps
+                || state.active_creatures < spawned.active_creatures
+            {
+                return Err(format!(
+                    "step=completion observed={state:?} wave-spawn={spawned:?} server-needed=stopped-badger-with-retained-progress-and-creatures"
+                )
+                .into());
             }
-            if !state.running {
-                row.pass("completion", &format!("state={state:?}"));
-                break state;
-            }
+            row.pass(
+                "completion",
+                &format!("wave-spawn={spawned:?} completed={state:?}"),
+            );
+            break state;
         }
         if tokio::time::Instant::now() >= deadline {
             let step = if running.is_none() {
                 "schedule-fired"
+            } else if spawned.is_none() {
+                "wave-spawn"
             } else {
                 "completion"
             };

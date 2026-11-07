@@ -80,7 +80,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = tokio::time::timeout(Duration::from_secs(120), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
-        Err(_) => Err("step=deadline_observed=timeout_120s_need=responsive_appearance_or_use_route".into()),
+        Err(_) => Err(
+            "step=deadline_observed=timeout_120s_need=responsive_appearance_or_use_route".into(),
+        ),
     });
 }
 
@@ -167,11 +169,15 @@ async fn outfit_and_refusal(
     let after = snapshot(client)?;
     if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
         || after.catalogue.root_revision != committed
-        || own_binding(client, &after)?.selection_revision != after.catalogue.selected.as_ref().map(|s| s.revision)
+        || own_binding(client, &after)?.selection_revision
+            != after.catalogue.selected.as_ref().map(|s| s.revision)
     {
         return Err(format!("step=outfit-select observed=missing-selection-delta-sequence-{sequence} need=catalogue-and-own-binding-delta").into());
     }
-    row.pass("outfit-select", format!("committed_revision={committed} sequence={sequence}"));
+    row.pass(
+        "outfit-select",
+        format!("committed_revision={committed} sequence={sequence}"),
+    );
 
     let mut forbidden = selection.clone();
     forbidden.addons = option.permitted_addons.saturating_add(1);
@@ -194,11 +200,14 @@ async fn outfit_and_refusal(
     {
         return Err(format!("step=unearned-refusal observed=status-{status:?}-result-{result:?}-state-changed-{} need=rejected-with-unchanged-state", unchanged.catalogue != after.catalogue).into());
     }
-    row.pass("unearned-refusal", format!("rejected sequence={refusal_sequence}"));
+    row.pass(
+        "unearned-refusal",
+        format!("rejected sequence={refusal_sequence}"),
+    );
     Ok(selection)
 }
 
-async fn taming_attempt(row: &mut Row, client: &mut DevClientSession) -> TestResult {
+async fn taming_attempt(client: &mut DevClientSession) -> TestResult {
     let definitions = provisioning::item_index()?;
     let reference = provisioning::item_reference(&definitions, 16251)?;
     let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
@@ -211,25 +220,36 @@ async fn taming_attempt(row: &mut Row, client: &mut DevClientSession) -> TestRes
     let reply = client.session_mut().world_context_use(&payload).await?;
     let (result, _) = world_object::decode_use_result_with_gate(&reply.payload)
         .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
-    if reply.status != CommandStatus::Accepted || result != world_object::UseDisposition::Committed {
-        return Err(format!("step=taming-attempt observed=status-{status:?}-disposition-{result:?}-definition-oteryn:item.tibia.i16251 need=legitimate_player_acquisition_and_authored_target_route", status = reply.status).into());
-    }
-    row.pass("taming-attempt", format!("committed sequence={}", reply.server_sequence));
-    Ok(())
+    Err(format!(
+        "step=taming-attempt observed=status-{status:?}-disposition-{result:?}-sequence-{sequence}-definition-oteryn:item.tibia.i16251 need=legitimate-player-acquisition-authored-creature-and-inventory-creature-message-deltas",
+        status = reply.status,
+        sequence = reply.server_sequence,
+    )
+    .into())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb6).await?;
-    if !client.selected_capabilities().contains(&appearance::CAPABILITY_APPEARANCE_V1) {
-        return Err("step=admission observed=appearance-capability-not-selected need=capability-25".into());
+    if !client
+        .selected_capabilities()
+        .contains(&appearance::CAPABILITY_APPEARANCE_V1)
+    {
+        return Err(
+            "step=admission observed=appearance-capability-not-selected need=capability-25".into(),
+        );
     }
     let selected = outfit_and_refusal(row, &mut client).await?;
     // This is an actual native taming mechanic command. Failure returns only after the server's
     // reply was decoded, and therefore cannot become a canned/source-only verdict.
-    taming_attempt(row, &mut client).await?;
+    taming_attempt(&mut client).await?;
 
     let state = snapshot(&mut client)?;
-    let mount = state.catalogue.mounts.first().ok_or("step=mount-select observed=no-earned-mount")?;
+    let mount = state
+        .catalogue
+        .mounts
+        .first()
+        .cloned()
+        .ok_or("step=mount-select observed=no-earned-mount")?;
     let mut mounted = selected;
     mounted.mount_key = Some(mount.clone());
     let request = appearance::Change {
@@ -240,21 +260,48 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         content_revision: content_revision()?,
     };
     let (status, result, sequence) = change(&mut client, &request).await?;
-    if status != CommandStatus::Accepted || !matches!(result, appearance::ChangeResult::Committed(_)) {
-        return Err(format!("step=mount-select observed=status-{status:?}-result-{result:?} need=tamed-mount-selection").into());
+    let committed = match result {
+        appearance::ChangeResult::Committed(revision) if status == CommandStatus::Accepted => revision,
+        observed => return Err(format!("step=mount-select observed=status-{status:?}-result-{observed:?} need=tamed-mount-selection").into()),
+    };
+    let mounted_state = snapshot(&mut client)?;
+    let mounted_selected = mounted_state.catalogue.selected.as_ref();
+    let mounted_binding = own_binding(&client, &mounted_state)?;
+    if mounted_selected.map(|selected| &selected.selection) != Some(&mounted)
+        || mounted_state.catalogue.root_revision != committed
+        || mounted_selected.map(|selected| selected.revision) != mounted_binding.selection_revision
+        || mounted_binding.root_revision != committed
+    {
+        return Err(format!("step=mount-select observed=missing-catalogue-or-own-binding-delta-sequence-{sequence} need=committed-revision-{committed}-and-selected-mount-{mount}").into());
     }
-    row.pass("mount-select", format!("committed sequence={sequence}"));
-    if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+    let selected_revision = mounted_selected
+        .map(|selected| selected.revision)
+        .ok_or("step=mount-select observed=missing-selected-revision")?;
+    row.pass(
+        "mount-select",
+        format!("committed_revision={committed} selected_revision={selected_revision} sequence={sequence}"),
+    );
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
         return Err("step=fresh-admission observed=logout-refused".into());
     }
     let mut fresh = connect_world(clients, 0xb7).await?;
     let persisted = snapshot(&mut fresh)?;
+    let persisted_binding = own_binding(&fresh, &persisted)?;
     if persisted.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&mounted)
-        || !persisted.catalogue.mounts.contains(mount)
+        || !persisted.catalogue.mounts.contains(&mount)
+        || persisted.catalogue.root_revision != committed
+        || persisted.catalogue.selected.as_ref().map(|s| s.revision) != Some(selected_revision)
+        || persisted_binding.root_revision != committed
+        || persisted_binding.selection_revision != Some(selected_revision)
     {
-        return Err("step=fresh-admission observed=selection-or-unlock-missing need=durable-cosmetic-state".into());
+        return Err(format!("step=fresh-admission observed=selection-unlock-or-revision-mismatch need=mount-{mount}-root-{committed}-selection-{selected_revision}").into());
     }
-    row.pass("fresh-admission", "selected-outfit-addon-mount-and-unlock-persisted");
+    row.pass(
+        "fresh-admission",
+        format!("selected-outfit-addon-mount-and-unlock-persisted root_revision={committed} selected_revision={selected_revision}"),
+    );
     Ok(())
 }
 

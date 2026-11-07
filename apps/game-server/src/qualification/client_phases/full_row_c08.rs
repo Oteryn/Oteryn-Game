@@ -23,7 +23,10 @@ struct Row {
 
 impl Row {
     fn pass(&mut self, detail: impl std::fmt::Debug) {
-        evidence(&format!("C08_CHECK step={} PASS observed={detail:?}", self.step));
+        evidence(&format!(
+            "C08_CHECK step={} PASS observed={detail:?}",
+            self.step
+        ));
         self.step += 1;
     }
     fn finish(self, result: &TestResult) {
@@ -32,23 +35,38 @@ impl Row {
         }
         evidence(&format!(
             "e2e_all scenario=C08.full status={} seconds={:.3}",
-            if result.is_ok() && self.step == 6 { "PASS" } else { "FAIL" },
+            if result.is_ok() && self.step == 6 {
+                "PASS"
+            } else {
+                "FAIL"
+            },
             self.started.elapsed().as_secs_f64()
         ));
     }
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let mut row = Row { started: std::time::Instant::now(), step: 1 };
+    let mut row = Row {
+        started: std::time::Instant::now(),
+        step: 1,
+    };
     let result = tokio::time::timeout(Duration::from_secs(240), journey(&mut row, clients)).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err(format!("timeout waiting for server reply/delta at step {}", row.step).into()),
+        Err(_) => Err(format!(
+            "timeout waiting for server reply/delta at step {}",
+            row.step
+        )
+        .into()),
     };
     row.finish(&result);
 }
 
-async fn next_health_change(client: &mut DevClientSession, before: u32, seconds: u64) -> TestResult<u32> {
+async fn next_health_change(
+    client: &mut DevClientSession,
+    before: u32,
+    seconds: u64,
+) -> TestResult<u32> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
@@ -65,50 +83,127 @@ async fn next_health_change(client: &mut DevClientSession, before: u32, seconds:
     }
 }
 
+async fn assert_health_unchanged(
+    client: &mut DevClientSession,
+    expected: u32,
+    seconds: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
+    loop {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        for event in client.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event
+                && delta.value.health != expected
+            {
+                return Err(format!(
+                    "step dispel: poison health changed during post-cast window: {expected}->{}",
+                    delta.value.health
+                )
+                .into());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            let observed = client
+                .actor_vitals()
+                .ok_or("step dispel: vitals absent after post-cast window")?
+                .health;
+            if observed != expected {
+                return Err(format!(
+                    "step dispel: post-cast health changed without an observed delta: {expected}->{observed}"
+                )
+                .into());
+            }
+            return Ok(());
+        }
+    }
+}
+
 async fn poison(client: &mut DevClientSession) -> TestResult<(u32, u32)> {
     client.session_mut().attack_target(None).await?;
     client.take_events();
-    let before = client.actor_vitals().ok_or("step poison: vitals absent")?.health;
+    let before = client
+        .actor_vitals()
+        .ok_or("step poison: vitals absent")?
+        .health;
     let direct = next_health_change(client, before, 30).await?;
+    if direct >= before {
+        return Err(
+            format!("step poison: first delta was not direct damage: {before}->{direct}").into(),
+        );
+    }
     let delayed = next_health_change(client, direct, 15).await?;
     if delayed >= direct {
-        return Err(format!("step poison: delayed delta was not damage: {direct}->{delayed}").into());
+        return Err(
+            format!("step poison: delayed delta was not damage: {direct}->{delayed}").into(),
+        );
     }
     Ok((direct, delayed))
 }
 
 fn antidote(client: &mut DevClientSession) -> TestResult<(NonZeroU32, u32)> {
     use oteryn_protocol_oteryn::actor_spell_catalog as wire;
-    let snapshot = client.session_mut().gated_snapshot(wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
         .ok_or("step dispel: served spell catalogue snapshot absent")?;
     let entries = wire::decode_catalog(&snapshot.payload)
         .map_err(|error| format!("step dispel: catalogue decode: {error:?}"))?;
-    let entry = entries.iter().find(|entry| entry.words == "exana pox")
+    let entry = entries
+        .iter()
+        .find(|entry| entry.words == "exana pox")
         .ok_or("step dispel: exana pox absent from served catalogue")?;
-    Ok((NonZeroU32::new(entry.cast_index).ok_or("step dispel: zero cast index")?, entry.mana))
+    Ok((
+        NonZeroU32::new(entry.cast_index).ok_or("step dispel: zero cast index")?,
+        entry.mana,
+    ))
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xc8).await?;
-    travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.poison_spider").await?;
+    travel_to_spawn(
+        &mut client,
+        &world,
+        &metadata.spawns,
+        "oteryn:creature.poison_spider",
+    )
+    .await?;
     let damage = poison(&mut client).await?;
     row.pass(damage);
 
     let (spell, mana_cost) = antidote(&mut client)?;
-    let mana = client.actor_vitals().ok_or("step dispel: vitals absent")?.mana;
+    let mana = client
+        .actor_vitals()
+        .ok_or("step dispel: vitals absent")?
+        .mana;
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("step dispel: exana pox reply={cast:?}").into());
     }
-    let mana_after = client.actor_vitals().ok_or("step dispel: post-cast vitals absent")?.mana;
+    let mana_after = client
+        .actor_vitals()
+        .ok_or("step dispel: post-cast vitals absent")?
+        .mana;
     if mana_after.checked_add(mana_cost) != Some(mana) {
-        return Err(format!("step dispel: accepted reply missing mana delta {mana}->{mana_after} cost={mana_cost}").into());
+        return Err(format!(
+            "step dispel: accepted reply missing mana delta {mana}->{mana_after} cost={mana_cost}"
+        )
+        .into());
     }
-    row.pass(cast.disposition);
+    let health_after = client
+        .actor_vitals()
+        .ok_or("step dispel: post-cast vitals absent")?
+        .health;
+    assert_health_unchanged(&mut client, health_after, 15).await?;
+    row.pass((cast.disposition, mana, mana_after, health_after));
 
     let before_refusal = *client.actor_vitals().ok_or("step refusal: vitals absent")?;
     let refusal = client.session_mut().logout().await?;
@@ -124,10 +219,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass(refusal.result);
 
-    let damaged = client.actor_vitals().ok_or("step regeneration: vitals absent")?.health;
+    let damaged = client
+        .actor_vitals()
+        .ok_or("step regeneration: vitals absent")?
+        .health;
     let regenerated = next_health_change(&mut client, damaged, 45).await?;
     if regenerated <= damaged {
-        return Err(format!("step regeneration: expected positive health delta, got {damaged}->{regenerated}").into());
+        return Err(format!(
+            "step regeneration: expected positive health delta, got {damaged}->{regenerated}"
+        )
+        .into());
     }
     row.pass((damaged, regenerated));
 
@@ -142,7 +243,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             _ => return Err(format!("step persistence: unexpected logout reply={reply:?}").into()),
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step persistence: logout remained refused after poison, last={reply:?}").into());
+            return Err(format!(
+                "step persistence: logout remained refused after poison, last={reply:?}"
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(250)).await?;
         client.take_events();
@@ -152,10 +256,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == old_session {
         return Err("step persistence: fresh admission reused game session".into());
     }
-    let admitted = client.actor_vitals().ok_or("step persistence: admitted vitals absent")?.health;
+    let admitted = client
+        .actor_vitals()
+        .ok_or("step persistence: admitted vitals absent")?
+        .health;
     let tick = next_health_change(&mut client, admitted, 15).await?;
     if tick >= admitted {
-        return Err(format!("step persistence: first fresh-admission delta was not durable DoT: {admitted}->{tick}").into());
+        return Err(format!(
+            "step persistence: first fresh-admission delta was not durable DoT: {admitted}->{tick}"
+        )
+        .into());
     }
     row.pass((second, admitted, tick));
     let _ = client.session_mut().logout().await?;

@@ -108,6 +108,13 @@ async fn earn_gold(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
+    let starting_gold = carried_gold(client)?;
+    if starting_gold >= PRICE {
+        return Err(format!(
+            "step-2-combat-required-but-skipped:starting-gold={starting_gold}:required={PRICE}"
+        )
+        .into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
     while carried_gold(client)? < PRICE {
         if tokio::time::Instant::now() >= deadline {
@@ -125,15 +132,29 @@ fn item_handle(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) ->
         .map(|entry| entry.handle).ok_or_else(|| format!("inventory-item-absent:{key}").into())
 }
 
+fn item_count(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<u64> {
+    Ok(client.inventory().ok_or("item-count-inventory-missing")?.entries.iter()
+        .filter(|entry| entry.item_definition_ref == key)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum())
+}
+
 async fn wait_for_item(
     client: &mut oteryn_dev_client::DevClientSession,
     key: NonZeroU32,
+    previous_count: u64,
 ) -> TestResult<items::ItemHandle> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Ok(handle) = item_handle(client, key) { return Ok(handle); }
+        if item_count(client, key)? > previous_count {
+            return item_handle(client, key);
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("purchase-inventory-delta-timeout:item={key}").into());
+            return Err(format!(
+                "purchase-inventory-delta-timeout:item={key}:previous-count={previous_count}:observed-count={}",
+                item_count(client, key)?
+            )
+            .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
@@ -185,6 +206,7 @@ async fn buy_energy_ring(
     let (offer_index, offer) = window.offers.iter().enumerate().find(|(_, offer)| {
         offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == wanted.get()
     }).ok_or("energy-ring-live-offer-missing")?;
+    let previous_count = item_count(client, wanted)?;
     let reply = shop_runtime::buy(client.session_mut(), &npc::NpcTradeIntent {
         npc_actor: actor,
         catalogue_revision: window.open.ok_or("energy-ring-trade-window-closed")?.1,
@@ -196,7 +218,7 @@ async fn buy_energy_ring(
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!("energy-ring-buy-refused:reply={reply:?}:gold={}:price={}", carried_gold(client)?, offer.unit_price).into());
     }
-    wait_for_item(client, wanted).await
+    wait_for_item(client, wanted, previous_count).await
 }
 
 fn equipped_ring(client: &oteryn_dev_client::DevClientSession, active: NonZeroU32) -> TestResult<items::ItemHandle> {
@@ -242,7 +264,11 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 
         let inspected = timed_command(&mut client, timed::TimedAction::Inspect, handle, 0).await?;
         let remaining = inspected.remaining_ms.ok_or("inspect-missing-remaining-ms")?;
-        if inspected.disposition != timed::TimedDisposition::Ok || remaining == 0 || remaining > 600_000 {
+        if inspected.disposition != timed::TimedDisposition::Ok
+            || inspected.revision != 0
+            || remaining == 0
+            || remaining > 600_000
+        {
             return Err(format!("equipped-inspect-invalid:reply={inspected:?}").into());
         }
         let equipment = client.inventory().map(|view| view.equipment.clone()).ok_or("stale-equipment-missing")?;
@@ -253,7 +279,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         }
         let current = timed_command(&mut client, timed::TimedAction::Inspect, handle, inspected.revision).await?;
         if current.disposition != timed::TimedDisposition::Ok { return Err(format!("current-revision-inspect-refused:reply={current:?}").into()); }
-        row.passed(4, "inspect-ok+bounded-budget+stale-refusal+no-delta");
+        row.passed(4, "inspect-ok+revision-zero+bounded-budget+stale-refusal+no-delta+current-revision-ok");
 
         let old_session = client.join_snapshot().game_session_id;
         if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {

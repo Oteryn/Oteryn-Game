@@ -130,12 +130,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let zero = send_cast(&mut client, &book, "exori infir nia").await;
     match zero {
         Ok(outcome)
-            if client.actor_vitals().is_some_and(|v| v.harmony == 0)
-                && (outcome.disposition
-                    == oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Cast
-                    || client.actor_vitals().is_some_and(|v| v.mana == before.mana)) =>
+            if client
+                .actor_vitals()
+                .is_some_and(|after| after.harmony == 0 && after.mana == before.mana) =>
         {
-            row.pass("zero-spender-path", outcome.disposition)
+            row.pass(
+                "zero-spender-path",
+                format!(
+                    "reply={outcome:?} before={before:?} after={:?}",
+                    client.actor_vitals()
+                ),
+            )
         }
         Ok(outcome) => row.fail(
             "zero-spender-path",

@@ -11,7 +11,7 @@
 //!    and the durable offline-training pool (with the first ten minutes excluded from accrual) to
 //!    remain present, then perform an ordinary accepted logout.
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientError, DevClientSession};
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::loop_training::{
     CAPABILITY_TRAINING_V1, COMMAND_TYPE_OFFLINE_TRAINING, TrainingResult,
@@ -33,7 +33,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-180s need=reachable-statue-and-replies".into()),
+        Err(_) => {
+            Err("step=journey observed=timeout-180s need=reachable-statue-and-replies".into())
+        }
     };
     if let Err(error) = &result {
         evidence(&format!("P14_GAP {error}"));
@@ -60,7 +62,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .map(|key| {
             index
                 .definition_ref("Item", key, "definition-r1")
-                .ok_or_else(|| format!("step=locate-statue observed=missing-definition:{key}").into())
+                .ok_or_else(|| {
+                    format!("step=locate-statue observed=missing-definition:{key}").into()
+                })
         })
         .collect::<TestResult<_>>()?;
     let positions = statue_positions(&bytes, &index)?;
@@ -100,11 +104,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let ended = match client.service_liveness(Duration::from_secs(5)).await {
+        Err(DevClientError::Session(error)) => {
+            let observed = error.to_string();
+            if !observed.starts_with("transport I/O failed: ") {
+                return Err(format!(
+                    "step=3-server-ended-session observed={error:?} need=server-closed-connection-after-disposition-3"
+                )
+                .into());
+            }
+            observed
+        }
+        observed => {
+            return Err(format!(
+                "step=3-server-ended-session observed={observed:?} need=server-closed-connection-after-disposition-3"
+            )
+            .into());
+        }
+    };
     evidence(&format!(
-        "P14_CHECK step=3 status=PASS observed=walked,statue-handle-{},disposition-3,revision-{},pool-seconds-{}",
-        statue.get(), selected.revision, selected.pool_seconds
+        "P14_CHECK step=3 status=PASS observed=walked,statue-handle-{},disposition-3,revision-{},pool-seconds-{},server-ended-session-{ended}",
+        statue.get(),
+        selected.revision,
+        selected.pool_seconds,
     ));
-    drop(client);
 
     let mut fresh = connect_world(clients, 0xb5).await?;
     let fresh_pool = general_stats(&mut fresh).await?;
@@ -147,9 +170,11 @@ fn statue_positions(
     let mut positions = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
-            if tile.items.iter().any(|item| {
-                references.contains(&(manifest.palette[item.palette as usize].id + 1))
-            }) {
+            if tile
+                .items
+                .iter()
+                .any(|item| references.contains(&(manifest.palette[item.palette as usize].id + 1)))
+            {
                 positions.push(TilePos {
                     x: tile.x,
                     y: tile.y,

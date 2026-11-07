@@ -94,13 +94,26 @@ async fn use_with_self(
             &payload,
         )
         .await?;
-    if !matches!(
-        reply.status,
-        CommandStatus::Accepted | CommandStatus::Rejected
-    ) {
-        return Err(format!("step={step} observed={reply:?}").into());
+    let disposition = world_object::decode_use_result(&reply.payload)
+        .map_err(|error| format!("step={step} observed=reply-decode-{error:?}"))?;
+    validate_use_reply(step, reply.status, disposition)
+}
+
+fn validate_use_reply(
+    step: &str,
+    status: CommandStatus,
+    disposition: world_object::UseDisposition,
+) -> TestResult {
+    if status != CommandStatus::Accepted || disposition != world_object::UseDisposition::Committed {
+        return Err(format!(
+            "step={step} observed=status:{status:?},disposition:{disposition:?} needed=accepted-committed-with-state-delta"
+        )
+        .into());
     }
-    Ok(())
+    Err(format!(
+        "step={step} observed=status:{status:?},disposition:{disposition:?} needed=observable-furniture-or-fluid-state-delta"
+    )
+    .into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -119,11 +132,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     // Do not short-circuit: even when one owner refuses, every row command is attempted and its
     // observed result is retained for the final runtime-derived verdict.
     let wrapped = wrap_command(&mut client, wrap::Action::Wrap, 0).await;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    let after_wrap = client.inventory().cloned();
     let unwrapped = wrap_command(&mut client, wrap::Action::Unwrap, 0).await;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    let after_unwrap = client.inventory().cloned();
     let destroyed = use_with_self(&mut client, "destroy", handle).await;
     let filled = use_with_self(&mut client, "fluid-fill", handle).await;
     let poured = use_with_self(&mut client, "fluid-pour", handle).await;
+    let before_refused = client.inventory().cloned();
     let refused = wrap_command(&mut client, wrap::Action::Wrap, u64::MAX).await;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    let after_refused = client.inventory().cloned();
     let before_logout = client.inventory().cloned();
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -158,16 +178,36 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         Ok(wrap::Reply::Committed(revision)) => revision,
         other => return Err(format!("step=wrap observed={other:?}").into()),
     };
+    if after_wrap
+        .as_ref()
+        .is_none_or(|inventory| inventory == &initial)
+    {
+        return Err(
+            format!("step=wrap observed=inventory:{after_wrap:?} needed=inventory-delta").into(),
+        );
+    }
     match unwrapped {
         Err(error) => return Err(format!("step=unwrap observed={error}").into()),
         Ok(wrap::Reply::Committed(revision)) if revision > wrap_revision => {}
         other => return Err(format!("step=unwrap observed={other:?}").into()),
+    }
+    if after_unwrap
+        .as_ref()
+        .is_none_or(|inventory| Some(inventory) == after_wrap.as_ref())
+    {
+        return Err(format!(
+            "step=unwrap observed=inventory:{after_unwrap:?} needed=inventory-or-house-custody-delta"
+        )
+        .into());
     }
     destroyed.map_err(|error| format!("step=destroy observed={error}"))?;
     filled.map_err(|error| format!("step=fluid-fill observed={error}"))?;
     poured.map_err(|error| format!("step=fluid-pour observed={error}"))?;
     if !matches!(refused, Ok(wrap::Reply::Refused(wrap::Refusal::Stale))) {
         return Err(format!("step=stale-refusal observed={refused:?}").into());
+    }
+    if after_refused != before_refused {
+        return Err("step=stale-refusal observed=inventory-delta".into());
     }
     if before_logout.as_ref() != Some(&after_relog) {
         return Err("step=fresh-admission observed=inventory-state-changed".into());
@@ -186,5 +226,28 @@ mod tests {
             "MISSING-SERVER"
         );
         assert_eq!(classify("step=wrap observed=Blocked").0, "FAIL");
+    }
+
+    #[test]
+    fn use_steps_require_committed_reply_and_observable_delta() {
+        let rejected = validate_use_reply(
+            "destroy",
+            CommandStatus::Rejected,
+            world_object::UseDisposition::Rejected,
+        );
+        let rejected = rejected.err().map(|error| error.to_string());
+        assert!(
+            rejected.is_some_and(|error| error.contains("step=destroy observed=status:Rejected"))
+        );
+
+        let unverified = validate_use_reply(
+            "fluid-fill",
+            CommandStatus::Accepted,
+            world_object::UseDisposition::Committed,
+        );
+        let unverified = unverified.err().map(|error| error.to_string());
+        assert!(unverified.is_some_and(|error| {
+            error.contains("needed=observable-furniture-or-fluid-state-delta")
+        }));
     }
 }

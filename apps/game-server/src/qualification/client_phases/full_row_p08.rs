@@ -81,14 +81,14 @@ async fn select(
         perk: Some(0),
     }
     .encode();
-    let reply = command(
-        client,
-        wire::COMMAND_TYPE_PROFICIENCY_SELECT_PERK,
-        &payload,
-    )
-    .await?;
-    wire::SelectPerkReply::decode(&reply.payload)
-        .ok_or_else(|| format!("step-select:status={:?} payload={:?}", reply.status, reply.payload).into())
+    let reply = command(client, wire::COMMAND_TYPE_PROFICIENCY_SELECT_PERK, &payload).await?;
+    wire::SelectPerkReply::decode(&reply.payload).ok_or_else(|| {
+        format!(
+            "step-select:status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into()
+    })
 }
 
 async fn modify(
@@ -132,30 +132,61 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         .iter()
         .find_map(|entry| NonZeroU32::new(entry.definition))
         .ok_or("step-catalogue:no admitted weapon definition")?;
+    let catalogue_entry = catalogue
+        .entries
+        .iter()
+        .find(|entry| entry.definition == definition.get())
+        .ok_or("step-1:chosen definition missing from catalogue")?;
+    let browse_row = before
+        .rows
+        .iter()
+        .find(|row| row.definition == definition)
+        .ok_or("step-1:chosen definition missing from browse page")?;
+    let catalogue_level = u8::try_from(
+        catalogue_entry
+            .thresholds
+            .iter()
+            .take_while(|threshold| catalogue_entry.experience >= **threshold)
+            .count(),
+    )?;
+    observed.require(
+        "1-catalogue-browse-agreement",
+        browse_row.name == catalogue_entry.name
+            && browse_row.experience == catalogue_entry.experience
+            && browse_row.level == catalogue_level
+            && browse_row.selections
+                == catalogue_entry
+                    .levels
+                    .iter()
+                    .map(|level| level.selected)
+                    .collect::<Vec<_>>(),
+        (catalogue_entry, browse_row),
+    );
 
     // This is a real player fight. With the node-boot starter's empty hands it also proves that
     // an unrelated kill cannot manufacture a weapon track.
     let combat = async {
-        travel_to_spawn(
-            &mut client,
-            &world,
-            &metadata.spawns,
-            "oteryn:creature.rat",
-        )
-        .await?;
+        travel_to_spawn(&mut client, &world, &metadata.spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(&mut client).await
     }
     .await;
     observed.require("combat", combat.is_ok(), &combat);
     let after_kill = browse(&mut client).await?;
     observed.require(
-        "xp-delta",
+        "2-xp-delta",
         after_kill
             .rows
             .iter()
             .zip(&before.rows)
-            .any(|(after, before)| after.definition == before.definition && after.experience > before.experience),
+            .any(|(after, before)| {
+                after.definition == before.definition && after.experience > before.experience
+            }),
         (&before.rows, &after_kill.rows),
+    );
+    observed.require(
+        "2-equipped-bound-weapon",
+        false,
+        "browse exposes XP but no equipped/bound weapon state; the journey did not equip one",
     );
 
     let selected = select(&mut client, definition).await?;
@@ -163,6 +194,25 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         "select",
         selected.result == wire::SelectPerkResult::Accepted,
         &selected,
+    );
+    let after_select = browse(&mut client).await?;
+    let selected_row = after_select
+        .rows
+        .iter()
+        .find(|row| row.definition == definition);
+    observed.require(
+        "3-selection-browse-delta",
+        selected.result == wire::SelectPerkResult::Accepted
+            && selected.selections.first() == Some(&Some(0))
+            && selected_row.is_some_and(|row| {
+                row.selections == selected.selections
+                    && after_kill
+                        .rows
+                        .iter()
+                        .find(|before| before.definition == definition)
+                        != Some(row)
+            }),
+        (&after_kill, &selected, &after_select),
     );
     let operations = [
         wire::ModificationOperation::Modify { level: 0 },
@@ -172,6 +222,7 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         wire::ModificationOperation::ReshapeChoose { choice: Some(0) },
         wire::ModificationOperation::Clear,
     ];
+    let mut previous_slot: Option<wire::ModifiedSlot> = None;
     for (index, operation) in operations.into_iter().enumerate() {
         let reply = modify(&mut client, definition, operation, index as u64 + 1).await?;
         observed.require(
@@ -179,15 +230,77 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
             reply.result == wire::ModificationResult::Accepted,
             (operation, reply),
         );
+        let transition_matches = match (operation, previous_slot, reply.slot) {
+            (wire::ModificationOperation::Modify { level: 0 }, None, Some(after)) => {
+                after.level == 0 && after.rank == 0 && after.pending_offer.is_none()
+            }
+            (wire::ModificationOperation::RankUp, Some(before), Some(after)) => {
+                after.level == before.level
+                    && after.entry_index == before.entry_index
+                    && after.rank == before.rank + 1
+                    && after.pending_offer.is_none()
+            }
+            (wire::ModificationOperation::OrbRank, Some(before), Some(after)) => {
+                after.level == before.level
+                    && after.entry_index == before.entry_index
+                    && after.rank == 10
+                    && after.pending_offer.is_none()
+            }
+            (wire::ModificationOperation::ReshapeOffer, Some(before), Some(after)) => {
+                after.level == before.level
+                    && after.entry_index == before.entry_index
+                    && after.rank == before.rank
+                    && after.pending_offer.is_some()
+            }
+            (
+                wire::ModificationOperation::ReshapeChoose { choice: Some(0) },
+                Some(before),
+                Some(after),
+            ) => {
+                after.level == before.level
+                    && after.rank == before.rank
+                    && after.entry_index
+                        == before
+                            .pending_offer
+                            .map(|offer| offer[0])
+                            .unwrap_or(u8::MAX)
+                    && after.pending_offer.is_none()
+            }
+            (wire::ModificationOperation::Clear, Some(_), None) => true,
+            _ => false,
+        };
+        observed.require(
+            "4-slot-transition",
+            transition_matches,
+            (operation, previous_slot, reply),
+        );
+        observed.require(
+            "4-cost-delta",
+            false,
+            format!(
+                "operation={operation:?} reply={reply:?}; no player inventory/currency state is exposed by the native proficiency replies"
+            ),
+        );
+        previous_slot = reply.slot;
     }
     let stable = browse(&mut client).await?;
-    let refused = modify(&mut client, definition, wire::ModificationOperation::RankUp, u64::MAX).await?;
+    let refused = modify(
+        &mut client,
+        definition,
+        wire::ModificationOperation::RankUp,
+        u64::MAX,
+    )
+    .await?;
     observed.require(
         "stale-refusal",
         refused.result == wire::ModificationResult::StaleRevision,
         refused,
     );
-    observed.require("refusal-no-delta", browse(&mut client).await? == stable, &stable);
+    observed.require(
+        "refusal-no-delta",
+        browse(&mut client).await? == stable,
+        &stable,
+    );
 
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -201,7 +314,16 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
         fresh.join_snapshot().game_session_id != initial_session,
         fresh.join_snapshot().game_session_id,
     );
-    observed.require("durable-state", browse(&mut fresh).await? == stable, &stable);
+    observed.require(
+        "durable-state",
+        browse(&mut fresh).await? == stable,
+        &stable,
+    );
+    observed.require(
+        "6-shaped-slot-catalyst-durability",
+        false,
+        "fresh browse matches XP/selections, but exposes neither shaped slots nor catalyst inventory consumption",
+    );
     let _ = fresh.session_mut().logout().await;
     Ok(())
 }
@@ -209,11 +331,8 @@ async fn journey(clients: &SeamClients<'_>, observed: &mut Observations) -> Test
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let mut observed = Observations::default();
-    let result = tokio::time::timeout(
-        Duration::from_secs(240),
-        journey(clients, &mut observed),
-    )
-    .await;
+    let result =
+        tokio::time::timeout(Duration::from_secs(240), journey(clients, &mut observed)).await;
     match result {
         Ok(Err(error)) => observed.failures.push(error.to_string()),
         Err(_) => observed.failures.push("step-deadline:timeout".into()),
