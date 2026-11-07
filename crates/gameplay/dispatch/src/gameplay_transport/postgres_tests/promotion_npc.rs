@@ -414,6 +414,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?
             .position();
         let death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 220,
             ))
@@ -476,6 +477,7 @@ fn scenario() -> TestResult {
 
         // A fresh death after lapse must ignore the still-promoted login display.
         let lapsed_death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 221,
             ))

@@ -5,6 +5,7 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+mod v2;
 mod world_totals;
 
 use super::DurabilityRoot;
@@ -737,6 +738,16 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 }
 
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
+    async fn next_v2(&self, family:crate::native_admission_source::public_projections::v2::Family, held:&[String]) -> std::result::Result<Option<crate::native_admission_source::public_projections::v2::Snapshot>,()> {
+        self.root.next_public_v2(self.authority,family,held).await.map_err(|_|())
+    }
+    async fn ack_v2(&self, snapshot:&crate::native_admission_source::public_projections::v2::Snapshot) -> std::result::Result<(),()> {
+        self.root.ack_public_v2(self.authority,snapshot).await.map_err(|_|())
+    }
+    async fn v2_facts(&self,family:crate::native_admission_source::public_projections::v2::Family) -> std::result::Result<crate::native_admission_source::public_projections::v2::Facts,()> {
+        self.root.public_v2_facts(self.authority,family).await.map_err(|_|())
+    }
+
     async fn sample_totals(&self, after: &str) -> std::result::Result<Option<String>, ()> {
         self.root
             .sample_public_world_totals(self.authority, after)

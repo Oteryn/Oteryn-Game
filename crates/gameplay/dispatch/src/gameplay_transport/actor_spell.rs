@@ -1254,6 +1254,33 @@ impl ChannelSpellStates {
         now: crate::foundation::owner_timer::SemanticTimeMicros,
         analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
     ) -> Option<CreatureHit> {
+        self.apply_creature_damage_kind_from(
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            kind,
+            now,
+            analyser_source,
+            None,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing lethal owner inputs plus native historical cause"
+    )]
+    pub(in crate::gameplay_transport) fn apply_creature_damage_kind_from(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        kind: crate::player_lethal::PlayerHitKind,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        analyser_source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource,
+        public_cause: Option<crate::durability::character_death::PublicDeathCause>,
+    ) -> Option<CreatureHit> {
         // Durable unknown outcomes retain their exact player before-state. A bite
         // must not invalidate that state, including another caster's reserved target.
         if self.is_dead(target)
@@ -1284,6 +1311,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
+                public_cause,
                 occurrence: (self.mint_death)()?,
                 cell,
             })
@@ -1617,6 +1645,9 @@ impl ChannelSpellStates {
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now),
                 super::analyser::source(runtime, source),
             );
+            if !replayed && receipt.is_some_and(|receipt| receipt.death.is_some()) {
+                self.capture_native_death_cause(runtime, target, session, source);
+            }
             if !replayed
                 && receipt.is_some()
                 && let Ok(snapshot) = runtime.companion_snapshot(source)
@@ -2290,6 +2321,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
+                public_cause: None,
                 occurrence: (self.mint_death)()?,
                 cell,
             })
@@ -2599,6 +2631,7 @@ impl ChannelSpellStates {
                 actor,
                 session,
                 PlayerDeath {
+                    public_cause: None,
                     occurrence,
                     cell: result.0.position(),
                 },
@@ -2707,5 +2740,50 @@ impl ChannelSpellStates {
             self.source_damage.push(memo)
         }
         Some(receipt)
+    }
+}
+
+/// The current creature slot owns its content identity and historical display.
+/// No analyser race/sprite id or source label is an identity substitute.
+pub(in crate::gameplay_transport) fn native_public_death_cause(
+    runtime: &ChannelRuntimeV1,
+    source: ExactActorRef,
+) -> Option<crate::durability::character_death::PublicDeathCause> {
+    let source = runtime.companion_snapshot(source).ok()?;
+    if let Some(master) = source.state.master {
+        // Donor death.lua resolves player-owned summons to their master. Preserve
+        // classified PvP/privacy: never publish a summon as an anonymous PvE killer.
+        runtime
+            .player_control_facts(master.actor, master.session)
+            .ok()?;
+        return Some(
+            crate::durability::character_death::PublicDeathCause::PlayerSession {
+                game_session_id: *master.session.as_bytes(),
+            },
+        );
+    }
+    Some(
+        crate::durability::character_death::PublicDeathCause::native_creature(
+            &source.state.policy.definition_key,
+            &source.state.policy.display_name,
+        ),
+    )
+}
+impl ChannelSpellStates {
+    fn capture_native_death_cause(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        source: ExactActorRef,
+    ) {
+        if let Some((_, _, death)) = self
+            .deaths
+            .iter_mut()
+            .rev()
+            .find(|(actor, held, _)| *actor == target && *held == session)
+        {
+            death.public_cause = native_public_death_cause(runtime, source);
+        }
     }
 }

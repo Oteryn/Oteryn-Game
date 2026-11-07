@@ -44,6 +44,11 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
             kind: PvpContributorKind::Damage,
             unjustified: true,
         }];
+        request.public_cause = Some(
+            crate::durability::character_death::PublicDeathCause::Player {
+                character_id: id(60),
+            },
+        );
         let mut current = fence(1)?;
         current.character_lease_generation = 2;
         let death = owner
@@ -61,6 +66,19 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
              (SELECT count(*) FROM game_character_pvp_state WHERE white_skull_until >= kill_block_until)",
         ).fetch_one(&harness.pool).await?;
         assert_eq!(consequences, (1, 1, 0, 1));
+        let identity:(String,String,bool)=sqlx::query_as("SELECT k.kind,k.character_id::text,c.pvp FROM game_public_death_killers k JOIN game_public_death_classifications c USING(death_occurrence_id)").fetch_one(&harness.pool).await?;
+        assert_eq!(
+            identity,
+            (
+                "player".into(),
+                sqlx::query_scalar::<_, String>("SELECT encode($1,'hex')::uuid::text")
+                    .bind(id(60).as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?,
+                true
+            )
+        );
+
         let blessings: Vec<String> = sqlx::query_scalar(
             "SELECT blessing_key FROM game_character_blessings \
              WHERE character_id = encode($1,'hex')::uuid ORDER BY blessing_key",

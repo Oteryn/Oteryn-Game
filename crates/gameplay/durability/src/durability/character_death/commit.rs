@@ -376,6 +376,10 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(error));
                     }
+                    public_cause::capture(
+                        &mut tx, request.occurrence,
+                        contributors, request.public_cause,
+                    ).await?;
                     super::super::guild_war::attribute_guild_war_frag_in_transaction(
                         &mut tx,
                         fence.character_id,

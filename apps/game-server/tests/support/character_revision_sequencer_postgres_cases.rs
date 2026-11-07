@@ -807,6 +807,7 @@ fn kill(tag: u8) -> TestResult<BestiaryKillRequest> {
 fn death(tag: u8) -> TestResult<CharacterDeathRequest<2>> {
     let xp = xp_request(tag)?;
     Ok(CharacterDeathRequest {
+        public_cause: None,
         pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         context: xp.context,

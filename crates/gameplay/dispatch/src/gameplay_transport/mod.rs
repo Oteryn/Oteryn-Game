@@ -1594,6 +1594,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        public_cause: death.public_cause,
         pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),

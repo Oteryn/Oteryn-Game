@@ -664,8 +664,23 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
     // does not bind, and the 11 waiting plain records are left out. KEY-1 adds the 21 key
     // variants with a `canary:door-key/` binding. W15b adds 67 native container/text/key recipes and one fully charged
     // plain leaf through the same binder.
+    // ITEMHOLD-Q admitted two exact native container recipes and one full-charge
+    // plain leaf after the original 308-candidate cohort (ITEMHOLD-Q.md,
+    // "Qualification ledger follow-up on ddc18edf8"). Preserve that baseline
+    // and require each newly admitted identity, rather than loosening the count.
+    let itemhold_admissions = [
+        "oteryn:reward-claim.kv.ornamentedshield",
+        "oteryn:reward-claim.kv.powerring2",
+        "oteryn:reward-claim.kv.triangletower",
+    ];
+    for claim in itemhold_admissions {
+        assert!(
+            report.unbound.iter().any(|entry| entry.claim == claim),
+            "missing admitted ITEMHOLD-Q candidate {claim}"
+        );
+    }
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    assert_eq!(candidates, 308);
+    assert_eq!(candidates, 308 + itemhold_admissions.len());
     assert!(report.served.is_empty());
     assert_eq!(
         report

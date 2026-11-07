@@ -19,6 +19,7 @@ pub(super) fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
     });
     let context = harness::context();
     Ok(CharacterDeathRequest {
+        public_cause: None,
         pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         policy: FiniteProgressionPolicy {

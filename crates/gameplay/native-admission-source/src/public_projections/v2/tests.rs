@@ -144,3 +144,59 @@ fn v2_ack_is_version_bound_and_never_accepts_http_status_alone() {
         assert!(decode_response(raw).is_err());
     }
 }
+
+#[test]
+fn v2_family_collection_limits_are_inclusive_and_never_truncated() {
+    let (_, mut deaths) = fixture("character_deaths_player");
+    let Body::Deaths(rows) = &mut deaths.body else {
+        panic!("deaths")
+    };
+    let original = rows[0].clone();
+    *rows = (0..21)
+        .rev()
+        .map(|n| {
+            let mut row = original.clone();
+            row.death_occurrence_id = format!("01934f10-7c08-7001-805b-{n:012x}");
+            row
+        })
+        .collect();
+    assert!(encode(AUTHORITY, &deaths).is_err());
+    let Body::Deaths(rows) = &mut deaths.body else {
+        panic!("deaths")
+    };
+    rows.pop();
+    assert!(encode(AUTHORITY, &deaths).is_ok());
+    let (_, mut guild) = fixture("guild");
+    let Body::Guild(rows) = &mut guild.body else {
+        panic!("guild")
+    };
+    let original = rows[0].members[0].clone();
+    rows[0].members = (0..2001)
+        .map(|n| {
+            let mut member = original.clone();
+            member.character_id = format!("01934f10-7c04-7001-805b-{n:012x}");
+            member
+        })
+        .collect();
+    assert!(encode(AUTHORITY, &guild).is_err());
+    let Body::Guild(rows) = &mut guild.body else {
+        panic!("guild")
+    };
+    rows[0].members.pop();
+    assert!(encode(AUTHORITY, &guild).is_ok());
+    let Body::Guild(rows) = &mut guild.body else {
+        panic!("guild")
+    };
+    rows[0].ranks = (1..=21)
+        .map(|level| Rank {
+            level,
+            name: "Member".into(),
+        })
+        .collect();
+    assert!(encode(AUTHORITY, &guild).is_err());
+    let Body::Guild(rows) = &mut guild.body else {
+        panic!("guild")
+    };
+    rows[0].ranks.pop();
+    assert!(encode(AUTHORITY, &guild).is_ok());
+}

@@ -536,6 +536,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
+                public_cause: super::native_public_death_cause(runtime, source),
                 occurrence: (self.mint_death)()?,
                 cell,
             })

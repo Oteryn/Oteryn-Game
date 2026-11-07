@@ -48,3 +48,34 @@ so it cannot publish fabricated facts before those source paths are installed.
 Recent historical receipts without immutable classification must withhold
 freshness, rather than become guessed PvE or a known empty death history.
 C and D implementation has not started.
+
+### Durable capture checkpoint
+
+Reserved migrations:1350 (V2 heads/outbox/source seam),1351 (Guild/house),1352
+(death capture). Resource ordinals10069–10076: base maximum10018, next10019
+plus lane offset50. No command ids, capability bits or mechanic ordinals added.
+
+The reconciled durable read/ACK/facts adapter and native death capture compile
+with the server (4m08s). Native admission-source tests:151 passed,0 failed,
+0 ignored (0.14s); native all-target clippy passed (16s). Source migration PG
+execution, house catalogue boot integration, delayed-condition cause provenance
+and full changed-crate validation remain pending. This is a compiling WIP.
+
+A's full server tests exposed a pre-existing stale reward-claim golden: actual
+311 versus expected308. ITEMHOLD-Q commit ca5a91b59 admitted exactly
+ornamentedshield, powerring2 and triangletower; see
+`docs/architecture/reviews/ITEMHOLD-Q.md:651–659`. The correction preserves the
+original308 cohort and additionally requires each of those three exact ids.
+No content or binder rule changed. Its focused rerun remains pending.
+
+Pin-refresh, pin-check and architecture-check completed successfully. Physical
+node-boot qualification reached the exact Platform checkout but failed on the
+host prerequisites: Docker buildx tried a read-only home path, and cleanup
+reported `sudo: command not found`. No node-boot PASS is claimed.
+
+The new ADMINAN obligation reserves creature keys player and unknown. Future
+admin player-death analytics uses World × primary killer key × UTC day, with
+all player killers collapsed to player and unattributed causes to unknown;
+private G-4 CharacterIds never enter that admin feed. Known invalid source
+metadata must remain quarantined, not be relabelled unknown. C/D source and
+retention implementation is in progress; no ADMINAN producer is implemented.
