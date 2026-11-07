@@ -26,6 +26,7 @@ use oteryn_protocol_oteryn::{actor_spell_catalog as catalog, logout::LogoutResul
 const WORDS_UP: &str = "exani hur up";
 const WORDS_DOWN: &str = "exani hur down";
 const WORDS_REFUSAL: &str = "exani hur sideways";
+const LEVITATE_CAST_INDEX: u32 = 130;
 
 #[derive(Debug)]
 struct Observation {
@@ -69,6 +70,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     let mut client = connect_world(clients, 0xb1).await?;
     let levitate = levitate_entry(&mut client)?;
+    let player_level = observed_level(&mut client).await?;
     let initial_session = client.join_snapshot().game_session_id;
 
     // Send every mechanic command even when the admitted character is not yet
@@ -90,10 +92,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     let durable = client.join_snapshot().game_session_id != initial_session
         && client.world_spatial().actor_position == before_logout_position
         && client.actor_vitals() == Some(&before_logout_vitals)
-        && after_entry.cast_index == levitate.cast_index
-        && after_entry.available == levitate.available;
+        && after_entry == levitate;
 
-    validate_success(&up, &down, &refusal, durable, &levitate)?;
+    validate_success(&up, &down, &refusal, durable, &levitate, player_level)?;
     Ok("up-down-refusal-and-fresh-admission-frames-validated")
 }
 
@@ -105,10 +106,39 @@ fn levitate_entry(client: &mut DevClientSession) -> TestResult<catalog::SpellCat
     let entries = catalog::decode_catalog(&snapshot.payload).map_err(|error| {
         format!("step=1 observed=malformed-catalog-{error:?} server-needed=valid-catalog-frame")
     })?;
-    entries
+    let entry = entries
         .into_iter()
         .find(|entry| entry.name == "Levitate" && entry.words == "exani hur")
-        .ok_or_else(|| "step=1 observed=levitate-absent server-needed=served-levitate-entry".into())
+        .ok_or("step=1 observed=levitate-absent server-needed=served-levitate-entry")?;
+    if entry.cast_index != LEVITATE_CAST_INDEX {
+        return Err(format!(
+            "step=1 observed=levitate-cast-index-{} expected={LEVITATE_CAST_INDEX} server-needed=canonical-catalogue-cast-index",
+            entry.cast_index
+        )
+        .into());
+    }
+    Ok(entry)
+}
+
+async fn observed_level(client: &mut DevClientSession) -> TestResult<u32> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+
+    let request = [wire::CharacterTab::GeneralStats as u8, 0, 0, 1];
+    let reply = client
+        .session_mut()
+        .gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, 388, &request)
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.payload.len() != 42
+        || reply.payload.first() != Some(&(wire::CharacterTab::GeneralStats as u8))
+        || reply.payload[33] > 1
+    {
+        return Err(format!(
+            "step=1 observed=level-query-{reply:?} server-needed=accepted-valid-general-stats"
+        )
+        .into());
+    }
+    Ok(u32::from_le_bytes(reply.payload[9..13].try_into()?))
 }
 
 async fn observe_speech(
@@ -189,15 +219,21 @@ fn validate_success(
     refusal: &Observation,
     durable: bool,
     levitate: &catalog::SpellCatalogEntry,
+    player_level: u32,
 ) -> TestResult {
+    if levitate.available != (player_level >= levitate.level) {
+        return Err(format!(
+            "step=1 observed=level-{player_level}-required-{}-available-{} server-needed=availability-matching-earned-level-and-vocation-state",
+            levitate.level, levitate.available
+        )
+        .into());
+    }
     for (step, observed) in [("2-up", up), ("3-down", down)] {
-        let floor_changed = observed.before_position.floor != observed.after_position.floor;
         let paid = observed.before.mana.checked_sub(50) == Some(observed.after.mana)
             && observed.before.soul == observed.after.soul;
         if observed.status != CommandStatus::Accepted
             || observed.disposition != ChatDisposition::Ok
             || observed.result_sequence == 0
-            || !floor_changed
             || !paid
             || !observed.saw_vitals_delta
             || !observed.saw_spatial_delta
@@ -208,7 +244,35 @@ fn validate_success(
             ).into());
         }
     }
-    if refusal.before_position != refusal.after_position
+    let one_floor = up.after_position.floor.abs_diff(up.before_position.floor) == 1;
+    let one_tile = (up.after_position.x.abs_diff(up.before_position.x) == 1
+        && up.after_position.y == up.before_position.y)
+        || (up.after_position.y.abs_diff(up.before_position.y) == 1
+            && up.after_position.x == up.before_position.x);
+    if player_level < levitate.level
+        || !levitate.available
+        || !one_floor
+        || !one_tile
+    {
+        return Err(format!(
+            "step=2-up command={} observed={up:?} player_level={player_level} required_level={} catalog_available={} server-needed=eligible-cast-moving-exactly-one-floor-and-one-forward-tile",
+            up.command, levitate.level, levitate.available
+        )
+        .into());
+    }
+    if down.before_position != up.after_position
+        || down.after_position.floor != up.before_position.floor
+    {
+        return Err(format!(
+            "step=3-down command={} original={:?} observed={down:?} server-needed=return-to-original-floor",
+            down.command, up.before_position
+        )
+        .into());
+    }
+    if refusal.status != CommandStatus::Rejected
+        || refusal.disposition != ChatDisposition::Rejected
+        || refusal.result_sequence == 0
+        || refusal.before_position != refusal.after_position
         || refusal.before != refusal.after
         || refusal.saw_vitals_delta
         || refusal.saw_spatial_delta

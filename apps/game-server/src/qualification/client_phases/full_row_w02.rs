@@ -26,11 +26,31 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 
 const BOSS: &str = "oteryn:boss.faceless_bane";
 const LEVERS: &[TilePos] = &[
-    TilePos { x: 33638, y: 32562, floor: -13 },
-    TilePos { x: 33639, y: 32562, floor: -13 },
-    TilePos { x: 33640, y: 32562, floor: -13 },
-    TilePos { x: 33641, y: 32562, floor: -13 },
-    TilePos { x: 33642, y: 32562, floor: -13 },
+    TilePos {
+        x: 33638,
+        y: 32562,
+        floor: -13,
+    },
+    TilePos {
+        x: 33639,
+        y: 32562,
+        floor: -13,
+    },
+    TilePos {
+        x: 33640,
+        y: 32562,
+        floor: -13,
+    },
+    TilePos {
+        x: 33641,
+        y: 32562,
+        floor: -13,
+    },
+    TilePos {
+        x: 33642,
+        y: 32562,
+        floor: -13,
+    },
 ];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -56,7 +76,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 fn evidence_token(value: &str) -> String {
     value
         .chars()
-        .map(|character| if character.is_ascii_alphanumeric() || "-_.:=,;".contains(character) { character } else { '-' })
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || "-_.:=,;".contains(character) {
+                character
+            } else {
+                '-'
+            }
+        })
         .collect()
 }
 
@@ -74,7 +100,9 @@ async fn command(
 async fn cooldowns(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
     let reply = command(client, wire::COMMAND_TYPE_BOSS_COOLDOWNS, &[]).await?;
     if reply.status != CommandStatus::Accepted || reply.payload.is_empty() {
-        return Err(format!("step-1-cooldown-query:observed={reply:?};need=accepted-native-list").into());
+        return Err(
+            format!("step-1-cooldown-query:observed={reply:?};need=accepted-native-list").into(),
+        );
     }
     Ok(reply.payload)
 }
@@ -83,7 +111,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb2).await?;
     let before = cooldowns(&mut client).await?;
     if contains_key(&before, BOSS) {
-        return Err("step-1-fresh-cooldown:observed=faceless-bane-present;need=fresh-node-boot-character".into());
+        return Err(
+            "step-1-fresh-cooldown:observed=faceless-bane-present;need=fresh-node-boot-character"
+                .into(),
+        );
     }
     evidence("W02_CHECK step=1 status=PASS observed=accepted-empty-target-cooldown");
 
@@ -98,15 +129,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let from = tile(client.world_spatial().actor_position)?;
-    if let Some(path) = route(&world, from, |at| LEVERS.contains(&at)) {
-        walk(&mut client, &world, &path).await?;
-    }
+    let path = route(&world, from, |at| LEVERS.contains(&at)).ok_or_else(|| {
+        format!("step-2-lever-walk:observed=no-route-from-{from:?};need=walk-to-authored-lever")
+    })?;
+    walk(&mut client, &world, &path).await?;
+    let lever_position = client.world_spatial().actor_position;
+    let channel_session = client.join_snapshot().game_session_id;
 
-    let payload = wire::encode_boss_key(BOSS)
-        .map_err(|error| format!("step-2-lever-encode:{error:?}"))?;
+    let payload =
+        wire::encode_boss_key(BOSS).map_err(|error| format!("step-2-lever-encode:{error:?}"))?;
     let lever = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
-    let activity = wire::decode_boss_activity_reply(&lever.payload)
-        .map_err(|error| format!("step-2-lever-reply:status={:?};decode={error:?}", lever.status))?;
+    let activity = wire::decode_boss_activity_reply(&lever.payload).map_err(|error| {
+        format!(
+            "step-2-lever-reply:status={:?};decode={error:?}",
+            lever.status
+        )
+    })?;
     match activity {
         wire::BossActivityReply::Refused(reason) => {
             // This is a real server decision after the native command, not a
@@ -117,22 +155,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 lever.status
             ).into());
         }
-        wire::BossActivityReply::Accepted { .. } if lever.status == CommandStatus::Accepted => {
-            evidence("W02_CHECK step=2 status=PASS observed=accepted-instance-handoff");
+        wire::BossActivityReply::Accepted { handoff, .. }
+            if lever.status == CommandStatus::Accepted =>
+        {
+            let instance_session = client.join_snapshot().game_session_id;
+            let instance_position = client.world_spatial().actor_position;
+            if instance_session == channel_session || instance_position == lever_position {
+                return Err(format!(
+                    "step-2-instance-deltas:observed-reply=Accepted-handoff-{handoff:?},session-changed={},position-changed={};need=Instance-scope-and-position-deltas",
+                    instance_session != channel_session,
+                    instance_position != lever_position
+                )
+                .into());
+            }
+            evidence(
+                "W02_CHECK step=2 status=PASS observed=accepted-instance-session-and-position-deltas",
+            );
         }
         other => {
             return Err(format!("step-2-lever-entry:observed-status={:?},reply={other:?};need=accepted-consistent-handoff", lever.status).into());
         }
     }
+    let instance_session = client.join_snapshot().game_session_id;
 
     // The accepted branch must observe a real boss before combat. It deliberately
     // fails with the served frames when the handoff did not publish the entity;
     // it never substitutes a defeated/timeout control command for a player kill.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let target = loop {
-        if let Some(entity) = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
-        }).copied() {
+        if let Some(entity) = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
+            })
+            .copied()
+        {
             break entity;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -141,9 +200,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
+    let attack = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-        return Err(format!("step-3-boss-combat:observed={attack:?};need=accepted-native-attack").into());
+        return Err(
+            format!("step-3-boss-combat:observed={attack:?};need=accepted-native-attack").into(),
+        );
     }
     let defeat_deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     while client
@@ -158,18 +222,64 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     client.session_mut().attack_target(None).await?;
-    evidence("W02_CHECK step=3 status=PASS observed=native-boss-removal");
+    let return_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    while client.join_snapshot().game_session_id == instance_session
+        || client.world_spatial().actor_position != lever_position
+    {
+        if tokio::time::Instant::now() >= return_deadline {
+            return Err(format!(
+                "step-3-return-to-channel:observed-session-changed={},position={:?};need=new-Channel-session-at-{lever_position:?}",
+                client.join_snapshot().game_session_id != instance_session,
+                client.world_spatial().actor_position
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    evidence("W02_CHECK step=3 status=PASS observed=native-boss-removal-and-channel-return");
 
     let after = cooldowns(&mut client).await?;
-    if !contains_key(&after, BOSS) {
-        return Err("step-4-participation:observed=boss-defeated-without-target-cooldown;need=durable-participation-settlement".into());
+    let settled_cooldown = nested_entry(&after, 2, BOSS)?
+        .ok_or("step-4-cooldown:observed=no-target-entry;need=new-durable-boss-deadline")?;
+    let observed_at = varint_field(&after, 1)?;
+    let cooldown_deadline = varint_field(&settled_cooldown, 2)?;
+    if observed_at
+        .zip(cooldown_deadline)
+        .is_none_or(|(now, deadline)| deadline <= now)
+    {
+        return Err(format!(
+            "step-4-cooldown:observed-now={observed_at:?},deadline={cooldown_deadline:?};need=future-boss-deadline"
+        )
+        .into());
+    }
+    let progress = nested_entry(&after, 4, BOSS)?
+        .ok_or("step-4-participation:observed=no-target-progress;need=positive-kill-progress")?;
+    if varint_field(&progress, 2)?.is_none_or(|count| count == 0) {
+        return Err(
+            "step-4-participation:observed=zero-kill-count;need=positive-kill-progress".into(),
+        );
     }
     let chest = command(&mut client, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
-    if chest.status != CommandStatus::Accepted || !contains_key(&chest.payload, BOSS) {
-        return Err(format!("step-4-reward:observed={chest:?};need=personal-participation-reward-group").into());
+    let settled_reward = nested_entry(&chest.payload, 2, BOSS)?;
+    let reward_count = settled_reward
+        .as_ref()
+        .map(|entry| varint_field(entry, 5))
+        .transpose()?
+        .flatten();
+    if chest.status != CommandStatus::Accepted || reward_count.is_none_or(|count| count == 0) {
+        return Err(format!(
+            "step-4-reward:observed={chest:?};need=personal-participation-reward-group"
+        )
+        .into());
     }
+    let settled_reward = settled_reward.ok_or(
+        "step-4-reward:observed=missing-target-group;need=personal-participation-reward-group",
+    )?;
     evidence("W02_CHECK step=4 status=PASS observed=cooldown-and-personal-reward");
 
+    let before_repeat_session = client.join_snapshot().game_session_id;
+    let before_repeat_position = client.world_spatial().actor_position;
     let repeated = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
     let repeated_reply = wire::decode_boss_activity_reply(&repeated.payload)
         .map_err(|error| format!("step-5-cooldown-refusal-decode:{error:?}"))?;
@@ -178,7 +288,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step-5-cooldown-refusal:observed-status={:?},reply={repeated_reply:?};need=typed-Cooldown", repeated.status).into());
     }
-    evidence("W02_CHECK step=5 status=PASS observed=typed-cooldown-refusal");
+    if client.join_snapshot().game_session_id != before_repeat_session
+        || client.world_spatial().actor_position != before_repeat_position
+    {
+        return Err(format!(
+            "step-5-no-second-handoff:observed-reply={repeated_reply:?},session-changed={},position-changed={};need=Cooldown-without-Instance-handoff",
+            client.join_snapshot().game_session_id != before_repeat_session,
+            client.world_spatial().actor_position != before_repeat_position
+        )
+        .into());
+    }
+    evidence(
+        "W02_CHECK step=5 status=PASS observed=typed-cooldown-refusal-without-session-or-position-handoff",
+    );
 
     let old_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
@@ -192,18 +314,97 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let durable = cooldowns(&mut fresh).await?;
     let durable_chest = command(&mut fresh, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
-    if !contains_key(&durable, BOSS)
+    let durable_cooldown = nested_entry(&durable, 2, BOSS)?;
+    let durable_reward = nested_entry(&durable_chest.payload, 2, BOSS)?;
+    if durable_cooldown.as_ref() != Some(&settled_cooldown)
         || durable_chest.status != CommandStatus::Accepted
-        || !contains_key(&durable_chest.payload, BOSS)
+        || durable_reward.as_ref() != Some(&settled_reward)
     {
-        return Err(format!("step-6-durable-recheck:observed-cooldown={},chest={durable_chest:?};need=same-cooldown-and-personal-reward", contains_key(&durable, BOSS)).into());
+        return Err(format!("step-6-durable-recheck:observed-cooldown-match={},reward-match={},chest-status={:?};need=same-deadline-and-personal-reward-group", durable_cooldown.as_ref() == Some(&settled_cooldown), durable_reward.as_ref() == Some(&settled_reward), durable_chest.status).into());
     }
     evidence("W02_CHECK step=6 status=PASS observed=durable-state-after-fresh-admission");
     Ok(())
 }
 
 fn contains_key(payload: &[u8], key: &str) -> bool {
-    payload.windows(key.len()).any(|window| window == key.as_bytes())
+    payload
+        .windows(key.len())
+        .any(|window| window == key.as_bytes())
+}
+
+fn read_varint(payload: &[u8], at: &mut usize) -> TestResult<u64> {
+    let mut value = 0_u64;
+    for shift in (0..70).step_by(7) {
+        let byte = *payload
+            .get(*at)
+            .ok_or("boss-reply:observed=truncated-varint")?;
+        *at += 1;
+        if shift == 63 && byte > 1 {
+            return Err("boss-reply:observed=overflowing-varint".into());
+        }
+        value |= u64::from(byte & 0x7f) << shift;
+        if byte & 0x80 == 0 {
+            return Ok(value);
+        }
+    }
+    Err("boss-reply:observed=overlong-varint".into())
+}
+
+fn nested_entry(payload: &[u8], field: u64, key: &str) -> TestResult<Option<Vec<u8>>> {
+    let mut at = 0;
+    while at < payload.len() {
+        let tag = read_varint(payload, &mut at)?;
+        match tag & 7 {
+            0 => {
+                read_varint(payload, &mut at)?;
+            }
+            2 => {
+                let len = usize::try_from(read_varint(payload, &mut at)?)?;
+                let end = at
+                    .checked_add(len)
+                    .filter(|end| *end <= payload.len())
+                    .ok_or("boss-reply:observed=truncated-field")?;
+                if tag >> 3 == field && contains_key(&payload[at..end], key) {
+                    return Ok(Some(payload[at..end].to_vec()));
+                }
+                at = end;
+            }
+            wire_type => {
+                return Err(
+                    format!("boss-reply:observed=unsupported-wire-type-{wire_type}").into(),
+                );
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn varint_field(payload: &[u8], field: u64) -> TestResult<Option<u64>> {
+    let mut at = 0;
+    while at < payload.len() {
+        let tag = read_varint(payload, &mut at)?;
+        match tag & 7 {
+            0 => {
+                let value = read_varint(payload, &mut at)?;
+                if tag >> 3 == field {
+                    return Ok(Some(value));
+                }
+            }
+            2 => {
+                let len = usize::try_from(read_varint(payload, &mut at)?)?;
+                at = at
+                    .checked_add(len)
+                    .filter(|end| *end <= payload.len())
+                    .ok_or("boss-reply:observed=truncated-field")?;
+            }
+            wire_type => {
+                return Err(
+                    format!("boss-reply:observed=unsupported-wire-type-{wire_type}").into(),
+                );
+            }
+        }
+    }
+    Ok(None)
 }
 
 #[cfg(test)]
@@ -212,7 +413,10 @@ mod tests {
 
     #[test]
     fn evidence_is_one_report_token() {
-        assert_eq!(evidence_token("step 2: Refused(Position)"), "step-2:-Refused-Position-");
+        assert_eq!(
+            evidence_token("step 2: Refused(Position)"),
+            "step-2:-Refused-Position-"
+        );
     }
 
     #[test]

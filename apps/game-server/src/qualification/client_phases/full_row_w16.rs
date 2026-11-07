@@ -27,9 +27,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = tokio::time::timeout(Duration::from_secs(180), journey(clients)).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("PASS", "all-summer-map-and-dialogue-steps-validated".to_owned()),
+        Ok(Ok(())) => (
+            "PASS",
+            "all-summer-map-and-dialogue-steps-validated".to_owned(),
+        ),
         Ok(Err(error)) => ("FAIL", evidence_token(&error.to_string())),
-        Err(_) => ("FAIL", "step=summer-route-observed=deadline-timeout".to_owned()),
+        Err(_) => (
+            "FAIL",
+            "step=summer-route-observed=deadline-timeout".to_owned(),
+        ),
     };
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=W16.full status={status} seconds={:.3} evidence={detail}",
@@ -139,20 +145,26 @@ async fn talk(client: &mut DevClientSession, key: &str, target: ActorPosition) -
     let actor = client
         .world_entities()
         .and_then(|entities| {
-            entities
-                .iter()
-                .find(|entry| {
-                    entry.kind == oteryn_dev_client::EntityKind::Npc
-                        && entry.position == target
-                })
+            entities.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc && entry.position == target
+            })
         })
         .map(|entry| entry.entity)
-        .ok_or_else(|| format!("step=npc-talk-{key} observed=no-visible-npc"))?;
-    for text in if key.ends_with("wayland_smythers") {
-        &["hi", "danger", "name", "bye"][..]
+        .ok_or_else(|| format!("step=3-npc-talk-{key} observed=no-visible-npc"))?;
+    let exchanges = if key.ends_with("wayland_smythers") {
+        &[
+            ("hi", "Wayland Smythers, in service of science"),
+            ("danger", "humble messenger"),
+            ("name", "Wayland Smythers"),
+            ("bye", "do be careful"),
+        ][..]
     } else {
-        &["hi", "bye"][..]
-    } {
+        &[
+            ("hi", "mayor of what remains"),
+            ("bye", "Keep your head down out there"),
+        ][..]
+    };
+    for (text, expected) in exchanges {
         client.take_events();
         let disposition = runtime::talk(
             client.session_mut(),
@@ -163,15 +175,24 @@ async fn talk(client: &mut DevClientSession, key: &str, target: ActorPosition) -
         )
         .await?;
         if disposition != NpcIntentDisposition::Ok {
-            return Err(format!("step=npc-talk-{key}-{text} observed={disposition:?}").into());
+            return Err(format!("step=3-npc-talk-{key}-{text} observed={disposition:?}").into());
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
-        if !client
-            .take_events()
-            .iter()
-            .any(|event| matches!(event, SessionEvent::NpcConversation(_)))
-        {
-            return Err(format!("step=npc-talk-{key}-{text} observed=missing-conversation-delta").into());
+
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let mut lines = Vec::new();
+        while lines.is_empty() && tokio::time::Instant::now() < deadline {
+            client.service_liveness(Duration::from_millis(25)).await?;
+            for event in client.take_events() {
+                if let SessionEvent::NpcConversation(delta) = event {
+                    lines.extend(delta.value.lines);
+                }
+            }
+        }
+        if !lines.iter().any(|line| line.contains(expected)) {
+            return Err(format!(
+                "step=3-npc-talk-{key}-{text} observed=replies-{lines:?}-expected-text-{expected:?}"
+            )
+            .into());
         }
     }
     Ok(())
@@ -181,7 +202,8 @@ fn evidence_token(value: &str) -> String {
     value
         .chars()
         .map(|character| {
-            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '=' | ':' | '.') {
+            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '=' | ':' | '.')
+            {
                 character
             } else {
                 '-'

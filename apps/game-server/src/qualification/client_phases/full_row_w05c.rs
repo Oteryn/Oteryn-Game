@@ -20,7 +20,7 @@
 //! it never changes the clock or claims day/night coverage from source text.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
+use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as npc;
 use std::collections::{BTreeMap, VecDeque};
 
@@ -58,8 +58,8 @@ impl Row {
         if let Err(error) = result {
             self.failure = Some(error.to_string());
         }
-        let complete = self.failure.is_none()
-            && ACTIONS.iter().all(|action| self.passed.contains(action));
+        let complete =
+            self.failure.is_none() && ACTIONS.iter().all(|action| self.passed.contains(action));
         let evidence_suffix = self
             .failure
             .as_deref()
@@ -76,7 +76,13 @@ impl Row {
 fn compact(value: &str) -> String {
     value
         .chars()
-        .map(|character| if character.is_whitespace() { '-' } else { character })
+        .map(|character| {
+            if character.is_whitespace() {
+                '-'
+            } else {
+                character
+            }
+        })
         .collect()
 }
 
@@ -85,7 +91,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = tokio::time::timeout(Duration::from_secs(1_800), journey(&mut row, clients)).await;
     row.finish(match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-1800s need=reachable-weekday-NPC-route".into()),
+        Err(_) => {
+            Err("step=journey observed=timeout-1800s need=reachable-weekday-NPC-route".into())
+        }
     });
 }
 
@@ -151,20 +159,26 @@ async fn approach(
         format!("step=walk-weekday-destination observed=no-route from={start:?} to={target:?} need=player-reachable-Rashid-placement")
     })?;
     walk(client, world, &path).await.map_err(|error| {
-        format!("step=walk-weekday-destination observed={error} need=accepted-STEP-and-spatial-delta")
+        format!(
+            "step=walk-weekday-destination observed={error} need=accepted-STEP-and-spatial-delta"
+        )
     })?;
-    client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Npc
-                    && tile(entry.position).ok() == Some(target)
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or_else(|| {
-            format!("step=observe-weekday-spawn observed=missing-NPC-at-{target:?} need=Rashid-actor-at-today-destination").into()
-        })
+    let entities = client.world_entities().ok_or_else(|| {
+        format!("step=observe-weekday-spawn observed=missing-world-entities need=exactly-one-NPC-at-{target:?}")
+    })?;
+    let mut matches = entities
+        .iter()
+        .filter(|entry| entry.kind == EntityKind::Npc && tile(entry.position).ok() == Some(target));
+    let actor = matches.next().map(|entry| entry.entity);
+    let extra = matches.count();
+    match (actor, extra) {
+        (Some(actor), 0) => Ok(actor),
+        (actor, extra) => Err(format!(
+            "step=observe-weekday-spawn observed=npc-count-{}-at-{target:?} need=exactly-one-Rashid-actor",
+            usize::from(actor.is_some()) + extra
+        )
+        .into()),
+    }
 }
 
 async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> TestResult<u64> {
@@ -184,7 +198,11 @@ async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> Te
     let disposition = npc::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("NPC intent reply: {error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != npc::NpcIntentDisposition::Ok {
-        return Err(format!("step=talk-{text} observed=status:{:?},reply:{disposition:?} need=Accepted/Ok", reply.status).into());
+        return Err(format!(
+            "step=talk-{text} observed=status:{:?},reply:{disposition:?} need=Accepted/Ok",
+            reply.status
+        )
+        .into());
     }
     Ok(reply.server_sequence)
 }
@@ -198,7 +216,10 @@ async fn open_trade(client: &mut DevClientSession, actor: EntityRef) -> TestResu
     let conversation = npc::decode_npc_conversation(&delta.payload)
         .map_err(|error| format!("conversation delta: {error:?}"))?;
     if delta.server_sequence <= greeting || conversation.open.map(|open| open.0) != Some(actor) {
-        return Err(format!("step=talk-hi observed=conversation:{conversation:?} need=new-open-conversation-delta").into());
+        return Err(format!(
+            "step=talk-hi observed=conversation:{conversation:?} need=new-open-conversation-delta"
+        )
+        .into());
     }
     let trade = talk(client, actor, "trade").await?;
     let delta = client
@@ -211,7 +232,10 @@ async fn open_trade(client: &mut DevClientSession, actor: EntityRef) -> TestResu
         || window.open.map(|open| open.0) != Some(actor)
         || window.offers.is_empty()
     {
-        return Err(format!("step=talk-trade observed=window:{window:?} need=new-nonempty-Rashid-trade-window").into());
+        return Err(format!(
+            "step=talk-trade observed=window:{window:?} need=new-nonempty-Rashid-trade-window"
+        )
+        .into());
     }
     Ok(())
 }
@@ -225,10 +249,15 @@ async fn refusal(
     let origin = tile(client.world_spatial().actor_position)?;
     let path = route(world, origin, |at| {
         at.floor == npc_position.floor
-            && at.x.abs_diff(npc_position.x).max(at.y.abs_diff(npc_position.y)) > 4
+            && at
+                .x
+                .abs_diff(npc_position.x)
+                .max(at.y.abs_diff(npc_position.y))
+                > 4
     })
     .ok_or("step=leave-range observed=no-route need=walkable-tile-beyond-NPC-range")?;
     walk(client, world, &path).await?;
+    client.take_events();
     let payload = npc::encode_npc_talk_intent(&npc::NpcTalkIntent {
         npc_actor: actor,
         text: "trade".into(),
@@ -246,6 +275,25 @@ async fn refusal(
         .map_err(|error| format!("refusal reply: {error:?}"))?;
     if reply.status != CommandStatus::Rejected || disposition == npc::NpcIntentDisposition::Ok {
         return Err(format!("step=out-of-range-refusal observed=status:{:?},reply:{disposition:?} need=Rejected/non-Ok", reply.status).into());
+    }
+    client.service_liveness(Duration::from_millis(250)).await?;
+    let trade_window = client
+        .take_events()
+        .into_iter()
+        .find_map(|event| match event {
+            SessionEvent::NpcTradeWindow(delta)
+                if delta.server_sequence > reply.server_sequence =>
+            {
+                Some(delta)
+            }
+            _ => None,
+        });
+    if let Some(delta) = trade_window {
+        return Err(format!(
+            "step=out-of-range-refusal observed=status:{:?},reply:{disposition:?},new-trade-window:{:?} need=Rejected/non-Ok-without-new-trade-window",
+            reply.status, delta.value
+        )
+        .into());
     }
     Ok(())
 }
@@ -305,6 +353,9 @@ mod tests {
 
     #[test]
     fn evidence_is_one_token() {
-        assert_eq!(compact("step=x observed=timed out"), "step=x-observed=timed-out");
+        assert_eq!(
+            compact("step=x observed=timed out"),
+            "step=x-observed=timed-out"
+        );
     }
 }

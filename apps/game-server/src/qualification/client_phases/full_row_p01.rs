@@ -139,6 +139,7 @@ fn race_complete(reply: &CharmProgressionReply, race: NonZeroU32) -> bool {
 
 async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    let before = query(client).await?;
     let here = client.world_spatial().actor_position;
     let target = client
         .world_entities()
@@ -184,15 +185,45 @@ async fn kill_adjacent(client: &mut DevClientSession) -> TestResult {
             .is_some_and(|entities| entities.get(&target.entity).is_none())
         {
             client.session_mut().attack_target(None).await?;
+            let after = query(client).await?;
+            let before_total = before
+                .bestiary
+                .iter()
+                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
+                .ok_or("Bestiary kill total overflow before ATTACK")?;
+            let after_total = after
+                .bestiary
+                .iter()
+                .try_fold(0_u32, |total, entry| total.checked_add(entry.kill_count))
+                .ok_or("Bestiary kill total overflow after ATTACK")?;
+            if before_total
+                .checked_add(1)
+                .ok_or("Bestiary kill total overflow")?
+                != after_total
+                || before
+                    .bestiary
+                    .iter()
+                    .any(|entry| count(&after, entry.race) < entry.kill_count)
+            {
+                return Err(format!(
+                    "target vanished without exactly one credited Bestiary kill: before={:?} after={:?}",
+                    before.bestiary, after.bestiary
+                )
+                .into());
+            }
             evidence(&format!(
-                "P01_CHECK combat-kill PASS target={:?} damaged={damaged}",
+                "P01_CHECK combat-kill PASS target={:?} damaged={damaged} bestiary_delta=1",
                 target.entity
             ));
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
             client.session_mut().attack_target(None).await?;
-            return Err(format!("ATTACK timeout target={:?} damaged={damaged}", target.entity).into());
+            return Err(format!(
+                "ATTACK timeout target={:?} damaged={damaged}",
+                target.entity
+            )
+            .into());
         }
     }
 }
@@ -266,11 +297,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("query has no locked charm with a stage cost")?;
 
     row.at("locked-assignment-refusal");
-    let refused = command(
-        &mut client,
-        CharmProgressionAction::Assign { charm, race },
-    )
-    .await?;
+    let refused = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
     if refused.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::CharmLocked)
         || refused.charms != current.charms
     {
@@ -312,19 +339,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("unlocked charm vanished")?;
     if unlocked.outcome != CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
         || unlocked_state.unlocked_stage != stage + 1
-        || unlocked.charms.charm_points_available + cost
-            != current.charms.charm_points_available
+        || unlocked.charms.charm_points_available + cost != current.charms.charm_points_available
     {
         return Err(format!("UNLOCK reply/delta mismatch: {unlocked:?}").into());
     }
     evidence("P01_CHECK unlock-stage PASS stage-and-balance-delta");
 
     row.at("assign-unlocked");
-    let assigned = command(
-        &mut client,
-        CharmProgressionAction::Assign { charm, race },
-    )
-    .await?;
+    let assigned = command(&mut client, CharmProgressionAction::Assign { charm, race }).await?;
     let assigned_state = &assigned.charms.charms[usize::try_from(charm.get() - 1)?];
     if assigned.outcome != CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
         || assigned_state.assigned_race != Some(race)
@@ -339,7 +361,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     hunt_once(&mut client, &world, &metadata.spawns).await?;
     let after_hook = query(&mut client).await?;
     let after_state = &after_hook.charms.charms[usize::try_from(charm.get() - 1)?];
-    if count(&after_hook, race) < before_hook
+    if count(&after_hook, race) != before_hook.checked_add(1).ok_or("kill count overflow")?
         || after_state.assigned_race != Some(race)
         || !after_state.effect_active
     {

@@ -138,8 +138,11 @@ async fn buy(
     use oteryn_dev_client::client_runtime::npc_shop as shop;
     let definitions = provisioning::item_index()?;
     let reference = provisioning::item_reference(&definitions, id)?;
-    if let Some(item) = inventory_item(client, reference) {
-        return Ok(item);
+    if inventory_item(client, reference).is_some() {
+        return Err(format!(
+            "step=1-buy-{id} observed=reply-not-sent-item-already-present need=live-buy-reply-and-inventory-delta"
+        )
+        .into());
     }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let records: serde_json::Value = serde_json::from_slice(&std::fs::read(
@@ -304,8 +307,31 @@ fn transformed(events: &[SessionEvent], object: Object, after: u16) -> bool {
 }
 
 fn tile_has(tile: &MapTile, object: Object, appearance: u16) -> bool {
-    tile.position == ActorPosition { x: i32::from(object.at.x), y: i32::from(object.at.y), floor: -i16::from(object.at.floor) }
+    tile_at(tile, object.at)
         && tile.items.iter().any(|item| item.appearance_id == appearance && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal, .. } if ordinal == object.ordinal))
+}
+
+fn contains_placement_tile_delta(events: &[SessionEvent], object: Object) -> bool {
+    events.iter().any(|event| match event {
+        SessionEvent::WorldMap(delta) => delta
+            .value
+            .tiles
+            .iter()
+            .any(|tile| tile_at(tile, object.at)),
+        SessionEvent::WorldMapSnapshot(delta) => {
+            delta.value.tiles.iter().any(|tile| tile_at(tile, object.at))
+        }
+        _ => false,
+    })
+}
+
+fn tile_at(tile: &MapTile, position: TilePos) -> bool {
+    tile.position
+        == ActorPosition {
+            x: i32::from(position.x),
+            y: i32::from(position.y),
+            floor: -i16::from(position.floor),
+        }
 }
 
 async fn use_tool(
@@ -393,6 +419,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         use_with_map_item: Some(MapUseTarget::Object(target(&world, pick, 0)?)),
         use_with_position: None,
     };
+    client.take_events();
     let reply = client
         .session_mut()
         .gated_command(
@@ -409,7 +436,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    evidence(&format!("M08_CHECK stale-refusal PASS reply={refusal:?}"));
+    client.service_liveness(Duration::from_millis(250)).await?;
+    let second_events = client.take_events();
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or_else(|| {
+            format!(
+                "step=3-stale-no-second-delta observed=reply:{refusal:?},map-snapshot-missing need=appearance-7236-and-no-object-delta"
+            )
+        })?;
+    let durable_state = snapshot.tiles.iter().any(|tile| tile_has(tile, pick, 7236));
+    let second_delta = contains_placement_tile_delta(&second_events, pick);
+    if second_delta || !durable_state {
+        return Err(format!(
+            "step=3-stale-no-second-delta observed=reply:{refusal:?},object-delta:{second_delta},appearance-7236:{durable_state} need=no-object-delta-and-appearance-7236"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "M08_CHECK stale-refusal PASS reply={refusal:?} object_delta=false appearance=7236"
+    ));
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
