@@ -1058,3 +1058,73 @@ passed, execution 545.989s (1123.039s including compilation). Dryad enter/leave
 reported real-PG completion markers at 62.125s and 62.870s. The strengthened
 reward-bag case passed in 52.05s. PR #3022 was still open at this batch; its two
 main-red fixes are intentionally left to its owner and a subsequent main merge.
+
+## QENGINE2 source profile count and cosmetic voucher repair
+
+Main d34807f5b has 3572 raw native Item profiles; QENGINE2 e7867e061 has
+3619 and is missing six main-owned keys (2949, 12369, 14156, 33330, 44179,
+52732). QENGINE2 adds 53 other keys. The merged raw file correctly has 3625;
+materialization adds the same 38 main-owned update profiles, giving 3663 rather
+than the old main-only pin 3610. No Item data is removed or duplicated.
+All 3572 existing main records compare equal. The update packet's 59 records
+are unchanged (34 overlays plus 25 insertions); only its base SHA is rebound.
+The 13 starting-loadout records are also unchanged, completing the 38 additions.
+
+The 53 QENGINE2 IDs are:
+133, 139, 768, 769, 770, 875, 3244, 3723, 4867, 5886, 5903, 5921, 5924, 5937, 5938, 5939, 5940, 5945, 5947, 6099, 6100, 6101, 6102, 6107, 6126, 7289, 9041, 10198, 10199, 11700, 11701, 12413, 12517, 12599, 12601, 12803, 15698, 16103, 16128, 16129, 16165, 16167, 16242, 20275, 20276, 22516, 22721, 28792, 28793, 30168, 30169, 37002, 37003.
+
+They exactly equal qengine_reward_item_profiles.py's source IDS and generated
+qengine-reward-item-profiles.json records. All 53 qualify speed_bonus=0.
+Source: Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446, items.xml SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearance
+data SHA256 2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.
+The speed test derives the cohort from that generated proof, checks its exact
+53 unique keys and every zero-speed admission, then retains all existing raw
+attribute, equipment-slot and unknown-speed assertions. Native regeneration
+--check reproduces all 43 registered files without changing generated content.
+
+USE 16255 reaches the existing cosmetic owner. Its ContentUnavailable refusal
+came from two equally matching outfit keys (the QENGINE2 primary and retained
+NX-5 alias); it was not routed through Dryad callbacks. Item grants now resolve
+the explicit authored primary target before checking the source look pair and
+existing provenance/kind/addon compatibility. Unqualified ambiguous look lookup
+remains refused. Historical aliases remain compatible; no grant or receipt is
+created by this lookup. Negative wrong-look, missing-grant and wrong-provenance
+checks accompany the production catalogue regression. SRVWLD watersplash and
+QENGINE2 callback execution code remain unchanged.
+
+Plain-main ownership check (bbb3e06d04875fc1e63f024b853194f7580cc875):
+the speed catalogue case passed (96.990s), NX-5 global rules (13.582s),
+NX-5 outfit unlock/replay (132.953s), Atelier split dismantle (94.773s),
+and Forge pending revision refusal (227.200s), all against real PostgreSQL
+where applicable. QENGINE2 voucher/outfit story modules are absent on main;
+zero selected stories are not counted as passes.
+
+Forge's initial fixture rebinds both training and authored cosmetics to
+content-1. Its independently reconstructed successor previously rebound only
+training, so restoring the presentation bytes could not restore the original
+server digest. Initial and successor activation now share the same prepared
+native input; only the deliberate whitespace repack changes identity. All
+three original digest equality assertions and the retained refusal stay intact.
+The additional Atelier runtime/receipt case also passes on plain main
+(14.863s). The reported vector mismatch is in three later coin-proof functions,
+not a different copied assets-guard body: replaying 0314/0624/0744–0747 removes
+Quest cause 18 from coin admission/completion and duplicates the Atelier-only
+Character proof arm because 1000 broadened that arm. The repair keeps that arm
+Atelier-only and reapplies the later Quest coin/receipt extension from its
+migration; exact live function definitions, stored state and receipts remain
+the test's independent equality expectations.
+
+The Royal Costume failure reproduces as a PostgreSQL transaction timeout in
+the original two-second semantic pass (backend log), not a missing grant CHECK.
+The source recipe still consumes exactly 15,000 silver and 12,500 copper tokens,
+leaving the test's extra token of each kind untouched. Reward hand-ins now lock
+locations and check plain-item exclusions in bounded sets, insert every original
+consumption proof before mutation, update stacks together, and remove only
+fully consumed custody entries. All existing BEFORE/deferred guards still run.
+The carried membership projection walks the same bounded UUID tree before
+serializing selected location rows; its guard overload avoids projecting every
+inventory row for each input. The 500/501-node, depth-eight/nine, cycle and
+foreign Character/World/absent-item cases were compared against migration 0268's
+actual function on real PostgreSQL (six fixtures, full/selected equality).
+No deadline, recipe quantity, custody exclusion or receipt assertion was relaxed.

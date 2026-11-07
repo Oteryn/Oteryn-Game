@@ -39,6 +39,15 @@ enum Target {
     Mount { mount_key: String },
 }
 
+/// The authored primary target stays distinct from compatible historical aliases.
+pub(super) fn primary_target(mapping: &GrantMapping) -> EarnedCosmetic<'_> {
+    match &mapping.target {
+        Target::Outfit { outfit_key } => EarnedCosmetic::Outfit(outfit_key),
+        Target::Addon { outfit_key, addon } => EarnedCosmetic::Addon(outfit_key, *addon),
+        Target::Mount { mount_key } => EarnedCosmetic::Mount(mount_key),
+    }
+}
+
 pub(super) fn validate(
     mappings: &[GrantMapping],
     outfits: &[Outfit],
@@ -170,6 +179,26 @@ mod sex_qualified_tests {
             "grant_key": "test", "target": {"kind":"Addon", "outfit_key":outfits[0].key, "addon":1},
             "compatible_provenance":["pinned"], "outfit_aliases":[alias_key]
         }))?;
+        assert!(
+            matches!(primary_target(&mapping), EarnedCosmetic::Addon(key, 1)
+            if key == outfits[0].key)
+        );
+        assert_eq!(
+            resolve(
+                Some(&mapping),
+                "pinned",
+                EarnedCosmetic::Addon(&alias_key, 1)
+            ),
+            UnlockFact::Compatible
+        );
+        assert_eq!(
+            resolve(
+                Some(&mapping),
+                "wrong",
+                EarnedCosmetic::Addon(&alias_key, 1)
+            ),
+            UnlockFact::Incompatible
+        );
         outfits.push(alias);
         let last = outfits.len() - 1;
         assert!(validate(std::slice::from_ref(&mapping), &outfits, &[]).is_ok());
