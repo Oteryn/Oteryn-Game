@@ -18,7 +18,10 @@ fn callback(name: &str) -> TestResult<Callback> {
             env!("CARGO_MANIFEST_DIR"),
             "/../../../tools/content-schema/quest-authoring/samples/qengine-access-test-fixtures.json"
         )))?;
-        let row = fixtures["callbacks"].as_array().ok_or("access fixtures")?.iter()
+        let row = fixtures["callbacks"]
+            .as_array()
+            .ok_or("access fixtures")?
+            .iter()
             .find(|row| row["key"].as_str().is_some_and(|key| key.ends_with(name)))
             .ok_or("item-cycle fixture")?;
         return Ok(serde_json::from_value(row.clone())?);
@@ -243,6 +246,15 @@ pub(super) fn world(
         cells
             .entry((position.floor, position.x, position.y))
             .or_default();
+    }
+    if callback.key == "oteryn:quest-callback/l6-carried-step-fixture"
+        && let Some(recipe) = oteryn_gameplay_quests::quest::carried_step::RECIPES
+            .iter()
+            .find(|recipe| Some(recipe.unique) == callback.selector.unique)
+    {
+        for p in [recipe.success, recipe.missing] {
+            cells.entry((p.floor, p.x, p.y)).or_default();
+        }
     }
     for passage in &callback.passages {
         if passage.replacement == Some(7767) {

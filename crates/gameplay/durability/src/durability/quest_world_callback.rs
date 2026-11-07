@@ -1,4 +1,5 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
+pub mod carried_step;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,

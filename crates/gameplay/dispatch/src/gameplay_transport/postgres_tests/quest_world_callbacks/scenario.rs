@@ -23,10 +23,18 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let small_ruby = name.starts_with("l6-small-ruby");
+    let tomb_native = name.starts_with("l6-tomb-native-");
+    let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
-    let native_crop = small_ruby || mead || spirit;
-    let start = if spirit {
+    let native_crop = small_ruby || mead || spirit || tomb_native;
+    let start = if tomb_native {
+        Position {
+            x: trigger.x,
+            y: trigger.y - 1,
+            ..trigger
+        }
+    } else if spirit {
         Position {
             x: 33081,
             y: 31159,
@@ -71,11 +79,32 @@ fn scenario_case(
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
-    } else if target_swap || reusable_tool || floor_profiles || floor_assembly {
+    } else if target_swap || reusable_tool || floor_profiles || floor_assembly || carried_step {
         "fish-napping-key"
     } else {
         name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if carried_step {
+        // Geometry supplies the exact source UID and both floor endpoints only.
+        // Production callback selection and physical branch ownership are unchanged.
+        let unique = name.rsplit('-').next().ok_or("tomb UID")?.parse::<u16>()?;
+        callback.key = "oteryn:quest-callback/l6-carried-step-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(unique);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.item_on_target = None;
+        callback.storage.clear();
+        callback.passages.clear();
+        callback.offerings.clear();
+        callback.lever = None;
+        callback.effects = Default::default();
+        callback.teleport = stateless_destination;
+        if tomb_native {
+            callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
+        }
+    }
     if name.ends_with("-expiry") {
         callback
             .effects
@@ -154,11 +183,15 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if small_ruby {
+        if small_ruby || carried_step {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
                 .await?;
-            eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+            if carried_step {
+                eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
+            } else {
+                eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+            }
         }
         prepare_current_session(&h)
             .await
@@ -176,7 +209,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if small_ruby {
+        let world = if tomb_native {
+            super::super::l6_tomb_native::world(
+                generation.native_gameplay().ok_or("native Tomb policies")?,
+                callback.selector.unique.ok_or("source UID")?,
+            )?
+        } else if small_ruby {
             super::super::l6_world_pickups::small_ruby(
                 generation
                     .native_gameplay()
@@ -492,6 +530,45 @@ fn scenario_case(
         } else if floor_assembly {
             super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
                 .await?;
+        } else if carried_step {
+            if name.contains("-present-") {
+                let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
+                    .iter()
+                    .find(|r| Some(r.unique) == callback.selector.unique)
+                    .ok_or("source key recipe")?;
+                super::input_item(
+                    &owner,
+                    fence.item_fence(),
+                    &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                        position: trigger,
+                        item: recipe.item.into(),
+                        count: 1,
+                    },
+                    71,
+                    true,
+                )
+                .await?;
+            }
+            super::stateless::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                stateless_destination.ok_or("source branch destination")?,
+            )
+            .await?;
+            super::super::l6_carried_step::verify(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                name.contains("-present-"),
+                tomb_native,
+            )
+            .await?;
         } else if ancient_instruments {
             super::super::l6_ancient_tombs::exercise(
                 &mut owner,

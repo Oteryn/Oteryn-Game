@@ -89,7 +89,13 @@ pub(super) async fn exercise(
         admitted,
         1,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::East),
+        encode_step_intent(
+            if callback.key == "oteryn:quest-callback/l6-native-step-fixture" {
+                StepDirection::South
+            } else {
+                StepDirection::East
+            },
+        ),
     )
     .await?;
     assert_eq!(
@@ -150,7 +156,13 @@ pub(super) async fn exercise(
             admitted,
             1,
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            encode_step_intent(StepDirection::East),
+            encode_step_intent(
+                if callback.key == "oteryn:quest-callback/l6-native-step-fixture" {
+                    StepDirection::South
+                } else {
+                    StepDirection::East
+                },
+            ),
         )
         .await?;
         assert_eq!(

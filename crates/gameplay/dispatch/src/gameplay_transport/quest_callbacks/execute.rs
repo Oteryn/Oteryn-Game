@@ -214,22 +214,141 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(3) => Some(MovementFacing::West),
             Some(_) => return UseDisposition::Rejected,
         };
-        let teleport = match callback.teleport {
-            Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
-                runtime,
-                self.movement_cells,
-                actor,
-                session,
-                expected,
-                local(to),
-                blocked,
-                &closed,
-                facing.or(callback.effects.facing.map(super::effects::facing)),
-            ) {
-                Ok(proof) => Some(proof),
-                Err(_) => return UseDisposition::NotPossible,
-            },
-            None => None,
+        let teleport = if let Some(recipe) =
+            oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key)
+        {
+            let (Some(fence), QuestCause::Step(command), Some(native)) = (
+                fence,
+                cause,
+                self.active_generation.and_then(|g| g.native_gameplay()),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            let prepare = |to| {
+                crate::map::floor::prepare_quest_callback_teleport_facing(
+                    runtime,
+                    self.movement_cells,
+                    actor,
+                    session,
+                    expected,
+                    local(to),
+                    blocked,
+                    &closed,
+                    facing.or(callback.effects.facing.map(super::effects::facing)),
+                )
+                .ok()
+            };
+            let success = prepare(recipe.success);
+            let missing = prepare(recipe.missing);
+            let context = QuestWorldContext {
+                map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                content_revision: format!(
+                    "sha256:{}",
+                    hex(&runtime.content_pin().server_artifact_digest())
+                ),
+                placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+                reset_epoch: self.reset_epoch,
+                actor_placement: actor.placement_identity(),
+                movement_revision: expected.revision(),
+            };
+            let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                let pending = records.entry(session).or_insert(Pending {
+                    actor,
+                    session,
+                    expected,
+                    callback: callback.key.clone(),
+                    key,
+                    revision: expected_revision,
+                    cause,
+                    origin: None,
+                    context: None,
+                    ingress_settled: false,
+                });
+                pending.context.get_or_insert(context).clone()
+            } else {
+                return UseDisposition::Rejected;
+            };
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            // Reserve the same projection capacity before any physical debit.
+            // The original post-prepare check below remains for ordinary callbacks.
+            if !map
+                .facts
+                .quest_callback_capacity(key, expected_revision, callback.passages.len())
+            {
+                if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                    records.remove(&session);
+                }
+                return UseDisposition::Exhausted;
+            }
+            let result = self
+                .root
+                .commit_carried_step(
+                    permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command,
+                    native,
+                    crate::durability::quest_world_callback::carried_step::Request {
+                        recipe: recipe.key.into(),
+                        placement,
+                        object_revision: expected_revision,
+                        context,
+                        success_prepared: success.is_some(),
+                        missing_prepared: missing.is_some(),
+                    },
+                )
+                .await;
+            match result {
+                Ok(Some(receipt)) => {
+                    #[cfg(test)]
+                    if self
+                        .states
+                        .quest_callbacks
+                        .interrupt_after_commit
+                        .swap(false, std::sync::atomic::Ordering::AcqRel)
+                    {
+                        return UseDisposition::Rejected;
+                    }
+                    let selected = if receipt.consumed { success } else { missing };
+                    let Some(selected) = selected else {
+                        return UseDisposition::NotPossible;
+                    };
+                    Some(selected)
+                }
+                Ok(None) => {
+                    if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
+                        records.remove(&session);
+                    }
+                    return UseDisposition::Rejected;
+                }
+                Err(error) => {
+                    #[cfg(test)]
+                    eprintln!("CARRIED_STEP commit error: {error:?}");
+                    #[cfg(not(test))]
+                    let _ = error;
+                    return UseDisposition::Rejected;
+                }
+            }
+        } else {
+            match callback.teleport {
+                Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
+                    runtime,
+                    self.movement_cells,
+                    actor,
+                    session,
+                    expected,
+                    local(to),
+                    blocked,
+                    &closed,
+                    facing.or(callback.effects.facing.map(super::effects::facing)),
+                ) {
+                    Ok(proof) => Some(proof),
+                    Err(_) => return UseDisposition::NotPossible,
+                },
+                None => None,
+            }
         };
         if !map
             .facts
