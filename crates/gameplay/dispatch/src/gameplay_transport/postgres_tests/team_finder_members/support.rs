@@ -8,8 +8,8 @@ use crate::gameplay_transport::{
         FreshAdmissionAuthority, IDLE_LIVENESS, SessionContinuity, serve_admitted,
     },
     last_position::AdmissionPosition,
-    team_finder_members::SessionTeamFinderView,
     tcp_tls::{read_frame, write_frame},
+    team_finder_members::SessionTeamFinderView,
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_protocol_oteryn::{
@@ -141,10 +141,9 @@ async fn busy_holder<T>(
     use std::task::Poll;
     let pass = owner.root.try_issue_semantic_pass()?;
     let mut command = std::pin::pin!(command);
-    let waiting = std::future::poll_fn(|context| {
-        Poll::Ready(command.as_mut().poll(context).is_pending())
-    })
-    .await;
+    let waiting =
+        std::future::poll_fn(|context| Poll::Ready(command.as_mut().poll(context).is_pending()))
+            .await;
     assert!(waiting, "a busy holder must wait rather than disconnect");
     pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
     tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, command)
@@ -291,6 +290,28 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             &AdmissionPosition::FirstLogin,
             fence,
         ));
+    }
+    if case == Case::Cancel {
+        // A concurrent owner work item owns the Root lane. A cold bootstrap
+        // must queue before touching its holder. Cancel this probe while queued
+        // so all three real connections below still exercise cold startup.
+        let _lane = owner
+            .spell_lane
+            .acquire()
+            .await
+            .map_err(|_| "probe lane unresolved")?;
+        assert!(h.root.is_ready());
+        let mut probe = admitted[2];
+        let mut preparing = std::pin::pin!(owner.prepare_quest_callback_resume(&mut probe));
+        let pending = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(preparing.as_mut().poll(cx).is_pending())
+        })
+        .await;
+        assert!(pending, "cold bootstrap must wait for the owner lane");
+        assert!(
+            h.root.is_ready(),
+            "cold bootstrap borrowed the Root outside the owner lane"
+        );
     }
     if case == Case::Logout {
         // Exercise both Team Finder dispatch owners against a known busy holder;
