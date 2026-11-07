@@ -958,6 +958,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-15",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.eathar",
+          "name": "Eathar",
+          "expected": {
+            "x": 33536,
+            "y": 31948,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.edmund",
+          "name": "Edmund",
+          "expected": {
+            "x": 33624,
+            "y": 31894,
+            "floor": -4
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elbert",
+          "name": "Elbert",
+          "expected": {
+            "x": 33585,
+            "y": 31988,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.elliott",
+          "name": "Elliott",
+          "expected": {
+            "x": 33570,
+            "y": 31908,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.emily",
+          "name": "Emily",
+          "expected": {
+            "x": 33612,
+            "y": 31886,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.fillias",
+          "name": "Fillias",
+          "expected": {
+            "x": 33573,
+            "y": 31926,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
