@@ -1489,7 +1489,12 @@
     "round": "L7",
     "qualified_components": [
       "Native academy levers, atomic phase-specific actor/NPC evacuation, source item relocation, Rat death and once-only unlit Torch",
-      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass"
+      "Real PostgreSQL RED/GREEN; strict checks, generated content and pin reproducibility pass",
+      {
+        "scope": "Production guardian default-build regression and native Torch PG revalidation",
+        "proof": "default-build-validation.json",
+        "duration_seconds": 86.680714483
+      }
     ],
     "first_unqualified_stage": null,
     "qualification_scope": "Complete finite chosen Oteryn recipe with retained native selectors and documented conservative source mappings; see bridge-routes-validation.json"

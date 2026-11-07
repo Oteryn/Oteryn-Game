@@ -1,3 +1,14 @@
+# Production guardian default-build regression fixed
+
+The existing corpse-pin query is now available to production guardian cleanup.
+Default cargo check first reproduced E0599, then passed. Changed-crate strict
+Clippy, native generator40files, pin refresh and fmt pass. Native Torch passed
+actual PostgreSQL again (see default-build-validation.json for exact marker,
+duration and proof hashes). No quest qualification count changes:14of23,9remain.
+Mystery of the Valley mandatory Lai introduction is the active next slice;
+its authored NPC executor/access/Premium/replay tests are being implemented.
+No remaining entry is deferred to another lane for engine support.
+
 # Restart convergence checkpoint
 
 Current branch adopts a03597c06 without rewriting earlier history. Its complete
