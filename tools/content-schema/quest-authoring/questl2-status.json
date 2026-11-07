@@ -1292,8 +1292,33 @@
     },
     {
       "title": "Steal From Thieves",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_delivery_batch_steal_from_thieves_full_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 3.086206271,
+            "result": "complete source hand-in binding absent"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-steal",
+            "duration_seconds": 77.171317588,
+            "passed": 1,
+            "failed": 0
+          },
+          "proves": [
+            "Actual Ahmet mission issuance",
+            "Native chest refuses with all 20 backpack slots occupied and no bag or progress change",
+            "Moving one non-stackable filler to a nested backpack allows exactly one quest bag",
+            "Final hand-in refuses atomically when the consumed input frees only one of two required output slots",
+            "Freeing another slot permits exact bag consumption and 100 gold plus 100 brown mushrooms",
+            "Completed native chest refuses another bag"
+          ],
+          "sources": "CONTRACT-NOTES.md: Ahmet118-159 SHA7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797; actions_steal_from_thieves.lua4-16 SHAcf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+          "postgres_log": "/tmp/l2-delivery-green7.log"
+        }
+      ]
     },
     {
       "title": "The Ape City",
@@ -2525,7 +2550,9 @@
       "rerun_status": "Three full journeys running; previous red points remain unqualified until they complete.",
       "authoring_tests_passed": 50,
       "lane_authoring_log": "/tmp/l2-equipment-authoring.log",
-      "shared_authoring_log": "/tmp/l2-equipment-qengine-tests.log"
+      "shared_authoring_log": "/tmp/l2-equipment-qengine-tests.log",
+      "steal_full_journey_passed": true,
+      "remaining": "Troll full journey running; final clippy and world pin verification pending."
     }
   },
   "cross_lane_inspection": {
