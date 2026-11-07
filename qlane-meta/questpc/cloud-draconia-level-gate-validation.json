@@ -1,0 +1,102 @@
+{
+  "scope": "Exact native Draconia level25 door binding and source-derived closed/open profiles through production USE",
+  "red": [
+    {
+      "level": 26,
+      "duration_seconds": 44.672601624,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "level": 24,
+      "duration_seconds": 44.183665835,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "level": 25,
+      "duration_seconds": 44.31227731,
+      "postgres": "18.6",
+      "result": "RED"
+    }
+  ],
+  "green": [
+    {
+      "level": 26,
+      "duration_seconds": 46.58575383,
+      "postgres": "18.6",
+      "result": "GREEN"
+    },
+    {
+      "level": 24,
+      "duration_seconds": 45.905986975,
+      "postgres": "18.6",
+      "result": "GREEN"
+    },
+    {
+      "level": 25,
+      "duration_seconds": 45.779121602,
+      "postgres": "18.6",
+      "result": "GREEN"
+    }
+  ],
+  "red_harness_seconds": 133.17,
+  "green_harness_seconds": 138.28,
+  "red_cause": "Production ItemReference gap for the native level-door profiles; three real PostgreSQL probes before the profile and source-binding fix.",
+  "source_url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/door_level.lua#L16-L23",
+  "source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "native_selector": {
+    "position": [
+      32804,
+      31583,
+      2
+    ],
+    "item": 5102,
+    "action": 1025
+  },
+  "profiles_added": [
+    5102,
+    5103
+  ],
+  "previous_native_profiles_preserved": true,
+  "checks": {
+    "cargo_check": "PASS 1m20s",
+    "clippy_all_targets_all_features_D_warnings": "PASS 3m35s",
+    "fmt": "PASS",
+    "source_bindings_units": "PASS 5/5 0.05s",
+    "native_profile_units": "PASS 2/2 0.124s",
+    "source_capture_and_profile_generation": "PASS",
+    "spell_registration_generation": "PASS 40 outputs",
+    "pins": "PASS unchanged world digest; refreshed inputs digest07c1872b44ee4043cdb655bc57217a4507e84d48726b1e0cf929d7f078dd07b1"
+  },
+  "world_digest": "bb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c",
+  "proof_boundary": "Fixture initial canonical actor facts are24/25/26; actual admitted transport/owner evaluates the source-bound door. This does not certify XP gains or the entire quest.",
+  "logs": [
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-red.log",
+      "sha256": "e5a0ee9479e61cfc9806b0fbdda23471d15300114f434997414f4f42e2558048"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-green.log",
+      "sha256": "7aa988f31d3b83bb7d1018e61dce3548a910f84f4fdd19379f4556bf460c9219"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-check.log",
+      "sha256": "aefd3c71d5f7e6034c68384e89134013f2868a5b3464566dc58cbaf1210988db"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-clippy.log",
+      "sha256": "847dde8880ef8c557594f9c83e1f7c37ca3aace9fae9e8cb8bfc5e8c768dedc0"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-world-unit.log",
+      "sha256": "5ff957287a03b54f63d43a502546f804c97a5b8f8513198e18adc5beae399a97"
+    },
+    {
+      "path": "qlane-meta/questpc/cloud-draconia-level-gate-pins.log",
+      "sha256": "55e46c059ec3f19384512544cd861e9d340b8ffd449d95206485f841d56e6079"
+    }
+  ],
+  "whole_title_promoted": false,
+  "review": "No remaining findings. No old profile record changed; stock5/door10/callback9 source captures and binary maps unchanged."
+}

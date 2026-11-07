@@ -3546,7 +3546,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Dragonlord source greeting exchange/flag/replay/final-write rollback+recovery now native PG/strict GREEN. Pressure gates/portals, source stock3003-3007, ten key doors and four lever/exit anchors already GREEN. Finish level25 gate, Elathriel paid3012 and shared skeletonstock3001, then compose complete source route."
+      "active_batch": "Level25 native gate now PG/strict GREEN at24/25/26 with key-bypass/replay/close proof. Dragonlord, pressure/portal, stock3003-3007, ten key doors and lever/exit anchors already GREEN. Implement Elathriel exact paid3012 and shared skeletonstock3001, then compose complete source route."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8579,9 +8579,9 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": "Draconia Dragonlord greeting exchange and reviewed native NPC placement",
-    "validation": "qlane-meta/questpc/cloud-dragonlord-validation.json",
+    "scope": "Draconia exact native level25 gate and profiles5102/5103",
     "status": "GREEN",
+    "validation": "qlane-meta/questpc/cloud-draconia-level-gate-validation.json",
     "whole_title_promoted": false
   },
   "continuation": {
@@ -9639,5 +9639,12 @@
     "pg_cases": 3,
     "pg_selected_duration_seconds": 255.022765273,
     "postgres": "18.6"
+  },
+  "cloud_draconia_level_gate": {
+    "status": "GREEN",
+    "postgres": "18.6",
+    "cases": 3,
+    "duration_seconds": 138.28,
+    "validation": "qlane-meta/questpc/cloud-draconia-level-gate-validation.json"
   }
 }

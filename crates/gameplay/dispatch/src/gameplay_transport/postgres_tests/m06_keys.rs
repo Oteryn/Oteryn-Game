@@ -73,7 +73,41 @@ pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestRes
     })
 }
 
+#[test]
+fn draconia_native_level_gate_below_25() -> TestResult {
+    source_level_gate(24)
+}
+#[test]
+fn draconia_native_level_gate_exact_25() -> TestResult {
+    source_level_gate(25)
+}
+#[test]
+fn draconia_native_level_gate_above_25() -> TestResult {
+    source_level_gate(26)
+}
+fn source_level_gate(level: u32) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("draconia-level-gate", move || {
+        scenario_with_level(Some((32804, 31583, -2, 1025)), Some(level))
+    });
+    eprintln!(
+        "POSTGRES_CASE_{} draconia_level_gate level={level} duration={:?}",
+        if result.is_ok() {
+            "COMPLETED"
+        } else {
+            "FAILED"
+        },
+        started.elapsed()
+    );
+    result
+}
 fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
+    scenario_with_level(source, None)
+}
+fn scenario_with_level(source: Option<(u16, u16, i8, u16)>, level: Option<u32>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "m06_keys", true, false).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
@@ -99,7 +133,9 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
         let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
-        let door_appearance = if source
+        let door_appearance = if level.is_some() {
+            5102
+        } else if source
             .is_some_and(|(_, _, _, action)| (3001..=3008).contains(&action) || action == 3012)
         {
             5097
@@ -265,7 +301,30 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
-        deps.initialize(&owner).await;
+        if let Some(level) = level {
+            // Initial canonical actor facts are a fixture; the real admitted owner
+            // re-proves this actor/session when evaluating the source level door.
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            assert!(
+                states
+                    .initialize(
+                        &runtime,
+                        deps.actor,
+                        deps.admitted.game_session_id,
+                        crate::spell::cast::CharacterCastFacts {
+                            level,
+                            vocation: crate::spell::Vocation::Monk,
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
+                        (3, 7_000_000),
+                        owner.owner_now()
+                    )
+                    .is_some()
+            );
+        } else {
+            deps.initialize(&owner).await;
+        }
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
         )
@@ -318,6 +377,63 @@ fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 .ok_or("door facts")
         };
         assert_eq!(appearance()?, door_appearance);
+        if let Some(level) = level {
+            // Even a carried key whose immutable number equals the action cannot
+            // replace the canonical level predicate.
+            let key_payload = encode_item_use_intent(&intent(station.clone())).map_err(debug)?;
+            let (next, result, _) =
+                super::item_craft::exchange(&owner, admitted, 1, &key_payload, reference(key_item))
+                    .await?;
+            assert_ne!(
+                result,
+                UseDisposition::Committed,
+                "a key cannot bypass a level door"
+            );
+            assert_eq!(map.facts().doors().revision(placement_key), 0);
+            assert!(!map.enterable(station_pos));
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            let payload =
+                oteryn_protocol_oteryn::world_object::encode_use_intent(&station).map_err(debug)?;
+            let expected = if level >= 25 {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Locked
+            };
+            let (next, result, replay) =
+                super::item_craft::exchange(&owner, next, 2, &payload, None).await?;
+            assert_eq!(
+                result, expected,
+                "source action1025 checks canonical level{level}"
+            );
+            let revision = u64::from(level >= 25);
+            assert_eq!(map.facts().doors().revision(placement_key), revision);
+            assert_eq!(map.enterable(station_pos), level >= 25);
+            let (next, result, _) =
+                super::item_craft::exchange(&owner, next, 2, &replay, None).await?;
+            assert_eq!(result, expected);
+            assert_eq!(map.facts().doors().revision(placement_key), revision);
+            if level >= 25 {
+                assert_eq!(appearance()?, 5103);
+                station.expected_revision = 1;
+                let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&station)
+                    .map_err(debug)?;
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                let (_, result, _) =
+                    super::item_craft::exchange(&owner, next, 3, &payload, None).await?;
+                assert_eq!(result, UseDisposition::Committed);
+                assert_eq!(map.facts().doors().revision(placement_key), 2);
+                assert!(!map.enterable(station_pos));
+                assert_eq!(appearance()?, 5102);
+            }
+            eprintln!(
+                "POSTGRES_CASE_COMPLETED draconia_level_gate level={level} source_action=1025 key_bypass=false replay=true duration={:?}",
+                started.elapsed()
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let payload = encode_item_use_intent(&intent(station.clone())).map_err(debug)?;
         let (next, result, _) =
             super::item_craft::exchange(&owner, admitted, 1, &payload, reference(wrong_key))

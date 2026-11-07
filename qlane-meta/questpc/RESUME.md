@@ -1,3 +1,23 @@
+## Native Draconia level25 gate GREEN — 2026-11-07
+Exact source binding5102/action1025 at32804,31583,z2 reuses existing generic owner.
+Only5102/5103 profiles added with pinned importer; all old profiles byte-equivalent.
+Actual PostgreSQL18.6 RED3=133.17s, GREEN3=138.28s for canonical levels24/25/26;
+key cannot bypass, direct USE evaluates25, replay does not mutate, opened gate closes.
+Check1m20s/strict Clippy3m35s/fmt, world binding5/profile2 units, generation/pins PASS.
+No binary maps or existing stock5/door10/callback9 captures changed. World digest
+bb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c unchanged;
+inputs digest07c1872b44ee4043cdb655bc57217a4507e84d48726b1e0cf929d7f078dd07b1.
+Evidence cloud-draconia-level-gate-validation.json; review no remaining findings.
+Counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT Elathriel5000 cash/bank ->copper2970 immutable3012, exactyes/topic1 only,
+repeatable source sales and no/insufficient refusal. Reuse qpc6 paid enginee30938891
+(coherent importedengine2123b7871); plan/tmp/questpc-elathriel-reuse-plan.md.
+Freshqengine2d44f015c1/qpc6head53d5648b8 fetched09:00. Current branch lacks shared
+rewardcallbacks modules/SQL0999+1096. Select reusable engine hunks preserving local
+Corym participant, Dragonlord, world callbacks and atomicFather11; no new handoff.
+Then generic shared skeleton5972 stockkey3001, final complete route composition.
+
 ## Dragonlord slice GREEN — 2026-11-07
 Source-bound greeting uses existing generic atomic item-exchange owner: one3723
 consumed, one3206 granted, exact Dragonfetish!=1 guard, flag1, immediate focus end.
