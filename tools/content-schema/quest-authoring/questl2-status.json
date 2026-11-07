@@ -2932,8 +2932,12 @@
     "alliance_progress": {
       "status": "PENDING_NATIVE_JOURNEY_PROOF",
       "production_callback_sources": "Curos source mission sequence; explicit documented provision restoration; native Renegade Orc callback and source tower chest",
-      "compile_log": "/tmp/l2-alliance-compile.log",
-      "remaining": "Run full native PG journey, verify timed restoration, then focused Clippy/pins."
+      "compile_log": "/tmp/l2-alliance-compile2.log",
+      "remaining": "Run the full native PG journey, then focused Clippy and official pin checks.",
+      "compile": {
+        "status": "PASS",
+        "duration": "2m33s"
+      }
     }
   }
 }

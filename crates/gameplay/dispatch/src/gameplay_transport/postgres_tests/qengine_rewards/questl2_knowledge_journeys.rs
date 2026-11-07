@@ -384,6 +384,48 @@ async fn alliance(
     assert_eq!(quest_stage(h, "questline").await?, 3);
     use_at(owner, admitted, crystal, UseDisposition::Committed).await?;
     assert_eq!(quest_stage(h, "questline").await?, 4);
+    let map = owner.bundle_map().ok_or("crystal map")?;
+    let crystal_key =
+        oteryn_world_bundle::bundle::placement_key(crystal.floor, crystal.x, crystal.y, 1)
+            .ok_or("crystal placement")?;
+    assert_eq!(
+        map.facts
+            .quest_callback_entry(map.overlay.base(), crystal_key)
+            .ok_or("broken crystal")?
+            .1
+            .appearance_id,
+        10187
+    );
+    let due = map
+        .facts
+        .next_movement_decay_time()
+        .ok_or("native ten-second restoration")?;
+    assert_eq!(
+        map.facts.expire_movement_items(due - 1),
+        0,
+        "the crystal does not restore early"
+    );
+    let _ = map;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(11))
+        .ok_or("crystal clock")?;
+    let map = owner.bundle_map().ok_or("crystal map")?;
+    assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 1);
+    assert_eq!(
+        map.facts
+            .quest_callback_entry(map.overlay.base(), crystal_key)
+            .ok_or("restored crystal")?
+            .1
+            .appearance_id,
+        10186
+    );
+    assert_eq!(
+        quest_stage(h, "questline").await?,
+        4,
+        "restoration never resets mission progress"
+    );
+
     use_at(
         owner,
         admitted,

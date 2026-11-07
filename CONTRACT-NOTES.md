@@ -342,3 +342,13 @@ owner-authorized restoration, Curos accepts one of each when issuing the
 mission, requires exact milk subtype6, and returns an empty bucket. This is
 an explicit Oteryn binding, not a claim that the donor NPC consumed them.
 His donor mission sequence and one-tome final reward remain unchanged.
+
+Alliance PG fixture shortens unrelated navigation by placing Curos near the
+source tower chest and a device carrying the real global action40030 binding.
+The native Renegade Orc is reduced to one health before the player's real
+attack; captured positive damage and the native death settlement remain real.
+Only the foreign New Frontier prerequisite is arranged through the fenced
+quest writer; no Alliance progress, death credit or Tome reward is seeded.
+Timed transformations reuse revision-bound movement decay; the PG journey
+checks the state immediately before its deadline and after advancing the
+Channel owner clock, without changing durable quest progress.
