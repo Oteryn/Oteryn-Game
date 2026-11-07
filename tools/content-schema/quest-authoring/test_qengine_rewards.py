@@ -35,6 +35,16 @@ class QuestRewards(unittest.TestCase):
         with self.assertRaises(ValueError):
             q.validate_callbacks(document)
 
+    def test_vampire_source_tiers_preserve_exact_costs_xp_and_final_outputs(self):
+        tiers=[c for c in self.callbacks['callbacks'] if '/l2-vampire-tier-' in c['key']]
+        self.assertEqual([c['take'][0]['count'] for c in tiers],[1,4,5,10,30,50])
+        self.assertEqual([c['experience'] for c in tiers],[1000,5000,10000,20000,50000,100000])
+        self.assertTrue(all(c['requires'][0]['minimum']==11 for c in tiers))
+        self.assertTrue(all(c['give'] is None and c['achievement'] is None for c in tiers[:-1]))
+        self.assertEqual(tiers[-1]['give']['item'],'oteryn:item.tibia.i8191')
+        self.assertEqual(tiers[-1]['achievement'],'oteryn:achievement/razing')
+        self.assertEqual(tiers[-1]['storage'][-1]['set'],1)
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
@@ -180,7 +190,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),36)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 20)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 26)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

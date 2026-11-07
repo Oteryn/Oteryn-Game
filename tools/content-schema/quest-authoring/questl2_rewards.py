@@ -5,14 +5,14 @@ import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
 
 
-NPCS = tuple(sorted({'amber', 'norma', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
+NPCS = tuple(sorted({'amber', 'norma', 'storkus', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
 ITEMS = {
-    131, 4852, 11699, 227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    8191, 8192, 131, 4852, 11699, 227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,

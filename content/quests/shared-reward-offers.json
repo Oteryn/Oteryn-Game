@@ -2173,6 +2173,126 @@
       ]
     },
     {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "vampire lord token"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would ye' like to give me vampire tokens?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.tibra",
       "keywords": [
         "stake"

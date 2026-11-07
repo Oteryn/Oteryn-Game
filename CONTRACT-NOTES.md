@@ -164,3 +164,19 @@ not an L2 quest qualification. Only its elapsed timer is advanced by a test-only
 native transition; assertions keep every other progress value unchanged.
 Source file/line/SHA references are generated into each callback and the
 writable foreign-track declaration from the committed donor corpus.
+
+L2 Vampire Hunter follows Crystal9f `data-global/npc/storkus.lua:99-199`,
+SHA256 `8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd`.
+Six hand-ins consume 1/4/5/10/30/50 tokens 8192 and award
+1000/5000/10000/20000/50000/100000 XP. The final hand-in grants doll 8191,
+rank 6 and Door 1. Inquisition Questline >=11 remains a read-only prerequisite.
+The PG character arranges only that separate prerequisite through a fenced
+transition; no Vampire rank, access, reward or achievement is seeded.
+Absent donor rank -1 is normalized to the new bounded track's unstarted 0.
+The donor omits the achievement requested by the owner. This lane restores
+`oteryn:achievement/razing` using `content/achievements/achievements-00000-00499.json:1`,
+SHA256 `d097a1833981e27ec326f274651c39b5f6dc6f06ea79afc6cb6123e953a81341`: its description explicitly identifies the
+vampire hunter who has gathered numerous tokens. The final reward uses the
+existing atomic achievement obligation, not an independent script grant.
+The native access door is the existing action 41731/appearance 8259 at
+(32953,31460,9), bound by the source door-table owner to the same Door track.

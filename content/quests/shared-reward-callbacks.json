@@ -21,6 +21,28 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:103-106:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 6,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
     }
   ],
   "callbacks": [
@@ -2324,6 +2346,280 @@
           "item": "oteryn:item.tibia.i25088",
           "count": 3
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-1",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "experience": 1000,
+      "reply": [
+        "Ye' brought the token needed to advance to the first vampire hunter rank. I consider that a fluke, but still, congrats! Let me share some of my experience with ye'."
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-2",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 4
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "experience": 5000,
+      "reply": [
+        "Ye' brought the four tokens needed to advance to the second vampire hunter rank. Pretty lucky ye' are! Let me share some of my experience with ye'."
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-3",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "experience": 10000,
+      "reply": [
+        "Ye' brought the five tokens needed to advance to the third vampire hunter rank. Wow, you're pretty determined! Let me share some of my experience with ye'."
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-4",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "experience": 20000,
+      "reply": [
+        "Ye' brought the ten tokens needed to advance to the fourth vampire hunter rank. You're absolutely painstaking! Let me share some of my experience with ye'."
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-5",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 30
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "experience": 50000,
+      "reply": [
+        "Ye' brought the thirty tokens needed to advance to the fifth vampire hunter rank. You're completely obliterative, kid! Let me share some of my experience with ye'."
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-vampire-tier-6",
+      "quest": "oteryn:quest.vampire_hunter_quest",
+      "npc": "oteryn:npc.storkus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/rank",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8192",
+          "count": 50
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8191",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/razing",
+      "experience": 100000,
+      "reply": [
+        "Ye' brought the fifty tokens needed to advance to the last vampire hunter rank. Now that's something. You're razing-amazing! Let me share some of my experience and a little something with ye'!"
+      ],
+      "failure_reply": [
+        "Ye' don't have enought tokens."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/storkus.lua:99-199:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
       ]
     },
     {

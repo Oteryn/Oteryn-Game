@@ -25,6 +25,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
         "qengine-rewards-l2-sam" => Some(Position{x:32455,y:31967,floor:-14}),
         "qengine-rewards-l2-outfox" => Some(Position{x:32467,y:31969,floor:-5}),
         "qengine-rewards-l2-bone" => Some(Position{x:32408,y:32107,floor:-10}),
+        "qengine-rewards-l2-vampire" => Some(Position{x:32953,y:31460,floor:-9}),
         "qengine-rewards-l2-botany" => Some(Position{x:33007,y:31536,floor:-10}),
         _=>None,
     };
@@ -177,14 +178,17 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
     scenario("qengine-rewards-exchange-fixed")
 }
 
-#[path = "qengine_rewards/questl2_shared_engine.rs"]
-mod questl2_shared_engine;
-
 #[path = "qengine_rewards/questl2_botany.rs"]
 mod questl2_botany;
 
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
+
+#[path = "qengine_rewards/questl2_shared_engine.rs"]
+mod questl2_shared_engine;
+
+#[path = "qengine_rewards/questl2_vampire.rs"]
+mod questl2_vampire;
 
 #[path = "qengine_rewards/exchange_fixed.rs"]
 mod exchange_fixed;
@@ -265,6 +269,7 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-vampire-tier-") {return &["vampire lord token"]; }
     match key.rsplit('/').next().unwrap_or(key) {
         "l2-botany-start" | "l2-botany-return" => &["mission"],
         "l2-bone-start" => &["mission"],
@@ -775,6 +780,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name=="qengine-rewards-l2-vampire" {
+        return questl2_vampire::exercise(owner,admitted,h).await;
+    }
     if name=="qengine-rewards-l2-engine-shared" {
         return questl2_shared_engine::exercise(owner,admitted,h).await;
     }

@@ -1130,8 +1130,38 @@
     },
     {
       "title": "Vampire Hunter",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_vampire_six_token_tiers_full_player_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 2.843872718,
+            "result": "all six token-tier bindings absent"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-vampire",
+            "duration_seconds": 90.22600048,
+            "passed": 1,
+            "failed": 0
+          },
+          "proves": [
+            "Unranked character completes all six actual NPC token hand-ins",
+            "Every tier refuses without the required tokens",
+            "Consumes exactly 100 source tokens and grants exactly 186000 XP",
+            "Ranks advance in order to six",
+            "Final hand-in grants one Vampire Doll and one Razing achievement",
+            "Existing native source access door locks before journey and opens after completion"
+          ],
+          "source": {
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "file": "data-global/npc/storkus.lua",
+            "lines": "99-199",
+            "sha256": "8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
+          },
+          "contract_notes": "CONTRACT-NOTES.md: Vampire Hunter source and requested Razing restoration; only separate Inquisition prerequisite is arranged through a fenced transition."
+        }
+      ]
     }
   ],
   "validation": {
@@ -1211,12 +1241,12 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b",
-      "bytes": 31102495,
-      "reason": "Includes admitted Cyclops and Marina deployments",
+      "digest": "95adf4415a9986049ddbf99b042dc8a7df67ae72acbbdc8c547746e9f1e91c12",
+      "bytes": 31102582,
+      "reason": "Includes admitted Storkus placement for the full Vampire Hunter journey",
       "tool": "convert_placements.py; regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check",
-      "log": "/tmp/l2-exchanges-postmerge-pin-check.log",
-      "regeneration_log": "/tmp/l2-exchanges-merge-regen.log",
+      "log": "/tmp/l2-vampire-pin-check.log",
+      "regeneration_log": "/tmp/l2-vampire-pin-refresh.log",
       "pin_check_log": "/tmp/l2-priests-merged-pin-check.log"
     },
     "formatting": "cargo fmt --all --check passed after priest-journey merge",
@@ -1778,6 +1808,16 @@
       "domain_passed": 1,
       "world_pin_check": "/tmp/l2-shared-pin-check.log",
       "migration_clash_check": "Seventy fetched remote heads: npcfix occupies 1147; 1148 unused before this slice."
+    },
+    "vampire_slice": {
+      "postgres_log": "/tmp/l2-vampire-green.log",
+      "authoring_passed": 24,
+      "placements_passed": 11,
+      "clippy_log": "/tmp/l2-vampire-clippy.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "pin_refresh": "/tmp/l2-vampire-pin-refresh.log",
+      "pin_check": "/tmp/l2-vampire-pin-check.log"
     }
   },
   "cross_lane_inspection": {
@@ -1864,10 +1904,10 @@
   },
   "next_batch": {
     "entries": [
-      "Sam's Old Backpack",
-      "To Outfox a Fox",
-      "Into The Bone Pit"
+      "Barbarian Test",
+      "Unnatural Selection",
+      "Tomes of Knowledge"
     ],
-    "source_tracing": "Pinned NPC/startup sources and public quest_system2.lua resolve Sam door/chest/reward and Outfox door/helmet; generic doors already exist. Reuse them and compose complete journeys."
+    "source_tracing": "Pinned Sven and Lazaran scripts extracted; shared native Unnatural Selection dance owner exists. Trace and compose complete NPC/world journeys without seeding entry progress."
   }
 }

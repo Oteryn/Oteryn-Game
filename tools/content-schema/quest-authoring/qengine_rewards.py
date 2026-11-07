@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 import questl2_rewards
 import questl2_shared_engine
+import questl2_vampire
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
@@ -363,6 +364,7 @@ def build():
     offers.append({'npc':'oteryn:npc.ariella','keywords':['task'],'topic':0,'next_topic':5,
         'storage':[storage(hat,1,2)],'reply':['Did you bring the shirt, sabre, hat and eye patch?']})
     questl2_shared_engine.append(add, storage, callbacks, offers, declarations, inputs, PIN, sha)
+    questl2_vampire.append(callbacks, offers, declarations, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
