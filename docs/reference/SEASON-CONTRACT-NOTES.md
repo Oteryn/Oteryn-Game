@@ -967,3 +967,19 @@ nativecupboard84.368s and Cake extraction76.066s. An earlier disk-exhaustion
 batch's unexecuted failures were rerun rather than counted as mechanics verdicts.
 Cake phase and seasonal NPC/contribution failures remain to be grouped with
 full Nextest results. Known regeneration RED tests remain intact pending fix.
+
+### Owner-requested compiling WIP checkpoint,16:07UTC
+
+At the owner's latest explicit request to push compiling WIP immediately, this
+checkpoint includes the local main merge41b58cac0 (origin/mainbbb3e06d0).
+The complete32-crate all-feature Nextest build passed in7m34s; its9,721 selected
+tests across105 binaries are still running with PostgreSQL and no fail-fast.
+Existing43 ignored external-topology/capture/measurement tests retain their
+repository annotations; no test was weakened or newly skipped.
+
+Exact known red points retained: condition_cake_regen_tests' three source
+merge/tick assertions; focusedPG Cake phase Exhausted versus Committed;
+Christmas/real Baker invalid journal state; equipment-only Baker parent-capacity
+constraint and partial-extra source-count completion. Full failure collection
+continues before the prepared fix batch and full rerun. No green row is claimed.
+The complete31-case Python source rerun now passes472.453s.
