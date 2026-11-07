@@ -76,6 +76,7 @@ fn scenario_case(
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles" || name == "l6-ruby-profile";
+    let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
     let monk = name.starts_with("monk-guidance");
@@ -104,6 +105,7 @@ fn scenario_case(
         || reusable_tool
         || floor_profiles
         || floor_assembly
+        || room_raise
         || carried_step
         || shared_switch
         || shared_gate
@@ -619,6 +621,8 @@ fn scenario_case(
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if room_raise {
+            super::super::l6_room_raise::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if native_altar {
             super::super::l6_floor_native::exercise(&mut owner, &mut admitted, &h, fence, name)
                 .await?;

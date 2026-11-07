@@ -6252,7 +6252,7 @@
       "remote_verified": true
     },
     "native_altar_batch_18": {
-      "status": "GREEN_READY_TO_FF_PUSH",
+      "status": "GREEN_PUSHED",
       "previous_pushed_head": "864b66a511beb9a9a2ba28249d478459d11cbdf0",
       "scope": [
         "seven physical parts actualnativefloor atomic assembly/replay/FIREAREA",
@@ -6364,7 +6364,31 @@
       "publication_note": "AllfinalgatesGREEN after compiledWIP checkpoint. Commitverification and exactfreshfetch/FFpush immediately. Qualifies native selected interaction only; wholeTombs/17wholeentries remain IN_PROGRESS.",
       "compiled_checkpoint_pushed_head": "bb2fdb7ca4f2b95737d982e29baad706686ed70a",
       "compiled_checkpoint_remote_verified": true,
-      "qualification_scope": "Exact native assembly and ruby interaction, source quantity/lifetime/identity/audit/replay/refusal/FIREAREA. Not full native quest traversal."
+      "qualification_scope": "Exact native assembly and ruby interaction, source quantity/lifetime/identity/audit/replay/refusal/FIREAREA. Not full native quest traversal.",
+      "pushed_head": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
+      "remote_verified": true
+    },
+    "room_raise_batch_19": {
+      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "previous_pushed_head": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
+      "scope": "Reusable monotone source room progress; five PG fixture cases lower/equal/higher/refusal/i64MAX+replay",
+      "source_contract": "CONTRACT-NOTES.md batch19, exact retainedblob hashes/lines and primary frozen evidence distinguished",
+      "production_implementation": "None yet. Test calls public callback loader, actualPGversion before serde at_least unknownfield, then intended Root locked state transaction",
+      "red_log": "/tmp/questpc4-room-raise-red2.log",
+      "red_session": 30095,
+      "first_compile_retry": "E0603 private fixture helper call; exactownedCargo131078+descendants stopped143. Public source loader substituted, real Root snapshot table/replay variant corrected before PG ever ran. No assertion weakened.",
+      "next": "PushcompiledRED checkpoint now before15min; implement plain/bound RaiseTo with unused9/10tags, Storage.at_least defaultfalse omitted; keepsevenflamecallback/tests unchanged, authorUID40085 sourceentry preservinglegal2. FivePGGREEN+legacy/security/frozenhash checks+fmt/check/clippy thenpush.",
+      "whole_entries_remaining": 17,
+      "source_need": "Missing UID40085 entry grants treasure1 only when<=0 and must preserve legal terminal2. Existing seven-flame terminal2 and unsupported3/i64MAX refusal tests remain unchanged.",
+      "review_decision": "Corrected preliminary interpretation before production implementation. Generic fixture owns its own i64MAX-bounded track; do not widen canonical Tomb bounds or weaken existing source tests.",
+      "red": {
+        "version": "18.6",
+        "seconds": 53.228458235,
+        "marker": "POSTGRES_DATABASE_READY l6_room_raise",
+        "error": "unknown field at_least; expected track/minimum/maximum/set/preserve/increment",
+        "log": "/tmp/questpc4-room-raise-red2.log",
+        "result": "0passed1failed, actualPGsetup complete before missingmechanism rejection; codecompiled3m47s"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
