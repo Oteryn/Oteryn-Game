@@ -40,6 +40,16 @@ class QuestStartupBindings(unittest.TestCase):
             value = (objects[0][1] or {}).get(row['attribute'])
             self.assertIn(value, (None, row['value']), row)
 
+    def test_hoist_direction_lever_is_the_real_upper_floor_default(self):
+        root = author.ROOT / 'content/world/placements'
+        palette = json.loads((root / 'index.json').read_text())['palette']
+        x, y, z = 32156, 31125, 10
+        sectors = codec.decode_region((root / codec.region_name(z, x // 256, y // 256)).read_bytes())[3]
+        tile, = [tile for _, sector in sectors for tile in sector if tile[:2] == (x, y)]
+        self.assertEqual(tile[3], 0)
+        top = [(palette[index]['source_item_id'], attrs) for index, depth, attrs in tile[5] if depth == 0]
+        self.assertEqual(top, [(5770, None), (5772, None), (2773, None)])
+
 
 if __name__ == '__main__':
     unittest.main()

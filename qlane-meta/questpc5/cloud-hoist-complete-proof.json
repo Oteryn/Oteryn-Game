@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "scope": "Whole Formorgar Mines Hoist Quest: both real instruction acquisitions, cold replay, refusal, all three source hoists and both live direction branches.",
+  "status": "QUALIFIED",
+  "red": {
+    "postgres_marker_seconds": 3.790235714,
+    "test_seconds": 3.8,
+    "error": "source reversible hoist direction lever is absent"
+  },
+  "green": {
+    "test_filter": "questpc5_hoist_complete_source_route",
+    "postgres_marker_seconds": 3.814298093,
+    "registration_seconds": 4.569334808,
+    "test_seconds": 65.01,
+    "construction_plans_USE_seconds": 7.162785683,
+    "construction_plans_cold_replay_seconds": 9.084483669,
+    "real_acquisition_travel_program_seconds": 3.564828244,
+    "native_claims": 2,
+    "instruction_flags": [
+      1,
+      1
+    ],
+    "travel_cases": 5,
+    "lever_USE_changes": 2,
+    "lever_final_revision": 2,
+    "negative_clicked_ground": true,
+    "quest_tracks_receipts_Character_revision_unchanged_during_travel_and_switching": true
+  },
+  "production": {
+    "direction_switch": "oteryn:quest-callback/formogar-hoist-direction-switch",
+    "source_cell": [
+      32156,
+      31125,
+      -10
+    ],
+    "physical_initial_appearance": 2773,
+    "physical_ordinal": 2,
+    "reversible_pair": [
+      2772,
+      2773
+    ],
+    "middle_floor_selector": 3060,
+    "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "direction_source": "data/scripts/actions/items/decay_to.lua:33-34",
+    "direction_source_sha256": "563402b5c26dadadf753422e76384a962c7f415e5038ead293dc897fef95f27f",
+    "direction_source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/items/decay_to.lua"
+  },
+  "assumption": "The separately documented conservative construction-plan claim teaches the missing source chest instruction; both independent flags remain mandatory.",
+  "fixture_integrity": [
+    "Actual USE earns both independent flags; no quest progress seeding.",
+    "All original source bag/text/once/stale-fence/atomic-refusal/cold-replay assertions retained.",
+    "Movement cells bind the activated generation; scope checks remain unchanged.",
+    "Continue the actual cold owner and retained session/journal; no command-counter fabrication.",
+    "Only travel between distant source objects is abbreviated through existing qualified movement proofs."
+  ],
+  "reuse_checked": {
+    "qengine2": "059364f38",
+    "questpc2": "f9cc1e550",
+    "questpc3": "b7f139977",
+    "questpc4": "579927e93",
+    "questpc6": "2e42d08fa",
+    "questpc7": "00b3d57a6",
+    "questpc8": "28a7715f7",
+    "result": "No matching QUALIFIED title and no current shared reversible position matcher to reuse."
+  },
+  "checks": {
+    "python_physical_startup_tests": 3,
+    "python_batch4_tests": 17,
+    "authoring_check": 0,
+    "cargo_check_dispatch": 0,
+    "clippy_dispatch_all_targets_all_features_D_warnings": 0,
+    "cargo_and_mounted_fmt": 0,
+    "pin_refresh": 0,
+    "pin_check": 0
+  },
+  "world_digest": "264a3573a295a70bf5fe6dfaa2f41a82fdedd9f37c4d1116c6386a66b178d24d",
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-hoist-direction-red.log",
+      "sha256": "dda06b231f43b338a31e7505c117465e56df1e014ce7fe7cac3981d033b36fe5"
+    },
+    "green": {
+      "path": "/tmp/questpc5-hoist-composed-green.log",
+      "sha256": "e569a7b46815273b376229a7b38d62252ac528ee07b7573bfe43f63ca8f53593"
+    },
+    "check": {
+      "path": "/tmp/questpc5-hoist-composed-check.log",
+      "sha256": "fcc1688427242cd2af3eea0a01215eb144843ddfd8662d599a8bbbc426ea687e"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-hoist-composed-clippy.log",
+      "sha256": "616ac8873776364e6a9f91743cecc4914f40342132fd00a114c6015ef031de30"
+    },
+    "pin_refresh": {
+      "path": "/tmp/questpc5-hoist-composed-pin-refresh.log",
+      "sha256": "4998fdc3c8860c0799a1a9c79a0be5ec7bc53dbef32353b8e03e67e79729307f"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-hoist-composed-pin-check.log",
+      "sha256": "707f1dcc69023ae87855122766c4afaddb722a59e300b558382ea44d2eb9af63"
+    }
+  }
+}

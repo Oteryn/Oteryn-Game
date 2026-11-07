@@ -389,13 +389,12 @@
     "canonical": "oteryn:quest.formogar_mine_hoist",
     "title": "Formorgar Mines Hoist Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
-    "status": "UNFINISHED",
-    "blocker": "Whole-route composition remains: exercise both actual instruction acquisitions and all three physical source hoist movements in one character session, including native reversible direction-lever USE. Production UID3060 is registered and its exact live remote branches/refusal are PostgreSQL-proven.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc",
       "questpc7"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole chosen quest: earn both exact source instructions through native USE, retain once/cold replay, enforce both flags, all three source movements and both live lever branches.",
     "input_canonical": "oteryn:quest.formogar_mine_hoist",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00100-00199.json",
@@ -409,6 +408,14 @@
         "log": ".questpc5/l5-hoist-green.log",
         "cases": 8,
         "scope": "UID3059/3061: neither instruction, each missing instruction independently, and both present; exact destination and no quest writes."
+      },
+      {
+        "filter": "questpc5_hoist_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 65.01,
+        "postgres_marker_seconds": 3.814298093,
+        "proof": "cloud-hoist-complete-proof.json",
+        "scope": "Same character, actual plan+book acquisitions, cold replay, instruction refusal, all physical source movements, reversible direction USE and wrong-object negative; no travel/switch quest writes."
       }
     ],
     "mechanism_evidence": [
@@ -420,7 +427,9 @@
     ],
     "startup_binding_evidence": "cloud-startup-bindings-proof.json",
     "skeleton_instruction_evidence": "cloud-skeleton-instruction-proof.json",
-    "middle_floor_evidence": "cloud-hoist-middle-floor-proof.json"
+    "middle_floor_evidence": "cloud-hoist-middle-floor-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-hoist-complete-proof.json"
   },
   {
     "canonical": "oteryn:quest.authored.last_creep_standing",

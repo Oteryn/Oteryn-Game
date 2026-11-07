@@ -104,14 +104,14 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None)
+    scenario_case(case, None, None, None, false)
 }
 
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
 }
 
 pub(super) fn catalogue_scenario_with_progress(
@@ -120,7 +120,13 @@ pub(super) fn catalogue_scenario_with_progress(
     progress: Option<&str>,
 ) -> TestResult {
     match progress {
-        Some(track) => scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(track)),
+        Some(track) => scenario_case(
+            Case::Catalogue,
+            Some(chest),
+            Some(activation),
+            Some(track),
+            false,
+        ),
         None => catalogue_scenario(chest, activation),
     }
 }
@@ -130,6 +136,7 @@ fn scenario_case(
     catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests::CatalogueActivation>,
     progress: Option<&str>,
+    hoist: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let (claim, chest, unique, root_key, expected) = match case {
@@ -259,7 +266,11 @@ fn scenario_case(
                 2472,
             )?
         } else if let Some(chest) = catalogue {
-            super::quest_catalogue_chests::catalogue_source_world(chest)?
+            if hoist {
+                super::quest_catalogue_chests::catalogue_source_world_with_hoist(chest, true)?
+            } else {
+                super::quest_catalogue_chests::catalogue_source_world(chest)?
+            }
         } else {
             let appearance = if let Some(chest) = catalogue {
                 chest.appearance
@@ -282,7 +293,7 @@ fn scenario_case(
             "source namespace must match the native World binder"
         );
         let cells = world
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(activated_pin.qualified_room().movement_cells())
             .map_err(debug)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
@@ -571,6 +582,7 @@ fn scenario_case(
                 target.clone()
             };
             let mut first_root = None;
+            let mut route_session = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
             // then starts at 1 again, proving replay from the durable receipt
@@ -581,8 +593,12 @@ fn scenario_case(
                 owner.movement_cells = &cells;
                 if progress.is_some() {
                     owner.quest_catalogue = Some(std::sync::Arc::new(
-                        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-                            .map_err(debug)?.catalogue().clone(),
+                        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(
+                            "content-1",
+                        )
+                        .map_err(debug)?
+                        .catalogue()
+                        .clone(),
                     ));
                 }
                 owner.admit_progression_session(&mut admitted).await;
@@ -591,18 +607,40 @@ fn scenario_case(
                     owner.admit_quest_session(&admitted).await;
                 }
                 if cold_replay {
-                    assert_eq!(
-                        wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
-                        [(CommandStatus::Accepted, UseDisposition::Committed),]
-                    );
+                    if hoist {
+                        // Continue the current cold transport, never resurrect the
+                        // warm socket's controller after its replacement connected.
+                        let (results, stream) =
+                            super::quest_callbacks::wire_use_targets_retaining_session(
+                                &owner,
+                                admitted,
+                                &[(1, &target), (2, &alternate)],
+                            )
+                            .await?;
+                        assert_eq!(
+                            results,
+                            [
+                                (CommandStatus::Accepted, UseDisposition::Committed),
+                                (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                            ]
+                        );
+                        route_session = Some(stream);
+                    } else {
+                        assert_eq!(
+                            wire_use_targets(&owner, admitted, &[(1, &target)]).await?,
+                            [(CommandStatus::Accepted, UseDisposition::Committed),]
+                        );
+                    }
                 } else {
-                    assert_eq!(
-                        wire_use_targets(
+                    let (results, _stream) =
+                        super::quest_callbacks::wire_use_targets_retaining_session(
                             &owner,
                             admitted,
-                            &[(1, &target), (1, &target), (2, &alternate)]
+                            &[(1, &target), (1, &target), (2, &alternate)],
                         )
-                        .await?,
+                        .await?;
+                    assert_eq!(
+                        results,
                         [
                             (CommandStatus::Accepted, UseDisposition::Committed),
                             (CommandStatus::DuplicateReplay, UseDisposition::Committed),
@@ -611,11 +649,21 @@ fn scenario_case(
                     );
                 }
                 if let Some(track) = progress {
-                    let state = owner.root.read_character_quest_state(&authority, fence.character_id)
-                        .await.map_err(debug)?;
-                    eprintln!("POSTGRES_CASE_OBSERVED instruction_claim={claim} cold_replay={cold_replay} access={:?} duration={:?}", state.tracks().get(track), started.elapsed());
-                    assert_eq!(state.tracks().get(track), Some(&1),
-                               "the actual instruction claim must write its access flag, including cold replay");
+                    let state = owner
+                        .root
+                        .read_character_quest_state(&authority, fence.character_id)
+                        .await
+                        .map_err(debug)?;
+                    eprintln!(
+                        "POSTGRES_CASE_OBSERVED instruction_claim={claim} cold_replay={cold_replay} access={:?} duration={:?}",
+                        state.tracks().get(track),
+                        started.elapsed()
+                    );
+                    assert_eq!(
+                        state.tracks().get(track),
+                        Some(&1),
+                        "the actual instruction claim must write its access flag, including cold replay"
+                    );
                 }
                 let bag = harness
                     .root
@@ -660,7 +708,12 @@ fn scenario_case(
                     let mut expected_texts = chest.texts.clone();
                     expected_texts.sort();
                     assert_eq!(texts, expected_texts, "complete source text plan");
-                    super::quest_catalogue_chests::assert_charges(&harness.pool, root.item_instance_id, chest).await?;
+                    super::quest_catalogue_chests::assert_charges(
+                        &harness.pool,
+                        root.item_instance_id,
+                        chest,
+                    )
+                    .await?;
                     let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
                         .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
                     let mut expected_fluids = chest.fluids.clone();
@@ -681,7 +734,9 @@ fn scenario_case(
                         ("oteryn:item.tibia.i3284", 1),
                     ] {
                         if chest.charges.iter().any(|(partial, _)| partial == key)
-                            || (root_key != key && !expected.iter().any(|(child, _, _)| *child == key)) {
+                            || (root_key != key
+                                && !expected.iter().any(|(child, _, _)| *child == key))
+                        {
                             continue;
                         }
                         use crate::content::ReferenceItemField::Known;
@@ -791,6 +846,18 @@ fn scenario_case(
                         "authored text must not forge a player rewrite receipt"
                     );
                 }
+                if hoist && cold_replay {
+                    // Keep the live owner's retained command-ingress journal;
+                    // a newly constructed owner cannot resume this socket's counter.
+                    let mut stream = route_session.take().ok_or("source claim stream")?;
+                    super::questpc5_hoist_route::exercise(
+                        &mut owner,
+                        &mut stream,
+                        &harness,
+                        deps.actor,
+                    )
+                    .await?;
+                }
             }
             let achievements:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator'")
                 .fetch_one(&harness.pool).await?;
@@ -836,4 +903,17 @@ fn scenario_case(
         drop(seal);
         harness.cleanup().await
     })
+}
+
+pub(super) fn hoist_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        Some(super::questpc5_hoist_route::PLANS_TRACK),
+        true,
+    )
 }

@@ -3841,6 +3841,37 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/formogar-hoist-direction-switch",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32156,
+          "y": 31125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/scripts/actions/items/decay_to.lua:33-34"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
       "quest": "oteryn:quest.adventures_of_galthen_quest",
       "trigger": "step_in",

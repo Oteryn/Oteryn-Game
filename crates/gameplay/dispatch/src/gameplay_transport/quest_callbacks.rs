@@ -124,7 +124,14 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                                 .nth(usize::from(ordinal))
                         })
                         .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                        .is_some_and(|facts| {
+                            facts.appearance_id == appearance
+                                || (callback.trigger == Trigger::Use
+                                    && callback.reversible
+                                    && callback.lever.is_some_and(|pair| {
+                                        pair[0] == appearance && pair.contains(&facts.appearance_id)
+                                    }))
+                        })
                 })))
 }
 

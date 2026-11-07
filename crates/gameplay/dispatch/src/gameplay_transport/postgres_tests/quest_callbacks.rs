@@ -198,6 +198,21 @@ pub(super) async fn wire_use_targets(
     admitted: AdmittedSession,
     commands: &[(u64, &WorldObjectTarget)],
 ) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    Ok(
+        wire_use_targets_retaining_session(owner, admitted, commands)
+            .await?
+            .0,
+    )
+}
+
+pub(super) async fn wire_use_targets_retaining_session(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<(
+    Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>,
+    AdmittedSession,
+)> {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -254,7 +269,14 @@ pub(super) async fn wire_use_targets(
         ),
     )
     .await?;
-    results.map_err(|error| format!("{end:?}: {error}").into())
+    let results = results.map_err(|error| format!("{end:?}: {error}"))?;
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    let stream = match end {
+        ConnectionEnd::AdmittedThenDisconnected(stream)
+        | ConnectionEnd::AdmittedThenClosed(stream, _) => stream,
+        other => return Err(format!("source stream did not retain admission: {other:?}").into()),
+    };
+    Ok((results, stream))
 }
 
 #[test]

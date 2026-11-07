@@ -953,6 +953,13 @@ pub(super) async fn assert_charges(
 pub(super) fn catalogue_source_world(
     chest: &CatalogueChest,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    catalogue_source_world_with_hoist(chest, false)
+}
+
+pub(super) fn catalogue_source_world_with_hoist(
+    chest: &CatalogueChest,
+    hoist: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let mut placements = Vec::new();
@@ -960,7 +967,10 @@ pub(super) fn catalogue_source_world(
         let shard: Value = serde_json::from_str(shard)?;
         for row in shard["records"].as_array().ok_or("claim records")? {
             let definition = &row["definition"];
-            if definition["identity"]["key"] != chest.claim {
+            if definition["identity"]["key"] != chest.claim
+                && !(hoist
+                    && definition["identity"]["key"] == super::questpc5_hoist_route::SKELETON_CLAIM)
+            {
                 continue;
             }
             for source in definition["placements"]
@@ -993,6 +1003,28 @@ pub(super) fn catalogue_source_world(
         !placements.is_empty(),
         "every catalogue claim has placed sources"
     );
+    if hoist {
+        let startup: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/quest-startup-bindings.json"
+        )))?;
+        for row in startup["bindings"].as_array().ok_or("startup bindings")? {
+            if row["attribute"] == "unique"
+                && [3059, 3060, 3061].contains(&row["value"].as_u64().unwrap_or(0))
+            {
+                let pos = &row["position"];
+                placements.push((
+                    u16::try_from(pos[0].as_u64().ok_or("hoist x")?)?,
+                    u16::try_from(pos[1].as_u64().ok_or("hoist y")?)?,
+                    -i8::try_from(pos[2].as_u64().ok_or("hoist floor")?)?,
+                    u16::try_from(row["value"].as_u64().ok_or("hoist uid")?)?,
+                    u16::try_from(row["item"].as_u64().ok_or("hoist appearance")?)?,
+                ));
+            }
+        }
+        placements.push((32156, 31125, -10, 0, 5772));
+        placements.push((32156, 31125, -10, 0, 2773));
+    }
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
@@ -1016,21 +1048,23 @@ pub(super) fn catalogue_source_world(
             appearances.insert(appearance, index);
             index
         };
-        for tile_x in x.saturating_sub(2)..=x {
-            tiles
-                .entry((floor, y, tile_x))
-                .or_insert_with(|| sector::Tile {
-                    x: tile_x,
-                    y,
-                    flags: 0,
-                    house: 0,
-                    zones: Vec::new(),
-                    items: vec![sector::Item {
-                        palette: 0,
-                        depth: 0,
-                        attrs: sector::Attrs::default(),
-                    }],
-                });
+        for tile_y in y.saturating_sub(u16::from(hoist))..=y + u16::from(hoist) {
+            for tile_x in x.saturating_sub(2)..=x + u16::from(hoist) {
+                tiles
+                    .entry((floor, tile_y, tile_x))
+                    .or_insert_with(|| sector::Tile {
+                        x: tile_x,
+                        y: tile_y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![sector::Item {
+                            palette: 0,
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }],
+                    });
+            }
         }
         tiles
             .get_mut(&(floor, y, x))
@@ -1040,7 +1074,7 @@ pub(super) fn catalogue_source_world(
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    unique: Some(unique),
+                    unique: (unique != 0).then_some(unique),
                     ..Default::default()
                 },
             });
@@ -1173,5 +1207,29 @@ fn execute_with_progress(cases: Vec<CatalogueChest>, progress: Option<String>) -
         })?
         .join()
         .map_err(|_| "catalogue chest scenario panicked")??;
+    Ok(())
+}
+
+pub(super) fn hoist_route_cohort() -> TestResult {
+    let claim = "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest";
+    let cases: Vec<_> = cases_including(|key| key == claim)?
+        .into_iter()
+        .filter(|c| c.claim == claim)
+        .collect();
+    assert_eq!(cases.len(), 1);
+    let case = cases.into_iter().next().ok_or("plans source")?;
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || -> Result<(), String> {
+            let world = crate::foundation::WorldId::decode(&super::fixture::id(42))
+                .map_err(|e| format!("{e:?}"))?;
+            let activation =
+                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")
+                    .map_err(|e| e.to_string())?;
+            super::quest_container_chests::hoist_scenario(&case, &activation)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "hoist route thread panicked")??;
     Ok(())
 }
