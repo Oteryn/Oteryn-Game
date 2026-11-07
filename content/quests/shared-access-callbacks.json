@@ -510,6 +510,94 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-32"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/spring-nest-1",
+      "quest": "oteryn:quest.authored.spring_into_life",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32344,
+          "y": 31604,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 52601,
+        "appearance": 14098
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spring_into_life/participation",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This nest is dormant or you have already joined its current hatch.",
+      "success_message": "You have helped prepare the nest. Return after it hatches.",
+      "effects": {
+        "world_event": {
+          "event": "spring_into_life",
+          "action": {
+            "BeginObject": 1
+          }
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32647-32650:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spring-nest-2",
+      "quest": "oteryn:quest.authored.spring_into_life",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33977,
+          "y": 32646,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 52602,
+        "appearance": 14098
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spring_into_life/participation",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This nest is dormant or you have already joined its current hatch.",
+      "success_message": "You have helped prepare the nest. Return after it hatches.",
+      "effects": {
+        "world_event": {
+          "event": "spring_into_life",
+          "action": {
+            "BeginObject": 2
+          }
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32647-32650:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
+      ]
     }
   ]
 }

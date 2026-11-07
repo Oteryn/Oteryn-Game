@@ -41,6 +41,23 @@ def generate():
     bindings.sort(key=lambda row: (row["action"], row["position"]))
     if len(bindings) != 16:
         raise ValueError("WEVENTS_STARTUP_COUNT")
+    policy_path = "content/quests/world-event-object-policy.json"
+    policy_raw = (ROOT / policy_path).read_bytes()
+    policy = json.loads(policy_raw)
+    if policy.get("schema") != 1 or len(policy.get("bindings", [])) > 64:
+        raise ValueError("WEVENTS_AUTHORED_POLICY")
+    for row in policy["bindings"]:
+        region = row["region"]
+        if not region.startswith("content/world/placements/") or ".." in Path(region).parts:
+            raise ValueError("WEVENTS_AUTHORED_REGION")
+        if hashlib.sha256((ROOT / region).read_bytes()).hexdigest() != row["region_sha256"]:
+            raise ValueError("WEVENTS_AUTHORED_REGION_SHA256")
+        bindings.append({**{key: row[key] for key in ("position", "item", "action", "unique")},
+                         "source": {"policy": policy_path, "sha256": hashlib.sha256(policy_raw).hexdigest(),
+                                    "region": region, "region_sha256": row["region_sha256"]}})
+    bindings.sort(key=lambda row: (row["action"], row["position"]))
+    if len({(tuple(row["position"]), row["item"]) for row in bindings}) != len(bindings):
+        raise ValueError("WEVENTS_AUTHORED_DUPLICATE")
     return (json.dumps({"schema": 1, "bindings": bindings}, indent=2) + "\n").encode()
 
 
@@ -66,6 +83,8 @@ def verify_native_objects(document):
         tile = cache[name].get((x, y))
         if tile is None:
             raise ValueError(f"WEVENTS_NATIVE_TILE {binding['position']}")
+        if "policy" in binding["source"] and tile[3] != 0:
+            raise ValueError(f"WEVENTS_AUTHORED_HOUSE {binding['position']}")
         items = [palette[index]["source_item_id"] for index, depth, _ in tile[5] if depth == 0]
         if not items or (binding["item"] is not None and binding["item"] not in items):
             raise ValueError(f"WEVENTS_NATIVE_ITEM {binding['position']}")
@@ -85,4 +104,4 @@ if __name__ == "__main__":
             raise SystemExit("WEVENTS_STARTUP_STALE")
     else:
         target.write_bytes(expected)
-    print("WEVENTS startup selectors: 16 verified source bindings")
+    print(f"WEVENTS startup selectors: {len(json.loads(expected)['bindings'])} verified bindings")

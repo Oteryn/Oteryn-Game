@@ -79,6 +79,15 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rosemarie",
+      "greet": "Greetings and nature's blessing, traveller!",
+      "farewell": "Farewell |PLAYERNAME|.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rosemarie.lua:51-53:sha256:e96bd8db17c9fa763a6e38a7dffa1df0f3e02f09110f4b13b32accfecd58aa84"
+      ]
+    },
+    {
       "npc": "oteryn:npc.sam",
       "greet": "Welcome to my shop, adventurer |PLAYERNAME|! I {trade} with weapons and armor.",
       "farewell": "Good bye and come again, |PLAYERNAME|.",

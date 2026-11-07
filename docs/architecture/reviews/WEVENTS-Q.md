@@ -288,3 +288,52 @@ Four-crate cargo check and strict library clippy passed in **30.41 s** and
 diff whitespace checks, and tooling pin refresh/check passed; content pins
 remain unchanged. Migration 1124 adds the bounded expiry index. This shared
 slice changes no title qualification rows.
+
+## Spring integration contract
+
+The two public item-14098 nests are bound by authored IDs 52601/52602;
+`native_event_bindings.py --map-check` verifies source-region SHA256, object
+membership and absence of house ownership. The other four nest objects are
+excluded. The raid generator adds one Dragon Hatchling per public nest, using
+existing native creature policy and bounded area placement. Timers, admission
+and retry cadence are the explicit policy in CONTRACT-NOTES.md, while surprise
+nest contents retain the donor's eleven equally selected categories.
+
+The scheduler seals the event/member/revision with the immutable firing and
+records its planned version. Physical publication and ACK acquire the event
+cycle before firing rows, matching scheduler lock order. Successful physical
+ACK rearms the shared object once; all-Channel placement failure retries after
+an hour. Superseded persistent actors use the existing LOST cleanup. Personal
+hatch eligibility survives joining another nest. The NPC reward reserves the
+once-per-season claim in the same sequenced transaction as MINT, and the paid
+purchase debits its source-bound crystal coin through the existing reward owner.
+
+## Shared hatch owner preparation proof
+
+The focused PostgreSQL owner run passed **1 test / 26.30 s**, with executed
+markers: Chyllfroest **6.926932154 s**, Flower **6.804642492 s**, Mummy
+**6.530311934 s**, and Spring **6.026340056 s**
+(`/tmp/wevents-spring-reset-pg-final.log`). Spring exercises the one-hour
+boundary, no early reward, sealed native member, successful ACK, all-target
+placement failure/retry, preserved terminal firing history, LOST cleanup and
+reset recovery on the raid scheduler's next due check. The earlier retirement
+attempt failed against the existing immutable-terminal trigger; migration 1125
+adds a separate immutable retirement receipt instead of weakening that trigger.
+
+Actual native hatchling realization passed **1 PostgreSQL test / 80.38 s**
+(`/tmp/wevents-spring-native-pg.log`). Literal native nest USE passed with an
+executed marker in **94.10603899 s**, and native surprise-nest opening passed in
+**172.22974216 s**; logs are `/tmp/wevents-spring-three-pg-green.log` and
+`/tmp/wevents-spring-native-four-pg.log` (those runs also retain the merchant
+failures that led to adding Rosemarie's donor conversation registry entry).
+The focused item-owner test reaches all eleven gift categories and inclusive
+quantity endpoints: **1 passed / 0.25 s**. The generator's **15 tests**, native
+map provenance test, reward schema test and **12** lifecycle/catalogue tests
+passed. Seven-crate cargo check passed in **18.76 s**, strict library clippy in
+**40.64 s**; fmt and tooling pin refresh/check passed, with unchanged World pin.
+
+This shared-engine checkpoint keeps Spring unpublished in the committed owner
+catalogue. Its native merchant verification is running separately; no new
+WORLDCHG-Q title row is claimed here. Declared event raid bindings remain
+reserved while unpublished, so they cannot fall through to ordinary calendar
+admission. The focused owner case includes Spring whenever publication is on.

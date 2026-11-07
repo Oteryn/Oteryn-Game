@@ -1466,10 +1466,27 @@
           "url": "https://tibia.fandom.com/index.php?curid=59009&oldid=1099118"
         }
       ],
-      "reason": "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent.",
-      "missing_facts": [
-        "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent."
-      ]
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "spring_into_life",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.spring-nest-1",
+            "member": 1,
+            "condition": "hatch"
+          },
+          {
+            "key": "raid:world-events.spring-nest-2",
+            "member": 2,
+            "condition": "hatch"
+          }
+        ]
+      },
+      "reason": "Two verified public nests share seasonal hatch clocks; native placement acknowledges hatching and participation admits a sequenced surprise-nest reward. Calendar and merchant price are explicit Oteryn policy."
     },
     {
       "key": "stampede",

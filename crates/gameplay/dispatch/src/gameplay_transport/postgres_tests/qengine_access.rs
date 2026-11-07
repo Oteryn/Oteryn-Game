@@ -1060,3 +1060,45 @@ async fn wardrobe(
     ));
     Ok(())
 }
+
+#[test]
+fn wevents_postgres_spring_native_nest_use() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("spring-native-use", || {
+        super::quest_world_callbacks::scenario(
+            "spring-nest-1",
+            Position {
+                x: 32344,
+                y: 31604,
+                floor: -6,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "WEVENTS PG EXECUTED: spring native USE duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) async fn spring_use(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    trigger: Position,
+) -> TestResult {
+    super::qengine_rewards::spring_fixture(owner, admitted, h, false).await?;
+    assert_eq!(
+        use_lever(owner, admitted, 1, trigger, 0).await?,
+        UseDisposition::Committed
+    );
+    let credited: i64 = sqlx::query_scalar("SELECT credited FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key='spring_into_life'")
+        .bind(owner.world_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(credited, 1);
+    Ok(())
+}

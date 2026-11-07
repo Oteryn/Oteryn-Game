@@ -48,6 +48,18 @@ fn w19_event_containers_nested_christmas_wire_atomic_replay_and_refusals() -> Te
     run_scenario_source("oteryn:item.tibia.i6506", 1, 7, true)
 }
 
+#[test]
+fn wevents_postgres_spring_surprise_nest_open() -> TestResult {
+    let started = std::time::Instant::now();
+    let result = run_scenario("oteryn:item.tibia.i14759", 1, 1);
+    eprintln!(
+        "WEVENTS PG EXECUTED: spring surprise nest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
 fn run_scenario(bag_key: &'static str, source_quantity: u32, output_count: usize) -> TestResult {
     run_scenario_source(bag_key, source_quantity, output_count, false)
 }

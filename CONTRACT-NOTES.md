@@ -97,3 +97,29 @@ scheduler next runs; a bounded indexed page prevents an unbounded catch-up
 transaction. Victory remains final. Current-cycle jar actions do not acquire
 locks for older annual cycles. Fixture-only time overrides are scoped to a
 Root and its clones, reject production Roots, and never change PostgreSQL time.
+
+Spring public nest selectors are authored IDs 52601/52602, on the two verified
+source objects (item 14098, donor items.xml:32647-32650, same SHA above).
+Each successful native hatch rearms its public nest for one hour. A stale or
+replayed placement ACK cannot rearm it twice. If every target Channel reports
+failed placement, retry after an hour without awarding a hatch. The latest
+successful hatch time preserves a participant's earned claim when joining
+another nest. Superseded persistent hatchlings use the raid runner's LOST
+cleanup; they do not accumulate across hourly nest generations. The merchant
+reward/purchase tests seed completed-hatch prerequisites separately from the
+scheduler/placement and actual-actor cases.
+
+Rosemarie's native conversation reuses her retained greeting, farewell and
+walk-away lines, rather than a placeholder: Crystal
+`9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data-global/npc/rosemarie.lua:51-53`, SHA256
+`e96bd8db17c9fa763a6e38a7dffa1df0f3e02f09110f4b13b32accfecd58aa84`.
+The shared quest-reward greeting registry supplies her conversation; the World
+binding still admits or refuses each seasonal purchase and free reward.
+
+Completed raid firing rows remain immutable. Migration 1125 records retirement
+separately; current physical-effect reads and timed kill admission reject a
+retired firing. Running firings may transition to LOST, while completed firings
+retain their terminal state and append normal LOST cleanup effects. This also
+prevents a prior successful hatch's retained actors from accumulating when its
+next object revision fires.

@@ -368,7 +368,12 @@ pub async fn interact(
         if !state.reward_admitted(
             u64::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?,
             claimed,
-        ) || (request.kind == EventKind::SpringIntoLife && !reward_ready)
+        ) || (request.kind == EventKind::SpringIntoLife
+            && !reward_ready
+            && !u16::try_from(ready_object)
+                .ok()
+                .and_then(|member| state.lifecycle.last_success_ms.get(&member))
+                .is_some_and(|at| ready > 0 && *at >= ready))
         {
             return Ok(None);
         }
@@ -378,19 +383,39 @@ pub async fn interact(
             .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(request.operation.as_slice()).bind(input).execute(&mut **tx).await?;
         return Ok(Some(true));
     }
+    let earned_hatch = request.kind == EventKind::SpringIntoLife
+        && u16::try_from(ready_object)
+            .ok()
+            .and_then(|member| state.lifecycle.last_success_ms.get(&member))
+            .is_some_and(|at| ready > 0 && *at >= ready);
     let before = state.objects;
-    let applied = state
+    let mut applied = state
         .advance(request.kind, request.now_ms, request.input, draw)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    // Joining an already armed public object does not restart its shared clock.
+    if request.kind == EventKind::SpringIntoLife
+        && let Input::BeginObject(member) = request.input
+        && let Some(at) = state
+            .lifecycle
+            .objects
+            .get(&member)
+            .and_then(|o| o.ready_at())
+        && at > request.now_ms
+        && (ready != at || ready_object != object)
+    {
+        applied = true;
+    }
     let expected_jar = matches!(request.input, Input::Jar(aid) if aid == 50006 + u16::from(before));
     let (cooldown, cooldown_object) = if request.kind == EventKind::SpringIntoLife
         && applied
         && matches!(request.input, Input::BeginObject(_))
     {
         (
-            request
-                .now_ms
-                .checked_add(oteryn_gameplay_world_change::timed::HOUR)
+            state
+                .lifecycle
+                .objects
+                .get(&u16::try_from(object).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .and_then(|o| o.ready_at())
                 .ok_or(DurabilityError::InvalidStoredState)?,
             object,
         )
@@ -409,8 +434,8 @@ pub async fn interact(
         (0, object)
     };
     save(tx, request.world, request.kind, &state, cycle).await?;
-    sqlx::query("UPDATE game_world_timed_participants SET credited=credited+$5,ready_ms=$6,ready_object=$7 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
-        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied && matches!(request.input,Input::Jar(_)|Input::BeginObject(_)|Input::Extinguish(_)|Input::Fill(_)))).bind(cooldown).bind(cooldown_object).execute(&mut **tx).await?;
+    sqlx::query("UPDATE game_world_timed_participants SET credited=credited+$5,ready_ms=$6,ready_object=$7,reward_ready=reward_ready OR $8 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied && matches!(request.input,Input::Jar(_)|Input::BeginObject(_)|Input::Extinguish(_)|Input::Fill(_)))).bind(cooldown).bind(cooldown_object).bind(earned_hatch).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_world_timed_receipts(world_id,event_key,cycle_id,character_id,operation_id,input,applied) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7)")
         .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(request.operation.as_slice()).bind(input).bind(applied).execute(&mut **tx).await?;
     Ok(Some(applied))
@@ -612,3 +637,5 @@ pub(crate) async fn apply_binding(
 mod raids;
 pub use raids::{NativeKillOutcome, NativeKillRequest, RaidOrigin};
 pub(crate) use raids::{raid_origin, seal_raid_origin};
+
+pub(crate) mod schedules;

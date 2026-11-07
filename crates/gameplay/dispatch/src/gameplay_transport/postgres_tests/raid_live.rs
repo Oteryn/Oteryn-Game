@@ -34,6 +34,16 @@ fn wevents_postgres_flower_native_wave() -> TestResult {
 }
 
 #[test]
+fn wevents_postgres_spring_native_hatchling() -> TestResult {
+    run_case(
+        "wevents_spring_map",
+        "raid:world-events.spring-nest-1",
+        1,
+        false,
+    )
+}
+
+#[test]
 fn wevents_postgres_horestis_single_native_boss() -> TestResult {
     run_case("wevents_mummy_map", "raid:world-events.horestis", 1, true)
 }

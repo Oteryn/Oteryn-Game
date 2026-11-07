@@ -25,13 +25,53 @@ pub(super) struct Binding {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum Source {
+    Donor(DonorSource),
+    Authored(AuthoredSource),
+}
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Source {
+struct DonorSource {
     repository: String,
     revision: String,
     path: String,
     line: u32,
     sha256: String,
+}
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AuthoredSource {
+    policy: String,
+    sha256: String,
+    region: String,
+    region_sha256: String,
+}
+impl Source {
+    fn valid(&self) -> bool {
+        let hex = |s: &str, len| s.len() == len && s.bytes().all(|b| b.is_ascii_hexdigit());
+        match self {
+            Self::Donor(s) => {
+                s.line > 0
+                    && !s.repository.is_empty()
+                    && s.repository.len() <= 160
+                    && !s.path.is_empty()
+                    && s.path.len() <= 512
+                    && hex(&s.revision, 40)
+                    && hex(&s.sha256, 64)
+            }
+            Self::Authored(s) => {
+                s.policy.starts_with("content/quests/")
+                    && s.policy.len() <= 512
+                    && !s.policy.split('/').any(|p| p == "..")
+                    && hex(&s.sha256, 64)
+                    && s.region.starts_with("content/world/placements/")
+                    && s.region.len() <= 512
+                    && !s.region.split('/').any(|p| p == "..")
+                    && hex(&s.region_sha256, 64)
+            }
+        }
+    }
 }
 
 pub(super) fn load() -> Result<&'static Bindings, FactsRefusal> {
@@ -53,19 +93,12 @@ fn parse(raw: &str) -> Option<Bindings> {
     let mut result = Bindings::new();
     for binding in doc.bindings {
         let source = &binding.source;
-        let hex = |s: &str, len| s.len() == len && s.bytes().all(|b| b.is_ascii_hexdigit());
         if binding.position[2] > 15
             || binding.item == Some(0)
             || binding.action == Some(0)
             || binding.unique == Some(0)
             || (binding.action.is_none() && binding.unique.is_none())
-            || source.line == 0
-            || source.repository.is_empty()
-            || source.repository.len() > 160
-            || source.path.is_empty()
-            || source.path.len() > 512
-            || !hex(&source.revision, 40)
-            || !hex(&source.sha256, 64)
+            || !source.valid()
         {
             return None;
         }
@@ -109,6 +142,29 @@ pub(super) fn apply(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn authored_public_nests_require_closed_provenance() -> Result<(), Box<dyn std::error::Error>> {
+        let raw = include_str!("../../../../../../content/quests/native-object-bindings.json");
+        let bindings = parse(raw).ok_or("bindings")?;
+        assert_eq!(
+            bindings
+                .values()
+                .filter(|b| matches!(b.source, Source::Authored(_)))
+                .count(),
+            2
+        );
+        let mut document: serde_json::Value = serde_json::from_str(raw)?;
+        let row = document["bindings"]
+            .as_array_mut()
+            .ok_or("array")?
+            .iter_mut()
+            .find(|b| b["source"]["policy"].is_string())
+            .ok_or("authored")?;
+        row["source"]["policy"] = "content/quests/../outside.json".into();
+        assert!(parse(&serde_json::to_string(&document)?).is_none());
+        Ok(())
+    }
+
     #[test]
     fn source_jars_and_preplaced_walls_project_open_close_and_reset()
     -> Result<(), Box<dyn std::error::Error>> {

@@ -41897,6 +41897,216 @@
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
+      "inactive_reasons": [],
+      "key": "raid:world-events.spring-nest-1",
+      "kind": "calendar",
+      "name": "Spring nest 1",
+      "schedule": {
+        "interval_ms": 1000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 23,
+          "end_month": 4,
+          "start_day": 16,
+          "start_month": 4
+        }
+      },
+      "source_conflicts": [
+        "hatch_timer_and_population_are_oteryn_policy_CONTRACT_NOTES"
+      ],
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 32647,
+          "path": "data/items/items.xml",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.spring-nest-1",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 32647,
+              "path": "data/items/items.xml",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 6,
+                      "x": 32342,
+                      "y": 31602
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z06-x126-y123.b3",
+                        "sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac"
+                      }
+                    ],
+                    "to": {
+                      "floor": 6,
+                      "x": 32346,
+                      "y": 31606
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32342_31602_6-32346_31606_6",
+                  "boss": false,
+                  "creature": "oteryn:creature.dragon_hatchling",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 32647,
+                    "path": "data/items/items.xml",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+                  },
+                  "source_name": "Dragon Hatchling",
+                  "spawn_mode": "area"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Public dragon nest",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.spring-nest-2",
+      "kind": "calendar",
+      "name": "Spring nest 2",
+      "schedule": {
+        "interval_ms": 1000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 23,
+          "end_month": 4,
+          "start_day": 16,
+          "start_month": 4
+        }
+      },
+      "source_conflicts": [
+        "hatch_timer_and_population_are_oteryn_policy_CONTRACT_NOTES"
+      ],
+      "sources": [
+        {
+          "evidence": "OTS_HYPOTHESIS_ONLY",
+          "line": 32647,
+          "path": "data/items/items.xml",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.spring-nest-2",
+          "sources": [
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 32647,
+              "path": "data/items/items.xml",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 6,
+                      "x": 33975,
+                      "y": 32644
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z06-x132-y127.b3",
+                        "sha256": "4e1ea1caa375784daad020cad4d706fed1bb4c832585316962a2e790ab54ce04"
+                      }
+                    ],
+                    "to": {
+                      "floor": 6,
+                      "x": 33979,
+                      "y": 32648
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:33975_32644_6-33979_32648_6",
+                  "boss": false,
+                  "creature": "oteryn:creature.dragon_hatchling",
+                  "source": {
+                    "evidence": "OTS_HYPOTHESIS_ONLY",
+                    "line": 32647,
+                    "path": "data/items/items.xml",
+                    "repository": "zimbadev/crystalserver",
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+                  },
+                  "source_name": "Dragon Hatchling",
+                  "spawn_mode": "area"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Public dragon nest",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
       "global_observations": [
         {
           "facts": {
@@ -42271,8 +42481,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 2,
-      "total": 6
+      "active": 4,
+      "total": 8
     },
     "city": {
       "active": 2,

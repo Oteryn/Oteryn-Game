@@ -605,7 +605,14 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+        for name in [
+            "morgan",
+            "navigator",
+            "costello",
+            "budrik",
+            "sam",
+            "rosemarie",
+        ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)

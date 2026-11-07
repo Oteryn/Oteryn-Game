@@ -444,6 +444,34 @@ def mummy_raid(source: dict, creatures: dict, placements: dict) -> dict:
     return record
 
 
+def spring_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
+    """Oteryn hatch policy on verified public nest objects; not a donor timer."""
+    policy = load(root, "content/quests/world-event-object-policy.json")
+    source = {"path": "data/items/items.xml", "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "repository": REPOSITORY, "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"}
+    result = []
+    for member, row in enumerate(policy["bindings"], 1):
+        x, y, z = row["position"]
+        area = {"from": {"x": x-2, "y": y-2, "floor": z},
+                "to": {"x": x+2, "y": y+2, "floor": z}}
+        record = {"key": f"raid:world-events.spring-nest-{member}", "name": f"Spring nest {member}",
+            "wiki_area": "Public dragon nest", "boss_names": [], "wiki_records": [], "wiki_sources": [],
+            "sources": [citation(source, 32647)], "variant_group": None, "inactive_reasons": [],
+            "source_conflicts": ["hatch_timer_and_population_are_oteryn_policy_CONTRACT_NOTES"],
+            "schedule": {"kind": "calendar", "interval_ms": 1000, "start_immediately": True,
+                "repeat_persistent": True,
+                "window": {"start_month": 4, "start_day": 16, "end_month": 4, "end_day": 23}},
+            "end": {"kind": "until_reset", "despawn_after_ms": None},
+            "variants": [{"key": f"world-events.spring-nest-{member}", "announcements": [], "unresolved": [],
+                "sources": [citation(source, 32647)], "waves": [{"delay_ms": 0, "entries": [{
+                    "creature": "oteryn:creature.dragon_hatchling", "source_name": "Dragon Hatchling",
+                    "amount": {"min": 1, "max": 1}, "area": area, "area_anchor": area_anchor(area),
+                    "spawn_mode": "area", "boss": False, "source": citation(source, 32647)}]}]}]}
+        qualify(record, creatures, placements)
+        result.append(record)
+    return result
+
+
 def calendar_schedule(observation: dict) -> dict:
     # Inclusive World reset dates: the source end server-save belongs to the next
     # inactive reset date. Null times/frequency remain unknown, not midnight.
@@ -629,6 +657,7 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
                             creature_catalogue(root), load(root, PLACEMENTS))
     records.append(mummy_raid(retained_mummy_source(root), creature_catalogue(root), load(root, PLACEMENTS)))
+    records.extend(spring_raids(root, creature_catalogue(root), load(root, PLACEMENTS)))
     records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}

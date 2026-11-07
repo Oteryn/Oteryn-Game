@@ -60,6 +60,15 @@ fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }
 #[test]
+fn wevents_postgres_spring_merchant_reward() -> TestResult {
+    scenario("qengine-rewards-spring-claim")
+}
+#[test]
+fn wevents_postgres_spring_merchant_purchase() -> TestResult {
+    scenario("qengine-rewards-spring-buy")
+}
+
+#[test]
 fn qengine_rewards_backpack_exchange() -> TestResult {
     scenario("qengine-rewards-backpack")
 }
@@ -608,6 +617,8 @@ pub(super) async fn exercise(
         "qengine-rewards-hallowed" => "hallowed-holy-water",
         "qengine-rewards-outfox" => "outfox-helmet",
         "qengine-rewards-backpack" => "sam-backpack",
+        "qengine-rewards-spring-claim" => "spring-nest-claim",
+        "qengine-rewards-spring-buy" => "spring-nest-buy",
         _ => return Err("unknown reward scenario".into()),
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
@@ -618,19 +629,27 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         // Palimuth's source completion at questline 52 does not test the side.
         // Keep the actual callback unchanged while arranging the opposite side.
-        setup.storage.retain(|state| !state.track.ends_with("/side_decision"));
+        setup
+            .storage
+            .retain(|state| !state.track.ends_with("/side_decision"));
         for state in &mut setup.storage {
             if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
                 state.minimum = -1;
             }
         }
-        setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
-            track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
-            minimum: 2,
-            maximum: 2,
-            set: 2,
-            preserve: true,
-        });
+        setup
+            .storage
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+                track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
+                    .into(),
+                minimum: 2,
+                maximum: 2,
+                set: 2,
+                preserve: true,
+            });
+    }
+    if key.starts_with("spring-nest-") {
+        spring_fixture(owner, admitted, h, true).await?;
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
@@ -726,7 +745,7 @@ pub(super) async fn exercise(
             );
         }
     }
-    if key == "outfox-helmet" {
+    if key == "outfox-helmet" || key == "spring-nest-buy" {
         capacity_refusal(owner, admitted, h, npc, command, &callback).await?;
         command += 1;
     }
@@ -817,7 +836,11 @@ pub(super) async fn exercise(
     for s in &callback.storage {
         assert_eq!(
             super::classic_quests::progress(owner, admitted, authority, &s.track).await?,
-            s.set
+            if callback.repeatable {
+                s.minimum + s.set
+            } else {
+                s.set
+            }
         );
     }
     for input in &callback.take {
@@ -1128,5 +1151,52 @@ async fn legacy_decaying(
         retained, receipt_id,
         "selection preserves the original immutable grant receipt"
     );
+    Ok(())
+}
+
+pub(super) async fn spring_fixture(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    hatched: bool,
+) -> TestResult {
+    use crate::durability::world_event::changes::timed::{self, EventKind, Input};
+    let at = 1_934_078_400_000_i64;
+    let world = owner.world_id;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,'spring-reward-fixture',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($3::double precision/1000),'2031-04')")
+        .bind(world.as_bytes().as_slice()).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+        .bind(world.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    owner.reset_epoch = 1;
+    // The World transaction locks admission relations. Read the Character fence
+    // first instead of recursively entering the Root while those locks are held.
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "spring fixture fence read failed")?
+        .ok_or("spring fixture session terminal")?;
+    let mut tx = h.pool.begin().await?;
+    let mut state = timed::poll(&mut tx, world, 1, EventKind::SpringIntoLife, at)
+        .await?
+        .ok_or("spring reward season")?;
+    if hatched {
+        // Native placement ACK is independently proved by the owner/actor cases.
+        // This fixture starts at that committed precondition to exercise real MINT.
+        state.note_spawn(1, true).map_err(debug)?;
+        state
+            .advance(EventKind::SpringIntoLife, at + 3_600_000, Input::Tick, 0)
+            .map_err(debug)?;
+        sqlx::query("UPDATE game_world_timed_events SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND event_key='spring_into_life'")
+        .bind(world.as_bytes().as_slice()).bind(serde_json::to_value(&state)?).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_world_timed_participants(world_id,event_key,cycle_id,character_id,credited,reward_ready) SELECT world_id,event_key,cycle_id,encode($2,'hex')::uuid,1,true FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key='spring_into_life'")
+        .bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at + if hatched { 3_600_000 } else { 0 }))
+        .map_err(debug)?;
     Ok(())
 }

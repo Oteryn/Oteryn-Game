@@ -23,7 +23,11 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
             fixture::runtime()
                 .map_err(fixture::debug)?
                 .block_on(async {
-                    for case in ["chyllfroest", "flower", "mummy"] {
+                    let catalogue: serde_json::Value = serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/encounters/world-changes/owner-catalogue.json")))?;
+                    let spring_published = catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry| entry["key"] == "spring_into_life" && entry["status"] == "QUALIFIED");
+                    let mut cases = vec!["chyllfroest", "flower", "mummy"];
+                    if spring_published { cases.push("spring"); }
+                    for case in cases {
                         let started = std::time::Instant::now();
                         let h = fixture::Harness::create(
                             admin.clone(),
@@ -34,7 +38,8 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                         let result = match case {
                             "chyllfroest" => chyllfroest(&h).await,
                             "flower" => flower(&h).await,
-                            _ => mummy(&h).await,
+                            "mummy" => mummy(&h).await,
+                            _ => spring(&h).await,
                         };
                         h.cleanup().await?;
                         result?;
@@ -755,5 +760,421 @@ async fn mummy(h: &fixture::Harness) -> fixture::TestResult {
         result.is_some(),
         "the current cycle remains independently usable"
     );
+    Ok(())
+}
+
+async fn spring(h: &fixture::Harness) -> fixture::TestResult {
+    // 2031-04-16 06:00 Europe/Berlin, retained public nests and authored timer.
+    let at = 1_934_078_400_000_i64;
+    seed(h, at)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let world = fixture::scope()?.world_id();
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let selected = candidate("raid:world-events.spring-nest-1", 91)?;
+    let mut req = request(selected.clone(), at)?;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+            .firings
+            .is_empty()
+    );
+    let mut tx = h
+        .pool
+        .begin()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let state = timed::poll(&mut tx, world, 1, EventKind::SpringIntoLife, at)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+        .ok_or("spring selected")?;
+    assert_eq!(state.phase, Phase::Active);
+    tx.commit()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("INSERT INTO game_durability_fresh_admission_receipts SELECT decode('01'||repeat('00',32),'hex'),game_session_id,account_id,character_id,world_id,runtime_scope_channel_id,character_lease_generation,scope_ownership_generation,1,current_transport_ref,1,'{}',1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid ON CONFLICT DO NOTHING")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await.map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2,control_loss_epoch=NULL,original_grace_deadline=NULL,predecessor_generation=NULL,fresh_replay_key=decode('01'||repeat('00',32),'hex') WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await.map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
+    for (op, input, expected) in [
+        (101, Input::BeginObject(1), Some(true)),
+        (102, Input::BeginObject(1), Some(false)),
+        (103, Input::Reward, None),
+    ] {
+        let mut tx = h
+            .pool
+            .begin()
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+        assert_eq!(
+            timed::interact(
+                &mut tx,
+                TimedActor {
+                    recovery: &recovery,
+                    node: &h.node,
+                    fence: fixture::fence(1)?
+                },
+                TimedRequest {
+                    world,
+                    epoch: 1,
+                    kind: EventKind::SpringIntoLife,
+                    now_ms: at,
+                    operation: fixture::id(op),
+                    input
+                }
+            )
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?,
+            expected
+        );
+        tx.commit()
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    }
+    req.now_ms = at + 3_600_000 - 1;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+            .firings
+            .is_empty()
+    );
+    req.now_ms += 1;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+            .firings
+            .len(),
+        1
+    );
+    let wave = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(91),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+        .ok_or("hatch wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+        return Err("hatch wave kind".into());
+    };
+    assert_eq!(creatures.len(), 1);
+    assert!(creatures[0].timed_event);
+    assert_eq!(
+        creatures[0].creature.as_str(),
+        "oteryn:creature.dragon_hatchling"
+    );
+    let outcomes = creatures
+        .iter()
+        .map(|c| RaidPlacementOutcome {
+            identity: c.identity,
+            placed: true,
+        })
+        .collect();
+    h.root
+        .acknowledge_raid_effect(&h.node, wave.identity, outcomes, req.now_ms)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let end = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(91),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await?
+        .ok_or("first hatch completion")?;
+    h.root
+        .acknowledge_raid_effect(&h.node, end.identity, vec![], req.now_ms)
+        .await?;
+    let mut tx = h
+        .pool
+        .begin()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            TimedRequest {
+                world,
+                epoch: 1,
+                kind: EventKind::SpringIntoLife,
+                now_ms: req.now_ms,
+                operation: fixture::id(104),
+                input: Input::Reward
+            }
+        )
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?,
+        Some(true)
+    );
+    tx.rollback()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?; // Preview cannot consume the later sequenced MINT claim.
+    let mut tx = h
+        .pool
+        .begin()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    assert_eq!(
+        timed::interact(
+            &mut tx,
+            TimedActor {
+                recovery: &recovery,
+                node: &h.node,
+                fence: fixture::fence(1)?
+            },
+            TimedRequest {
+                world,
+                epoch: 1,
+                kind: EventKind::SpringIntoLife,
+                now_ms: req.now_ms,
+                operation: fixture::id(105),
+                input: Input::BeginObject(2)
+            }
+        )
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?,
+        Some(true)
+    );
+    tx.commit()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let second = candidate("raid:world-events.spring-nest-2", 92)?;
+    let failed = request(second.clone(), at + 7_200_000)?;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, failed.clone())
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+            .firings
+            .len(),
+        1
+    );
+    settle_spring_wave(h, &failed, &second, 92, false)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let mut tx = h
+        .pool
+        .begin()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let state = timed::poll(&mut tx, world, 1, EventKind::SpringIntoLife, failed.now_ms)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+        .ok_or("failed hatch state")?;
+    assert!(!state.lifecycle.last_success_ms.contains_key(&2));
+    assert_eq!(
+        state.lifecycle.objects[&2].ready_at(),
+        Some(at + 10_800_000)
+    );
+    tx.commit()
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let retry = request(
+        candidate("raid:world-events.spring-nest-2", 93)?,
+        at + 10_800_000,
+    )?;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, retry.clone())
+            .await
+            .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+            .firings
+            .len(),
+        1
+    );
+    settle_spring_wave(h, &retry, &second, 93, true)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let retired: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_retirements WHERE firing_id=encode($1,'hex')::uuid)")
+        .bind(fixture::id(92).as_slice()).fetch_one(&h.pool).await?;
+    assert!(retired);
+    let terminal: i16 = sqlx::query_scalar(
+        "SELECT state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid",
+    )
+    .bind(fixture::id(92).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(terminal, 2, "retirement preserves completed firing history");
+    let newer = request(
+        candidate("raid:world-events.spring-nest-1", 94)?,
+        retry.now_ms,
+    )?;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, newer.clone())
+            .await?
+            .firings
+            .len(),
+        1
+    );
+    let lost = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(91),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            retry.now_ms,
+        )
+        .await?
+        .ok_or("retired hatch cleanup")?;
+    assert!(matches!(lost.action, CommittedRaidAction::Lost));
+    h.root
+        .acknowledge_raid_effect(&h.node, lost.identity, vec![], retry.now_ms)
+        .await?;
+    let retained: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_raid_creatures WHERE firing_id=encode($1,'hex')::uuid AND state=1").bind(fixture::id(91).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained, 0,
+        "retired hatch actors leave through LOST cleanup"
+    );
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    let mut reset = request(
+        candidate("raid:world-events.spring-nest-1", 95)?,
+        retry.now_ms + 1,
+    )?;
+    reset.reset_epoch = 2;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, reset.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    let mut tx = h.pool.begin().await?;
+    let state = timed::poll(&mut tx, world, 2, EventKind::SpringIntoLife, reset.now_ms)
+        .await?
+        .ok_or("reset hatch state")?;
+    assert_eq!(
+        state.lifecycle.objects[&1].ready_at(),
+        Some(reset.now_ms + 3_600_000)
+    );
+    assert_eq!(state.lifecycle.last_success_ms[&1], at + 3_600_000);
+    tx.commit().await?;
+    reset.now_ms += 3_600_000;
+    reset.candidates = vec![candidate("raid:world-events.spring-nest-1", 96)?];
+    // The reused raid schedule observes its normal one-minute reset cadence.
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, reset.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    reset.now_ms += oteryn_gameplay_encounter_rules::raid::CHECK_INTERVAL_MS;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, reset)
+            .await?
+            .firings
+            .len(),
+        1
+    );
+
+    Ok(())
+}
+
+async fn settle_spring_wave(
+    h: &fixture::Harness,
+    req: &RaidSchedulerCheck,
+    selected: &RaidScheduleCandidate,
+    id: u8,
+    placed: bool,
+) -> fixture::TestResult {
+    let wave = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(id),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+        .ok_or("spring wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+        return Err("spring wave kind".into());
+    };
+    let outcomes = creatures
+        .iter()
+        .map(|c| RaidPlacementOutcome {
+            identity: c.identity,
+            placed,
+        })
+        .collect();
+    h.root
+        .acknowledge_raid_effect(&h.node, wave.identity, outcomes, req.now_ms)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    let end = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(id),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?
+        .ok_or("spring completion")?;
+    h.root
+        .acknowledge_raid_effect(&h.node, end.identity, vec![], req.now_ms)
+        .await
+        .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
     Ok(())
 }
