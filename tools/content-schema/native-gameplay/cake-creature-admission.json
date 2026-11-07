@@ -1,0 +1,1552 @@
+{
+  "schema": "OTERYN_SEASONAL_CREATURE_ADMISSION/v1",
+  "crystal_commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "sources": [
+    {
+      "path": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf"
+    },
+    {
+      "path": "src/creatures/monsters/monsters.hpp",
+      "sha256": "24c5b9830d89c4150ccdaecf12f6a5d892e926b5e81c1f812d0081df32220426"
+    },
+    {
+      "path": "src/creatures/creatures_definitions.hpp",
+      "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+    },
+    {
+      "path": "src/game/game.cpp",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.cpp",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7"
+    }
+  ],
+  "source_blob": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d",
+  "qualification": "OTS_HYPOTHESIS_ONLY",
+  "capture_tool_sha256": "0d5545c368245235bbef4774d2c7da8270c156bcf82473b76d5720befe292fbf",
+  "stage_tool_sha256": "03c3f04acf5bb9c8353d104ba7e9b4254b253a2d27ff14ada0a928ea022dd59d",
+  "bundle": {
+    "monster.json": {
+      "creature": {
+        "identity": {
+          "key": "canary:creature/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "display_name": "Cake Golem",
+        "inspection": {
+          "description": "a cake golem"
+        },
+        "stats": {
+          "max_health": 444,
+          "initial_health": 444,
+          "experience": 100,
+          "speed": 95,
+          "armor": 8,
+          "defense": 8,
+          "critical_chance_percent": 0,
+          "mitigation_percent": {
+            "numerator": 41,
+            "denominator": 100
+          }
+        },
+        "resistances": [
+          {
+            "damage_type": "physical",
+            "reduction_percent": {
+              "numerator": 20,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "death",
+            "reduction_percent": {
+              "numerator": 85,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "holy",
+            "reduction_percent": {
+              "numerator": 95,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "ice",
+            "reduction_percent": {
+              "numerator": 95,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "fire",
+            "reduction_percent": {
+              "numerator": 85,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "energy",
+            "reduction_percent": {
+              "numerator": 90,
+              "denominator": 1
+            }
+          },
+          {
+            "damage_type": "earth",
+            "reduction_percent": {
+              "numerator": 95,
+              "denominator": 1
+            }
+          }
+        ],
+        "immunities": {
+          "damage_types": [],
+          "conditions": [
+            "invisible"
+          ]
+        },
+        "flags": {
+          "attackable": true,
+          "illusionable": false,
+          "health_hidden": false
+        },
+        "summoning": {
+          "summonable": false,
+          "convinceable": true,
+          "is_familiar": false,
+          "mana_cost": 0
+        },
+        "presentation": {
+          "family": "Presentation",
+          "key": "canary:presentation/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "behavior": {
+          "family": "Behavior",
+          "key": "canary:behavior/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "damage_reflection": [],
+        "healing_from_damage": [],
+        "system_eligibility": {
+          "prey": true,
+          "exclusive_prey": false,
+          "forge": true,
+          "reward_boss": false
+        },
+        "spawn_eligibility": {
+          "period": "all",
+          "ignore_period_underground": false,
+          "blocked_by_nearby_players": false
+        },
+        "name_forms": {
+          "article": "a"
+        },
+        "bestiary": {
+          "class": "Construct",
+          "taxonomy": "construct",
+          "difficulty": "easy",
+          "occurrence": "very_rare",
+          "stars": 2,
+          "kill_thresholds": [
+            2,
+            3,
+            5
+          ],
+          "charm_points": 30,
+          "locations": "Thais, Carlin, Edron, Darashia and Liberty Bay during the world quest A Piece of Cake."
+        },
+        "corpse_item": {
+          "family": "Item",
+          "key": "canary:item/12141",
+          "revision": "canary-47dfd51f"
+        },
+        "death_residue": {
+          "item": {
+            "family": "Item",
+            "key": "canary:item/2886",
+            "revision": "canary-47dfd51f"
+          },
+          "fluid_type": "slime"
+        },
+        "loot": {
+          "family": "Loot",
+          "key": "canary:loot/cake_golem",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "behavior": {
+        "identity": {
+          "key": "canary:behavior/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "movement": {
+          "can_walk": true,
+          "pass_through": false,
+          "pushable": true,
+          "push_items": false,
+          "push_creatures": false,
+          "field_permissions": {
+            "energy": true,
+            "fire": true,
+            "poison": true
+          }
+        },
+        "targeting": {
+          "hostile": true,
+          "can_target": true,
+          "sense_invisible": true,
+          "target_distance_tiles": 1,
+          "static_attack_chance_percent": 90,
+          "flee_health": 0,
+          "change_target": {
+            "interval_ms": 4000,
+            "chance_percent": 8
+          },
+          "strategy_weights": {
+            "nearest": 100,
+            "damage": 0,
+            "health": 0,
+            "random": 0
+          }
+        },
+        "attacks": [
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/cake_golem/attack-1",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 100
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/cake_golem/attack-2",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 15
+          },
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/cake_golem/attack-3",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 60
+          }
+        ],
+        "defenses": [
+          {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/cake_golem/defense-1",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 15
+          }
+        ],
+        "event_bindings": [],
+        "voices": {
+          "interval_ms": 5000,
+          "chance_percent": 10,
+          "entries": [
+            {
+              "text": "Must... reach... the machine...",
+              "mode": "say"
+            },
+            {
+              "text": "Sugary rage!",
+              "mode": "yell"
+            }
+          ]
+        }
+      },
+      "presentation": {
+        "identity": {
+          "key": "canary:presentation/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "appearance": {
+          "asset_binding": "canary.appearance:object/6393",
+          "palette_bindings": [],
+          "attachment_bindings": [],
+          "visual_effect_bindings": []
+        },
+        "light": {
+          "level": 0
+        },
+        "audio": {
+          "event_bindings": []
+        }
+      },
+      "loot": {
+        "identity": {
+          "key": "canary:loot/cake_golem",
+          "revision": "canary-47dfd51f"
+        },
+        "algorithm": "IndependentBernoulli",
+        "entries": [
+          {
+            "item": {
+              "family": "Item",
+              "key": "canary:item/12143",
+              "revision": "canary-47dfd51f"
+            },
+            "min_count": 1,
+            "max_count": 1,
+            "probability_percent": 50,
+            "skip_later_same_item_after_success": false
+          }
+        ]
+      }
+    },
+    "dependencies.json": {
+      "abilities": [
+        {
+          "identity": {
+            "key": "canary:ability/cake_golem/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "melee",
+          "range_tiles": 1,
+          "needs_target": true,
+          "needs_direction": false,
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "canary:effect/cake_golem/attack-1",
+              "revision": "canary-47dfd51f"
+            }
+          ]
+        },
+        {
+          "identity": {
+            "key": "canary:ability/cake_golem/attack-2",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "spell",
+          "range_tiles": 7,
+          "needs_target": true,
+          "needs_direction": false,
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "canary:effect/cake_golem/attack-2",
+              "revision": "canary-47dfd51f"
+            }
+          ]
+        },
+        {
+          "identity": {
+            "key": "canary:ability/cake_golem/attack-3",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "spell",
+          "range_tiles": 7,
+          "needs_target": true,
+          "needs_direction": false,
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "canary:effect/cake_golem/attack-3",
+              "revision": "canary-47dfd51f"
+            }
+          ]
+        },
+        {
+          "identity": {
+            "key": "canary:ability/cake_golem/defense-1",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "spell",
+          "range_tiles": 0,
+          "needs_target": false,
+          "needs_direction": false,
+          "effects": [
+            {
+              "family": "Effect",
+              "key": "canary:effect/cake_golem/defense-1",
+              "revision": "canary-47dfd51f"
+            }
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "identity": {
+            "key": "canary:effect/cake_golem/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "operation": "damage",
+          "damage_type": "physical",
+          "formula": {
+            "family": "Formula",
+            "key": "canary:formula/cake_golem/attack-1-1",
+            "revision": "canary-47dfd51f"
+          },
+          "mitigated_by": [
+            "armor",
+            "shield"
+          ]
+        },
+        {
+          "identity": {
+            "key": "canary:effect/cake_golem/attack-2",
+            "revision": "canary-47dfd51f"
+          },
+          "operation": "damage",
+          "damage_type": "undefined",
+          "formula": {
+            "family": "Formula",
+            "key": "canary:formula/cake_golem/attack-2-1",
+            "revision": "canary-47dfd51f"
+          },
+          "presentation": {
+            "projectile_asset_binding": "canary.appearance:missile/cake",
+            "impact_asset_binding": "canary.appearance:effect/poisonarea"
+          }
+        },
+        {
+          "identity": {
+            "key": "canary:effect/cake_golem/attack-3",
+            "revision": "canary-47dfd51f"
+          },
+          "operation": "condition",
+          "duration_ms": 8000,
+          "condition": {
+            "type": "drunk",
+            "lifetime": "fixed_duration"
+          },
+          "presentation": {
+            "projectile_asset_binding": "canary.appearance:missile/cake"
+          }
+        },
+        {
+          "identity": {
+            "key": "canary:effect/cake_golem/defense-1",
+            "revision": "canary-47dfd51f"
+          },
+          "operation": "heal",
+          "damage_type": "healing",
+          "formula": {
+            "family": "Formula",
+            "key": "canary:formula/cake_golem/defense-1-1",
+            "revision": "canary-47dfd51f"
+          },
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_blue"
+          }
+        }
+      ],
+      "formulas": [
+        {
+          "identity": {
+            "key": "canary:formula/cake_golem/attack-1-1",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "range",
+          "magnitude": {
+            "minimum": 0,
+            "maximum": 45
+          }
+        },
+        {
+          "identity": {
+            "key": "canary:formula/cake_golem/attack-2-1",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "range",
+          "magnitude": {
+            "minimum": 0,
+            "maximum": 40
+          }
+        },
+        {
+          "identity": {
+            "key": "canary:formula/cake_golem/defense-1-1",
+            "revision": "canary-47dfd51f"
+          },
+          "kind": "range",
+          "magnitude": {
+            "minimum": 180,
+            "maximum": 250
+          }
+        }
+      ],
+      "documents": [],
+      "items": [
+        {
+          "identity": {
+            "key": "canary:item/12141",
+            "revision": "canary-47dfd51f"
+          },
+          "presentation": {
+            "name": "dead cake golem",
+            "asset_binding": "canary.appearance:object/12141",
+            "article": "a"
+          },
+          "classification": {
+            "is_corpse": true
+          },
+          "physical": {
+            "weight_centioz": 4000,
+            "movable": false,
+            "pickupable": false
+          },
+          "collision": {
+            "block_walk": false,
+            "block_projectiles": false,
+            "block_pathfinding": false
+          },
+          "temporal": {
+            "decay_action": "remove",
+            "stop_duration": false,
+            "duration_ms": 60000
+          },
+          "container": {
+            "capacity": 10
+          }
+        }
+      ],
+      "loot_tables": []
+    },
+    "catalog.json": {
+      "definitions": [
+        {
+          "family": "Item",
+          "key": "canary:item/12143",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Item",
+          "key": "canary:item/2886",
+          "revision": "canary-47dfd51f"
+        }
+      ],
+      "assets": [
+        "canary.appearance:effect/magic_blue",
+        "canary.appearance:effect/poisonarea",
+        "canary.appearance:missile/cake",
+        "canary.appearance:object/12141",
+        "canary.appearance:object/6393"
+      ]
+    },
+    "manifest.json": {
+      "sources": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+        }
+      ],
+      "entries": [
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 77,
+          "source_field": "attacks[1]",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/attacks/0",
+          "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 79,
+          "source_field": "attacks[2]",
+          "kind": "field",
+          "status": "mapped",
+          "resolution": "Crystal src/creatures/monsters/monsters.hpp:244 defaults omitted type to Undefined; src/creatures/creatures_definitions.hpp:805 names family4; src/game/game.cpp:8142 bypasses mana shield; src/items/functions/item/item_parse.cpp:534 excludes item all-absorb.",
+          "destination": "/monster/behavior/attacks/1"
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 81,
+          "source_field": "attacks[3]",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/attacks/1",
+          "resolution": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 1,
+          "source_field": "defenses[1]",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/defenses/0",
+          "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 26,
+          "source_field": "corpse",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/corpse_item",
+          "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 73,
+          "source_field": "loot[1]",
+          "kind": "dependency",
+          "status": "mapped",
+          "destination": "/monster/loot/entries/0",
+          "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 12143 \"sweet and sugary substance\" is a declared source-scoped reference, not an admitted canonical Item."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 109,
+          "source_field": "elements.type=COMBAT_HEALINGDAMAGE",
+          "kind": "field",
+          "status": "approved_omission",
+          "resolution": "an undefined Lua global evaluates to nil in Canary; registerMonsterType.elements skips an entry without type."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 11,
+          "source_field": "Bestiary",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/bestiary",
+          "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 39,
+          "source_field": "flags.pass_through",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/movement/pass_through",
+          "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 39,
+          "source_field": "flags.canWalk/canTarget",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/movement/can_walk",
+          "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 4,
+          "source_field": "description",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/inspection/description",
+          "resolution": "Original source text, unchanged."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 23,
+          "source_field": "health",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/initial_health",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 24,
+          "source_field": "maxHealth",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/max_health",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 5,
+          "source_field": "experience",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/experience",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 27,
+          "source_field": "speed",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/speed",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 6,
+          "source_field": "outfit",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/presentation/appearance/asset_binding",
+          "resolution": "Declared source appearance binding, not an admitted asset."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 60,
+          "source_field": "light",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/presentation/light/level",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 39,
+          "source_field": "flags",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/flags",
+          "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 30,
+          "source_field": "changeTarget",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/targeting/change_target",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 35,
+          "source_field": "strategiesTarget",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/targeting/strategy_weights",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 65,
+          "source_field": "voices",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/behavior/voices",
+          "resolution": "Original source text, unchanged."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 100,
+          "source_field": "elements",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/resistances",
+          "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 115,
+          "source_field": "immunities",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/immunities",
+          "resolution": "Invisible condition immunity also sets sense_invisible."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 86,
+          "source_field": "defenses.armor",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/armor",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 85,
+          "source_field": "defenses.defense",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/defense",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 87,
+          "source_field": "defenses.mitigation",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/stats/mitigation_percent",
+          "resolution": "Canary float percent points as an exact decimal ratio."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 28,
+          "source_field": "manaCost",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature/summoning/mana_cost",
+          "resolution": "Direct source value."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 10,
+          "source_field": "raceId",
+          "kind": "field",
+          "status": "metadata_only",
+          "resolution": "Foreign identifier; provenance only."
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+          "source_line": 25,
+          "source_field": "race",
+          "kind": "dependency",
+          "status": "mapped",
+          "destination": "/monster/creature/death_residue",
+          "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+        },
+        {
+          "source_index": 1,
+          "source_file": "config.lua.dist",
+          "source_line": 519,
+          "source_field": "maxDamageReflection/minElementalResistance/maxElementalResistance",
+          "kind": "field",
+          "status": "mapped",
+          "destination": "/monster/creature",
+          "resolution": "Pinned distribution-default profile only; {\"evidence\": [{\"file\": \"config.lua.dist\", \"git_blob\": \"55ccf0802351aa84a98bfe59e176a5f98f94a56b\", \"setting_lines\": {\"maxDamageReflection\": 519, \"maxElementalResistance\": 518, \"minElementalResistance\": 517}}, {\"file\": \"src/config/configmanager.cpp\", \"git_blob\": \"e5bc946fa5351f4ab8d0613b4869a6c2c9ce04dd\", \"setting_lines\": {\"maxDamageReflection\": 312, \"maxElementalResistance\": 313, \"minElementalResistance\": 322}}], \"evidence_class\": \"OTS_HYPOTHESIS_ONLY\", \"loader_defaults\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}, \"profile\": \"PINNED_DISTRIBUTION_DEFAULT\", \"repository\": \"opentibiabr/canary\", \"revision\": \"47dfd51f45280a59a1d3e50ba7edd573d7234446\", \"settings\": {\"maxDamageReflection\": 200, \"maxElementalResistance\": 200, \"minElementalResistance\": -200}}"
+        },
+        {
+          "source_index": 0,
+          "source_file": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+          "source_line": 516,
+          "source_field": "CakeQuest.Items.SweetAndSugarySubstance",
+          "kind": "dependency",
+          "status": "mapped",
+          "destination": "/monster/loot/entries/0/item",
+          "resolution": "Exact same-revision config table supplied only in this isolated preparation harness; value12143. Product importer remains unchanged."
+        }
+      ]
+    }
+  },
+  "staged": {
+    "schema": "OTERYN_CREATURE_ADMISSION_STAGED/v1",
+    "records": [
+      {
+        "kind": "Ability",
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-1",
+          "revision": "definition-r1"
+        },
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.cake_golem.attack-1",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      {
+        "kind": "Ability",
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-2",
+          "revision": "definition-r1"
+        },
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.cake_golem.attack-2",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      {
+        "kind": "Ability",
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-3",
+          "revision": "definition-r1"
+        },
+        "effects": []
+      },
+      {
+        "kind": "Ability",
+        "identity": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.defense-1",
+          "revision": "definition-r1"
+        },
+        "effects": [
+          {
+            "family": "Effect",
+            "key": "oteryn:effect.creature.cake_golem.defense-1",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      {
+        "kind": "Generic",
+        "identity": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ServerOnly"
+      },
+      {
+        "kind": "Creature",
+        "identity": {
+          "family": "Creature",
+          "key": "oteryn:creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ClientSafe",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "loot": {
+          "family": "Loot",
+          "key": "oteryn:loot.creature.cake_golem",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Effect",
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.attack-1",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-1-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Effect",
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.attack-2",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ServerOnly",
+        "effect_family": "Damage",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-2-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Effect",
+        "identity": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.defense-1",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ServerOnly",
+        "effect_family": "Heal",
+        "formula": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.defense-1-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Formula",
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-1-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Formula",
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-2-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Formula",
+        "identity": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.defense-1-1",
+          "revision": "definition-r1"
+        }
+      },
+      {
+        "kind": "Loot",
+        "identity": {
+          "family": "Loot",
+          "key": "oteryn:loot.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "algorithm": "IndependentBernoulliPpm",
+        "entries": [
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i12143",
+              "revision": "definition-r1"
+            },
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 500000
+          }
+        ]
+      },
+      {
+        "kind": "Generic",
+        "identity": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "client_projection": "ClientSafe"
+      }
+    ],
+    "authoring_profiles": [
+      {
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "kind": "Melee",
+              "range_tiles": 1,
+              "needs_target": true,
+              "needs_direction": false,
+              "effects": [
+                {
+                  "kind": "Executable",
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.cake_golem.attack-1",
+                    "revision": "definition-r1"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-2",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "kind": "Spell",
+              "range_tiles": 7,
+              "needs_target": true,
+              "needs_direction": false,
+              "effects": [
+                {
+                  "kind": "Executable",
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.cake_golem.attack-2",
+                    "revision": "definition-r1"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.attack-3",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "kind": "Spell",
+              "range_tiles": 7,
+              "needs_target": true,
+              "needs_direction": false,
+              "effects": [
+                {
+                  "kind": "Inline",
+                  "effect": {
+                    "key": "oteryn:effect.creature.cake_golem.attack-3",
+                    "operation": {
+                      "operation": "Condition",
+                      "condition": {
+                        "condition_type": "drunk",
+                        "lifetime": "FixedDuration"
+                      },
+                      "duration_ms": 8000
+                    },
+                    "presentation": {
+                      "projectile_asset_binding": "canary.appearance:missile/cake"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.cake_golem.defense-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Ability",
+          "profile": {
+            "details": {
+              "kind": "Spell",
+              "range_tiles": 0,
+              "needs_target": false,
+              "needs_direction": false,
+              "effects": [
+                {
+                  "kind": "Executable",
+                  "effect": {
+                    "family": "Effect",
+                    "key": "oteryn:effect.creature.cake_golem.defense-1",
+                    "revision": "definition-r1"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": true,
+              "push_items": false,
+              "push_creatures": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 100,
+                "damage": 0,
+                "health": 0,
+                "random": 0
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.cake_golem.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.cake_golem.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.cake_golem.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 600000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.cake_golem.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              }
+            ],
+            "voices": {
+              "interval_ms": 5000,
+              "chance_ppm": 100000,
+              "entries": [
+                {
+                  "text": "Must... reach... the machine...",
+                  "mode": "Say"
+                },
+                {
+                  "text": "Sugary rage!",
+                  "mode": "Yell"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 444,
+            "experience": 100,
+            "speed": 95,
+            "armor": 8,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "numerator": 85,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 95,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "numerator": 90,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": 85,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "numerator": 95,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 95,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "numerator": 20,
+                  "denominator": 1
+                }
+              }
+            ],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.cake_golem.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.cake_golem.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.cake_golem.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.cake_golem.defense-1",
+                "revision": "definition-r1"
+              }
+            ],
+            "mitigation": {
+              "numerator": 41,
+              "denominator": 100
+            },
+            "bestiary": {
+              "difficulty": "easy",
+              "occurrence": "very_rare",
+              "kill_thresholds": [
+                2,
+                3,
+                5
+              ],
+              "charm_points": 30
+            },
+            "details": {
+              "display_name": "Cake Golem",
+              "inspection": "a cake golem",
+              "defense": 8,
+              "critical_chance_ppm": 0,
+              "reference_level": null,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": true,
+                "is_familiar": false,
+                "mana_cost": 0
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible"
+              ],
+              "bestiary": {
+                "class": "Construct",
+                "taxonomy": "construct",
+                "stars": 2,
+                "locations": "Thais, Carlin, Edron, Darashia and Liberty Bay during the world quest A Piece of Cake."
+              },
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i12141",
+                "revision": "definition-r1"
+              },
+              "death_residue": {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                },
+                "fluid_type": "slime"
+              }
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.attack-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "physical",
+            "mitigated_by": [
+              "Armor",
+              "Shield"
+            ]
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.attack-2",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "undefined",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/poisonarea",
+              "projectile_asset_binding": "canary.appearance:missile/cake"
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.cake_golem.defense-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Effect",
+          "profile": {
+            "damage_type": "healing",
+            "presentation": {
+              "impact_asset_binding": "canary.appearance:effect/magic_blue"
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-1-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "minimum": 0,
+            "maximum": 45
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.attack-2-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "minimum": 0,
+            "maximum": 40
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Formula",
+          "key": "oteryn:formula.creature.cake_golem.defense-1-1",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Formula",
+          "profile": {
+            "formula": "Range",
+            "minimum": 180,
+            "maximum": 250
+          }
+        }
+      },
+      {
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "light_level": 0,
+            "asset_binding": "canary.appearance:object/6393"
+          }
+        }
+      }
+    ],
+    "source_identity_bindings": [
+      {
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8",
+        "identity_namespace": "crystalserver/monster-file",
+        "external_id": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.cake_golem",
+          "revision": "definition-r1"
+        },
+        "disposition": "EXACT"
+      }
+    ]
+  }
+}
