@@ -9493,7 +9493,22 @@
       "1224_quest_reward_backpack_outputs.sql",
       "1225_quest_world_reward_participants.sql"
     ],
-    "status": "compiling WIP; pre-rename focused PostgreSQL backpack-output test passed in 6.812420905s on PostgreSQL 18.6; post-rename verification pending",
-    "red_point": "Six-entry native treasure qualification remains RED: entries=0, agaric=false, composed_maps=0, repeated_map=false, ring=0, quartz=0, coins=0, stage=4. Strict Clippy interrupted by ENOSPC; no lint pass claimed."
+    "status": "QUALIFIED: renames preserve SQL, post-rename PostgreSQL proof, repository pin refresh, duplicate check, fmt, five-crate check and strict Clippy all passed",
+    "red_point": "Treasure six-entry qualification remains RED pending native producers; registry and peer-output mechanism are qualified. Supplemental focused integration-test Clippy still running; not part of claimed pass.",
+    "post_rename_postgresql": {
+      "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
+      "duration_seconds": 20.228471197,
+      "result": "1 passed, 24 filtered; atomic outputs, audited replay, injected failure rollback, capacity refusal",
+      "log": "/tmp/questpc3-registry-pg.log"
+    },
+    "content_verification": "Five published migration renames byte-for-byte equal to 9293e3d9b; 1224 equals reused upstream SQL. Archival proof logs and historical collision observations retain their original migration numbers; this registry supersedes their reservations.",
+    "qengine2_source": "9c581fd104aa9c6cbdd8404618e65bc112b73f88: 0999 and 1000 SHA-256 identical",
+    "checks": {
+      "fmt": "cargo fmt --all --check PASS",
+      "check": "five changed crates PASS 31.97s",
+      "clippy": "five changed crates --lib --bins -- -D warnings PASS 5m00s",
+      "duplicates": "repository dup-migrations.sh HEAD: no output; staged tree also no output",
+      "pins": "repository world-bundle-compiler pin-refresh . PASS; world digest unchanged 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
+    }
   }
 }
