@@ -7215,6 +7215,60 @@
         "checked_at": "2026-11-07 13:55 UTC",
         "result": "QENGINE2 and QBASE registry files absent, conditional merge not yet applicable"
       }
+    },
+    "diprath_room_batch_25": {
+      "decided_at": "2026-11-07 13:45 UTC",
+      "source": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/the_ancient_tombs/movements_enter_diprath_room.lua:9-19",
+      "source_sha256": "b272e8cbc89c8ef15a1d9c154470c4ebc35c119c0f0bee93b5d996b8bff695eb",
+      "source_uid": 40083,
+      "predicate": "World Diprath count >=7 OR current actor persisted sign8 ==1; preserve prior documented repair of source player/global-reader mismatch",
+      "progress": "Existing authored timer track oteryn:quest-track/ancient-tombs/diprath-treasure, RaiseTo3 preserving all legal higher values; no new namespace/migration",
+      "generic_owner": "Extend existing shared Gate with optional exact personal-track equality and optional monotone progress. Root resolves canonical gate and reads count+actor predicate from one current fenced PostgreSQL statement snapshot. No caller-selected arbitrary track/value.",
+      "native": {
+        "trigger": [
+          33093,
+          32589,
+          15
+        ],
+        "appearance": 423,
+        "ordinal": 0,
+        "approach": [
+          33092,
+          32589,
+          15
+        ],
+        "approach_appearance": 418,
+        "goal": [
+          33092,
+          32590,
+          15
+        ],
+        "goal_appearance": 418,
+        "region_sha256": "f45775e6b1f4018f1e25fce404c915066f0b1dc887ca4f5c87e6e6d2a813c864"
+      },
+      "upstream_checked": {
+        "qengine2": "f114c121d9a71df1e4dd7f3a8f7b46fdd858a6e6",
+        "questpc3": "87b96da9a",
+        "questpc8": "914373cac"
+      },
+      "reuse": "No shared-count/personal OR implementation found. PC3 conditional effects concern already-locked Quest operands rather than shared World leases, and published enum tags conflict; retain local published tags unchanged.",
+      "tests": "Three composed native cases: 6 switches+7 ordered signs refuse; 7 switches alone open; 8 ordered signs alone open. All USE/STEP real; sealed pocket setup only, no SQL-seeded flags/counts; source landing11/Rootprogress/replay. Existing native threshold gate regression and source-expiry regression.",
+      "scope": "Exact interaction pockets only, not complete maze or whole quest qualification. Do not implement until batch24 green pushed.",
+      "status": "COMPILED_FIXTURE_RED_WIP_CHECKPOINT",
+      "previous_pushed_head": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
+      "red_session": 38516,
+      "red_log": "/tmp/questpc4-diprath-room-red.log",
+      "whole_entries_remaining": 17,
+      "next_sql": 1259,
+      "red": {
+        "kind": "FIXTURE_CROP_FAILURE_NOT_BEHAVIORAL_PG_RED",
+        "compiled": "4m58s",
+        "seconds": 54.9,
+        "marker": "NOT_REACHED",
+        "error": "l6_world_pickups/world.rs:213 every expected source tile is present:0 vs1",
+        "cause": "Selected switches at y32507 belong to adjacent source region y126, not y127. Correct per-tile source region; preserve original tile presence assertion.",
+        "log": "/tmp/questpc4-diprath-room-red.log"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

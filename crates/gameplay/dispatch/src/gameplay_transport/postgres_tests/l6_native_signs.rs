@@ -170,7 +170,10 @@ pub(super) fn start() -> TestResult<Position> {
     Ok(SIGNS.first().ok_or("first sign")?.start)
 }
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
+    super::l6_world_pickups::native_scene(native, crops()?, &[])
+}
+pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups::NativeCrop>> {
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop};
     let start = start()?;
     let mut crops = Vec::new();
     for s in SIGNS.iter().chain(std::iter::once(&CONTROL)) {
@@ -207,9 +210,9 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             });
         }
     }
-    native_scene(native, crops, &[])
+    Ok(crops)
 }
-async fn relocate(
+pub(super) async fn relocate(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -268,6 +271,23 @@ async fn use_sign(
         super::quest_world_callbacks::wire(owner, admitted, ordinal, 2, payload.clone()).await?;
     let disposition = decode_use_result(&reply).map_err(debug)?;
     Ok((disposition, ordinal, payload, reply))
+}
+pub(super) async fn activate_signs(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    count: usize,
+) -> TestResult {
+    if count > SIGNS.len() {
+        return Err("sign count".into());
+    }
+    for sign in SIGNS.iter().copied().take(count) {
+        let (result, _, _, _) = use_sign(owner, admitted, sign).await?;
+        assert_eq!(result, UseDisposition::Committed);
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+    }
+    Ok(())
 }
 async fn snapshot(h: &Harness) -> TestResult<Vec<serde_json::Value>> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('tracks',(SELECT jsonb_agg(to_jsonb(t) ORDER BY track_key) FROM game_character_quest_tracks t),'receipts',(SELECT jsonb_agg(to_jsonb(r) ORDER BY committed_character_revision) FROM game_character_quest_receipts r))").fetch_all(&h.pool).await?)
