@@ -26,8 +26,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/23",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Elvith",
@@ -35,15 +41,21 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/98",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Olrik",
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/248; content/services/trade/trade-00000-00326.json:1#/records/221",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/251; content/services/trade/trade-00000-00326.json:1#/records/221",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -67,7 +79,7 @@
       "town": "Ankrahmun",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 29 retail offers, including a full-state Ice Rapier purchase; existing Efreet mission03=3 gate enforced in window and durable trade.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/19; content/services/trade/trade-00000-00326.json:1#/records/6",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/21; content/services/trade/trade-00000-00326.json:1#/records/6",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -85,7 +97,7 @@
       "town": "Ankrahmun",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/116; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/119; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -119,8 +131,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/107",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "A Helpful Fairy",
@@ -171,15 +189,21 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/60",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Liane",
       "town": "Carlin",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/192; content/services/trade/trade-00000-00326.json:1#/records/181",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/195; content/services/trade/trade-00000-00326.json:1#/records/181",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -189,8 +213,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/263",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Altar",
@@ -213,7 +243,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/64; content/services/trade/trade-00000-00326.json:1#/records/60",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/66; content/services/trade/trade-00000-00326.json:1#/records/60",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING",
       "physical_admission": {
@@ -228,15 +258,21 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/99",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-02",
+        "postgres_red_seconds": 29.32,
+        "postgres_green_seconds": 81.33,
+        "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims."
+      }
     },
     {
       "npc": "Kasmir",
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Heal to40 and cure fire/poison/energy through the canonical vitals/condition owner.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/182; crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:760",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/185; crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:760",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -254,7 +290,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 32 retail offers including default-state Ice Rapier buyback; existing Marid mission03=3 gate enforced in window and durable sale.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/229; content/services/trade/trade-00000-00326.json:1#/records/207",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/232; content/services/trade/trade-00000-00326.json:1#/records/207",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -281,7 +317,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Wiki fares and destinations for eight ordinary routes; carried scarab-cheese guard. Travora source row retained held. Eight ordinary destinations repaired. Travora remains held: daily ticket and Captain Tiberius last-port return owner are absent.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/269; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2179; content/services/travel/travel-00000-00058.json:1#/records/44",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/272; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2179; content/services/travel/travel-00000-00058.json:1#/records/44",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "PENDING",
       "source": {
@@ -413,7 +449,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Enable Venore40 with carried scarab-cheese guard.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/56; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -431,7 +467,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/68; content/services/trade/trade-00000-00326.json:1#/records/64",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/70; content/services/trade/trade-00000-00326.json:1#/records/64",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -876,7 +912,7 @@
       "town": "Farmine",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/198; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/201; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -894,7 +930,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Connect native bank service alongside postal shop; conditional postage. Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/225; content/services/trade/trade-00000-00326.json:1#/records/206",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/228; content/services/trade/trade-00000-00326.json:1#/records/206",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -912,7 +948,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add ten Wiki-confirmed ammunition, weapon and flag offers.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/272; content/services/trade/trade-00000-00326.json:1#/records/232",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/275; content/services/trade/trade-00000-00326.json:1#/records/232",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -984,7 +1020,7 @@
       "town": "Feyrist",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add seven candy buyback offers, including Pastry Dragon95000.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/308; content/services/trade/trade-00000-00326.json:1#/records/291",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/311; content/services/trade/trade-00000-00326.json:1#/records/291",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1033,7 +1069,7 @@
       "town": "Issavi",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/110; content/npcs/definitions/npcs-00000-00499.json:1#/records/410",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/113; content/npcs/definitions/npcs-00000-00499.json:1#/records/410",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1130,7 +1166,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer. Connect the native postal service (Letter, Parcel and Label).",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/201; content/services/trade/trade-00000-00326.json:1#/records/184",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/204; content/services/trade/trade-00000-00326.json:1#/records/184",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1256,7 +1292,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/313; content/services/trade/trade-00000-00326.json:1#/records/308",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/316; content/services/trade/trade-00000-00326.json:1#/records/308",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1274,7 +1310,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Yalahar400 route with started-Yalahar quest gate; correct scene identities; no Postman discount.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/52; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1601,7 +1637,7 @@
       "town": "Port Hope",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/284; content/services/trade/trade-00000-00326.json:1#/records/242",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/287; content/services/trade/trade-00000-00326.json:1#/records/242",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1700,7 +1736,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add three exercise-wrap offers and buy Sword25; qualify full default charge purchases.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/117; content/services/trade/trade-00000-00326.json:1#/records/103",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/120; content/services/trade/trade-00000-00326.json:1#/records/103",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1709,7 +1745,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/122; content/services/trade/trade-00000-00326.json:1#/records/111",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/125; content/services/trade/trade-00000-00326.json:1#/records/111",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1879,7 +1915,7 @@
       "town": "Rookgaard",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Buy Chain Helmet from player for17 instead of12.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/76; content/services/trade/trade-00000-00326.json:1#/records/78",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/78; content/services/trade/trade-00000-00326.json:1#/records/78",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1897,7 +1933,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/94; content/npcs/definitions/npcs-00000-00499.json:1#/records/385",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/97; content/npcs/definitions/npcs-00000-00499.json:1#/records/385",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1938,7 +1974,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/130; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/133; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1956,7 +1992,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/318; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/321; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1965,7 +2001,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/323; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/326; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2121,7 +2157,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/233; content/services/trade/trade-00000-00326.json:1#/records/209",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/236; content/services/trade/trade-00000-00326.json:1#/records/209",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2139,7 +2175,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 155 retail offers including seven default-state amulet buybacks; mission07 gate and seven weekday placements matching the existing runtime selector.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/240",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/286; content/services/trade/trade-00000-00326.json:1#/records/240",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2211,7 +2247,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Buy Heavy Old Tome30; compose its existing canonical policy into the active provider, preserving the gated blank-scroll purchase.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/17; content/services/trade/trade-00000-00326.json:1#/records/4",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/19; content/services/trade/trade-00000-00326.json:1#/records/4",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2236,7 +2272,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/40; content/services/trade/trade-00000-00326.json:1#/records/33",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/42; content/services/trade/trade-00000-00326.json:1#/records/33",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2537,7 +2573,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Sell Torch for2.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/203; content/services/trade/trade-00000-00326.json:1#/records/185",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/206; content/services/trade/trade-00000-00326.json:1#/records/185",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2609,7 +2645,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Parcel15 and Label1 service; parcel/label keyword aliases; no Postman discount.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/287; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/290; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2678,7 +2714,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Retail greeting/name substitution, farewell and eight keyword aliases; preserve all multipart lines through command and ordinary chat.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/3; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/4; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay; npcfix_guardian_chat_preserves_name_and_multipart_source_order",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2971,7 +3007,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add three exercise-wrap offers; qualify full default charge purchases.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/288; content/services/trade/trade-00000-00326.json:1#/records/250",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/291; content/services/trade/trade-00000-00326.json:1#/records/250",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2980,7 +3016,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add sixteen Wiki-confirmed pillow/pick offers.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/294; content/services/trade/trade-00000-00326.json:1#/records/265",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/297; content/services/trade/trade-00000-00326.json:1#/records/265",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3088,7 +3124,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Sell empty Mug4 using the existing default empty state.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/274; content/services/trade/trade-00000-00326.json:1#/records/233",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/233",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3097,7 +3133,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/299; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3106,7 +3142,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Free return passage; displayed name Tarak.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/300; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/303; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3133,7 +3169,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add the recorded sacred-place greeting.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/331; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/330",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/334; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/330",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3531,6 +3567,34 @@
       },
       "self_review": "Only Edgar-Ellen canonical declaration changed; no identities added/removed. All pre-existing reward item profiles exactly preserved;15 reviewed passive profiles added with canonical weights and other custody conflict guards retained. No compiler/collision bypass, binary, workflow, repository-tool edit, test deletion or weakened assertion.",
       "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
+    },
+    {
+      "name": "retail-population-qualification-02",
+      "state": "QUALIFIED",
+      "entries": [
+        "Alkestios",
+        "Elvith",
+        "Enpa Rudra",
+        "Cerdras",
+        "Padreia",
+        "Elyen Ravenlock"
+      ],
+      "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 29.32,
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-02-red.log"
+      },
+      "fixture_regression": "Cumulative current run72.67s exposed KeysNotAscending. Sort only constructed runtime table keys; production ordering guard and all case assertions retained.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 81.33,
+        "cumulative_cases": 12,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-02-final-green.log"
+      },
+      "checks": "PASS fmt; dispatch alltargets/allfeatures check and strict clippy. No production authoring data or pin inputs changed. Also repaired39 compound lane evidence references to the current shard.",
+      "next": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations."
     }
   ],
   "owner_constraints": {
@@ -3545,9 +3609,9 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions.",
+  "next_batch": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations.",
   "shared_engine_lookup": {
-    "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
       "head": "9d3c3869f",
       "found": [
@@ -3579,40 +3643,32 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "Fading Memory and five source NPC cells",
+    "name": "retail-population-qualification-02",
     "state": "QUALIFIED",
     "entries": [
-      "A Fading Memory",
-      "Dream Butterfly",
-      "Edgar-Ellen",
-      "Jack The Worker",
-      "Nemal",
-      "Ocelus"
+      "Alkestios",
+      "Elvith",
+      "Enpa Rudra",
+      "Cerdras",
+      "Padreia",
+      "Elyen Ravenlock"
     ],
-    "scope": "Real canonical cell admission plus actual PostgreSQL/native runtime placement, floor conversion and exact names. Fading source story/reward/cooldown reply separately pushed43c59ddb9; Edgar-Ellen exact declared name repaired rather than weakening the assertion.",
-    "red": "Live PG initial2 failed129.94s; intermediate1 passed/1 failed212.62s exposed Edgar Ellen slug fallback. Name expectation retained. Materializer source fixture ordering RED1/2 was corrected with explicit last-Service selection and an additional NPC atomic-rejection case.",
+    "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims.",
+    "red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 29.32,
+      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-02-red.log"
+    },
+    "fixture_regression": "Cumulative current run72.67s exposed KeysNotAscending. Sort only constructed runtime table keys; production ordering guard and all case assertions retained.",
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "duration_seconds": 91.16,
-      "result": "1 passed; all six canonical/native identities and exact positions",
-      "log": "/tmp/npcfix-evidence/fading-placements-final-green.log",
-      "fading_component": "43c59ddb9; actual PG111.14s with DB marker"
+      "seconds": 81.33,
+      "cumulative_cases": 12,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-02-final-green.log"
     },
-    "checks": {
-      "authoring": "7 own/12 shared/12 placement cases PASS; original assertions retained",
-      "source_generation": "PASS complete repository materializer/family/pin generation; all required focused checks run separately",
-      "repair_units": "3 passed0.49s: all53 repairs plus Service and NPC before-state atomic refusal",
-      "tree": "PASS validate_world_project_v2_to_tree;97/97 materialized; complete tree tests; qengine source reproduction",
-      "repository": "5 passed104.53s; exact packet53 and full-record equality retained",
-      "catalogue": "1 passed56.26s",
-      "content": "123 passed5.09s",
-      "check": "PASS quests/durability/dispatch alltargets/allfeatures4m15s; materializer example2m18s",
-      "clippy": "PASS shared packages alltargets/allfeatures9m39s; materializer example3m06s; repository test1.17s; -D warnings",
-      "fmt": "PASS workspace and explicit mounted files",
-      "pin": "25c99a2d63e3e08a9387c4a71bf5d1926a60db4eb7777021f2f36433e902ba85; independent pin-check PASS"
-    },
-    "self_review": "Only Edgar-Ellen canonical declaration changed; no identities added/removed. All pre-existing reward item profiles exactly preserved;15 reviewed passive profiles added with canonical weights and other custody conflict guards retained. No compiler/collision bypass, binary, workflow, repository-tool edit, test deletion or weakened assertion.",
-    "next": "Push immediately, then continue existing placement-only rows in3-6-entry historical RED/current GREEN batches; retain all cumulative assertions."
+    "checks": "PASS fmt; dispatch alltargets/allfeatures check and strict clippy. No production authoring data or pin inputs changed. Also repaired39 compound lane evidence references to the current shard.",
+    "next": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations."
   },
   "continuation_merge": {
     "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",
