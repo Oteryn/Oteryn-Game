@@ -428,6 +428,11 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 65535
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
         }
       }
     },

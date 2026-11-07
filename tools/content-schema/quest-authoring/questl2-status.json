@@ -2853,7 +2853,7 @@
       "An Uneasy Alliance",
       "Tomes of Knowledge"
     ],
-    "phase": "Kilmaresh QUALIFIED; Alliance and Tomes remain RED full native journeys.",
+    "phase": "Kilmaresh QUALIFIED; Alliance full native journey composed, type-checking before PG; Tomes remains RED.",
     "postgres_log": "/tmp/l2-knowledge-red.log",
     "postgres_version": "18.6",
     "red_durations_seconds": {
@@ -2928,6 +2928,12 @@
         "log": "/tmp/l2-kill-compile.log"
       },
       "remaining": "Native Alliance mission issuance -> Renegade Orc death -> source tower device -> two tomes."
+    },
+    "alliance_progress": {
+      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "production_callback_sources": "Curos source mission sequence; explicit documented provision restoration; native Renegade Orc callback and source tower chest",
+      "compile_log": "/tmp/l2-alliance-compile.log",
+      "remaining": "Run full native PG journey, verify timed restoration, then focused Clippy/pins."
     }
   }
 }

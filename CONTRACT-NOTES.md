@@ -335,3 +335,10 @@ container_quest.lua:92-98, SHA256
 c18f0caf3d2c9f1d0c084722dfcb55523dbb1811166863a4f72d052bd2ae24b9,
 adds the chest at33343,31610,z1. Together these ten physical books and
 Curos/Zalamon's one-tome NPC grants supply Cael's twelve source deliveries.
+
+Alliance provision restoration: the pinned wiki lists milk, crocodile steak
+and wooden flute but does not bind their use; Curos Lua omits them. In the
+owner-authorized restoration, Curos accepts one of each when issuing the
+mission, requires exact milk subtype6, and returns an empty bucket. This is
+an explicit Oteryn binding, not a claim that the donor NPC consumed them.
+His donor mission sequence and one-tome final reward remain unchanged.

@@ -1738,6 +1738,165 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-alliance-finish",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i10217",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is a reward. It's a strange tome that we've found in the lizard ruins. Maybe it is of some value for you or your allies."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:95-101:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-rebel-report",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "With the death of their leader, the rebels return to our camps one by one, deeply humiliated."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:83-85:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-spy-mission",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Infiltrate this tower and destroy their scrying device."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:86-94:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-alliance-start",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2873",
+          "count": 1,
+          "fluid_subtype": 6
+        },
+        {
+          "item": "oteryn:item.tibia.i10219",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i2948",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i2873",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find the rebel leader and kill him. Take these empty provisions back with you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/curos.lua:70-82:sha256:6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
+        "repo:tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:An Uneasy Alliance Quest:spoiler:7-9:sha256:2788b3c0b943e0b71687494a5e7bc5aa81542e0b1407793c165cd64e00fc2dfd",
+        "owner:restore-requested-provisions-at-mission-issuance:return-empty-bucket"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ],
+      "failure_reply": [
+        "Bring one bucket of milk, one crocodile steak and one wooden flute."
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-battle-mage-base",
       "quest": "oteryn:quest.the_secret_library_quest",
       "npc": "oteryn:npc.dedoras",

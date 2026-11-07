@@ -57,6 +57,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             y: 31758,
             floor: -7,
         }),
+        "qengine-rewards-l2-alliance" => Some(Position { x:33154,y:31297,floor:-3 }),
         "qengine-rewards-l2-cartography" => Some(Position {
             x: 32209,
             y: 32297,

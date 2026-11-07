@@ -71,6 +71,20 @@ pub(crate) fn world(
         family: bundle::Family::Item,
         terrain: None,
     });
+    if name.ends_with("alliance") {
+        for (id, appearance) in [(3, 2472), (4, 10186), (5, 10187)] {
+            data.manifest.palette.push(bundle::PaletteEntry {
+                id,
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
+    }
     let mut cells = BTreeMap::<(i8, u16, u16), Vec<sector::Item>>::new();
     let mut patch = |floor: i8, x0: u16, x1: u16, y0: u16, y1: u16| {
         for x in x0..=x1 {
@@ -87,7 +101,14 @@ pub(crate) fn world(
     };
     type FixtureCell = (u16, u16, i8);
     let mut portals: Vec<(FixtureCell, FixtureCell)> = Vec::new();
-    let start = if name.ends_with("steal") {
+    let start = if name.ends_with("alliance") {
+        patch(-3, 33148, 33160, 31294, 31300);
+        Position {
+            x: 33153,
+            y: 31297,
+            floor: -3,
+        }
+    } else if name.ends_with("steal") {
         patch(-7, 33125, 33134, 32658, 32665);
         Position {
             x: 33130,
@@ -150,6 +171,21 @@ pub(crate) fn world(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if name.ends_with("alliance") {
+        for (x, y, palette, action) in [(33154, 31297, 3, None), (33154, 31298, 4, Some(40030))] {
+            cells
+                .get_mut(&(-3, x, y))
+                .ok_or("alliance tile")?
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: sector::Attrs {
+                        action,
+                        ..Default::default()
+                    },
+                });
+        }
     }
     for ((x, y, z), destination) in portals {
         cells

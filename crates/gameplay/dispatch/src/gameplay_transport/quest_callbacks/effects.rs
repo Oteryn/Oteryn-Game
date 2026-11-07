@@ -24,6 +24,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(duration) = callback.effects.transform_duration_us {
+            let restore = map
+                .facts
+                .quest_callback_entry(map.overlay.base(), key)
+                .ok_or(UseDisposition::StaleState)?
+                .1;
+            let due = self
+                .owner_now()
+                .get()
+                .checked_add(duration)
+                .ok_or(UseDisposition::Exhausted)?;
+            return Ok(Some(QuestCallbackProjection::TimedTransform {
+                restore,
+                due,
+            }));
+        }
         if callback.effects.temporary_item.is_some() || callback.effects.remove_target {
             if map.facts.house_tile(position) {
                 return Err(UseDisposition::Rejected);

@@ -113,6 +113,7 @@ fn scenario_case(
             | "qengine-rewards-l2-vampire"
             | "qengine-rewards-l2-steal"
             | "qengine-rewards-l2-troll"
+            | "qengine-rewards-l2-alliance"
             | "qengine-rewards-l2-cartography"
     ) {
         None
@@ -154,6 +155,7 @@ fn scenario_case(
                 name,
                 "qengine-rewards-l2-steal"
                     | "qengine-rewards-l2-troll"
+                    | "qengine-rewards-l2-alliance"
                     | "qengine-rewards-l2-cartography"
             ) =>
             {

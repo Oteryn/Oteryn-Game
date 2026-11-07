@@ -33,6 +33,9 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub remove_target: bool,
     pub transform: Option<u16>,
+    /// Restore this exact transformed object revision through the existing movement decay owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transform_duration_us: Option<u64>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
     pub portals: Option<PortalPair>,
@@ -183,6 +186,21 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 .iter()
                 .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
             || !super::super::reward_callbacks::valid_item_reward(reward)
+    }) {
+        return false;
+    }
+    if effects.transform_duration_us.is_some_and(|duration| {
+        duration == 0
+            || duration > 86_400_000_000
+            || effects.transform.is_none()
+            || callback.trigger != Trigger::Use
+            || callback.is_read_only()
+            || effects.portals.is_some()
+            || effects.item_cycle.is_some()
+            || effects.temporary_item.is_some()
+            || effects.remove_target
+            || effects.encounter.is_some()
+            || callback.lever.is_some()
     }) {
         return false;
     }
