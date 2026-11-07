@@ -76,6 +76,11 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
     """
+    from itemhold_charge_precedence import qualifies
+    # A literal one-charge source is retained by charge_native, never expanded.
+    if (pilot_key != 'canary:reward-claim/kv/ornamentedshield'
+            and qualifies(item, pilot_key, position, key, raw_count)):
+        return True
     if (type(raw_count) is not int or raw_count <= 0
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'

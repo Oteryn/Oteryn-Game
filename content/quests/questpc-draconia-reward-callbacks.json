@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/draconia-key3012",
+      "quest": "oteryn:quest.draconia_quest",
+      "npc": "oteryn:npc.elathriel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i2970",
+        "count": 1,
+        "contents": [],
+        "key_number": 3012
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "failure_reply": [
+        "Come back when you have enough money."
+      ],
+      "failure_next_topic": 0,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:193:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:195:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:201:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:204:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:206:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:208:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:211:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elathriel.lua:213:sha256:24dbbbe1ee2bcb74f74462ce131dd10cdf45801d53ecb586bd63993e1450cd7d"
+      ]
+    }
+  ]
+}

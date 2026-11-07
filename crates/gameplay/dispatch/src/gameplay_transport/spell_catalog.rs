@@ -72,6 +72,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<Vec<SpellCatalogEntry>> {
+        // This is a required join domain. Share one bounded retry budget across
+        // its durable reads; only a busy holder is transient, never a bad fence.
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        let refusal = |error| match error {
+            crate::durability::DurabilityError::RootUnavailable => {
+                super::connection::AdmissionRefusal::Unavailable
+            }
+            _ => super::connection::AdmissionRefusal::Rejected,
+        };
         // A House resident uses its named custody fence rather than a Channel combat lease.
         let (character, house) = {
             let runtime = self.runtime.lock().await;
@@ -89,17 +98,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let house_fence = if house {
-            let (current, _) = super::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(session)
+            let (current, _) = retry
+                .retry_unavailable(async || {
+                    super::FreshAdmissionStore::from_root(self.root.clone())
+                        .current_session_at(session)
+                        .await
+                        .map_err(refusal)
+                })
                 .await
                 .ok()?;
             Some(super::item_fence_of(current)?)
         } else {
             None
         };
-        let learned = self
-            .root
-            .read_character_known_spells(self.character, character)
+        let learned = retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_known_spells(self.character, character)
+                    .await
+                    .map_err(refusal)
+            })
             .await
             .ok()?;
         let runtime = self.runtime.lock().await;

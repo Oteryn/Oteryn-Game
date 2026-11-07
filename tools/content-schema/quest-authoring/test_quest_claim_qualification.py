@@ -1,5 +1,6 @@
 """Unit tests for the quest claim qualification audit."""
 
+import copy
 import importlib.util
 import json
 import tempfile
@@ -31,10 +32,33 @@ class QualificationTests(unittest.TestCase):
         # 172 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
         self.assertEqual(sum(counts.values()), 162)
+        ledger = qualification.read_json(qualification.LEDGER)
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            self.assertNotIn(key, ledger["claims"])
+            coverage = qualification.read_json(qualification.COVERAGE)
+            records = {row["claim"]: row for quest in coverage["quests"]
+                       for row in quest["chests"]}
+            self.assertEqual(records[key]["status"], "dispatch_pg_qualified")
+            self.assertIn("use_replay_and_refusal", records[key]["reason"])
 
     def test_missing_row_is_rejected(self):
-        del self.ledger["claims"][next(iter(self.ledger["claims"]))]
-        self.assertTrue(any("missing claim" in error for error in self.check()))
+        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+            with self.subTest(claim=key):
+                ledger = copy.deepcopy(self.ledger)
+                coverage = qualification.read_json(qualification.COVERAGE)
+                if key in qualification.ITEMHOLD_ADMISSIONS:
+                    # The live selectors are already qualified. Reconstruct the
+                    # unqualified inventory premise to retain missing-row checks.
+                    for quest in coverage["quests"]:
+                        for row in quest["chests"]:
+                            if row["claim"] == key:
+                                row["status"] = "supported_unqualified"
+                    coverage_path = Path(self.temp.name) / "coverage.json"
+                    coverage_path.write_text(json.dumps(coverage))
+                else:
+                    del ledger["claims"][key]
+                    coverage_path = qualification.COVERAGE
+                self.assertIn(f"missing claim: {key}", self.check(ledger, coverage_path))
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

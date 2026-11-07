@@ -115,10 +115,12 @@ where
         Next::Probe => {
             // Idle work (including the durable logout) stays within the existing database
             // pass deadline. Timeout follows ordinary control-loss reconciliation.
-            match tokio::time::timeout(
-                crate::durability::DB_PASS_DEADLINE,
-                idle::tick(stream, authority, session),
-            )
+            match tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, async {
+                if authority.account_closure_check(session.admitted).await {
+                    return Err(ServeEnd::Disconnected);
+                }
+                idle::tick(stream, authority, session).await
+            })
             .await
             {
                 Ok(result) => result?,

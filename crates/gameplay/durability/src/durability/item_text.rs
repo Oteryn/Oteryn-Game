@@ -1,20 +1,19 @@
 //! WRITE-1: content-qualified rewrites in held, depot and proven Ground custody.
 //!
-//! This is a bounded producer with its native storage ACL in migration 0101 and
-//! registered Content/storage modules, awaiting actual transport composition.
-//! It admits neither write-once definitions nor house custody locations.
+//! The production MAIL ingress supplies carried bindings under the mutation lane
+//! and physical trade exclusion; storage independently checks Content and custody.
+//! Content-qualified write-once transforms share the text transaction; house custody stays closed.
 //! Ground admission is limited to loop drops and unchanged map-MINT or
 //! native-map initialized roots, including their bounded nested trees, with
 //! owner-observed reach/open-view data and the existing map source proofs.
-//! The compositor must also apply the Channel trade owner's physical exclusion
-//! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
-//! that guard and the actual transport composition are integrated.
+//! Depot/Ground callers must likewise supply owner-observed reach/open-view data
+//! under that lane and exclusion (WRITE-0 §5.1).
 //! No player text, writer name or text-derived diagnostic enters value audit.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::numeric_u64;
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction, lock_admission_relations,
 };
 use super::item_loop_move::LoopGround;
 use super::item_mint::TypedDefinitionRef;
@@ -27,6 +26,8 @@ use crate::domain::CharacterId;
 use crate::foundation::{CommandRef, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+
+pub mod write_once;
 
 // Storage is installed once by the standing MAIL migration 0101.
 
@@ -226,6 +227,7 @@ pub struct MailTextPolicy {
     definition: TypedDefinitionRef,
     source_digest: [u8; 32],
     max_text_length: u32,
+    pub(super) write_once_target: Option<TypedDefinitionRef>,
 }
 
 impl MailTextPolicy {
@@ -241,6 +243,7 @@ impl MailTextPolicy {
             definition,
             source_digest,
             max_text_length,
+            write_once_target: None,
         }
     }
 }
@@ -295,10 +298,6 @@ impl DurabilityRoot {
     /// mandatory. `None` means no receipt was committed when that lock was
     /// acquired; it grants no permission to retry without fresh write authority.
     /// Cancellation or any unavailable result leaves the attempt unresolved.
-    #[allow(
-        dead_code,
-        reason = "D1377c history prerequisite; the actual TEXT consumer remains separately gated"
-    )]
     pub async fn reconcile_item_text_rewrite(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -383,7 +382,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     match rewrite(
@@ -398,7 +397,7 @@ impl DurabilityRoot {
                     .await
                     {
                         Ok(outcome) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            tx.commit(deadline).await?;
                             Ok(Ok(outcome))
                         }
                         Err(ItemTextWriteError::Unavailable(error)) => Err(error),
@@ -411,7 +410,7 @@ impl DurabilityRoot {
 }
 
 async fn rewrite(
-    tx: &mut Transaction<'_, Postgres>,
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     node: &NodeIncarnationProof,
     fence: &CurrentCharacterItemFence,
     policy: &MailTextPolicy,
@@ -429,7 +428,7 @@ async fn rewrite(
     // Same lock used by game_content_record_activation and the equipment owner.
     sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea,'hex')::uuid::text || ':' || encode($2::bytea,'hex')::uuid::text,0))")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-        .execute(&mut **tx).await?;
+        .execute(&mut ***tx).await?;
     if !character_item_fence_is_current(
         tx,
         node,
@@ -445,13 +444,17 @@ async fn rewrite(
     }
     let digest: Option<Vec<u8>> = sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-        .fetch_optional(&mut **tx).await?;
+        .fetch_optional(&mut ***tx).await?;
     if digest.as_deref() != Some(policy.source_digest.as_slice()) {
         return Err(ItemTextWriteError::AuthorityRejected);
     }
     let text = qualified_text(policy, request)?;
     lock_carried_text_item(tx, fence, request, open_depot, ground).await?;
-    persist_rewrite(tx, character, request, text).await
+    let outcome = persist_rewrite(tx, character, request, text).await?;
+    if let Some(target) = &policy.write_once_target {
+        write_once::apply(tx, fence, request, target).await?;
+    }
+    Ok(outcome)
 }
 
 /// Read just the requested ancestry, with one excess depth as an overflow sentinel.
@@ -745,7 +748,7 @@ async fn persist_rewrite(
         .fetch_one(&mut **tx)
         .await?;
     if changed {
-        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT 1 FROM game_item_text_write_receipts WHERE character_id=encode($1,'hex')::uuid AND changed AND written_at>$2::text::timestamptz-interval '1 second' LIMIT 2) recent")
+        let count: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT 1 FROM game_item_text_write_receipts WHERE character_id=encode($1,'hex')::uuid AND (changed OR EXISTS(SELECT 1 FROM game_item_write_once_transforms w WHERE w.game_session_id=game_item_text_write_receipts.game_session_id AND w.command_id=game_item_text_write_receipts.command_id)) AND written_at>$2::text::timestamptz-interval '1 second' LIMIT 2) recent")
             .bind(character.as_slice()).bind(&now).fetch_one(&mut **tx).await?;
         if count >= 2 {
             return Err(ItemTextWriteError::Exhausted);

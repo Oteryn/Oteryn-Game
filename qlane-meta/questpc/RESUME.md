@@ -1,3 +1,91 @@
+## Current owner work rules and collector
+Push green5–8 quest batches to this lane; wpkg collects them into its one PR.
+No PR from this lane. Merge main when coordinator announces collector merge.
+Shared engine belongs to qengine2: request missing generic capabilities, move
+to another owned quest; only a local helper under about50 lines in a new file.
+Regenerate completion matrix, pins and generated files once before each push.
+Only packet quests; merge/reuse other lane work. These rules supersede the
+historical execution rules retained below. Current merge reused QENGINE2 via main.
+
+## Main consolidation green — current continuation
+Main1ae39c7f integrated; shared0999–1008 exact, old1200–1205 removed,
+source-only contracts1290 and lane migrations1291–1297. Nine focused PG cases
+PASS on PostgreSQL18.6 after collecting eight failures and repairing their two
+fixture root causes together. Workspace all-targets, strict changed-crate Clippy,
+fmt, native/source/converter checks and pin-refresh/independent pin-check PASS.
+Detailed markers/durations: cloud-main-qengine-consolidation-proof.json.
+No whole-title promotion; counts61QUALIFIED/116UNFINISHED/1excluded remain.
+Next push once, then continue Uneasy crystal source action40030 with existing
+movement decay owner; source capture and conservative constraints remain below.
+
+## Current owner gate — supersedes historical full-suite instructions below
+Main1ae39c7f merge resolved, verification in progress. Owner replaced full reverse-
+dependency nextest with own focused mechanic tests including real PostgreSQL,
+workspace all-targets check, changed-crate strict Clippy, fmt, generated pins,
+and duplicate migration check. Do not run /tmp/questpc-run-full.sh.
+Main0999–1008 retained unchanged; old1200–1205 removed. Source-only contracts
+absent from main consolidated in1290; lane migrations now1290–1297.
+Five focused quest tests PASS after canonical reward/own sidecar layering and
+exact Curos activation roster repairs. Native providers regenerated; three new
+physical overlap tests reproduced RED and now PASS. Grizzly30/30 regenerated.
+Next finish workspace/pins, scoped nine PG cases and strict Clippy; collect all
+failures and fix together before ONE push. No whole-quest promotion in this merge.
+
+## Owner directs PR3020 consolidation — 2026-11-07
+New main1ae39c7fb9bef09c3cd50d16410374f4134b1676 contains QENGINE2/QBASE.
+Finish existing bbb3 local merge checkpoint, then merge that new main now.
+Take main canonical shared code/migrations, preserve lane-only extensions, no
+number duplicates. Regenerate and run full affected reverse-dependency nextest
+with PG +fmt/check/strict; repair all failures and push ONCE. Prior final pin
+check/converter check interrupted as superseded; no final PG credit claimed.
+Existing pins refreshed successfully c4fb390f... with readiness/deploy mirrors.
+Earlier content23-check collection had only old item_conversion count129 vs145;
+exact count corrected, full converter check must run again on new main.
+
+## Main integration continuation — 2026-11-07 16:40 UTC
+No push: owner requires the complete reverse-dependency set before any push.
+Full44 first attempt failed compilation (server MapItemMintRequest key_number),
+not PG; fixed explicitNone and scanned both mint request families. Strict31
+all-target Clippy with dispatch/entity test-support PASS6m02s. Reward64 PASS
+109.408s; qualification7 PASS; Quest tree/completion34 PASS346.919s in
+/tmp/questpc-main-quest-merge-units-final2.log (earlier duplicate logs excluded).
+Canonical regeneration failed STARTING_LOADOUT_PROFILE_DUPLICATE because main
+and lane admit3571/3572/7991. New RED reproduced it; transfer existing records
+verbatim into the one starting provider, with exact identity/binding/admission
+checks and both provider digests regenerated. Six provider tests PASS7.722s.
+Current /tmp/questpc-main-tree-resume-env.log runs resumed converter with env
+sourced; World materializer already completed, do not rerun that expensive step.
+After converter: run regenerate_content.AUTHORING_TOOLS then CHECKS, repair all
+freshness failures, stage inputs and pin-refresh/pin-check. Full required runner
+/tmp/questpc-run-full.sh includes44 packages, PG18.6 marker, no-fail-fast,
+success output and time. Do not run it until generated inputs are stable.
+Donor generator completed; archives differ from lane HEAD only at quest_inputs,
+source payloads identical (cloud-main-donor-capture-review.json); independent
+--check running /tmp/questpc-main-donor-final-check.log. Grizzly30/30 reproduced.
+Migration repo duplicate script PASS; QBASE1200–1205 and own1290–1296 intact,
+QENGINE0999–1006 exact upstream. No whole-title promotion: counts61/116/1.
+Once full set and remaining checks pass, commit merge with owner author/trailers,
+fetch exact lane ref, merge if moved and test, ONE fast-forward push. Then resume
+Uneasy crystal; original component/source details below remain authoritative.
+
+## Main merge and required reverse-dependency gate — 2026-11-07
+Main bbb3e06d04875fc1e63f024b853194f7580cc875 is being merged; merge commit
+not yet made. New owner rule requires every changed crate and reverse normal
+workspace dependent before ANY push. Exact cargo-tree closure: 44 crates,
+/tmp/questpc-merged-dependent-crates.txt; full nextest --no-fail-fast with PG
+enabled running in /tmp/questpc-main-full-nextest.log. Collect all failures,
+fix by root cause, rerun full set, ONE push. No skip/weaken/delete tests.
+The stale automatic push reminder was explicitly withdrawn by owner.
+Initial compile repairs: Schrodinger additive callback fields, Tibiadrome absent
+root charge/fluid fields. Main/lane content merged, exact raw-one charge rule
+retained. Three already PG-qualified reward selectors restored against their
+existing proofs; qualification audit 7/7 passes. SOURCE compiler amendment tool
+verified frozen cores identical before repinning. Quest tree regenerated.
+Migration source filenames have no duplicate numbers; QENGINE2 0999–1006 exact
+upstream bytes, own1290–1296 unchanged. Repo duplicate script and remaining
+pins/check/fmt/strict/full PG gates still required. Counts61/116/1 unchanged.
+After green push resume Uneasy crystal, as described below; do not end task.
+
 ## Curos report/brief GREEN — 2026-11-07
 ActualPG18.6 report109.14939318s,brief121.686876488s,no-kill109.117748647s.
 ActualNPCstart ->nativeRenegade lethalowner ->Door1 ->missionQL2 ->briefQL3.

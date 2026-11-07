@@ -137,29 +137,84 @@ pub(super) async fn dev_client<'a>(
         )
         .into());
     }
-    // CHAT-PM-CHANNELS-1 sends the initial channel list as a pushed domain-12 delta,
-    // not in the join snapshot (chat-private-channel-world-v1.md). Assert it before
-    // the door scenario so its arrival cannot race that scenario's exact event lists.
+    // Negotiated owners refresh independently after the snapshot. Retain exact
+    // values, per-domain revisions and contiguous wire sequences across read batches.
+    let mut expected = Vec::new();
+    if dev_client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
+    {
+        // This entry room has no city ambience: the initial replacement stops sound.
+        expected.push(oteryn_dev_client::SessionEvent::Presentation(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![oteryn_protocol_oteryn::presentation::PresentationEvent {
+                    decision_ordinal: 1,
+                    emission_ordinal: 1,
+                    kind:
+                        oteryn_protocol_oteryn::presentation::PresentationEventKind::AmbientSound {
+                            cue_id: 0,
+                        },
+                }],
+            },
+        ));
+    }
     if dev_client.selected_capabilities().contains(
         &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
     ) {
-        let events = dev_client_door_events(&mut dev_client)
-            .await
-            .map_err(|error| format!("dev client initial channel list: {error}"))?;
-        dev_client_expect(
-            "initial channel list",
-            &events,
-            &vec![oteryn_dev_client::SessionEvent::ChatChannelList(
-                oteryn_dev_client::AppliedDelta {
-                    server_sequence: 1,
-                    base_revision: 1,
-                    new_revision: 2,
-                    value: oteryn_protocol_oteryn::chat::private_channel::ChatChannelList::default(
-                    ),
-                },
-            )],
-        )?;
+        expected.push(oteryn_dev_client::SessionEvent::ChatChannelList(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: expected.len() as u64 + 1,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_protocol_oteryn::chat::private_channel::ChatChannelList::default(),
+            },
+        ));
     }
+    if dev_client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1)
+    {
+        let entities = dev_client
+            .session_mut()
+            .world_entities()
+            .ok_or("initial entities")?;
+        let players = entities
+            .iter()
+            .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Player)
+            .collect::<Vec<_>>();
+        dev_client_expect("initial visible players", &players.len(), &1)?;
+        let own = players[0].entity;
+        dev_client_expect(
+            "initial icon identity",
+            &own.identity,
+            entities.own_identity(),
+        )?;
+        expected.push(oteryn_dev_client::SessionEvent::PartyIcons(
+            oteryn_dev_client::AppliedDelta {
+                server_sequence: expected.len() as u64 + 1,
+                base_revision: dev_client_snapshot.world_spatial_revision,
+                new_revision: dev_client_snapshot.world_spatial_revision + 1,
+                value: vec![oteryn_protocol_oteryn::party_skull::PartyIcon {
+                    entity: own,
+                    shield: 0,
+                    skull: 0,
+                }],
+            },
+        ));
+    }
+    let events = tokio::time::timeout(Duration::from_secs(20), async {
+        let mut events = Vec::new();
+        while events.len() < expected.len() {
+            events.extend(dev_client_door_events(&mut dev_client).await?);
+        }
+        TestResult::Ok(events)
+    })
+    .await
+    .map_err(|_| "initial client pushes timed out")??;
+    expect_initial_pushes(&events, &expected)?;
     dev_client_door_scenario(
         &mut dev_client,
         &dev_client_snapshot,
@@ -230,6 +285,35 @@ pub(super) async fn dev_client<'a>(
     Ok(())
 }
 
+fn expect_initial_pushes(
+    events: &[oteryn_dev_client::SessionEvent],
+    expected: &[oteryn_dev_client::SessionEvent],
+) -> TestResult {
+    use oteryn_dev_client::SessionEvent;
+    dev_client_expect("initial push count", &events.len(), &expected.len())?;
+    let mut remaining = expected.to_vec();
+    for (index, event) in events.iter().enumerate() {
+        // Chat and visibility both tick at 250 ms; Serene can publish ambience
+        // too. Match owners without inventing a total order between their timers.
+        let owner = remaining
+            .iter()
+            .position(|candidate| {
+                std::mem::discriminant(candidate) == std::mem::discriminant(event)
+            })
+            .ok_or("unexpected or duplicate initial server push")?;
+        let mut expected = remaining.remove(owner);
+        let sequence = u64::try_from(index)? + 1;
+        match &mut expected {
+            SessionEvent::Presentation(delta) => delta.server_sequence = sequence,
+            SessionEvent::ChatChannelList(delta) => delta.server_sequence = sequence,
+            SessionEvent::PartyIcons(delta) => delta.server_sequence = sequence,
+            _ => return Err("unexpected bootstrap owner in qualification".into()),
+        }
+        dev_client_expect("initial negotiated owner delta", event, &expected)?;
+    }
+    Ok(())
+}
+
 async fn dev_client_door_scenario(
     dev_client: &mut oteryn_dev_client::DevClientSession,
     dev_client_snapshot: &oteryn_dev_client::JoinSnapshot,
@@ -240,10 +324,22 @@ async fn dev_client_door_scenario(
     {
         use oteryn_dev_client::{AppliedDelta, CommandOutcome, SessionEvent};
         use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
-        let spatial_baseline = dev_client_snapshot.world_spatial_revision;
-        let sequence_base = u64::from(dev_client.selected_capabilities().contains(
-            &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
-        ));
+        let icon_push = u64::from(
+            dev_client
+                .selected_capabilities()
+                .contains(&oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1),
+        );
+        let spatial_baseline = dev_client_snapshot.world_spatial_revision + icon_push;
+        let ambient_push = u64::from(
+            dev_client
+                .selected_capabilities()
+                .contains(&oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1),
+        );
+        let sequence_base = ambient_push
+            + icon_push
+            + u64::from(dev_client.selected_capabilities().contains(
+                &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
+            ));
         dev_client_expect(
             "door scenario numbering",
             &(
@@ -399,4 +495,108 @@ async fn dev_client_door_scenario(
         )?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod initial_pushes_tests {
+    use super::*;
+    use oteryn_dev_client::{AppliedDelta, EntityRef, SessionEvent};
+    use oteryn_protocol_oteryn::presentation::{PresentationEvent, PresentationEventKind};
+
+    fn expected() -> Vec<SessionEvent> {
+        vec![
+            SessionEvent::Presentation(AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![PresentationEvent {
+                    decision_ordinal: 1,
+                    emission_ordinal: 1,
+                    kind: PresentationEventKind::AmbientSound { cue_id: 0 },
+                }],
+            }),
+            SessionEvent::ChatChannelList(AppliedDelta {
+                server_sequence: 2,
+                base_revision: 1,
+                new_revision: 2,
+                value: Default::default(),
+            }),
+            SessionEvent::PartyIcons(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 1,
+                new_revision: 2,
+                value: vec![oteryn_protocol_oteryn::party_skull::PartyIcon {
+                    entity: EntityRef {
+                        identity: [1; 16],
+                        generation: 1,
+                    },
+                    shield: 0,
+                    skull: 0,
+                }],
+            }),
+        ]
+    }
+
+    fn sequence(event: &mut SessionEvent, value: u64) {
+        match event {
+            SessionEvent::Presentation(delta) => delta.server_sequence = value,
+            SessionEvent::ChatChannelList(delta) => delta.server_sequence = value,
+            SessionEvent::PartyIcons(delta) => delta.server_sequence = value,
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn initial_pushes_accept_independent_owner_interleavings() -> TestResult {
+        let expected = expected();
+        for order in [
+            [0, 1, 2],
+            [1, 0, 2],
+            [0, 2, 1],
+            [1, 2, 0],
+            [2, 0, 1],
+            [2, 1, 0],
+        ] {
+            let mut actual: Vec<_> = order
+                .into_iter()
+                .map(|index| expected[index].clone())
+                .collect();
+            for (index, event) in actual.iter_mut().enumerate() {
+                sequence(event, u64::try_from(index)? + 1);
+            }
+            expect_initial_pushes(&actual, &expected)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn initial_pushes_reject_missing_duplicate_extra_or_corrupt_owner_state() {
+        let expected = expected();
+        assert!(expect_initial_pushes(&expected[..2], &expected).is_err());
+        let mut extra = expected.clone();
+        extra.push(expected[0].clone());
+        assert!(expect_initial_pushes(&extra, &expected).is_err());
+        let mut duplicate = expected.clone();
+        duplicate[1] = expected[0].clone();
+        sequence(&mut duplicate[1], 2);
+        assert!(expect_initial_pushes(&duplicate, &expected).is_err());
+        let mut wrong_sequence = expected.clone();
+        sequence(&mut wrong_sequence[1], 3);
+        assert!(expect_initial_pushes(&wrong_sequence, &expected).is_err());
+        let mut wrong_revision = expected.clone();
+        if let SessionEvent::ChatChannelList(delta) = &mut wrong_revision[1] {
+            delta.base_revision = 0;
+        }
+        assert!(expect_initial_pushes(&wrong_revision, &expected).is_err());
+        let mut wrong_cue = expected.clone();
+        if let SessionEvent::Presentation(delta) = &mut wrong_cue[0] {
+            delta.value[0].kind = PresentationEventKind::AmbientSound { cue_id: 25 };
+        }
+        assert!(expect_initial_pushes(&wrong_cue, &expected).is_err());
+        let mut wrong_icon = expected.clone();
+        if let SessionEvent::PartyIcons(delta) = &mut wrong_icon[2] {
+            delta.value[0].shield = 1;
+        }
+        assert!(expect_initial_pushes(&wrong_icon, &expected).is_err());
+    }
 }

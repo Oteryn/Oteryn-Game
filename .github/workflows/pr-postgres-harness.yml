@@ -22,8 +22,10 @@ name: PR PostgreSQL harness
 #
 # OTERYN_SELF_HOSTED_PG=on runs all twenty-four partitions on Molehill; split runs
 # partitions 1-4 on Molehill and 5-24 on ubuntu-24.04. Off or unset runs all
-# partitions hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
-# per job instead of the hosted service container; turn it off when offline.
+# partitions hosted. auto and auto-split act as on and split only while the
+# Molehill heartbeat (OTERYN_MOLEHILL_SEEN) is fresh, so an offline PC falls
+# back to hosted. Molehill uses a throwaway native PostgreSQL 18 cluster
+# per job instead of the hosted service container.
 # Forks and Dependabot always stay hosted. The build job stays hosted: the
 # test binaries embed its workspace path at compile time, so a Molehill
 # partition exposes a checkout of the same head at that path (one head at a
@@ -71,8 +73,37 @@ jobs:
       lib_sha256: ${{ steps.digest.outputs.lib_sha256 }}
       workspace: ${{ steps.digest.outputs.workspace }}
       empty: ${{ steps.scope.outputs.empty }}
+      pg_runner_mode: ${{ steps.route.outputs.mode }}
     # No database here: this job verifies target custody and compiles once; the partition jobs run the tests.
     steps:
+      # Resolved once (e2e leg only) so every partition sees the same routing. auto and auto-split
+      # behave as on and split while the Molehill heartbeat (OTERYN_MOLEHILL_SEEN, Unix seconds,
+      # written every 5 minutes by the PC while a runner listener is alive) is at most 10 minutes
+      # old, and as off otherwise.
+      - name: Resolve Molehill routing
+        id: route
+        if: matrix.archive == 'e2e'
+        env:
+          MODE: ${{ vars.OTERYN_SELF_HOSTED_PG }}
+          SEEN: ${{ vars.OTERYN_MOLEHILL_SEEN }}
+          MAX_AGE: '600'
+        run: |
+          set -euo pipefail
+          now="$(date +%s)"
+          alive=false
+          if [[ "$SEEN" =~ ^[0-9]{9,11}$ ]] && (( now - SEEN >= -120 && now - SEEN <= MAX_AGE )); then
+            alive=true
+          fi
+          case "$MODE" in
+            on) mode=on ;;
+            split) mode=split ;;
+            auto) if [[ "$alive" == true ]]; then mode=on; else mode=off; fi ;;
+            auto-split) if [[ "$alive" == true ]]; then mode=split; else mode=off; fi ;;
+            *) mode=off ;;
+          esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Molehill routing: variable '${MODE:-unset}', heartbeat alive=$alive -> $mode"
+
       - name: Check out exact pull request head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -339,7 +370,7 @@ jobs:
     name: PR early signal / Durability PostgreSQL harness
     needs: build
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ${{ ((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ ((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read
@@ -352,7 +383,7 @@ jobs:
     # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
-        image: ${{ !((vars.OTERYN_SELF_HOSTED_PG == 'on' || (vars.OTERYN_SELF_HOSTED_PG == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
+        image: ${{ !((needs.build.outputs.pg_runner_mode == 'on' || (needs.build.outputs.pg_runner_mode == 'split' && matrix.partition <= 4)) && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}

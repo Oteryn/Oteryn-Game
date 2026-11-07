@@ -12,6 +12,9 @@ use std::time::Duration;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
+#[path = "npc_voice.rs"]
+mod npc_voice;
+
 struct Peer {
     commands: Arc<Mutex<Vec<ChatIntent>>>,
     rooms: ChatRoomSet,

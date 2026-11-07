@@ -352,6 +352,7 @@ impl TileBatch {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct SpriteBatch {
     instances: Vec<QuadInstance>,
+    pub lighting: crate::lighting::SceneLighting,
 }
 
 #[path = "sprite_batch.rs"]

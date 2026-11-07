@@ -135,7 +135,7 @@ assert lock["family_counts"] == {
     **family_counts, "Document": 1609,
     "Encounter.Raid": json.loads((ROOT / "content/encounters/raids/index.json").read_text())["record_count"],
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4, "Encounter": 108, "Charm": 25,
-    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
+    "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 145,
     **{family: value["records"] for family, value in quest_families.items()},
 }
 assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}

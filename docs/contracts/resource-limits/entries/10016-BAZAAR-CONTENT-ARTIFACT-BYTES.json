@@ -1,0 +1,21 @@
+{
+  "id": "BAZAAR-CONTENT-ARTIFACT-BYTES",
+  "owner_contract": "OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+  "resource": "Independently pinned server-authoritative native Content artifact for Bazaar instance and policy checks",
+  "unit": "bytes",
+  "hard_maximum": 33554432,
+  "configurable_range": {
+    "minimum": 33554432,
+    "maximum": 33554432
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "The existing artifact decoder receives at most 32 MiB of local immutable input. File metadata rejects an oversized artifact before allocation; an exact-length read plus a one-byte stack probe independently refuses file growth. This is not an increase to any durability root, outbox, HTTP or ANL budget.",
+  "client_visible": false,
+  "boundary_tests": [
+    "bazaar_items_native_postgres_custody_split_replay_and_terminal_races"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/bazaar/items.rs"
+  ],
+  "notes": "Missing, malformed, hash-mismatched, oversized or unadmitted Content leaves authority PENDING. A catalog with more than 1024 supported decisions is unavailable rather than truncated. Safe returns retain their existing escrow attributes and do not require current transferability approval. No artifact facts originate in Platform or a configuration-defined tradeable flag."
+}

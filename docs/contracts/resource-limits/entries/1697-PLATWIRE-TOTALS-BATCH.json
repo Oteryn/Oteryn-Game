@@ -1,0 +1,20 @@
+{
+  "owner_contract": "world-totals/v1/README.md",
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded public aggregate publisher; refusal retains durable samples.",
+  "client_visible": false,
+  "boundary_tests": [
+    "platform_world_totals_page_worlds_and_pending_history_without_truncation"
+  ],
+  "id": "PLATWIRE-TOTALS-BATCH",
+  "resource": "World sampler page and replay batch",
+  "unit": "rows",
+  "hard_maximum": 32,
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/world_totals.rs BATCH"
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "run_seconds": 367.576,
+    "passed": 1,
+    "failed": 8,
+    "root_causes": {
+      "duplicate fresh-session preparation": 7,
+      "obsolete Viola placement shard path": 1
+    }
+  },
+  "second_red": {
+    "passed": 6,
+    "failed": 3,
+    "run_seconds": 472.846,
+    "root_cause": "Elathriel assertion still named removed migration numbers; now requires all18 exact main and lane migrations"
+  },
+  "green": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_bank_price_exact_key_replay_and_repurchase",
+        "seconds": 84.091
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_carried_price_exact_key_replay_and_repurchase",
+        "seconds": 84.123
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::draconia_elathriel::draconia_elathriel_full_backpack_rolls_back_bank_fee_and_key",
+        "seconds": 85.058
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay",
+        "seconds": 89.176
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::source_quest_death_multi::source_quest_death_multi_non_damaging_observer",
+        "seconds": 56.206
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::uneasy_curos::uneasy_curos_accepts_two_flags_atomically_and_replays",
+        "seconds": 100.671
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_reports_native_renegade_death",
+        "seconds": 84.614
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::viola::viola_mission_yes_book_handin_is_atomic_and_survives_restart",
+        "seconds": 135.702
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::newhaven_corruptor::newhaven_corruptor_all_five_vocations_kill_loot_take_equip",
+        "seconds": 406.195
+      }
+    ],
+    "execution_markers": [
+      "SOURCE_QUEST_DEATH_MULTI POSTGRES_CASE_COMPLETED case=observer duration=56.170435145s",
+      "POSTGRES_CASE_STARTED draconia-elathriel-bank server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 33294, y: 31677, floor: -15 }",
+      "POSTGRES_CASE_COMPLETED draconia-elathriel-bank duration=84.036742561s",
+      "POSTGRES_CASE_STARTED draconia-elathriel-coins server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 33294, y: 31677, floor: -15 }",
+      "POSTGRES_CASE_COMPLETED draconia-elathriel-coins duration=84.065015005s",
+      "POSTGRES_CASE_STARTED draconia-elathriel-full server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 33294, y: 31677, floor: -15 }",
+      "POSTGRES_CASE_COMPLETED draconia-elathriel-full duration=85.021298168s",
+      "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=89.129867478s",
+      "UNEASY_CUROS POSTGRES_CASE_COMPLETED case=start duration=100.637503477s",
+      "UNEASY_CUROS_PROGRESS POSTGRES_CASE_COMPLETED case=report duration=84.575278348s",
+      "POSTGRES_CASE_COMPLETED viola_mission_yes_book_handin_is_atomic_and_survives_restart 135.652316912s",
+      "NEWHAVEN_knight POSTGRES_CASE_COMPLETED 88.139828947s",
+      "NEWHAVEN_paladin POSTGRES_CASE_COMPLETED 84.054825834s",
+      "NEWHAVEN_sorcerer POSTGRES_CASE_COMPLETED 71.320156674s",
+      "NEWHAVEN_druid POSTGRES_CASE_COMPLETED 83.213567073s",
+      "NEWHAVEN_monk POSTGRES_CASE_COMPLETED 79.436712013s"
+    ]
+  },
+  "unit_tests": {
+    "quest_source_and_predecessor": {
+      "passed": 5,
+      "seconds": 4.693
+    },
+    "elathriel_source_conversation": {
+      "passed": 1,
+      "seconds": 37.64
+    },
+    "native_item_overlap": {
+      "passed": 3,
+      "seconds": 0.071
+    },
+    "starting_and_newhaven_providers": {
+      "passed": 6,
+      "seconds": 6.829
+    }
+  },
+  "checks": {
+    "workspace": "cargo check --locked --workspace --all-targets",
+    "clippy": "31 selected crates all-targets strict PASS; dispatch all-targets strict rerun after fixture repairs PASS",
+    "fmt": "cargo fmt --all -- --check",
+    "generated": "native profiles, placement conversion, Grizzly30/30, Elathriel, batch4 packets23, complete world converter248 managed files, pin-refresh and independent pin-check",
+    "bundle_digest": "606d4fb425c866a3bae939a5784e4ad607fb0de83f4226cf7ba72b0e82e33d29"
+  },
+  "qualification_boundary": "Integration regression proof only; no whole-title promotion.",
+  "movement_pg": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::draconia_route::draconia_route_native_29002",
+        "seconds": 58.782
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::draconia_route::draconia_route_native_38003",
+        "seconds": 59.195
+      }
+    ],
+    "execution_markers": [
+      "POSTGRES_CASE_STARTED draconia-route-29002 server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32810, y: 31595, floor: -5 }",
+      "POSTGRES_CASE_COMPLETED draconia-route-29002 duration=58.752456574s",
+      "POSTGRES_CASE_STARTED draconia-route-38003 server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32675, y: 31646, floor: -10 }",
+      "POSTGRES_CASE_COMPLETED draconia-route-38003 duration=59.168497643s"
+    ]
+  }
+}

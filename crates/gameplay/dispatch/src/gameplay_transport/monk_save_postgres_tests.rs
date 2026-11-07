@@ -692,11 +692,8 @@ mod death_ml_loss_composed {
     use super::fixture::{Harness, debug, id, run};
     use super::{Dependencies, TestResult, prepare_current_session};
     use crate::ability::creature_bite::CreatureBiteVitals;
+    use crate::content::ContentActivationController;
     use crate::content::native_gameplay::NativeGameplayInput;
-    use crate::content::{
-        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-        activate_native_entry_room_with_gameplay,
-    };
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
         DurableBuildState, convert_vocation,
@@ -818,6 +815,16 @@ mod death_ml_loss_composed {
         ContentActivationController,
         crate::content::NativeEntryContentPin,
     )> {
+        let supplied = production_input_with_source(content, source)?;
+        crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
+            .map_err(debug)
+    }
+
+    /// Keep initial and successor generations on the same fixture revision.
+    pub(super) fn production_input_with_source(
+        content: &str,
+        source: Option<&[u8]>,
+    ) -> TestResult<NativeGameplayInput> {
         use sha2::Digest;
         let manifest = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -840,25 +847,21 @@ mod death_ml_loss_composed {
             .as_mut()
             .ok_or("the manifest pins build training")?
             .content_revision = content.into();
-        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
-            .map_err(debug)?;
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        let pin = activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .map_err(debug)?;
-        Ok((controller, pin))
+        {
+            let cosmetics = &mut supplied.cosmetics;
+            let mut packet: serde_json::Value = serde_json::from_slice(&cosmetics.bytes)?;
+            if packet["availability"] == "authored" {
+                // The fixture rebinds the Character content revision above;
+                // its admitted appearance packet must use that same revision.
+                packet["authoring"]["document"]["content_revision"] = content.into();
+                cosmetics.bytes = serde_json::to_vec(&packet)?;
+                cosmetics.sha256 = sha2::Sha256::digest(&cosmetics.bytes)
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect();
+            }
+        }
+        Ok(supplied)
     }
 
     pub(super) async fn current_fence(

@@ -216,7 +216,8 @@ fn resolve_item(
     if !item_rules::grant_allowed(item_properties(&item)) {
         return Err(SpellCastDisposition::NotAvailable);
     }
-    Ok(item)
+    crate::durability::native_world_items::qualify_source_item_chain(content, item)
+        .map_err(|_| SpellCastDisposition::NotAvailable)
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -28,8 +28,8 @@ pub fn stage_item_costume(
     Ok(next)
 }
 
-/// Crystal fireworks_rocket.lua:11 calls addHealth directly. It does not run armor,
-/// mana-shield or incoming combat reductions; the shared HP/death floor still applies.
+/// Crystal 201189f fireworks_rocket.lua:11 and creature_functions.cpp:591-608:
+/// Lua HP loss skips armor/origin reductions but retains mana shields and survival.
 pub fn stage_item_health_loss(
     state: &PlayerSpellState,
     amount: u32,
@@ -41,7 +41,7 @@ pub fn stage_item_health_loss(
     ),
     SpellCastDisposition,
 > {
-    stage_hit(state, amount, now_us, false, false, None)
+    stage_hit(state, amount, now_us, false, false, None, true)
 }
 
 #[cfg(test)]

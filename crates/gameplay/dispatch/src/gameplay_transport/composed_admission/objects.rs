@@ -412,6 +412,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return outcome;
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self
+                .use_dawnport_departure(actor, command, map, &target)
+                .await
+            {
+                return outcome;
+            }
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
                 return outcome;
             }

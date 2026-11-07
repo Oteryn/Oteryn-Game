@@ -4,6 +4,7 @@ include!("core_modules.rs");
 
 // Keep sorted by module name; insert in order, never append.
 pub mod arena_match;
+pub mod bazaar;
 pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_difficulty;
@@ -20,6 +21,7 @@ pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
 mod daily_reward_effects;
 mod daily_reward_jokers;
+pub mod dawnport_departure;
 pub mod endgame_terminal;
 pub mod exercise_training;
 pub mod field_removal;
@@ -49,6 +51,7 @@ pub mod raid_schedule;
 pub mod staff;
 pub mod task_board;
 pub mod terrain_tool;
+pub mod tibiadrome;
 pub mod tutorial_viola;
 pub mod vip;
 pub mod vip_presence;

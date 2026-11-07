@@ -834,6 +834,7 @@ fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMi
         reset_epoch: epoch,
         item: facts(COIN, STACKABLE),
         quantity,
+        key_number: None,
         content_revision: "content-1".into(),
         ruleset_revision: "ruleset-1".into(),
         sim_revision: "sim-1".into(),
@@ -1629,7 +1630,7 @@ mod map_overlay_pickup {
         out.extend_from_slice(&npc_frame);
         let body = out.len();
         let digest: [u8; 32] = Sha256::new()
-            .chain_update(b"OTERYN_WORLD_BUNDLE/v6\0")
+            .chain_update(b"OTERYN_WORLD_BUNDLE/v7\0")
             .chain_update(&out)
             .finalize()
             .into();

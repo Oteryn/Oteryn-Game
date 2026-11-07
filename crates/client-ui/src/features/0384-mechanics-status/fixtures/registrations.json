@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0384-mechanics-status",
+    "kind": "keybindings",
+    "id": "0384-mechanics-status-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+U",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0384-mechanics-status",
+    "kind": "panels",
+    "id": "0384-mechanics-status-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0384-mechanics-status",
+    "kind": "handlers",
+    "id": "0384-mechanics-status-query",
+    "status": "supported",
+    "commands": [
+      669
+    ],
+    "direction": "client_to_server",
+    "capability": 384,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Read-only existing owner observations; no client rule settings."
+    }
+  }
+]

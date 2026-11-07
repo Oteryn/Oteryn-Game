@@ -45,4 +45,5 @@ pub enum PlayCommand {
     Hireling(oteryn_client_runtime::hireling::HirelingCommand),
     Market(oteryn_client_runtime::market::MarketCommand),
     ChatPublic(oteryn_session::ChatIntent),
+    MovementSpeech(oteryn_session::ChatIntent),
 }

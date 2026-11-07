@@ -1,0 +1,89 @@
+{
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "shared_migrations": [
+    {
+      "path": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294"
+    },
+    {
+      "path": "apps/game-server/migrations/1000_quest_reward_payments.sql",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311"
+    },
+    {
+      "path": "apps/game-server/migrations/1001_quest_reward_participants.sql",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5"
+    },
+    {
+      "path": "apps/game-server/migrations/1002_quest_reward_state_operations.sql",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8"
+    },
+    {
+      "path": "apps/game-server/migrations/1003_quest_reward_target_sets.sql",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf"
+    },
+    {
+      "path": "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800"
+    },
+    {
+      "path": "apps/game-server/migrations/1005_quest_carried_use_proofs.sql",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023"
+    },
+    {
+      "path": "apps/game-server/migrations/1006_quest_owned_base_predicates.sql",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2"
+    },
+    {
+      "path": "apps/game-server/migrations/1007_quest_carried_payment_reapplication.sql",
+      "sha256": "7e2498f421c470305eadf8b89e3eab0928b8a386fea385cff9768a51a743a2ae"
+    },
+    {
+      "path": "apps/game-server/migrations/1008_quest_carried_membership_projection.sql",
+      "sha256": "3c8d74e1b4ef3c4a19d6b9bd0cee4651bd2e57e3c3e10891b39126452b7751ca"
+    }
+  ],
+  "lane_migrations": [
+    {
+      "path": "apps/game-server/migrations/1290_questpc_source_contracts.sql",
+      "sha256": "039000e5410faad283c89f442e6bc7f4bf7fea926bd2dd761a7ba2ba1286934b"
+    },
+    {
+      "path": "apps/game-server/migrations/1291_marlin_trophy_exchange.sql",
+      "sha256": "5a94f1a4e48d3027f0d014ce44fe34ad82bbddc31b444fe17506f655d99c3183"
+    },
+    {
+      "path": "apps/game-server/migrations/1292_raid_token_exchange.sql",
+      "sha256": "28395f34634210f9c0e113b5871e687e0d41c5b8926c260cdbda5c8388af1e09"
+    },
+    {
+      "path": "apps/game-server/migrations/1293_map_key_binding.sql",
+      "sha256": "2dfdaf4232252ec7943b6d6c9f03b4670107cab99d804839f6974b81df8db7e4"
+    },
+    {
+      "path": "apps/game-server/migrations/1294_quest_npc_item_sources.sql",
+      "sha256": "6f6e070cf0e60d99fd38719b06381d68cb20ae09e6b12b7c20c42a28638d588c"
+    },
+    {
+      "path": "apps/game-server/migrations/1295_quest_stateless_paid_receipts.sql",
+      "sha256": "ee718149321aad0472c25e18dd6dc918011ebc633b71325701f59b1e5557fa2f"
+    },
+    {
+      "path": "apps/game-server/migrations/1296_quest_paid_sale_mint_occurrences.sql",
+      "sha256": "bd76f790932fcda6d368ce995992e21355ba1c08bbdea414efe5d7c35cf861d3"
+    },
+    {
+      "path": "apps/game-server/migrations/1297_fathers_burden_xp_binding.sql",
+      "sha256": "2c6d7019d3f0dece349143c74e066d77be26a015df8333d9cfeeb2cc15ba3c9b"
+    }
+  ],
+  "removed_numbers": [
+    1200,
+    1201,
+    1202,
+    1203,
+    1204,
+    1205
+  ],
+  "no_duplicate_numbers": true,
+  "source_contract_review": "Main contains none of fluid_plan, charges_plan, game_quest_npc_program_receipts, game_character_viola, game_character_viola_book_cycles or game_father_values_proven. Lane1290 adds these required contracts without duplicating main0999-1008. Father shape extends the installed main predicate; eleven-track write remains atomic."
+}

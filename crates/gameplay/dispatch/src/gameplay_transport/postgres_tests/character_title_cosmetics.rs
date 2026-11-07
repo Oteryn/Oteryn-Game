@@ -11,9 +11,10 @@ use oteryn_protocol_oteryn::character_info::CharacterTitle;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
-const OUTFITS: [(&str, [u32; 2], CharacterTitle); 3] = [
+const OUTFITS: [(&str, [u32; 2], CharacterTitle); 4] = [
     ("crown", [1457, 1456], CharacterTitle::AdmirerOfTheCrown),
     ("golden", [1211, 1210], CharacterTitle::BigSpender),
+    ("aucar", [1598, 1597], CharacterTitle::ProconsulOfIksupan),
     (
         "bounac",
         [1437, 1436],
@@ -75,9 +76,9 @@ fn packet() -> TestResult<Vec<u8>> {
             mappings.push(json!({"grant_key":format!("title.{name}.addon{addon}"),"target":{"kind":"Addon","outfit_key":key,"addon":addon},"compatible_provenance":["title-fixture-r1"]}));
         }
     }
-    // Six further identities give nine earned outfits (eighteen sex looks). An earned
+    // Five further identities give nine earned outfits (eighteen sex looks). An earned
     // addon on the available starter later supplies the tenth canonical identity.
-    for index in 1..=6 {
+    for index in 1..=5 {
         let key = format!("oteryn:outfit.title_extra_{index:02}");
         let mut outfit = outfit_template.clone();
         outfit["key"] = key.clone().into();
@@ -87,6 +88,25 @@ fn packet() -> TestResult<Vec<u8>> {
         outfit["starter_addons_male"] = 0.into();
         outfits.push(outfit);
         mappings.push(json!({"grant_key":format!("title.extra.{index:02}"),"target":{"kind":"Outfit","outfit_key":key},"compatible_provenance":["title-fixture-r1"]}));
+    }
+    // The same Formal Dress appearance has distinct Store and quest grants.
+    // Neither an owned Store look nor a stale quest receipt proves quest completion.
+    let mut formal = outfit_template.clone();
+    formal["key"] = "oteryn:outfit.title_formal".into();
+    formal["starter_female"] = false.into();
+    formal["starter_male"] = false.into();
+    formal["starter_addons_female"] = 0.into();
+    formal["starter_addons_male"] = 0.into();
+    for (sex, look) in [("female", 1461_u64), ("male", 1460)] {
+        formal[sex] = json!({"id":look,"source_record_sha256":look_sources.get(&look).ok_or("Formal Dress source")?});
+    }
+    outfits.push(formal);
+    for key in [
+        "title.formal.quest",
+        "title.formal.stale",
+        "title.formal.store",
+    ] {
+        mappings.push(json!({"grant_key":key,"target":{"kind":"Outfit","outfit_key":"oteryn:outfit.title_formal"},"compatible_provenance":["title-fixture-r1"]}));
     }
     mappings.push(json!({"grant_key":"title.starter.addon2","target":{"kind":"Addon","outfit_key":"oteryn:outfit.proposed","addon":2},"compatible_provenance":["title-fixture-r1"]}));
     let mut mounts = Vec::new();
@@ -184,7 +204,7 @@ fn scenario() -> TestResult {
             initial.push(format!("title.{name}.base"));
             initial.push(format!("title.{name}.addon1"));
         }
-        initial.extend((1..=6).map(|index| format!("title.extra.{index:02}")));
+        initial.extend((1..=5).map(|index| format!("title.extra.{index:02}")));
         seed(&h, &initial, "title-fixture-r1", "quest").await?;
         seed(
             &h,
@@ -273,7 +293,7 @@ fn scenario() -> TestResult {
         assert_eq!(
             stored,
             [46, 47, 52, 53, 54],
-            "ten mounts, nine base grants plus one earned starter addon identity, and all three exact full outfit pairs"
+            "ten mounts, nine base grants plus one earned starter addon identity, and the exact full outfit pairs"
         );
         assert_eq!(
             command(
@@ -301,6 +321,38 @@ fn scenario() -> TestResult {
             .0,
             CommandStatus::Accepted
         );
+        let title = CharacterTitle::TimeTraveller;
+        assert_eq!(
+            command(&owner, &mut admitted, &[2, title.id()]).await?.0,
+            CommandStatus::Rejected
+        );
+        for (key, provenance, kind, expected) in [
+            (
+                "title.formal.store",
+                "title-fixture-r1",
+                "store",
+                CommandStatus::Rejected,
+            ),
+            (
+                "title.formal.stale",
+                "retired-provenance",
+                "quest",
+                CommandStatus::Rejected,
+            ),
+            (
+                "title.formal.quest",
+                "title-fixture-r1",
+                "quest",
+                CommandStatus::Accepted,
+            ),
+        ] {
+            seed(&h, &[key.into()], provenance, kind).await?;
+            assert_eq!(
+                command(&owner, &mut admitted, &[2, title.id()]).await?.0,
+                expected,
+                "Formal Dress source {kind}/{provenance}"
+            );
+        }
         // Cosmetic titles are permanent: a later view without an available definition does
         // not revoke historical achievement or the selected title.
         owner.active_generation = None;

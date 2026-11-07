@@ -178,6 +178,21 @@ impl DamageCursor {
                 == Some(self.remaining)
     }
 
+    /// Remaining schedule after its next tick; the owner separately supplies that deadline.
+    pub(super) fn remaining_span_ms(&self) -> Option<u64> {
+        let current = self.current()?;
+        let initial =
+            u64::from(self.left.checked_sub(1)?).checked_mul(u64::from(current.interval_ms))?;
+        self.segments
+            .get(self.at + 1..)?
+            .iter()
+            .try_fold(initial, |sum, segment| {
+                sum.checked_add(
+                    u64::from(segment.count).checked_mul(u64::from(segment.interval_ms))?,
+                )
+            })
+    }
+
     pub fn current(&self) -> Option<DamageSegment> {
         self.segments.get(self.at).copied()
     }

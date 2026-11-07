@@ -1,0 +1,25 @@
+{
+  "scope": "Existing generated donor captures; no new reference-data copy",
+  "generator": "python3 tools/content-schema/quest-authoring/quest_donor_source_authoring.py",
+  "result": "Only quest-input provenance changed; all captured source payload fields identical to the lane head",
+  "files": [
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/npc.json.gz",
+      "before_sha256": "a4b0a7c3c2cacae99df28826abbe7ee61ff4a3513db783d5fe98ee5a897c67cc",
+      "after_sha256": "652f973780d3489d6351306df68c57da8cc4edf69545b86afe3e1213a27b94fc",
+      "changed_fields": [
+        "quest_inputs"
+      ],
+      "source_payload_unchanged": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/dialogue.json.gz",
+      "before_sha256": "f6e907255a3e84f29717212d8abf799fd31ecbbeae7c78919086ad80e2e32b3a",
+      "after_sha256": "5cd0597cc6972624598a94c8da6e5f0947c7708fd71df544375b9ab81a79e377",
+      "changed_fields": [
+        "quest_inputs"
+      ],
+      "source_payload_unchanged": true
+    }
+  ]
+}

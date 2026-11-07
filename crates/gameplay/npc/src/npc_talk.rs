@@ -26,6 +26,10 @@ const REWARD_CALLBACKS: &str =
     include_str!("../../../../content/quests/shared-reward-callbacks.json");
 const REWARD_GREETINGS: &str =
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
+const DRACONIA_CALLBACKS: &str =
+    include_str!("../../../../content/quests/questpc-draconia-reward-callbacks.json");
+const DRACONIA_GREETINGS: &str =
+    include_str!("../../../../content/dialogues/quests/questpc-draconia-reward-greetings.json");
 
 #[derive(serde::Deserialize)]
 struct RewardMessages {
@@ -43,10 +47,15 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     }
     static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
     let rows = DATA.get_or_init(|| {
-        serde_json::from_str::<Document>(REWARD_GREETINGS)
-            .ok()
-            .filter(|d| d.schema == 1 && d.npcs.len() <= 256)
-            .map(|d| d.npcs)
+        let mut rows = Vec::new();
+        for text in [REWARD_GREETINGS, DRACONIA_GREETINGS] {
+            let document = serde_json::from_str::<Document>(text).ok()?;
+            if document.schema != 1 || rows.len() + document.npcs.len() > 256 {
+                return None;
+            }
+            rows.extend(document.npcs);
+        }
+        Some(rows)
     });
     reward_callback_npc(key).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
@@ -67,11 +76,12 @@ fn reward_callback_npc(key: &str) -> bool {
     static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
         std::sync::OnceLock::new();
     NPCS.get_or_init(|| {
-        serde_json::from_str::<Document>(REWARD_CALLBACKS)
-            .ok()
-            .filter(|d| d.schema == 1 && d.callbacks.len() <= 256)
-            .map(|d| d.callbacks.into_iter().map(|c| c.npc).collect())
-            .unwrap_or_default()
+        [REWARD_CALLBACKS, DRACONIA_CALLBACKS]
+            .into_iter()
+            .filter_map(|text| serde_json::from_str::<Document>(text).ok())
+            .filter(|document| document.schema == 1 && document.callbacks.len() <= 256)
+            .flat_map(|document| document.callbacks.into_iter().map(|c| c.npc))
+            .collect()
     })
     .contains(key)
 }
@@ -174,6 +184,8 @@ impl NpcTalkEntry {
 /// Catalogue display names and the qualified native talk entries, by NPC key.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct NpcTalkBook {
+    /// Source-qualified automatic speech, installed only by the catalogue/bundle boot binding.
+    source_voices: std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile>,
     /// S-ENTNAME: all admitted catalogue names, including NPCs without native dialogue.
     display_names: HashMap<String, String>,
     npcs: HashMap<String, NpcTalkEntry>,
@@ -183,6 +195,25 @@ pub struct NpcTalkBook {
 }
 
 impl NpcTalkBook {
+    pub fn bind_source_voices(
+        &mut self,
+        catalogue: &crate::content::NpcDataCatalogue,
+        model: &NpcServiceModel,
+        qualify: impl Fn(&str) -> Option<String>,
+    ) -> Result<(), crate::npc_voice::VoiceError> {
+        if self.catalogue_revision != Self::from_model(model).catalogue_revision {
+            return Err(crate::npc_voice::VoiceError::ContentSourceMismatch);
+        }
+        self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
+        Ok(())
+    }
+
+    pub fn source_voices(
+        &self,
+    ) -> &std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile> {
+        &self.source_voices
+    }
+
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
@@ -194,7 +225,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{:?}\0{}\0{}",
+                "{}\0{}\0{}\0{:?}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -203,6 +234,8 @@ impl NpcTalkBook {
                 crate::quest_greetings::revision_material(),
                 REWARD_CALLBACKS,
                 REWARD_GREETINGS,
+                DRACONIA_CALLBACKS,
+                DRACONIA_GREETINGS,
             )),
             ..Self::default()
         };
@@ -274,7 +307,7 @@ impl NpcTalkBook {
                     Vec::new(),
                 )
             } else if let Some(greeting) = endgame_greeting(&reference.key) {
-                // W11: only these four source NPCs have native stateful Quest
+                // Only these source NPCs have native stateful Quest
                 // consumers. This admits their greeting, not their Lua/script
                 // branches; dispatch owns every confirmation and durable write.
                 (greeting.into(), "Farewell.".into(), None, Vec::new())
@@ -477,10 +510,17 @@ impl NpcTalkBook {
     }
 }
 
-/// Crystal201189f NPC greeting messages. A script-backed NPC outside this exact
-/// set remains unavailable through the native endgame conversation consumer.
+/// Source-qualified native finale speakers. A script-backed NPC outside this exact
+/// set remains unavailable through the native conversation consumer.
 fn endgame_greeting(key: &str) -> Option<&'static str> {
     Some(match key {
+        // SRV6: exact final-report speaker; Crystal kesar_the_younger_day.lua:286.
+        "oteryn:npc.kesar_the_younger_day" => {
+            "Hail, traveller. What brings you here during these dire times under {siege}? The fair Bounac is suffering greatly."
+        }
+        // Retained current-Tibia source identifies this canonical NPC. Its final
+        // sequence is native; unavailable intermediate story copy stays suppressed.
+        "oteryn:npc.planestrider_npc" => "Planestrider",
         // data-global/npc/flickering_soul.lua:198.
         "oteryn:npc.flickering_soul" => "Be greeted, living soul!",
         // data-global/npc/torkada.lua:96.
@@ -634,6 +674,34 @@ mod tests {
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
         for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+            let key = format!("oteryn:npc.{name}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("missing reward conversation {key}"))?;
+            assert!(!entry.greeting_reply.is_empty());
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "no scripted reward branch opens through talk rules"
+            );
+        }
+        assert!(!reward_callback_npc("oteryn:npc.unqualified"));
+        Ok(())
+    }
+
+    #[test]
+    fn draconia_reward_npc_opens_only_its_source_conversation() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        {
+            let name = "elathriel";
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)

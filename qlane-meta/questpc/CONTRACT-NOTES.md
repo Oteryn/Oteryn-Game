@@ -556,3 +556,24 @@ Next tests must use actual native Curos dialogue and these prerequisite guards.
 Later crystal action40030 changes10186->10187 for10seconds and only advances
 Questline3->4; check qworld/other lanes for a reusable timer before implementing one.
 These are verified source facts for continuing work, not full-quest qualification.
+
+## 2026-11-07 main merge: exact charge overlap
+
+Main's ITEMHOLD fallback overlaps the existing source-exact Ornamented Shield
+recipe. A source raw count of one remains one item with one charge; it is not
+expanded to the definition's 150 charges. The historical SOURCE mismatch remains
+as provenance while the admitted native recipe retains its exact one charge.
+The existing `test_charge_native` regression and the strengthened merged variant
+assertion enforce that count and charge together. Independent ITEMHOLD admissions
+remain available. Frozen SOURCE cores were compared in full before compiler-pin
+refresh; no source core or qualification was invented to resolve the merge.
+
+## 2026-11-07 main merge: starting-item provider ownership
+
+The starting-loadout cohort overlaps the already admitted Newhaven profiles for
+3571, 3572 and 7991. Transfer existing records verbatim into the cohort's single
+provider, remove their duplicate base entries, and regenerate both manifest
+digests. Existing identity, source binding and custody must exactly match the
+source-derived cohort; conflicting binding/admission is rejected before mutation.
+Earlier Wiki/native facts remain authoritative. Added RED/GREEN regressions
+prove full-record retention, one provider identity and both digest updates.

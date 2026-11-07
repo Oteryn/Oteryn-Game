@@ -29,6 +29,10 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid party icons reply".into();
         return;
     };
+    show_icons(panel, &icons);
+}
+fn show_icons(panel: &mut Panel, icons: &[wire::PartyIcon]) {
+    panel.icons = icons.to_vec();
     panel.summary = if icons.is_empty() {
         "No visible party icons".into()
     } else {
@@ -66,4 +70,20 @@ fn shield(value: u8) -> &'static str {
 }
 fn skull(value: u8) -> &'static str {
     ["None", "Yellow", "Green", "White", "Red", "Black", "Orange"][usize::from(value)]
+}
+
+pub(in crate::play) fn reduce(panel: &mut Panel, events: &[oteryn_session::SessionEvent]) {
+    if !panel.selected { return; }
+    for event in events {
+        match event {
+            oteryn_session::SessionEvent::PartyIcons(delta) => show_icons(panel, &delta.value),
+            oteryn_session::SessionEvent::WorldSpatialEntities(delta) if !delta.value.leave.is_empty() => {
+                let mut icons = panel.icons.clone();
+                icons.retain(|icon| !delta.value.leave.contains(&icon.entity));
+                show_icons(panel, &icons);
+            }
+            oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 1 => show_icons(panel, &[]),
+            _ => {}
+        }
+    }
 }

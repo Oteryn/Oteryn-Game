@@ -318,7 +318,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let installed: bool = sqlx::query_scalar(
-        "SELECT count(*)=17 FROM _sqlx_migrations WHERE version IN (999,1000,1001,1002,1003,1004,1005,1006,1200,1201,1202,1203,1204,1205,1294,1295,1296) AND success",
+        "SELECT count(*)=18 FROM _sqlx_migrations WHERE version IN (999,1000,1001,1002,1003,1004,1005,1006,1007,1008,1290,1291,1292,1293,1294,1295,1296,1297) AND success",
     )
     .fetch_one(&h.pool)
     .await?;
@@ -327,7 +327,7 @@ pub(super) async fn exercise(
         "the actual PG schema must include the stateless paid receipt proof"
     );
     eprintln!(
-        "POSTGRES_MIGRATION_REGISTRY qengine8=true qbase6=true lane_paid3=true migration1294=true migration1295=true migration1296=true"
+        "POSTGRES_MIGRATION_REGISTRY main10=true lane8=true migration1290=true migration1295=true migration1296=true migration1297=true"
     );
     unpaired_stateless_receipt_is_rejected(h).await?;
     let [npc] = super::classic_quests::install(owner, admitted, ["oteryn:npc.elathriel"]).await?;

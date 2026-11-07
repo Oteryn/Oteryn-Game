@@ -46,8 +46,8 @@ pub struct WorldFieldPolicyData {
     in_fight_ms: u32,
 }
 impl WorldFieldPolicyData {
-    /// Borrow binds the actual same SQL transaction retaining readiness and
-    /// immutable config locks through field's physical owner install.
+    /// Borrow binds the actual same SQL transaction retaining the readiness
+    /// lock and its immutable policy facts through field's physical owner install.
     pub fn bind<'r, 'h>(
         self,
         tx: &'r Transaction<'h, Postgres>,
@@ -94,7 +94,10 @@ pub async fn read_world_field_policy_in_transaction(
     // is always the function owner, and `session_user` is the authenticated login
     // that a `SET ROLE` cannot change. A row here was published by the exact
     // control login holding a World/revision grant, never by a role it assumed.
-    let row=sqlx::query("SELECT world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision=$2 FOR SHARE")
+    // Policy rows are immutable (migration 0048 rejects UPDATE/DELETE). The
+    // current guard above stays locked in this transaction; this read needs
+    // only SELECT, the runtime role's deliberately read-only policy privilege.
+    let row=sqlx::query("SELECT world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision=$2")
         .bind(world_id.as_bytes().as_slice()).bind(&world_policy_revision).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(None) };
     if row.try_get::<String, _>("source_pin")? != "99902524e052f37574194466c2949c576e4ab269"

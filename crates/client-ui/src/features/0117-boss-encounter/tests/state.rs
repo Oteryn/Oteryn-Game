@@ -8,7 +8,7 @@ fn boss_encounter_gates_pending_and_projects_only_valid_server_data() {
     let command = request(&mut panel, Intent::Refresh);
     assert_eq!(
         command.map(|c| (c.capability, c.kind, c.payload)),
-        Some((117, 133, vec![]))
+        Some((117, 133, vec![16, 1]))
     );
     assert!(request(&mut panel, Intent::Refresh).is_none());
     let response = GatedCommandResult {
@@ -53,7 +53,7 @@ fn boss_encounter_next_uses_earlier_cursor_to_avoid_skipping_either_list() {
     };
     assert_eq!(
         request(&mut panel, Intent::Next).map(|c| c.payload),
-        Some(vec![10, 3, b'a', b':', b'm'])
+        Some(vec![10, 3, b'a', b':', b'm', 16, 1])
     );
     panel.pending = false;
     panel.snapshot = Some(Snapshot::default());

@@ -100,7 +100,7 @@ fn run_scenario_items(
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case, crystal))
+                .block_on(scenario(admin, case, crystal, None))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -112,6 +112,7 @@ async fn scenario(
     admin: String,
     case: Option<item_use_view_refresh_tests::Case>,
     crystal: bool,
+    current_potion: Option<u32>,
 ) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
@@ -144,7 +145,10 @@ async fn scenario(
     } else {
         "oteryn:item.tibia.i3577"
     };
-    let potion_key = if crystal {
+    let current_potion_key = current_potion.map(|id| format!("oteryn:item.tibia.i{id}"));
+    let potion_key = if let Some(key) = &current_potion_key {
+        key.as_str()
+    } else if crystal {
         "oteryn:item.tibia.i268"
     } else {
         "oteryn:item.tibia.i266"
@@ -271,7 +275,10 @@ async fn scenario(
                     &runtime,
                     actor,
                     session,
-                    crate::gameplay_transport::actor_spell::tests::FACTS,
+                    crate::spell::cast::CharacterCastFacts {
+                        level: if current_potion.is_some() { 200 } else { 8 },
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    },
                     (0, 0),
                     owner.owner_now()
                 )
@@ -390,6 +397,18 @@ async fn scenario(
         .await;
     assert_eq!(outcome.disposition, UseDisposition::Committed);
     assert_eq!(harness.count("game_item_use_records").await?, 2);
+    if current_potion.is_some() {
+        let empty: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i284' AND quantity=1 AND lifecycle=1")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(
+            empty, 1,
+            "current mana variants return the donor's large empty flask exactly once"
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     // Equipment-first refuses without falling through to the closed bag. A reserved
     // equipment match is skipped, then a reserved nested source is skipped as well.
     let mut tx = harness.pool.begin().await?;
@@ -534,6 +553,47 @@ async fn drink_from_a_vial(
         (fluid_of(130).await?, fluid_of(134).await?),
         (Some(10), None)
     );
+    // GAP-SV2/I10 re-verification: a full destination must never be overwritten
+    // or spill the source. Empty-source filling below remains a separate action.
+    // Owner-accepted difference: Crystal 201189f fluids.lua:70-81 spills it.
+    let full_vessel_started = std::time::Instant::now();
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,encode($3,'hex')::uuid)")
+        .bind(id(134).as_slice()).bind(id(42).as_slice()).bind(id(137).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let transitions = harness.count("game_item_fluid_transitions").await?;
+    for (command, source, target) in [(20, 134, 130), (21, 130, 134)] {
+        assert_eq!(
+            pour(command, source, target)
+                .await
+                .map(|outcome| outcome.disposition),
+            Some(UseDisposition::Rejected)
+        );
+        assert_eq!(
+            (fluid_of(130).await?, fluid_of(134).await?),
+            (Some(10), Some(1))
+        );
+        assert_eq!(
+            harness.count("game_item_fluid_transitions").await?,
+            transitions
+        );
+    }
+    eprintln!(
+        "GAP-SV2/I10 PostgreSQL: two full-vessel refusals preserved both fluids and transition history in {:?}",
+        full_vessel_started.elapsed()
+    );
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_item_fluid_states WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(134).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     let filled = pour(11, 134, 130).await.map(|outcome| outcome.disposition);
     assert_eq!(filled, Some(UseDisposition::Committed));
     assert_eq!(
@@ -544,4 +604,32 @@ async fn drink_from_a_vial(
     // The backpack is no fluid container, so another owner may take that use.
     assert!(pour(12, 134, 70).await.is_none());
     Ok(())
+}
+
+#[test]
+fn srx1_current_mana_potion_variants_wire_replay_postgres() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            postgres_fixture::runtime()
+                .map_err(|e| e.to_string())?
+                .block_on(async {
+                    for item in [53162, 53163, 53164] {
+                        let started = std::time::Instant::now();
+                        scenario(admin.clone(), None, true, Some(item)).await?;
+                        eprintln!(
+                            "SRX1_PG current_potion={item} wire/replay/flask elapsed={:?}",
+                            started.elapsed()
+                        );
+                    }
+                    Ok::<_, Box<dyn std::error::Error>>(())
+                })
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "current potion test panicked")?
+        .map_err(Into::into)
 }

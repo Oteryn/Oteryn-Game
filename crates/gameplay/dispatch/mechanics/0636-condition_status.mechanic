@@ -1,0 +1,8 @@
+name=condition_status
+commands=492
+transport=condition_status
+composed=condition_status
+authority=condition_status
+offer=631,condition_status::offered,condition_status_available
+[route]
+routing::condition_status::route(authority, &session.admitted, command).await

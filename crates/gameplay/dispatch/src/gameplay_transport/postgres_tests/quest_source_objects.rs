@@ -928,7 +928,7 @@ async fn hidden_steps(
                 .ok_or("source facts")?;
             assert!(
                 map.facts
-                    .apply_quest_callback(key, 0, facts, &[], &[], false),
+                    .apply_quest_callback(key, 0, facts, &[], &[], false, None),
                 "another completed owner event advances the shared source revision"
             );
             assert!(

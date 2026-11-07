@@ -407,6 +407,8 @@ pub enum OneItemOperationV1 {
     // 17/18 belong to the PlayerDeathItem owner and retain their existing encoding.
     #[prost(message, tag = "19")]
     Forge(super::character_forge_dust::OneItemForgeV1),
+    #[prost(message, tag = "20")]
+    WriteOnce(super::item_text::write_once::OneItemWriteOnceV1),
     // End tag-sorted variants.
 }
 
@@ -433,6 +435,7 @@ pub struct OneItemTransactionV1 {
             15, // Craft
             16, // Atelier
             19, // Native Forge
+            20, // WriteOnce
         )
     )]
     pub operation: Option<OneItemOperationV1>,
@@ -2071,6 +2074,8 @@ pub(super) mod tests {
                 // W19 seed drops share the move owner's Type2 transaction and tuple.
                 "crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
+                // C4 write-once text uses the same fenced Type2Transaction tuple.
+                "crates/gameplay/durability/src/durability/item_text/write_once.rs",
                 "crates/gameplay/durability/src/durability/item_timed_state.rs",
                 "crates/gameplay/durability/src/durability/item_transfer.rs",
                 // E12's native Inbox lamp burn uses the same fenced Type2 tuple.

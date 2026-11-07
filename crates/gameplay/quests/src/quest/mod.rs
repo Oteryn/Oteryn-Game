@@ -29,17 +29,21 @@ pub mod dark_trails;
 pub mod falcon;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod hero_of_bounac;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kills;
 pub mod native_rules;
 pub mod npc_rules;
+pub mod planegazer_finale;
 mod quests_2_focus;
 pub mod raid_tokens;
 pub mod reward_callbacks;
 pub mod rotten_blood;
+pub mod schrodinger_island;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
@@ -334,7 +338,8 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
-                && !reward_callbacks::stateless_sale(&transition.key, &transition.quest)
+                && !(transition.experience.is_none()
+                    && reward_callbacks::owns_transition(&transition.key, &transition.quest))
             {
                 return Err(E::InvalidEffect(transition.key));
             }

@@ -1,0 +1,17 @@
+{
+  "id": 278,
+  "name": "BATTLE_INSTINCT_STATUS_V1",
+  "constant": "battle_instinct_status::CAPABILITY_BATTLE_INSTINCT_STATUS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    494
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

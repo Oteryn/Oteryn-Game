@@ -28,6 +28,11 @@ authorised; this file only says how the flow behaves.
   re-run, do not wait for them.
 - A job that sits `queued` with no runner is a failure, not progress. Check
   whether the routing variable points at an offline self-hosted runner.
+- `auto` (and `auto-split` for PG) routes to Molehill only while the PC
+  heartbeat `OTERYN_MOLEHILL_SEEN` (Unix seconds, written every 5 minutes by
+  `molehill-heartbeat.sh` while a runner listener is alive) is at most 10
+  minutes old; otherwise the run goes hosted. The `Molehill fallback` workflow
+  cancels and re-runs, every 15 minutes, runs still waiting on an offline PC.
 
 ## Blind spot
 

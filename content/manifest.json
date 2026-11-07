@@ -292,6 +292,12 @@
       "path": "content/cosmetics/mounts/mounts-00000-00251.json"
     },
     {
+      "path": "content/cosmetics/outfits/authoring.json"
+    },
+    {
+      "path": "content/cosmetics/outfits/native-cosmetics.json"
+    },
+    {
       "path": "content/craft/index.json"
     },
     {
@@ -604,6 +610,12 @@
       "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
+      "path": "content/items/definitions/srx1-item-updates.json"
+    },
+    {
+      "path": "content/items/definitions/starting-loadout-profiles.json"
+    },
+    {
       "path": "content/items/index.json"
     },
     {
@@ -836,6 +848,9 @@
     },
     {
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -992,7 +1007,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3744,
+          "record_count": 3790,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1000,7 +1015,20 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "25307e488056c58bdcf6e2ddd5b21b1ff8e345c3e0e458e6712f6449c703fac7"
+          "sha256": "49f5b9b2b7fc7857dbab5514c6ae712a1222209a4400f56b4e7fd96f6e22bf9b"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/items/definitions/starting-loadout-profiles.json",
+          "record_count": 13,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+          },
+          "sha256": "d14aab3f71b6ca396d7b5b0e929c8cd3f377da3b0a3052056c8bbe121e61efb2"
         }
       ],
       "Presentation": [

@@ -33,8 +33,14 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(looks['item_appearances']),6)
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
-        # PREY-DIFF registers the generated tier and slot-value tables below.
-        self.assertEqual(len(actual),40)
+        # PREY-DIFF registers the generated tier and slot-value tables below;
+        # C1 registers the Newhaven starting-loadout item profiles; SRX-1
+        # registers the pinned item-profile supplement. QENGINE2 adds its
+        # source-qualified reward Item proof alongside those 42 outputs.
+        self.assertEqual(len(actual),43)
+        self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
+        self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
+        self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)

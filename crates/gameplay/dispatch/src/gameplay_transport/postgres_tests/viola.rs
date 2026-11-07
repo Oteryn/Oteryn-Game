@@ -477,13 +477,18 @@ async fn install_source(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let document: serde_json::Value = serde_json::from_slice(&std::fs::read(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../content/world/npc-placements/placements-00000-00033.json"
-    ))?)?;
-    let declaration = document["records"]
-        .as_array()
-        .ok_or("placements")?
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/npc-placements/index.json"),
+    )?)?;
+    let mut placements = Vec::new();
+    for shard in index["shards"].as_array().ok_or("placement shards")? {
+        let path = shard.as_str().ok_or("placement shard path")?;
+        let document: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join(path))?)?;
+        placements.extend(document["records"].as_array().ok_or("placements")?.iter().cloned());
+    }
+    let declaration = placements
         .iter()
         .find_map(|row| {
             let d = &row["declaration"];

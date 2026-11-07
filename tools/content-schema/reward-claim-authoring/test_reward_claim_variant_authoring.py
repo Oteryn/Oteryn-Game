@@ -69,7 +69,14 @@ class CanonicalVariantTests(unittest.TestCase):
                     self.assertEqual(p['reward'][charge['reward_field']][charge['reward_index']]['count'], 1)
                 if charge['data_status'] == 'CONFLICT':
                     found += 1
-                    self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                    if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield':
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
+                        leaves = d['native_contents']['placements'][0]['contents']
+                        garlic, = [leaf for leaf in leaves if leaf['item']['key'] == 'oteryn:item.tibia.i3083']
+                        self.assertEqual(garlic['count'], 1)
+                        self.assertEqual(garlic['charges_remaining'], 1)
+                    else:
+                        self.assertTrue(any(g['code'] == 'SOURCE_CHARGE_MISMATCH' for g in d['data_holds']))
                     self.assertNotEqual(charge['source_raw_argument'], charge['definition_charges']['value'])
         self.assertEqual(found, 3)
 

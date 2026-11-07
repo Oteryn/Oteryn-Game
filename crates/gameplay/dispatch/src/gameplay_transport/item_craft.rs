@@ -15,10 +15,12 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+mod dispenser;
 pub(super) mod enchanting;
 mod harvest;
 mod planting;
 mod rope;
+mod skinning;
 mod terrain;
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
@@ -50,6 +52,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        match self
+            .use_dispenser(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
+        match self
+            .use_skinning(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         match self
             .use_planting(actor, command, &intent, source, target)
             .await

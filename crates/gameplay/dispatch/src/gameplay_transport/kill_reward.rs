@@ -1293,6 +1293,13 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    if runtime.is_tibiadrome(target) {
+        let _ = crate::combat::project_fixed_one_creature_death(
+            &mut runtime.borrow_combat_death(),
+            target,
+        );
+        return;
+    }
     // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
     // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
     if runtime.soulpit_variant(target).is_some() {
@@ -1450,7 +1457,9 @@ pub fn record_creature_kill(
             let boss = sink.rewards.boss(&creature);
             if boss.is_none()
                 && !oteryn_gameplay_quests::quest::creature_death::tracks_creature(&creature)
-                && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
+                && (top.present().is_none()
+                    || !super::grizzly_kills::tracks_creature(&creature)
+                        && !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&creature))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the

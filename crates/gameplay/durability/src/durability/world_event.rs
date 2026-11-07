@@ -35,6 +35,7 @@ pub(super) async fn record_reset(
     if stored != (!announcement.is_empty(), announcement.to_owned()) {
         return Err(DurabilityError::InvalidStoredState);
     }
+    super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
     Ok(())
 }
 

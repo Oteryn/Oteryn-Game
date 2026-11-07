@@ -319,6 +319,17 @@ pub async fn prepare_relocation<'owner, 'database>(
     let static_owner = qualified_static_owner(room, runtime, objects)?;
     let cells = room.movement_cells();
     let source = current.position();
+    // Captured source rooms use native -z; bundle runtimes use legacy +z.
+    let bundle_frame = matches!(
+        cells.index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+    );
+    let upstairs = if bundle_frame { -1 } else { 1 };
+    let source_depth = if bundle_frame {
+        i32::from(source.floor)
+    } else {
+        -i32::from(source.floor)
+    };
     let origin = tile_in_transaction(tx, authority, room, runtime, source)
         .await?
         .ok_or(WorldRelocationError::MissingTileMetadata)?;
@@ -359,13 +370,13 @@ pub async fn prepare_relocation<'owner, 'database>(
                     });
                 }
             };
-            if up && source.floor == -8 || !up && source.floor == -7 {
+            if up && source_depth == 8 || !up && source_depth == 7 {
                 return Ok(WorldRelocationOutcome::Refused {
                     reason: "not_possible",
                 });
             }
             let probe = if up {
-                offset(source, 0, 0, 1)?
+                offset(source, 0, 0, upstairs)?
             } else {
                 offset(source, x, y, 0)?
             };
@@ -397,7 +408,10 @@ pub async fn prepare_relocation<'owner, 'database>(
                     reason: "not_possible",
                 });
             }
-            (offset(source, x, y, if up { 1 } else { -1 })?, false)
+            (
+                offset(source, x, y, if up { upstairs } else { -upstairs })?,
+                false,
+            )
         }
         Some("rope_up") => {
             if !origin.ground_present() {
@@ -443,7 +457,7 @@ pub async fn prepare_relocation<'owner, 'database>(
                 (-1, -1),
                 (1, -1),
             ] {
-                let candidate = offset(source, x, y, 1)?;
+                let candidate = offset(source, x, y, upstairs)?;
                 let Some(t) = tile_in_transaction(tx, authority, room, runtime, candidate).await?
                 else {
                     continue;
@@ -472,7 +486,7 @@ pub async fn prepare_relocation<'owner, 'database>(
             let destination = if let Some(selected) = selected {
                 selected
             } else {
-                let fallback = offset(source, 0, 1, 1)?;
+                let fallback = offset(source, 0, 1, upstairs)?;
                 if tile_in_transaction(tx, authority, room, runtime, fallback)
                     .await?
                     .is_none()
@@ -818,6 +832,9 @@ mod tests {
     use super::*;
     use crate::content::{QualifiedNativeEntryRoom, qualify_native_entry_room};
     use serde_json::{Value, json};
+    mod bundle_air {
+        include!("world_execution_bundle_tests.rs");
+    }
     use {
         crate::foundation::{ChannelId, GameSessionId, NodeId, WorldId},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,

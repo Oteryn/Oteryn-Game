@@ -15,6 +15,7 @@ pub enum SessionEvent {
     ChatSnapshot(AppliedDelta<ChatLog>),
     WorldClock(AppliedDelta<world_clock::WorldClock>),
     Presentation(AppliedDelta<Vec<PresentationEvent>>),
+    ItemEffects(AppliedDelta<Vec<PresentationEvent>>),
     ActorCooldowns(AppliedDelta<oteryn_protocol_oteryn::presentation::ActorCooldowns>),
     PlayerTrade(AppliedDelta<player_trade::State>),
     NpcConversation(AppliedDelta<npc_service::NpcConversation>),
@@ -34,6 +35,8 @@ pub enum SessionEvent {
     /// Domain 1 with capability 6 selected: the entities that entered, updated and left, and the
     /// own-actor position. [`Session::world_entities`] already holds the result.
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
+    /// Domain 1 icons-only replacement for the currently visible players.
+    PartyIcons(AppliedDelta<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
     /// Domain 17: validated bundle map changes, bound to the admitted content and reset epoch.
@@ -84,6 +87,7 @@ impl SessionEvent {
             Self::WorldClock(_) => 18,
             Self::WorldWeather(_) => 22,
             Self::Presentation(_) => 19,
+            Self::ItemEffects(_) => oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS,
             Self::ActorCooldowns(_) => 20,
             Self::ServerSaveCountdown(_) => 40,
             Self::AchievementEarned(_) => {
@@ -92,7 +96,7 @@ impl SessionEvent {
             Self::ServerMessage(_) => {
                 oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
             }
-            Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
+            Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) | Self::PartyIcons(_) => {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,

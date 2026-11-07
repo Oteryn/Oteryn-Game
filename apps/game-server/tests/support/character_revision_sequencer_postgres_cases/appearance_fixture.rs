@@ -5,7 +5,18 @@ use super::*;
 pub(super) enum CreationFixture {
     Historical,
     Own,
+    OwnFemale,
     Observer,
+}
+
+impl CreationFixture {
+    pub(super) fn sex(self) -> Option<i16> {
+        match self {
+            Self::Historical => None,
+            Self::OwnFemale => Some(1),
+            Self::Own | Self::Observer => Some(2),
+        }
+    }
 }
 
 impl Harness {
@@ -18,6 +29,7 @@ impl Harness {
             false,
             false,
             CreationFixture::Observer,
+            "starter-1",
         )
         .await
     }
@@ -31,6 +43,7 @@ impl Harness {
             true,
             false,
             CreationFixture::Observer,
+            "starter-1",
         )
         .await
     }
@@ -44,6 +57,29 @@ impl Harness {
 
     #[allow(dead_code, reason = "used by the native dispatch library harness")]
     pub(crate) async fn create_appearance(admin: String, tag: &str) -> TestResult<Self> {
-        Self::create_seeded(admin, tag, true, false, true).await
+        Self::create_seeded(admin, tag, true, false, CreationFixture::Own).await
+    }
+
+    #[allow(
+        dead_code,
+        reason = "used by the QENGINE reward dispatch library cases"
+    )]
+    pub(crate) async fn create_quest_reward(
+        admin: String,
+        tag: &str,
+        female: bool,
+    ) -> TestResult<Self> {
+        Self::create_seeded(
+            admin,
+            tag,
+            false,
+            false,
+            if female {
+                CreationFixture::OwnFemale
+            } else {
+                CreationFixture::Own
+            },
+        )
+        .await
     }
 }

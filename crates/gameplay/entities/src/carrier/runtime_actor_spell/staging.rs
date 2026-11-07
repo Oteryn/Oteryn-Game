@@ -133,6 +133,11 @@ impl ChannelRuntimeV1 {
         } = staging;
         let digest: [u8; 32] = Sha256::digest(binding).into();
         for effect in &batch.effects {
+            // W17: the Channel-local Drome room has the same combat isolation as an
+            // Instance. Qualified familiars inherit their exact current master's room.
+            if self.is_tibiadrome(batch.caster) != self.is_tibiadrome(effect.target) {
+                return Err(Error::InvalidBatch);
+            }
             let index = self
                 .carrier
                 .validate_ref(&self.continuity, effect.target.0)?;

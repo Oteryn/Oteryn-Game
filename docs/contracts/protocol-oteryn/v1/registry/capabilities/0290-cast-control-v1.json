@@ -1,0 +1,13 @@
+{
+  "id": 290,
+  "name": "CAST_CONTROL_V1",
+  "owner_decision": "S17-A / accepted S17-CAST-DESIGN section 6",
+  "owner": "Game off-tick cast owner",
+  "command_types": [
+    502,
+    505
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Disabled pending Platform observer profile, production worker composition, durable audit and measured qualification."
+}

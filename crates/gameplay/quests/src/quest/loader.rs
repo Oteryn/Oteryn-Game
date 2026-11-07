@@ -256,6 +256,10 @@ pub fn load_embedded_quest_state_at_layer(
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -299,8 +303,7 @@ pub fn load_embedded_quest_state_at_layer(
             }
         }
     }
-    lowered.catalogue =
-        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);

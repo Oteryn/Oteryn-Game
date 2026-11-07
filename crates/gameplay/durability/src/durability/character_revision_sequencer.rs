@@ -33,6 +33,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
+mod native_kills;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
@@ -484,7 +485,7 @@ impl RevisionSlot {
         clippy::too_many_arguments,
         reason = "the revision slot forwards the complete existing Quest and reward admission context"
     )]
-    pub async fn commit_quest_reward(
+    pub async fn commit_quest_reward<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -493,6 +494,7 @@ impl RevisionSlot {
         request: QuestTransitionRequest,
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
+        gate: &G,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -506,6 +508,7 @@ impl RevisionSlot {
                     request.clone(),
                     std::sync::Arc::clone(&catalogue),
                     admission,
+                    gate,
                 )
             },
         )
@@ -584,6 +587,7 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -598,6 +602,7 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&catalogue),
                     permit,
                     context.clone(),
+                    native,
                 )
             },
         )

@@ -41,6 +41,22 @@ pub(super) async fn exercise(
             .ok_or("mail capability")?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = admitted.item_fence.ok_or("fence")?;
+    // Historical initial inventory: a partially used keg. Actual parcel insertion,
+    // mail posting, Inbox retrieval and replay below must preserve its whole row.
+    let charge_item=(!list).then_some(crate::bestiary_postgres_harness::id(240));
+    if let Some(item)=charge_item {
+        let mut tx=pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i25904','definition-r1',1,1,encode($3,'hex')::uuid)")
+            .bind(item.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(crate::bestiary_postgres_harness::id(241).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT encode($1,'hex')::uuid,world_id,character_id,item_instance_id,99,encode($2,'hex')::uuid FROM game_item_container_slots WHERE character_id=encode($3,'hex')::uuid")
+            .bind(item.as_slice()).bind(crate::bestiary_postgres_harness::id(242).as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_timed_definitions VALUES('Item','oteryn:item.tibia.i25904','definition-r1',500,NULL,false) ON CONFLICT DO NOTHING").execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES(encode($1,'hex')::uuid,441,1)").bind(item.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    let frozen=if let Some(item)=charge_item {Some(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(pool).await?)} else {None};
+
     let name: String = sqlx::query_scalar(
         "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
@@ -75,7 +91,13 @@ pub(super) async fn exercise(
         mailbox_handle: 2,
     })
     .map_err(debug)?;
-    set_text(pool, letter, &name).await?;
+    let write_started = std::time::Instant::now();
+    let write = encode_intent(&MailIntent::WriteText { item_handle: 1, text: name.clone() }).map_err(debug)?;
+    for _ in 0..2 {
+        assert_eq!(owner.mail_command(actor, admitted, 500, &write, Some(ItemKey::Instance(letter)), None).await,
+            Some(MailOutcome::TextWritten));
+    }
+    eprintln!("GAP-SV2 I04 PostgreSQL production text ingress/replay PASS in {:?}", write_started.elapsed());
     // Command 124 names a mailbox: the adjacent depot locker is none, the mailbox two tiles
     // away is out of reach. Neither writes.
     for (command_id, mailbox) in [(501, base(6, 1)?), (502, base(10, 1)?)] {
@@ -145,6 +167,10 @@ pub(super) async fn exercise(
         state(pool, parcel).await?,
         (String::from("oteryn:item.tibia.i3503"), 0, 1)
     );
+    if let Some(item)=charge_item {
+        assert_eq!(owner.move_loop_item(actor,command(508),LoopMove{item:ItemKey::Instance(item),count:None,
+            target:LoopTarget::Container(ItemKey::Instance(parcel))}).await,LoopMoveResult::Committed);
+    }
     // The mail owner admits one post per sender each second.
     tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
     assert_eq!(
@@ -176,7 +202,13 @@ pub(super) async fn exercise(
     if list {
         super::depot_list::exercise(owner, admitted).await?;
     }
-    retrieve_from_inbox(owner, actor, admitted, pool, letter, parcel, label).await
+    retrieve_from_inbox(owner, actor, admitted, pool, [letter,parcel,label],charge_item).await?;
+    if let Some(item)=charge_item {
+        assert_eq!(Some(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(pool).await?),frozen);
+        assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(pool).await?,0);
+        eprintln!("SRX1_PG partially used keg: parcel/Inbox/retrieval/replay preserves 441 charges");
+    }
+    Ok(())
 }
 
 fn hex(item: [u8; 16]) -> String {
@@ -190,10 +222,10 @@ async fn retrieve_from_inbox(
     actor: crate::foundation::ExactActorRef,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     pool: &sqlx::PgPool,
-    letter: [u8; 16],
-    parcel: [u8; 16],
-    label: [u8; 16],
+    items: [[u8;16];3],
+    charge_item:Option<[u8;16]>,
 ) -> TestResult {
+    let [letter,parcel,label]=items;
     use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
     let inbox = async || -> TestResult<i64> {
         Ok(
@@ -215,11 +247,9 @@ async fn retrieve_from_inbox(
         Ok(backpack.entries.iter().any(|e| e.item.item_instance_id == item))
     };
     assert_eq!(inbox().await?, 2);
-    for (command_id, client_id, item, left) in [
-        (601, 3507, label, 2),
-        (602, 3504, parcel, 1),
-        (603, 3506, letter, 0),
-    ] {
+    let mut retrievals=vec![(601,3507,label,2),(602,3504,parcel,1),(603,3506,letter,0)];
+    if let Some(item)=charge_item {retrievals.insert(0,(600,25904,item,2));}
+    for (command_id, client_id, item, left) in retrievals {
         let request = Request::Retrieve {
             client_id,
             all: true,
@@ -239,7 +269,7 @@ async fn retrieve_from_inbox(
     assert_eq!(counter, "0");
     let kinds: Vec<i16> = sqlx::query_scalar("SELECT l.from_kind FROM game_item_loop_move_lines l JOIN game_item_loop_move_receipts r USING(transaction_id) WHERE r.quick_loot_ordinal>0 AND l.from_kind IN(6,7) ORDER BY r.command_id")
         .fetch_all(pool).await?;
-    assert_eq!(kinds, [7, 6, 6]);
+    assert_eq!(kinds, if charge_item.is_some() {vec![7,7,6,6]} else {vec![7,6,6]});
     let reply = owner
         .depot_search_command(
             actor,

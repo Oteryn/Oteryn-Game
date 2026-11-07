@@ -122,7 +122,9 @@ pub(super) async fn exercise(
             assert!(callbacks.iter().any(|entry| entry.key == key));
             let result = slot.commit_world_callback(owner.root, owner.character, owner.holder,
                 fence, request(admitted.game_session_id, &key, 1000 + u64::try_from(index)?)?,
-                catalogue.clone(), &permit, setup_context.clone()).await.map_err(debug)?;
+                catalogue.clone(), &permit, setup_context.clone(),
+                None,
+            ).await.map_err(debug)?;
             assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "setup step {index}: {result:?}");
         }
     }
@@ -150,7 +152,9 @@ pub(super) async fn exercise(
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let result = slot.commit_world_callback(owner.root, owner.character, owner.holder,
             stale, request(admitted.game_session_id, &callback.key, 2000 + u64::from(connection))?,
-            catalogue.clone(), &permit, setup_context.clone()).await;
+            catalogue.clone(), &permit, setup_context.clone(),
+            None,
+        ).await;
         assert!(matches!(result, Err(CharacterProgressionError::AuthorityRejected)),
             "stale generation={connection}: {result:?}");
     }
@@ -201,7 +205,9 @@ pub(super) async fn exercise(
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         let replay = slot.commit_world_callback(owner.root, owner.character, owner.holder,
             current, request(admitted.game_session_id, &callback.key, ordinal)?,
-            catalogue, &permit, replay_context).await.map_err(debug)?;
+            catalogue, &permit, replay_context,
+            None,
+        ).await.map_err(debug)?;
         let QuestTransitionOutcome::AlreadyCommitted(receipt) = replay else {
             return Err(format!("exact final replay: {replay:?}").into());
         };

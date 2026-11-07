@@ -1,5 +1,15 @@
 # Cake Golem: recovered source and authoring bundle
 
+WORLD-SRC continuation: the omitted damage type is now source-resolved to actual
+`COMBAT_UNDEFINEDDAMAGE`, including ordinary mitigation and mana-shield bypass.
+See [fresh pinned engine evidence](../../world-src-1105/seasonal-continuation.md#cake-golem-donor-damage-semantics-resolved)
+for Crystal201189f/Canary47dfd51 file:line citations and the five-line native STOP.
+Faithful native admission requires changes to the user-protected HP consumer.
+A package manifest can carry data profiles, but it cannot supply those HP semantics. The historical authoring projection below
+is still partial and is not silently relabeled Physical/Earth or admitted.
+
+## Historical authoring evidence
+
 The historical importer failed because CakeQuest.Items was not loaded. The table exists in the same CrystalServer revision. Isolated evaluation with that exact table reaches registration and preserves all21 declared monster fields. The product importer and historical deferred-admission guard are unchanged.
 
 The bundle contains the converted Creature, Behavior, Presentation, Loot, abilities/effects/formulas and corpse Item dependencies. All structural, semantic and declared-reference checks pass. **Import readiness remains blocked** by one exact source entry: attacks[2] has no combat type. Its complete raw value is retained in source-evaluation.json; it is not silently discarded or guessed in the evidence. monster.json is a partial authoring projection until that manifest entry is resolved.

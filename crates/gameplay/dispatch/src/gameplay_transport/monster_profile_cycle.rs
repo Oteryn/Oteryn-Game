@@ -222,7 +222,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 physical_spell::execute(
-                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now,
+                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now, owner.imported_charms,
                 )
                 .await;
                 drop(map);

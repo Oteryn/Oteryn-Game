@@ -269,6 +269,32 @@ fn scenario(
             assert_eq!(quantity(&h, potion).await?, 4);
             assert_eq!(awards(&h, potion).await?, 0);
             assert_effect(&owner, deps.actor, admitted.game_session_id, potion, &h).await?;
+            // NX-8 W09: the timer comes from the condition installed by this real USE,
+            // rather than its immutable burn receipt or a new ten-minute client timer.
+            let mut timer_view = admitted;
+            timer_view.continuity.selected_capabilities = SelectedCapabilities::select(
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[oteryn_protocol_oteryn::potion_durations::CAPABILITY_POTION_DURATIONS_V1],
+            )
+            .ok_or("timer capability")?;
+            let timer_bytes = owner
+                .potion_durations_page(timer_view)
+                .await
+                .ok_or("active potion projection")?;
+            let timers =
+                oteryn_protocol_oteryn::potion_durations::PotionDurations::decode(&timer_bytes)
+                    .ok_or("timer reply")?;
+            let item_id: u32 = potion
+                .key()
+                .strip_prefix("oteryn:item.tibia.i")
+                .ok_or("potion prefix")?
+                .parse()?;
+            let timer = timers
+                .active
+                .iter()
+                .find(|entry| entry.source == 2 && entry.item_id == item_id)
+                .ok_or("used potion timer")?;
+            assert!(timer.remaining_ms > 0 && timer.remaining_ms <= 600_000);
             let (status, replay) =
                 exchange(&owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &valid).await?;
             assert_eq!(status, CommandStatus::DuplicateReplay);
@@ -435,6 +461,7 @@ async fn assert_effect(
     potion: ConditionPotion,
     h: &Harness,
 ) -> TestResult {
+    super::cl6_status::check_timer(owner, actor, session, potion.key(), true, 600_000).await?;
     let (start, end): (String, String) = sqlx::query_as("SELECT applied_owner_micros::text,expires_owner_micros::text FROM game_item_condition_potion_receipts WHERE condition_key=$1 ORDER BY applied_owner_micros DESC LIMIT 1")
         .bind(potion.key()).fetch_one(&h.pool).await?;
     let (start, end) = (start.parse::<u64>()?, end.parse::<u64>()?);

@@ -32,7 +32,7 @@ def outputs():
     offers = [dict(npc=NPC, keywords=['key','keys'], topic=topic, next_topic=1, storage=[], reply=[question]) for topic in [0,1]]
     offers.append(dict(npc=NPC, keywords=['no'], topic=1, next_topic=0, storage=[], reply=[no]))
     messages = dict(npc=NPC,greet=greeting,farewell=farewell,walkaway=farewell,sources=[reference(line) for line in [236,237,238]])
-    return {'content/quests/shared-reward-callbacks.json':dict(schema=1,callbacks=[callback]),'content/quests/shared-reward-offers.json':dict(schema=1,offers=offers),'content/dialogues/quests/shared-reward-greetings.json':dict(schema=1,npcs=[messages])}
+    return {'content/quests/questpc-draconia-reward-callbacks.json':dict(schema=1,callbacks=[callback]),'content/quests/questpc-draconia-reward-offers.json':dict(schema=1,offers=offers),'content/dialogues/quests/questpc-draconia-reward-greetings.json':dict(schema=1,npcs=[messages])}
 
 
 def main():

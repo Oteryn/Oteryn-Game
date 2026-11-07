@@ -711,11 +711,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         // A retained build may have committed its refill before live installation. Keep
         // the transaction's projection until the actor has the committed pools too.
-        if self
-            .states
-            .npc_conversations
-            .dawnport_choice(session)
-            .is_some_and(|choice| choice.retained.is_some())
+        if self.states.dawnport_departures.held(session)
+            || self
+                .states
+                .npc_conversations
+                .dawnport_choice(session)
+                .is_some_and(|choice| choice.retained.is_some())
             || self
                 .states
                 .dawnport_trials
@@ -827,6 +828,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> Option<FinalLastPosition> {
+        if !self.resume_dawnport_departure(actor, session).await {
+            return None;
+        }
         let track = self.states.last_positions.tracked(session)?;
         if track.actor != actor {
             return None;

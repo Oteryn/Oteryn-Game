@@ -64,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources', 'objects', 'failure_teleport', 'object_conditions',
+    'success_message', 'native_rule', 'effects', 'sources', 'objects', 'failure_teleport', 'object_conditions',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -170,9 +170,14 @@ def text_message(value, context):
             context + ': invalid message')
 
 
-def provenance(value, context):
+def provenance(value, context, *, outfit=False):
     require(isinstance(value, list) and value, context + ': empty provenance')
     for reference in value:
+        if outfit and isinstance(reference,str):
+            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}',reference)
+            if pinned:
+                require('..' not in pinned.group(1).split('/'),context + ': invalid source path')
+                continue
         match = SOURCE.fullmatch(reference) if isinstance(reference, str) else None
         require(match is not None, context + ': callback source must use the exact Crystal pin and line')
         source_path, first, last = match.groups()
@@ -222,6 +227,92 @@ def validate_native(callback, context):
         context + ': native rule has unrelated effects or feedback')
 
 
+def validate_effects(callback, context):
+    """The optional Channel effects share the Rust world_callbacks closed shape."""
+    effects = callback.get('effects', {})
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
+    fields(effects, set(), allowed, context + ': effects')
+    outfit = effects.get('outfit_reward')
+    if outfit is not None:
+        fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
+        require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
+                and re.fullmatch(r'oteryn:outfit\.[a-z0-9_]+',outfit['outfit']) is not None
+                and integer(outfit['addons'],0,3), context + ': invalid outfit reward')
+        require(callback['trigger']=='use' and callback['storage']
+                and any(not s.get('preserve',False) and not s['minimum']<=s['set']<=s['maximum']
+                        for s in callback['storage']), context + ': repeatable outfit reward')
+    transform = effects.get('transform')
+    require(transform is None or integer(transform, 1, 65535), context + ': invalid transform')
+    facing = effects.get('facing')
+    require(facing is None or facing in ('north', 'east', 'south', 'west')
+            and callback.get('teleport') is not None, context + ': invalid destination facing')
+    require(callback['trigger'] != 'step_out' or not callback['return_on_failure'],
+            context + ': stepout cannot return to the departed tile')
+    require(callback.get('native_rule') is None or all(value is None for value in effects.values()),
+            context + ': native rule has unrelated effects')
+    magic = effects.get('magic')
+    if magic is not None:
+        fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
+        position(magic['position'], context + ': magic')
+        require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
+    require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
+            and callback.get('lever') is not None and not callback['storage']
+            and not callback['passages'] and callback.get('teleport') is None),
+            context + ': incompatible map effects')
+    pair = effects.get('portals')
+    if pair is not None:
+        fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')
+        require(integer(pair['appearance'], 1, 65535)
+                and (pair.get('lifetime_us') is None or integer(pair['lifetime_us'], 1, 2**64-1)),
+                context + ': invalid portal appearance/lifetime')
+        require(isinstance(pair['portals'], list) and len(pair['portals']) == 2, context + ': paired endpoints required')
+        positions = []
+        for portal in pair['portals']:
+            fields(portal, {'position', 'destination'}, {'position', 'destination'}, context + ': portal')
+            positions.append(position(portal['position'], context + ': portal'))
+            position(portal['destination'], context + ': destination')
+        require(positions[0] != positions[1], context + ': duplicate portal endpoint')
+    cycle = effects.get('item_cycle')
+    if cycle is not None:
+        fields(cycle, {'position', 'remove', 'create'}, {'position', 'remove', 'create'}, context + ': cycle')
+        position(cycle['position'], context + ': cycle')
+        require(integer(cycle['remove'], 1, 65535) and integer(cycle['create'], 1, 65535)
+                and cycle['remove'] != cycle['create'], context + ': invalid item cycle')
+    encounter = effects.get('encounter')
+    if encounter is not None:
+        names = {'minimum_level', 'players', 'monsters', 'room_min', 'room_max'}
+        fields(encounter, names, names, context + ': encounter')
+        require(integer(encounter['minimum_level'], 1, 2**32-1) and not callback['reversible'],
+                context + ': invalid encounter level/reversal')
+        lower = position(encounter['room_min'], context + ': room min')
+        upper = position(encounter['room_max'], context + ': room max')
+        require(lower[2] == upper[2] and lower[0] <= upper[0] and lower[1] <= upper[1],
+                context + ': invalid encounter room')
+
+        def in_room(at):
+            return at[2] == lower[2] and lower[0] <= at[0] <= upper[0] and lower[1] <= at[1] <= upper[1]
+
+        for name in ('players', 'monsters'):
+            require(isinstance(encounter[name], list) and 1 <= len(encounter[name]) <= MAX_EFFECTS,
+                    context + ': invalid encounter ' + name)
+        origins, destinations, monsters = set(), set(), set()
+        for player in encounter['players']:
+            fields(player, {'from', 'to'}, {'from', 'to'}, context + ': member')
+            origin = position(player['from'], context + ': staging tile')
+            destination = position(player['to'], context + ': landing tile')
+            require(origin not in origins and destination not in destinations
+                    and not in_room(origin) and in_room(destination), context + ': invalid encounter member')
+            origins.add(origin)
+            destinations.add(destination)
+        for monster in encounter['monsters']:
+            fields(monster, {'position', 'creature'}, {'position', 'creature'}, context + ': monster')
+            at = position(monster['position'], context + ': spawn tile')
+            require(at not in monsters and at not in destinations and in_room(at)
+                    and valid_key(monster['creature']), context + ': invalid encounter spawn')
+            monsters.add(at)
+
+
 def validate_callback(callback, directory):
     context = directory + ' callback'
     fields(callback, CALLBACK_REQUIRED, CALLBACK_FIELDS, context)
@@ -266,13 +357,6 @@ def validate_callback(callback, directory):
                     and (create is None or integer(create, 1, 65535))
                     and (remove is None or remove != create), key + ': invalid object mutation')
             seen_objects.add(location)
-    if callback['trigger'] == 'step_out':
-        require(callback['reversible'] and callback.get('teleport') is None
-                and not callback['storage'] and not callback['offerings']
-                and callback.get('item_on_target') is None and callback.get('minimum_level') is None
-                and callback.get('experience') is None and callback.get('monk_reward') is None
-                and callback.get('native_rule') is None and not callback['return_on_failure'],
-                key + ': departure must only restore map facts')
     selector = callback['selector']
     selector_fields = {'position', 'unique', 'action', 'appearance'}
     fields(selector, set(), selector_fields, key + ': selector')
@@ -355,8 +439,9 @@ def validate_callback(callback, directory):
     require(callback.get('monk_reward') is None, key + ': Monk rewards are outside batch four')
     text_message(callback.get('failure_message'), key + ': failure_message')
     text_message(callback.get('success_message'), key + ': success_message')
-    provenance(callback['sources'], key)
+    provenance(callback['sources'], key, outfit=callback.get('effects',{}).get('outfit_reward') is not None)
     validate_native(callback, key)
+    validate_effects(callback, key)
 
 
 def source_only(value, context):

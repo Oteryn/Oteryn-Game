@@ -81,12 +81,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Trigger::StepIn => false,
             Trigger::StepOut => !callback.is_guarded_source_departure(),
         };
-        if close && !callback.reversible {
+        if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
+        if let Some(appearance) = callback.effects.transform {
+            let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
+                return UseDisposition::Rejected;
+            };
+            after = replacement;
+        }
+        let projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -96,6 +106,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             after = replacement;
+        }
+        if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+            position,
+            create: Some(_),
+            ..
+        }) = &projection
+        {
+            let Some(at) = runtime
+                .read_actor_position(actor)
+                .ok()
+                .and_then(|p| native(p.position()))
+            else {
+                return UseDisposition::Rejected;
+            };
+            if super::super::map_door::doorway_occupied(runtime, actor, at, *position) {
+                return UseDisposition::Occupied;
+            }
         }
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
@@ -165,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let teleport = match callback.teleport {
-            Some(to) => match crate::map::floor::prepare_quest_callback_teleport(
+            Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                 runtime,
                 self.movement_cells,
                 actor,
@@ -174,6 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(to),
                 blocked,
                 &closed,
+                callback.effects.facing.map(super::effects::facing),
             ) {
                 Ok(proof) => Some(proof),
                 Err(_) => return UseDisposition::NotPossible,
@@ -250,6 +278,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue),
                     permit,
                     context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
@@ -300,6 +330,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        if callback.effects.encounter.is_some() {
+            return self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+            );
+        }
         // Progress-only callbacks have no Channel projection. Retained tools must
         // preserve the ordinary door owner's current appearance and revision.
         if callback.is_guarded_source_departure() || callback.is_progress_only_tool() {
@@ -321,6 +364,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &passages,
                 &replacements,
                 close,
+                projection.as_ref(),
             )
         };
         if callback.eject_occupants.is_some() {
@@ -339,10 +383,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else if !project() {
             return UseDisposition::Rejected;
         }
+        if callback
+            .effects
+            .portals
+            .as_ref()
+            .is_some_and(|pair| pair.lifetime_us.is_some())
+        {
+            states.owner_wake.notify_one();
+        }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
+            // publish at the committed destination, never at the source or on refusal.
+            if matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/dryad-garden-enter"
+                    | "oteryn:quest-callback/dryad-garden-leave"
+            ) {
+                states.sounds.record_item_effect(
+                    runtime,
+                    actor,
+                    snapshot.position(),
+                    oteryn_gameplay_items::event_planting::DRYAD_GARDEN_EFFECT_ID,
+                    false,
+                );
+            }
             states.stage_special_movement_step(
                 runtime,
                 map,
@@ -361,6 +428,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+        }
+        if let Some(magic) = &callback.effects.magic {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);

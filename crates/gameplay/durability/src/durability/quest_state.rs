@@ -545,6 +545,9 @@ pub(super) mod capacity;
 pub mod creature_death;
 pub mod grizzly;
 pub mod grizzly_boss;
+mod hero_of_bounac;
+mod planegazer_finale;
+pub mod native_kills;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;
@@ -552,6 +555,9 @@ mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
+#[path = "quest_state/wrath_sleeping_dragon.rs"]
+mod wrath_sleeping_dragon;
+
 mod writer;
 use storage::*;
 
