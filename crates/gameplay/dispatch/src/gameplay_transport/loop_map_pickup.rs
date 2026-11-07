@@ -139,7 +139,7 @@ pub(super) async fn move_map_item(
         placement_key,
         reset_epoch,
         item,
-        key_number: None,
+        key_number: entry.key_number,
         quantity: entry.quantity,
         content_revision: sha256_revision(native.source_digest()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),

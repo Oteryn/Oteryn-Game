@@ -1,3 +1,31 @@
+## Shared source-key pickup wire GREEN — 2026-11-07
+Three real PostgreSQL18.6 cases RED130.06s / GREEN132.83s: silver3007 real
+command9 pickup/replay39.355735236s; copper3008 MINT/TRANSFER interruption and
+recovery/replay40.187052424s; golden3002 full bag/refusals40.56201804s.
+Key binding persists through source MINT and ordinary TRANSFER. Shared source
+rehide/stock/replay/read-failure ownership is reused. Wrapper keeps house,
+unrelated bindings, contents, charges, text and teleport refusals. Only trusted
+standard key Item2967-2973 receives the action-number exception and movable view.
+Four focused wrapper units pass0.00s (pure units, not PG); fmt/check2m58s/strict
+clippy3m07s pass world+dispatch all targets/all features; pin unchanged2cabea56... .
+Full logs/hashes:cloud-map-key-wire-validation.json. Counts60/117/1excluded unchanged.
+
+NEXT: Native Draconia key objects lack action attributes. Freshly fetched
+questpc6@f91534062 has reusable world/map/facts/source_bindings.rs; commit8aacc18bb
+extends source key-door bindings for Fibula. Reuse that owner/capture/producer
+pattern for owned Draconia keys, without enabling unrelated lane aliases.
+Draconia remains SKIPPED_OTHER_LANE on questpc6, so this lane retains ownership.
+Five native key facts/pins prepared in /tmp/questpc-draconia-native-key-facts.json;
+implementation plan in /tmp/questpc-native-key-next.md (amend plan to reuse the
+existing source_bindings owner rather than create a parallel registry).
+Then party switches, first shared key/NPC exchange, and original reward composition.
+BR wiki/source/native conservative boundary is documented in CONTRACT-NOTES.md.
+
+BUILD: root32GB filled with25GB Cargo incremental cache. Removed only that
+rebuildable cache;24GB free recovered. After sourcing /workspace/oteryn-env/env.sh,
+export CARGO_INCREMENTAL=0 for subsequent Cargo commands to avoid recurrence.
+Focused verification was rerun successfully; no suite expansion or test weakening.
+
 ## Shared map key durable writer GREEN — 2026-11-07
 Three real PostgreSQL18.6 cases RED10.96s / GREEN11.86s: silver3007,
 copper3008, golden3002. Key row and typed audit retain the source number;

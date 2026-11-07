@@ -8512,8 +8512,8 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Shared source-key durable MINT",
-    "validation": "qlane-meta/questpc/cloud-map-key-validation.json",
+    "name": "Source action-bound shared key command9 pickup",
+    "validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json",
     "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 60,
@@ -9128,9 +9128,10 @@
       }
     },
     "shared_map_keys": {
-      "state": "durable_writer_pg_green",
+      "state": "source_action_bound_pickup_pg_green",
       "validation": "qlane-meta/questpc/cloud-map-key-validation.json",
-      "next": "Retain exact trusted source key numbers in map eligibility/view and command9 pickup; wire PG proof, then party switches."
+      "next": "Reuse questpc6 source_bindings.rs for five reviewed native Draconia key placements lacking action numbers; then party switches and source route composition.",
+      "wire_validation": "qlane-meta/questpc/cloud-map-key-wire-validation.json"
     }
   },
   "cross_lane_qualified_elsewhere": {

@@ -13,7 +13,8 @@
 //!   `1..=100`, else 1, and `sub_type` its charges, else 0. A placement whose compact id names both
 //!   an Item and a Terrain record keeps its palette index, because the base keeps the id alone.
 //! - **Pickup.** The original attributes and exact pickup-wrapper decision are retained
-//!   separately; the normalized view facts above do not change.
+//!   separately. A standard source key with an otherwise eligible action binding exposes its
+//!   immutable key number and a movable view; unrelated bound entries remain sealed.
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
 //!   facts.
 //! - **Doors (MAP-DOOR-1).** A plain door placement shows the open item's facts while open;
@@ -308,27 +309,28 @@ impl BundleFacts {
                     }
                     PaletteDoor::No => {}
                 }
+                let palette = self.palette.get(item.palette as usize);
+                let pickup = pickup::eligibility_with_key(
+                    tile,
+                    sector.floor,
+                    ordinal as u8,
+                    palette.is_some_and(|p| p.facts.pickupable),
+                    &manifest.dropped_teleports,
+                    palette.is_some_and(standard_key),
+                );
+                let key_number = pickup.as_ref().ok().and_then(|entry| entry.key_number);
                 let placement = Placement {
                     palette: item.palette,
-                    bound: dropped || bound(&item.attrs),
+                    bound: dropped || (bound(&item.attrs) && key_number.is_none()),
                     dropped,
                     count: item
                         .attrs
                         .count
                         .filter(|count| (1..=100).contains(count))
                         .unwrap_or(1),
-                    sub_type: item.attrs.charges.unwrap_or(0),
+                    sub_type: key_number.or(item.attrs.charges).unwrap_or(0),
                     attrs: item.attrs.clone(),
-                    pickup: pickup::eligibility(
-                        tile,
-                        sector.floor,
-                        ordinal as u8,
-                        self.palette
-                            .get(item.palette as usize)
-                            .is_some_and(|p| p.facts.pickupable),
-                        &manifest.dropped_teleports,
-                    )
-                    .map(|entry| entry.quantity),
+                    pickup: pickup.map(|entry| entry.quantity),
                 };
                 let plain = Placement {
                     palette: item.palette,
@@ -673,24 +675,34 @@ impl BundleFacts {
     ) -> Result<pickup::EligibleEntry, pickup::Ineligible> {
         let missing = pickup::Ineligible::NotTopLevel;
         let key = placement_key(pos, ordinal).ok_or(missing)?;
-        let (palette, quantity) = match self.placements.binary_search_by_key(&key, |(key, _)| *key)
-        {
-            Ok(found) => {
-                let placement = &self.placements[found].1;
-                (placement.palette, placement.pickup?)
-            }
-            Err(_) => {
-                let palette = self.unique_index(id).ok_or(missing)?;
-                if !self
-                    .palette
-                    .get(palette as usize)
-                    .is_some_and(|p| p.facts.pickupable)
-                {
-                    return Err(pickup::Ineligible::NotPickupable);
+        let (palette, quantity, key_number) =
+            match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+                Ok(found) => {
+                    let placement = &self.placements[found].1;
+                    (
+                        placement.palette,
+                        placement.pickup?,
+                        placement.attrs.action.filter(|number| {
+                            *number != 0
+                                && self
+                                    .palette
+                                    .get(placement.palette as usize)
+                                    .is_some_and(standard_key)
+                        }),
+                    )
                 }
-                (palette, 1)
-            }
-        };
+                Err(_) => {
+                    let palette = self.unique_index(id).ok_or(missing)?;
+                    if !self
+                        .palette
+                        .get(palette as usize)
+                        .is_some_and(|p| p.facts.pickupable)
+                    {
+                        return Err(pickup::Ineligible::NotPickupable);
+                    }
+                    (palette, 1, None)
+                }
+            };
         if self
             .palette
             .get(palette as usize)
@@ -704,6 +716,7 @@ impl BundleFacts {
             ordinal,
             palette,
             quantity,
+            key_number,
         })
     }
 
@@ -711,6 +724,12 @@ impl BundleFacts {
         let found = self.ids.binary_search_by_key(&id, |(id, _)| *id).ok()?;
         Some(self.ids[found].1).filter(|index| *index != AMBIGUOUS)
     }
+}
+
+/// Reviewed standard key Item types from the pinned source items.xml. Specialized cage
+/// keys keep their existing owner; appearances from Terrain/WorldObject never gain custody.
+fn standard_key(palette: &PaletteFacts) -> bool {
+    palette.family == Family::Item && (2967..=2973).contains(&palette.facts.appearance_id)
 }
 
 /// A placement attribute that binds the entry or that a pickup cannot represent.

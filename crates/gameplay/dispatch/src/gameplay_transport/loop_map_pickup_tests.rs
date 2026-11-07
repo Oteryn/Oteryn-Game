@@ -42,7 +42,31 @@ fn map_pickup_dispatch_to_main_backpack_resends_its_tile() -> TestResult {
     scenario(false, false, 0)
 }
 
+#[test]
+fn map_key_pickup_silver_source_binding_real_command9() -> TestResult {
+    scenario_with_key(false, false, 0, Some((2969, 3007)))
+}
+
+#[test]
+fn map_key_pickup_copper_binding_survives_mint_transfer_crash() -> TestResult {
+    scenario_with_key(true, false, 0, Some((2970, 3008)))
+}
+
+#[test]
+fn map_key_pickup_golden_full_bag_preserves_shared_stock() -> TestResult {
+    scenario_with_key(false, true, 0, Some((2972, 3002)))
+}
+
 fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
+    scenario_with_key(crash, full, epoch, None)
+}
+
+fn scenario_with_key(
+    crash: bool,
+    full: bool,
+    epoch: u64,
+    source_key: Option<(u16, u16)>,
+) -> TestResult {
     // These three full database bootstraps share the test cluster. Serialize this fixture's
     // setup/teardown so concurrent migrations cannot exhaust the owner's fixed DB deadlines.
     static DATABASE_BOOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -52,6 +76,15 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "map_pickup_dispatch", true, false).await?;
+        let started = std::time::Instant::now();
+        if let Some((appearance, number)) = source_key {
+            let version: String = sqlx::query_scalar("SHOW server_version")
+                .fetch_one(&harness.pool)
+                .await?;
+            eprintln!(
+                "QUESTPC-MAP-KEY-WIRE-PG version={version} appearance={appearance} key={number} crash={crash} full={full}"
+            );
+        }
         if epoch != 0 {
             let database: String = sqlx::query_scalar("SELECT current_database()")
                 .fetch_one(&harness.pool)
@@ -84,10 +117,14 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 .ok_or("backpack ref")?,
         )
         .ok_or("backpack definition")?;
+        let source_item = source_key.map_or_else(
+            || "oteryn:item.tibia.i3031".to_owned(),
+            |(appearance, _)| format!("oteryn:item.tibia.i{appearance}"),
+        );
         let coin_definition = crate::gameplay_transport::item_look::typed_definition(
             index,
             index
-                .definition_ref("Item", "oteryn:item.tibia.i3031", "definition-r1")
+                .definition_ref("Item", &source_item, "definition-r1")
                 .ok_or("coin ref")?,
         )
         .ok_or("coin definition")?;
@@ -110,10 +147,34 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
             .ok_or("coin id")?
             .get()
             - 1;
-        let (bytes, bundle_pins) = bundle_fixture::bundle_with_item_ids(
+        let (mut bytes, mut bundle_pins) = bundle_fixture::bundle_with_item_ids(
             (&backpack_definition.production_key, box_id),
             (&coin_definition.production_key, coin_id),
         );
+        if let Some((_, number)) = source_key {
+            let mut bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+            let tile = bundle
+                .sectors
+                .iter_mut()
+                .flat_map(|sector| &mut sector.tiles)
+                .find(|tile| tile.x == 7 && tile.y == 0)
+                .ok_or("key fixture tile")?;
+            let item = tile
+                .items
+                .iter_mut()
+                .filter(|item| item.depth == 0)
+                .nth(1)
+                .ok_or("key fixture item")?;
+            item.attrs.action = Some(number);
+            item.attrs.count = None;
+            bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
+                &bundle.manifest,
+                &bundle.sectors,
+                &bundle.spawns,
+                &bundle.npcs,
+            )?;
+            bundle_pins.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        }
         let base = crate::map::load(&bytes, &bundle_pins).map_err(debug)?;
         let world = boot(
             &bytes,
@@ -579,6 +640,24 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 "only the ground remains on the taken origin"
             );
             assert_eq!(items.resolve(handle), None);
+        }
+        if let Some((_, number)) = source_key {
+            let bindings: Vec<i32> =
+                sqlx::query_scalar("SELECT key_number FROM game_item_keys ORDER BY key_number")
+                    .fetch_all(&harness.pool)
+                    .await?;
+            assert_eq!(
+                bindings,
+                if full {
+                    Vec::new()
+                } else {
+                    vec![i32::from(number)]
+                }
+            );
+            eprintln!(
+                "QUESTPC-MAP-KEY-WIRE-PG GREEN key={number} crash={crash} full={full} duration={:?}",
+                started.elapsed()
+            );
         }
         // Both durable readers fail closed. No boot-overlay fallback may re-show an origin.
         for relation in ["game_map_item_mint_receipts", "game_item_ground_locations"] {

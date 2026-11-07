@@ -195,3 +195,24 @@ writes the immutable key row atomically with its map MINT receipt. Existing
 unbound intent bytes stay unchanged. This owner-authorized feature amends the
 older reward-claim-only restriction; it does not infer any quest key placement.
 Refreshed qengine2 and questpc6 have no map key binding implementation to reuse.
+
+Shared source-key wrapper uses only the seven standard key types2967-2973. The
+source also has a specialized wooden cage key31379; that item retains its own
+interaction owner and does not gain the standard door-key exception. Key actions
+are exempted only after the exact existing pickup wrapper admits the placement: a
+nonzero number and one item, no other binding, no house, nested contents, charges,
+text or teleport. The original source attributes remain available to owners.
+
+Draconia route facts were retrieved from
+https://www.tibiawiki.com.br/Draconia_Quest?action=raw
+after Fandom returned402. The route explicitly requires two players and keys
+that replenish at server save. One player holds the southern switch to admit
+the other to a second switch; holding the second admits the first to the portal
+leading to Key3007. Conservative rule for the missing complete switch script:
+occupancy is Channel-local and current; each gate is open only while its own
+plate has an occupant, closes on departure, and uses no personal quest claim.
+The native Draconia map has standard silver-key objects with source action
+attributes absent. Those need explicit reviewed/pinned source-number bindings
+in the next composition slice; an unbound inventory key is insufficient. This
+research stopped after the source/wiki/native comparison, without inventing
+production selector aliases or treating personal rewards as shared stock.

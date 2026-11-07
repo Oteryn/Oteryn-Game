@@ -1,7 +1,7 @@
 //! MAP-OVERLAY-1b: picking up a map-authored item (ADR-0021 §4.4; DUR-03 §39.3).
 //!
 //! - [`eligibility`] decides from the bundle's own tile record whether a top-level entry may be
-//!   picked up: pickupable, not on a house tile, and with no action, unique, door, depot or
+//!   picked up: pickupable, not on a house tile, and with no uninterpreted action, unique, door, depot or
 //!   teleport binding (a dropped zero-destination teleport included), no contents, and no
 //!   `text`, `description` or `charges`. Everything else stays in place.
 //! - [`hide_origin_at_freeze`] hides the origin when the MINT is frozen; the hide may be refused
@@ -30,6 +30,8 @@ pub struct EligibleEntry {
     /// The compact palette index of the entry's item.
     pub palette: u32,
     pub quantity: u32,
+    /// Nonzero action binding of a trusted source key definition.
+    pub key_number: Option<u16>,
 }
 
 /// Whether the top-level entry `ordinal` of the bundle `tile` at native `floor` may be picked
@@ -41,6 +43,19 @@ pub fn eligibility(
     ordinal: u8,
     pickupable: bool,
     dropped_teleports: &[u64],
+) -> Result<EligibleEntry, Ineligible> {
+    eligibility_with_key(tile, floor, ordinal, pickupable, dropped_teleports, false)
+}
+
+/// As `eligibility`, allowing the source action binding only for a trusted key definition.
+/// Every other placement/house/content restriction remains unchanged.
+pub fn eligibility_with_key(
+    tile: &Tile,
+    floor: i8,
+    ordinal: u8,
+    pickupable: bool,
+    dropped_teleports: &[u64],
+    key_item: bool,
 ) -> Result<EligibleEntry, Ineligible> {
     let at = tile
         .items
@@ -54,11 +69,15 @@ pub fn eligibility(
     let item = &tile.items[at];
     let attrs = &item.attrs;
     let quantity = attrs.count.map_or(1, u32::from);
+    let key_number = attrs.action.filter(|number| key_item && *number != 0);
+    if key_number.is_some() && quantity != 1 {
+        return Err(Ineligible::Quantity);
+    }
     oteryn_gameplay_items::map_pickup::eligibility(
         oteryn_gameplay_items::map_pickup::PickupFacts {
             pickupable,
             house: tile.house != 0,
-            action: attrs.action.is_some(),
+            action: attrs.action.is_some() && key_number.is_none(),
             unique: attrs.unique.is_some(),
             door: attrs.door.is_some(),
             depot: attrs.depot.is_some(),
@@ -81,6 +100,7 @@ pub fn eligibility(
         ordinal,
         palette: item.palette,
         quantity,
+        key_number,
     })
 }
 
@@ -241,6 +261,7 @@ mod map_overlay_pickup_tests {
                 ordinal: 1,
                 palette: 1,
                 quantity: 7,
+                key_number: None,
             }
         );
         assert_eq!(
@@ -250,6 +271,68 @@ mod map_overlay_pickup_tests {
         assert_eq!(
             origin_of(entry.placement_key),
             Some((entry.origin, entry.ordinal))
+        );
+    }
+
+    #[test]
+    fn map_overlay_pickup_key_binding_keeps_all_other_refusals() {
+        let make = |edit: fn(&mut Attrs)| {
+            let mut attrs = Attrs {
+                action: Some(3007),
+                ..Attrs::default()
+            };
+            edit(&mut attrs);
+            tile(0, vec![item(0, attrs)])
+        };
+        let base = make(|_| {});
+        assert_eq!(
+            eligibility_with_key(&base, -5, 0, true, &[], true)
+                .expect("key")
+                .key_number,
+            Some(3007)
+        );
+        assert_eq!(
+            eligibility_with_key(&base, -5, 0, true, &[], false),
+            Err(Ineligible::Action)
+        );
+        for (edit, reason) in [
+            (
+                (|a: &mut Attrs| a.unique = Some(1)) as fn(&mut Attrs),
+                Ineligible::Unique,
+            ),
+            (|a| a.door = Some(1), Ineligible::Door),
+            (|a| a.depot = Some(1), Ineligible::Depot),
+            (|a| a.teleport = Some((1, 2, 7)), Ineligible::Teleport),
+            (|a| a.charges = Some(1), Ineligible::Charges),
+            (|a| a.text = Some("bound".into()), Ineligible::Text),
+            (
+                |a| a.description = Some("bound".into()),
+                Ineligible::Description,
+            ),
+            (|a| a.count = Some(2), Ineligible::Quantity),
+            (|a| a.action = Some(0), Ineligible::Action),
+        ] {
+            assert_eq!(
+                eligibility_with_key(&make(edit), -5, 0, true, &[], true),
+                Err(reason)
+            );
+        }
+        let mut house = base.clone();
+        house.house = 1;
+        assert_eq!(
+            eligibility_with_key(&house, -5, 0, true, &[], true),
+            Err(Ineligible::House)
+        );
+        let mut nested = base.clone();
+        nested.items.push(item(1, Attrs::default()));
+        assert_eq!(
+            eligibility_with_key(&nested, -5, 0, true, &[], true),
+            Err(Ineligible::Contents)
+        );
+        let dropped = placement_key(-5, 100, 200, 0).expect("placement");
+        assert_eq!(
+            eligibility_with_key(&base, -5, 0, true, &[dropped], true),
+            Err(Ineligible::DroppedTeleport)
         );
     }
 
