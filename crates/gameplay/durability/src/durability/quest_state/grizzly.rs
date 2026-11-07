@@ -19,6 +19,20 @@ pub trait GrizzlyPremiumGate: Sync {
     ) -> impl std::future::Future<Output = StoredResult<bool>> + Send;
 }
 
+/// Optional native authority fails closed for premium source requirements.
+impl<G: GrizzlyPremiumGate> GrizzlyPremiumGate for Option<&G> {
+    async fn task_permitted(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> StoredResult<bool> {
+        match self {
+            Some(gate) => gate.task_permitted(tx, account).await,
+            None => Ok(false),
+        }
+    }
+}
+
 /// Kill/report/cancel paths need no Premium decision. Absence of the native Premium
 /// owner may never grant a premium task, including before an activation was observed.
 pub struct NoGrizzlyPremium;
@@ -75,6 +89,8 @@ impl DurabilityRoot {
             gate,
             None,
             None,
+            None,
+            None,
         )
         .await
     }
@@ -113,6 +129,8 @@ impl DurabilityRoot {
             gate,
             policy,
             None,
+            None,
+            None,
         )
         .await
     }
@@ -142,6 +160,8 @@ impl DurabilityRoot {
             None,
             Some(source),
             &NoGrizzlyPremium,
+            None,
+            None,
             None,
             None,
         )
