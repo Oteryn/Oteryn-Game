@@ -3536,7 +3536,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Exit35011 correct pattern, four individual wrong states and live USE recovery passed six fresh PG scenes268.57s. Generic immutable object_conditions implementation is still in working tree pending check/clippy/pin completion; push code immediately afterward."
+      "active_batch": "Exit35011 source pattern and generic stateless object_conditions complete: six PG scenes268.57s, alltarget/allfeature check2m50s and strict clippy2m56s, pin/generation checks green. Continue shared resettable keys and party switches here, then all four source rewards; no whole-title promotion yet."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8454,7 +8454,7 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Draconia exit six-scene PG proof; implementation checks running",
+    "name": "Generic current object predicates and Draconia exit35011",
     "validation": "qlane-meta/questpc/cloud-draconia-exit-validation.json",
     "qualified_titles_added": 0,
     "counts": {
@@ -8899,6 +8899,101 @@
         "tools/content-schema/quest-authoring/quests-2/world-callbacks/draconia_quest.json": "cd483a6f38e1d8a29d389bb306e13db115978c6f02115d9dba8bb1085870ab1e",
         "tools/content-schema/native-gameplay/quests-2-emperor-item-profiles.json": "59de89545e6099b4a87dae290d25208d3ae1b97cfc9876e557f89a64dfdb9199",
         "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json": "e7646667b87987c4e7af61f3ce3450f97c00e1a8819f78bef9152e4637239127"
+      }
+    },
+    "draconia_exit": {
+      "result": "PASS",
+      "scope": "Generic bounded immutable placement predicates and original UID35011 alternating four-lever exit; no whole-title promotion",
+      "red_seconds": 3.45,
+      "pg": {
+        "cases": {
+          "draconia-exit-correct": 44.694929673,
+          "draconia-exit-wrong-0": 44.064131479,
+          "draconia-exit-wrong-1": 43.962059843,
+          "draconia-exit-wrong-2": 44.46737689,
+          "draconia-exit-wrong-3": 44.300377885,
+          "draconia-exit-live": 47.081677539
+        },
+        "total_seconds": 268.57,
+        "passed_scenes": 6,
+        "failed": 0
+      },
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-exit_teleport.lua",
+        "sha256": "80af40ac459eb655670472a0391db78590d456827917d4a64e714947b64723a4"
+      },
+      "validation": {
+        "schema": "PASS1 pure unit0.01s",
+        "python": "PASS8batch3 and19batch4 pure units",
+        "generation": "PASS callback,23packet and40Native checks;4Quest shards regenerated/check clean",
+        "semantic_diff": "Only new exit callback; old callbacks/Native records unchanged;28Quest provenance hashes only",
+        "check": "PASS dispatch/content/quests alltarget/allfeature2m50s",
+        "clippy": "PASS dispatch/content/quests alltarget/allfeature,-D warnings2m56s",
+        "pin": "PASS unchanged world digest2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+        "format": "PASS changed-crate cargo fmt and explicit mounted Rust formatting"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-red.log",
+          "sha256": "81b4b69e9728d68c4e054c95f81e6e3f7290bbd4aa90741767e151de3e015c3b"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-green.log",
+          "sha256": "9d93f6004a3014829ac19e664274ff14539daaa3053cdfa755fda45124bafbfa"
+        },
+        "schema": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-schema.log",
+          "sha256": "f656fd4a850a58d5af7a4c1ee690ec01637a79dfe889e19d9ee8cd8079d2bb15"
+        },
+        "python3": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-python3.log",
+          "sha256": "75ff54e727b57e4bd7b88956ed0c92c4b9a416e6f0976707e8fb54aa385ac0bd"
+        },
+        "python4": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-python4.log",
+          "sha256": "18ae074998fd985c2cf9dcd3b747037c0e8125dc630a8365ed0590e645df3fd5"
+        },
+        "generated-review": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-generated-review.log",
+          "sha256": "b52f5c457911995bdf3c3022f4b8a28e696e04ffe4cdd64e9af61f4841b32bdf"
+        },
+        "generated-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-generated-check.log",
+          "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+        },
+        "native-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-native-check.log",
+          "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+        },
+        "tree-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-tree-check.log",
+          "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-check.log",
+          "sha256": "d51badfc00dcc86c611a61915969563c7fbb3d8334f08b480a4681c1070aa8a1"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-clippy.log",
+          "sha256": "60f148962c32fdd3c14c57417169961249c1d3e914bf266c66b7b1a3ed6e5416"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-draconia-exit-pin.log",
+          "sha256": "f246b07810f21960855887cc884f7904387fcccf52dee1ca216a71f64fd2297e"
+        }
+      },
+      "runtime_contract": {
+        "bound": 8,
+        "allowed_objects": "Current immutable Channel Base/Added; no portable/ground/house custody",
+        "read_set": "One pinned current snapshot under runtime owner; stateless, no await before map/movement commit",
+        "failure": "Missing/unreadable placement fails predicate and uses authored failure landing",
+        "compatibility": "Existing callbacks default to an empty predicate list"
+      },
+      "artifact_hashes": {
+        "content/quests/world-callbacks.json": "af96e5d623b5e5b17508c0d19003c62f155ba8e1a26ec49b1e973f156ddcfc4b",
+        "crates/gameplay/quests/src/quest/world_callbacks/conditions.rs": "d17ad27a02a71e80c2b14ee125ac4c154b549e03840be571067365d468ac5981",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/conditions.rs": "e12b6de2bad173b14474af90ba53a8c20c8a305ba59e3b6239f60153cb9aa98f",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_exit.rs": "c1a4ba1abe8ad1421f26b576ae26d0e877ca7d4b8162c44a1270b5063ff47250"
       }
     }
   }

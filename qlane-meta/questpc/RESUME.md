@@ -1,3 +1,37 @@
+## Draconia current-lever exit green — 2026-11-07
+Generic object_conditions now implemented for stateless world callbacks: up to8
+unique position/appearance predicates, one current pinned callback/door snapshot,
+immutable Channel Base/Added objects only, checked under the runtime owner with
+no await before map/movement commit. Missing/unreadable/house/value placements
+fail. Existing callbacks default to no conditions. No storage/offering/XP/native
+reward combination can bypass a durable read-set with this stateless feature.
+
+UID35011 exact pattern at32802..32805,31584,z1 is2772,2773,2772,2773. Success
+32701,31639,z6; failure32803,31587,z1. Six realPG scenes PASS268.57s: correct;
+each individually wrong; third corrected through actual USE then successful
+re-entry, proving current changed facts are used. Replay/no Quest writes tested.
+RED3.45s unknown field after DB creation. Scene trigger coordinate is fixture-only;
+production selector is UID-only. Source hash/URL and details in CONTRACT-NOTES.md.
+
+All checksPASS: dispatch/content/quests alltarget/allfeature check2m50s; strict
+clippy2m56s; schema1unit0.01s; Python8+19;23source packet/40Native/callback checks;
+4Quest shards regenerated/check clean; pin world digest unchanged2cabea56... .
+Semantic audit: only new exit callback; no old callbacks/Native records changed;
+28Quest provenance leaves only; approval graph/core/immutable/compiler inputs
+unchanged. Full proof:cloud-draconia-exit-validation.json. cc36e6070 was the
+preceding evidence-only heartbeat; this batch publishes the implementation.
+Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: shared resettable Draconia keys and party floor switches. Existing command9
+map pickup owner already scopes claims by base digest/placement/reset_epoch and
+hides consumed placements, so reuse it; inspect key binding support before writing.
+Relevant files:gameplay_transport/loop_map_pickup.rs; world/map/facts.rs pickup_entry;
+durability/map_item_mint.rs and map_item_mint_audit.rs (currently mint key_number0).
+First check qengine2/other lanes for existing bound-key map-pickup support. Retain
+source key numbers, global stock/reset and exact party mechanics; do not substitute
+personal claims. Then compose all four original Draconia rewards. Ten-minute fact
+cap; document conservative source choices and push each finished tested slice.
+
 ## Exit six-scene PG proof — implementation push pending strict pipeline
 Six real PostgreSQL scenes PASS268.57s: correct2772/2773/2772/2773 pattern; each
 individual wrong lever; wrong third lever corrected by actual USE, followed by

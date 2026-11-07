@@ -85,3 +85,24 @@ class Batch3WorldTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'held callback contract'):
                 tool.compile_callbacks({'schema': 1, 'callbacks': []}, empty,
                                        {'source': {'schema': 1, 'callbacks': [invalid]}})
+
+    def test_world_object_conditions_preserve_presence_and_reject_unsafe_or_unbounded_inputs(self):
+        row = {'key': 'gate', 'sources': [tool.PIN + 'file.lua:1'],
+               'object_conditions': [{'position': {'x': 32802, 'y': 31584, 'floor': -1}, 'appearance': 2772}]}
+        empty = {'schema': tool.SCHEMA, 'sources': []}
+        result, _ = tool.compile_callbacks({'schema': 1, 'callbacks': []}, empty,
+                                          {'source': {'schema': 1, 'callbacks': [row]}})
+        self.assertEqual(result['callbacks'], [row])
+        for case in range(4):
+            invalid = copy.deepcopy(row)
+            if case == 0:
+                invalid['object_conditions'][0]['appearance'] = True
+            elif case == 1:
+                invalid['object_conditions'] *= 2
+            elif case == 2:
+                invalid['object_conditions'][0]['position']['floor'] = -16
+            else:
+                invalid['experience'] = 1
+            with self.assertRaisesRegex(ValueError, 'held callback contract'):
+                tool.compile_callbacks({'schema': 1, 'callbacks': []}, empty,
+                                       {'source': {'schema': 1, 'callbacks': [invalid]}})

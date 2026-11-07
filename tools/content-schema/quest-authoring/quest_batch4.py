@@ -64,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources', 'objects', 'failure_teleport',
+    'success_message', 'native_rule', 'sources', 'objects', 'failure_teleport', 'object_conditions',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -230,6 +230,20 @@ def validate_callback(callback, directory):
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
     require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    conditions = callback.get('object_conditions', [])
+    require(isinstance(conditions, list) and len(conditions) <= MAX_EFFECTS, key + ': object conditions bound')
+    if conditions:
+        require(not callback['storage'] and not callback['offerings']
+                and all(callback.get(field) is None for field in ('item_on_target', 'minimum_level', 'experience', 'monk_reward', 'native_rule')),
+                key + ': object conditions must be stateless')
+        seen_conditions = set()
+        for condition in conditions:
+            fields(condition, {'position', 'appearance'}, {'position', 'appearance'}, key + ': object condition')
+            position(condition['position'], key + ': object condition position')
+            require(integer(condition['appearance'], 1, 65535), key + ': object condition appearance')
+            identity = (tuple(condition['position'][axis] for axis in ('x', 'y', 'floor')), condition['appearance'])
+            require(identity not in seen_conditions, key + ': duplicate object condition')
+            seen_conditions.add(identity)
     objects = callback.get('objects')
     if objects is not None:
         fields(objects, {'consume_trigger', 'mutations'}, {'consume_trigger', 'mutations'}, key + ': objects')

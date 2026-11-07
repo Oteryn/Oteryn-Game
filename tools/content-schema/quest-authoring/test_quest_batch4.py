@@ -44,6 +44,24 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_object_conditions_are_current_bounded_stateless_predicates(self):
+        row = callback('cults_of_tibia', 'object-conditions')
+        row['storage'] = []
+        row['object_conditions'] = [{'position': {'x': 32802, 'y': 31584, 'floor': -1}, 'appearance': 2772}]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for case in range(4):
+            invalid = copy.deepcopy(row)
+            if case == 0:
+                invalid['object_conditions'][0]['appearance'] = 0
+            elif case == 1:
+                invalid['object_conditions'][0]['position']['floor'] = -16
+            elif case == 2:
+                invalid['object_conditions'] *= 2
+            else:
+                invalid['storage'] = [{'track': 'oteryn:quest-track/fixture', 'minimum': -1, 'maximum': 1, 'set': 1}]
+            with self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'cults_of_tibia')
+
     def test_conditional_set_is_exact_and_cannot_be_a_read_only_guard(self):
         row = callback('cults_of_tibia', 'conditional-reset')
         row['storage'] = [{'track': 'oteryn:quest-progress/conditional-reset/flag',
