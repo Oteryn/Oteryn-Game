@@ -23,6 +23,16 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::from(3);
         }
     };
+    if std::env::args().any(|arg| arg == "--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(()) => std::process::ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("Oteryn Watch: {error}");
+                std::process::ExitCode::FAILURE
+            }
+        };
+    }
+
     match windows_shell::run(native_client()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
@@ -34,6 +44,11 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(not(windows))]
 fn main() {
+    if std::env::args().any(|arg| arg == "--watch") {
+        eprintln!("Oteryn Watch uses the native Windows desktop shell");
+        return;
+    }
+
     if let Some(client) = native_client()
         && let Ok(Some(config)) =
             oteryn_client::NativeLoginConfig::from_env(|name| std::env::var(name).ok())

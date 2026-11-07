@@ -62,7 +62,7 @@ macro_rules! authority_methods {
         fn cast_live_chat(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
-        ) -> impl std::future::Future<Output = Vec<Vec<u8>>> {
+        ) -> impl std::future::Future<Output = Vec<(u32, Vec<u8>)>> {
             async { Vec::new() }
         }
     };
@@ -117,7 +117,10 @@ macro_rules! composed_methods {
         ) {
             self.cast_public_effects(admitted, events).await;
         }
-        async fn cast_live_chat(&self, admitted: connection::AdmittedSession) -> Vec<Vec<u8>> {
+        async fn cast_live_chat(
+            &self,
+            admitted: connection::AdmittedSession,
+        ) -> Vec<(u32, Vec<u8>)> {
             self.cast_chat_lines(admitted).await
         }
     };
@@ -125,6 +128,22 @@ macro_rules! composed_methods {
 pub(super) use composed_methods;
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn cast_facts(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_gameplay_social::spectate::TargetFacts> {
+        // Canary livestream.cpp:486 keeps a live cast while refreshing its picture.
+        // NODEBOOT-1: a busy shared holder is not evidence that the caster is gone.
+        // All read/install callers use the same bounded gate before deciding Gone.
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.cast_facts_once(admitted)
+                    .await
+                    .ok_or(connection::AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    }
+    async fn cast_facts_once(
         &self,
         admitted: connection::AdmittedSession,
     ) -> Option<oteryn_gameplay_social::spectate::TargetFacts> {
@@ -167,25 +186,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         payload: &[u8],
     ) -> Option<Vec<u8>> {
-        let facts = self.cast_facts(admitted).await?;
         let request = Message::decode(payload).ok()?;
+        // Canary livestream.cpp:249: settings use the current caster. NODEBOOT-1
+        // additionally bounds retries of these read/install gates while the privacy
+        // worker owns the shared holder. The cast operation itself is never retried.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let facts = self.cast_facts(admitted).await?;
         if kind == 503 {
-            let Message::ConsentSet { revision, allowed } = request else {
-                return None;
+            let change = match request {
+                Message::ConsentSet { revision, allowed } => {
+                    Some((i64::try_from(revision).ok()?, allowed))
+                }
+                Message::ConsentQuery => None,
+                _ => return None,
             };
-            let expected = i64::try_from(revision).ok()?;
-            let fence =
-                character_gameplay_fence::current(self, admitted.game_session_id, false).await?;
+            let fence = budget
+                .retry_unavailable(async || {
+                    character_gameplay_fence::current(self, admitted.game_session_id, false)
+                        .await
+                        .ok_or(connection::AdmissionRefusal::Unavailable)
+                })
+                .await
+                .ok()?;
             // The Root publishes the cross-worker denial floor and commits
             // only after every media lease is invalidated or expired.
-            let value = self
-                .root
-                .character_cast_consent(
-                    self.character,
-                    self.holder,
-                    fence,
-                    Some((expected, allowed)),
-                )
+            // NODEBOOT-1: the privacy worker shares this holder. Retry only
+            // its explicit busy refusal under the existing command budget.
+            let value = budget
+                .retry_unavailable(async || {
+                    self.root
+                        .character_cast_consent(self.character, self.holder, fence, change)
+                        .await
+                        .map_err(|error| match error {
+                            crate::durability::character_progression::CharacterProgressionError::Unavailable(
+                                crate::durability::DurabilityError::RootUnavailable,
+                            ) => connection::AdmissionRefusal::Unavailable,
+                            _ => connection::AdmissionRefusal::Rejected,
+                        })
+                })
                 .await
                 .ok()?;
             use crate::durability::cast_consent::CastConsentOutcome as O;
@@ -205,6 +243,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             .encode()
             .ok();
+        }
+        if kind == 502 && matches!(request, Message::ControlQuery) {
+            let message = match self.states.casts.get() {
+                Some(node) => match node
+                    .service
+                    .apply(Operation::State(admitted.game_session_id))
+                    .await
+                {
+                    Ok(Reply::State(state)) => Message::CasterState {
+                        cast_id: state.cast_id,
+                        revision: state.revision,
+                        epoch: state.epoch,
+                        delay: state.delay_seconds,
+                        count: state.viewers,
+                    },
+                    Err(oteryn_gameplay_social::cast::Error::Unavailable) => Message::End,
+                    _ => return None,
+                },
+                None => Message::End,
+            };
+            return message.encode().ok();
         }
         let node = self.states.casts.get()?;
         let op = match (kind, request) {
@@ -306,7 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn cast_chat_lines(
         &self,
         admitted: connection::AdmittedSession,
-    ) -> Vec<Vec<u8>> {
+    ) -> Vec<(u32, Vec<u8>)> {
         let Some(node) = self.states.casts.get() else {
             return Vec::new();
         };
@@ -340,7 +399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             lines.splice(0..0, presence);
         }
-        lines
+        let mut frames: Vec<_> = lines
             .into_iter()
             .filter_map(|v| {
                 Message::CasterLine {
@@ -349,8 +408,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 .encode()
                 .ok()
+                .map(|payload| (1, payload))
             })
-            .collect()
+            .collect();
+        if let Ok(Reply::Roster(Some((revision, subjects)))) = node
+            .service
+            .apply(Operation::CasterRoster(admitted.game_session_id))
+            .await
+            && let Ok(payload) = (Message::CasterRoster { revision, subjects }).encode()
+        {
+            frames.insert(
+                0,
+                (
+                    oteryn_protocol_oteryn::cast::DELTA_TYPE_CAST_ROSTER,
+                    payload,
+                ),
+            );
+        }
+        frames
     }
 }
 
