@@ -1,0 +1,13 @@
+.F
+======================================================================
+FAIL: test_native_provider_contains_the_actual_key_and_door_physics (test_key_door_item_profiles.KeyDoorProfileTests.test_native_provider_contains_the_actual_key_and_door_physics) (item=5097)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/Oteryn-Game/tools/content-migration/test_key_door_item_profiles.py", line 22, in test_native_provider_contains_the_actual_key_and_door_physics
+    self.assertIsNotNone(row, f'Production native profile missing: {item}')
+AssertionError: unexpectedly None : Production native profile missing: 5097
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.136s
+
+FAILED (failures=1)

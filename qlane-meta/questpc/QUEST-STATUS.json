@@ -3539,7 +3539,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Five native shared stock keys3003-3007 PG and strict verification green. Continue exact native5097 door/access bindings, first stock/NPC exchange, party switches and complete source reward composition."
+      "active_batch": "Native stock3003-3007 and doors3001/3002/3003 plus both Hellgate3012 doors PG/strict green. Continue doors3004-3008, source selectors/level gate, party and first stock/NPC exchange, then complete reward composition."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8547,7 +8547,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Merged NPC acceptance/rescues/hand-in and native stock keys validating before push; then implement three Hidden Threats crafting components, followed by forged-key doors and Cave Spider room. Mintwallin and Life Ring earlier source qualifications remain intact.",
+    "active": "NPC three-component batch and native stock/door integrations GREEN. Publish fast-forward, then execute Hidden Threats filing/heating-joining/finishing craft batch. Follow with source key doors and Cave Spider room; no shared-engine deferral.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -9156,6 +9156,11 @@
       "native_checkpoint": "qlane-meta/questpc/cloud-native-key-checkpoint.json",
       "implementation_published": true,
       "native_validation": "qlane-meta/questpc/cloud-native-key-validation.json"
+    },
+    "draconia_source_doors": {
+      "state": "first_five_native_access_entries_pg_green",
+      "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
+      "next": "Remaining source doors3004-3008, same native5097 profile and generic owner; then complete source access/party/NPC/stock route."
     }
   },
   "cross_lane_qualified_elsewhere": {
@@ -9269,5 +9274,70 @@
       "UNFINISHED": 117,
       "BLOCKED": 1
     }
+  },
+  "concurrent_key_door_batch": {
+    "name": "Five exact native source key-door access entries",
+    "validation": "qlane-meta/questpc/cloud-draconia-door-validation.json",
+    "qualified_titles_added": 0,
+    "counts": {
+      "QUALIFIED": 60,
+      "UNFINISHED": 117,
+      "BLOCKED": 1
+    }
+  },
+  "latest_cloud_door_integration": {
+    "parents": [
+      "dc989c1f1",
+      "fcde7f80d"
+    ],
+    "status": "GREEN",
+    "resolution": "Source-disjoint union; only latest batch metadata conflicted. All NPC and native door evidence retained. Current44-placement pin verified.",
+    "fresh_checks": {
+      "fmt": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "results": []
+      },
+      "check": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-check.log",
+        "sha256": "efaae545df73dbbb22fd73636ac210f44fea2519bcc17d56307b2625e94778fe",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 43s"
+        ]
+      },
+      "clippy": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-clippy.log",
+        "sha256": "1cb500d9da1d0e79888730a38b2421b4f1771e5658440dc8b6f1b8dd603bbb16",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 50s"
+        ]
+      },
+      "units": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-units.log",
+        "sha256": "e4bf1a4e863dc749c587da99b7cbf32f251cd79c466e6bb716ed5daf6825ec3d",
+        "results": [
+          "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 28s",
+          "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.05s"
+        ]
+      },
+      "generation": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-generation.log",
+        "sha256": "b223e7aa5109fc79ecefe4c12c5705c64760d0b703dce9b9851131f5eec0d4f0",
+        "results": []
+      },
+      "pin": {
+        "path": "qlane-meta/questpc/cloud-hidden-door-merge-pin.log",
+        "sha256": "2a238f88819004e624a23597fc21a519aa5a7536cf3d0eba5871f2169c03016c",
+        "results": [
+          "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+        ]
+      }
+    },
+    "reused_postgres": [
+      "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+      "qlane-meta/questpc/cloud-hidden-merge-validation.json",
+      "qlane-meta/questpc/cloud-draconia-door-validation.json"
+    ],
+    "postgres_boundary": "No PG cases repeated for this disjoint merge; the new native door producer/profile cohort has its own committed actual PG proof and full NPC composition passed on the combined ancestor."
   }
 }

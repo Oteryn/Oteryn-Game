@@ -1,3 +1,55 @@
+## Concurrent native door integration — 2026-11-07
+
+NPC/native-stock merge is GREEN (cloud-hidden-merge-validation.json). Remote
+fcde7f80d adds five exact native door selectors and5097 profiles with its own
+real PostgreSQL proof. This disjoint runtime merge has only batch metadata
+conflict; both records retained. Fresh world+dispatch strict checks, exact source
+capture/generation, focused binding units and pin check PASS; prior PG cases stay
+unchanged and were not repeated. Evidence: cloud-hidden-door-merge-validation.json.
+Current44-placement pin9865615f... verified; commit/push fast-forward.
+Then execute /tmp/questpc-hidden-next-plan.md crafting batch; qengine2 checked2638a83ca.
+Draft PG fixture: /tmp/questpc-hidden-threats-craft-draft.rs (not applied yet).
+Reuse existing carried wire helper, adapting map target and distinct equal-type
+operands while preserving original fluid cases. Run actual PG RED before feature
+implementation; add source-bound generic retained tool conversion and recipe facts.
+
+---
+
+## First five native source key doors GREEN — 2026-11-07
+Source doors3001/3002/3003 and both Hellgate3012 positions now acquire exact startup
+actions from pinned Lua/native capture. All are native locked appearance5097.
+Added only5097 via existing pinned importer (5098/5099 already present); existing
+native records unchanged. Reused questpc6@8aacc18bb's source-backed M06 scenario,
+no injected source action attrs. Stock capture remains byte-identical; capture
+union enforces total bound and no cross-file ambiguous attrs. No binary maps/raw
+reference copies or graph/native-admission changes.
+
+Actual PostgreSQL18.6 RED5/5,221.64s (ItemReference missing5097), GREEN5/5,236.50s.
+Each six framed commands/three transitions: wrong key/open/replay/reconnect/relock/
+plain locked refusal. Durations3001=45.878695531s;3002=42.554876218s;3003=42.419699423s;
+3012north=42.071275704s;south=41.745346491s. Nine pure world units0.05s,2profile units
+0.124s, fmt, source captures, native40-file generation/check, content/world/dispatch
+all-target/all-feature check3m00s and strict clippy3m21s PASS. Pin digest unchanged
+2cabea56... (used already-built unchanged repository compiler directly alongside
+Rust checks; no second Cargo build). Full evidence:cloud-draconia-door-validation.json.
+Counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT five-entry batch: source doors3004=(32809,31593,-6),3005=(32794,31582,-6),
+3006=(32814,31595,-6),3007=(32797,31592,-4),3008=(32804,31585,-1).
+Same5097 profile/owner now available. Extend existing --capture doors to ten total
+rows (preserve first5), add5source m06 wire tests RED/GREEN, then strict checks/push.
+All10facts /tmp/questpc-draconia-native-door-facts.json and pinned door_key.lua.
+Afterwards source access/reward/level selectors, party pressure gates and NPC/first
+shared container stock key, then original rewards/source route composition.
+Primary loader loads MapContainersQuest before source actions; first key3001 is
+likely source container stock, not an invented loose item. Scratch executor
+/tmp/questpc-key-startup-executor.lua. Check existing generic map-container support
+on qengine2/other lanes before implementing; own all missing features here.
+
+Use sourceenv then CARGO_INCREMENTAL=0; push every green slice and at least30min.
+Do not end while actual entries remain. Latest temporary active note:
+/tmp/questpc-active-door-batch.md (current batch now complete; superseded here).
+
 ## NPC and native-stock integration — 2026-11-07
 
 NPC batch90a959a3e is green with three source components; remote89cfab3ee

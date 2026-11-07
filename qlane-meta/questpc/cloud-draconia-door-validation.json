@@ -1,0 +1,97 @@
+{
+  "result": "PASS",
+  "qualified_titles_added": 0,
+  "slice": "Five source key-door access entries:3001/3002/3003 and both3012 Hellgate doors",
+  "reuse": "questpc6@8aacc18bb source-backed M06 key USE scenario; existing native key-door importer and bounded startup binder",
+  "pg": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "failed": 5,
+      "passed": 0,
+      "total_seconds": 221.64,
+      "reason": "Native locked door5097 cannot boot:ItemReference"
+    },
+    "green": {
+      "passed": 5,
+      "failed": 0,
+      "total_seconds": 236.5,
+      "case_body_seconds": {
+        "3001": 45.878695531,
+        "3002": 42.554876218,
+        "3003": 42.419699423,
+        "3012_north": 42.071275704,
+        "3012_south": 41.745346491
+      },
+      "per_case": "Six real framed USE commands, three observed transitions; wrong key, open, replay, reconnect, relock and plain locked refusal"
+    }
+  },
+  "validation": {
+    "fmt": "PASS changed crates",
+    "units": "9 world source binding/wrapper tests0.05s; pure units, not PG",
+    "profile": "RED missing5097; GREEN2 provider tests0.124s",
+    "source": "Both stock and door captures verified; existing stock byte-identical",
+    "generation": "PASS40 native generated files; all previous native profile records unchanged, only5097 added",
+    "check": "PASS content/world/dispatch all targets/all features3m00s",
+    "clippy": "PASS content/world/dispatch all targets/all features,-D warnings3m21s",
+    "pins": "PASS unchanged world digest2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968; unchanged repository compiler binary used directly to avoid concurrent Cargo builds"
+  },
+  "boundary": "Exact native door selectors and key USE are qualified as mechanics. Fixture carried keys are existing controlled M06 setup; source key issuance is separately covered by stock/reward evidence. Whole Draconia remains active work. No raw source assets/binary maps or graph admission changes.",
+  "logs": {
+    "red": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-red.log",
+      "sha256": "5dc41f7ffda48e7be5813e8c803de4cf622ac7fe23714a69755665f7046391d6"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-green.log",
+      "sha256": "bca1a73d877a58f8c956be88aa0771462db2285c50ce65eda4aa9c2d7acf39aa"
+    },
+    "profile-red": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-profile-red.log",
+      "sha256": "267ba041225b883abd9769e88b664fba3779d5f96376a6df4cdff1ddcbb23a7d"
+    },
+    "profile-green": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-profile-green.log",
+      "sha256": "bf85bdf594d30e52eace196bb43fa4510a5dc1cece4acc1692efb3a78c636d9a"
+    },
+    "profile-gen": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-profile-gen.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "native-gen": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-native-gen.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "generated": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-generated.log",
+      "sha256": "ac3e3a1ab4dd888e8bad56979850cbb67de0e58ab3f10c60bbc44a38d8c502b2"
+    },
+    "stock-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-stock-check.log",
+      "sha256": "bae8b598e12cb3b0c8cd893a6efa846807305a9821b2fe1235aa902def5d66ab"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-units.log",
+      "sha256": "d80b322c6497fe59867564516701d8d01b65bf61e35a573f69a87fa8df5cfdec"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-check.log",
+      "sha256": "550ca96b3b8ca04db39c4ee23ceffcc8f6c8ccad8ae598274df27eceb564b723"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-clippy.log",
+      "sha256": "72590b02b37e205e27135422ca029d4f5666aa927d8e3bc78065b8691e1ac00d"
+    },
+    "native-check": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-native-check.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-draconia-door-pins.log",
+      "sha256": "7a5cdaeae97582ea0ce22360c3adf5769c195483f29359d8b309b76c132fad26"
+    }
+  }
+}

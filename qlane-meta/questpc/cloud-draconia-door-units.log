@@ -1,0 +1,68 @@
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-progression v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/progression)
+   Compiling oteryn-gameplay-characters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/characters)
+   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)
+   Compiling oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)
+   Compiling oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)
+   Compiling oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)
+   Compiling oteryn-gameplay-content-promotion v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content-promotion)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 34s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_world-a6252737ed090cb4)
+
+running 9 tests
+test map::facts::source_bindings::tests::source_binding_capture_is_bounded_and_rejects_ambiguous_or_untyped_attributes ... ok
+test map::facts::source_bindings::tests::source_capture_union_rejects_cross_capture_ambiguity ... ok
+test map::facts::source_bindings::tests::source_door_bindings_are_exact_and_preserve_native_attributes ... ok
+test map::facts::source_bindings::tests::source_stock_keys_bind_only_exact_native_positions_items_and_nonhouses ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_key_binding_keeps_all_other_refusals ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_leaves_every_ineligible_kind_in_place ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_reach_is_one_tile_on_the_same_floor ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_takes_an_eligible_entry_whole ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_uses_effective_startup_attributes_without_losing_refusals ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 214 filtered out; finished in 0.05s
