@@ -1,3 +1,7 @@
+Published source-container mechanic cc0b08f71, all checks/actualPG3 GREEN.
+Proof logs normalized only at EOF; validation retains raw and normalized SHA256.
+Next remains two-player/reset/full route.
+
 ## Shared native container stock GREEN — 2026-11-07
 Actual PostgreSQL18.6 GREEN3 wall71.60s: replay62.081279379s,shared62.729988979s,
 forged71.600899512s. Native empty5972 opens one2969; withdrawal mints immutable3001.

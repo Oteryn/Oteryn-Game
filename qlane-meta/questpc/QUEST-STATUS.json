@@ -10366,6 +10366,8 @@
   "container_stock_progress": {
     "state": "GREEN: reusable source-container stock owner and3 actual PG probes",
     "evidence": "cloud-container-stock-validation.json",
-    "remaining": "prove second-player visibility, reset replenishment and final Draconia source-route composition"
+    "remaining": "prove second-player visibility, reset replenishment and final Draconia source-route composition",
+    "implementation_commit": "cc0b08f71",
+    "proof_log_normalization": "EOF only; raw hashes retained in validation"
   }
 }

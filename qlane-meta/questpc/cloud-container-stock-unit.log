@@ -50,4 +50,3 @@ test map::container_stock::tests::nonempty_house_bound_or_wrong_container_is_nev
 test map::container_stock::tests::exact_empty_native_container_gets_source_stock ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 224 filtered out; finished in 0.00s
-

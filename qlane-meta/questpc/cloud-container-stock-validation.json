@@ -37,7 +37,9 @@
   "logs": {
     "pg": {
       "path": "cloud-container-stock-green.log",
-      "sha256": "4e218f91d329ca78406af019a164785782311d0d22f7d9f01378dd0a86d8743a"
+      "sha256": "9826487f94e34d10033f6ab82ca46378481110eb5495fd73a15e726503e78f7e",
+      "raw_sha256": "4e218f91d329ca78406af019a164785782311d0d22f7d9f01378dd0a86d8743a",
+      "normalization": "EOF newline only; raw bytes retained by preceding feature commit"
     },
     "check": {
       "path": "cloud-container-stock-check.log",
@@ -49,7 +51,9 @@
     },
     "unit": {
       "path": "cloud-container-stock-unit.log",
-      "sha256": "d5bddb829be2f9df2700ac2b7c13baac9ca2a4205cefc82201bdbb635f0a9d03"
+      "sha256": "1ae740e2c1d6fb04aab098f3a99ee8be9432ee90c23444f35b315e5dcebe4a01",
+      "raw_sha256": "d5bddb829be2f9df2700ac2b7c13baac9ca2a4205cefc82201bdbb635f0a9d03",
+      "normalization": "EOF newline only; raw bytes retained by preceding feature commit"
     },
     "fmt": {
       "path": "cloud-container-stock-fmt.log",

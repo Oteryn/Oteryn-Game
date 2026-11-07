@@ -72,4 +72,3 @@ POSTGRES_CASE_COMPLETED draconia_container_stock_forged duration=71.600899512s
 test gameplay_transport::monk_save::postgres_tests::draconia_container_stock::draconia_container_stock_rejects_forged_origin ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2606 filtered out; finished in 71.60s
-
