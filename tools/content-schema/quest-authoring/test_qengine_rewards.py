@@ -71,6 +71,9 @@ class QuestRewards(unittest.TestCase):
         all_callbacks=self.callbacks['callbacks']
         workshop_keys={'oteryn:quest-reward/npcfix-ghost-tear', 'oteryn:quest-reward/npcfix/altar-bag',
                        'oteryn:quest-reward/npcfix/koshei-submit', 'oteryn:quest-reward/npcfix/koshei-claim'}
+        workshop_keys |= {'oteryn:quest-reward/exchange-cyclops-' + name for name in (
+            'start', 'skirts', 'royal-steel', 'draconian-steel', 'hell-steel',
+            'crude-iron', 'gold-melt', 'gear-wheel')}
         workshop=[c for c in all_callbacks if c['key'] in workshop_keys]
         self.assertEqual({c['key'] for c in workshop}, workshop_keys)
         npcfix=[c for c in all_callbacks if c['key'].startswith('oteryn:quest-reward/npcfix/') and c not in workshop]
