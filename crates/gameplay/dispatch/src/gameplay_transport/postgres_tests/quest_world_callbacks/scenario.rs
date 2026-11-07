@@ -25,7 +25,7 @@ fn scenario_case(
     let small_ruby = name.starts_with("l6-small-ruby");
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = name == "l6-floor-profiles";
+    let floor_profiles = name == "l6-floor-profiles" || name == "l6-ruby-profile";
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
     let monk = name.starts_with("monk-guidance");
@@ -377,6 +377,8 @@ fn scenario_case(
                 drop(seal);
                 return h.cleanup().await;
             }
+        } else if name == "l6-ruby-profile" {
+            super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
         } else if floor_assembly {

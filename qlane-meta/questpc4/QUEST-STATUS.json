@@ -3328,35 +3328,6 @@
           "ordinal": 1
         }
       },
-      "complete_reward_child_fluids": {
-        "status": "QUALIFIED",
-        "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
-        "red": {
-          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
-          "duration_seconds": 53.89,
-          "marker": "POSTGRES_DATABASE_READY l6_reward_fluids",
-          "result": "0 passed / 1 failed",
-          "actual": "None",
-          "expected": "Some(16)",
-          "log": "/tmp/questpc4-reward-fluid-red.log"
-        },
-        "green": {
-          "postgres_version": "18.6",
-          "duration_seconds": 55.436742052,
-          "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
-          "result": "2 focused PG tests passed / 0 failed; batch55.47s",
-          "log": "/tmp/questpc4-reward-fluid-final-pg.log",
-          "assertions": [
-            "source mead16 persisted with one exact child identity",
-            "stale fence writes nothing",
-            "changed subtype with same CommandRef conflicts without writes",
-            "unrelated root fluid proof rejected by SQL23514",
-            "exact replay leaves instance/receipt/reservation/fluid/audit counts unchanged",
-            "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
-            "legacy source bear bag USE/once/replay remains green"
-          ]
-        }
-      },
       "floor_assembly_plain_physical": {
         "status": "QUALIFIED",
         "scope": "Bounded current Channel non-House AddItem assembly of up to7 whole plain physical floor operands into1 fresh plain output; qualified source recipe7 helmet parts3222..3228->3229. Synthetic composed PG room with exact source AID40040; no whole Ancient Tombs or native altar traversal qualification.",
@@ -3411,6 +3382,75 @@
           "Source fire-area presentation",
           "Native altar and all remaining whole-quest access/reward composition"
         ]
+      },
+      "complete_reward_child_fluids": {
+        "status": "QUALIFIED",
+        "scope": "Generic complete-plan reward child fluid MINT only. Source barrel/mission9/wire lowering and whole Waterskin entry are not qualified by this fixture.",
+        "red": {
+          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 53.89,
+          "marker": "POSTGRES_DATABASE_READY l6_reward_fluids",
+          "result": "0 passed / 1 failed",
+          "actual": "None",
+          "expected": "Some(16)",
+          "log": "/tmp/questpc4-reward-fluid-red.log"
+        },
+        "green": {
+          "postgres_version": "18.6",
+          "duration_seconds": 55.436742052,
+          "marker": "POSTGRES_CASE_COMPLETED l6_reward_fluids success=true",
+          "result": "2 focused PG tests passed / 0 failed; batch55.47s",
+          "log": "/tmp/questpc4-reward-fluid-final-pg.log",
+          "assertions": [
+            "source mead16 persisted with one exact child identity",
+            "stale fence writes nothing",
+            "changed subtype with same CommandRef conflicts without writes",
+            "unrelated root fluid proof rejected by SQL23514",
+            "exact replay leaves instance/receipt/reservation/fluid/audit counts unchanged",
+            "real carried-tree fluid writer empties vessel; historical MINT replay does not refill",
+            "legacy source bear bag USE/once/replay remains green"
+          ]
+        }
+      },
+      "ruby_helmet_native_policy": {
+        "status": "QUALIFIED",
+        "scope": "Only native3230 identity/admission and exact absolute policy under real PostgreSQL activation; not ruby conversion, timer execution or whole Ancient Tombs qualification.",
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/items/items.xml",
+          "line": 8079,
+          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+          "duration_ms": 1800000,
+          "decay_target": 3229,
+          "stop_duration": false,
+          "charges": "NOT_APPLICABLE"
+        },
+        "red": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_DATABASE_READY l6-ruby-profile",
+          "result": "0 passed / 1 failed",
+          "duration_seconds": 53.29,
+          "error": "full helmet3230 native policy missing",
+          "log": "/tmp/questpc4-ruby-profile-red.log"
+        },
+        "green": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+          "result": "1 passed / 0 failed",
+          "duration_seconds": 53.116194692,
+          "log": "/tmp/questpc4-ruby-profile-green.log",
+          "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
+        },
+        "generated_delta": {
+          "before": 3606,
+          "after": 3607,
+          "added": [
+            "oteryn:item.tibia.i3230"
+          ],
+          "changed_existing": [],
+          "removed": [],
+          "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
+        }
       }
     },
     "active_counts": {
@@ -3422,46 +3462,28 @@
     },
     "latest_batch_checks": {
       "result": "PASS",
-      "focused_postgres": {
-        "result": "3 passed / 0 failed",
-        "total_seconds": 109.81,
-        "log": "/tmp/questpc4-floor-assembly-final-all.log",
-        "cases": [
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly",
-            "duration_seconds": 55.929983408
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-missing",
-            "duration_seconds": 55.980734694
-          },
-          {
-            "marker": "POSTGRES_CASE_COMPLETED l6-floor-assembly-unbound",
-            "duration_seconds": 53.871434084
-          }
-        ],
-        "probes": [
-          "busy Ground owner rejects without consequence",
-          "locked destination Item rejects without consequence",
-          "injected receipt trigger witness executes; entire original drop and assembly roll back",
-          "audit7 balance summaries + SHA256 of exact full immutable snapshots",
-          "fresh output instance and append ordinal; same physical xid as triggering move",
-          "original wire command replay writes no duplicate assembly"
-        ]
+      "profile_postgres": {
+        "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+        "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+        "result": "1 passed / 0 failed",
+        "duration_seconds": 53.116194692,
+        "log": "/tmp/questpc4-ruby-profile-green.log",
+        "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
       },
-      "cargo_check": "PASS items+durability+dispatch --all-targets --all-features,3m20s",
-      "clippy": "PASS items+durability+dispatch --all-targets --all-features -- -D warnings; see /tmp/questpc4-floor-assembly-clippy.log",
-      "cargo_fmt": "PASS all workspace and explicit mounted leaves",
-      "git_diff_check": "PASS",
-      "migration_numbers": "1060 unclaimed on main/open PRs; lane reservation1060..1079; duplicate check PASS",
-      "generated_inputs": "Unchanged in this runtime slice; no pin/source regeneration required."
+      "provider_and_capture": "PASS source capture check and native provider write/check42 files",
+      "cargo_check": "PASS content+dispatch all targets/features32.07s",
+      "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
+      "fmt": "PASS all and explicit mounted leaves",
+      "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
+      "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
     },
     "current_attempt": {
       "name": "cloud-reward-fluids-05",
-      "state": "VALIDATING_COMBINED_TREE",
+      "state": "GREEN_PENDING_PUSH",
       "local_green_commit": "39937583a",
       "incoming_floor_commit": "516de7b0d",
-      "next_action": "Pass combined focused PG/check/clippy, commit merge and push fast-forward. Continue actual Mead lowering/mission9/native barrel binding;19 active entries. Do not redo qualified Small Ruby or plain floor assembly."
+      "next_action": "Pass combined focused PG/check/clippy, commit merge and push fast-forward. Continue actual Mead lowering/mission9/native barrel binding;19 active entries. Do not redo qualified Small Ruby or plain floor assembly.",
+      "incoming_profile_commit": "a18dba296"
     },
     "authoring_state": "AUTHORING",
     "attempt_history": [
@@ -3541,8 +3563,79 @@
             "original wire command replay writes no duplicate assembly"
           ]
         }
+      },
+      {
+        "name": "cloud-ruby-native-profile-05",
+        "state": "GREEN",
+        "published": false,
+        "whole_entries_newly_qualified": 0,
+        "base_sha": "516de7b0d",
+        "ruby_transform_red": {
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "result": "0 passed / 1 failed",
+          "duration_seconds": 53.77,
+          "actual_same_helmet_definition": "oteryn:item.tibia.i3229",
+          "expected_same_helmet_definition": "oteryn:item.tibia.i3230",
+          "log": "/tmp/questpc4-floor-ruby-red.log"
+        },
+        "profile_red": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_DATABASE_READY l6-ruby-profile",
+          "result": "0 passed / 1 failed",
+          "duration_seconds": 53.29,
+          "error": "full helmet3230 native policy missing",
+          "log": "/tmp/questpc4-ruby-profile-red.log"
+        },
+        "decision": "Admit exactly source3230 absolute1800000ms decay policy before implementing generic identity-preserving floor transform. No whole Ancient Tombs qualification.",
+        "generated_delta": {
+          "before": 3606,
+          "after": 3607,
+          "added": [
+            "oteryn:item.tibia.i3230"
+          ],
+          "changed_existing": [],
+          "removed": [],
+          "provider": "PASS write and --check,42 import files; native-only regeneration includes freshness checks"
+        },
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/items/items.xml",
+          "line": 8079,
+          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+          "duration_ms": 1800000,
+          "decay_target": 3229,
+          "stop_duration": false,
+          "charges": "NOT_APPLICABLE"
+        },
+        "validation": "All bounded profile checks passed; commit/push immediately. Runtime RED stays unstaged.",
+        "reuse_check": "qengine2 a89547fd8 and available questpc3/8 have no physical3230/floor-transform runtime implementation",
+        "profile_green": {
+          "test": "l6_ruby_profile_admits_exact_helmet_absolute_policy",
+          "marker": "POSTGRES_CASE_COMPLETED l6-ruby-profile",
+          "result": "1 passed / 0 failed",
+          "duration_seconds": 53.116194692,
+          "log": "/tmp/questpc4-ruby-profile-green.log",
+          "scope": "Native policy only, exact identity3230,1800000ms absolute deadline to3229, no charges and actual active PostgreSQL content digest"
+        },
+        "checks": {
+          "provider_and_capture": "PASS source capture check and native provider write/check42 files",
+          "cargo_check": "PASS content+dispatch all targets/features32.07s",
+          "clippy": "PASS content+dispatch all targets/features-D warnings45.91s",
+          "fmt": "PASS all and explicit mounted leaves",
+          "pin_refresh": "PASS unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298; inputs12ba3d59676cac791a83eb85559de28fbab079275bf15dc987412f75aab83616",
+          "pin_check": "PASS exit0; unchanged World cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298"
+        },
+        "environment_recovery": "Sandbox failed No space left on device after all checks had exited0. Deleted only25GB disposable Rust incremental compiler cache via approved escalation; source and PostgreSQL untouched;25GB now free. No test weakened or skipped.",
+        "next_action": "After immediate profile push, implement same-instance floor transform and repeatable per-cycle deadlines through existing fenced timer owner; no deferral to another lane."
       }
-    ]
+    ],
+    "last_pushed_batch": {
+      "name": "cloud-floor-assembly-04",
+      "sha": "516de7b0d",
+      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "published": true,
+      "checks": "PG3/0; check3m20s; clippy3m02s all targets/features; fmt/diff; migration allocation and duplicates"
+    }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
   "shared_engine_integration": {
@@ -3687,7 +3780,7 @@
     "contract": "qlane-meta/questpc4/REWARD-FLUID-CONTRACT.md",
     "red_test": "l6_reward_container_preserves_mead_and_exact_replay",
     "red_log": "/tmp/questpc4-reward-fluid-red.log",
-    "stage": "Fluid+floor combined tree green. Remote advanced again to a18dba296 native3230 policy; merge it before fast-forward push, preserving green mechanisms and current19 active whole entries.",
+    "stage": "All combined gates GREEN; commit merge with a18dba296 and push fast-forward now. Then continue actual Mead world reward lowering, mission09/native selector and19 active entries.",
     "remaining_whole_entries": 19,
     "red": {
       "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
@@ -3756,6 +3849,29 @@
         "clippy": "same crates/all targets/features,-D warnings,8m42s",
         "fmt": "PASS all and explicit fluid PG leaf"
       }
+    },
+    "native_profile_merge": {
+      "head": "a18dba296",
+      "status": "QUALIFIED",
+      "scope": "Preserve exact incoming3230 policy and native generator output; no new whole quest claim.",
+      "pg": {
+        "result": "4 passed / 0 failed",
+        "batch_seconds": 65.8,
+        "fluid_seconds": 62.778295829,
+        "floor_seconds": 65.794161383,
+        "profile_seconds": 62.761630134,
+        "log": "/tmp/questpc4-fluid-ruby-merge-pg.log",
+        "postgres_version": "18.6"
+      },
+      "provider_check": "PASS42 registered native files; all3606 prior profiles equal, one exact3230 addition",
+      "check": "PASS content+items+durability+dispatch all targets/features31.75s",
+      "clippy": "PASS content+items+durability+dispatch all targets/features -D warnings3m14s; local CARGO_INCREMENTAL=0"
+    },
+    "next_scope_facts": {
+      "mission09": "Existing native track initial0/max2. Lurik accepts Formorgar Mines mission by setting Questline35, Mission09=1 and FormorgarMinesDoor=1.",
+      "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lurik.lua",
+      "source_line": 119,
+      "source_sha256": "4c26f87476f1b358e82c06814ad0c6d6f2b1413066dcd198769ca5c6fbd4d274"
     }
   }
 }
