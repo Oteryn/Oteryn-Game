@@ -186,6 +186,52 @@ fn tibiadrome_projection_consumer_withdraws_auction_rows_paging_and_own_rank() -
     })
 }
 
+// Same fenced durability reader/commit called by native Drome Status; this
+// supported Reference authority fixture does not claim a native actor boot.
+async fn drome_status(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    ordinal: u64,
+) -> TestResult<oteryn_protocol_oteryn::arena::DromeResult> {
+    use oteryn_protocol_oteryn::arena as wire;
+    let mut fence = harness::fence(1)?;
+    let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    fence.expected_character_revision =
+        crate::domain::CharacterRevision::new(revision.parse()?).map_err(debug)?;
+    let command = crate::foundation::CommandRef::new(
+        fence.game_session_id,
+        crate::foundation::CommandId::new(ordinal).map_err(debug)?,
+    );
+    let payload = wire::encode_match_request(wire::ArenaAction::Drome(wire::DromeAction::Status))
+        .map_err(debug)?;
+    let read = h
+        .root
+        .read_tibiadrome(authority, &h.node, fence, command, &payload)
+        .await
+        .map_err(debug)?;
+    let before = read.state;
+    let mut after = before.clone();
+    let rotation = read.now / crate::durability::tibiadrome::ROTATION_SECONDS;
+    if after == crate::durability::tibiadrome::Record::default() {
+        after.progress.rotation = rotation;
+    }
+    after.progress.rotate(rotation);
+    let reply = h
+        .root
+        .commit_tibiadrome(
+            authority, &h.node, fence, command, payload, before, after, 1, None,
+        )
+        .await
+        .map_err(debug)?;
+    Ok(wire::DromeResult::decode(&reply).map_err(debug)?)
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_auction_excludes_standing_and_expired_rewards() -> TestResult {
+    tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical()
+}
+
 #[test]
 fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical() -> TestResult {
     run("hsdromeprofile", async |h| {
@@ -281,6 +327,27 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
             assert_eq!(batch.lists[0].len(), 1);
             public_captured.push((held, batch));
         }
+        // Manual combat.md:263: actual current auction withdrawal, while a
+        // listing after the old rotation cutoff preserves already earned prizes.
+        let now: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool)
+                .await?;
+        let rotation = u32::try_from(now)? / crate::durability::tibiadrome::ROTATION_SECONDS;
+        let state = crate::durability::tibiadrome::Record {
+            progress: crate::durability::tibiadrome::Progress {
+                rotation: rotation - 1,
+                level: 25,
+                start: 25,
+                waves: 1,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2)")
+            .bind(id(CHARACTER).as_slice()).bind(serde_json::to_value(state)?).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,3,1000),(encode($1,'hex')::uuid,$4,encode($3,'hex')::uuid,25,1234),(encode($1,'hex')::uuid,$4,encode($5,'hex')::uuid,25,2000)")
+            .bind(id(WORLD).as_slice()).bind(i64::from(rotation)).bind(id(CHARACTER).as_slice()).bind(i64::from(rotation-1)).bind(observer.as_slice()).execute(&h.pool).await?;
         let receipt = custody
             .command(&h.pool, &h.root, &authority, &h.node, &observer, true)
             .await
@@ -294,6 +361,20 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
             .map_err(|error| {
                 format!("public fixture recovery validity after real capture: {error:?}")
             })?;
+        let standing = drome_status(h, &valid, 4001).await?;
+        assert_eq!(
+            (standing.rank, standing.points, standing.potions),
+            (1, 250, 3),
+            "fenced Drome Status excludes an actually auction-locked rival"
+        );
+        let previous:(i64,i32)=sqlx::query_as("SELECT rank,potions FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2")
+            .bind(observer.as_slice()).bind(i64::from(rotation-1)).fetch_one(&h.pool).await?;
+        assert_eq!(
+            previous,
+            (2, 3),
+            "later listing preserves prior rotation prize"
+        );
+
         drop(valid);
         // PUBLIC_PROJECTIONS_V1.md:195-200,233-240: immutable ranking revisions;
         // website withdrawal follows the newer profile:[] through its existing join.
@@ -400,6 +481,12 @@ fn tibiadrome_native_profile_withdrawal_keeps_public_highscore_retries_identical
             .map_err(|error| {
                 format!("public fixture recovery validity after real unlock: {error:?}")
             })?;
+        let restored = drome_status(h, &authority, 4002).await?;
+        assert_eq!(
+            (restored.rank, restored.points, restored.potions),
+            (2, 250, 3),
+            "genuine unlock restores the current rank and never doubles rotation points"
+        );
         drop(authority);
         drop(seal);
         Ok(())

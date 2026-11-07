@@ -19,13 +19,11 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 type Result<T> = std::result::Result<T, String>;
 fn error(value: impl std::fmt::Debug) -> String {
     format!("{value:?}")
 }
-static OBSERVATION: AtomicU64 = AtomicU64::new(1);
 
 pub(super) struct NativeBazaar {
     directory: PathBuf,
@@ -168,7 +166,16 @@ impl NativeBazaar {
     ) -> Result<Value> {
         let (account, world, subject, revision, operation, now): (String, String, String, String, String, i64) = sqlx::query_as("SELECT account_id::text,world_id::text,character_id::text,character_revision::text,game_character_uuid_v7()::text,floor(extract(epoch FROM statement_timestamp()))::bigint FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
             .bind(character.as_slice()).fetch_one(pool).await.map_err(error)?;
-        let observed = OBSERVATION.fetch_add(1, Ordering::SeqCst);
+        // Other legitimate producers (including bootstrap) may already have
+        // observed this Account. Continue its actual retained source floor.
+        let observed: String = sqlx::query_scalar(
+            "SELECT (COALESCE(max(source_revision),0)+1)::text FROM game_durability_native_source_floors WHERE registration_id=1 AND source_authority='platform' AND floor_subject=$1",
+        )
+        .bind(format!("account:{account}"))
+        .fetch_one(pool)
+        .await
+        .map_err(|error| format!("Bazaar fixture account source floor: {error:?}"))?;
+        let observed = observed.parse::<u64>().map_err(error)?;
         let facts = json!({"version":1,"operation":"ReadAccountSecurityV1","result":"observed",
             "source_authority":"platform","source_revision":observed.to_string(),"decision_identity":observed.to_string(),
             "source_observed_at":now.to_string(),"clock_uncertainty_seconds":"0","account_id":account,
@@ -186,7 +193,7 @@ impl NativeBazaar {
             },
         )
         .await
-        .map_err(error)?;
+        .map_err(|error| format!("Bazaar fixture account security observation: {error:?}"))?;
         let command = if lock {
             "LockBazaarCharacter"
         } else {

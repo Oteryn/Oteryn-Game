@@ -1080,3 +1080,21 @@ is being qualified through the supported fenced Reference consumer; already
 GREEN native encounter, movement, physical rewards and Highscores paging proofs
 remain unchanged. Migration1106 is pending qualification and is not yet claimed
 as a completed rotation-cut production rule.
+
+## W17 genuine current-auction regression compiled checkpoint
+
+The supported Reference authority fixture now performs actual Game Bazaar
+Lock, signed capture/custody and full recovery reopen. The named auction
+regression moved to that fixture; native physical/status/UI positives remain.
+Build PASS172s; actual PostgreSQL RED33.255s: fenced native-provider Status
+returned (rank,points,potions)=(2,250,3), expected(1,250,3), proving an auctioned
+rival incorrectly remained in current standings. Command: cargo nextest run
+--locked -p oteryn-game-server --test character_authority_postgres
+--test-threads 1 -E 'test(srvenc_tibiadrome_postgres_auction_excludes_standing_and_expired_rewards)'.
+Account-security observations now continue the registered Account source floor
+through its actual API; no custody or recovery guard was bypassed. Obsolete
+unsupported actor-auction fixture scaffolding is removed. Migration1106 is the
+shared historical lifecycle-at-cut reader (manual combat.md:263); it and the
+compiled fixture are checkpointed before production caller correction. Actual
+cut tests cover event history, not a simulated fortnight crossing.
+Final fmt PASS14.912s, architecture PASS3.540s, registry-fragments check PASS.

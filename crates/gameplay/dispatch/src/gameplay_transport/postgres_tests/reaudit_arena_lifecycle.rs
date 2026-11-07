@@ -3,8 +3,6 @@ use super::TestResult;
 use super::arena_match::fixture;
 use super::fixture::Harness;
 
-#[path = "reaudit_arena_lifecycle/auction.rs"]
-mod auction_history;
 #[path = "reaudit_arena_lifecycle/source.rs"]
 mod source_map;
 
@@ -27,7 +25,7 @@ fn reaudit_arena_lifecycle_postgres_rotation_rank_rewards_and_replay() -> TestRe
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Drome regression thread panicked")??;
     eprintln!(
@@ -44,7 +42,7 @@ fn srvenc_tibiadrome_postgres_raffle_awards_one_fifth_of_large_rotation() -> Tes
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Drome raffle thread panicked")??;
     eprintln!(
@@ -54,25 +52,7 @@ fn srvenc_tibiadrome_postgres_raffle_awards_one_fifth_of_large_rotation() -> Tes
     Ok(())
 }
 
-#[test]
-fn srvenc_tibiadrome_postgres_auction_excludes_standing_and_expired_rewards() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        return Ok(());
-    }
-    let started = std::time::Instant::now();
-    std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| scenario(false, true).map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "Drome auction thread panicked")??;
-    eprintln!(
-        "SRVENC POSTGRES_CASE_COMPLETED auction_standing_and_rotation_forfeiture duration={:?}",
-        started.elapsed()
-    );
-    Ok(())
-}
-
-fn scenario(large_rotation: bool, auction: bool) -> TestResult {
+fn scenario(large_rotation: bool) -> TestResult {
     use super::fixture::{Harness, debug, id, run};
     use super::{Dependencies, prepare_current_session};
     use crate::durability::tibiadrome::{Progress, ROTATION_SECONDS, Record};
@@ -80,19 +60,7 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
     use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
     use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction, DromeAction};
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "b22_drome", auction, false).await?;
-        if auction {
-            // Accepted historical authority facts precede admission and its
-            // recovery seal; every root revision is advanced by normal guards.
-            let cut: i64 = sqlx::query_scalar(
-                "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint / 1209600 * 1209600",
-            )
-            .fetch_one(&harness.pool)
-            .await?;
-            auction_history::transition(&harness.pool, &id(41), 2, cut - 1).await?;
-            auction_history::transition(&harness.pool, &id(41), 1, cut).await?;
-        }
+        let harness = Harness::create_with_admission_seed(admin, "b22_drome", false, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -118,6 +86,7 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
                     .map_err(debug)?,
                 )
                 .map_err(debug)?;
+
             let at = runtime.read_actor_position(deps.actor).map_err(debug)?;
             runtime
                 .relocate_arena_player(
@@ -138,6 +107,7 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
             "content-1",
         )?;
         owner.active_generation = controller.active();
+
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
         )
@@ -210,20 +180,13 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
         // A concurrent participant may hold its current root while the previous
         // rotation is published. Award FKs must lock its committed score, not that root.
         let mut seed = harness.pool.begin().await?;
-        if auction {
-            // Synthetic ranking subject, not a bootstrap/admission producer:
-            // initial root/progression revision one uses every normal SQL guard.
-            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,1,1,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
+        sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
-            sqlx::query("INSERT INTO game_character_progression_state SELECT (jsonb_populate_record(NULL::game_character_progression_state,to_jsonb(p)||jsonb_build_object('character_id',encode($2,'hex')::uuid,'character_revision',1))).* FROM game_character_progression_state p WHERE p.character_id=encode($1,'hex')::uuid")
-                .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
-        } else {
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *seed)
-                .await?;
-            sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($2,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Drome Other' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                .bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
-        }
+
         sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,25,2000)")
             .bind(id(42).as_slice()).bind(i64::from(rotation-1)).bind(id(92).as_slice()).execute(&mut *seed).await?;
         if large_rotation {
@@ -237,23 +200,8 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
             sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) SELECT encode($1,'hex')::uuid,$2,('20000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,25,10000+n FROM generate_series(1,318) AS sample(n)")
                 .bind(id(42).as_slice()).bind(i64::from(rotation-1)).execute(&mut *seed).await?;
         }
-        if auction {
-            // Manual combat.md:263: the Character was locked at the old
-            // rotation boundary, then unlocked before this real native read.
-            // The other Character remains auction-locked in the current list.
-            sqlx::query("INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,25,1234),(encode($1,'hex')::uuid,$2,encode($4,'hex')::uuid,50,2000)")
-                .bind(id(42).as_slice()).bind(i64::from(rotation)).bind(id(41).as_slice()).bind(id(92).as_slice()).execute(&mut *seed).await?;
-        }
+
         seed.commit().await?;
-        if auction {
-            auction_history::transition(
-                &harness.pool,
-                &id(92),
-                2,
-                i64::from(rotation) * i64::from(ROTATION_SECONDS) - 1,
-            )
-            .await?;
-        }
         let mut concurrent = harness.pool.begin().await?;
         sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE").bind(id(92).as_slice()).execute(&mut *concurrent).await?;
         let next_id = admitted.continuity.next_command_id;
@@ -267,20 +215,7 @@ fn scenario(large_rotation: bool, auction: bool) -> TestResult {
         .await?;
         concurrent.rollback().await?;
         let result = wire::DromeResult::decode(&rotated).map_err(debug)?;
-        if auction {
-            assert_eq!(
-                (result.rank, result.points, result.potions),
-                (1, 0, 0),
-                "current auction standings exclude the locked rival; expired locked rotation forfeits points and prizes even after unlock"
-            );
-            let awards:i64=sqlx::query_scalar("SELECT count(*) FROM game_tibiadrome_awards WHERE world_id=encode($1,'hex')::uuid AND rotation=$2")
-                .bind(id(42).as_slice()).bind(i64::from(rotation-1)).fetch_one(&harness.pool).await?;
-            assert_eq!(
-                awards, 0,
-                "neither Character was eligible when the prior rotation ended"
-            );
-            return Ok(());
-        }
+
         assert_eq!(
             (result.level, result.start, result.points, result.potions),
             (0, 20, 250, 3)

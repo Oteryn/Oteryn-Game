@@ -106,5 +106,5 @@ pub(super) fn world(
             door,
         })
     })
-    .map_err(|error| debug(error).into())
+    .map_err(debug)
 }
