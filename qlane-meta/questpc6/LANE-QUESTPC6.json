@@ -6,14 +6,16 @@
     {
       "title": "Deeper Fibula Quest",
       "canonical": "oteryn:quest.deeper_fibula_quest",
-      "status": "IN_PROGRESS"
+      "status": "QUALIFIED"
     }
   ],
   "counts": {
     "SKIPPED_OTHER_LANE": 31,
     "EXCLUDED": 1,
-    "IN_PROGRESS": 1
+    "QUALIFIED": 1
   },
   "ownership_evidence": "cloud-scope-ownership.json",
-  "status_file": "QUEST-STATUS.json"
+  "status_file": "QUEST-STATUS.json",
+  "completion_evidence": "cloud-fibula-completion-verification.json",
+  "review_evidence": "cloud-independent-review-verification.json"
 }

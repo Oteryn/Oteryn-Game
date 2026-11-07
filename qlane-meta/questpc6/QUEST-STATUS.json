@@ -696,7 +696,7 @@
     "title": "Deeper Fibula Quest",
     "canonical": "oteryn:quest.deeper_fibula_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
-    "status": "IN_PROGRESS",
+    "status": "QUALIFIED",
     "scope": "Complete original source well and six-claim contract plus the previously unfinished chosen authored supplement.",
     "reward_claims": [
       {
@@ -737,20 +737,17 @@
       }
     ],
     "authored_supplement": {
-      "status": "IN_PROGRESS",
+      "status": "QUALIFIED",
       "scope": "separate chosen Oteryn recipe, not the original source contract",
-      "missing_piece": "All authored runtime stages have real PostgreSQL qualification. Only required independent review of the stable checked code candidate remains.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
       ],
-      "remaining_work": [
-        "Obtain independent exact-head read-only review; repair any material findings and qualify/push final lane metadata."
-      ],
+      "remaining_work": [],
       "keyed_access": {
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-keys-verification.json",
-        "scope": "Exact source key3940/3980 doors only; NPC acquisition, expertise and native-kill completion remain active work."
+        "scope": "Exact source key3940/3980 doors; remaining acquisition/route/completion is now separately qualified."
       },
       "key_purchase": {
         "status": "QUALIFIED_MECHANISM",
@@ -761,7 +758,7 @@
       "route_mechanisms": {
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-route-verification.json",
-        "scope": "Both raw source wells; exact native expertise door1050 refuses49/admit50/replay. Native portal StepIn and whole authored completion remain active."
+        "scope": "Both raw source wells and native expertise door1050: refuses49, admits50, replay unchanged. Portal/full completion is separately qualified."
       },
       "native_kill_goals": {
         "status": "QUALIFIED_MECHANISM",
@@ -772,6 +769,12 @@
         "status": "QUALIFIED_MECHANISM",
         "evidence": "cloud-fibula-completion-verification.json",
         "scope": "Native portal, source Key3980 and six cache claims, level50/eight-death terminal completion, replay, repeated paid keys after completion; five actual PG18.6 cases green."
+      },
+      "qualification": {
+        "evidence": "cloud-fibula-completion-verification.json",
+        "review": "cloud-independent-review-verification.json",
+        "reviewed_code_head": "6eac53e5d7bd58bd1ff5009a9780f98f95fa872c",
+        "scope": "Whole retained authored path plus prior original source contract; native source access, portal, exact keys/caches, level50, eight credited deaths, terminal once-only completion/replay and continued atomic paid key sales."
       }
     },
     "qualification": {
@@ -784,7 +787,9 @@
     },
     "latest_lane_verification": {
       "evidence": "cloud-fibula-completion-verification.json",
-      "scope": "Whole authored runtime path and generic terminal/repeat-sale support; independent review pending."
+      "review": "cloud-independent-review-verification.json",
+      "reviewed_code_head": "6eac53e5d7bd58bd1ff5009a9780f98f95fa872c",
+      "scope": "All owned source/authored obligations qualified; no implementation, review or owner question remains."
     },
     "source_contract_status": "QUALIFIED",
     "historical_continuation_scope_review": {

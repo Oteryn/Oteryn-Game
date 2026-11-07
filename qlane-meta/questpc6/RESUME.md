@@ -1,39 +1,46 @@
-# Active questpc6 continuation — final independent review pending
+# questpc6 complete — all owned scope QUALIFIED
 
-AUTHORING checkpoint: all authored Fibula runtime stages now have real PostgreSQL
-qualification. Overall ledger remains IN_PROGRESS only for the required independent
-review of the stable checked candidate. No implementation is deferred.
+The sole owned entry, Deeper Fibula Quest, is QUALIFIED for both its original
+source well/six-claim contract and the retained authored supplement.31 titles
+remain SKIPPED_OTHER_LANE with verified allocation evidence; Dawnport is EXCLUDED.
+No owned implementation, mechanism, review, blocker or owner question remains.
+Do not reopen historical unfinished records below as the current lane queue.
 
-Final proof: cloud-fibula-completion-verification.json. PG18.6 RED2/59.12s proved
-missing terminal binding. Initial full run completed/replayed, then exposed a real
-second-repeat sale MINT refusal357.11s. Reused once-only MINT claims now bind exact
-GameSession/command for paid repeats, with forward migration1097 requiring the exact
-same-transaction source/payment/MINT. Main max1095/open-PR numbers checked; local1096
-retained. qengine2a585529d7 does not provide these terminal fields or repeat fix.
+Final product candidate6eac53e5d7bd58bd1ff5009a9780f98f95fa872c was pushed after
+all deterministic checks passed. Independent read-only review of that exact head
+against2e42d08fa returned No significant findings. Review covered Rust/SQL, atomic
+fee/MINT proofs, native lethal/lease/origin/retry paths, terminal guards, runtime
+wiring, source selectors and all21 origin pointers. No files changed during the
+freeze. Returned to AUTHORING only for this evidence/qualification closeout;
+product code remains byte-identical to the reviewed head. No PR was created.
 
-Final GREEN2/388.97s: raw native portal StepIn/replay, earned Key3980, eight personal
-origin-bound native deaths, all six original caches, below50 refusal, missing-cache
-refusal at50, completion/replay with no extra loot/fee, and another paid key afterward.
-GREEN3/185.51s: three cash/bank purchases and literal replay, full-backpack bank rollback.
-268 quest units15.00s, Python13/9.221s, authoring/tree reproduction, all-target/all-feature
-three-crate check4m18s and strict Clippy7m39s, package/mounted formatting and pin-refresh/
-pin-check passed. World77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
-No full nextest or full PG suite ran. No tests were skipped or weakened.
+Proofs: cloud-fibula-keys/purchase/route/native-goals/completion-verification.json
+and cloud-independent-review-verification.json. PG18.6 final GREEN2/388.97s proves
+raw native portal/replay, earned Key3980 and all six original caches, eight credited
+native cavern deaths, native level50 and missing-cache refusals, terminal once-only
+completion/replay without duplicate loot/fee, and another paid key afterward.
+GREEN3/185.51s proves three cash/bank purchases and literal replay, plus full-pack
+bank/MINT rollback. First RED2/59.12s lacked terminal binding; a secondary357.11s
+RED exposed the once-only second-repeat MINT defect, repaired by command-bound paid
+claims and exact atomic source/payment proof in forward migration1097.
 
-Decision: final Dermot expedition confirmation is an explicit chosen Oteryn adaptation;
-it consumes no extra payment and grants no duplicate source cache loot. Generic bounded
-minimum-level/earned-claim/completes guards read existing Character owners under the
-Quest transaction lock. All original source claims remain once-only and unchanged.
-Source keys/wells/native level gate and native-origin deaths retain their prior proofs.
+All268 quest units15.00s,13 Python authoring tests9.221s, generator/tree reproduction,
+three changed crates all-target/all-feature check4m18s and strict Clippy7m39s,
+package/mounted formatting, repository-tool pin-refresh/pin-check passed. World
+77d515155be0a03af5dc4fb6abfbfaec9795660aa15e512efdad033f2908c5b0 unchanged.
+No full nextest/full PG suite or remote CI ran; no tests skipped/weakened.
 
-NEXT: commit/push this green batch; obtain one required independent read-only review of
-the exact stable code head against2e42d08fa. Live branch PR readback is empty; do not
-create a PR. Freeze candidate during review. Repair real material findings, otherwise
-return to AUTHORING for evidence-only final QUALIFIED status and push.31 verified foreign
-entries and Dawnport remain skipped. Do not end while the review/qualification remains.
+Decisions: native shared route, no private instance or invented rectangle.21 exact
+native origin points and personal most-damage lease credit implement the chosen
+eight-kill cap. Explicit Dermot expedition confirmation is an Oteryn adaptation,
+using locked native Character level and immutable original earned claim receipts;
+source cache loot is not granted again. Paid source sales remain repeatable before
+and after completion, with replay charged once. Original source charge mismatch
+is retained. Father's Burden11-track transaction is untouched.
 
-Fetch task ref before every push; compare FETCH_HEAD because remote.origin.fetch maps
-only main. Merge if moved, never force. Retain all old commits and exact owner trailers.
+Keep all prior commits. Fetch task ref before every future push and compare
+FETCH_HEAD (tracking ref may be stale); merge if moved, never force/main/PR.
+Lane metadata is retained per owner instruction and removed before any future PR.
 
 ---
 Historical continuation records below do not describe the active queue.

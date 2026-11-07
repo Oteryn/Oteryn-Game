@@ -71,7 +71,9 @@
     "caller_scan": "Only RewardCallback literal outside its declaration is qengine_access fixture; all three default fields supplied. No workflow/repository-tool edits, dependencies, binaries, test skips or weakened assertions."
   },
   "independent_review": {
-    "state": "pending stable checked candidate"
+    "state": "complete; no significant findings",
+    "candidate": "6eac53e5d7bd58bd1ff5009a9780f98f95fa872c",
+    "evidence": "cloud-independent-review-verification.json"
   },
   "logs": {
     "pg-red": {
