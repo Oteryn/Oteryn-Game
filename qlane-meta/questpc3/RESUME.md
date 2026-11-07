@@ -1,6 +1,6 @@
 # questpc3 — active authoring
 
-Work in /workspace/Oteryn-Game on claude/happy-davinci-ijz3wy-questpc3. Preserve all prior commits. Before EVERY push fetch the exact branch, merge if moved (never rebase published work, force-push or push main), then push origin HEAD:claude/happy-davinci-ijz3wy-questpc3. Commit as blakinio <75369544+blakinio@users.noreply.github.com>, with trailers Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com> and Claude-Session: https://claude.ai/code/session_01D1SN2sEo2yY1k19f6kjEHf. No PR. Metadata is removed before the eventual PR by the owner.
+Work in /workspace/Oteryn-Game on claude/happy-davinci-ijz3wy-questpc3. Preserve all prior commits. Before EVERY push fetch the exact branch, merge if moved (never rebase published work, force-push or push main), then push origin HEAD:claude/happy-davinci-ijz3wy-questpc3. Commit as blakinio <75369544+blakinio@users.noreply.github.com> with the two required owner trailers exactly as recorded in the latest Git commits. No PR. Metadata is removed before the eventual PR by the owner.
 
 ## Complete: Pilgrimage of Ashes
 
