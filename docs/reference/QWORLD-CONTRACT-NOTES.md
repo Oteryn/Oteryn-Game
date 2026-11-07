@@ -752,3 +752,8 @@ stories. The allocated migrations are exactly:
 - `1322_world_change_decision_required.sql`
 Independent review of the bounded-RNG and missing-occurrence fixes reported no
 concrete P0/P1 findings.
+Final verification passed: workspace fmt and explicit generated-mounted test fmt;
+focused production check (1m00s); Clippy with `-D warnings` for world-change,
+durability, dispatch, game-server and bundle compiler (2m12s), plus content and
+quests; official pin-refresh/pin-check; and duplicate migrations on the committed
+candidate. No full PostgreSQL suite was run.
