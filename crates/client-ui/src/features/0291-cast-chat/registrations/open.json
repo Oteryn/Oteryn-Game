@@ -1,0 +1,9 @@
+{
+  "mechanic": "0291-cast-chat",
+  "kind": "keybindings",
+  "id": "0291-cast-chat-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+H",
+  "entry": "input.rs::open_key"
+}
