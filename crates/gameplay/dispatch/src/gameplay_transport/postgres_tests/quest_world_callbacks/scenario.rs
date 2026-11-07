@@ -25,6 +25,7 @@ fn scenario_case(
     let small_ruby = name.starts_with("l6-small-ruby");
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles";
+    let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
@@ -48,7 +49,7 @@ fn scenario_case(
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
-    } else if target_swap || reusable_tool || floor_profiles {
+    } else if target_swap || reusable_tool || floor_profiles || floor_assembly {
         "fish-napping-key"
     } else {
         name.strip_suffix("-expiry").unwrap_or(name)
@@ -64,10 +65,16 @@ fn scenario_case(
     if reusable_tool {
         callback = super::super::l6_reusable_tools::fixture(callback);
     }
-    if floor_profiles {
+    if floor_profiles || floor_assembly {
         callback.key = "oteryn:quest-callback/l6-floor-profile-fixture".into();
         callback.selector.unique = None;
-        callback.selector.action = None;
+        callback.selector.action = if name.ends_with("-unbound") {
+            Some(40041)
+        } else if floor_assembly {
+            Some(40040)
+        } else {
+            None
+        };
         callback.selector.appearance = Some(100);
         callback.selector.position = None;
         callback.item_on_target = None;
@@ -369,6 +376,9 @@ fn scenario_case(
             }
         } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
+        } else if floor_assembly {
+            super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
+                .await?;
         } else if ancient_instruments {
             super::super::l6_ancient_tombs::exercise(
                 &mut owner,
