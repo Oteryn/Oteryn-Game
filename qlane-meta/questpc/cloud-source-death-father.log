@@ -1,0 +1,6 @@
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay ... POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay duration=126.290383014s
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2619 filtered out; finished in 126.29s

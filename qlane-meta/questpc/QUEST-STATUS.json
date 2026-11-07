@@ -8627,32 +8627,25 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": "Elathriel paid copper key3012 and generic stateless paid-sale owner",
+    "scope": "generic source creature-death callback core",
     "status": "GREEN",
-    "validation": "qlane-meta/questpc/cloud-elathriel-validation.json",
+    "validation": "five actual PostgreSQL18.6 cases plus Father atomic regression, fmt/check/strictClippy/source/pins",
     "whole_title_promoted": false
   },
   "continuation": {
-    "next": "Finish corrected five source-death PG cases, Father atomic-write regression, then multi-contributor native deaths and complete Uneasy Alliance NPC/crystal route.",
+    "next": "Run the prepared real two-character damaging-player selection probes, then Curos NPC start and timed crystal source route.",
     "runtime_change_since_4f151ba81": true,
-    "red_point": "Last replay PG retained flag0 because row-less fallback dropped damage shares; copy now added, final PG pending. Active bypass probe UUID corrected. No positive runtime qualification yet.",
+    "red_point": null,
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
     "upstream_pr_3020": "OPEN, inspected 2026-11-07T13:28Z; retain exact shared migrations until merged.",
     "focused_pg": {
-      "active": {
-        "status": "RED",
-        "duration_seconds": 47.168323876
-      },
-      "replay": {
-        "status": "RED",
-        "duration_seconds": 47.245271437
-      },
-      "inactive": {
-        "status": "GREEN",
-        "duration_seconds": 50.802640971
-      }
+      "replay": 72.572018456,
+      "restarted": 72.68580566,
+      "inactive": 89.541777659,
+      "late-start": 89.565341527,
+      "active": 47.700990906
     },
-    "proof": "cloud-source-death-progress.json",
+    "proof": "cloud-source-death-validation.json",
     "implementation_static_checks": {
       "existing_owners": [
         "native damage shares",
@@ -9286,11 +9279,16 @@
       "state": "five_new_native_mechanics_and_one_native_regression_pg_strict_green",
       "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
       "next": "Level25 gate, Elathriel exact paid copper key3012, Dragonlord mushroom/fetish exchange and shared skeleton stock key3001, then final route composition."
+    },
+    "source_creature_death": {
+      "status": "CORE_GREEN",
+      "proof": "cloud-source-death-validation.json",
+      "whole_title_promoted": false
     }
   },
   "cross_lane_qualified_elsewhere": {
     "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "sha": "5ad49dbe994e1bdc168b966b4281ae8d3f6bfa4e",
+    "sha": "9328159ab69580ab90d496986a95debaf1796e4a",
     "titles": [
       "Afflicted Outfits Quest",
       "Assassin Outfits Quest",
@@ -9303,6 +9301,7 @@
       "Citizen of Issavi Outfits Quest",
       "Crystal Warlord Outfits Quest",
       "Dark Trails Quest",
+      "Decaying Defender Outfits Quest",
       "Deeper Fibula Quest",
       "Demon Helmet Quest",
       "Demon Outfits Quest",
@@ -9324,6 +9323,8 @@
       "Giant Smithhammer Quest",
       "Glooth Engineer Outfits Quest",
       "Golden Outfits Quest",
+      "Grave Danger Quest",
+      "Grimvale Quest",
       "Hand of the Inquisition Outfits Quest",
       "Hero of Rathleton Quest",
       "Hidden Threats Quest",
@@ -9344,13 +9345,17 @@
       "Newhaven Legion Helmet Quest",
       "Newhaven Quest",
       "Nightmare Outfits Quest",
+      "Nimmersatt's Lair",
       "Nobleman Outfits Quest",
+      "Nomads Mini World Change",
       "Norseman Outfits Quest",
       "Oriental Outfits Quest",
       "Pilgrimage of Ashes Quest",
       "Pirate Outfits Quest",
       "Power Ring Quest",
       "Present Quest",
+      "Revenant Outfits Quest",
+      "Rift Warrior Outfits Quest",
       "Royal Costume Outfits Quest",
       "Soil Guardian Outfits Quest",
       "Stampede Mini World Change",
@@ -9380,8 +9385,8 @@
       "Yalaharian Outfits Quest"
     ],
     "rule": "Skip QUALIFIED titles in every recorded owner snapshot; this records ownership and does not claim implementations merged here.",
-    "qualified_count": 86,
-    "local_overlap_count": 49,
+    "qualified_count": 93,
+    "local_overlap_count": 43,
     "sources": {
       "The Annihilator Quest": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc2",
@@ -10078,62 +10083,179 @@
     "owner_snapshots": {
       "questpc2": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc2",
-        "sha": "5a26f9a0e06c839c29dcf98a371c23ebb69dc51a",
+        "sha": "abab42d136b1f9affaa695137de3f306bd49c8a2",
         "path": "qlane-meta/questpc2/QUEST-STATUS.json",
         "qualified_count": 2,
-        "titles_sha256": "d845c53b27bf4fd079b5aa9ccebaf9704f19bc8256f58739827566df613420a0"
+        "titles": [
+          "The Annihilator Quest",
+          "The Desert Dungeon Quest"
+        ]
       },
       "questpc3": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc3",
-        "sha": "6146ee945bc2e01b5c7e751e6499f670062ad03a",
+        "sha": "6bcf558f937e96b43b77856977a65261b985a1f6",
         "path": "qlane-meta/questpc3/QUEST-STATUS.json",
         "qualified_count": 2,
-        "titles_sha256": "36a8c0b5e7b10e288f8878d872713f5d6b5df965c67b977fa244a9f4a73a7e5e"
+        "titles": [
+          "Pilgrimage of Ashes Quest",
+          "Stampede Mini World Change"
+        ]
       },
       "questpc4": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc4",
-        "sha": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
+        "sha": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
         "path": "qlane-meta/questpc4/QUEST-STATUS.json",
         "qualified_count": 11,
-        "titles_sha256": "38ab9ae2f867caa42bb95c6c52310a5b1d8fc0b11f12c146feb3095f4ecd8533"
+        "titles": [
+          "Thawing Mini World Change",
+          "The Spirit Will Get You Quest",
+          "The Way of the Monk Quest",
+          "Throwing Star Quest",
+          "Time Ring Quest",
+          "Triangle Tower Quest",
+          "Troll Cave Quest",
+          "Vampire Shield Quest",
+          "Waterfall Quest",
+          "Waterskin of Mead Quest",
+          "Wedding Ring Quest"
+        ]
       },
       "questpc5": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
-        "sha": "6675a993793bd089af11a9e8cdd1481a694b2b23",
+        "sha": "7bde610e5ffa1920893d525170bfbda4a8941f00",
         "path": "qlane-meta/questpc5/QUEST-STATUS.json",
-        "qualified_count": 8,
-        "titles_sha256": "80c190d63cdfb80011a34537542c38a0c5ea36d9321b614224df704701b9c632"
+        "qualified_count": 10,
+        "titles": [
+          "Newhaven Legion Helmet Quest",
+          "Newhaven Quest",
+          "Nimmersatt's Lair",
+          "Nomads Mini World Change",
+          "Power Ring Quest",
+          "Present Quest",
+          "Demon Helmet Quest",
+          "Devil Helmet Quest",
+          "Formorgar Mines Hoist Quest",
+          "Thais Lighthouse Quest"
+        ]
       },
       "questpc6": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc6",
         "sha": "53d5648b88e48bed2b9f27545334c21ea6f37028",
         "path": "qlane-meta/questpc6/QUEST-STATUS.json",
         "qualified_count": 1,
-        "titles_sha256": "81052152cf55070c3719b3a94b527ce20fe9b8f80b1b7d9455c83db8e84e730a"
+        "titles": [
+          "Deeper Fibula Quest"
+        ]
       },
       "questpc7": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
-        "sha": "cc57399ca33e4f9b3f9f14de77f20b031145e359",
+        "sha": "6872620d732c367534f58ad2fd7b2c91625f4080",
         "path": "qlane-meta/questpc7/QUEST-STATUS.json",
-        "qualified_count": 17,
-        "titles_sha256": "c1a9cd99a14433da584c44337014c2cae8bd4b1ec2cc6a88a2f548adf1bd4312"
+        "qualified_count": 19,
+        "titles": [
+          "Exchange Quests",
+          "Ferumbras' Ascension Quest",
+          "Festive Outfits Quest",
+          "Fiend Slayer Outfits Quest",
+          "Fire-Fighter Outfits Quest",
+          "Formal Dress Outfits Quest",
+          "Formorgar Mines Hoist Quest",
+          "Formorgar Mines Quest",
+          "Giant Smithhammer Quest",
+          "Glooth Engineer Outfits Quest",
+          "Golden Outfits Quest",
+          "Grave Danger Quest",
+          "Grimvale Quest",
+          "Hand of the Inquisition Outfits Quest",
+          "Hero of Rathleton Quest",
+          "Hidden Threats Quest",
+          "Hunter Outfits Quest",
+          "Hunting for Tokens Quest",
+          "Hydra Egg Quest"
+        ]
       },
       "questpc8": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
-        "sha": "2e0c955511a428c92c4d7498be144e19d169620c",
+        "sha": "00c8ca4015a997b10347d545856c2f873b9c4fed",
         "path": "qlane-meta/questpc8/QUEST-STATUS.json",
         "qualified_count": 20,
-        "titles_sha256": "c8f64890c65ed9b9800fbc8ca12422080ddbdb91081f8d916008873d1fcbae77"
+        "titles": [
+          "Killing in the Name of... Quest",
+          "Kingdom of Kormarak Quest",
+          "Life Ring Quest",
+          "Lone Medusa Quest",
+          "Magic Sword Quest",
+          "Mastermind Potion Quest",
+          "Mintwallin Cyclops Quest",
+          "Mystery of the Valley Quest",
+          "Giant Smithhammer Quest",
+          "Triangle Tower Quest",
+          "Waterfall Quest",
+          "The Secret Library Quest",
+          "The Travelling Trader Quest",
+          "Tibia Anniversary",
+          "Tinder Box Quest",
+          "Treasure Island Quest",
+          "Torch Quest",
+          "Vampire Shield Quest",
+          "Voodoo Doll Quest",
+          "Braindeath Quest"
+        ]
       },
       "qengine2": {
         "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-        "sha": "38232aafd85d60ac8f084c114854e20edfcdbae8",
+        "sha": "9328159ab69580ab90d496986a95debaf1796e4a",
         "path": "qlane-meta/qengine2/QUEST-STATUS.json",
-        "qualified_count": 39,
-        "titles_sha256": "487b59d85fe2ac44bce332bff33087d7e1051daf6a4c6d5c73f411cb7b9ce6bb"
+        "qualified_count": 44,
+        "titles": [
+          "Afflicted Outfits Quest",
+          "Assassin Outfits Quest",
+          "Battle Mage Outfits Quest",
+          "Beggar Outfits Quest",
+          "Brotherhood Outfits Quest",
+          "Cave Explorer Outfits Quest",
+          "Citizen of Issavi Outfits Quest",
+          "Citizen Outfits Quest on Rook",
+          "Crystal Warlord Outfits Quest",
+          "Dark Trails Quest",
+          "Decaying Defender Outfits Quest",
+          "Demon Outfits Quest",
+          "Dragon Slayer Outfits Quest",
+          "Dream Warden Outfits Quest",
+          "Dream Warrior Outfits Quest",
+          "Druid Outfits Quest",
+          "Druid Outfits Quest on Rook",
+          "Elementalist Outfits Quest",
+          "Ferumbras' Ascension Quest",
+          "Festive Outfits Quest",
+          "Fiend Slayer Outfits Quest",
+          "Fire-Fighter Outfits Quest",
+          "Formal Dress Outfits Quest",
+          "Formorgar Mines Quest",
+          "Glooth Engineer Outfits Quest",
+          "Golden Outfits Quest",
+          "Grave Danger Quest",
+          "Hand of the Inquisition Outfits Quest",
+          "Hunter Outfits Quest",
+          "Knight Outfits Quest",
+          "Mage Outfits Quest",
+          "Makeshift Warrior Outfits Quest",
+          "Nightmare Outfits Quest",
+          "Nobleman Outfits Quest",
+          "Norseman Outfits Quest",
+          "Oriental Outfits Quest",
+          "Pirate Outfits Quest",
+          "Revenant Outfits Quest",
+          "Rift Warrior Outfits Quest",
+          "Royal Costume Outfits Quest",
+          "Soil Guardian Outfits Quest",
+          "Warmaster Outfits Quest",
+          "Wayfarer Outfits Quest",
+          "Yalaharian Outfits Quest"
+        ]
       }
     },
-    "latest_refresh": "2026-11-07; explicit fresh refs; previously qualified source evidence retained"
+    "latest_refresh": "2026-11-07T14:08:25.016246+00:00"
   },
   "latest_cloud_integration": {
     "state": "anchor_craft_combined_checks_pass",

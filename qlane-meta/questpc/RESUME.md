@@ -1,3 +1,18 @@
+## Generic source death core GREEN — 2026-11-07
+Five actualPG18.6 cases PASS: replay=72.572018456s, restarted=72.68580566s, inactive=89.541777659s, late-start=89.565341527s, active=47.700990906s.
+Fatheratomic11-track/handins/capeXP/replay regression PASS126.290383014s.
+Source4blobs, pins unchanged, fmt/finalCheck3crates/strictClippy3crates+final
+dispatch rerun PASS. Productioncode37def8b16; corrected active UUIDv7 fixture
+proves missing-source-context generic-writer refusal. Historical fixture/
+share-copy failures retained honestly; selected proof cloud-source-death-validation.json.
+No title promotion: counts61QUALIFIED/116UNFINISHED/1excludedDawnport.
+Freshotherlanes93titles qualified;43localunfinishedSKIP,73owned remain.
+NEXT prepared/tmp/questpc-source-death-multi.rs real2-character damagers/lesser/
+observer cases, then nativeCuros start and timedcrystal route. Keep source proof
+scoped; no fake full-world traversal. Migrations remain exactQENGINE0999-1006
+(latest9328159a), QBASE1200-1205, own1290-1296. PR3020 OPEN at14:02.
+Fetch exacttarget+mergeFETCH_HEAD beforeEVERYpush; neverforce/rebase/main/PR.
+
 ## Generic source-death implementation compiling WIP — 2026-11-07
 Runtime capture and existing locked writer now connected. cargoCheck1m29s PASS;
 strictClippy3changedcrates/alltargets/allfeatures PASS8m02s includingwait. Pins

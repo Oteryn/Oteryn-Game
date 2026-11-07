@@ -103,7 +103,12 @@ pub(super) async fn exercise(
         )
         .map_err(debug)?;
     if name.ends_with("-active") {
-        let outcome=owner.revision_sequencer.acquire(fence.character_id).await.commit_quest_transition(owner.root,owner.character,owner.holder,fence,QuestTransitionRequest{transition_key:format!("{PREFIX}creature_event_1"),cause:QuestCause::CreatureDeath(crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes([251;16]).map_err(debug)?)},owner.quest_catalogue.clone().ok_or("catalogue")?).await;
+        // A valid UUIDv7 exercises the writer guard, not occurrence parsing.
+        let mut occurrence = [0; 16];
+        occurrence[6] = 0x70;
+        occurrence[8] = 0x80;
+        occurrence[15] = 251;
+        let outcome=owner.revision_sequencer.acquire(fence.character_id).await.commit_quest_transition(owner.root,owner.character,owner.holder,fence,QuestTransitionRequest{transition_key:format!("{PREFIX}creature_event_1"),cause:QuestCause::CreatureDeath(crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes(occurrence).map_err(debug)?)},owner.quest_catalogue.clone().ok_or("catalogue")?).await;
         assert!(matches!(outcome,Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)),"generic writer must not bypass captured source eligibility: {outcome:?}");
     }
     owner.refresh_quest_session(session, false).await;

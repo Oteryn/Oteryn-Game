@@ -1,0 +1,83 @@
+{
+  "status": "SOURCE_CALLBACK_CORE_GREEN",
+  "production_code_commit": "37def8b16",
+  "cases_postgresql_18_6": {
+    "replay": 72.572018456,
+    "restarted": 72.68580566,
+    "inactive": 89.541777659,
+    "late-start": 89.565341527,
+    "active": 47.700990906
+  },
+  "father_atomic_regression_seconds": 126.290383014,
+  "validation": {
+    "check": "PASS final three changed crates",
+    "clippy": "PASS three changed crates all-targets/all-features -D warnings, plus final dispatch rerun after fixture-only correction",
+    "fmt": "PASS cargo fmt plus explicit mounted Rust formatting",
+    "source": "four manifest Git blobs / SHA256 verified; cloud-source-death-source-validation.json",
+    "pins": {
+      "inputs_digest": "ed2f5e73847894a993b7c5ea2665f82ac9d62ff70bb04b0ae94805d826b36c19",
+      "pins": [
+        {
+          "digest": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+          "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "proof_boundary": "Five selected actual PG cases across two runs on identical production code. Four-green log also contains the invalid-active-occurrence fixture failure, explicitly excluded; corrected active run tests valid UUIDv7 and rejects generic-writer bypass. No relaxed assertion.",
+  "historical_failures": [
+    "Initial missing native attacker lease is fixture-only.",
+    "Original active/replay flag0 is callback RED.",
+    "Intermediate replay flag0 is row-less fallback losing native damage shares; fixed by copying the captured shares.",
+    "First attempted occurrence text replacement missed the unspaced literal; corrected active run uses explicit valid UUIDv7."
+  ],
+  "whole_title_promoted": false,
+  "remaining_source_route": [
+    "Real multi-contributor selection coverage",
+    "Native Curos NPC quest start",
+    "Crystal use / ten-second transform reversion"
+  ],
+  "logs": {
+    "cloud-source-death-four-green.log": {
+      "raw_sha256": "c90f207fa602d28741fcf0183c3d83b48b83b8e25553da2312db2daf66ea12c0",
+      "stored_sha256": "c90f207fa602d28741fcf0183c3d83b48b83b8e25553da2312db2daf66ea12c0"
+    },
+    "cloud-source-death-active-green.log": {
+      "raw_sha256": "3b497159a39509f188cf13e72fc96570fa2661c01a2a19540a7d1695eadaaba2",
+      "stored_sha256": "a282d81eae24fb41dbdcefd74c6b7bb20125fd60a5e0f87936aec61cfc6b4325"
+    },
+    "cloud-source-death-father.log": {
+      "raw_sha256": "3e8ada3d7e58490a76cbe6ba1248315d88b7817e88e81eca6f92814d2e79858e",
+      "stored_sha256": "85090927c9fd1e543abec2be665417f7e480793d555fb74706ec89c2e0cc5d4e"
+    },
+    "cloud-source-death-final-check.log": {
+      "raw_sha256": "164333b7426dc903088fa101376c34bdb98b81312974879863b084b3c26f3411",
+      "stored_sha256": "164333b7426dc903088fa101376c34bdb98b81312974879863b084b3c26f3411"
+    },
+    "cloud-source-death-final-clippy.log": {
+      "raw_sha256": "1dc4c68034e74b6269350ca8bf686e43114ae30bd97d941a3e6e8f29217e714c",
+      "stored_sha256": "1dc4c68034e74b6269350ca8bf686e43114ae30bd97d941a3e6e8f29217e714c"
+    },
+    "cloud-source-death-all-crates-clippy.log": {
+      "raw_sha256": "867cf5bb7cafedf8db32cddd1c970873b5423615c8af32d2de77598669016174",
+      "stored_sha256": "867cf5bb7cafedf8db32cddd1c970873b5423615c8af32d2de77598669016174"
+    }
+  },
+  "rust_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs": "3de224723794dfc61eeadc076a4ae1ee1491d6cf8e59e3230e33a8657a1f8690",
+    "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs": "53c1c8f9351c28eff1aa4e5da7de10a4085ae48f838e79a0cad3def714d753b5",
+    "crates/gameplay/dispatch/src/gameplay_transport/mod.rs": "c22ab06a058cddfbbac4a8170fc322fa5b91ba21b7d6e07b954e2e1502b0b1aa",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/source_quest_death.rs": "d9fd41c879fabeb55da722019caf9cb5641a0005db9361590d30acc0661f5056",
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_admission.rs": "30141cb3a39b82947c51d8726464c4ce98d60b9dbbfdf360949f42c8d3713940",
+    "crates/gameplay/dispatch/src/gameplay_transport/source_quest_death.rs": "fa16de4dcc79da71ddcabbe6f76158b776124e4a5ed94f8d2729c0d5792dd2ce",
+    "crates/gameplay/durability/src/durability/character_revision_sequencer.rs": "9feb43aeb6dd4bcd3c978a166a1825e05e9c9b02b08048c3f71912894e720283",
+    "crates/gameplay/durability/src/durability/quest_state.rs": "8d03178b9a25b3ede2557152c8f12a94ef076a4c85bd2bae653c84d67039965f",
+    "crates/gameplay/durability/src/durability/quest_state/creature_death.rs": "921177e440e444c49a5cccd6a2990a982ff1bec15fcac647e15f71128ac2e75d",
+    "crates/gameplay/durability/src/durability/quest_state/grizzly.rs": "1e0d04b6b08b27d30cd226082a43c3d45c761618e1daa63baa8e665805068407",
+    "crates/gameplay/durability/src/durability/quest_state/grizzly_boss.rs": "9a92504fa1a23e03e3c60c89bf86afa37ff4420f950ba4805ab1f7b5ee72530c",
+    "crates/gameplay/durability/src/durability/quest_state/writer.rs": "eaa009ad0a223a2540ab19f88110efc6cb50ff5ebb5cd5d3c03bb82c27951019",
+    "crates/gameplay/quests/src/quest/creature_death.rs": "9efd07f950e84347cec9f2ac4da6c1c26b89e4169646d0788bbb09a51fc4ab10",
+    "crates/gameplay/quests/src/quest/mod.rs": "efc6a6f9df86e6f0f94d0397d0b505d2bd2c2c19e0a52b8ac3b64b030e449217"
+  }
+}
