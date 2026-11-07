@@ -23,6 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let small_ruby = name.starts_with("l6-small-ruby");
+    let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles" || name == "l6-ruby-profile";
     let floor_assembly = name.starts_with("l6-floor-assembly");
@@ -43,7 +44,7 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if ancient_instruments {
         "ancient-tombs-diprath-sign-1"
-    } else if classic_npc || small_ruby {
+    } else if classic_npc || small_ruby || reward_fluids {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -289,7 +290,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if small_ruby {
+        if reward_fluids {
+            super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority).await?;
+        } else if small_ruby {
             super::super::l6_world_pickups::exercise(&owner, &mut admitted, &h, 0).await?;
             if name.ends_with("-reset") {
                 let mut next = super::super::l6_world_pickups::cycle(

@@ -194,6 +194,7 @@ async fn mint(
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
                     item: resolve(&i.item)?,
                     quantity: u32::from(i.count),
                     key_number: None,
