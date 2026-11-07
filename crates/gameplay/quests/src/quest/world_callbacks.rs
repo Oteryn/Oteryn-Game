@@ -781,7 +781,7 @@ mod tests {
         let mut callbacks = load()?;
         let mut alias = callbacks
             .iter()
-            .find(|callback| callback.key.ends_with("triangle-tower-wall"))
+            .find(|callback| callback.key.ends_with("triangle-tower-lever"))
             .ok_or("triangle callback")?
             .clone();
         alias.key = "oteryn:quest-callback/triangle-selector-alias".into();
@@ -831,16 +831,15 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../../tools/content-schema/quest-authoring/samples/qengine-access-test-fixtures.json"
         ))).map_err(|error| error.to_string())?;
-        source["callbacks"]
-            .as_array_mut()
-            .ok_or("callbacks")?
-            .extend(
-                fixtures["callbacks"]
-                    .as_array()
-                    .ok_or("fixtures")?
-                    .iter()
-                    .cloned(),
-            );
+        // The committed canonical row now owns Triangle. Supplement only missing
+        // fixture keys, retaining the actual production callback under test.
+        let fixture_callbacks = fixtures["callbacks"].as_array().ok_or("fixtures")?;
+        let rows = source["callbacks"].as_array_mut().ok_or("callbacks")?;
+        for fixture in fixture_callbacks {
+            if !rows.iter().any(|row| row["key"] == fixture["key"]) {
+                rows.push(fixture.clone());
+            }
+        }
         parse(&source.to_string())?;
         let callbacks = source["callbacks"].as_array().ok_or("callbacks")?;
         let index = |name: &str| {

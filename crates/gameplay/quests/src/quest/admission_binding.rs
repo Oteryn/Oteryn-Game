@@ -51,6 +51,11 @@ fn registry() -> Result<&'static Registry, String> {
                     add(world_callbacks::primary_transition(&callback)?, true)?;
                 }
             }
+            // Native death writes share tracks with bound NPC trial stages.
+            // Their specialised writer already requires an exact native-death proof.
+            for counter in super::native_kills::COUNTERS {
+                add(counter.transition(), false)?;
+            }
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false)?;
             }
@@ -84,6 +89,21 @@ pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_deaths_keep_their_exact_registered_counter_operation() -> Result<(), String> {
+        for counter in super::super::native_kills::COUNTERS {
+            let original = counter.transition();
+            validate(&original, false)?;
+            let mut changed = original.clone();
+            changed.effects[1].effect = QuestEffectKind::Add(2);
+            assert!(validate(&changed, false).is_err());
+            let mut alias = original;
+            alias.key.push_str("-shadow");
+            assert!(validate(&alias, false).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn monotone_effect_cannot_replace_or_strip_a_registered_physical_operation()

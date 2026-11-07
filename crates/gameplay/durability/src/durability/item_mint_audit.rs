@@ -2071,6 +2071,10 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
                 // P18 zero-gold Forge events use the fenced transaction's selected tuple.
                 "crates/gameplay/durability/src/durability/item_forge_live/actions.rs",
+                // Quest floor assembly and timed transforms retain the caller's
+                // fenced Type2Transaction and bind its selected audit tuple.
+                "crates/gameplay/durability/src/durability/item_loop_move/floor_assembly.rs",
+                "crates/gameplay/durability/src/durability/item_loop_move/floor_transform.rs",
                 // W19 seed drops share the move owner's Type2 transaction and tuple.
                 "crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",

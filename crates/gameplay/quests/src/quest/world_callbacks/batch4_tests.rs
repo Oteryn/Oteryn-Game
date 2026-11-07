@@ -224,7 +224,7 @@ fn native_callback_rejects_incomplete_or_foreign_authoring() {
 fn triangle_tower_wall_preserves_source_remove_and_create_ids() -> Result<(), String> {
     let callback = load()?
         .into_iter()
-        .find(|c| c.key == "oteryn:quest-callback/triangle-tower-wall")
+        .find(|c| c.key == "oteryn:quest-callback/triangle-tower-lever")
         .ok_or("Triangle Tower UID30034 has no admitted source callback")?;
     assert_eq!(callback.selector.unique, Some(30034));
     assert_eq!(
@@ -239,21 +239,24 @@ fn triangle_tower_wall_preserves_source_remove_and_create_ids() -> Result<(), St
     assert!(callback.reversible);
     let value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
     assert_eq!(
-        value["passages"],
-        serde_json::json!([
-            {"position":{"x":32566,"y":32119,"floor":-7},"appearance":1270,"replacement":null,"create_on_close":1025}
-        ])
+        value["effects"]["item_cycle"],
+        serde_json::json!({"position":{"x":32566,"y":32119,"floor":-7},"remove":1270,"create":1025})
     );
     Ok(())
 }
 
 #[test]
 fn asymmetric_wall_rejects_effects_it_cannot_commit() -> Result<(), String> {
-    let callback = load()?
-        .into_iter()
-        .find(|c| c.key == "oteryn:quest-callback/triangle-tower-wall")
-        .ok_or("wall")?;
-    let value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    // Main's Triangle uses item_cycle now. The retained source packet still
+    // exercises the separate asymmetric-passage validator without registering
+    // a second production owner for that same selector.
+    let packet: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/quest-authoring/batches/quests4/triangle_tower_quest.json"
+    )))
+    .map_err(|error| error.to_string())?;
+    let value = packet["callbacks"][0].clone();
+    callbacks(value.clone())?;
     for (field, invalid) in [
         (
             "effects",

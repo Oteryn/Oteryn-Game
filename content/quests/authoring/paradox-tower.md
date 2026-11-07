@@ -118,3 +118,14 @@ opening of each exact-food lever. The existing opening counters start at-1, so
 one successful opening records0. The new selected `climb-complete` flag is authored
 progress; donor scripts are not claimed to store it. Whole-quest qualification
 still requires the complete lower-to-upper physical route and Riddler finale.
+
+Riddler finale source recovery: retained corpus `data-global/npc/riddler.lua:57-141`,
+revision9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d and SHA256
+`198907507cb4bf3c40b7c00abdf75a5ebb0e260e6e1b18683a39b652b711dc8a`,
+uses `test,yes,goshnar,demonbunny,tha'kull,yes,breath,silence,old,yes,green,none,1`.
+Green records FavoriteColour1; the last answer advances learned Mathemagics and
+FavoriteColour to2 and teleports to32478,31905,z1 with effect11. The native
+Riddler identity already exists; its source center is32479,31901,z2. The native
+success destination is plain ground409 with no house. Generic callback movement
+must preflight the actual landing and recover an interrupted committed command;
+no additional achievement is granted at the Riddler.

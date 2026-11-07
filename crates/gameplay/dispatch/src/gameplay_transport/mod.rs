@@ -152,6 +152,7 @@ mod quest_admission;
 mod quest_callbacks;
 mod quest_kills;
 mod quest_log_source;
+mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -171,7 +172,6 @@ pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,
 };
-mod quest_timer_cycle;
 mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;

@@ -306,7 +306,7 @@
     },
     {
       "path": "refinements/joins.json",
-      "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+      "sha256": "cc0c252a1fd4c9ebcacb11e20e600605d73ccf24797f4ceb631c357c01b1a68c"
     },
     {
       "path": "refinements/dialogue.json.gz",
@@ -314,7 +314,7 @@
     },
     {
       "path": "refinements/summary.json",
-      "sha256": "43c846dcab62dcba41ec65f47560fd025d793899be1477758a8bcaea15a7055f"
+      "sha256": "284cb04b7097cf7dd3d865d58077356cb351aa5bd675bfa45c5b47cd05a0da11"
     }
   ],
   "quest_refinements": {
@@ -896,7 +896,7 @@
       },
       {
         "path": "joins.json",
-        "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+        "sha256": "cc0c252a1fd4c9ebcacb11e20e600605d73ccf24797f4ceb631c357c01b1a68c"
       },
       {
         "path": "dialogue.json.gz",

@@ -1,4 +1,5 @@
 //! Native client process and component composition.
+pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
 pub mod character_selection;
 pub mod combat_input;
