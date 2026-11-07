@@ -2182,3 +2182,7 @@ mod tests {
         );
     }
 }
+
+pub(super) mod npc_program;
+pub(super) mod fathers_burden;
+pub(super) mod marlin_trophy;

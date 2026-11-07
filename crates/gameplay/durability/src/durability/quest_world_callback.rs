@@ -479,3 +479,91 @@ async fn apply_input(
     }
     Ok(())
 }
+
+pub(super) async fn consume_npc_inputs(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    _permit: &super::quest_state::npc_program::NpcItemPermit,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
+) -> Result<bool, DurabilityError> {
+    let super::quest_state::QuestCause::Command(command) = request.cause else {
+        return Ok(false);
+    };
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleEffect;
+    let mut remaining = std::collections::BTreeMap::<String, i64>::new();
+    for effect in &plan.effects {
+        if let NpcRuleEffect::TakeItem {
+            item,
+            count,
+            subtype: None,
+            optional: false,
+        } = effect
+        {
+            let total = remaining.entry(item.clone()).or_default();
+            *total = total
+                .checked_add(i64::from(*count))
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            if *total > 100 {
+                return Ok(false);
+            }
+        }
+    }
+    if remaining.is_empty() {
+        return Ok(true);
+    }
+    if remaining.len() > 8 {
+        return Ok(false);
+    }
+    let keys: Vec<_> = remaining.keys().cloned().collect();
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
+    if rows.len() > 500 {
+        return Ok(false);
+    }
+    let mut inputs = Vec::new();
+    for row in rows {
+        let key: String = row.try_get("definition_production_key")?;
+        let Some(required) = remaining.get_mut(&key) else {
+            continue;
+        };
+        let quantity: i64 = row.try_get("quantity")?;
+        let count = (*required).min(quantity);
+        if count == 0 {
+            continue;
+        }
+        let input = Input {
+            item: row.try_get("item")?,
+            before: row.try_get("before_item")?,
+            location: row.try_get("location")?,
+            kind: row.try_get("kind")?,
+            quantity,
+            count: u16::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?,
+            replacement: None,
+        };
+        lock_location(tx, &input).await?;
+        let plain:bool=sqlx::query_scalar("SELECT NOT (EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=$1::uuid))")
+            .bind(&input.item).fetch_one(&mut **tx).await?;
+        if !plain {
+            return Ok(false);
+        }
+        *required -= count;
+        inputs.push(input);
+    }
+    if remaining.values().any(|n| *n != 0) {
+        return Ok(false);
+    }
+    let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    for input in inputs {
+        let proof=serde_json::to_vec(&serde_json::json!({"npc_program_digest":plan.program_digest,"selected_rules":plan.selected_rule_keys,"effects":plan.effects,"before":input.before,"location":input.location,"count":input.count})).map_err(|_|DurabilityError::InvalidStoredState)?;
+        if proof.len() > 16384 {
+            return Ok(false);
+        }
+        sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
+            .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
+        apply_input(tx, &input, &transaction).await?;
+    }
+    Ok(true)
+}
