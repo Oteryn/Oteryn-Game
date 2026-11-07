@@ -113,8 +113,13 @@ def build():
     construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
         table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
         {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
-    native_taming=[r for r in json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
-                   if r['item_key']!='oteryn:item.tibia.i21897']
+    # Retain every source row, but bind construction costs to the existing atomic
+    # pieces owner. The ordinary one-item taming path cannot execute these rows.
+    native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
+    recipes={f"oteryn:item.tibia.i{r['item_id']}":r for r in item_packet['rules'] if r['mode']=='pieces'}
+    for rule in native_taming:
+        if recipe:=recipes.get(rule['item_key']):
+            rule['required_items']=[f'oteryn:item.tibia.i{item}' for item in recipe['required_items']]
     for outfit in outfits:
         key=outfit['key']
         for addon in range(outfit['addon_count']+1):

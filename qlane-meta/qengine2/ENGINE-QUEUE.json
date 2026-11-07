@@ -61,6 +61,36 @@
       "requesting_lane": "questpc3",
       "quest": "The Tainted Souls Quest",
       "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "step_in_boss_cooldown_and_cleanup",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "request": "StepIn admission via existing occupancy, named-boss cooldown and timed cleanup owners",
+      "evidence": "561ce33ce:qlane-meta/questpc3/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
+    },
+    {
+      "feature": "carried_use_live_player_quest_predicate",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc8",
+      "quest": "The Colours of Magic",
+      "request": "Fenced current other-player quest predicate with selected-instance carried replacement/reward",
+      "evidence": "2b8157325:qlane-meta/questpc8/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
+    },
+    {
+      "feature": "item_look_disguise_restore",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc8",
+      "quest": "Wrath of the Emperor Quest",
+      "request": "Source lookTypeEx item disguise through existing appearance condition and restoration owner",
+      "evidence": "2b8157325:qlane-meta/questpc8/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
     }
   ]
 }

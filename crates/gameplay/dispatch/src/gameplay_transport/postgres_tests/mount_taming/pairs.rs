@@ -64,9 +64,11 @@ pub(super) async fn run(
     let rules = crate::content::native_gameplay::mount_taming::rules();
     assert_eq!(
         rules.len(),
-        50,
-        "47 creature rules and three item targets; Glider has its own complete piece recipe"
+        51,
+        "47 creature rules, three one-item targets, and the complete Glider recipe"
     );
+    assert_eq!(rules.iter().filter(|rule| rule.single_item_use()).count(), 50);
+    assert_eq!(rules.iter().filter(|rule| !rule.single_item_use()).count(), 1);
     let mut retained = admitted(owner, actor, session)?;
     owner
         .states

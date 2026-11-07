@@ -52,8 +52,12 @@ class QuestRewards(unittest.TestCase):
         original=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
         native=json.loads(self.outputs['content/cosmetics/taming-native.json'])
         self.assertEqual(len(original),51)
-        self.assertEqual(len(native),50)
-        self.assertEqual(native,[r for r in original if r['item_key']!='oteryn:item.tibia.i21897'])
+        self.assertEqual(len(native),51)
+        others=lambda rows:[r for r in rows if r['item_key']!='oteryn:item.tibia.i21897']
+        self.assertEqual(others(native),others(original))
+        expected=copy.deepcopy(next(r for r in original if r['item_key']=='oteryn:item.tibia.i21897'))
+        expected['required_items']=[f'oteryn:item.tibia.i{item}' for item in [21897,21898,21899,21901,21902,21905,21906]]
+        self.assertEqual(next(r for r in native if r['item_key']=='oteryn:item.tibia.i21897'),expected)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
         rule=next(r for r in packet['rules'] if r['item_id']==21897)
         self.assertEqual(rule['mode'],'pieces')

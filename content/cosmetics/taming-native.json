@@ -690,6 +690,27 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:38"
   },
   {
+    "item_key": "oteryn:item.tibia.i21897",
+    "target_item_key": "oteryn:item.tibia.i21897",
+    "creature_key": "",
+    "mount_key": "oteryn:content.mount.glooth_glider",
+    "grant_key": "oteryn:taming.glooth_glider",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You have assembled the Glooth Glider.",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:71",
+    "required_items": [
+      "oteryn:item.tibia.i21897",
+      "oteryn:item.tibia.i21898",
+      "oteryn:item.tibia.i21899",
+      "oteryn:item.tibia.i21901",
+      "oteryn:item.tibia.i21902",
+      "oteryn:item.tibia.i21905",
+      "oteryn:item.tibia.i21906"
+    ]
+  },
+  {
     "item_key": "oteryn:item.tibia.i24960",
     "creature_key": "oteryn:creature.stone_rhino",
     "mount_key": "oteryn:content.mount.stone_rhino",
