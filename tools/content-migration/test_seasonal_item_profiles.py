@@ -7,6 +7,23 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class SeasonalItemProfiles(unittest.TestCase):
+    def test_cake_phase_map_and_brutus_rewards_are_source_bound(self):
+        overlay = json.loads((ROOT / 'tools/content-schema/native-gameplay/seasonal-item-profiles.json').read_bytes())
+        profiles = {row['production_definition']['production_key']: row for row in overlay['records']}
+        expected = {12085, 12086, 12147, 12148, 12152, 12153, 12154, 12155,
+                    12090, 12091, 12092, 12093, 12094, 12095,
+                    14756, 20347, 20350, 28484, 28485, 28486}
+        self.assertEqual(len(profiles), 25)
+        for item in expected:
+            profile = profiles[f'oteryn:item.tibia.i{item}']
+            self.assertEqual(profile['production_binding']['disposition'], 'EXACT')
+            self.assertTrue(profile['admission']['materializable'])
+        sources = {row['path'] for row in overlay['sources']}
+        self.assertIn('data-global/npc/brutus_the_baker.lua', sources)
+        self.assertIn('data-global/scripts/lib/a_piece_of_cake_config.lua', sources)
+        self.assertIn('data-global/scripts/quests/a_piece_of_cake/actions_cake_bite.lua', sources)
+        self.assertNotIn('oteryn:item.tibia.i48227', profiles)
+
     def test_cake_corpse_and_residue_have_closed_native_decay_policies(self):
         profiles = {row['production_definition']['production_key']: row for row in json.loads(
             (ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']}

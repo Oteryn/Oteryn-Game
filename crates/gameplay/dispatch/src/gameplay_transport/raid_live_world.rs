@@ -1,5 +1,7 @@
 //! Raid placement borrows the existing physical Item/Map transaction and the
 //! current Channel creature owner. No detached map snapshot grants a spawn.
+mod cake;
+
 use super::ComposedFreshAdmission;
 use crate::durability::DurabilityError;
 use crate::durability::raid_runner::{

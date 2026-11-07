@@ -34,9 +34,24 @@ pub fn santa_present_items(chance: u8, group: u8) -> Option<&'static [u32]> {
     NORMAL.get(usize::from(group.checked_sub(1)?)).copied()
 }
 
-fn valid_gift(request: &RewardClaimMintRequest, ids: &[u32]) -> bool {
+/// Receipt-scoped bookkeeping, as the existing repeatable MINT purchase owner
+/// uses: this key is never Santa's permanent840293 entitlement.
+pub fn santa_failed_script_claim(command: CommandRef) -> String {
+    let session: String = command
+        .game_session_id()
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    format!(
+        "oteryn:reward.santa-bag.{session}.{}",
+        command.command_id().get()
+    )
+}
+
+fn valid_gift(request: &RewardClaimMintRequest, ids: &[u32], expected_claim: &str) -> bool {
     if request.claim.family != "RewardClaim"
-        || request.claim.production_key != SANTA_PRESENT_CLAIM
+        || request.claim.production_key != expected_claim
         || request.item.definition.production_key != "oteryn:item.tibia.i6510"
         || request.item.definition.family != "Item"
         || request.item.container_capacity != Some(5)
@@ -91,13 +106,28 @@ impl DurabilityRoot {
         }
         let expected = santa_present_items(attempt.chance, attempt.group);
         match (&attempt.gift, expected) {
-            (Some(gift), Some(ids)) if gift.command == attempt.command && valid_gift(gift, ids) => {
+            (Some(gift), Some(ids))
+                if gift.command == attempt.command
+                    && valid_gift(gift, ids, SANTA_PRESENT_CLAIM) =>
+            {
                 validate_request(gift)?;
                 if !contents::weight_pin_matches(gift, weights) {
                     return Err(RewardClaimMintError::InvalidInput);
                 }
             }
-            (None, None) => {}
+            // LuaJIT src/lib_math.c:155 makes random(0)=1, so the empty
+            // table lookup in santa_claus.lua:97 yields nil. Santa:111 creates
+            // this bag before #reward fails at114. There is no reward group,
+            // no NPC Merry Christmas reply and no permanent840293 flag.
+            (Some(gift), None)
+                if gift.command == attempt.command
+                    && valid_gift(gift, &[], &santa_failed_script_claim(attempt.command)) =>
+            {
+                validate_request(gift)?;
+                if !contents::weight_pin_matches(gift, weights) {
+                    return Err(RewardClaimMintError::InvalidInput);
+                }
+            }
             _ => return Err(RewardClaimMintError::InvalidInput),
         }
         let binding = attempt
@@ -136,13 +166,7 @@ impl DurabilityRoot {
             let claimed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=$2)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(SANTA_PRESENT_CLAIM).fetch_one(&mut **tx).await?;
             if claimed { return Ok(Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed))); }
-            let Some(request) = attempt.gift else {
-                // The source resolves no group for this branch. Its later #nil
-                // fails after addItem6510 under LuaJIT; the native complete-plan
-                // MINT owner refuses the whole attempt instead of minting a bag
-                // from a failed script. No probability or rare group is invented.
-                return Ok(Err(RewardClaimMintError::InvalidInput));
-            };
+            let request=attempt.gift.ok_or(DurabilityError::InvalidStoredState)?;
             let binding = binding.ok_or(DurabilityError::InvalidStoredState)?;
             let row = sqlx::query("SELECT game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id,game_character_uuid_v7()::text AS item_instance_id,floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS occurred_at")
                 .fetch_one(&mut **tx).await?;
@@ -180,7 +204,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn santa_literal_branch_order_never_fabricates_rare_or_empty_gifts() {
+    fn santa_literal_lookup_preserves_unreachable_rare_groups_and_nil() {
         assert_eq!(
             santa_present_items(1, 1),
             Some([7439, 7440, 7443].as_slice())
@@ -190,5 +214,67 @@ mod tests {
         assert_eq!(santa_present_items(100, 10), None);
         assert_eq!(santa_present_items(0, 1), None);
         assert_eq!(santa_present_items(1, 0), None);
+    }
+}
+impl DurabilityRoot {
+    /// Resolve the original atomic MINT after its acknowledgement was lost.
+    /// This owner never reconstructs a gift or repeats the random decision.
+    pub async fn reconcile_santa_present(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        attempt: SantaPresentRequest,
+    ) -> Result<Option<CommittedRewardClaimMint>> {
+        if attempt.command.game_session_id() != fence.game_session_id {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        let binding = attempt
+            .gift
+            .as_ref()
+            .map(|gift| intent_binding(gift, fence.character_id))
+            .transpose()?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    lock_cause(&mut tx, attempt.command).await?;
+                    let (world, channel) =
+                        scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if !character_item_fence_is_current(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        attempt.command,
+                        fence.character_id,
+                        *world.as_bytes(),
+                        *channel.as_bytes(),
+                    )
+                    .await?
+                    {
+                        return Ok(Err(RewardClaimMintError::AuthorityRejected));
+                    }
+                    let result = if let Some(row) = load_receipt(&mut tx, attempt.command).await? {
+                        if binding.as_ref().is_none_or(|binding| {
+                            row.try_get::<Vec<u8>, _>("intent_binding").ok().as_deref()
+                                != Some(binding.as_slice())
+                        }) {
+                            return Ok(Err(RewardClaimMintError::ConflictingCause));
+                        }
+                        Some(decode_receipt(&row)?)
+                    } else {
+                        None
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(result))
+                })
+            })
+            .await?
     }
 }

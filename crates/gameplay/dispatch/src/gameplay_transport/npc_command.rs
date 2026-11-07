@@ -76,6 +76,8 @@ struct SessionNpc {
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    seasonal: Option<seasonal::Pending>,
+    cake: Option<cake::Pending>,
     quest_dialogue: quest_dialogue::State,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,

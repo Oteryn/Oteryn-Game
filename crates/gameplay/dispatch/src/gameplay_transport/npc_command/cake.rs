@@ -5,6 +5,65 @@ use crate::durability::consume_transform::{CakeBakerContext, ConsumeTransformReq
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[derive(Clone)]
+pub(super) struct Pending {
+    character: crate::domain::CharacterId,
+    request: ConsumeTransformRequest,
+    intent: NpcTalkIntent,
+    context: (u64, u64, String),
+}
+fn clear(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId) {
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state.cake = None;
+    }
+}
+async fn committed_reply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    context: &(u64, u64, String),
+    result: &crate::durability::consume_transform::ConsumeTransformResult,
+) -> NpcTalkOutcome {
+    let (Some(accepted), Some(after)) = (
+        result
+            .effects
+            .get("accepted")
+            .and_then(serde_json::Value::as_u64),
+        result
+            .effects
+            .get("after")
+            .and_then(serde_json::Value::as_u64),
+    ) else {
+        return NpcTalkOutcome {
+            unknown: true,
+            ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+        };
+    };
+    let runtime = admission.runtime.lock().await;
+    let current = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        &runtime,
+        actor,
+        session,
+        intent,
+    ) == Some(context.clone());
+    let mut outcome = NpcConversations::bank_reply(
+        intent,
+        format!(
+            "Wonderful, thank you! You delivered {accepted} substance(s). ({after}/200 total delivered)"
+        ),
+    );
+    outcome.inventory_changed = true;
+    if !current && let Some(conversation) = outcome.conversation.as_mut() {
+        conversation.open = None;
+    }
+    clear(admission, session);
+    outcome
+}
+
 #[derive(Clone, Copy)]
 enum Topic {
     Mass,
@@ -99,7 +158,7 @@ pub(super) async fn apply(
         .acquire(fence.character_id)
         .await;
     let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
+        return rejected();
     };
     if current.item_fence() != fence {
         return rejected();
@@ -133,7 +192,7 @@ pub(super) async fn apply(
             .await
         {
             Ok(progress) => progress,
-            Err(_) => return unknown(),
+            Err(_) => return rejected(),
         };
         let (substances, golems) =
             progress.map_or((0, 0), |progress| (progress.substances, progress.golems));
@@ -145,7 +204,7 @@ pub(super) async fn apply(
             Topic::Base => {
                 format!("So far, {golems} of the 200 Cake Golems have been lured to the machines.")
             }
-            Topic::Deliver => unreachable!(),
+            Topic::Deliver => return rejected(),
         };
         return NpcConversations::bank_reply(&intent, line);
     }
@@ -155,7 +214,7 @@ pub(super) async fn apply(
         .await
     {
         Ok(inventory) => inventory,
-        Err(_) => return unknown(),
+        Err(_) => return rejected(),
     };
     let source = inventory
         .equipment
@@ -185,11 +244,26 @@ pub(super) async fn apply(
         intent: bytes,
     };
     let context = CakeBakerContext {
-        npc_key: step.context.2,
+        npc_key: step.context.2.clone(),
         expected_epoch: admission.reset_epoch,
     };
     let content = super::super::item_ref_admission::NativeItemWeights(native)
         .with_wheel(admission.premium_coordinator);
+    {
+        let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+            return rejected();
+        };
+        let state = sessions.entry(command.game_session_id).or_default();
+        if state.cake.is_some() || state.seasonal.is_some() {
+            return unknown();
+        }
+        state.cake = Some(Pending {
+            character: fence.character_id,
+            request: request.clone(),
+            intent: intent.clone(),
+            context: step.context.clone(),
+        });
+    }
     let result = admission
         .root
         .consume_cake_substances(
@@ -205,37 +279,26 @@ pub(super) async fn apply(
         .await;
     match result {
         Ok(Some(result)) if result.disposition == UseDisposition::Committed => {
-            let (Some(accepted), Some(after)) = (
-                result
-                    .effects
-                    .get("accepted")
-                    .and_then(serde_json::Value::as_u64),
-                result
-                    .effects
-                    .get("after")
-                    .and_then(serde_json::Value::as_u64),
-            ) else {
-                return unknown();
-            };
-            // Crystal data-global/npc/biff_the_baker.lua:92-98.
-            let mut outcome = NpcConversations::bank_reply(
+            committed_reply(
+                admission,
+                actor,
+                command.game_session_id,
                 &intent,
-                format!(
-                    "Wonderful, thank you! You delivered {accepted} substance(s). ({after}/200 total delivered)"
-                ),
-            );
-            outcome.inventory_changed = true;
-            outcome
+                &step.context,
+                &result,
+            )
+            .await
         }
         Err(_) => unknown(),
         _ => {
+            clear(admission, command.game_session_id);
             let progress = match admission
                 .root
                 .cake_world_progress(admission.world_id, admission.reset_epoch)
                 .await
             {
                 Ok(progress) => progress,
-                Err(_) => return unknown(),
+                Err(_) => return rejected(),
             };
             // Crystal biff_the_baker.lua:70-89: stage, carried count, then goal.
             let line = if progress.is_none_or(|progress| !progress.phase_one_active()) {
@@ -249,5 +312,76 @@ pub(super) async fn apply(
             };
             NpcConversations::bank_reply(&intent, line.into())
         }
+    }
+}
+
+pub(in crate::gameplay_transport) async fn resume(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+) -> Option<NpcTalkOutcome> {
+    let pending = admission
+        .states
+        .npc_conversations
+        .sessions
+        .lock()
+        .ok()?
+        .get(&command.game_session_id)?
+        .cake
+        .clone()?;
+    if pending.request.command.command_id().get() != command.command_id {
+        return None;
+    }
+    let unknown = || NpcTalkOutcome {
+        unknown: true,
+        ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+    };
+    let Some(permit) = admission.spell_lane_permit().await else {
+        return Some(unknown());
+    };
+    let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
+        return Some(unknown());
+    };
+    if current.character_id != pending.character {
+        return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+    }
+    let Some(native) = admission
+        .active_generation
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+    else {
+        return Some(unknown());
+    };
+    let content = super::super::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(admission.premium_coordinator);
+    match admission
+        .root
+        .consume_transform_detailed(
+            &permit,
+            admission.character,
+            admission.holder,
+            current.item_fence(),
+            pending.request,
+            native,
+            &content,
+            true,
+        )
+        .await
+    {
+        Ok(Some(result)) if result.disposition == UseDisposition::Committed => Some(
+            committed_reply(
+                admission,
+                actor,
+                command.game_session_id,
+                &pending.intent,
+                &pending.context,
+                &result,
+            )
+            .await,
+        ),
+        Ok(_) => {
+            clear(admission, command.game_session_id);
+            Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
+        }
+        Err(_) => Some(unknown()),
     }
 }

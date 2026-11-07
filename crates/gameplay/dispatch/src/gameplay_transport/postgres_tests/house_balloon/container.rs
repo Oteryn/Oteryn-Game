@@ -215,17 +215,28 @@ pub(super) async fn scenario(
         delivered,
         vec![
             (id(71).to_vec(), id(101).to_vec()),
-            (id(72).to_vec(), id(41).to_vec()),
-            (id(73).to_vec(), id(41).to_vec())
+            (id(72).to_vec(), id(41).to_vec())
         ],
-        "normal disposition returns each inserted descendant to its own retained subject"
+        "disposition detaches the guest's bag from the other owner's cupboard"
     );
-    let nested_remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
-        .bind(id(72).as_slice()).bind(id(73).as_slice()).fetch_one(&h.pool).await?;
+    let retained_parent:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(n.parent_item_instance_id) FROM game_item_nested_entries n JOIN game_item_character_inbox_locations root ON root.item_instance_id=n.parent_item_instance_id WHERE n.item_instance_id=encode($1,'hex')::uuid AND root.character_id=encode($2,'hex')::uuid")
+        .bind(id(73).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
-        nested_remaining, 0,
-        "disposition does not leave Inbox items in nested custody"
+        retained_parent,
+        id(72),
+        "same-subject contents retain their exact bag edge through Inbox delivery"
     );
+    let counts: Vec<i32> = sqlx::query_scalar(
+        "SELECT tree_count FROM game_house_disposition_census ORDER BY item_instance_id",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(counts, vec![1, 2]);
+    let remaining_provenance: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_house_nested_reclaim_provenance")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(remaining_provenance, 0);
     eprintln!(
         "W18_PG house_container_open_insert_nested_remove_replay_stale elapsed={:?}",
         started.elapsed()

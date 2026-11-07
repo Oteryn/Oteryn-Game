@@ -120,7 +120,9 @@ mod contents;
 mod grizzly;
 mod monk;
 mod santa;
-pub use santa::{SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_present_items};
+pub use santa::{
+    SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_failed_script_claim, santa_present_items,
+};
 mod soul_war;
 mod tibiadrome;
 

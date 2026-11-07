@@ -241,3 +241,199 @@ async fn timed(h: &Harness, item: [u8; 16]) -> TestResult<Value> {
     Ok(sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item.as_slice()).fetch_one(&h.pool).await?)
 }
+
+pub(super) async fn near_expiry_scenario(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::house_rotation as wire;
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    let fence = admitted.item_fence.ok_or("House fence")?;
+    let context = {
+        let runtime = owner.runtime.lock().await;
+        HouseActionContext::from_native_owner(&runtime, actor, admitted.game_session_id, fence)
+            .map_err(debug)?
+    };
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native timed furniture")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (number, duration, _) in CYCLE {
+        sqlx::query("INSERT INTO game_item_timed_definitions VALUES('Item',$1,'definition-r1',NULL,$2,true) ON CONFLICT DO NOTHING")
+            .bind(format!("oteryn:item.tibia.i{number}")).bind(duration).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_item_timed_states SELECT encode($1,'hex')::uuid,NULL,200000,floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1,1")
+        .bind(id(71).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let mut intent = wire::COMMAND.to_be_bytes().to_vec();
+    intent.extend(
+        wire::Request::Rotate(wire::Target::Item {
+            item: id(71),
+            expected_revision: 1,
+        })
+        .encode()
+        .ok_or("rotation bytes")?,
+    );
+    let request = ConsumeTransformRequest {
+        command: CommandRef::new(admitted.game_session_id, CommandId::new(1).map_err(debug)?),
+        source: id(71),
+        target: None,
+        intent,
+    };
+    let result = owner
+        .root
+        .consume_transform_in_house(
+            owner.holder,
+            context.clone().with_rotation(1),
+            request.clone(),
+            native,
+        )
+        .await?;
+    assert_eq!(result.disposition, UseDisposition::Committed);
+    assert!(result.fresh);
+    assert_eq!(
+        super::scenario::item(h).await?["definition_production_key"],
+        "oteryn:item.tibia.i35970",
+        "Game::transformItem chooses requested form's decayTo when remaining duration is at most1ms"
+    );
+    let after = timed(h, id(71)).await?;
+    assert_eq!(after["remaining_ms"], 1000);
+    let exact:bool=sqlx::query_scalar("SELECT deadline_after=committed_at+1000 FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid AND expected_revision=1")
+        .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    assert!(exact);
+    let replay = owner
+        .root
+        .consume_transform_in_house(owner.holder, context.with_rotation(1), request, native)
+        .await?;
+    assert!(!replay.fresh);
+    assert_eq!(timed(h, id(71)).await?, after);
+    eprintln!(
+        "W18 POSTGRES_CASE_COMPLETED near-expiry rotation selects counterpart decay stage and duplicate preserves its1s deadline"
+    );
+    Ok(())
+}
+pub(super) async fn wrap_scenario(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::durability::house_wrap::HouseWrapCommand;
+    use oteryn_protocol_oteryn::house_wrap as wire;
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    let fence = admitted.item_fence.ok_or("House fence")?;
+    let context = {
+        let runtime = owner.runtime.lock().await;
+        HouseActionContext::from_native_owner(&runtime, actor, admitted.game_session_id, fence)
+            .map_err(debug)?
+    };
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (number, duration, _) in CYCLE {
+        sqlx::query("INSERT INTO game_item_timed_definitions VALUES('Item',$1,'definition-r1',NULL,$2,true) ON CONFLICT DO NOTHING")
+            .bind(format!("oteryn:item.tibia.i{number}")).bind(duration).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_item_timed_states SELECT encode($1,'hex')::uuid,NULL,200000,floor(extract(epoch FROM clock_timestamp())*1000)::bigint+60000,1")
+        .bind(id(71).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let acl: String = sqlx::query_scalar("SELECT acl_revision::text FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+        .bind(context.house().world_id().as_bytes().as_slice()).bind(context.house().house_key())
+        .fetch_one(&h.pool).await?;
+    let request = wire::Request {
+        action: wire::Action::Wrap,
+        item: id(71),
+        expected_revision: 1,
+        acl_revision: acl.parse()?,
+        position: POSITION,
+    };
+    let command = HouseWrapCommand {
+        house: context.house().clone(),
+        command: 10,
+        request,
+    };
+    let result = owner
+        .root
+        .wrap_house_furniture(
+            owner.holder,
+            fence,
+            command,
+            |key| {
+                (key == "oteryn:item.tibia.i35949").then(|| "oteryn:item.tibia.i23398".to_owned())
+            },
+            |key| (key == "oteryn:item.tibia.i2854").then_some(8),
+        )
+        .await?;
+    assert_eq!(
+        result,
+        wire::Reply::Committed(2),
+        "active source timer must not prevent donor wrapping"
+    );
+    let packed = timed(h, id(71)).await?;
+    assert!(packed["remaining_ms"].is_null());
+    assert!(packed["deadline_at"].is_null());
+    assert_eq!(packed["state_revision"], 2);
+    let request = wire::Request {
+        action: wire::Action::Unwrap,
+        expected_revision: 2,
+        ..request
+    };
+    let command = HouseWrapCommand {
+        house: context.house().clone(),
+        command: 11,
+        request,
+    };
+    let result = owner
+        .root
+        .wrap_house_furniture(
+            owner.holder,
+            fence,
+            command,
+            |key| {
+                (key == "oteryn:item.tibia.i23398").then(|| "oteryn:item.tibia.i35949".to_owned())
+            },
+            |key| (key == "oteryn:item.tibia.i2854").then_some(8),
+        )
+        .await?;
+    assert_eq!(result, wire::Reply::Committed(3));
+    let unwrapped = timed(h, id(71)).await?;
+    assert_eq!(unwrapped["remaining_ms"], 200000);
+    assert!(unwrapped["deadline_at"].as_i64().is_some());
+    assert_eq!(unwrapped["state_revision"], 3);
+    let exact:bool=sqlx::query_scalar("SELECT deadline_after=committed_at+200000 FROM game_item_timed_state_writes WHERE item_instance_id=encode($1,'hex')::uuid AND expected_revision=2")
+        .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    assert!(
+        exact,
+        "unwrap starts a full donor timer instead of restoring the packed budget"
+    );
+    let command = HouseWrapCommand {
+        house: context.house().clone(),
+        command: 11,
+        request,
+    };
+    let replay = owner
+        .root
+        .wrap_house_furniture(
+            owner.holder,
+            fence,
+            command,
+            |_| None,
+            |key| (key == "oteryn:item.tibia.i2854").then_some(8),
+        )
+        .await?;
+    assert_eq!(replay, wire::Reply::Committed(3));
+    assert_eq!(
+        timed(h, id(71)).await?,
+        unwrapped,
+        "duplicate unwrap cannot extend its deadline"
+    );
+    eprintln!(
+        "W18 POSTGRES_CASE_COMPLETED wrap cancels active aqueduct timer, unwrap resets full duration, replay preserves"
+    );
+    Ok(())
+}

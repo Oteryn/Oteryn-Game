@@ -632,13 +632,27 @@ async fn santa_present_scenario(
     let failed = owner
         .npc_talk(actor, command(empty_command), intent("present"))
         .await;
-    assert!(!failed.inventory_changed);
-    assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
+    assert!(failed.inventory_changed);
+    assert_eq!(failed.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        failed.conversation.is_none(),
+        "the source fails before its Christmas reply"
+    );
     let failed_counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(
         failed_counts,
-        (0, 0, 0),
-        "the failed script mints no partial bag and sets no permanent flag"
+        (0, 1, 1),
+        "the source creates its bag before failure and sets no permanent Santa flag"
+    );
+    let empty_replay = owner
+        .npc_talk(actor, command(empty_command), intent("present"))
+        .await;
+    assert!(empty_replay.inventory_changed);
+    assert!(empty_replay.conversation.is_none());
+    let empty_bags:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'").fetch_one(&h.pool).await?;
+    assert_eq!(
+        empty_bags, 1,
+        "the same failed-script command never mints twice"
     );
     let gift = owner
         .npc_talk(actor, command(normal_command), intent("present"))
@@ -649,18 +663,18 @@ async fn santa_present_scenario(
         ["Merry Christmas!"]
     );
     let counts: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE claim_production_key='oteryn:reward-claim.santa-claus-present'),(SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i6510'),(SELECT count(*) FROM game_reward_claim_mint_receipts)").fetch_one(&h.pool).await?;
-    assert_eq!(counts, (1, 1, 1));
-    let replay = owner
-        .npc_talk(actor, command(normal_command), intent("present"))
-        .await;
-    assert!(replay.inventory_changed);
-    // Four real talk intents exhausted this source window. Advance only the
-    // fixture's existing monotonic Channel clock before the next real intent.
+    assert_eq!(counts, (1, 2, 2));
+    // Four actual talk intents exhausted this source window. Advance the
+    // fixture's existing monotonic clock before replay and a fresh request.
     let mut later = (*owner).clone();
     later.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("fixture monotonic clock")?;
+    let replay = later
+        .npc_talk(actor, command(normal_command), intent("present"))
+        .await;
+    assert!(replay.inventory_changed);
     let repeated = later
         .npc_talk(actor, command(20_000), intent("present"))
         .await;

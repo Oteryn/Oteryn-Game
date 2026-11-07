@@ -828,3 +828,18 @@ before the new timer owner is installed; static fixture reach/reset setup.
 Auto-carpet neighbor occurrences, authored base-container materialization,
 source25-slot container negotiation, complete tree-preserving disposition and
 remaining seasonal stages are still being completed. No row is marked DONE.
+
+### Compiling seasonal retry/extraction and House timer checkpoint
+
+The shared scoped native source reservation, committed creature machine-step
+consumer and acknowledged raid extraction now compile alongside the timer owner,
+static/bed routing fixes and seasonal NPC retry/empty-attempt consumers. The
+all-target/all-feature dispatch and game-server check passes in 2m58s. Existing
+Player reservation APIs remain intact. New source capture closes25 admitted
+seasonal Item policies, including the independent Cake map/reward definitions;
+bridge48227 stays excluded under its exact owner decision.
+
+This is a compiling WIP, not row completion. Focused caller tests, current native
+provider/loot/Prey regeneration, timer/bed greens, remaining seasonal phases and
+source-qualified placement, complete furniture projection, clippy and final
+pins/architecture qualification remain required.

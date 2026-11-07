@@ -60,10 +60,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             crate::foundation::RuntimeScopeRefV1::Instance { .. }))
         && let Ok(intent) = &decoded
         && intent.use_with.is_none()
-        && (intent.use_with_map_item.is_none()
-            || (admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
-                crate::foundation::RuntimeScopeRefV1::Instance { .. }))
-                && matches!(intent.use_with_map_item.as_ref(), Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(_)))))
+        && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
         && matches!(
             intent.target,
@@ -122,7 +119,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     // Map and position uses must reach their own receipt probes before an unrelated
     // event-item inventory check can reject a historical command's stale fence.
     if let Ok(intent) = &decoded
-        && intent.use_with_map_item.is_none()
+        && (intent.use_with_map_item.is_none()
+            || (admitted.item_fence.is_some_and(|fence| {
+                matches!(
+                    fence.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                )
+            }) && matches!(
+                intent.use_with_map_item.as_ref(),
+                Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                    _
+                ))
+            )))
         && intent.use_with_position.is_none()
         && admitted
             .continuity
@@ -488,7 +496,10 @@ mod fluid_routing_tests {
         let fluid = route.find(".use_fluid_on_map(");
         let imbuement = route.find(".use_imbuement_item(");
         let key = route.find(".use_key_on_door(");
-        assert!(fluid.is_some() && imbuement.is_some() && key.is_some(), "handlers present");
+        assert!(
+            fluid.is_some() && imbuement.is_some() && key.is_some(),
+            "handlers present"
+        );
         assert!(imbuement < fluid, "imbuement handler before fluid");
         assert!(key < fluid, "key handler before fluid");
     }

@@ -10,6 +10,8 @@ use oteryn_gameplay_items::novelty_items::{self, GroundEffect};
 
 #[path = "consume_transform_house/decorations.rs"]
 mod decorations;
+#[path = "consume_transform_house/timed_decorations.rs"]
+mod timed_decorations;
 
 /// The actual House actor owner constructs this context. Neither wire positions nor
 /// a Channel equipment fence can stand in for the current named-House lease.

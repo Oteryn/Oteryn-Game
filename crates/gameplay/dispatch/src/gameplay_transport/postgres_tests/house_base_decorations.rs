@@ -88,7 +88,7 @@ pub(super) async fn window_scenario(
 
     // The production caller resolves an actual window from the admitted House bundle.
     // The window is adjacent to, rather than on, the House arrival cell.
-    let window_position = [32311_i32, 32804, 7];
+    let window_position = [32310_i32, 32804, 7];
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -108,7 +108,7 @@ pub(super) async fn window_scenario(
     .await?;
     tx.commit().await?;
     let position = crate::map::overlay::TilePos {
-        x: 32311,
+        x: 32310,
         y: 32804,
         floor: -7,
     };
@@ -181,7 +181,7 @@ pub(super) async fn window_scenario(
         .tiles
         .iter()
         .find(|tile| {
-            tile.position.x == 32311 && tile.position.y == 32804 && tile.position.floor == -7
+            tile.position.x == 32310 && tile.position.y == 32804 && tile.position.floor == -7
         })
         .and_then(|tile| {
             tile.items.iter().find(|item| {
@@ -229,7 +229,7 @@ pub(super) async fn aqueduct_scenario(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'static-fixture',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp()-interval '201.5 seconds','2026-11') ON CONFLICT(world_id,reset_epoch) DO UPDATE SET target_digest=EXCLUDED.target_digest,activated_at=EXCLUDED.activated_at")
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'static-fixture',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp()-interval '201.5 seconds','2026-11') ON CONFLICT(world_id,reset_epoch) DO UPDATE SET target_digest=EXCLUDED.target_digest,activated_at=EXCLUDED.activated_at")
         .bind(context.house().world_id().as_bytes().as_slice()).bind(bundle.as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=0")
         .bind(context.house().world_id().as_bytes().as_slice()).execute(&mut *tx).await?;
@@ -239,7 +239,7 @@ pub(super) async fn aqueduct_scenario(
     .bind(context.house().world_id().as_bytes().as_slice())
     .bind(context.house().house_key())
     .bind(
-        [32311_i32, 32804, 7]
+        [32310_i32, 32804, 7]
             .into_iter()
             .flat_map(i32::to_be_bytes)
             .collect::<Vec<_>>(),
@@ -296,12 +296,12 @@ pub(super) async fn bed_scenario(
     for y in [32804, 32805] {
         sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
             .bind(context.house().world_id().as_bytes().as_slice()).bind(context.house().house_key())
-            .bind([32311_i32,y,7].into_iter().flat_map(i32::to_be_bytes).collect::<Vec<_>>()).execute(&mut *tx).await?;
+            .bind([32310_i32,y,7].into_iter().flat_map(i32::to_be_bytes).collect::<Vec<_>>()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     let placement = crate::map::view::placement_key(
         crate::map::overlay::TilePos {
-            x: 32311,
+            x: 32310,
             y: 32804,
             floor: -7,
         },

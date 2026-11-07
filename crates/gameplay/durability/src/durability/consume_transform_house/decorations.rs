@@ -129,6 +129,7 @@ pub(super) async fn plan(
     let mut extra_cues = Vec::<Value>::new();
     let mut base_changes: Option<Value> = None;
     let mut house_container_capacity: Option<u16> = None;
+    let mut timed_decoration: Option<Value> = None;
     let mut speech: Option<String> = None;
     let mut achievement_progress = Vec::<Value>::new();
     let mut cooldown_effect: Option<Value> = None;
@@ -429,12 +430,28 @@ pub(super) async fn plan(
         };
         house_container_capacity = before.container_capacity;
         // Native rotations retain their existing container graph and metadata.
-        // Temporal variants are handed to the same timed-state owner separately.
-        if before.container_capacity != after.container_capacity
-            || before.decay.is_some()
-            || after.decay.is_some()
-        {
+        if before.container_capacity != after.container_capacity {
             return Ok(Some(Err(UseDisposition::NotPossible)));
+        }
+        if before.decay.is_some() || after.decay.is_some() {
+            let after_ref = TypedDefinitionRef {
+                family: definition.family.clone(),
+                production_key: key,
+                revision_ref: definition.revision_ref.clone(),
+            };
+            let Some(metadata) = super::timed_decorations::prepare(
+                tx, context, request, native, definition, &after_ref,
+            )
+            .await?
+            else {
+                return Ok(Some(Err(UseDisposition::NotPossible)));
+            };
+            target = metadata
+                .get("selected_key")
+                .and_then(Value::as_str)
+                .and_then(item_id)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            timed_decoration = Some(metadata);
         }
     } else {
         return Ok(None);
@@ -452,7 +469,7 @@ pub(super) async fn plan(
         "private_speech":false,"require_head":false,"require_player_target":false,
         "achievement_progress":achievement_progress,"decoration_cooldown":cooldown_effect,
         "base_changes":base_changes,"extra_cues":extra_cues,
-        "house_container_capacity":house_container_capacity});
+        "house_container_capacity":house_container_capacity,"timed_decoration":timed_decoration});
     Ok(Some(Ok(ActionPlan {
         recipe: format!("oteryn:house-decoration.{family}.i{id}.v1"),
         outputs: Vec::new(),

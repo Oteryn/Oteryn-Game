@@ -127,6 +127,9 @@ BEGIN
    quantity=CASE WHEN r.consume_source THEN 0 ELSE quantity END,lifecycle=CASE WHEN r.consume_source THEN 2 ELSE lifecycle END,
    state_revision=state_revision+1,last_transaction_id=r.transaction_id WHERE item_instance_id=r.source_item_instance_id;
  END IF;
+ IF r.effects->'timed_decoration' IS NOT NULL AND r.effects->'timed_decoration'<>'null'::jsonb THEN
+  PERFORM game_house_decoration_timed_apply(r.transaction_id);
+ END IF;
  IF r.consume_source THEN
   CASE r.source_location->>'custody_kind'
    WHEN 'house' THEN

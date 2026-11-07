@@ -14,7 +14,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "oteryn:item.tibia.i22736".to_owned(),
             "oteryn:item.tibia.i22737".to_owned(),
         ),
-        Case::TimedRotation => (
+        Case::TimedRotation | Case::TimedNearExpiry | Case::TimedWrap => (
             "oteryn:item.tibia.i35949".to_owned(),
             "oteryn:item.tibia.i35969".to_owned(),
         ),
@@ -46,6 +46,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::StaticWindow
             | Case::StaticAqueduct
             | Case::TimedRotation
+            | Case::TimedNearExpiry
+            | Case::TimedWrap
             | Case::Container
             | Case::CarpetTile { .. }
     );
@@ -200,7 +202,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         | Case::Decoration(2358, _)
         | Case::Decoration(34278, _)
         | Case::StaticAqueduct
-        | Case::TimedRotation => &[4, 6, 11, 15, 18, 49, 86, 445],
+        | Case::TimedRotation
+        | Case::TimedNearExpiry
+        | Case::TimedWrap => &[4, 6, 11, 15, 18, 49, 86, 445],
         Case::Container => &[4, 6, 11, 12, 14, 15, 18, 49, 86],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
         Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
@@ -250,6 +254,8 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::Container
             | Case::StaticAqueduct
             | Case::TimedRotation
+            | Case::TimedNearExpiry
+            | Case::TimedWrap
             | Case::BedKit(_)
             | Case::CarpetTile { .. }
     ) {
@@ -367,6 +373,12 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "W19 POSTGRES_CASE_COMPLETED house_balloon outside_house_and_changed_character_custody_refuse"
         );
         return Ok(());
+    }
+    if case == Case::TimedNearExpiry {
+        return super::timed::near_expiry_scenario(&owner, h, admitted).await;
+    }
+    if case == Case::TimedWrap {
+        return super::timed::wrap_scenario(&owner, h, admitted).await;
     }
     if case == Case::TimedRotation {
         return super::timed::scenario(&owner, h, admitted).await;

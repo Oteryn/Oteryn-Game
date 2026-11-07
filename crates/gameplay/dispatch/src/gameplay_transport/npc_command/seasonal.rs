@@ -5,13 +5,59 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::ItemStackClass;
 use crate::durability::reward_claim_mint::{
     RewardClaimMintContent, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest,
-    RewardClaimRefusal, SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_present_items,
+    RewardClaimRefusal, SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_failed_script_claim,
+    santa_present_items,
 };
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+
+#[derive(Clone)]
+pub(super) struct Pending {
+    character: crate::domain::CharacterId,
+    request: SantaPresentRequest,
+    intent: NpcTalkIntent,
+    context: (u64, u64, String),
+}
+fn clear(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId) {
+    if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+    {
+        state.seasonal = None;
+    }
+}
+async fn committed_reply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    context: &(u64, u64, String),
+    bag_only: bool,
+) -> NpcTalkOutcome {
+    if bag_only {
+        clear(admission, session);
+        let mut outcome = NpcTalkOutcome::only(NpcIntentDisposition::Ok);
+        outcome.inventory_changed = true;
+        return outcome;
+    }
+    let runtime = admission.runtime.lock().await;
+    let current = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        &runtime,
+        actor,
+        session,
+        intent,
+    ) == Some(context.clone());
+    let mut outcome = NpcConversations::bank_reply(intent, "Merry Christmas!".into());
+    outcome.inventory_changed = true;
+    if !current && let Some(conversation) = outcome.conversation.as_mut() {
+        conversation.open = None;
+    }
+    clear(admission, session);
+    outcome
+}
 
 // Crystal data/npclib/npc.lua:13-19 checks a left word boundary only;
 // "presents" and "present?" qualify, but any alphanumeric prefix blocks it.
@@ -92,7 +138,7 @@ pub(super) async fn apply(
         .acquire(fence.character_id)
         .await;
     let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
+        return rejected();
     };
     if current.item_fence() != fence {
         return rejected();
@@ -141,7 +187,10 @@ pub(super) async fn apply(
             return rejected();
         };
         let mut definitions = Vec::new();
-        if let Some(ids) = santa_present_items(chance, group) {
+        // The nil branch still executes addItem6510 before the source error.
+        // This bag-only plan does not synthesize an empty reward group.
+        let ids = santa_present_items(chance, group).unwrap_or(&[]);
+        {
             for id in std::iter::once(&6510).chain(ids) {
                 let key = format!("oteryn:item.tibia.i{id}");
                 let Some(revision) = index.revision(&key) else {
@@ -211,7 +260,11 @@ pub(super) async fn apply(
             command: reference,
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: SANTA_PRESENT_CLAIM.into(),
+                production_key: if chance <= 90 {
+                    SANTA_PRESENT_CLAIM.into()
+                } else {
+                    santa_failed_script_claim(reference)
+                },
                 revision_ref: "oteryn:santa-present.v1".into(),
             },
             source_placement: "oteryn:npc.santa_claus".into(),
@@ -239,7 +292,7 @@ pub(super) async fn apply(
                 actor,
                 command.game_session_id,
                 &intent,
-            ) != Some(context)
+            ) != Some(context.clone())
             || !admission
                 .states
                 .player_trades
@@ -250,33 +303,118 @@ pub(super) async fn apply(
     }
     let weights = super::super::item_ref_admission::NativeItemWeights(native)
         .with_wheel(admission.premium_coordinator);
+    let request = SantaPresentRequest {
+        command: reference,
+        reset_epoch: admission.reset_epoch,
+        chance,
+        group,
+        gift,
+    };
+    {
+        let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+            return rejected();
+        };
+        let state = sessions.entry(command.game_session_id).or_default();
+        if state.seasonal.is_some() || state.cake.is_some() {
+            return unknown();
+        }
+        state.seasonal = Some(Pending {
+            character: fence.character_id,
+            request: request.clone(),
+            intent: intent.clone(),
+            context: context.clone(),
+        });
+    }
     match admission
         .root
         .claim_santa_present(
             admission.character,
             admission.holder,
             fence,
-            SantaPresentRequest {
-                command: reference,
-                reset_epoch: admission.reset_epoch,
-                chance,
-                group,
-                gift,
-            },
+            request,
             &weights,
         )
         .await
     {
         Ok(RewardClaimMintOutcome::Committed(_) | RewardClaimMintOutcome::AlreadyCommitted(_)) => {
-            let mut outcome = NpcConversations::bank_reply(&intent, "Merry Christmas!".into());
-            outcome.inventory_changed = true;
-            outcome
-        }
-        Err(RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)) => {
-            NpcConversations::bank_reply(&intent, "You can't get other present.".into())
+            committed_reply(
+                admission,
+                actor,
+                command.game_session_id,
+                &intent,
+                &context,
+                chance > 90,
+            )
+            .await
         }
         Err(RewardClaimMintError::Unavailable(_)) => unknown(),
-        _ => rejected(),
+        Err(error) => {
+            clear(admission, command.game_session_id);
+            if matches!(
+                error,
+                RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)
+            ) {
+                NpcConversations::bank_reply(&intent, "You can't get other present.".into())
+            } else {
+                rejected()
+            }
+        }
+    }
+}
+
+pub(in crate::gameplay_transport) async fn resume(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+) -> Option<NpcTalkOutcome> {
+    let pending = admission
+        .states
+        .npc_conversations
+        .sessions
+        .lock()
+        .ok()?
+        .get(&command.game_session_id)?
+        .seasonal
+        .clone()?;
+    if pending.request.command.command_id().get() != command.command_id {
+        return None;
+    }
+    let unknown = || NpcTalkOutcome {
+        unknown: true,
+        ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+    };
+    let Ok(Some(current)) = admission.current_quest_fence(command.game_session_id).await else {
+        return Some(unknown());
+    };
+    if current.character_id != pending.character {
+        return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
+    }
+    match admission
+        .root
+        .reconcile_santa_present(
+            admission.character,
+            admission.holder,
+            current.item_fence(),
+            pending.request.clone(),
+        )
+        .await
+    {
+        Ok(Some(_)) => Some(
+            committed_reply(
+                admission,
+                actor,
+                command.game_session_id,
+                &pending.intent,
+                &pending.context,
+                pending.request.chance > 90,
+            )
+            .await,
+        ),
+        Ok(None) => {
+            clear(admission, command.game_session_id);
+            Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
+        }
+        Err(_) => Some(unknown()),
     }
 }
 

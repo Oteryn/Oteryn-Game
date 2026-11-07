@@ -311,69 +311,203 @@ GRANT EXECUTE ON FUNCTION
  game_house_container_loop_prepare(UUID,UUID,UUID,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC,UUID,TEXT,BYTEA,UUID,UUID,JSONB,BYTEA)
  TO oteryn_game_runtime;
 
--- Disposition uses its existing census, steps, Inbox deliveries and audit owner.
--- Descendants are delivered before their parents, each to its retained subject;
--- this also preserves the existing prohibition on populated ordinary Inbox roots.
+-- Accepted BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md:294-304
+-- requires whole trees in Inbox/disposition. Retain every same-subject edge;
+-- detach only the recipient boundaries required by HOUSE_OWN0:210-213.
+ALTER TABLE game_house_disposition_census
+ ADD COLUMN tree_count INTEGER NOT NULL DEFAULT 1 CHECK(tree_count BETWEEN 1 AND 500),
+ ADD COLUMN tree_digest BYTEA CHECK(tree_digest IS NULL OR octet_length(tree_digest)=32);
+CREATE TABLE game_house_disposition_tree_members (
+ operation_id UUID NOT NULL REFERENCES game_house_dispositions,
+ item_instance_id UUID NOT NULL,
+ tree_root UUID NOT NULL,
+ reclaim_subject UUID NOT NULL REFERENCES game_character_roots(character_id),
+ source_location JSONB NOT NULL,
+ source_provenance JSONB NOT NULL,
+ source_item JSONB NOT NULL,
+ original_depth INTEGER NOT NULL CHECK(original_depth BETWEEN 0 AND 8),
+ PRIMARY KEY(operation_id,item_instance_id),
+ FOREIGN KEY(operation_id,tree_root) REFERENCES game_house_disposition_census(operation_id,item_instance_id)
+  DEFERRABLE INITIALLY DEFERRED
+);
+CREATE INDEX game_house_disposition_tree_root ON game_house_disposition_tree_members(operation_id,tree_root);
+REVOKE ALL ON game_house_disposition_tree_members FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_house_disposition_tree_members TO oteryn_game_runtime,oteryn_game_control;
+CREATE TRIGGER game_house_disposition_tree_members_immutable BEFORE UPDATE OR DELETE
+ ON game_house_disposition_tree_members FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+
 CREATE FUNCTION game_house_disposition_container_sources(w UUID,h TEXT)
 RETURNS TABLE(item_instance_id UUID,reclaim_subject_character_id UUID,source_location JSONB,source_provenance JSONB,source_item JSONB)
 LANGUAGE sql STABLE SECURITY DEFINER AS $$
  SELECT l.item_instance_id,p.reclaim_subject_character_id,to_jsonb(l),to_jsonb(p),to_jsonb(i)
  FROM game_item_house_interior_locations l JOIN game_item_house_reclaim_provenance p USING(item_instance_id)
- JOIN game_item_instances i USING(item_instance_id)
- WHERE l.world_id=w AND l.house_key=h
+ JOIN game_item_instances i USING(item_instance_id) WHERE l.world_id=w AND l.house_key=h
  UNION ALL
  SELECT n.item_instance_id,p.reclaim_subject_character_id,to_jsonb(n),to_jsonb(p),to_jsonb(i)
  FROM game_house_nested_reclaim_provenance p JOIN game_item_nested_entries n USING(item_instance_id)
- JOIN game_item_instances i USING(item_instance_id)
- WHERE p.world_id=w AND p.house_key=h
+ JOIN game_item_instances i USING(item_instance_id) WHERE p.world_id=w AND p.house_key=h
 $$;
-CREATE FUNCTION game_house_disposition_descendant_count(op UUID,i UUID)
-RETURNS BIGINT LANGUAGE sql STABLE SECURITY DEFINER AS $$
- WITH RECURSIVE descendants(item,depth) AS (
-  SELECT i,0
-  UNION ALL SELECT c.item_instance_id,d.depth+1 FROM descendants d
-   JOIN game_house_disposition_census c ON c.operation_id=op
-    AND c.source_location->>'parent_item_instance_id'=d.item::text WHERE d.depth<8
- ) SELECT count(*) FROM descendants
+
+CREATE FUNCTION game_house_disposition_capture_container_trees(op UUID,w UUID,h TEXT)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_house_dispositions WHERE operation_id=op AND world_id=w AND house_key=h AND state=1)
+  OR EXISTS(SELECT 1 FROM game_house_disposition_tree_members WHERE operation_id=op) THEN
+  RAISE EXCEPTION 'container census requires unfrozen original property' USING ERRCODE='23514'; END IF;
+ WITH RECURSIVE items AS MATERIALIZED (
+  SELECT s.*,(s.source_location->>'parent_item_instance_id')::uuid AS parent,
+   (SELECT depth FROM game_house_container_root(s.item_instance_id)) AS original_depth
+  FROM game_house_disposition_container_sources(w,h) s
+ ), walk(item,node,parent,subject,hops) AS (
+  SELECT item_instance_id,item_instance_id,parent,reclaim_subject_character_id,0 FROM items
+  UNION ALL
+  SELECT walk.item,p.item_instance_id,p.parent,walk.subject,walk.hops+1
+  FROM walk JOIN items p ON p.item_instance_id=walk.parent AND p.reclaim_subject_character_id=walk.subject
+  WHERE walk.hops<8
+ ), roots AS (SELECT DISTINCT ON(item) item,node FROM walk ORDER BY item,hops DESC)
+ INSERT INTO game_house_disposition_tree_members
+ SELECT op,i.item_instance_id,r.node,i.reclaim_subject_character_id,i.source_location,i.source_provenance,i.source_item,i.original_depth
+ FROM items i JOIN roots r ON r.item=i.item_instance_id;
+ INSERT INTO game_house_disposition_census(operation_id,item_instance_id,reclaim_subject,source_location,source_provenance,source_item,tree_count,tree_digest)
+ SELECT op,m.item_instance_id,m.reclaim_subject,m.source_location,m.source_provenance,m.source_item,
+  (SELECT count(*) FROM game_house_disposition_tree_members child WHERE child.operation_id=op AND child.tree_root=m.item_instance_id),
+  (SELECT sha256(string_agg(uuid_send(child.item_instance_id),''::bytea ORDER BY child.item_instance_id))
+   FROM game_house_disposition_tree_members child WHERE child.operation_id=op AND child.tree_root=m.item_instance_id)
+ FROM game_house_disposition_tree_members m WHERE m.operation_id=op AND m.item_instance_id=m.tree_root;
+END $$;
+
+-- At most100 root transfers and500 checked members per step. A single whole
+-- tree may exceed the old100 flat-item target; BAGS-0 §4 bounds that tree at500.
+CREATE FUNCTION game_house_disposition_container_batch(op UUID)
+RETURNS SETOF game_house_disposition_census LANGUAGE sql STABLE SECURITY DEFINER AS $$
+ WITH pending AS (
+  SELECT c,m.original_depth FROM game_house_disposition_census c
+  JOIN game_house_disposition_tree_members m ON m.operation_id=c.operation_id AND m.item_instance_id=c.item_instance_id
+  WHERE c.operation_id=op AND NOT EXISTS(SELECT 1 FROM game_house_disposition_steps s
+   WHERE s.operation_id=op AND s.item_instance_id=c.item_instance_id)
+ ), ordered AS (
+  SELECT c,row_number() OVER(ORDER BY original_depth DESC,(c).item_instance_id) AS roots,
+   sum((c).tree_count) OVER(ORDER BY original_depth DESC,(c).item_instance_id) AS members
+  FROM pending
+ ) SELECT(c).* FROM ordered WHERE roots<=100 AND members<=500
+ ORDER BY roots
+$$;
+
+CREATE FUNCTION game_house_disposition_tree_delivery_complete(op UUID,i UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+DECLARE c game_house_disposition_census%ROWTYPE;n BIGINT;digest BYTEA;bad BOOLEAN;
+BEGIN
+ SELECT * INTO c FROM game_house_disposition_census WHERE operation_id=op AND item_instance_id=i;
+ IF c.item_instance_id IS NULL OR c.tree_digest IS NULL OR NOT game_house_disposition_delivery_proven(op,i)
+  OR NOT game_house_container_tree_valid(i) THEN RETURN FALSE; END IF;
+ WITH RECURSIVE tree(item,depth) AS (
+  SELECT i,0 UNION ALL SELECT e.item_instance_id,t.depth+1 FROM tree t
+  JOIN game_item_nested_entries e ON e.parent_item_instance_id=t.item WHERE t.depth<8
+ ) SELECT count(*),sha256(string_agg(uuid_send(t.item),''::bytea ORDER BY t.item)),
+  coalesce(bool_or(m.item_instance_id IS NULL OR m.tree_root<>i OR m.reclaim_subject<>c.reclaim_subject
+   OR to_jsonb(actual) IS DISTINCT FROM m.source_item
+   OR (t.item<>i AND to_jsonb(entry) IS DISTINCT FROM m.source_location)),false)
+ INTO n,digest,bad FROM tree t LEFT JOIN game_house_disposition_tree_members m ON m.operation_id=op AND m.item_instance_id=t.item
+ LEFT JOIN game_item_instances actual ON actual.item_instance_id=t.item
+ LEFT JOIN game_item_nested_entries entry ON entry.item_instance_id=t.item;
+ RETURN n=c.tree_count AND digest=c.tree_digest AND NOT bad AND NOT EXISTS(
+  SELECT 1 FROM game_house_disposition_tree_members m JOIN game_house_nested_reclaim_provenance p USING(item_instance_id)
+  WHERE m.operation_id=op AND m.tree_root=i);
+END $$;
+CREATE FUNCTION game_house_disposition_tree_step_proven() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF NOT game_house_disposition_tree_delivery_complete(NEW.operation_id,NEW.item_instance_id) THEN
+  RAISE EXCEPTION 'disposition lost whole-tree binding or recipient' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_house_disposition_tree_step_proven AFTER INSERT ON game_house_disposition_steps
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_house_disposition_tree_step_proven();
+
+-- Completion was independently proved in the delivery transaction. Subsequent
+-- recipient-authorized retrieval may remove children without invalidating Inbox.
+CREATE FUNCTION game_house_disposition_inbox_tree_admitted(i UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
+ SELECT EXISTS(SELECT 1 FROM game_house_disposition_census c
+  JOIN game_item_instances actual ON actual.item_instance_id=c.item_instance_id
+  WHERE c.item_instance_id=i AND c.tree_digest IS NOT NULL
+   AND actual.lifecycle=1 AND actual.quantity=1
+   AND (actual.definition_family,actual.definition_production_key,actual.definition_revision_ref)
+    =(c.source_item->>'definition_family',c.source_item->>'definition_production_key',c.source_item->>'definition_revision_ref')
+   AND game_house_disposition_delivery_proven(c.operation_id,i)
+   AND game_house_container_tree_valid(i)
+   AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.parent_item_instance_id=i)
+   AND NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i))
 $$;
 DO $patch$
 DECLARE body TEXT;old TEXT;replacement TEXT;
 BEGIN
  body:=pg_get_functiondef('game_house_disposition_advance(UUID,INT,INT,INT)'::regprocedure);
- old:='game_item_house_reclaim_provenance';
- -- Recipient locking also includes independently owned descendants. Keep the
- -- original property/census/item/counter lock order and existing 2000 bound.
  replacement:='(SELECT item_instance_id,world_id,house_key,reclaim_subject_character_id FROM game_item_house_reclaim_provenance UNION ALL SELECT item_instance_id,world_id,house_key,reclaim_subject_character_id FROM game_house_nested_reclaim_provenance)';
- body:=replace(body,'FROM game_item_house_reclaim_provenance p', 'FROM '||replacement||' p');
- body:=replace(body,'IF EXISTS(SELECT 1 FROM game_item_house_reclaim_provenance WHERE', 'IF EXISTS(SELECT 1 FROM '||replacement||' AS subjects WHERE');
+ body:=replace(body,'FROM game_item_house_reclaim_provenance p','FROM '||replacement||' p');
+ body:=replace(body,'IF EXISTS(SELECT 1 FROM game_item_house_reclaim_provenance WHERE','IF EXISTS(SELECT 1 FROM '||replacement||' AS subjects WHERE');
  old:='SELECT item_instance_id FROM game_item_house_interior_locations
    WHERE world_id=o.world_id AND house_key=o.house_key ORDER BY item_instance_id LIMIT 2001';
  IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition census bound'; END IF;
  body:=replace(body,old,'SELECT item_instance_id FROM game_house_disposition_container_sources(o.world_id,o.house_key) ORDER BY item_instance_id LIMIT 2001');
- old:='SELECT op,l.item_instance_id,p.reclaim_subject_character_id,to_jsonb(l),to_jsonb(p),to_jsonb(i)
+ old:='INSERT INTO game_house_disposition_census
+   SELECT op,l.item_instance_id,p.reclaim_subject_character_id,to_jsonb(l),to_jsonb(p),to_jsonb(i)
    FROM game_item_house_interior_locations l JOIN game_item_house_reclaim_provenance p USING(item_instance_id)
    JOIN game_item_instances i USING(item_instance_id)
-   WHERE l.world_id=o.world_id AND l.house_key=o.house_key ORDER BY l.item_instance_id LIMIT 2000';
+   WHERE l.world_id=o.world_id AND l.house_key=o.house_key ORDER BY l.item_instance_id LIMIT 2000;';
  IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition source census'; END IF;
- body:=replace(body,old,'SELECT op,s.item_instance_id,s.reclaim_subject_character_id,s.source_location,s.source_provenance,s.source_item FROM game_house_disposition_container_sources(o.world_id,o.house_key) s ORDER BY s.item_instance_id LIMIT 2000');
+ body:=replace(body,old,'PERFORM game_house_disposition_capture_container_trees(op,o.world_id,o.house_key);');
+ body:=replace(body,'(SELECT count(*) FROM game_house_disposition_census WHERE operation_id=op)<>n',
+  '(SELECT count(*) FROM game_house_disposition_tree_members WHERE operation_id=op)<>n');
+ body:=replace(body,'FROM game_house_disposition_census WHERE operation_id=op) WHERE operation_id=op;',
+  'FROM game_house_disposition_tree_members WHERE operation_id=op) WHERE operation_id=op;');
+ old:='SELECT c.item_instance_id FROM game_house_disposition_census c LEFT JOIN game_house_disposition_steps s USING(operation_id,item_instance_id)
+  WHERE c.operation_id=op AND s.item_instance_id IS NULL ORDER BY c.item_instance_id LIMIT 100';
+ IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition item batch'; END IF;
+ body:=replace(body,old,'SELECT m.item_instance_id FROM game_house_disposition_container_batch(op) c JOIN game_house_disposition_tree_members m ON m.operation_id=c.operation_id AND m.tree_root=c.item_instance_id ORDER BY m.item_instance_id');
+ old:='SELECT c.* FROM game_house_disposition_census c
+  LEFT JOIN game_house_disposition_steps s USING(operation_id,item_instance_id) WHERE c.operation_id=op AND s.item_instance_id IS NULL
+  ORDER BY c.item_instance_id LIMIT 100';
+ IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition counter batch'; END IF;
+ body:=replace(body,old,'SELECT c.* FROM game_house_disposition_container_batch(op) c');
+ old:='SELECT c.* FROM game_house_disposition_census c LEFT JOIN game_house_disposition_steps s USING(operation_id,item_instance_id)
+  WHERE c.operation_id=op AND s.item_instance_id IS NULL ORDER BY c.item_instance_id LIMIT 100';
+ IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition delivery batch'; END IF;
+ body:=replace(body,old,'SELECT c.* FROM game_house_disposition_container_batch(op) c');
  old:='SELECT 1 FROM game_item_house_interior_locations l JOIN game_item_house_reclaim_provenance p USING(item_instance_id)
    JOIN game_item_instances i USING(item_instance_id) WHERE l.item_instance_id=x.item_instance_id
    AND to_jsonb(l)=x.source_location AND to_jsonb(p)=x.source_provenance AND to_jsonb(i)=x.source_item';
  IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition frozen source'; END IF;
- body:=replace(body,old,'SELECT 1 FROM game_house_disposition_container_sources(o.world_id,o.house_key) s WHERE s.item_instance_id=x.item_instance_id AND s.source_location=x.source_location AND s.source_provenance=x.source_provenance AND s.source_item=x.source_item');
- body:=replace(body,'ORDER BY c.item_instance_id LIMIT 100','ORDER BY game_house_disposition_descendant_count(op,c.item_instance_id),c.item_instance_id LIMIT 100');
+ body:=replace(body,old,'SELECT 1 FROM game_house_disposition_container_sources(o.world_id,o.house_key) source WHERE source.item_instance_id=x.item_instance_id AND source.source_location=x.source_location AND source.source_provenance=x.source_provenance AND source.source_item=x.source_item');
  old:='DELETE FROM game_item_house_interior_locations WHERE item_instance_id=x.item_instance_id;';
- body:=replace(body,old,'DELETE FROM game_item_nested_entries WHERE item_instance_id=x.item_instance_id; DELETE FROM game_house_nested_reclaim_provenance WHERE item_instance_id=x.item_instance_id; '||old);
+ body:=replace(body,old,'DELETE FROM game_item_nested_entries WHERE item_instance_id=x.item_instance_id; DELETE FROM game_house_nested_reclaim_provenance WHERE item_instance_id IN(SELECT item_instance_id FROM game_house_disposition_tree_members WHERE operation_id=op AND tree_root=x.item_instance_id); '||old);
+ body:=replace(body,'n:=n+1;','n:=n+x.tree_count;');
  old:='IF EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE world_id=o.world_id AND house_key=o.house_key) THEN';
  body:=replace(body,old,'IF EXISTS(SELECT 1 FROM game_house_disposition_container_sources(o.world_id,o.house_key)) THEN');
  EXECUTE body;
+ body:=pg_get_functiondef('game_house_disposition_fence_check(UUID,TEXT,UUID,BOOLEAN)'::regprocedure);
+ old:='s.item_instance_id=i AND s.written_xact_id=pg_current_xact_id()';
+ IF strpos(body,old)=0 THEN RAISE EXCEPTION 'missing disposition member fence'; END IF;
+ EXECUTE replace(body,old,'(s.item_instance_id=i OR EXISTS(SELECT 1 FROM game_house_disposition_tree_members m WHERE m.operation_id=s.operation_id AND m.tree_root=s.item_instance_id AND m.item_instance_id=i AND m.reclaim_subject=s.reclaim_subject)) AND s.written_xact_id=pg_current_xact_id()');
  body:=pg_get_functiondef('game_item_nested_entry_proven()'::regprocedure);
- IF strpos(body,'BEGIN')=0 THEN RAISE EXCEPTION 'missing nested custody guard'; END IF;
  EXECUTE overlay(body placing E'BEGIN\n IF TG_OP=''DELETE'' AND game_house_disposition_native_removal_proven(to_jsonb(OLD)) AND NOT EXISTS(SELECT 1 FROM game_house_nested_reclaim_provenance WHERE item_instance_id=OLD.item_instance_id) THEN RETURN NULL; END IF;' FROM strpos(body,'BEGIN') FOR 5);
+ body:=pg_get_functiondef('game_item_location_exclusive(UUID)'::regprocedure);
+ old:=(regexp_match(body,'RAISE EXCEPTION ''CharacterInbox item cannot have contents'' USING ERRCODE\s*=\s*''23514'';'))[1];
+ IF old IS NULL THEN RAISE EXCEPTION 'missing existing Inbox contents guard'; END IF;
+ EXECUTE replace(body,old,'IF NOT game_house_disposition_inbox_tree_admitted(p_item) THEN '||old||' END IF;');
+ -- Every nested item remains frozen, including a timed/background mutation.
+ body:=pg_get_functiondef('game_house_disposition_item_fence()'::regprocedure);
+ old:='FROM game_item_house_interior_locations WHERE item_instance_id=OLD.item_instance_id';
+ EXECUTE replace(body,old,'FROM (SELECT item_instance_id,world_id,house_key FROM game_item_house_interior_locations UNION ALL SELECT item_instance_id,world_id,house_key FROM game_house_nested_reclaim_provenance) locations WHERE item_instance_id=OLD.item_instance_id');
 END $patch$;
 DO $$ DECLARE f REGPROCEDURE; BEGIN
- FOREACH f IN ARRAY ARRAY['game_house_disposition_container_sources(UUID,TEXT)'::regprocedure,
-  'game_house_disposition_descendant_count(UUID,UUID)'::regprocedure] LOOP
+ FOREACH f IN ARRAY ARRAY[
+  'game_house_disposition_container_sources(UUID,TEXT)'::regprocedure,
+  'game_house_disposition_capture_container_trees(UUID,UUID,TEXT)'::regprocedure,
+  'game_house_disposition_container_batch(UUID)'::regprocedure,
+  'game_house_disposition_tree_delivery_complete(UUID,UUID)'::regprocedure,
+  'game_house_disposition_tree_step_proven()'::regprocedure,
+  'game_house_disposition_inbox_tree_admitted(UUID)'::regprocedure] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,oteryn_game_runtime,oteryn_game_control',f);
  END LOOP;

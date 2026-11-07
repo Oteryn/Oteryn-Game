@@ -258,6 +258,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::item_ref_admission::pinned_index(&runtime, self.active_generation)?,
             )
         };
+        if !self
+            .root
+            .settle_house_timed_decorations(self.holder, fence, context.house().clone())
+            .await
+            .ok()?
+        {
+            return None;
+        }
         let at = context.position();
         let map = self.bundle_map()?;
         let snapshot = self

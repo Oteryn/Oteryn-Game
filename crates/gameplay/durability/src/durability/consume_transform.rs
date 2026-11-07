@@ -206,11 +206,16 @@ impl DurabilityRoot {
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:consume-transform:' || encode($1,'hex') || ':' || $2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .execute(&mut **tx).await?;
+            if matches!(context.3, ActionContext::CakeBaker(_)) &&
+                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.command),context.1.loop_content_digest()).await.is_err() {
+                return Ok(Some(ConsumeTransformResult::refused(UseDisposition::Rejected)));
+            }
             let previous: Option<(Vec<u8>, Vec<u8>, Value, String)> = sqlx::query_as("SELECT intent,uuid_send(character_id),effects,recipe FROM game_item_consume_transform_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;
             if let Some((intent, character, effects, recipe)) = previous {
-                let result = if intent == request.intent && character == fence.character_id.as_bytes() {
+                let caller_matches = matches!(context.3,ActionContext::CakeBaker(_)) == (recipe==cake::RECIPE);
+                let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
                     ConsumeTransformResult { disposition: UseDisposition::Committed, fresh: false, effects, recipe: Some(recipe.clone()) }
                 } else { ConsumeTransformResult { recipe: Some(recipe), ..ConsumeTransformResult::refused(UseDisposition::Rejected) } };
                 tx.commit(deadline).await?;

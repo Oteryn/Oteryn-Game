@@ -20,7 +20,19 @@ from build_spell_item_identities import BINDINGS, bind_profiles, binding_index
 PATH = 'tools/content-schema/native-gameplay/seasonal-item-profiles.json'
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
 CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
-IDS = {6510, 2992, 12141, 2886, 2887}
+# Crystal Cake config.lua:500-516 supplies all fixed map and reward identities.
+CAKE_REWARDS = {14756, 20347, 20350, 28484, 28485, 28486}
+CAKE_MAP = {12085, 12086, 12147, 12148, 12152, 12153, 12154, 12155,
+            12090, 12091, 12092, 12093, 12094, 12095}
+IDS = {6510, 2992, 12141, 2886, 2887} | CAKE_REWARDS | CAKE_MAP
+BRUTUS = 'data-global/npc/brutus_the_baker.lua'
+CAKE_CONFIG = 'data-global/scripts/lib/a_piece_of_cake_config.lua'
+CAKE_BITE = 'data-global/scripts/quests/a_piece_of_cake/actions_cake_bite.lua'
+CAKE_POLICY_SOURCES = {
+    BRUTUS: 'a105a573c305f901c95af4b9c7e254c8b97ce9be',
+    CAKE_CONFIG: 'b8291626b473b91916cdac2fe5727323c1367c6d',
+    CAKE_BITE: 'a662d386a90d295978c73ddff79a8d46c987d0d4',
+}
 SANTA = 'data-global/npc/santa_claus.lua'
 CAKE = 'data-global/monster/quests/a_piece_of_cake/cake_golem.lua'
 
@@ -45,6 +57,12 @@ def capture(crystal, canary):
             or 'monster.corpse = 12141' not in cake_raw.decode()
             or 'monster.race = "venom"' not in cake_raw.decode()):
         raise ValueError('SEASONAL_CAKE_ITEM_SOURCE_DRIFT')
+    cake_policy_raw = []
+    for path, expected in CAKE_POLICY_SOURCES.items():
+        raw = (crystal / path).read_bytes()
+        if hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() != expected:
+            raise ValueError('SEASONAL_CAKE_POLICY_SOURCE_DRIFT:' + path)
+        cake_policy_raw.append(('crystal', PIN, path, raw))
     xml = source.xml_index(xml_raw)
     appearances = source.engine_items.load_appearance_objects(appearance_raw)
     physical = {row['server_item_id']: row for row in source.policies(appearance_raw, xml_raw, IDS)}
@@ -60,9 +78,11 @@ def capture(crystal, canary):
                             ('crystal', PIN, 'data/items/items.xml', xml_raw),
                             ('canary', CANARY, 'data/items/appearances.dat', appearance_raw),
                             ('crystal', PIN, SANTA, santa_raw),
-                            ('crystal', PIN, CAKE, cake_raw))],
+                            ('crystal', PIN, CAKE, cake_raw), *cake_policy_raw)],
             'producer': SANTA + ':111-119',
-            'cake_producer': CAKE + ':25-26', 'records': bound['records']}
+            'cake_producer': CAKE + ':25-26',
+            'cake_reward_producer': BRUTUS + ':99-158',
+            'cake_map_producer': CAKE_CONFIG + ':508-514', 'records': bound['records']}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

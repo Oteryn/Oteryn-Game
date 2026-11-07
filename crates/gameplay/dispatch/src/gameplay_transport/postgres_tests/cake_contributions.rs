@@ -197,6 +197,46 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
         assert_eq!(replay.disposition, UseDisposition::Committed);
         assert!(!replay.fresh);
         assert_eq!(replay.effects, first.effects);
+        use crate::durability::runtime_scope_assignment::{
+            BootstrapSecret, NodeIncarnationProof, NodeRegistrationFact,
+        };
+        let stale_node = NodeIncarnationProof::new(
+            NodeRegistrationFact::new(
+                h.node.fact().node_id(),
+                h.node.fact().registration_revision() + 1,
+            ),
+            BootstrapSecret::from_bytes([241; 32]),
+        );
+        let stale = h
+            .root
+            .consume_cake_substances(
+                &permit,
+                &authority,
+                &stale_node,
+                fence,
+                request.clone(),
+                native,
+                &content,
+                &context,
+            )
+            .await?
+            .ok_or("stale node replay refusal")?;
+        assert_ne!(stale.disposition, UseDisposition::Committed);
+        let wrong_caller = h
+            .root
+            .consume_transform_detailed(
+                &permit,
+                &authority,
+                &h.node,
+                fence,
+                request.clone(),
+                native,
+                &content,
+                false,
+            )
+            .await?
+            .ok_or("ordinary USE cannot replay NPC turn-in")?;
+        assert_ne!(wrong_caller.disposition, UseDisposition::Committed);
         let mut changed = request;
         changed.intent = b"deliver changed".to_vec();
         let refused = h

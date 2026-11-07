@@ -89,56 +89,125 @@ impl DurabilityRoot {
         expected_epoch: u64,
         machine_position: [u16; 3],
     ) -> Result<RaidWrite, DurabilityError> {
-        if !is_machine_position(machine_position) {
-            return Ok(RaidWrite::CompareFailed);
-        }
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            if !effects::world_current(&mut tx, identity.firing_id).await?
-                || !effects::current(&mut tx, &node, identity.firing_id, identity.channel, identity.generation).await? {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(RaidWrite::CompareFailed);
-            }
-            let world: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(world_id) FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid")
-                .bind(identity.firing_id.as_slice()).fetch_optional(&mut *tx).await?;
-            let world = world.and_then(|value| <[u8; 16]>::try_from(value).ok()).ok_or(DurabilityError::InvalidStoredState)?;
-            let Some(progress) = phase_one_in_transaction(&mut tx, WorldId::decode(&world).map_err(|_| DurabilityError::InvalidStoredState)?, expected_epoch).await? else {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(RaidWrite::CompareFailed);
-            };
-            let existing: Option<(i32,i32,i32)> = sqlx::query_as("SELECT x,y,z FROM game_cake_lure_receipts WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND wave=$3 AND entry=$4 AND creature_index=$5")
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = extract_in_transaction(
+                        &mut tx,
+                        &node,
+                        identity,
+                        creature,
+                        expected_epoch,
+                        machine_position,
+                        true,
+                    )
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+}
+
+/// Immutable raid owner identity plus independently current node and reset fences.
+/// Completed hourly waves remain eligible; their successful live placements persist.
+pub async fn current_source_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    identity: RaidStepIdentity,
+) -> Result<bool, DurabilityError> {
+    if !effects::world_current(tx, identity.firing_id).await?
+        || !effects::current(
+            tx,
+            node,
+            identity.firing_id,
+            identity.channel,
+            identity.generation,
+        )
+        .await?
+    {
+        return Ok(false);
+    }
+    let valid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_channel_runs r JOIN game_world_raid_firings f USING(firing_id) WHERE r.firing_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.owner_generation=$3::text::numeric AND f.raid_key='oteryn:raid.piece_of_cake')")
+        .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice()).bind(identity.generation.get().to_string()).fetch_one(&mut **tx).await?;
+    Ok(valid)
+}
+
+/// Same physical Map/Item transaction as the independently current machine read.
+/// Stored receipts settle unknown COMMIT before a changed machine can refuse a new lure.
+pub async fn extract_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    identity: RaidStepIdentity,
+    creature: RaidCreatureIdentity,
+    expected_epoch: u64,
+    machine_position: [u16; 3],
+    machine_present: bool,
+) -> Result<RaidWrite, DurabilityError> {
+    if !is_machine_position(machine_position) {
+        return Ok(RaidWrite::CompareFailed);
+    }
+    if !current_source_in_transaction(tx, node, identity).await? {
+        return Ok(RaidWrite::CompareFailed);
+    }
+    let world: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(world_id) FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid")
+                .bind(identity.firing_id.as_slice()).fetch_optional(&mut **tx).await?;
+    let world = world
+        .and_then(|value| <[u8; 16]>::try_from(value).ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let Some(progress) = phase_one_in_transaction(
+        tx,
+        WorldId::decode(&world).map_err(|_| DurabilityError::InvalidStoredState)?,
+        expected_epoch,
+    )
+    .await?
+    else {
+        return Ok(RaidWrite::CompareFailed);
+    };
+    let existing: Option<(i32,i32,i32)> = sqlx::query_as("SELECT x,y,z FROM game_cake_lure_receipts WHERE firing_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND wave=$3 AND entry=$4 AND creature_index=$5")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                 .bind(effects::small(creature.wave)?).bind(effects::small(creature.entry)?).bind(effects::small(creature.index)?)
-                .fetch_optional(&mut *tx).await?;
-            if let Some(position) = existing {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(if position == (i32::from(machine_position[0]),i32::from(machine_position[1]),i32::from(machine_position[2])) { RaidWrite::Replayed } else { RaidWrite::CompareFailed });
-            }
-            if !progress.phase_one_active() || progress.golems >= 200 {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(RaidWrite::CompareFailed);
-            }
-            let changed = sqlx::query("UPDATE game_world_raid_creatures c SET state=2 WHERE c.firing_id=encode($1,'hex')::uuid AND c.channel_id=encode($2,'hex')::uuid AND c.wave=$3 AND c.entry=$4 AND c.creature_index=$5 AND c.state=1 AND c.creature_key='oteryn:creature.cake_golem' AND EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=c.firing_id AND r.channel_id=c.channel_id AND r.owner_generation=$6::text::numeric) AND EXISTS(SELECT 1 FROM game_world_raid_creature_placements p JOIN game_world_raid_effects e ON e.firing_id=p.firing_id AND e.channel_id=p.channel_id AND e.wave=p.wave AND e.action_kind=2 WHERE (p.firing_id,p.channel_id,p.wave,p.entry,p.creature_index)=(c.firing_id,c.channel_id,c.wave,c.entry,c.creature_index) AND p.placed AND e.state=2 AND e.owner_generation=$6::text::numeric)")
+                .fetch_optional(&mut **tx).await?;
+    if let Some(position) = existing {
+        return Ok(
+            if position
+                == (
+                    i32::from(machine_position[0]),
+                    i32::from(machine_position[1]),
+                    i32::from(machine_position[2]),
+                )
+            {
+                RaidWrite::Replayed
+            } else {
+                RaidWrite::CompareFailed
+            },
+        );
+    }
+    if !machine_present {
+        return Ok(RaidWrite::CompareFailed);
+    }
+    if !progress.phase_one_active() || progress.golems >= 200 {
+        return Ok(RaidWrite::CompareFailed);
+    }
+    let changed = sqlx::query("UPDATE game_world_raid_creatures c SET state=2 WHERE c.firing_id=encode($1,'hex')::uuid AND c.channel_id=encode($2,'hex')::uuid AND c.wave=$3 AND c.entry=$4 AND c.creature_index=$5 AND c.state=1 AND c.creature_key='oteryn:creature.cake_golem' AND EXISTS(SELECT 1 FROM game_world_raid_channel_runs r WHERE r.firing_id=c.firing_id AND r.channel_id=c.channel_id AND r.owner_generation=$6::text::numeric) AND EXISTS(SELECT 1 FROM game_world_raid_creature_placements p JOIN game_world_raid_effects e ON e.firing_id=p.firing_id AND e.channel_id=p.channel_id AND e.wave=p.wave AND e.action_kind=2 WHERE (p.firing_id,p.channel_id,p.wave,p.entry,p.creature_index)=(c.firing_id,c.channel_id,c.wave,c.entry,c.creature_index) AND p.placed AND e.state=2 AND e.owner_generation=$6::text::numeric)")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                 .bind(effects::small(creature.wave)?).bind(effects::small(creature.entry)?).bind(effects::small(creature.index)?)
-                .bind(identity.generation.get().to_string()).execute(&mut *tx).await?.rows_affected();
-            if changed != 1 {
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(RaidWrite::CompareFailed);
-            }
-            sqlx::query("INSERT INTO game_cake_lure_receipts(firing_id,channel_id,wave,entry,creature_index,world_id,event_year,reset_epoch,x,y,z) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7,$8::text::numeric,$9,$10,$11)")
+                .bind(identity.generation.get().to_string()).execute(&mut **tx).await?.rows_affected();
+    if changed != 1 {
+        return Ok(RaidWrite::CompareFailed);
+    }
+    sqlx::query("INSERT INTO game_cake_lure_receipts(firing_id,channel_id,wave,entry,creature_index,world_id,event_year,reset_epoch,x,y,z) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7,$8::text::numeric,$9,$10,$11)")
                 .bind(identity.firing_id.as_slice()).bind(identity.channel.as_bytes().as_slice())
                 .bind(effects::small(creature.wave)?).bind(effects::small(creature.entry)?).bind(effects::small(creature.index)?)
                 .bind(world.as_slice()).bind(progress.year).bind(expected_epoch.to_string())
-                .bind(i32::from(machine_position[0])).bind(i32::from(machine_position[1])).bind(i32::from(machine_position[2])).execute(&mut *tx).await?;
-            sqlx::query("UPDATE game_cake_world_progress SET golems=golems+1 WHERE world_id=encode($1,'hex')::uuid AND event_year=$2 AND golems=$3")
+                .bind(i32::from(machine_position[0])).bind(i32::from(machine_position[1])).bind(i32::from(machine_position[2])).execute(&mut **tx).await?;
+    sqlx::query("UPDATE game_cake_world_progress SET golems=golems+1 WHERE world_id=encode($1,'hex')::uuid AND event_year=$2 AND golems=$3")
                 .bind(world.as_slice()).bind(progress.year).bind(i16::try_from(progress.golems).map_err(|_| DurabilityError::InvalidStoredState)?)
-                .execute(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(RaidWrite::Applied)
-        })).await
-    }
+                .execute(&mut **tx).await?;
+    Ok(RaidWrite::Applied)
 }
 
 #[cfg(test)]

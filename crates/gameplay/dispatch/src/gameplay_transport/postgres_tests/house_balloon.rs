@@ -119,6 +119,8 @@ enum Case {
     StaticWindow,
     StaticAqueduct,
     TimedRotation,
+    TimedNearExpiry,
+    TimedWrap,
     BedKit(u32),
     NativeNoop(u32),
     Container,
@@ -245,6 +247,15 @@ fn run_case(case: Case) -> TestResult {
 #[test]
 fn w18_house_timed_rotation_resets_timer_and_catches_up_all_phases() -> TestResult {
     run_case(Case::TimedRotation)
+}
+
+#[test]
+fn w18_house_timed_near_expiry_rotation_advances_counterpart_phase() -> TestResult {
+    run_case(Case::TimedNearExpiry)
+}
+#[test]
+fn w18_house_timed_wrap_preserves_remaining_and_restores_deadline() -> TestResult {
+    run_case(Case::TimedWrap)
 }
 
 #[test]

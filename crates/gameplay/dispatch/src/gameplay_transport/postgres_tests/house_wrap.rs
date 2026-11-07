@@ -460,21 +460,21 @@ pub(super) fn static_decoration_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",8,0)])
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",7,0)])
 }
 
 pub(super) fn static_timed_decoration_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i35949",8,0)])
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i35949",7,0)])
 }
 
 pub(super) fn static_bed_decoration_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i2491",8,0),("oteryn:item.tibia.i2492",8,1)])
+    static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i2491",7,0),("oteryn:item.tibia.i2492",7,1)])
 }
 
 struct StaticDecoration {
@@ -524,6 +524,10 @@ fn wrap_bundle_with_static_decorations(
     let seed=sector.tiles.iter().find(|tile|tile.x==7).ok_or("House tile")?;
     let ground=seed.items.first().ok_or("House ground")?.palette;
     let flags=seed.flags;
+    // Clear only the fixture seed before placing actual native decorations.
+    for tile in &mut sector.tiles {
+        if tile.x == 7 { tile.items.truncate(1); }
+    }
     for extra in extras {
         let palette=if let Some(at)=data.manifest.palette.iter().position(|entry|entry.key==extra.key) {
             u32::try_from(at)?
@@ -533,14 +537,18 @@ fn wrap_bundle_with_static_decorations(
                 id:extra.definition.reference.get()-1,terrain:None});
             at
         };
-        sector.tiles.push(oteryn_world_bundle::sector::Tile {x:extra.x,y:extra.y,flags,house:3437,zones:Vec::new(),
-            items:vec![oteryn_world_bundle::sector::Item {palette:ground,depth:0,attrs:Default::default()},
-            oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()}]});
+        let item=oteryn_world_bundle::sector::Item {palette,depth:0,attrs:Default::default()};
+        if let Some(tile)=sector.tiles.iter_mut().find(|tile|tile.x==extra.x&&tile.y==extra.y) {
+            tile.house=3437;
+            tile.items.push(item);
+        } else {
+            sector.tiles.push(oteryn_world_bundle::sector::Tile {x:extra.x,y:extra.y,flags,house:3437,zones:Vec::new(),
+                items:vec![oteryn_world_bundle::sector::Item {palette:ground,depth:0,attrs:Default::default()},item]});
+        }
     }
     for tile in &mut sector.tiles {
         if tile.x == 7 {
             tile.house = 3437;
-            tile.items.truncate(1);
         }
         if tile.x == 6 {
             tile.house = 3437;
