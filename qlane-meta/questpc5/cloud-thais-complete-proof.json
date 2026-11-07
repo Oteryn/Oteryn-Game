@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "status": "QUALIFIED",
+  "scope": "Whole selected Thais Lighthouse Quest: source ladder, two native descents, creature-held pressure plate and restoration, paired portals in both directions and removal, both exact once treasures with cold replay.",
+  "red_dependency": {
+    "proof": "cloud-thais-occupancy-proof.json",
+    "commit": "e0eda748f",
+    "postgres_marker_seconds": 3.458625942,
+    "test_seconds": 3.46,
+    "error": "unknown field occupancy_driven; generic current-creature projection absent"
+  },
+  "green": {
+    "filter": "questpc5_thais_complete_source_route",
+    "test_seconds": 72.05,
+    "postgres_marker_seconds": 3.782389447,
+    "actual_puzzle_and_second_claim_marker": "thais_same_character_ladder_native_descent_creature_plate_restore_both_portals_both_once_rewards",
+    "real_ladder_use_and_restore": true,
+    "native_descents": [
+      [
+        -8,
+        -9
+      ],
+      [
+        -9,
+        -10
+      ]
+    ],
+    "pressure_creature_retirement_restores": true,
+    "both_portal_directions": true,
+    "both_portals_removed": true,
+    "puzzle_preserves_quest_state_and_receipts": true,
+    "source_claims": [
+      {
+        "unique": 6014,
+        "item": 3305,
+        "quantity": 1,
+        "cold_replay": true
+      },
+      {
+        "unique": 6015,
+        "item": 3421,
+        "quantity": 1,
+        "cold_replay": true
+      }
+    ],
+    "once_receipts_per_source": 1
+  },
+  "previous_shared_end_paths": "cloud-thais-occupancy-proof.json",
+  "world_digest": "fd9730294db60975bc9d39c28b69b28fa86931afafb78832aa37e668160b6a95",
+  "navigation_rule": "Navigation between distant objects is abbreviated by the existing fenced relocation owner. All lever changes, floor descents, portal traversals and acquisitions are literal native commands. The donor treasure claims have no puzzle/storage prerequisite; the original first-claim/cold cohort remains intact and the composed puzzle precedes the second treasure. No new gate is invented.",
+  "checks": [
+    "cargo fmt --all --check",
+    "mounted fixture rustfmt with skip_children",
+    "cargo check dispatch",
+    "all-target/all-feature Clippy -D warnings dispatch",
+    "unchanged World inputs retain the immediately preceding repository pin-refresh/check"
+  ],
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "action": {
+      "path": "data-global/scripts/quests/thais_lighthouse/action-lever.lua",
+      "lines": "5-46",
+      "sha256": "70d0d169b8a3fde2e5f121c0c2a8646b77803abbfc3defa87086cba1f1500ac5"
+    },
+    "treasure": {
+      "path": "data-global/startup/tables/chest.lua",
+      "lines": "685-700",
+      "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+    }
+  },
+  "logs": {
+    "postgres": {
+      "path": "/tmp/questpc5-thais-complete-green.log",
+      "sha256": "478803acb44ae4ef6aaf717cf03b9b789185be4c13144af81c93d3af589f5a74"
+    },
+    "check": {
+      "path": "/tmp/questpc5-thais-complete-check.log",
+      "sha256": "c74c256acd8409de64a3450e13e3c1ed4775f93b8920946bf581c1994db1560d"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-thais-complete-clippy-final.log",
+      "sha256": "cfd0161fd12dd602aa61e78dae2815c6b63b083ce951ef125ef9bc7d005ef2e3"
+    }
+  }
+}

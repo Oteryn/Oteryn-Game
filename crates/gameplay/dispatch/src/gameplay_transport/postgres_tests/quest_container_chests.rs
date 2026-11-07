@@ -17,6 +17,7 @@ pub(super) enum SourceRoute {
     Hoist,
     Present,
     PowerRing,
+    Thais,
 }
 
 #[derive(Clone, Copy)]
@@ -876,6 +877,15 @@ fn scenario_case(
                             )
                             .await?
                         }
+                        SourceRoute::Thais => {
+                            super::questpc5_thais_route::exercise(
+                                &mut owner,
+                                &mut stream,
+                                &harness,
+                                deps.actor,
+                            )
+                            .await?
+                        }
                         SourceRoute::PowerRing => {
                             super::questpc5_power_ring_route::exercise(
                                 &mut owner,
@@ -970,5 +980,18 @@ pub(super) fn power_ring_scenario(
         Some(activation),
         None,
         Some(SourceRoute::PowerRing),
+    )
+}
+
+pub(super) fn thais_scenario(
+    chest: &super::quest_catalogue_chests::CatalogueChest,
+    activation: &super::quest_catalogue_chests::CatalogueActivation,
+) -> TestResult {
+    scenario_case(
+        Case::Catalogue,
+        Some(chest),
+        Some(activation),
+        None,
+        Some(SourceRoute::Thais),
     )
 }

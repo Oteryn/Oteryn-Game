@@ -962,6 +962,7 @@ pub(super) fn catalogue_source_world_with_route(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let hoist = route == Some(super::quest_container_chests::SourceRoute::Hoist);
     let power_ring = route == Some(super::quest_container_chests::SourceRoute::PowerRing);
+    let thais = route == Some(super::quest_container_chests::SourceRoute::Thais);
     use oteryn_world_bundle::{bundle, sector};
     use std::collections::BTreeMap;
     let mut placements = Vec::new();
@@ -974,6 +975,7 @@ pub(super) fn catalogue_source_world_with_route(
                     && definition["identity"]["key"] == super::questpc5_hoist_route::SKELETON_CLAIM)
                 && !(power_ring
                     && definition["identity"]["key"] == "oteryn:reward-claim.kv.powerring2")
+                && !(thais && definition["identity"]["key"] == "oteryn:reward-claim.kv.lighthouse2")
             {
                 continue;
             }
@@ -1029,9 +1031,33 @@ pub(super) fn catalogue_source_world_with_route(
         placements.push((32156, 31125, -10, 0, 5772));
         placements.push((32156, 31125, -10, 0, 2773));
     }
+    if thais {
+        let startup: Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/quest-startup-bindings.json"
+        )))?;
+        for row in startup["bindings"].as_array().ok_or("startup bindings")? {
+            if row["attribute"] == "unique"
+                && [25010, 30004, 30005].contains(&row["value"].as_u64().unwrap_or(0))
+            {
+                let p = &row["position"];
+                placements.push((
+                    u16::try_from(p[0].as_u64().ok_or("x")?)?,
+                    u16::try_from(p[1].as_u64().ok_or("y")?)?,
+                    -i8::try_from(p[2].as_u64().ok_or("z")?)?,
+                    u16::try_from(row["value"].as_u64().ok_or("uid")?)?,
+                    u16::try_from(row["item"].as_u64().ok_or("item")?)?,
+                ));
+            }
+        }
+        placements.extend([(32225, 32276, -8, 0, 351), (32225, 32282, -9, 0, 429)]);
+    }
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.palette.truncate(1);
+    if thais {
+        data.manifest.palette[0].key = "oteryn:terrain.tibia.i356".into();
+    }
     let mut appearances = BTreeMap::new();
     let mut tiles = BTreeMap::<(i8, u16, u16), sector::Tile>::new();
     for (x, y, floor, unique, appearance) in placements {
@@ -1099,6 +1125,43 @@ pub(super) fn catalogue_source_world_with_route(
                         attrs: sector::Attrs::default(),
                     }],
                 });
+            }
+        }
+    }
+    if thais {
+        for appearance in [430, 431, 7767, 351, 2772, 2773, 1949] {
+            if let std::collections::btree_map::Entry::Vacant(entry) = appearances.entry(appearance)
+            {
+                let index = u32::try_from(data.manifest.palette.len())?;
+                data.manifest.palette.push(bundle::PaletteEntry {
+                    key: format!("oteryn:terrain.tibia.i{appearance}"),
+                    family: bundle::Family::Terrain,
+                    id: index,
+                    terrain: Some(bundle::Terrain {
+                        kind: bundle::TerrainKind::Common,
+                        walkable: None,
+                        ground_speed: None,
+                    }),
+                });
+                entry.insert(index);
+            }
+        }
+        for floor in [-8, -9, -10] {
+            for y in 32264..=32286 {
+                for x in 32223..=32233 {
+                    tiles.entry((floor, y, x)).or_insert_with(|| sector::Tile {
+                        x,
+                        y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items: vec![sector::Item {
+                            palette: 0,
+                            depth: 0,
+                            attrs: sector::Attrs::default(),
+                        }],
+                    });
+                }
             }
         }
     }
@@ -1333,5 +1396,37 @@ pub(super) async fn relocate_source_actor(
     runtime
         .commit_source_step(proof)
         .map_err(super::fixture::debug)?;
+    Ok(())
+}
+
+pub(super) fn thais_route_cohort() -> TestResult {
+    let claim = "oteryn:reward-claim.kv.lighthouse1";
+    let cases: Vec<_> =
+        cases_including(|key| key == claim || key == "oteryn:reward-claim.kv.lighthouse2")?
+            .into_iter()
+            .filter(|c| c.claim == claim || c.claim == "oteryn:reward-claim.kv.lighthouse2")
+            .collect();
+    assert_eq!(cases.len(), 2);
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || -> Result<(), String> {
+            let world = crate::foundation::WorldId::decode(&super::fixture::id(42))
+                .map_err(|e| format!("{e:?}"))?;
+            let activation =
+                super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")
+                    .map_err(|e| e.to_string())?;
+            for case in &cases {
+                if case.claim == claim {
+                    super::quest_container_chests::thais_scenario(case, &activation)
+                        .map_err(|e| e.to_string())?;
+                } else {
+                    super::quest_container_chests::catalogue_scenario(case, &activation)
+                        .map_err(|e| e.to_string())?;
+                }
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "Thais route thread panicked")??;
     Ok(())
 }
