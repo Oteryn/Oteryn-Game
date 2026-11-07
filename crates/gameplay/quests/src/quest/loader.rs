@@ -237,8 +237,6 @@ pub fn load_embedded_quest_state(
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
-    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
-        .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
@@ -425,21 +423,24 @@ mod tests {
                 .iter()
                 .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
         );
-        let source: serde_json::Value =
-            serde_json::from_str(crate::quest::world_callbacks::EMBEDDED)
-                .map_err(|error| error.to_string())?;
-        let mut expected: std::collections::BTreeSet<_> = source["callbacks"]
-            .as_array()
-            .ok_or("source callbacks")?
-            .iter()
-            .filter(|callback| callback["quest"] != "oteryn:quest.dawnport_quest")
-            .map(|callback| {
-                callback["key"]
-                    .as_str()
-                    .map(str::to_owned)
-                    .ok_or("callback key")
-            })
-            .collect::<Result<_, _>>()?;
+        let registries = [
+            crate::quest::world_callbacks::EMBEDDED,
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/native-scene-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+            include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+        ];
+        let mut expected = std::collections::BTreeSet::new();
+        for text in registries {
+            let source: serde_json::Value =
+                serde_json::from_str(text).map_err(|e| e.to_string())?;
+            for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                }
+            }
+        }
+        expected.insert(crate::quest::schrodinger_island::callback().key);
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         assert_eq!(
             callbacks

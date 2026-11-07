@@ -82,7 +82,6 @@ struct SessionNpc {
     catalogue: Option<catalogue::Pending>,
     delayed_end: Option<catalogue::DelayedEnd>,
     endgame: Option<endgame::Pending>,
-    catalogue: Option<catalogue::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,

@@ -428,37 +428,6 @@ impl NpcRuleCatalog {
 
     /// Preserve the source's absent value while accepting the complete native
     /// track range shared with other quest owners. Source bytes keep their digest.
-    pub fn with_native_bounds(
-        mut self,
-        native: &super::QuestStateCatalogue,
-    ) -> Result<Self, NpcRuleError> {
-        for program in &mut self.programs {
-            for track in &mut program.document.tracks {
-                let definition = native
-                    .track(&track.key)
-                    .ok_or_else(|| NpcRuleError::MissingTrack(track.key.clone()))?;
-                if definition.quest != track.quest
-                    || (definition.initial != track.initial
-                        && !(definition.initial == 0
-                            && track.initial == -1
-                            && native
-                                .npc_legacy
-                                .get(&track.quest)
-                                .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
-                    || definition.min > track.min
-                    || definition.max < track.max
-                {
-                    return Err(NpcRuleError::Invalid(format!(
-                        "native NPC track refinement: {}",
-                        track.key
-                    )));
-                }
-                track.min = definition.min;
-                track.max = definition.max;
-            }
-        }
-        Ok(self)
-    }
 
     pub fn load_embedded() -> Result<Self, NpcRuleError> {
         Self::embedded().cloned()
@@ -640,7 +609,8 @@ pub(super) fn extend(
     let mut legacy = catalogue.npc_legacy.clone();
     for program in source.programs() {
         let quest = &program.document.quest;
-        if quest != "oteryn:quest.the_order_of_the_stag_quest"
+        if program.document.schema == 1
+            && quest != "oteryn:quest.the_order_of_the_stag_quest"
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(
@@ -755,122 +725,9 @@ pub fn legacy_defaults<'a>(
 }
 
 /// Refine only original source-qualified tracks; preserve every wider native bound.
-pub(super) fn extend(
-    catalogue: super::QuestStateCatalogue,
-    source_tracks: &BTreeMap<String, String>,
-) -> Result<super::QuestStateCatalogue, String> {
-    let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    let mut legacy = catalogue.npc_legacy.clone();
-    for program in source.programs() {
-        let quest = &program.document.quest;
-        if program.document.schema == 1
-            && quest != "oteryn:quest.the_order_of_the_stag_quest"
-            && let Some(hash) = catalogue.definition_hash(quest)
-        {
-            legacy.insert(
-                quest.clone(),
-                (
-                    hash,
-                    catalogue
-                        .tracks
-                        .values()
-                        .filter(|track| &track.quest == quest)
-                        .map(|track| (track.key.clone(), track.initial))
-                        .collect(),
-                ),
-            );
-        }
-    }
-    let mut tracks = catalogue.tracks.clone();
-    let mut transitions = catalogue.transitions.clone();
-    for program in source.programs() {
-        for track in &program.document.tracks {
-            if let Some(native) = tracks.get_mut(&track.key) {
-                let original = track
-                    .key
-                    .strip_prefix("oteryn:")
-                    .map(|tail| format!("canary:{tail}"));
-                if native.quest != track.quest
-                    || (native.initial != track.initial
-                        && !(native.initial == 0
-                            && source_tracks.get(&track.key) == original.as_ref()))
-                {
-                    return Err(format!("NPC source track conflict: {}", track.key));
-                }
-                // Keep the old catalogue's absent value for every existing native
-                // consumer. Only source NPC planning uses its donor absent value.
-                native.min = native.min.min(track.min);
-                native.max = native.max.max(track.max);
-            } else {
-                tracks.insert(
-                    track.key.clone(),
-                    super::QuestTrack {
-                        key: track.key.clone(),
-                        quest: track.quest.clone(),
-                        initial: track.initial,
-                        min: track.min,
-                        max: track.max,
-                    },
-                );
-            }
-        }
-        // An unexecutable definition marker binds every guard, reply, effect and
-        // source reference into the existing quest definition hash.
-        let first = program
-            .document
-            .tracks
-            .first()
-            .ok_or("NPC program has no tracks")?;
-        let digest = program
-            .digest
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        let key = format!("oteryn:quest-npc-pin/{digest}");
-        if transitions
-            .insert(
-                key.clone(),
-                super::QuestTransition {
-                    world_change: None,
-                    key,
-                    quest: program.document.quest.clone(),
-                    effects: vec![super::QuestEffect {
-                        track: first.key.clone(),
-                        from: super::QuestComparison::Any,
-                        effect: super::QuestEffectKind::Computed,
-                    }],
-                    completes: false,
-                    experience: None,
-                },
-            )
-            .is_some()
-        {
-            return Err("duplicate NPC source pin".into());
-        }
-    }
-    let mut active = super::QuestStateCatalogue::new(
-        catalogue.content_revision,
-        tracks.into_values().collect(),
-        transitions.into_values().collect(),
-    )
-    .map_err(|e| format!("{e:?}"))?;
-    active.npc_legacy = legacy;
-    Ok(active)
-}
 
 /// Only an exact pre-activation definition can retain its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
-pub fn legacy_defaults<'a>(
-    catalogue: &'a super::QuestStateCatalogue,
-    quest: &str,
-    stored_hash: &[u8; 32],
-) -> Option<&'a BTreeMap<String, i64>> {
-    catalogue
-        .npc_legacy
-        .get(quest)
-        .filter(|(hash, _)| hash == stored_hash)
-        .map(|(_, defaults)| defaults)
-}
 
 #[cfg(test)]
 mod tests;

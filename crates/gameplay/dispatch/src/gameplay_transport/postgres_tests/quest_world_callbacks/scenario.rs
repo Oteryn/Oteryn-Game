@@ -443,7 +443,7 @@ fn scenario_case(
             name,
             "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"
         ) {
-            super::super::npc_program::exercise_father(
+            super::super::questpc8_npc_program_regressions::exercise_father(
                 &mut owner,
                 &mut admitted,
                 &h,
@@ -453,7 +453,7 @@ fn scenario_case(
             )
             .await?;
         } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
-            super::super::npc_program::exercise_scoped(
+            super::super::questpc8_npc_program_regressions::exercise_scoped(
                 &mut owner,
                 &mut admitted,
                 &h,

@@ -2093,6 +2093,7 @@ pub(super) mod tests {
                 // W15b container children bind the root transaction's selected Type2 tuple.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
+                "crates/gameplay/durability/src/durability/tutorial_viola.rs",
             ]
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time

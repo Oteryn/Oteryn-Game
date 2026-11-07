@@ -841,7 +841,7 @@ fn shipped_npc_source_does_not_claim_an_unbound_native_catalogue() -> Result<(),
 }
 
 #[test]
-fn storage_owner_refuses_inventory_dependent_fallbacks() -> Result<(), NpcRuleError> {
+fn storage_owner_refuses_inventory_dependent_fallbacks_main_source() -> Result<(), NpcRuleError> {
     let mut conditional = fixture_rule("inventory-first", serde_json::json!([]));
     conditional["guards"] = serde_json::json!([
         {"kind":"item","item":"oteryn:item.tibia.i140","count":1}
@@ -862,7 +862,8 @@ fn storage_owner_refuses_inventory_dependent_fallbacks() -> Result<(), NpcRuleEr
 }
 
 #[test]
-fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), NpcRuleError> {
+fn storage_owner_preserves_order_and_rejects_unowned_effects_main_source()
+-> Result<(), NpcRuleError> {
     let mut first = fixture_rule(
         "first",
         serde_json::json!([
@@ -901,7 +902,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 }
 
 #[test]
-fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback()
+fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback_main_source()
 -> Result<(), String> {
     let text = include_str!("../../../../../../content/quests/missions/quest-state.json");
     let old = super::super::loader::parse_quest_state(text, "npc-legacy")
@@ -997,7 +998,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
 }
 
 #[test]
-fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
+fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap_main_source()
 -> Result<(), NpcRuleError> {
     let source = NpcRuleCatalog::runtime()?;
     let facts = Facts::empty();

@@ -1,0 +1,21 @@
+{
+  "state": "All-target integration compile and generated files PASS; scoped tests building",
+  "main": "f641d8d6c",
+  "canonical_reuse": [
+    "NPC durable executor",
+    "NPC source hand-ins and XP",
+    "Father materials and cape mint",
+    "NPC dispatch catalogue"
+  ],
+  "core_check": "PASS42.99s",
+  "fmt": "PASS",
+  "native_regeneration": "PASS45 files; Grizzly rooms30/30",
+  "equipment_census_added": 174,
+  "own_pg_before_integration": {
+    "Wrath opening": 217.555976812
+  },
+  "whole_quest_status": "Wrath still in progress; no qualification count increment",
+  "workspace_all_targets": "PASS1m45s",
+  "pin_refresh": "PASS",
+  "unit_rerun": "12 collected failures selected across six changed crates; building"
+}

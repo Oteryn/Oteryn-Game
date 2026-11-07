@@ -348,6 +348,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 && (!callback.is_read_only()
                     || !matches!(callback.trigger, Trigger::Use | Trigger::StepIn)
                     || callback.teleport.is_none()
+                    || (callback.trigger == Trigger::StepIn && !callback.return_on_failure)
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || !callback.offerings.is_empty()
@@ -930,11 +931,25 @@ mod tests {
                 || c.key.ends_with("travelling-trader-delivery")
         }) {
             for storage in &callback.storage {
-                assert!(
-                    lowered.source_track(&storage.track).is_some(),
-                    "{}",
-                    storage.track
-                );
+                if callback.key.starts_with("oteryn:quest-callback/authored-") {
+                    assert!(storage.track.starts_with("oteryn:quest-progress/chosen/"));
+                    assert!(
+                        callback
+                            .sources
+                            .iter()
+                            .any(|s| s.starts_with("oteryn-authored:"))
+                    );
+                    assert!(
+                        lowered.source_track(&storage.track).is_none(),
+                        "authored state cannot invent a donor source"
+                    );
+                } else {
+                    assert!(
+                        lowered.source_track(&storage.track).is_some(),
+                        "{}",
+                        storage.track
+                    );
+                }
                 assert_eq!(
                     lowered
                         .catalogue()

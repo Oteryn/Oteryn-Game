@@ -423,7 +423,6 @@ impl QuestStateCatalogue {
             hashes,
             npc_legacy: BTreeMap::new(),
             predecessors: BTreeMap::new(),
-            npc_legacy: BTreeMap::new(),
         })
     }
 

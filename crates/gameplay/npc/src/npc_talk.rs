@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 
+mod caller_scope;
 mod dark_trails;
 mod isle_of_evil;
 
@@ -238,11 +239,6 @@ impl NpcTalkBook {
         Self::from_model_with_native_quests(model, &[])
     }
 
-    /// Admit source greetings for NPCs whose stateful rules have a native executor.
-    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
-        Self::from_model_with_native_quests(model, &[])
-    }
-
     /// Admit only the caller's native quest NPCs' existing literal greetings.
     /// Stateful keywords and durable writes remain with the native dispatcher.
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
@@ -279,6 +275,9 @@ impl NpcTalkBook {
                     | "oteryn:npc.second_in_command_demeron"
             );
             let native_quest = stag || native_npcs.contains(&reference.key.as_str());
+            if !caller_scope::allows(&reference.key, native_quest) {
+                continue;
+            }
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,

@@ -543,6 +543,8 @@ def main() -> int:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+        for census in ("equipment", "audit_sites", "room_sites"):
+            run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
@@ -572,6 +574,8 @@ def main() -> int:
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+    for census in ("equipment", "audit_sites", "room_sites"):
+        run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

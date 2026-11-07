@@ -1,5 +1,8 @@
 //! Reused native activation fixture and LOOP-MONSTER source-profile variants.
 use super::*;
+#[cfg(test)]
+#[path = "source_loot_assertions.rs"]
+mod source_loot_assertions;
 
 fn manifest_input() -> NativeGameplayInput {
     let manifest = Path::new(if env!("CARGO_PKG_NAME") == "oteryn-game-server" {
@@ -226,6 +229,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
+    let newly_admitted = ["oteryn:creature.the_percht_queen"];
     let mut missing = 0;
     let mut inadmissible = 0;
     let mut admitted = Vec::new();
@@ -307,13 +311,32 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|binding| binding.creature.key == policy.definition_key)
                 .ok_or("source reward-boss loot binding")?;
-            assert!(binding.loot.is_none(), "source boss has no authored loot");
-            assert_eq!(row.loot_table_ref, row.corpse_item);
             assert_eq!(
                 row.loot_table.algorithm,
                 LootSelectionAlgorithm::IndependentBernoulliPpm
             );
-            assert!(row.loot_table.entries.is_empty());
+            if let Some(reference) = &binding.loot {
+                assert!(newly_admitted.contains(&policy.definition_key.as_str()));
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|t| t.identity == *reference)
+                    .ok_or("source Queen loot table")?;
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&reference.family, &reference.key, &reference.revision)
+                );
+                assert_eq!(table.algorithm, "IndependentBernoulliPpm");
+                assert!(!table.entries.is_empty());
+                source_loot_assertions::entries(
+                    &row.loot_table.entries,
+                    &table.entries,
+                    &loot.items,
+                );
+            } else {
+                assert_eq!(row.loot_table_ref, row.corpse_item);
+                assert!(row.loot_table.entries.is_empty());
+            }
             None
         } else if corpse.is_none() {
             missing += 1;
@@ -329,8 +352,18 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 329, 1));
-    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    assert_eq!(
+        (missing, inadmissible, admitted.len()),
+        (52, 329 - newly_admitted.len(), 1 + newly_admitted.len())
+    );
+    admitted.sort_unstable();
+    assert_eq!(
+        admitted,
+        [
+            "oteryn:creature.the_percht_queen",
+            "oteryn:creature.the_primal_menace"
+        ]
+    );
     shared_body.sort_unstable();
     assert_eq!(
         shared_body,
