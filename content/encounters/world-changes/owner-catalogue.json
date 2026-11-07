@@ -1433,7 +1433,7 @@
       "key": "spring_into_life",
       "title": "Spring into Life",
       "quest": "oteryn:quest.authored.spring_into_life",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",

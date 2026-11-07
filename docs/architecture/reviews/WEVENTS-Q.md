@@ -337,3 +337,24 @@ catalogue. Its native merchant verification is running separately; no new
 WORLDCHG-Q title row is claimed here. Declared event raid bindings remain
 reserved while unpublished, so they cannot fall through to ordinary calendar
 admission. The focused owner case includes Spring whenever publication is on.
+
+## Spring qualification
+
+Spring into Life is now **QUALIFIED**. The source-bound Rosemarie conversation
+resolved the real `NoConversation` regression. Both production NPC-dispatch
+PostgreSQL cases passed, with executed markers: paid purchase **127.065023255 s**,
+free participation reward **129.857878653 s**, overall **2 passed / 129.86 s**
+(`/tmp/wevents-spring-merchant-pg-green.log`). They exercise real native MINT,
+coin debit, filled-backpack refusal/rollback, literal command replay and repeated
+claim refusal. These complete the independently executed nest USE, actual
+hatchling realization, surprise-nest opening/weights, shared-clock ACK and
+reset/retirement proofs recorded above. No seeded merchant prerequisite is
+claimed as proof of physical hatching; those paths have separate executed cases.
+
+Final strict clippy passed all seven changed libraries in **48.98 s**;
+publication model checks passed **12 tests**, and fmt passed. Logs:
+`/tmp/wevents-spring-publication-{clippy,model,fmt}.log`.
+Only the Spring row changes in WORLDCHG-Q.md. The owner catalogue publishes its
+closed timed binding, and the focused PostgreSQL owner run includes this title
+whenever that publication is enabled. The two declared event raids remain
+reserved if publication is later disabled.
