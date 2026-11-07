@@ -18749,6 +18749,750 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/utils/utils_definitions.hpp#L438-L451 sha256=03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d: native global enum oil7, mana10, life11; the legacy data-crystal fluid script uses different numeric constants.",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/fluids.lua#L124-L139 sha256=5ca5ff091a9710788e7e4610c95620220ff338a8b8fc6b3baf88ed857ccdfb50: matching global consumption owner; oil never grants mana or health."
       ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Guardian of the Deep Seas"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.guardian_of_the_deep_seas",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "research": [
+        "Exact displayed identity Guardian of the Deep Seas; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:83865 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 69433, 'revid': 1116843}. All other NPC facts and existing identity remain unchanged."
+      ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Hemor, the guard"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.hemor_the_guard",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "research": [
+        "Exact displayed identity Hemor, the guard; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:95281 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 30666, 'revid': 851837}. All other NPC facts and existing identity remain unchanged."
+      ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Humnog, the guard"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.humnog_the_guard",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "research": [
+        "Exact displayed identity Humnog, the guard; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:97240 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 30548, 'revid': 851844}. All other NPC facts and existing identity remain unchanged."
+      ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Lesser Messenger of Heaven"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.lesser_messenger_of_heaven",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "research": [
+        "Exact displayed identity Lesser Messenger of Heaven; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:117074 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 78554, 'revid': 851926}. All other NPC facts and existing identity remain unchanged."
+      ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "trader"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "trade"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "services": [
+          {
+            "family": "Service",
+            "key": "oteryn:service.trade.nah_bob",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "trader"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "trade"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Nah'Bob"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.nah_bob",
+          "revision": "definition-r1"
+        },
+        "services": [
+          {
+            "family": "Service",
+            "key": "oteryn:service.trade.nah_bob",
+            "revision": "definition-r1"
+          }
+        ]
+      },
+      "research": [
+        "Exact displayed identity Nah'Bob; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:132171 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 5820, 'revid': 1114137}. All other NPC facts and existing identity remain unchanged."
+      ]
+    },
+    {
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "trader"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/189\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "trade"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_chance_percent",
+            "value": {
+              "type": "Integer",
+              "value": 50
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_interval_ms",
+            "value": {
+              "type": "Integer",
+              "value": 15000
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_lines",
+            "value": {
+              "type": "Text",
+              "value": "[{\"text\":\"Did you hear that, too?\",\"yell\":false}]"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.base_speed",
+            "value": {
+              "type": "Integer",
+              "value": 55
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.floor_change",
+            "value": {
+              "type": "Boolean",
+              "value": false
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "trader"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/189\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "trade"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_chance_percent",
+            "value": {
+              "type": "Integer",
+              "value": 50
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_interval_ms",
+            "value": {
+              "type": "Integer",
+              "value": 15000
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.voice_lines",
+            "value": {
+              "type": "Text",
+              "value": "[{\"text\":\"Did you hear that, too?\",\"yell\":false}]"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "One-Eyed Joe"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.one_eyed_joe",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "research": [
+        "Exact displayed identity One-Eyed Joe; tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:143809 sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; wiki page/revision {'pageid': 69432, 'revid': 1116842}. All other NPC facts and existing identity remain unchanged."
+      ]
     }
   ]
 }

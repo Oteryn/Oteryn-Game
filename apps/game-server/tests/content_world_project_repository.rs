@@ -724,7 +724,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         world_project_sha256(npcfix_bytes),
-        "d2ab30181dc41efd535e5d5b565e438311fc4d175de756c3001b28ed5de96723"
+        "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66"
     );
     let npcfix: serde_json::Value = serde_json::from_slice(npcfix_bytes).expect("NPCFIX packet");
     let npcfix_records: BTreeMap<_, _> = npcfix["repairs"]
@@ -740,7 +740,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             )
         })
         .collect();
-    assert_eq!(npcfix_records.len(), 54);
+    assert_eq!(npcfix_records.len(), 60);
     assert!(v2.declarations.iter().all(|declaration| {
         let repaired = match declaration {
             ProjectV2Declaration::Npc { identity, .. }

@@ -8439,7 +8439,7 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "COMPILES; CORRECTED_NEW_FIXTURE_ORDER; DEFAULT_NAME_RED_RUNNING",
+    "state": "COMPILES; UPDATED_MATERIALIZER_EXECUTING; CANONICAL_NAME_GREEN_PENDING",
     "entries": [
       "Guardian of the Deep Seas",
       "Hemor, the guard",
@@ -8454,6 +8454,19 @@
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
       "log": "/tmp/npcfix-evidence/six-name-fixture-order-red.log"
     },
-    "fix": "Only new case points sorted by exact runtime order(floor,y,x); both Lesser Messenger anchors retained and checked against frozen retail positions. No Rust, runtime ordering guard, prior case or canonical NPC data changed. Fresh name RED rerun active."
+    "fix": "Only new case points sorted by exact runtime order(floor,y,x); both Lesser Messenger anchors retained and checked against frozen retail positions. No Rust, runtime ordering guard, prior case or canonical NPC data changed. Fresh name RED rerun active.",
+    "postgres_red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 162.13,
+      "error": "Guardian Of The Deep Seas != Guardian of the Deep Seas",
+      "log": "/tmp/npcfix-evidence/six-name-pg-red.log",
+      "sha256": "42bb5395379ed378c5e56f3bc0199721d79496d48c3bfca95f4d3639d7048f77"
+    },
+    "source_packet": {
+      "repairs": 60,
+      "original54_preserved": true,
+      "sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66"
+    },
+    "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active."
   }
 }
