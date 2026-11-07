@@ -712,6 +712,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-l12-") {
+        return super::qengine_kill_stories::exercise(owner,admitted,h,authority,name).await;
+    }
     if name.starts_with("qengine-rewards-l11-") {
         return super::qengine_level_stories::exercise(owner,admitted,h,authority,name).await;
     }

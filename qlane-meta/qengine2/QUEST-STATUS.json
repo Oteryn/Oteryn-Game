@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 33,
-    "unfinished": 33,
+    "qualified": 36,
+    "unfinished": 30,
     "blocked": 0
   },
   "quests": [
@@ -231,7 +231,7 @@
     {
       "canonical": "oteryn:quest.cave_explorer_outfits_quest",
       "title": "Cave Explorer Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -246,7 +246,27 @@
           "matched_statuses": []
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected hunting/outfit programme via native death queue and real NPC commands",
+        "postgres_red": "/tmp/qengine2-batch12-red.log;3failed86.02s; real missing start bindings,42.76-43.63s markers",
+        "postgres_green": "/tmp/qengine2-batch12-green4.log; POSTGRES_CASE_COMPLETED duration=95.757436472s success=true",
+        "proofs": [
+          "Native NPC acceptance before credit; Current Premium refusal; early report durably refused",
+          "Native creature policy health and lethal owner commit; no quest counter seeding or direct counter writer in the stories",
+          "Duplicate lethal projections and repeated drains count once; counters saturate at the chosen goal",
+          "Actual NPC base and addon exchange; exact source quantities consumed and surplus retained",
+          "Literal NPC command replay yields one source; normal account-backed appearance catalogue mask0/base or mask3/full addons"
+        ],
+        "source_notes": "CONTRACT-NOTES.md L12; native engine reused questpc3 5e72a3f0b, with only this lane trial bindings",
+        "assumptions": [
+          "Fixed Crystal Spider Spike assignment and Lava Lurker fiery assignment for selected unspecified creature groups.",
+          "Gnomadness physical Gnomprona contact; source greeting establishes location.",
+          "Cave donor base1000 and addon2000/3000 prices preserved; selected min80.",
+          "Explicit owner-selected Dragon Slayer quest promotes exact admitted store-labelled looks1289/1288; unrelated store looks remain excluded."
+        ],
+        "checks": "1native counter Rust unit;10reward Rust1.59s;28Python30.927s;3cratecheck1m03s;strict3crateclippy46.09s;fmt/reproducers;pin-refresh/check24ab unchanged;123content2.05s;MakeshiftPG81.499190544s green; 5world45.13s passed"
+      }
     },
     {
       "canonical": "oteryn:quest.children_of_the_revolution_quest",
@@ -470,7 +490,7 @@
     {
       "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
       "title": "Dragon Slayer Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -487,7 +507,27 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected hunting/outfit programme via native death queue and real NPC commands",
+        "postgres_red": "/tmp/qengine2-batch12-red.log;3failed86.02s; real missing start bindings,42.76-43.63s markers",
+        "postgres_green": "/tmp/qengine2-batch12-dragon-green5.log; POSTGRES_CASE_COMPLETED duration=92.727517035s success=true",
+        "proofs": [
+          "Native NPC acceptance before credit; Current Premium refusal; early report durably refused",
+          "Native creature policy health and lethal owner commit; no quest counter seeding or direct counter writer in the stories",
+          "Duplicate lethal projections and repeated drains count once; counters saturate at the chosen goal",
+          "Actual NPC base and addon exchange; exact source quantities consumed and surplus retained",
+          "Literal NPC command replay yields one source; normal account-backed appearance catalogue mask0/base or mask3/full addons"
+        ],
+        "source_notes": "CONTRACT-NOTES.md L12; native engine reused questpc3 5e72a3f0b, with only this lane trial bindings",
+        "assumptions": [
+          "Fixed Crystal Spider Spike assignment and Lava Lurker fiery assignment for selected unspecified creature groups.",
+          "Gnomadness physical Gnomprona contact; source greeting establishes location.",
+          "Cave donor base1000 and addon2000/3000 prices preserved; selected min80.",
+          "Explicit owner-selected Dragon Slayer quest promotes exact admitted store-labelled looks1289/1288; unrelated store looks remain excluded."
+        ],
+        "checks": "1native counter Rust unit;10reward Rust1.59s;28Python30.927s;3cratecheck1m03s;strict3crateclippy46.09s;fmt/reproducers;pin-refresh/check24ab unchanged;123content2.05s;MakeshiftPG81.499190544s green; 5world45.13s passed"
+      }
     },
     {
       "canonical": "oteryn:quest.dream_warden_outfits_quest",
@@ -737,7 +777,7 @@
     {
       "canonical": "oteryn:quest.fire_fighter_outfits_quest",
       "title": "Fire-Fighter Outfits Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -754,7 +794,27 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": null,
+      "qualification": {
+        "scope": "Whole selected hunting/outfit programme via native death queue and real NPC commands",
+        "postgres_red": "/tmp/qengine2-batch12-red.log;3failed86.02s; real missing start bindings,42.76-43.63s markers",
+        "postgres_green": "/tmp/qengine2-batch12-green4.log; POSTGRES_CASE_COMPLETED duration=95.848776751s success=true",
+        "proofs": [
+          "Native NPC acceptance before credit; Current Premium refusal; early report durably refused",
+          "Native creature policy health and lethal owner commit; no quest counter seeding or direct counter writer in the stories",
+          "Duplicate lethal projections and repeated drains count once; counters saturate at the chosen goal",
+          "Actual NPC base and addon exchange; exact source quantities consumed and surplus retained",
+          "Literal NPC command replay yields one source; normal account-backed appearance catalogue mask0/base or mask3/full addons"
+        ],
+        "source_notes": "CONTRACT-NOTES.md L12; native engine reused questpc3 5e72a3f0b, with only this lane trial bindings",
+        "assumptions": [
+          "Fixed Crystal Spider Spike assignment and Lava Lurker fiery assignment for selected unspecified creature groups.",
+          "Gnomadness physical Gnomprona contact; source greeting establishes location.",
+          "Cave donor base1000 and addon2000/3000 prices preserved; selected min80.",
+          "Explicit owner-selected Dragon Slayer quest promotes exact admitted store-labelled looks1289/1288; unrelated store looks remain excluded."
+        ],
+        "checks": "1native counter Rust unit;10reward Rust1.59s;28Python30.927s;3cratecheck1m03s;strict3crateclippy46.09s;fmt/reproducers;pin-refresh/check24ab unchanged;123content2.05s;MakeshiftPG81.499190544s green; 5world45.13s passed"
+      }
     },
     {
       "canonical": "oteryn:quest.formal_dress_outfits_quest",
@@ -2176,6 +2236,18 @@
       "postgres_red": "/tmp/qengine2-batch9b-red.log:43.641406526s/44.064888606s",
       "postgres_green": "/tmp/qengine2-batch9b-green1.log:2 passed83.07s; Crystal83.055503896s/Soil83.067978133s",
       "verification": "6Rust bag units;24Python9.564s;1bag-catalogue test0.004s;check4crates1m15s;clippy58.91s;fmt/3reproducers/pin-refresh24ab pass. Source acquisition uses existing bag owner, exact25ranges/quantities; no probability/UID/command-admission bypass. Targeted server content/world followons running session87022."
+    },
+    {
+      "batch": "L1-12",
+      "status": "QUALIFIED",
+      "entries": [
+        "Dragon Slayer Outfits Quest",
+        "Cave Explorer Outfits Quest",
+        "Fire-Fighter Outfits Quest"
+      ],
+      "postgres_red": "/tmp/qengine2-batch12-red.log:3failed86.02s",
+      "postgres_green": "Cave95.757436472s/Fire95.848776751s batch12-green4;Dragon92.727517035s batch12-dragon-green5; all actual PostgreSQL markers success=true",
+      "checks": "Rust1native+10reward;28Python30.927s;check1m03s;clippy46.09s;fmt/repro/pinrefresh+pincheck24ab;123content2.05s;MakeshiftPG81.499190544s;5world45.13s"
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2579,7 +2651,7 @@
     "postgres_green": "/tmp/qengine2-batch11-green2.log;3passed157.67s"
   },
   "active_batch_l1_12": {
-    "status": "AUTHORING",
+    "status": "QUALIFIED",
     "entries": [
       "Dragon Slayer Outfits Quest",
       "Cave Explorer Outfits Quest",
@@ -2587,12 +2659,17 @@
     ],
     "engine_reuse": "questpc3 native kill engine commit5e72a3f0b0e16803bc5cd999298e4ec83f05eed9; no other-lane bindings imported",
     "postgres_red": "/tmp/qengine2-batch12-red.log:3failed86.02s; Dragon43.246433792s,Cave43.632589177s,Fire42.764418081s; missing actual start bindings",
-    "progress": "Native engine all-feature check1m19s and strict all-target clippy3m05s passed;28Python22.738s passed. First full native-death PG run failed InvalidCreatureTarget (84.525934906s/85.373272012s plus Fire); corrected fixture installs stock native companion policies. Latest full stories add literal NPC replay and exact item consumption. Qualification still pending.",
+    "progress": "All three full native hunting stories and old Makeshift regression green. Final123content2.05s/5world45.13s, reproducers and pins pass. Commit and push this slice now.",
     "assumptions": [
       "Fixed Crystal Spider Spike assignment and Lava Lurker fiery assignment for selected unspecified creature groups.",
       "Gnomadness physical Gnomprona contact; source greeting establishes location.",
       "Cave donor base1000 and addon2000/3000 prices preserved; selected min80."
     ],
-    "evidence": "qlane-meta/qengine2/CONTRACT-NOTES.md L12"
+    "evidence": "qlane-meta/qengine2/CONTRACT-NOTES.md L12",
+    "postgres_green": {
+      "Dragon Slayer Outfits Quest": "92.727517035s success=true",
+      "Cave Explorer Outfits Quest": "95.757436472s success=true",
+      "Fire-Fighter Outfits Quest": "95.848776751s success=true"
+    }
   }
 }

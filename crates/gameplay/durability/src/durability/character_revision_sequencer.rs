@@ -32,6 +32,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod grizzly;
+mod native_kills;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;

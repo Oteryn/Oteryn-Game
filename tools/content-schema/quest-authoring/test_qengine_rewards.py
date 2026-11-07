@@ -7,6 +7,23 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
+        document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
+        rows={c['key'].split('/')[-1]:c for c in document['callbacks']}
+        for label,goals in [('dragon-slayer',[20,20]),('cave-explorer',[20]),('fire-fighter',[10])]:
+            start=rows[f'l12-{label}-start'];base=rows[f'l12-{label}-base']
+            self.assertEqual(start['storage'][0]['minimum'],0)
+            self.assertEqual(start['storage'][0]['set'],1)
+            self.assertEqual([s['minimum'] for s in base['storage'][1:]],goals)
+            self.assertEqual(base['storage'][0]['set'],2)
+            self.assertTrue(base['requires_premium'])
+            self.assertEqual(base['forbids_outfits'],[base['outfit']['outfit']])
+        self.assertEqual([rows[f'l12-cave-explorer-{stage}']['fee']['gold'] for stage in ['base','first','second']],[1000,2000,3000])
+        appearance=json.loads(q.build()['content/cosmetics/outfits/authoring.json'])['document']
+        dragon=next(o for o in appearance['outfits'] if o['key']=='oteryn:outfit.dragon_slayer')
+        self.assertEqual((dragon['female']['id'],dragon['male']['id']),(1289,1288))
+        self.assertTrue(any(m['grant_key']=='oteryn:outfit.dragon_slayer/quest-grant/0' for m in appearance['grant_mappings']))
+
     @classmethod
     def setUpClass(cls):
         cls.outputs=q.build()
@@ -288,10 +305,10 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-'))},
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),74)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),111)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),114)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

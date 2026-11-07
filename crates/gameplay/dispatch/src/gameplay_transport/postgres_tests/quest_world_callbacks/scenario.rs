@@ -124,7 +124,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if classic_npc {
+            if name.starts_with("qengine-rewards-l12-") {
+                128
+            } else if classic_npc {
                 5
             } else if monk {
                 4
@@ -154,6 +156,7 @@ fn scenario_case(
             || name.contains("l9-")
             || name.contains("l10-documents-")
             || name.contains("l11-")
+            || name.contains("l12-")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,

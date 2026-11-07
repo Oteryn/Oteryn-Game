@@ -8,7 +8,7 @@ META 3.1.0 resolved at bound immutable commit; required dev/coding/debugging/
 review/verify/waves guidance read. Source env.sh for Cargo/PG commands:
 `source /workspace/oteryn-env/env.sh` (do not print its private URL).
 
-Scope: exactly 66 L1 outfit/addon entries. Counts: 11 QUALIFIED, 55 UNFINISHED,
+Scope: exactly 66 L1 outfit/addon entries. Counts: 36 QUALIFIED, 30 UNFINISHED,
 0 BLOCKED. Original cross-lane evidence and source hashes remain in QUEST-STATUS.
 Preserve exclusions and other-lane/world-change ownership. Parent quest tracks
 retain their original owners; qualify all of an L1 outfit entry's reward paths.
@@ -601,3 +601,26 @@ selected protocol capabilities and Current Premium registration; added exact
 material consumption and literal NPC replay. Full stories compiling again in
 /tmp/qengine2-batch12-green3.log. Production L12 work remains uncommitted until
 green; this checkpoint records progress only. Continue without ending the turn.
+
+L1-12 QUALIFIED: Dragon Slayer, Cave Explorer, Fire-Fighter. Counts36/66 qualified,
+30 unfinished,0blocked. Generic native kill engine reused questpc3 5e72a3f0b;
+source trial bindings only, no other-lane quest enablement. Frozen native death
+eligibility/party observation, existing queue/occurrence identity/revision slot,
+fresh SQL mission epoch prevent backdating and duplicate progress. Native kill
+effects preserve the mission start revision. Real NPC starts, exact20Dragon plus
+20Dragon Lord/20Crystal Spider/10Lava Lurker goals; no direct counter writes.
+Cave source fees1000base/2000first/3000second; Dragon10green+10red scales; Fire
+axe39544/flame39545, Friendly Fire. Fixed creature choices and Gnomprona desk
+role documented. Dragon exact admitted looks1289/1288 explicitly promoted for
+owner-selected quest despite source store label; no unrelated store enablement.
+A unique exchange's keyword now reaches the locked stage refusal after eligible
+conversation offers, rather than falling through to legacy NPC dialogue.
+PG GREEN Cave95.757436472s/Fire95.848776751s in batch12-green4.log; Dragon
+92.727517035s in batch12-dragon-green5.log. Native deaths and replay, bounded
+counters, early/premium refusal, exact material consumption, surplus retention,
+NPC literal replay, account-backed normal masks pass. Existing MakeshiftPG
+regression81.499190544s green.1nativeRust+10rewardRust1.59s;28Python30.927s;
+check1m03s;strict clippy46.09s;fmt/reproducers;pin-refresh/check24ab unchanged;
+123content2.05s;5world45.13s passed. All slice checks green; commit/push now.
+Next proposed source programmes: Decaying Defender, Revenant, Rift Warrior;
+read chosen stages and reuse original parent/boss ownership, no parent redo.

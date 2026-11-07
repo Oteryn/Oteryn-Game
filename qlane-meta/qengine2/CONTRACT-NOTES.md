@@ -219,3 +219,15 @@ These fixed trials are explicit authored rules, not claims of recovered donor
 outfit scripts. Firefighting axe39544 and portable flame39545 retain existing
 canonical identities and native profiles. NPC dialogue accepts trials before any
 counter credit; no direct counter writes are used in the positive PG stories.
+Dragon Slayer appearance: pinned Crystal9f outfits.xml marks admitted looks
+female1289/male1288 as store. The owner explicitly selected an authored Dragon
+Slayer quest and authorizes missing bindings; promote this pair for its quest
+base grant as an explicit exception, retaining exact captured appearance hashes.
+Do not infer a recovered donor quest or enable unrelated store grants. The
+canonical outfit now participates in the existing account grant/appearance owner.
+A unique NPC exchange owns its exact keyword even with unmet predicates: after
+eligible conversation offers, route that unique exchange to the locked durable
+writer for a stage refusal instead of generic legacy-dialogue fallthrough.
+Cyclops identity evidence: same Crystal9f data-global/npc/a_sweaty_cyclops.lua:1-14,
+SHA256bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a.
+The authored20+20trial is an owner-selected supplement, not a donor script claim.

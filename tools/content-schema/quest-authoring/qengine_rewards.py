@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -68,8 +68,8 @@ def build():
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        # Owner-selected Royal Costume quest has a source NPC grant despite its XML store tag.
-        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name == 'Royal Costume'):
+        # Explicit owner-selected quest rewards may use admitted looks labelled store by the donor.
+        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name in ('Royal Costume', 'Dragon Slayer')):
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -837,6 +837,36 @@ def build():
     callbacks[-1].update(minimum_level=100,requires_premium=True,forbids_outfits=['oteryn:outfit.makeshift_warrior'])
     callbacks[-1]['sources'].append('owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:base-qualification')
     source_offer('gnomadness',['salvage'],0,11,[storage(qualification,1,1,preserve=True)])
+    # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
+    for label,family,quest,npc,level,counts,materials in [
+        ('dragon-slayer','dragon_slayer','authored.dragon_slayer_outfits_quest','a_sweaty_cyclops',0,[('dragons',20),('dragon_lords',20)],[(5920,10),(5882,10)]),
+        ('cave-explorer','cave_explorer','cave_explorer_outfits_quest','gnommander',80,[('kills',20)],[]),
+        ('fire-fighter','fire_fighter','fire_fighter_outfits_quest','gnomadness',250,[('kills',10)],[])]:
+        root='oteryn:quest-progress/chosen-trial/'+family+'/'
+        provenance='owner:chosen-trial:'+family+':fixed-native-creature-deaths:questpc3-engine-5e72a3f0b'
+        for track,maximum in [('phase',2)]+counts:
+            declarations.append({'key':root+track,'quest':'oteryn:quest.'+quest,'initial':0,'min':0,'max':maximum,'writable':True,'sources':[provenance]})
+        add('l12-'+label+'-start',quest,npc,[family.replace('_',' ')+' trial'],
+            [storage(root+'phase',0,1)]+[storage(root+track,0,0,preserve=True) for track,_ in counts])
+        callbacks[-1].update(requires_premium=True)
+        if level:callbacks[-1]['minimum_level']=level
+        callbacks[-1]['sources'].append(provenance)
+        add('l12-'+label+'-base',quest,npc,[family.replace('_',' ')+' report'],
+            [storage(root+'phase',1,2)]+[storage(root+track,maximum,maximum,preserve=True) for track,maximum in counts],
+            take=materials,outfit=(family,0),fee={'gold':1000,'include_bank':False} if label=='cave-explorer' else None)
+        callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
+        if level:callbacks[-1]['minimum_level']=level
+        callbacks[-1]['sources'].append(provenance)
+        if label=='dragon-slayer':continue
+        for bit in (1,2):
+            add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
+                take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
+                fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
+                achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
+            callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
+                forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
+            if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
+            callbacks[-1]['sources'].append(provenance)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

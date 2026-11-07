@@ -218,6 +218,83 @@
       "sources": [
         "owner:chosen-Gnome-Deep-Hub-salvage-apprenticeship:s1-s2:gnomadness-role"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
+      "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragons",
+      "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragon_lords",
+      "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/fire_fighter/kills",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 10,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
     }
   ],
   "callbacks": [
@@ -1904,6 +1981,451 @@
       ],
       "minimum_level": 100,
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-base",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": false
+      },
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "minimum_level": 80
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-first",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 1"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "fee": {
+        "gold": 2000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-second",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 2"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "fee": {
+        "gold": 3000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-start",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer trial"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnommander.lua:sha256:62e3088421dd6f06c1decf2f2ce0c3c296d4a106b670cfa8927eb936e0bb69eb",
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "requires_premium": true,
+      "minimum_level": 80
+    },
+    {
+      "key": "oteryn:quest-reward/l12-dragon-slayer-base",
+      "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "dragon slayer report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragons",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragon_lords",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5920",
+          "count": 10
+        },
+        {
+          "item": "oteryn:item.tibia.i5882",
+          "count": 10
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.dragon_slayer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.dragon_slayer"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-dragon-slayer-start",
+      "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "dragon slayer trial"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragons",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/dragon_slayer/dragon_lords",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "owner:chosen-trial:dragon_slayer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/l12-fire-fighter-base",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "fire fighter report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/fire_fighter/kills",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.fire_fighter",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.fire_fighter"
+      ],
+      "minimum_level": 250
+    },
+    {
+      "key": "oteryn:quest-reward/l12-fire-fighter-first",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "fire fighter addon 1"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39544",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.fire_fighter",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.fire_fighter"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.fire_fighter",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-fire-fighter-second",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "fire fighter addon 2"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i39545",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.fire_fighter",
+        "addons": 2
+      },
+      "achievement": "oteryn:achievement/friendly_fire",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "minimum_level": 250,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.fire_fighter"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.fire_fighter",
+          "addons": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.fire_fighter",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-fire-fighter-start",
+      "quest": "oteryn:quest.fire_fighter_outfits_quest",
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "fire fighter trial"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/fire_fighter/kills",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomadness.lua:sha256:e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279",
+        "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "requires_premium": true,
+      "minimum_level": 250
     },
     {
       "key": "oteryn:quest-reward/l2-battle-mage-base",
