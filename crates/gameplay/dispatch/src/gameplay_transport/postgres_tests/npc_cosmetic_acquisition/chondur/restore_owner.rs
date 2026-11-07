@@ -58,7 +58,19 @@ pub(super) async fn attach(
     let actor = {
         let mut runtime = owner.runtime.lock().await;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-        runtime.commit_fresh_session(reservation).map_err(debug)?
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        // Match production first_entry.rs: bind the SAME durable current lease
+        // before publishing this restored actor to any gameplay/appearance owner.
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        assert_eq!(
+            runtime
+                .bound_attacker_lease(actor, session)
+                .map_err(debug)?,
+            current.current_character_lease()
+        );
+        actor
     };
     let mut continuity = SessionContinuity::FRESH;
     continuity.selected_capabilities =

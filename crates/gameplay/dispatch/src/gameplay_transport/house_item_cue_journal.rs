@@ -37,7 +37,7 @@ pub(in crate::gameplay_transport) struct Reservation {
     live: bool,
 }
 impl Journal {
-    pub(super) fn reserve(
+    pub(in crate::gameplay_transport) fn reserve(
         journal: &Arc<Mutex<Self>>,
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
@@ -127,7 +127,7 @@ impl Journal {
     }
 }
 impl Reservation {
-    pub(super) fn commit(mut self) {
+    pub(in crate::gameplay_transport) fn commit(mut self) {
         if let Ok(mut held) = self.journal.lock() {
             for cue in &self.cues {
                 // reserve proved revision+all outstanding cue counts is representable.

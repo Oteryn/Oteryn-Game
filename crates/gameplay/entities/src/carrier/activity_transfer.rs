@@ -139,6 +139,70 @@ impl ScopeRuntimeV1 {
         self.prepare_activity_transfer_inner(destination, members, true)
     }
 
+    /// The sealed source portal admits a later actual stepper into its shared
+    /// room. Unlike fresh BossLever groups, its authored teleport can already
+    /// contain players. This proof never changes ordinary group admission.
+    pub fn prepare_activity_source_portal_entry(
+        &mut self,
+        destination: &mut Self,
+        members: &[ActivityTransferMember],
+        template: &oteryn_gameplay_content::content::bosses::activity_template::QualifiedActivityRoomTemplate,
+        active: &oteryn_gameplay_content::content::ActiveGeneration,
+    ) -> Result<ActivityTransferReservation, CarrierError> {
+        let [member] = members else {
+            return Err(CarrierError::WrongScope);
+        };
+        let [entry] = template.entry_positions() else {
+            return Err(CarrierError::WrongScope);
+        };
+        let [origin] = template.lever_positions() else {
+            return Err(CarrierError::WrongScope);
+        };
+        let pin = template
+            .issue_runtime_pin(active)
+            .map_err(|_| CarrierError::WrongScope)?;
+        if !template.source_portal()
+            || template.boss_key() != "oteryn:boss.rakesh_moonfang"
+            || template.creature_key() != "oteryn:creature.rakesh_moonfang"
+            || !matches!(
+                (
+                    self.binding.runtime_scope(),
+                    destination.binding.runtime_scope()
+                ),
+                (
+                    RuntimeScopeRefV1::Channel { .. },
+                    RuntimeScopeRefV1::Instance { .. }
+                )
+            )
+            || destination.content_pin() != &pin
+            || self.content_pin().world_id() != pin.world_id()
+            || self.content_pin().activation_sequence() != pin.activation_sequence()
+            || self.content_pin().server_artifact_digest() != pin.server_artifact_digest()
+            || self.content_pin().client_artifact_digest() != pin.client_artifact_digest()
+            || self.content_pin().frame_binding_digest() != template.origin_frame_digest()
+            || self.content_pin().map_revision_digest() != template.origin_map_digest()
+            || (
+                member.destination_cell.x,
+                member.destination_cell.y,
+                i32::from(member.destination_cell.floor),
+            ) != (entry.x, entry.y, entry.z)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        let position = self.read_actor_position(member.source_actor)?.position();
+        if (position.x, position.y, i32::from(position.floor)) != (origin.x, origin.y, origin.z)
+            || destination
+                .positioned_actor_census()?
+                .iter()
+                .filter(|(_, _, session)| session.is_some())
+                .count()
+                >= template.maximum_players()
+        {
+            return Err(CarrierError::PlayerReservationMismatch);
+        }
+        self.prepare_activity_transfer_inner(destination, members, true)
+    }
+
     /// The retained boss-room participant proof selects an exact authored exit.
     /// Crystal internalTeleport uses FLAG_NOLIMIT for it, including occupants.
     /// Map/door qualification remains with the caller before this reservation.

@@ -281,10 +281,6 @@ async fn scenario(
             requires: &[],
         },
         crate::gameplay_transport::capabilities::OfferedCapability {
-            id: 15,
-            requires: &[4],
-        },
-        crate::gameplay_transport::capabilities::OfferedCapability {
             id: 11,
             requires: &[15, 18],
         },
@@ -895,6 +891,113 @@ async fn scenario(
             oteryn_protocol_oteryn::world_object::UseDisposition::Committed
         );
         assert_custody(h, furniture, true, catalogue_query_case).await?;
+        if original_quantity > 1 {
+            // The first real Wrap4 -> MOVE9 -> USE2 restored AMOUNT onto the
+            // House floor. Re-wrap that observed stack through World marker3;
+            // no test changes its position, quantity, custody or revision.
+            let floor_reference = active
+                .native_gameplay()
+                .and_then(|native| native.item_index())
+                .and_then(|index| index.definition_ref("Item", furniture, "definition-r1"))
+                .ok_or("restored floor stack reference")?;
+            let revision: i64 = sqlx::query_scalar("SELECT state_revision::bigint FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+            let floor_wrap_command = admitted.continuity.next_command_id;
+            let (status, reply, _, original_floor_wrap) = opaque_peer::command(
+                &owner,
+                &mut admitted,
+                floor_wrap_command,
+                402,
+                vec![],
+                Some(floor_reference),
+                false,
+            )
+            .await?;
+            assert_eq!(
+                status,
+                CommandStatus::Accepted,
+                "a restored source stack must remain World-Wrapable"
+            );
+            assert_eq!(
+                wire::Reply::decode(&reply),
+                Some(wire::Reply::Committed(u64::try_from(revision + 1)?))
+            );
+            assert_custody(h, kit, false, catalogue_query_case).await?;
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?, 1);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT (before_item->>'quantity')::bigint FROM game_house_furniture_wrap_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND action=1")
+                .bind(admitted.game_session_id.as_bytes().as_slice()).bind(floor_wrap_command.to_string()).fetch_one(&h.pool).await?, original_quantity);
+            let before_replay: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+            let (status, replay, _, _) = opaque_peer::command(
+                &owner,
+                &mut admitted,
+                floor_wrap_command,
+                402,
+                original_floor_wrap,
+                None,
+                false,
+            )
+            .await?;
+            assert!(matches!(
+                status,
+                CommandStatus::Accepted | CommandStatus::DuplicateReplay
+            ));
+            assert_eq!(wire::Reply::decode(&replay), wire::Reply::decode(&reply));
+            assert_eq!(sqlx::query_scalar::<_,serde_json::Value>("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?, before_replay);
+            let wrapper_reference = active
+                .native_gameplay()
+                .and_then(|native| native.item_index())
+                .and_then(|index| index.definition_ref("Item", kit, "definition-r1"))
+                .ok_or("re-wrapped source reference")?;
+            let place_command = admitted.continuity.next_command_id;
+            let (status, payload, _, _) = opaque_peer::command(
+                &owner,
+                &mut admitted,
+                place_command,
+                9,
+                vec![],
+                Some(wrapper_reference),
+                false,
+            )
+            .await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                oteryn_protocol_oteryn::item_view::decode_item_move_result_for(
+                    &payload,
+                    oteryn_protocol_oteryn::item_view::ItemMoveSelection {
+                        world_interaction: true,
+                        ..Default::default()
+                    },
+                )
+                .map_err(debug)?,
+                oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+            );
+            let second_use = admitted.continuity.next_command_id;
+            let (status, payload, _, _) = opaque_peer::command(
+                &owner,
+                &mut admitted,
+                second_use,
+                2,
+                vec![],
+                Some(wrapper_reference),
+                false,
+            )
+            .await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result_with_gate(&payload)
+                    .map_err(debug)?
+                    .0,
+                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+            );
+            assert_custody(h, furniture, true, catalogue_query_case).await?;
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?, original_quantity);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_house_furniture_wrap_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND action=1")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?, 2);
+        }
         return Ok(());
     }
     if native_use {

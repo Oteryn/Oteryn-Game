@@ -39,7 +39,9 @@ mod planting;
 pub use ground::{GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
-pub use house::{HouseActionContext, HouseInteractiveSource};
+pub use house::{
+    HouseActionContext, HouseInteractiveSource, HouseWrapSourcePreview, OpaqueHouseWrapResult,
+};
 
 #[derive(Debug, Clone)]
 pub struct ConsumeTransformRequest {

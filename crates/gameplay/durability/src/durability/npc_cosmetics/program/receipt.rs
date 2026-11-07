@@ -23,6 +23,21 @@ pub(super) fn grant_keys(
             keys.push(grant.key.clone())
         }
     }
+    if plan.stampor {
+        let key = "oteryn:appearance-grant/npc/chondur/stampor/mount";
+        let mount = "oteryn:content.mount.stampor".to_owned();
+        if content.earned_unlock(key, PROVENANCE, EarnedCosmetic::Mount(&mount))
+            != UnlockFact::Compatible
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if !state
+            .owned_mount(11)
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            keys.push(key.to_owned());
+        }
+    }
     if plan.primal_prize {
         let key = "oteryn:appearance-grant/npc/gnomadness/noxious_ripptor/mount";
         let mount = "oteryn:content.mount.noxious_ripptor".to_owned();

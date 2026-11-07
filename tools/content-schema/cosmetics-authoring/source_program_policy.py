@@ -44,7 +44,9 @@ for npc in p['npcs']:
    and [e for e in t['effects'] if e['kind']=='consume_money']==[{'kind':'consume_money','gold':150000}]
    and all(e['kind'] in {'consume_money','set_track','grant_look_addon','magic_effect','achievement','achievement_progress','close_conversation'} for e in t['effects'])
    and all(e['storage'] in npc['owned_tracks'] for e in t['effects'] if e['kind']=='set_track'))
-  enabled = enabled or ajax_fire or ajax_greet or royal or sandra_output or quest_leaf or vescu_greet or primal or registered_readonly or irmana_paid
+  stampor=(npc['npc']=='oteryn:npc.chondur' and t['source_key']=='oteryn:npc-cosmetic/chondur/stampor-spirit'
+   and t['effects']==[{'kind':'consume_item','item':12312,'count':50},{'kind':'consume_item','item':12314,'count':30},{'kind':'consume_item','item':12313,'count':100},{'kind':'grant_mount','id':11},{'kind':'magic_effect','id':14}])
+  enabled = enabled or ajax_fire or ajax_greet or royal or sandra_output or quest_leaf or vescu_greet or primal or registered_readonly or irmana_paid or stampor
   for e in t['effects']:
    if e['kind']=='set_track':
     b=bindings[e['storage']];expr=dict(e['value'])
@@ -61,6 +63,7 @@ for npc in p['npcs']:
   rows=[{'family':'Item','key':f'oteryn:item.tibia.i{i}','revision':'definition-r1','count':count} for i,count in sorted(costs.items(),key=lambda pair:f'oteryn:item.tibia.i{pair[0]}')]
   service=f"oteryn:service.npc-cosmetic.{npc['npc'].split('.')[-1]}.{t['id']}" if price else None
   grant_keys=[g['key'] for g in t['grants']]
+  if stampor:grant_keys.append('oteryn:appearance-grant/npc/chondur/stampor/mount')
   if primal and t['id']=='ripptor-prize':
    grant_keys.append('oteryn:appearance-grant/npc/gnomadness/noxious_ripptor/mount')
   out.append('INSERT INTO game_npc_source_policies VALUES('+','.join([f"decode('{sha}','hex')",q(t['source_key']),q(npc['npc']),arr(sorted({b['key'] for b in p['bindings']})),j(writable),arr(grant_keys),j(rows),j(t['effects']),q(service) if service else 'NULL',str(price) if price else 'NULL','TRUE' if enabled else 'FALSE'])+');\n')

@@ -1,5 +1,8 @@
 //! HouseInterior balloon USE: the same receipt/audit, with named-House custody retained.
 use super::*;
+#[path = "consume_transform_house_wrap_opaque.rs"]
+mod opaque_wrap;
+pub use opaque_wrap::{HouseWrapSourcePreview, OpaqueHouseWrapResult};
 #[path = "consume_transform_house_construction.rs"]
 mod construction;
 #[path = "consume_transform_house_cupcake.rs"]
@@ -383,10 +386,16 @@ impl DurabilityRoot {
                 return Ok(ConsumeTransformResult::refused(UseDisposition::StaleState));
             }
             if !rotate&&constructor {
-                if !context.construction_cell_walkable {
+                let spatial:Option<Vec<u8>>=source.try_get("spatial_position")?;
+                let source_position=spatial.as_ref().map(|p|HouseActionContext::decode_spatial_position(p).ok_or(DurabilityError::InvalidStoredState)).transpose()?;
+                if let Some(position)=source_position {
+                    if position[2]!=context.position[2]||position[0].abs_diff(context.position[0])>1||position[1].abs_diff(context.position[1])>1{return Ok(ConsumeTransformResult::refused(UseDisposition::TooFar))}
+                } else if !context.construction_cell_walkable {
                     return Ok(ConsumeTransformResult::refused(UseDisposition::NoRoom));
                 }
-                let result=construction::apply(&mut tx,&node,&context,&request,&before,native).await?;
+                // Existing floor custody transforms in place; only carried construction
+                // requests a new placement at the actor's qualified cell.
+                let result=construction::apply(&mut tx,&node,&context,&request,&before,native,source_position).await?;
                 if result.disposition==UseDisposition::Committed { tx.commit(deadline).await?; }
                 return Ok(result);
             }

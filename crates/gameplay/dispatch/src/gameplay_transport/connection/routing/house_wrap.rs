@@ -6,6 +6,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
+    items: Option<&crate::gameplay_transport::item_view::SessionItemView>,
 ) -> Option<Dispatch> {
     if !admitted
         .continuity
@@ -15,10 +16,46 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
     }
     if let Some(page) = wire::decode_catalogue_query(command.payload) {
-        return Some(match authority.house_furniture_catalogue(*admitted, page).await? {
-            Ok(catalogue) => Dispatch::Reply(CommandStatus::Accepted, catalogue.encode()?),
-            Err(refusal) => Dispatch::Reply(CommandStatus::Rejected, wire::Reply::Refused(refusal).encode()),
-        });
+        return Some(
+            match authority.house_furniture_catalogue(*admitted, page).await? {
+                Ok(catalogue) => Dispatch::Reply(CommandStatus::Accepted, catalogue.encode()?),
+                Err(refusal) => Dispatch::Reply(
+                    CommandStatus::Rejected,
+                    wire::Reply::Refused(refusal).encode(),
+                ),
+            },
+        );
+    }
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_HOUSE_FURNITURE_WRAP_OPAQUE_V1)
+    {
+        if let Some(request) = wire::OpaqueWrapRequest::decode_probe(command.payload) {
+            let source = items.and_then(|views| views.resolve(request.handle));
+            let allowed = authority.house_wrap_probe(*admitted, request, source).await;
+            return Some(Dispatch::Reply(
+                CommandStatus::Accepted,
+                wire::encode_opaque_wrap_affordance(allowed).to_vec(),
+            ));
+        }
+        let opaque = wire::OpaqueWrapRequest::decode(command.payload)
+            .map(|r| (r, false))
+            .or_else(|| {
+                wire::OpaqueWrapRequest::decode_carried(command.payload).map(|r| (r, true))
+            });
+        if let Some((request, carried)) = opaque {
+            let source = items.and_then(|views| views.resolve(request.handle));
+            let reply = authority
+                .house_wrap_opaque(*admitted, command.command_id, request, source, carried)
+                .await?;
+            let status = if matches!(reply, wire::Reply::Committed(_)) {
+                CommandStatus::Accepted
+            } else {
+                CommandStatus::Rejected
+            };
+            return Some(Dispatch::Reply(status, reply.encode()));
+        }
     }
     let Some(request) = decode_request(
         admitted

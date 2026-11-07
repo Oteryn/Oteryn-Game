@@ -11,9 +11,9 @@ pub(super) async fn candidate(
     context: &HouseActionContext,
     request: &ConsumeTransformRequest,
 ) -> Result<bool, DurabilityError> {
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances i WHERE (EXISTS(SELECT 1 FROM game_house_furniture_rules c WHERE c.action=2 AND i.definition_production_key='oteryn:item.tibia.i'||c.first_item::text) OR (i.definition_production_key='oteryn:item.tibia.i23398' AND (EXISTS(SELECT 1 FROM game_house_furniture_kit_origins k WHERE k.item_instance_id=i.item_instance_id) OR EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts r WHERE r.item_instance_id=i.item_instance_id AND r.action=1 AND r.after_key=i.definition_production_key)))) AND i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots b ON b.item_instance_id=e.parent_item_instance_id AND b.world_id=e.world_id AND b.character_id=e.character_id WHERE e.item_instance_id=i.item_instance_id AND e.world_id=i.world_id AND e.character_id=encode($3,'hex')::uuid))")
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances i WHERE (EXISTS(SELECT 1 FROM game_house_furniture_rules c WHERE c.action=2 AND i.definition_production_key='oteryn:item.tibia.i'||c.first_item::text) OR (i.definition_production_key='oteryn:item.tibia.i23398' AND (EXISTS(SELECT 1 FROM game_house_furniture_kit_origins k WHERE k.item_instance_id=i.item_instance_id) OR EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts r WHERE r.item_instance_id=i.item_instance_id AND r.action=1 AND r.after_key=i.definition_production_key)))) AND i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND (EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots b ON b.item_instance_id=e.parent_item_instance_id AND b.world_id=e.world_id AND b.character_id=e.character_id WHERE e.item_instance_id=i.item_instance_id AND e.world_id=i.world_id AND e.character_id=encode($3,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_house_interior_locations floor_source WHERE floor_source.item_instance_id=i.item_instance_id AND floor_source.world_id=i.world_id AND floor_source.house_key=$4)))")
         .bind(request.source.as_slice()).bind(context.house.world_id().as_bytes().as_slice())
-        .bind(context.fence.character_id.as_bytes().as_slice())
+        .bind(context.fence.character_id.as_bytes().as_slice()).bind(context.house.house_key())
         .fetch_one(&mut ***tx).await?)
 }
 
@@ -50,6 +50,7 @@ pub(super) async fn apply(
     request: &ConsumeTransformRequest,
     before: &Value,
     native: &NativeGameplayState,
+    source_position: Option<[i32; 3]>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
     let definition = before
         .get("definition_production_key")
@@ -95,6 +96,7 @@ pub(super) async fn apply(
             },
             _ => None,
         });
+    let position = source_position.unwrap_or(context.position);
     let input = wire::Request {
         action: wire::Action::Unwrap,
         item: request.source,
@@ -105,12 +107,12 @@ pub(super) async fn apply(
         acl_revision: acl
             .parse()
             .map_err(|_| DurabilityError::InvalidStoredState)?,
-        position: context.position,
+        position,
     };
     let row=fenced("SELECT game_house_furniture_construct(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9,$10::text::numeric,encode($11,'hex')::uuid,$12::text::numeric,$13::text::numeric,$14::smallint,$15,$16,$17,$18,$19,$20)::text",node,context)
         .bind(request.command.command_id().get().to_string()).bind(request.source.to_vec())
         .bind(input.expected_revision.to_string()).bind(input.acl_revision.to_string()).bind(2_i16)
-        .bind(context.position.iter().flat_map(|n|n.to_be_bytes()).collect::<Vec<_>>()).bind(input.encode())
+        .bind(position.iter().flat_map(|n|n.to_be_bytes()).collect::<Vec<_>>()).bind(input.encode())
         .bind(&output.production_definition.production_key).bind(capacity).bind(backpack).bind(&request.intent)
         .fetch_one(&mut ***tx).await;
     match row {

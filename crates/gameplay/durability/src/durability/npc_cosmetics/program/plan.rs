@@ -17,6 +17,7 @@ pub(super) struct Prepared {
     pub advance_notices: Vec<String>,
     pub hazard_selection: Option<u16>,
     pub primal_prize: bool,
+    pub stampor: bool,
     pub close: bool,
     pub paid: bool,
     pub royal_kit: bool,
@@ -57,6 +58,7 @@ pub(super) fn prepare(
         advance_notices: Vec::new(),
         hazard_selection: None,
         primal_prize: false,
+        stampor: false,
         close: false,
         paid: false,
         royal_kit: false,
@@ -114,11 +116,16 @@ pub(super) fn prepare(
             }
             source::Effect::CloseConversation => plan.close = true,
             source::Effect::ConsumeMoney { gold } | source::Effect::ConsumeMoneyBank { gold } => {
-                let Some((price,cash_minimum)) = source::paid::terms(&npc.npc,&transition.id) else {
+                let Some((price, cash_minimum)) = source::paid::terms(&npc.npc, &transition.id)
+                else {
                     return Err(PlanError::Blocked("paid_source"));
                 };
-                let cash_only = matches!(effect,source::Effect::ConsumeMoney { .. });
-                if plan.paid || *gold != price || cash_only != (cash_minimum == price) || effects.payment.is_none() {
+                let cash_only = matches!(effect, source::Effect::ConsumeMoney { .. });
+                if plan.paid
+                    || *gold != price
+                    || cash_only != (cash_minimum == price)
+                    || effects.payment.is_none()
+                {
                     return Err(PlanError::Blocked("paid_source"));
                 }
                 plan.paid = true;
@@ -198,6 +205,28 @@ pub(super) fn prepare(
                 }
             }
             source::Effect::GrantMount { id } => {
+                if npc.npc == "oteryn:npc.chondur"
+                    && transition.source_key == "oteryn:npc-cosmetic/chondur/stampor-spirit"
+                    && *id == 11
+                {
+                    let exact_costs = [(12312, 50), (12314, 30), (12313, 100)];
+                    let actual: Vec<_> = transition
+                        .effects
+                        .iter()
+                        .filter_map(|effect| {
+                            if let source::Effect::ConsumeItem { item, count } = effect {
+                                Some((*item, *count))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    if actual != exact_costs || plan.stampor {
+                        return Err(PlanError::Invalid);
+                    }
+                    plan.stampor = true;
+                    continue;
+                }
                 if npc.npc != "oteryn:npc.gnomadness"
                     || transition.source_key != "oteryn:npc-cosmetic/gnomadness/ripptor-prize"
                     || *id != 202

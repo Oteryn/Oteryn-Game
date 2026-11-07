@@ -465,6 +465,25 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         } else {
             None
         };
+        let source_portal_entry = if source_portal && boss_room {
+            let template = self
+                .activity_runtimes
+                .template(
+                    &destination
+                        .template
+                        .as_ref()
+                        .ok_or_else(|| prepare_error("summer_source_handoff_prepare_template"))?
+                        .key,
+                    &request.template_revision,
+                )
+                .ok_or_else(|| prepare_error("summer_source_handoff_prepare_template"))?;
+            let active = self
+                .active_generation
+                .ok_or_else(|| prepare_error("summer_source_handoff_prepare_generation"))?;
+            Some((template, active))
+        } else {
+            None
+        };
         let mut sources = Vec::new();
         sources
             .try_reserve_exact(request.participants.len())
@@ -739,7 +758,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         return refuse(ActivityRefusal::AuthorityRejected);
                     }
                 };
-            let prepared = if boss_room {
+            let prepared = if let Some((template, active)) = source_portal_entry {
+                from.prepare_activity_source_portal_entry(&mut to, &members, template, active)
+            } else if boss_room {
                 from.prepare_activity_group_entry(&mut to, &members)
             } else {
                 from.prepare_activity_transfer(&mut to, &members)
@@ -864,9 +885,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             for held in evidence {
                 held.release().await.map_err(|_| ())?;
             }
-            let result = result.map_err(|_| {
+            let result = result.map_err(|error| {
                 if attempt.request.activity_key == "oteryn:boss.rakesh_moonfang" {
-                    super::operator_event("summer_source_handoff_durable_error");
+                    // DurabilityError retains categorical failure classes only;
+                    // PostgreSQL payloads and request identifiers are absent.
+                    super::operator_event(&format!(
+                        "summer_source_handoff_durable_error class={error:?}"
+                    ));
                 }
             })?;
             match result {

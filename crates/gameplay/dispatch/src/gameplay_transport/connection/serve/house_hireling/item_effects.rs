@@ -1,7 +1,10 @@
 //! House-only item visual events; command results and map mutations retain their owners.
 use super::*;
 impl State {
-    pub(super) async fn item_effects<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    pub(in crate::gameplay_transport::connection::serve) async fn item_effects<
+        S: AsyncWrite + Unpin,
+        A: FreshAdmissionAuthority,
+    >(
         &mut self,
         stream: &mut S,
         authority: &A,

@@ -307,6 +307,48 @@ def generated_catalogues(rules):
             (path, rust.encode())]
 
 
+def generated_wrap_admission(rules, profiles):
+    """Closed policy population for native13-byte Wrap; no per-Item state."""
+    eligible = {item for first, last, _ in rules['wrap'] for item in range(first, last + 1)}
+    rows = []
+    for record in profiles['records']:
+        definition = record['production_definition']
+        match = re.fullmatch(r'oteryn:item[.]tibia[.]i([1-9][0-9]*)', definition['production_key'])
+        if not match or int(match[1]) not in eligible:
+            continue
+        physical = record['semantics']['physical']
+        if physical.get('state') != 'KNOWN' or physical['value']['pickupable'] != {'state': 'KNOWN', 'value': True}:
+            continue
+        if not record['admission']['materializable'] or 'CharacterInventory' not in record['admission']['legal_destinations']:
+            raise ValueError('PORTABLE_WRAP_SOURCE_ADMISSION_DRIFT')
+        if definition['family'] != 'Item' or definition['revision_ref'] != 'definition-r1':
+            raise ValueError('PORTABLE_WRAP_SOURCE_IDENTITY_DRIFT')
+        stack = record['semantics']['stack']
+        if stack.get('state') != 'KNOWN':
+            raise ValueError('PORTABLE_WRAP_SOURCE_STACK_DRIFT')
+        stack = stack['value']
+        if stack['stackable'] == {'state': 'KNOWN', 'value': False}:
+            maximum = 1
+        elif stack['stackable'] == {'state': 'KNOWN', 'value': True} and stack['stack_max'].get('state') == 'KNOWN':
+            maximum = stack['stack_max']['value']
+            if type(maximum) is not int or not 2 <= maximum <= 100:
+                raise ValueError('PORTABLE_WRAP_SOURCE_STACK_DRIFT')
+        else:
+            raise ValueError('PORTABLE_WRAP_SOURCE_STACK_DRIFT')
+        rows.append((int(match[1]), maximum))
+    rows.sort()
+    if len(rows) != 88 or len({item for item, _ in rows}) != 88 or sum(maximum > 1 for _, maximum in rows) != 70:
+        raise ValueError('PORTABLE_WRAP_SOURCE_ROSTER_DRIFT')
+    directory = ROOT / 'tools/content-schema/native-gameplay'
+    source = (directory / 'furniture-native-wrap-source.sql').read_text()
+    if source.count('__PORTABLE_WRAP_ROWS__') != 1:
+        raise ValueError('PORTABLE_WRAP_SOURCE_TEMPLATE_DRIFT')
+    source = source.replace('__PORTABLE_WRAP_ROWS__', ',\n'.join(f'({item},{maximum})' for item, maximum in rows))
+    for name in ('furniture-native-wrap-quantity.sql', 'furniture-native-wrap-writer.sql', 'furniture-floor-construction.sql'):
+        source += '\n' + (directory / name).read_text()
+    return [('tools/content-schema/native-gameplay/furniture-native-wrap.generated.sql', source.encode())]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--crystal', type=Path, required=True)
@@ -315,7 +357,7 @@ def main():
     args = parser.parse_args()
     rules, profiles = capture(args.crystal, args.canary)
     outputs = [(path, (json.dumps(doc, indent=2, ensure_ascii=False) + '\n').encode())
-               for path, doc in [(RULES, rules), (PROFILE, profiles)]] + generated_catalogues(rules)
+               for path, doc in [(RULES, rules), (PROFILE, profiles)]] + generated_catalogues(rules) + generated_wrap_admission(rules, profiles)
     for path, raw in outputs:
         target = ROOT / path
         if args.check:

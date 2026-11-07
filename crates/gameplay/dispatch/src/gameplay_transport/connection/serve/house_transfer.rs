@@ -290,7 +290,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
                 && selected.command_selected(command.command_type)
             {
-                match routing::house_wrap::route(authority, &admitted, command).await {
+                match routing::house_wrap::route(
+                    authority,
+                    &admitted,
+                    command,
+                    services.wrap_items(),
+                )
+                .await
+                {
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
                     _ => return Err(ServeEnd::Disconnected),
                 }
@@ -398,6 +405,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 )
             {
                 services.inventory(stream, authority, &mut admitted).await?;
+                services
+                    .item_effects(stream, authority, &mut admitted)
+                    .await?;
             }
             if let Some(effects) = effects {
                 services

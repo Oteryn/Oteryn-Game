@@ -36,12 +36,40 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
 }
 macro_rules! authority_methods {
     () => {
+        fn house_wrap_opaque(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: u64,
+            _: oteryn_protocol_oteryn::house_wrap::OpaqueWrapRequest,
+            _: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            _: bool,
+        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::house_wrap::Reply>> {
+            async { None }
+        }
+        fn house_wrap_probe(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: oteryn_protocol_oteryn::house_wrap::OpaqueWrapRequest,
+            _: Option<$crate::gameplay_transport::item_view::ItemKey>,
+        ) -> impl std::future::Future<Output = bool> {
+            async { false }
+        }
+
         fn house_wrap_available(&self) -> bool {
             false
         }
         fn house_furniture_catalogue(
-            &self, _: $crate::gameplay_transport::connection::AdmittedSession, _: u16,
-        ) -> impl std::future::Future<Output=Option<Result<oteryn_protocol_oteryn::house_wrap::Catalogue,oteryn_protocol_oteryn::house_wrap::Refusal>>> {
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: u16,
+        ) -> impl std::future::Future<
+            Output = Option<
+                Result<
+                    oteryn_protocol_oteryn::house_wrap::Catalogue,
+                    oteryn_protocol_oteryn::house_wrap::Refusal,
+                >,
+            >,
+        > {
             async { None }
         }
         fn house_wrap(
@@ -57,6 +85,29 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn house_wrap_opaque(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            command: u64,
+            request: oteryn_protocol_oteryn::house_wrap::OpaqueWrapRequest,
+            source: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            carried: bool,
+        ) -> Option<oteryn_protocol_oteryn::house_wrap::Reply> {
+            $crate::gameplay_transport::house_wrap_opaque::execute_opaque(
+                self, admitted, command, request, source, carried,
+            )
+            .await
+        }
+        async fn house_wrap_probe(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            request: oteryn_protocol_oteryn::house_wrap::OpaqueWrapRequest,
+            source: Option<$crate::gameplay_transport::item_view::ItemKey>,
+        ) -> bool {
+            $crate::gameplay_transport::house_wrap_opaque::probe(self, admitted, request, source)
+                .await
+        }
+
         fn house_wrap_available(&self) -> bool {
             self.bundle_map().is_some()
                 && self
@@ -65,8 +116,15 @@ macro_rules! composed_methods {
                     .is_some()
         }
         async fn house_furniture_catalogue(
-            &self, admitted: connection::AdmittedSession, page: u16,
-        ) -> Option<Result<oteryn_protocol_oteryn::house_wrap::Catalogue,oteryn_protocol_oteryn::house_wrap::Refusal>> {
+            &self,
+            admitted: connection::AdmittedSession,
+            page: u16,
+        ) -> Option<
+            Result<
+                oteryn_protocol_oteryn::house_wrap::Catalogue,
+                oteryn_protocol_oteryn::house_wrap::Refusal,
+            >,
+        > {
             house_wrap::catalogue::read(self, admitted, page).await
         }
         async fn house_wrap(

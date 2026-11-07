@@ -33,6 +33,10 @@ pub(super) struct State {
 }
 
 impl State {
+    pub(super) fn wrap_items(&self) -> Option<&SessionItemView> {
+        self.items.as_ref()
+    }
+
     pub(super) async fn route<A: FreshAdmissionAuthority>(
         &mut self,
         authority: &A,
