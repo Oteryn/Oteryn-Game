@@ -138,3 +138,12 @@ all carrier state; players receive the usual movement/environment updates.
 Omitting relocations preserves existing source scene definitions. Native ordinal
 lever bindings accept both declared lever appearances only when reversible,
 while position, ordinal and any source attributes remain mandatory.
+
+A world callback `item_on_target` can set `reusable: true` for a reusable carried
+tool. It requires `count: 1` and no inventory `replacement`; a target replacement
+remains supported. The existing fenced quest transaction locks the actual
+carried instance and its custody location before committing the quest receipt.
+It neither burns nor mints that tool. The omitted/false default preserves the
+serialized shape and consumption behavior of existing callback receipts.
+
+Reusable-tool contract reused from questpc4 commit `d168fabd39622ddccef6cf280e55e67775bf613c`; unrelated counter/quest changes are not duplicated.

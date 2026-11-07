@@ -734,7 +734,7 @@
     "title": "Life Ring Quest",
     "canonical": "oteryn:quest.life_ring_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/67/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -744,28 +744,31 @@
       }
     ],
     "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
+      "stage": "s1..s4",
+      "native_dispatch_binding": [
+        "authored-life-ring-entry",
+        "authored-life-ring-pick",
+        "authored-life-ring-cache"
+      ],
+      "runtime_enabled": true
     },
-    "blocker": {
-      "missing_piece": "Bridge and bounded multi-actor relocation qualified through real PostgreSQL dispatch; implementing the chosen explore/pick/cache/completion programme next."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Locate the hidden Life Ring cave route near Thais.",
-      "targets": [
-        "Thais Life Ring cave route"
-      ]
-    },
-    "disposition": "authoring",
+    "blocker": null,
+    "first_unqualified_stage": null,
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "asymmetric_map_effects_multi_actor_moves",
+    "mechanism": "native bridge evacuation and chosen reusable-pick descent/cache programme",
     "round": "L7",
     "qualified_components": [
-      "Native reversible six-cell bridge with atomic player/creature evacuation; cloud-life-ring-bridge-proof.json"
-    ]
+      "Native reversible six-cell bridge with atomic player/creature evacuation; cloud-life-ring-bridge-proof.json",
+      {
+        "scope": "Full chosen exploration/reusable-pick/native-descent/cache/reward/completion/replay programme",
+        "test": "questpc8_life_ring_pick_descent_exact_rewards_and_replay",
+        "duration_seconds": 41.012305888,
+        "red_duration_seconds": 2.53,
+        "proof": "cloud-life-ring-programme-proof.json"
+      }
+    ],
+    "qualification_scope": "Complete chosen finite Oteryn recipe and retained source bridge component; original source holds and claims remain unchanged."
   },
   {
     "title": "Lion's Rock Quest",

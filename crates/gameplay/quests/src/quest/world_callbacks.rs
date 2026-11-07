@@ -89,7 +89,7 @@ mod native;
 use native::valid_native_callback;
 
 /// One carried item applied to the selected world object.  This deliberately is not a
-/// recipe language: the source is consumed or changed exactly once by the receipt owner.
+/// recipe language: the receipt owner locks the source and consumes, changes or retains it.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemOnTarget {
@@ -97,6 +97,8 @@ pub struct ItemOnTarget {
     pub count: u16,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub reusable: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -277,6 +279,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
+                    || (item.reusable && (item.count != 1 || item.replacement.is_some()))
                     || callback.storage.is_empty()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
@@ -881,6 +884,50 @@ mod tests {
                 "invalid wardrobe edit {edit}"
             );
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reusable_tool_tests {
+    use super::*;
+
+    #[test]
+    fn reusable_tools_require_one_item_and_forbid_inventory_replacement() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/authored-world-callbacks.json");
+        let valid: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let callbacks = parse_with_provenance(source, true)?;
+        let index = callbacks
+            .iter()
+            .position(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-pick")
+            .ok_or("pick")?;
+        assert!(
+            callbacks[index]
+                .item_on_target
+                .as_ref()
+                .ok_or("tool")?
+                .reusable
+        );
+        for case in 0..3 {
+            let mut invalid = valid.clone();
+            let tool = &mut invalid["callbacks"][index]["item_on_target"];
+            match case {
+                0 => tool["count"] = 0.into(),
+                1 => tool["count"] = 2.into(),
+                _ => tool["replacement"] = "oteryn:item.tibia.i3031".into(),
+            }
+            assert!(
+                parse_with_provenance(&invalid.to_string(), true).is_err(),
+                "invalid reusable tool case {case}"
+            );
+        }
+        // The absent default remains absent in old callback receipt hashes.
+        let mut legacy = valid;
+        legacy["callbacks"][index]["item_on_target"]["reusable"] = false.into();
+        let parsed = parse_with_provenance(&legacy.to_string(), true)?;
+        let encoded = serde_json::to_value(parsed[index].item_on_target.as_ref().ok_or("tool")?)
+            .map_err(|e| e.to_string())?;
+        assert!(encoded.get("reusable").is_none());
         Ok(())
     }
 }

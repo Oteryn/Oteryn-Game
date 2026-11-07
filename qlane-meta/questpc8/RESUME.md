@@ -1,4 +1,28 @@
-# Current Life Ring bridge slice — GREEN
+# Current Life Ring programme — QUALIFIED
+
+Full chosen exploration/pick/native floor descent/cache route passes actual
+PostgreSQL dispatch. RED2.53s preceded the bindings. Missing tool refuses
+without map/progress changes; success retains the exact carried pick; native
+394 descends onto386. Final exact3052x1/3085x1 grants prove the full native
+necklace default matches200 charges, without an invented partial state.
+Completion, replay and cold quest-cache refusal pass. Existing consuming-key
+regression, reusable schema unit, changed-crate check/strict Clippy, fmt,
+40-file generator drift and pin refresh pass. See
+cloud-life-ring-programme-proof.json for exact durations and log hashes.
+The earlier bridge proof remains in cloud-life-ring-bridge-proof.json, pushed
+as1d0b9e8d7. Reusable-tool contract reuses questpc4 d168fabd3 (`reusable`),
+not a second field spelling. Original source definitions/claims/holds retained.
+
+Twelve of23 L7 entries QUALIFIED,11 remain. Next Torch chosen historical
+Academy restoration: basic unlit torch2920 selected explicitly; use existing
+source-scene/passage, native Rat guardian and atomic reward owners. Other
+remaining: Magic Sword, Mystery of the Valley, Colours of Magic, Secret Library,
+Travelling Trader, Tibia Anniversary, Treasure Island, Venore Daily, Winterlight
+Solstice and Wrath of the Emperor. Skip the three entries qualified elsewhere.
+Continue without ending the session. Push every green slice with explicit
+fetch/merge protocol. The historical notes below are superseded by this head.
+
+# Historical bridge slice — GREEN in1d0b9e8d7
 
 Native six-cell reversible bridge, ordinal lever matching and bounded player/
 creature evacuation are qualified through real PostgreSQL dispatch. Both scene

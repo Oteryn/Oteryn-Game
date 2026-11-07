@@ -39,7 +39,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         minimum_level: None, experience: None,
             completes: false,
             premium_required: false, monk_reward: None, offerings: Vec::new(),
-        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,
+        item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1, reusable: false,
             replacement: None, target_replacement: None }),
         return_on_failure: false,
         failure_message: Some("You need a bloody tear for the sacrifice.".into()),

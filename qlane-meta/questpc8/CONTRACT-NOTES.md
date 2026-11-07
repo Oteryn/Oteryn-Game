@@ -239,3 +239,39 @@ adjacent32436/32438,32239 are351. Source reusable pick3456 is registered in
 changes354/355 with AID101 to394 and decays it. Native binding must use actual
 position/ordinal, retain the carried pick and use the existing floor-change
 owner for descent. This fact lookup does not certify a completed route.
+
+Chosen Life Ring route binds exploration to32437,32238,z10, then reusable
+pick3456 against355 ordinal0 at32437,32239,z10. Replacement394 is the existing
+catalogue DOWN floor change; stepping onto it descends to the native rope
+spot386 at32437,32239,z11. The nearby cache is reached along native bare cave
+grounds, with its actual PZ flags9 retained. No teleport or quest-counter seed
+substitutes for that descent. Opening is retained until the normal source-floor
+rebuild; the selected finite recipe does not assert a donor decay duration.
+The selected final grants are flat3052x1 and3085x1 without an extra source bag.
+The existing admitted3085 definition proves exactly200 full charges, matching
+the pinned source subtype200; the fresh mint uses that full default and does
+not fabricate a partial timed-state row. Legacy source claims and holds remain.
+
+Reusable carried-tool support is reused from questpc4 commit
+https://github.com/Oteryn/Oteryn-Game/commit/d168fabd39622ddccef6cf280e55e67775bf613c
+(`ItemOnTarget.reusable`, one-item/no-inventory-replacement validation, existing
+location lock and no-consumption branch). Fresh qengine2 head3b0c2d9e2 and the
+other questpc2..7 heads were checked; questpc4 contains this implementation.
+Only those generic portions are reused here; unrelated counters and quests
+stay on their owning branches. Existing default/false serialization is kept.
+
+## Next selected Torch restoration facts (bounded lookup)
+
+The chosen recipe explicitly restores a historical quest unavailable since2011:
+https://tibia.fandom.com/index.php?curid=3397&oldid=425673 . Current native
+registration is not claimed. Select basic unlit torch2920 (not lit2921 or the
+later2922/2924 variants); pinned Canary XML names2920 a torch, light source,
+weight500, stopduration1, without an asserted charge count:
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml .
+Seymour's admitted Academy placement is32104,32189,z7. Verified native basement
+candidates are box2473 ordinal1 at32097,32187,z8 (flags9, house0; donor table
+UID64129 is not retained) and lever2772 ordinal1 at32098,32204,z8. The older
+walkthrough's exact modern geometry is unknown; any selected restoration must
+be explicitly authored against actual placements, without fabricated source
+IDs or a claim of historical/source fidelity. Preserve real water/walls and
+use the existing native movement, passage and guardian owners in the proof.

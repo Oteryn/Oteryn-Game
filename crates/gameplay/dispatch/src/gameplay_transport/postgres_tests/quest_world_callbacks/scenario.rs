@@ -78,7 +78,9 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-life-ring-bridge" {
+        let world = if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::world()?
+        } else if name == "authored-life-ring-bridge" {
             super::super::questpc8_life_ring_bridge::world()?
         } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
             super::super::questpc8_retrieval_routes::world(route)?
@@ -260,7 +262,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "authored-life-ring-bridge" {
+        if name == "authored-life-ring-entry" {
+            super::super::questpc8_life_ring::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-life-ring-bridge" {
             super::super::questpc8_life_ring_bridge::exercise(&mut owner, &mut admitted).await?;
         } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
             super::super::questpc8_retrieval_routes::exercise(route, &mut owner, &mut admitted, &h)

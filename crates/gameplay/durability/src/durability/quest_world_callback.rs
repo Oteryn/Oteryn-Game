@@ -206,6 +206,9 @@ pub(super) async fn consume_reward_inputs(
     if remaining.values().any(|n| *n != 0) {
         return Ok(false);
     }
+    if inputs.is_empty() {
+        return Ok(true);
+    }
     let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -378,7 +381,12 @@ async fn consume_inputs(
                 return Err(DurabilityError::InvalidStoredState);
             }
         }
-        inputs.push(input);
+        // Retained tools still require a positive quantity, live custody and the
+        // same location lock. The enclosing Quest receipt binds this read to the
+        // action without inventing an item consumption or changing its identity.
+        if !required.reusable {
+            inputs.push(input);
+        }
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();

@@ -1,0 +1,73 @@
+{
+  "scope": "Complete chosen Life Ring explore/pick/native-floor-descent/cache/reward/completion/replay programme; source bridge separately qualified in1d0b9e8d7",
+  "red": {
+    "marker": "POSTGRES_CASE_STARTED authored-life-ring-entry after PostgreSQL fixture initialization",
+    "duration_seconds": 2.53,
+    "failure": "callback missing before native route authored",
+    "log_sha256": "fb2f7c841e6081e0593b80e0e3d782c135e19614452fc30e92d2cd8455734979"
+  },
+  "engine_reuse": {
+    "commit": "d168fabd39622ddccef6cf280e55e67775bf613c",
+    "lane": "questpc4",
+    "qengine2_checked": "3b0c2d9e2",
+    "reuse": "ItemOnTarget.reusable, one-item/no-replacement validation and locked-custody no-consumption branch; no unrelated quest/counter/alternatives copies"
+  },
+  "green": {
+    "duration_seconds": 41.012305888,
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_life_ring_pick_descent_exact_rewards_and_replay duration=41.012305888s",
+    "log_sha256": "1277681c57c04e6f3d83e80bf9f5e1af583ca7fb9c9a9adf6443aaed86d35094"
+  },
+  "validation": {
+    "green": {
+      "log_sha256": "1277681c57c04e6f3d83e80bf9f5e1af583ca7fb9c9a9adf6443aaed86d35094",
+      "duration_seconds": 41.012305888,
+      "marker": "POSTGRES_CASE_COMPLETED questpc8_life_ring_pick_descent_exact_rewards_and_replay duration=41.012305888s"
+    },
+    "consuming_regression": {
+      "log_sha256": "e20c6889a182648aeda9feeacc0c53e57d1f5356c7a215102bd7895afb767a6a",
+      "duration_seconds": 40.0,
+      "marker": "POSTGRES_REGRESSION_COMPLETED quest_world_callbacks_qcb3_target_swap_with_consumption_and_teleport duration=40s",
+      "kind": "actual PostgreSQL wire scenario; wrapper marker includes command runtime"
+    },
+    "reusable_unit": {
+      "log_sha256": "899d1260b396c33d0f43adeacf9ad52ff3f86503f453f38b4bc441b479ea44e6",
+      "kind": "pure unit, not PostgreSQL"
+    },
+    "check": {
+      "log_sha256": "cdd8c836b9711dc721e82959134003d506561a9043eeb02d78989de07e7bf88e"
+    },
+    "clippy": {
+      "log_sha256": "02493984e8628006b935782bfca253c872210f26ea5327ac940ca8af177a8969"
+    },
+    "generator_check": {
+      "log_sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "regeneration": {
+      "log_sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+    },
+    "pins": {
+      "log_sha256": "e03e653eee38eab4e5f13090f89cf4705bca400813306eb2749f3e2aecd6b603",
+      "refresh": {
+        "inputs_digest": "6d025b2111e7e996086ce78e935c3c242c5df70edb7096fedd62f8d284e1df7c",
+        "pins": [
+          {
+            "digest": "eef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012",
+            "previous": "eef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012",
+            "world": "oteryn"
+          }
+        ]
+      }
+    },
+    "fmt": {
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "coverage": [
+    "missing pick refuses with unchanged map/stage",
+    "same carried pick instance and custody after success; no consumption audit",
+    "native394 DOWN descent to native386 rope spot",
+    "exact3052x1 and3085x1; proven full-definition200 charges and no partial timed row",
+    "completion, command replay, new command refusal and cold quest-cache reload refusal",
+    "source six-cell bridge and native occupant evacuation separately qualified in1d0b9e8d7"
+  ]
+}

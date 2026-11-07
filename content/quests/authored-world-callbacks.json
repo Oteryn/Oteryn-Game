@@ -994,6 +994,146 @@
           ]
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-entry",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32437,
+          "y": 32238,
+          "floor": -10
+        },
+        "appearance": 351,
+        "ordinal": 0,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-pick",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32437,
+          "y": 32239,
+          "floor": -10
+        },
+        "appearance": 355,
+        "ordinal": 0,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3456",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 394,
+        "reusable": true
+      },
+      "success_message": "You opened the concealed passage with your pick."
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-cache",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32443,
+          "y": 32238,
+          "floor": -11
+        },
+        "appearance": 2469,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "success_message": "You recovered the Life Ring cache.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3052",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3085",
+              "count": 1
+            }
+          ]
+        }
+      }
     }
   ]
 }

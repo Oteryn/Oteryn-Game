@@ -1,3 +1,8 @@
+Life Ring full chosen programme now QUALIFIED. Twelve of23 L7 entries
+QUALIFIED,11 remain. Current QUEST-STATUS.json and RESUME.md supersede the
+historical reports below. See cloud-life-ring-programme-proof.json and the
+separately published source-bridge proof1d0b9e8d7.
+
 Merged retrieval/NPC verification PASS; native Grizzly and weekday placements retained.
 Mastermind final201gold/cold-replay semantics preserved. See cloud-mastermind-merge-proof.json.
 
