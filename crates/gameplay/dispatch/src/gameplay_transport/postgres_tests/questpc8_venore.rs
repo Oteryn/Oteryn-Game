@@ -262,6 +262,20 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(progress(h, "stage").await?, 13);
     assert_eq!(experience(h).await? - before_xp, 1000);
+    let (actual_key,derived_key,next_nonce_key,callback_key):(String,String,String,String)=sqlx::query_as("SELECT m.claim_production_key,game_quest_reward_mint_claim_key(s.character_id,s.cause_id,s.cause_ordinal,s.transition_key,s.plan),game_quest_reward_mint_claim_key(s.character_id,s.cause_id,s.cause_ordinal+1,s.transition_key,s.plan),s.transition_key FROM game_quest_reward_sources s JOIN game_reward_claim_mint_receipts m ON m.transaction_id=s.mint_transaction_id WHERE s.character_id=encode($1,'hex')::uuid AND s.transition_key='oteryn:quest-reward/chosen/venore-daily/report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        actual_key, derived_key,
+        "native MINT uses the shared authoritative claim-key owner"
+    );
+    assert_ne!(
+        actual_key, callback_key,
+        "daily report must not reuse a Character-wide once claim"
+    );
+    assert_ne!(
+        actual_key, next_nonce_key,
+        "fresh valid occurrences need distinct bounded command nonces"
+    );
+
     assert_eq!(
         quantity(h, 3035).await? - gold,
         10,

@@ -1,3 +1,20 @@
+# Venore native route reaches third machine — source arrival RED109.945s
+
+Actual PostgreSQL proves correct initial held-tool refusals, the three supply
+MINTs, guarded out-of-order machine rejection and two successful native machine
+USEs with exact replay, fresh refusal and unchanged reusable can. Third crane
+33017,32041,z6 has no cardinal walkable neighbour in the new fixture helper.
+Extend that helper to inspect the four native diagonals, preserving actual
+collision and real USE guards; print bounded source cells if none is usable.
+Full native route is not qualified. The strict nonce assertion is now mounted
+after the report: a recurring reward cannot reuse the callback once-claim key.
+
+Occurrence implementation draft is /tmp/questpc8-enable-occurrence-mint.py;
+SQL draft /tmp/questpc8_occurrence_mint.sql. Apply after reaching the nonce
+regression. Preserve source_placement=original callback key while using the
+shared occurrence claim key only for the MINT claim identity.19of23remain
+QUALIFIED; four remain. Keep pushing each compiling/green slice; do not end.
+
 # Complete native Venore circuit compiles; run replay and finish recurrence
 
 Nine exact native machine selectors, Scott/Frank exact hand-ins, five native
