@@ -1,3 +1,7 @@
+Kormarak chosen programme now QUALIFIED: PG RED2.52s/GREEN36.476644642s,
+final check/strict Clippy/fmt/40-file drift/pin refresh passed. Nine of23 L7
+entries QUALIFIED,14 remain. See current QUEST-STATUS.json and cloud-kormarak-proof.json.
+
 Current qualification update: Giant Smithhammer complete chosen programme is QUALIFIED.
 Real producer PG RED35.59s/GREEN37.615971969s, strict checks and pin refresh pass.
 See cloud-smith-cache-proof.json and current QUEST-STATUS.json; historical text

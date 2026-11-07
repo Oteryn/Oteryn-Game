@@ -429,29 +429,26 @@
     "title": "Kingdom of Kormarak Quest",
     "canonical": "oteryn:quest.authored.kingdom_of_kormarak_quest",
     "definition": "content/quests/definitions/quests-00300-00351.json:1#/records/9/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "blocker": {
-      "missing_piece": "The five-stage chosen programme and dead-human reward placement (Brass Armor, Brass Helmet, Hatchet, 13 Throwing Stars) lack an authored native binding; the binder currently requires a Crystal UID."
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter the Ancient Temple under Thais and follow the north ladder route.",
-      "targets": [
-        "Thais Ancient Temple"
-      ]
-    },
-    "disposition": "authoring",
+    "blocker": null,
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "native_reward_source_placement",
-    "round": "L7"
+    "mechanism": "ordered exploration, actual shared guardian, native ordinal body cache and atomic four-item backpack outputs",
+    "round": "L7",
+    "proof": "cloud-kormarak-proof.json",
+    "qualification_scope": "Complete chosen Oteryn recipe only; conservative native route/body restoration documented in CONTRACT-NOTES.md.",
+    "qualified_components": [
+      {
+        "scope": "Complete chosen exploration, captured native death, cache grant, completion and replay programme",
+        "test": "questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_kormarak_native_guardian_body_and_four_outputs",
+        "duration_seconds": 36.476644642,
+        "red_duration_seconds": 2.52,
+        "proof": "cloud-kormarak-proof.json"
+      }
+    ]
   },
   {
     "title": "Kingsday Mini World Change",

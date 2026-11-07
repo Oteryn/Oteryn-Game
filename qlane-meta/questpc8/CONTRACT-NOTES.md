@@ -82,3 +82,35 @@ is present. The bounded roaming chamber is32760..32790,32240..32270,z8.
 This conservative authored admission completes the selected kill requirement;
 it does not assert a missing historical source spawn coordinate. Kill credit
 still comes exclusively from the existing native death/progress owner.
+
+Kormarak restoration: retained native dead human32342,32125,z10 has top-level
+appearance4240 at ordinal2, above1854; it has no UID. The historical body beside
+a wooden coffin was not uniquely recoverable from the retained source. The
+chosen restoration therefore uses this real dead-human cache and two western
+approach thresholds32340,32125 and32341,32125,z10 for the ordered temple-route
+and inner-room exploration milestones. These are explicit conservative authored
+bindings, not claimed historical ladder/coffin coordinates. One native Demon
+Skeleton guardian at32342,32126,z10 is armed only after both milestones; its
+bounds32338..32344,32123..32127 retain native ground. It uses the shared guardian
+and native death owners. Free account, no level gate, one completion. Exact four
+backpack outputs: Brass Armor3359x1, Brass Helmet3354x1, Hatchet3276x1, Throwing
+Stars3287x13. This conserves the pinned selected rewards without an extra bag.
+Chosen source: https://tibia.fandom.com/index.php?curid=38407&oldid=884223
+Identity: https://tibia.fandom.com/index.php?curid=56856&oldid=899526
+The prior Fandom API402 and WikiBrasil403 were not retried or bypassed. Native
+B3 and existing admitted profiles supply exact binding/custody evidence.
+
+Next Voodoo binding evidence: retained native boxes32757,31953,z9 and
+32757,31957,z9 each appearance2473 ordinal1, no UID. Retained native Witch
+spawn points32747,31948,z9;32751,31948,z9;32752,31953,z9 match the nearby eastern
+room. Use those existing world populations, not an additional authored guardian.
+Pinned Canary XML identifies3209 as the doll that 'looks like a little king';
+3002 is a different generic doll. Select unlit Magic Light Wand3046, not lit3047.
+XML3046 has stopduration but no explicit initial duration/charges; do not infer
+a charged state from its name. Existing native3046 custody is already admitted.
+XML: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
+Chosen: https://tibia.fandom.com/index.php?curid=5235&oldid=749496
+Native Mastermind candidate box32216,31168,z11 appearance2473 ordinal1 has no
+UID. The second cache was not identified in the bounded scan; choose/document
+a conservative native cache when implementing that entry, rather than prolonging
+this investigation. Chosen: https://tibia.fandom.com/index.php?curid=18595&oldid=289008

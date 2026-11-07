@@ -1,5 +1,18 @@
 # questpc8 — AUTHORING
 
+Kormarak QUALIFIED: PG RED2.52s, required authored-provenance marker repair
+and unit passed, GREEN36.476644642s. Native body ordinal2, two exploration
+milestones, actual spawned Demon Skeleton and exact four rewards/replay.
+Final check81s, strict Clippy182s, fmt,40-file generator drift and pin-refresh
+passed. See cloud-kormarak-proof.json. Push this slice immediately.
+Next Voodoo: exact boxes and three existing source Witch spawns are recorded
+in CONTRACT-NOTES.md. Do not add a duplicate guardian. Prepared scaffold script
+/tmp/questpc8-voodoo-scaffold.py changes only fixture/mount/test files; apply
+AFTER Kormarak push, format and run the Voodoo PG case RED before adding data.
+Test name questpc8_voodoo_three_native_witches_two_boxes_and_replay. King
+doll3209 needs native custody closure through existing generic qualifier;
+unlit wand3046 is already admitted. No invented charge/duration state.
+
 Continue directly on claude/happy-davinci-ijz3wy-questpc8. Preserve its published
 history. Before every push fetch the exact ref explicitly:
 `git fetch origin refs/heads/claude/happy-davinci-ijz3wy-questpc8:refs/remotes/origin/claude/happy-davinci-ijz3wy-questpc8`.
@@ -10,10 +23,10 @@ blakinio <75369544+blakinio@users.noreply.github.com>; required Claude coauthor 
 session trailers still apply. Never main/force/PR. Push each green slice and at
 least every30minutes. Earlier publication bans and /home/mole paths are obsolete.
 
-Scope: LANE-L7.json,23 entries. Eight QUALIFIED: Killing in the Name of,
-Braindeath, Tinder Box, Mintwallin and Giant Smithhammer here; Triangle Tower, Waterfall and Vampire
+Scope: LANE-L7.json,23 entries. Nine QUALIFIED: Killing in the Name of,
+Braindeath, Tinder Box, Mintwallin, Giant Smithhammer and Kormarak here; Triangle Tower, Waterfall and Vampire
 Shield elsewhere. Smith guardian PG and final checks are green;
-15 entries remain. Non-L7 historical rows are not scope.
+14 entries remain. Non-L7 historical rows are not scope.
 Exclusions Dawnport, W14/P23/X01-X06; Father's eleven-track acceptance remains
 one atomic write, grants charge only on an exact match. No binaries/reference
 copies, workflows or tools/repository edits. No full workspace/PG/nextest runs.
@@ -40,7 +53,7 @@ A prior automatic merge9bfdafcfc used the repository's default author; retain
 published history. Local identity was corrected. New merges must use explicit
 attributed commits and trailers, never a silent default merge commit.
 
-Next: Kormarak, Mastermind Potion and Voodoo Doll. Do not spend over ten minutes
+Next: Voodoo Doll and Mastermind Potion. Do not spend over ten minutes
 on one fact. Document conservative authored choices in CONTRACT-NOTES.md.
 Kormarak actual dead human32342,32125,z10 appearance4240 ordinal2, no UID, was
 verified in retained B3. Four items3359/3354/3276/3287 already have admitted native
