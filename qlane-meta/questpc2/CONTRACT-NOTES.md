@@ -298,3 +298,36 @@ or client combat/reward qualification is inferred. Authority4.05s and
 complete earned Annihilator105.20s PostgreSQL regressions remain GREEN.
 Shared persistence retains the existing ordinary Quest SQL and caller gates;
 native write joins XP transaction rather than making a later separate write.
+
+Elvenbane playable exploration continuation (authored Oteryn selectors, not donor quest scripts):
+Committed source B3 decoded using tools/content-schema/world-authoring/world_region_codec.py; no geometry/attributes changed. Exact coordinate witnesses use binary-region line1 plus tile coordinates.
+- content/world/placements/region-z03-x127-y123.b3:1 SHA256 521b9242b03f5f7f5af3aa79c536ce6e31735134de9bc07a2bc593a2125836f9
+- content/world/placements/region-z05-x127-y123.b3:1 SHA256 70a99c547f3f3f4db33b72db5439221197dec182fe9ea1cff0b1e76ee522908c
+- content/world/placements/region-z06-x127-y123.b3:1 SHA256 8a55c8b9400e0511cf2e2925982ffd00741964714cb4e88c9e8663007e59a15f
+- content/world/placements/region-z07-x127-y123.b3:1 SHA256 d3eab921dcbe55c2708d5eee3dd8285e50becbca661a4c2da08e40c5b2dcea61
+- content/world/placements/region-z08-x127-y123.b3:1 SHA256 34d7229b0638876931954aced076b0dd62e600bf073ec0bd0f02ed47f9f5549a
+Chosen basement approach starts32599,31652,z7 and walks west onto ground437 at32598,31652,z7. Below, original north-stairs1947 at32598,31652,z8 resolve landing32598,31653,z8 via native floor rules (world/src/map/floor.rs:295-317); positive PG traversal is pending. Bind basement exploration to that landing.
+Poison2121 covers central source floor6, including32589,31644,z6. Bind a distinct poison-crossing flag there; only then allow the actual stairs1947 arrival32588,31642,z5 to advance phase1->2. This is the chosen recipe route, not a donor scripted gate. Do not synthesize prior progress in the continuous fixture.
+Original upper bedroom has two chest2472 placements at32590,31647,z3 and32591,31647,z3 (top-level placement index1). Bind once-only personal terminal bundle to a source chest after Dragon and all five defender counters; no NPC bypass. Production implementation and PG proof still pending.
+
+Exploration PG continuation: RED73.42s/server180006 proved literal hole
+landing32598,31653,z8 but no phase1. Three code-built authored callbacks now
+use existing fenced STEP/Quest owner; phase0 tracks are installed before
+world callback lowering, avoiding duplicate tracks/default-1 drift. Global
+callback bound512 retained, reservation derived from built-in count.
+Subsequent RED77.18s and diagnostic RED75.44s earned phase1 then disconnected
+on the second fixture connection: command.rs diagnostic194 identifies
+retained-NPC/Bank reconciliation. npc_command.rs:1114-1134 explicitly keeps
+work unresolved when command.item_fence is absent; fixture had left it None.
+Correct admission supplies current_quest_fence().item_fence() before input.
+Temporary test-only tracing removed; no Bank or protocol guard changed.
+Full basement/poison/Dragon-floor GREEN still pending this corrected fixture.
+
+Source ladder1948 admission: XML3918-3920 explicitly type=ladder (same pinned
+XML1cf2992c...); generic importer lacked LADDER in its existing native enum
+mapping. Source profiles omitted1948, so production default-solid policy
+correctly blocked the original stairs landing. Source capture tests
+RED7.276s ->GREEN6.734s; exact one native profile addition, all existing
+profiles preserved. Current peer heads listed RESUME have no1948 profile.
+No map flag, stairs direction, field condition or default-unknown policy
+was relaxed. Full source exploration PG remains pending.

@@ -1915,5 +1915,33 @@
       "marker_elapsed_ms": 104401
     },
     "batch": "BATCH-native-objective-atomic-2026-11-07.json"
+  },
+  "elvenbane_exploration_authoring_checkpoint": {
+    "state": "AUTHORING",
+    "last_runtime_publication": "d4b4ebe77",
+    "published_scope": "Verified source/admission findings and resume checkpoint only; exploration and ladder runtime/data remain local pending full GREEN.",
+    "postgres_reds": [
+      {
+        "version": 180006,
+        "seconds": 73.42,
+        "finding": "Literal source hole landing proved; missing basement phase1."
+      },
+      {
+        "version": 180006,
+        "seconds": 75.44,
+        "finding": "Phase1 earned, next per-command fixture connection lacked current item fence; normal Bank reconciliation correctly refused unknown work. Fixture now supplies actual durable fence; temporary tracing removed."
+      },
+      {
+        "version": 180006,
+        "seconds": 75.88,
+        "finding": "Next literal north step blocked by missing source ladder1948 native profile at landing. No source geometry/assertion changed."
+      }
+    ],
+    "source_xml": "imports/canary/items-xml/items.xml:3918-3920; SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "source_tests": "3source admission tests RED7.276s -> GREEN6.734s; exact ladder class/flags/custody/binding, existing doors still checked.",
+    "source_profile_review": "Exactly one1948 native profile added; every preexisting native profile byte-value unchanged.",
+    "current_case": "/tmp/questpc2-elvenbane-exploration-ladder-pg.log",
+    "registration": "/tmp/questpc2-elvenbane-ladder-registration.log: write PASS43, check in flight.",
+    "next": "Complete basement/poison/Dragon-floor real source movement GREEN, focused checks and push runtime. Then generic ladder USE if required, actual Dragon+five defenders, atomic seven-item reward/replay; qualify whole Elvenbane."
   }
 }
