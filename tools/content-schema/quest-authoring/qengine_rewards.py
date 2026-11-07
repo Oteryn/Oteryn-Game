@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -420,6 +420,42 @@ def build():
         take=[(5896,50),(5897,50)],outfit=('druid',1),topic=1)
     offers.append({'npc':'oteryn:npc.tom','keywords':['paws','bear paws'],'topic':0,'next_topic':1,
         'storage':[storage(rook_body,1,2)],'reply':['Have you brought 50 bear paws and 50 wolf paws?']})
+    citizen_rook=prefix+'u7_8/citizen_outfits_rook/'
+    rook_ref='oteryn:quest-progress/outfit_quest/ref'
+    ref_source=f'crystal:{PIN}:data-global/npc/amber.lua:103-106:sha256:{sha(inputs["data-global/npc/amber.lua"])}'
+    declarations.append({'key':rook_ref,'quest':'oteryn:quest.outfit_and_addon_quests','initial':0,
+        'min':0,'max':2147483647,'writable':True,'sources':[ref_source]})
+    backpack=citizen_rook+'addon_backpack_rook'
+    mission=citizen_rook+'mission_backpack_rook'
+    timer=citizen_rook+'addon_backpack_rook_timer'
+    states=[storage(backpack,-1,1,0),storage(mission,0,1,4)]
+    add('l6-citizen-rook-backpack-start','citizen_outfits_quest_on_rook','amber',['yes'],states,topic=2)
+    callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests','storage':[],
+        'state_ops':[{'track':rook_ref,'from':{'kind':'between','minimum':0,'maximum':2147483646},
+            'effect':{'kind':'add','value':1}}]}]
+    for words,before,after in [(['addon','outfit'],0,1),(['backpack','minotaur','leather'],1,2)]:
+        offers.append({'npc':'oteryn:npc.amber','keywords':words,'topic':before,'next_topic':after,
+            'storage':states,'reply':['Would you bring 100 minotaur leathers for a handmade backpack?']})
+    states=[storage(backpack,1,2),storage(mission,1,2)]
+    add('l6-citizen-rook-backpack-materials','citizen_outfits_quest_on_rook','amber',['yes'],states,take=[(5878,100)],topic=3)
+    callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'any'},'effect':{'kind':'set_now'}}]
+    offers.append({'npc':'oteryn:npc.amber','keywords':['addon','outfit','backpack','leather'],'topic':0,'next_topic':3,
+        'storage':states,'reply':['Did you bring 100 minotaur leathers? Your backpack takes two hours to make.']})
+    add('l6-citizen-rook-backpack','citizen_outfits_quest_on_rook','amber',['addon','outfit','backpack'],
+        [storage(backpack,2,3),storage(mission,2,4)],outfit=('citizen',1))
+    callbacks[-1]['state_ops']=[{'track':timer,'from':{'kind':'elapsed_at_least','seconds':7201},'effect':{'kind':'add','value':0}}]
+    callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests','storage':[storage(rook_ref,0,0,2147483647)]}]
+    hat=citizen_rook+'addon_hat_rook'
+    hat_mission=citizen_rook+'mission_hat_rook'
+    states=[storage(hat,-1,1,0),storage(hat_mission,0,1)]
+    add('l6-citizen-rook-hat-start','citizen_outfits_quest_on_rook','norma',['yes'],states,topic=1)
+    offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':1,
+        'storage':states,'reply':['Shall I teach you how to make a feather hat?']})
+    states=[storage(hat,1,2),storage(hat_mission,1,0)]
+    add('l6-citizen-rook-hat','citizen_outfits_quest_on_rook','norma',['yes'],states,
+        take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
+    offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
+        'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -486,22 +522,31 @@ def validate_callbacks(document):
     declarations=document.get('tracks',[])
     declared=set()
     readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
-    written={r['track'] for c in document['callbacks'] for r in c['storage']+[s for p in c.get('participants',[]) for s in p['storage']]}
+    owners={}
+    for c in document['callbacks']:
+        for owner,states in [(c['quest'],c['storage']+c.get('state_ops',[]))]+[(p['quest'],p['storage']+p.get('state_ops',[])) for p in c.get('participants',[])]:
+            for state in states: owners.setdefault(state['track'],set()).add(owner)
+    written=set(owners)
     for track in declarations:
+        writable=track.get('writable',False)
         if (track['key'] in declared or not track['min']<=track['initial']<=track['max']
-            or track['key'] not in readonly or track['key'] in written):
-            raise ValueError('invalid reward prerequisite declaration '+track['key'])
+            or (writable and owners.get(track['key'])!={track['quest']})
+            or (not writable and (track['key'] not in readonly or track['key'] in written))):
+            raise ValueError('invalid reward track declaration '+track['key'])
         declared.add(track['key'])
     keys=set()
     for callback in document['callbacks']:
         storage=callback['storage']
         participants=callback.get('participants',[])
         participant_storage=[s for p in participants for s in p['storage']]
-        all_keys=[s['track'] for s in storage+participant_storage]
+        participant_ops=[s for p in participants for s in p.get('state_ops',[])]
+        operations=callback.get('state_ops',[])
+        all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
         if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
             or any(s['minimum']>s['maximum'] for s in participant_storage)
+            or any(s['from']['kind']=='between' and s['from']['minimum']>s['from']['maximum'] for s in operations+participant_ops)
             or {r['track'] for r in callback.get('requires',[])} & set(all_keys)):
             raise ValueError('invalid reward participants '+callback['key'])
         requires=callback.get('requires',[])

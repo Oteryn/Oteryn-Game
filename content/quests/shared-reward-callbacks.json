@@ -10,6 +10,17 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ezebeth.lua:93-103:sha256:280ef0cf3d3342ed33e7f156a029f096e32e7a593981099e522256fe47c14e82"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/outfit_quest/ref",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:103-106:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ]
     }
   ],
   "callbacks": [
@@ -2553,6 +2564,259 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/razan.lua:sha256:c12e695654ada3a5f4b1775657835fa18e5957b0870e735803a5ead2e7483acb"
       ],
       "creation_sex": "male"
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 7201
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "set": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-materials",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5878",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-backpack-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amber.lua:sha256:00a81c0a699f019923ec1d906166c7dae13f7f60b4e3fcc321aff41c9b32a7f9"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.outfit_and_addon_quests",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/outfit_quest/ref",
+              "from": {
+                "kind": "between",
+                "minimum": 0,
+                "maximum": 2147483646
+              },
+              "effect": {
+                "kind": "add",
+                "value": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3374",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 50
+        },
+        {
+          "item": "oteryn:item.tibia.i5890",
+          "count": 100
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.citizen",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l6-citizen-rook-hat-start",
+      "quest": "oteryn:quest.citizen_outfits_quest_on_rook",
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/norma.lua:sha256:c1eb0cbfdf9520fe110dd90b07674729d70aeaf69926f8f40a5f65d2983e2105"
+      ]
     },
     {
       "key": "oteryn:quest-reward/l6-druid-rook-body",

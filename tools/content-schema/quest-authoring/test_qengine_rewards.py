@@ -26,6 +26,25 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(reachable[0]['next_topic'],second['topic'])
         self.assertTrue(all(s['minimum']<=phase<=s['maximum'] for s in second['storage']))
 
+    def test_citizen_rook_timer_and_shared_counter_are_explicit_source_operations(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        start=callbacks['l6-citizen-rook-backpack-start']
+        self.assertEqual(start['participants'][0]['quest'],'oteryn:quest.outfit_and_addon_quests')
+        self.assertEqual(start['participants'][0]['state_ops'][0]['effect'],{'kind':'add','value':1})
+        material=callbacks['l6-citizen-rook-backpack-materials']
+        self.assertEqual(material['take'],[{'item':'oteryn:item.tibia.i5878','count':100}])
+        self.assertEqual(material['state_ops'][0]['effect'],{'kind':'set_now'})
+        claim=callbacks['l6-citizen-rook-backpack']
+        self.assertEqual(claim['state_ops'][0]['from'],{'kind':'elapsed_at_least','seconds':7201})
+        self.assertEqual(callbacks['l6-citizen-rook-hat']['take'],[
+            {'item':'oteryn:item.tibia.i3374','count':1},{'item':'oteryn:item.tibia.i5902','count':50},
+            {'item':'oteryn:item.tibia.i5890','count':100}])
+        declaration=next(t for t in self.callbacks['tracks'] if t.get('writable'))
+        self.assertEqual(declaration['quest'],'oteryn:quest.outfit_and_addon_quests')
+        altered=copy.deepcopy(self.callbacks)
+        next(t for t in altered['tracks'] if t.get('writable'))['quest']='oteryn:quest.citizen_outfits_quest_on_rook'
+        with self.assertRaises(ValueError): q.validate_callbacks(altered)
+
     def test_oriental_source_costs_gender_and_foreign_door_owner(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
         for sex in ('female','male'):
@@ -154,8 +173,8 @@ class QuestRewards(unittest.TestCase):
         callbacks=self.callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),42)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),26)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),44)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),29)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

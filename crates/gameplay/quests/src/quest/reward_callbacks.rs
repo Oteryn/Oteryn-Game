@@ -6,6 +6,9 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod state_ops;
+pub use state_ops::{StateCondition, StateMutation, StateOperation};
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -54,6 +57,17 @@ pub enum CreationSex {
 pub struct QuestParticipant {
     pub quest: String,
     pub storage: Vec<Storage>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_ops: Vec<StateOperation>,
+}
+
+impl QuestParticipant {
+    pub fn tracks(&self) -> impl Iterator<Item = &str> {
+        self.storage
+            .iter()
+            .map(|s| s.track.as_str())
+            .chain(self.state_ops.iter().map(|s| s.track.as_str()))
+    }
 }
 
 /// A read-only prerequisite: its original quest retains ownership and writes.
@@ -85,6 +99,8 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_ops: Vec<StateOperation>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub participants: Vec<QuestParticipant>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creation_sex: Option<CreationSex>,
@@ -103,10 +119,12 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
-/// Source-bound catalogue input only; this declaration never writes progress.
+/// Source-bound track metadata; writable declarations name the exact existing owner.
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct TrackDeclaration {
+    #[serde(default)]
+    writable: bool,
     key: String,
     quest: String,
     initial: i64,
@@ -161,16 +179,42 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || track.sources.is_empty()
             || track.sources.len() > 8
             || track.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
-            || !document
-                .callbacks
-                .iter()
-                .any(|c| c.requires.iter().any(|r| r.track == track.key))
-            || document.callbacks.iter().any(|c| {
-                c.storage
+            || if track.writable {
+                let owners: Vec<_> = document
+                    .callbacks
                     .iter()
-                    .chain(c.participants.iter().flat_map(|p| &p.storage))
-                    .any(|r| r.track == track.key)
-            })
+                    .flat_map(|c| {
+                        c.storage
+                            .iter()
+                            .map(|s| (&c.quest, s.track.as_str()))
+                            .chain(c.state_ops.iter().map(|s| (&c.quest, s.track.as_str())))
+                            .chain(
+                                c.participants
+                                    .iter()
+                                    .flat_map(|p| p.tracks().map(|key| (&p.quest, key))),
+                            )
+                    })
+                    .filter(|(_, key)| *key == track.key)
+                    .map(|(owner, _)| owner)
+                    .collect();
+                owners.is_empty()
+                    || owners
+                        .iter()
+                        .any(|owner| owner.as_str() != track.quest.as_str())
+            } else {
+                !document
+                    .callbacks
+                    .iter()
+                    .any(|c| c.requires.iter().any(|r| r.track == track.key))
+                    || document.callbacks.iter().any(|c| {
+                        c.storage
+                            .iter()
+                            .map(|s| s.track.as_str())
+                            .chain(c.state_ops.iter().map(|s| s.track.as_str()))
+                            .chain(c.participants.iter().flat_map(QuestParticipant::tracks))
+                            .any(|key| key == track.key)
+                    })
+            }
         {
             return Err(format!(
                 "invalid reward prerequisite declaration {}",
@@ -180,8 +224,22 @@ fn parse_document(text: &str) -> Result<Document, String> {
     }
     for c in &document.callbacks {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
-        let participant_tracks: Vec<_> = c.participants.iter().flat_map(|p| &p.storage).collect();
-        let participant_keys: BTreeSet<_> = participant_tracks.iter().map(|s| &s.track).collect();
+        let op_keys: BTreeSet<_> = c.state_ops.iter().map(|s| &s.track).collect();
+        let participant_keys: BTreeSet<_> = c
+            .participants
+            .iter()
+            .flat_map(|p| {
+                p.storage
+                    .iter()
+                    .map(|s| &s.track)
+                    .chain(p.state_ops.iter().map(|s| &s.track))
+            })
+            .collect();
+        let participant_count: usize = c
+            .participants
+            .iter()
+            .map(|p| p.storage.len() + p.state_ops.len())
+            .sum();
         if (!c.participants.is_empty() && participant_key(&c.key, 0).len() > 128)
             || c.participants.len() > 3
             || c.participants
@@ -190,16 +248,21 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 .collect::<BTreeSet<_>>()
                 .len()
                 != c.participants.len()
-            || participant_keys.len() != participant_tracks.len()
+            || op_keys.len() != c.state_ops.len()
+            || !op_keys.is_disjoint(&tracks)
+            || c.state_ops.iter().any(|s| !s.valid())
+            || participant_keys.len() != participant_count
+            || !participant_keys.is_disjoint(&op_keys)
             || !participant_keys.is_disjoint(&tracks)
             || c.requires
                 .iter()
-                .any(|r| participant_keys.contains(&r.track))
-            || c.storage.len() + participant_tracks.len() > 8
+                .any(|r| participant_keys.contains(&r.track) || op_keys.contains(&r.track))
+            || c.storage.len() + c.state_ops.len() + participant_count > 8
             || c.participants.iter().any(|p| {
                 p.quest == c.quest
                     || !slug(&p.quest, "oteryn:", b"._/:-", 128)
-                    || p.storage.is_empty()
+                    || (p.storage.is_empty() && p.state_ops.is_empty())
+                    || p.state_ops.iter().any(|s| !s.valid())
                     || p.storage
                         .iter()
                         .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
@@ -315,6 +378,18 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     let callbacks = document.callbacks;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
     for callback in &callbacks {
+        for operation in &callback.state_ops {
+            if tracks
+                .iter()
+                .find(|t| t.key == operation.track)
+                .is_none_or(|t| t.quest != callback.quest)
+            {
+                return Err(format!(
+                    "undeclared or foreign reward operation {}",
+                    operation.track
+                ));
+            }
+        }
         for (index, participant) in callback.participants.iter().enumerate() {
             for state in &participant.storage {
                 let Some(track) = tracks.iter().find(|t| t.key == state.track) else {
@@ -331,6 +406,14 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     ));
                 }
             }
+            if participant.state_ops.iter().any(|op| {
+                tracks
+                    .iter()
+                    .find(|t| t.key == op.track)
+                    .is_none_or(|t| t.quest != participant.quest)
+            }) {
+                return Err(format!("foreign participant operation {}", callback.key));
+            }
             transitions.push(QuestTransition {
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
@@ -346,6 +429,12 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                             QuestEffectKind::Set(s.set)
                         },
                     })
+                    .chain(
+                        participant
+                            .state_ops
+                            .iter()
+                            .map(StateOperation::quest_effect),
+                    )
                     .collect(),
                 completes: false,
                 experience: None,
@@ -383,6 +472,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                         QuestEffectKind::Set(s.set)
                     },
                 })
+                .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
                 .collect(),
             completes: false,
             experience: None,
@@ -447,6 +537,55 @@ mod tests {
         let encoded = serde_json::to_value(legacy).map_err(|e| e.to_string())?;
         assert!(encoded.get("participants").is_none());
         assert!(encoded.get("creation_sex").is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn state_operations_and_writable_declarations_fail_closed() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let original: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let index = original["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .position(|c| c.get("state_ops").is_some())
+            .ok_or("operations")?;
+        for case in 0..4 {
+            let mut document = original.clone();
+            let callback = &mut document["callbacks"][index];
+            match case {
+                0 => callback["state_ops"][0]["track"] = callback["storage"][0]["track"].clone(),
+                1 => {
+                    callback["state_ops"][0]["from"] =
+                        serde_json::json!({"kind":"between","minimum":2,"maximum":1})
+                }
+                2 => callback["state_ops"][0]["effect"] = serde_json::json!({"kind":"execute_sql"}),
+                _ => {
+                    let declaration = document["tracks"]
+                        .as_array_mut()
+                        .ok_or("tracks")?
+                        .iter_mut()
+                        .find(|t| t["writable"] == true)
+                        .ok_or("writable")?;
+                    declaration["writable"] = false.into();
+                }
+            }
+            assert!(
+                parse(&document.to_string()).is_err(),
+                "invalid operation/declaration case{case}"
+            );
+        }
+        let legacy = load()?
+            .into_iter()
+            .find(|c| c.state_ops.is_empty() && c.participants.is_empty())
+            .ok_or("legacy")?;
+        assert!(
+            serde_json::to_value(legacy)
+                .map_err(|e| e.to_string())?
+                .get("state_ops")
+                .is_none()
+        );
         Ok(())
     }
 

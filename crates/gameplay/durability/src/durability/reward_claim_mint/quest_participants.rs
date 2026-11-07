@@ -68,11 +68,7 @@ pub(super) async fn apply(
                 current_hash.to_vec(),
             )
         };
-        let mut keys: Vec<_> = participant
-            .storage
-            .iter()
-            .map(|s| s.track.as_str())
-            .collect();
+        let mut keys: Vec<_> = participant.tracks().collect();
         keys.sort_unstable();
         let rows = sqlx::query("SELECT track_key,quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=ANY($2::text[]) ORDER BY track_key FOR UPDATE")
             .bind(id).bind(&keys).fetch_all(&mut **tx).await?;

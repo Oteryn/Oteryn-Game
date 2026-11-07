@@ -293,13 +293,46 @@
               },
               "storage": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "maxItems": 8,
                 "items": {
                   "$ref": "#/$defs/storage"
                 }
+              },
+              "state_ops": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "$ref": "#/$defs/stateOperation"
+                }
               }
-            }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "storage": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "state_ops"
+                ],
+                "properties": {
+                  "state_ops": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "state_ops": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/stateOperation"
           }
         }
       }
@@ -393,6 +426,9 @@
             "minLength": 1,
             "maxLength": 1024
           }
+        },
+        "writable": {
+          "type": "boolean"
         }
       }
     },
@@ -411,6 +447,109 @@
         },
         "include_bank": {
           "type": "boolean"
+        }
+      }
+    },
+    "stateOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "track",
+        "from",
+        "effect"
+      ],
+      "properties": {
+        "track": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^oteryn:[a-z0-9._/:-]+$"
+        },
+        "from": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "any"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "minimum",
+                "maximum"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "between"
+                },
+                "minimum": {
+                  "type": "integer"
+                },
+                "maximum": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "seconds"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "elapsed_at_least"
+                },
+                "seconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 31622400
+                }
+              }
+            }
+          ]
+        },
+        "effect": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "add"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "set_now"
+                }
+              }
+            }
+          ]
         }
       }
     }

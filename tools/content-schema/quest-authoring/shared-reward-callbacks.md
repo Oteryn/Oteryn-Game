@@ -119,3 +119,16 @@ commit at one revision or roll back together. Immutable participant proofs link
 to the same-transaction source and primary Quest receipt. Original single-owner
 SQL proof arms and row immutability remain in force, with a precise additional
 participant proof arm. A participant never completes another quest.
+
+`state_ops` optionally composes bounded `from` conditions (`any`, `between`,
+`elapsed_at_least`) and existing native effects (`add`, `set_now`). Both primary
+and foreign-owner participants support it. Elapsed checks preserve their clock
+with add0;the database transaction clock authorizes value. Dialogue time never
+authorizes a grant. Duplicate tracks,owner confusion and combined effects>8
+fail closed. Source deadlines can normalize to start+exact elapsed duration.
+
+A source-bound track declaration is read-only unless `writable:true` is explicit.
+Every writer must match its declared owner;existing native metadata must still
+match exactly. This permits missing shared counters without reassigning tracks.
+Immutable source/participant proofs validate exact operation conditions/results,
+and all state,costs,grants and original owner pins commit or roll back together.

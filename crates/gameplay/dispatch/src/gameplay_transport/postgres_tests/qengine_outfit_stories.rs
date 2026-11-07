@@ -76,6 +76,11 @@ fn qengine_l6_druid_rook_complete_available_body_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l6-druid-rook-story")
 }
 
+#[test]
+fn qengine_l6_citizen_rook_complete_source_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l6-citizen-rook-story")
+}
+
 const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
 
 const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
@@ -409,10 +414,23 @@ pub(super) async fn exercise(
             ],
             148,
         ),
+        "qengine-rewards-l6-citizen-rook-story" => (
+            "citizen-rook",
+            &[
+                ("backpack-start", None, None, None),
+                ("backpack-materials", Some((5878, 100)), None, None),
+                ("backpack", None, None, Some(1)),
+                ("hat-start", None, None, None),
+                ("hat", None, None, Some(2)),
+            ],
+            136,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
     let outfit_family = if family == "druid-rook" {
         "druid".to_owned()
+    } else if family == "citizen-rook" {
+        "citizen".to_owned()
     } else {
         family.replace('-', "_")
     };
@@ -451,6 +469,12 @@ pub(super) async fn exercise(
                 count: item.1,
             };
         let mut expected_take = take.iter().map(amount).collect::<Vec<_>>();
+        if family == "citizen-rook" && *suffix == "hat" {
+            expected_take = [(3374, 1), (5902, 50), (5890, 100)]
+                .iter()
+                .map(amount)
+                .collect();
+        }
         if family == "pirate" && *suffix == "hat" {
             expected_take = [(6101, 1), (6102, 1), (6100, 1), (6099, 1)]
                 .iter()
@@ -591,45 +615,52 @@ pub(super) async fn exercise(
     let mut readonly = None;
     for callback in &callbacks {
         let required = requirements(callback)?;
-        for key in callback
-            .storage
-            .iter()
-            .map(|s| s.track.as_str())
-            .chain(
-                callback
-                    .participants
-                    .iter()
-                    .flat_map(|p| p.storage.iter().map(|s| s.track.as_str())),
-            )
-            .chain(required.iter().map(|r| r.track.as_str()))
-        {
-            tracks.insert(
-                key.to_owned(),
-                canonical.track(key).cloned().ok_or("canonical track")?,
-            );
-        }
-        for (i, _) in callback.participants.iter().enumerate() {
-            transitions.push(
-                canonical
-                    .transition(
-                        &oteryn_gameplay_quests::quest::reward_callbacks::participant_key(
-                            &callback.key,
-                            i,
-                        ),
-                    )
-                    .cloned()
-                    .ok_or("participant transition")?,
-            );
-        }
         if readonly.is_none() {
             readonly = required.first().cloned();
         }
-        transitions.push(
-            canonical
-                .transition(&callback.key)
-                .cloned()
-                .ok_or("canonical transition")?,
+        let keys = std::iter::once(callback.key.clone()).chain(
+            callback.participants.iter().enumerate().map(|(i, _)| {
+                oteryn_gameplay_quests::quest::reward_callbacks::participant_key(&callback.key, i)
+            }),
         );
+        for key in keys {
+            let transition = canonical
+                .transition(&key)
+                .cloned()
+                .ok_or("canonical transition")?;
+            for effect in &transition.effects {
+                tracks.insert(
+                    effect.track.clone(),
+                    canonical
+                        .track(&effect.track)
+                        .cloned()
+                        .ok_or("effect owner track")?,
+                );
+            }
+            transitions.push(transition);
+        }
+        for requirement in required {
+            tracks.insert(
+                requirement.track.clone(),
+                canonical
+                    .track(&requirement.track)
+                    .cloned()
+                    .ok_or("prerequisite track")?,
+            );
+        }
+    }
+    if family == "citizen-rook" {
+        let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+        transitions.push(QuestTransition {
+            key:"oteryn:quest-transition/qengine2-story/clock-advance".into(),
+            quest:"oteryn:quest.citizen_outfits_quest_on_rook".into(),
+            effects:vec![QuestEffect {
+                track:"oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer".into(),
+                from:QuestComparison::Any,effect:QuestEffectKind::Set(now-7202),
+            }],completes:false,experience:None,
+        });
     }
     if family == "oriental" {
         let opposite = all
@@ -924,7 +955,13 @@ pub(super) async fn exercise(
         assert_eq!(counts(h).await?, before);
     }
     let mut npcs = BTreeMap::new();
-    if family == "oriental" {
+    if family == "citizen-rook" {
+        let keys = ["oteryn:npc.amber", "oteryn:npc.norma"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "oriental" {
         let keys = ["oteryn:npc.ishina", "oteryn:npc.miraia"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
@@ -991,6 +1028,45 @@ pub(super) async fn exercise(
             let changed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key IN('oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit','oteryn:quest-progress/outfit_quest/default_start')").fetch_one(&h.pool).await?;
             assert_eq!(changed, 0, "refusal cannot retain foreign source stages");
         }
+        if family == "citizen-rook" && callback.key.ends_with("-backpack") {
+            let op = serde_json::to_value(callback)?;
+            assert_eq!(
+                op["state_ops"][0]["from"],
+                serde_json::json!({"kind":"elapsed_at_least","seconds":7201})
+            );
+            let (stamp,now):(i64,i64)=sqlx::query_as("SELECT value,floor(extract(epoch FROM now()))::bigint FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer'").fetch_one(&h.pool).await?;
+            assert!(
+                stamp > 0 && stamp <= now && now - stamp < 7201,
+                "actual start timestamp must be fresh"
+            );
+            let before = counts(h).await?;
+            let (result, _, _) =
+                super::qengine_rewards::wire_reward(owner, admitted, npc, callback, false).await?;
+            assert_eq!(
+                result,
+                NpcIntentDisposition::Rejected,
+                "two-hour wait cannot grant early"
+            );
+            assert_eq!(counts(h).await?, before);
+            let before_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>'oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer' ORDER BY track_key").fetch_all(&h.pool).await?;
+            // Simulate elapsed wall time through the existing fenced owner. No quest
+            // progress or entitlement is seeded; every source stage already ran literally.
+            commit_fixture(
+                owner,
+                admitted,
+                "oteryn:quest-transition/qengine2-story/clock-advance",
+                9800,
+            )
+            .await?;
+            let after_stages:Vec<(String,i64)>=sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE track_key<>'oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook_timer' ORDER BY track_key").fetch_all(&h.pool).await?;
+            assert_eq!(
+                after_stages, before_stages,
+                "clock arrangement must never seed an outfit stage"
+            );
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+        }
         let needed: Vec<_> = callback.take.iter().chain(&callback.present).collect();
         let mut missing = false;
         for item in &needed {
@@ -1012,7 +1088,7 @@ pub(super) async fn exercise(
                 supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
             }
             if (matches!(family, "royal-costume" | "druid-rook")
-                || (family == "pirate" && callback.key.ends_with("-hat")))
+                || (matches!(family, "pirate" | "citizen-rook") && callback.key.ends_with("-hat")))
                 && index == 0
             {
                 let before = counts(h).await?;
@@ -1327,6 +1403,19 @@ pub(super) async fn exercise(
         (facts, facts),
         "one base plus exactly the source-earned immutable addon facts"
     );
+    if family == "citizen-rook" {
+        let value:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/outfit_quest/ref' AND quest_key='oteryn:quest.outfit_and_addon_quests'").fetch_one(&h.pool).await?;
+        assert_eq!(
+            value, 0,
+            "shared active marker closes under its declared original owner"
+        );
+        let proofs:(i64,bool)=sqlx::query_as("SELECT count(*),bool_and(p.committed_character_revision=r.committed_character_revision) FROM game_quest_reward_participants p JOIN game_character_quest_receipts r USING(character_id,cause_id,cause_ordinal,transition_key)").fetch_one(&h.pool).await?;
+        assert_eq!(
+            proofs,
+            (2, true),
+            "counter increment and close each share the primary revision"
+        );
+    }
     if family == "norseman" {
         let (stage,stage_owner): (i64,String) = sqlx::query_as("SELECT value,quest_key FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit'").fetch_one(&h.pool).await?;
         assert_eq!(stage, 3);

@@ -497,7 +497,7 @@ impl DurabilityRoot {
                     keys.extend(final_flags.iter().map(String::as_str));
                     if let Some(callback) = &reward_callback {
                         keys.extend(callback.requires.iter().map(|r| r.track.as_str()));
-                        keys.extend(callback.participants.iter().flat_map(|p| p.storage.iter().map(|s| s.track.as_str())));
+                        keys.extend(callback.participants.iter().flat_map(oteryn_gameplay_quests::quest::reward_callbacks::QuestParticipant::tracks));
                     }
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
@@ -514,7 +514,7 @@ impl DurabilityRoot {
                     for row in &rows {
                         let key: String = row.try_get("track_key")?;
                         let read_only = reward_callback.as_ref().is_some_and(|c|
-                            c.requires.iter().any(|r| r.track == key) || c.participants.iter().any(|p| p.storage.iter().any(|s| s.track == key)));
+                            c.requires.iter().any(|r| r.track == key) || c.participants.iter().any(|p| p.tracks().any(|track| track == key)));
                         let expected_owner: &str = if read_only {
                             &catalogue.track(&key).ok_or(DurabilityError::InvalidStoredState)?.quest
                         } else { quest };

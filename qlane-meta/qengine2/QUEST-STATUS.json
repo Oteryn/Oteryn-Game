@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 16,
-    "unfinished": 50,
+    "qualified": 17,
+    "unfinished": 49,
     "blocked": 0
   },
   "quests": [
@@ -252,7 +252,7 @@
     {
       "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
       "title": "Citizen Outfits Quest on Rook",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -269,7 +269,13 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "batch": "L1-06B",
+        "scope": "Complete source Amber backpack introduction,100minotaur leather5878,start timestamp,strict7201-second wait and addon1;Norma hat introduction,3374x1+5902x50+5890x100 and addon2. Shared General Ref checked increment/reset retains its original owner in exact same-source primary revision. Early wait refusal,partial recipe atomic refusal,replay,exact3accountfacts and normal appearance verified. Only clock fixture advanced;no outfit stage seeded.",
+        "native_owner_canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=79.962115793s success=true",
+        "assumptions": "CONTRACT-NOTES.md:Amber strict deadline normalized to native start+7201;missing Ref explicitly owned by General with nonnegative initial0,finish resets0 preserving ordinary source behavior."
+      }
     },
     {
       "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
@@ -2153,7 +2159,7 @@
       "oteryn:quest.citizen_outfits_quest_on_rook",
       "oteryn:quest.beggar_outfits_quest"
     ],
-    "phase": "CitizenRook generic bounded state operations and five source callbacks implemented;20 authoring tests6.641s and cargo check14.41s pass;strict clippy finishing before actual PostgreSQL GREEN. No qualification claimed yet.",
+    "phase": "CitizenRook QUALIFIED real PostgreSQL79.962115793s;commit/push now,follow-on content/world/pin checks next;then Beggar premium and source paths.",
     "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
     "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
     "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
@@ -2183,6 +2189,24 @@
         "follow_on_verification": "COMPLETE:123content2.05s;5world46.16s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
         "commit": "8d3145a1d",
         "push": "fast-forward confirmed"
+      },
+      {
+        "id": "L1-06B",
+        "status": "QUALIFIED",
+        "entries": [
+          "oteryn:quest.citizen_outfits_quest_on_rook"
+        ],
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=79.962115793s success=true",
+        "result": "1passed;0failed;0ignored;79.96s;actualPostgreSQL18.6",
+        "scope": "Complete source Amber backpack introduction,100minotaur leather5878,start timestamp,strict7201-second wait and addon1;Norma hat introduction,3374x1+5902x50+5890x100 and addon2. Shared General Ref checked increment/reset retains its original owner in exact same-source primary revision. Early wait refusal,partial recipe atomic refusal,replay,exact3accountfacts and normal appearance verified. Only clock fixture advanced;no outfit stage seeded.",
+        "mechanism": "Bounded typed state_ops reuse native checked Add/SetNow/ElapsedAtLeast;primary and foreign participant exact SQL proofs;explicit source-backed writable declarations retain strict owner and default read-only contract. Legacy optional-empty serialization unchanged.",
+        "checks": [
+          "20authoring6.641s;callback/placement reproduction",
+          "5Rustreward_callbacks1.17s;fmt;check14.41s;strictclippy2m54s",
+          "repo pin-refresh passed"
+        ],
+        "follow_on_verification": "PENDING after immediate green push"
       }
     ],
     "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false"
