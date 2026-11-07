@@ -757,3 +757,20 @@ its44158-only guard is unchanged. No runtime quest-engine feature is added.
 Post-main3032 validation finished:698 selected durability units PASS314.521s,
 NPC hand-in and Rotten corpse PG cases PASS2/2 in67.798s. No pending failures
 remain from that merge; publish the final receipt with the next green slice.
+
+
+- Remaining Summer memberships (43961/43962/43964/43966/43967/43968)
+  preserve the already admitted EXACT binding rows at00ce02a57ca5a12e48f32a3476e37471167e4c3f.
+  Their retained XML evidence is data/items/items.xml:76781,76785,76793,76801,
+  76805,76809; SHA25613a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece.
+  The identity factory accepts independent201189f/8a4a526c evidence only and
+  rejects all six with "Selected Item identity requires independently qualified source revision".
+  Decision: publish normalized membership facts for qengine2; do not relabel
+  Summer bytes, revise identities, relax the guard or admit runtime/use effects.
+- Items43946/43947/44048 have named, takeable client appearances but no row in
+  the retained server XMLs or accepted binding table. Client usability alone
+  does not prove server registration, portable weight or use effects. Preserve
+  refusal; do not infer scroll promotion or horseshoe effects from display names.
+- This source-only batch adds no Rust or SQL and changes no runtime content.
+  Existing PG180006 proof3/3PASS133.133s belongs to the prior six admitted Items;
+  it is not evidence of admission for the six new membership candidates.

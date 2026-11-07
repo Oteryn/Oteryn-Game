@@ -1757,13 +1757,36 @@
     }
   },
   "current_batch": {
-    "name": "Six Rotten Blood source Item custody admissions",
-    "state": "FOCUSED_GREEN_UNIT_RUN_PENDING",
-    "scope": "Canonical6 and native4 new admissions; preserve2 already qualified native physics, all34105/3687 nonselected records; no use effects or whole quest qualification.",
-    "pg_red": "35.586s PG180006:43501 DefinitionNotFound",
-    "pg_green": "3/3PASS133.133s; six exact carried Items in59.452s",
-    "next": "Finish compile/fmt, clippy and pin regeneration, then cadence push with additional unit tests explicitly pending.",
-    "proof": "qlane-meta/questpc2/BATCH-rotten-source-item-custody-2026-11-07.json"
+    "name": "Rotten Blood six exact source memberships for engine handoff",
+    "state": "SOURCE_GREEN_PUBLISH_NOW_BROADER_UNITS_PENDING",
+    "proof": "qlane-meta/questpc2/BATCH-rotten-membership-facts-2026-11-07.json",
+    "runtime_admissions": 0,
+    "whole_quests_qualified": 0,
+    "prepush": {
+      "workspace_all_targets": "PASS2m31s on disk-recovered retry",
+      "fmt": "PASS",
+      "native_regeneration": "44outputs regenerated in memory; byte equalityPASS",
+      "central_lists": "audit tags, quest binding evidence and completion matrix reproduced",
+      "pin_refresh": "PASS; runtime world pin unchanged aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
+      "own_pg": [
+        {
+          "case": "questpc2_rotten_source_items::rotten_source_items_materialize_into_exact_character_custody",
+          "returncode": 0,
+          "seconds": 34.395
+        },
+        {
+          "case": "boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
+          "returncode": 0,
+          "seconds": 60.254
+        },
+        {
+          "case": "npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+          "returncode": 0,
+          "seconds": 72.197
+        }
+      ],
+      "pending": "1914selected content+dispatch units (prior admission slice), explicitly pending under PREPUSH-2 cadence exception"
+    }
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1800,11 +1823,7 @@
     ],
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "external_dependencies_to_wait_for": [
-      "QENGINE2 source boss template hooks/summons/reward closure request"
-    ],
-    "task": "Merge origin/main1138720b1 after publishing this completed source-admission slice, compile+fmt and push. Continue source boss room/content work while qengine2 handles requested generic engine gaps.",
-    "source_entry_packet": "tools/content-schema/quest-authoring/samples/questpc2-soul-entries.json"
+    "task": "Finish1914 selected units, collect all failures, then continue source room closures or reuse qengine2 membership support when available; main47db34f09 is already merged."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
@@ -2256,10 +2275,11 @@
         "oteryn-gameplay-content",
         "oteryn-gameplay-dispatch"
       ],
-      "state": "RUNNING no failures observed",
+      "state": "RUNNING_LIBTEST_RETRY; no failures observed",
       "filter": "not test(postgres) & not test(::db_tests::)",
-      "log": "/tmp/questpc2-rotten-source-items-unit-tests.log",
-      "passed_at_snapshot": 598
+      "log": "/tmp/questpc2-rotten-source-items-libtest.log",
+      "isolated_process_run": "Interrupted after1032/1914observed passes; no failures; same selection restarted in one process per crate.",
+      "command": "existing content+dispatch libtest executables --skip postgres --skip ::db_tests:: --test-threads=2"
     },
     "workspace_check": "PASS6m32s including build-lock wait",
     "fmt": "PASS",
@@ -2331,6 +2351,30 @@
       "where": "tools/content-migration/register_spell_families.py",
       "status": "REQUESTED_FROM_QENGINE2",
       "evidence": "item49271 canonicalfalse/nativeTrue; source condition-potion receipt must remain unchanged."
+    },
+    {
+      "feature": "independently pinned Crystal Summer Item membership for existing exact bindings 43961/43962/43964/43966/43967/43968",
+      "quests": [
+        "Rotten Blood Quest"
+      ],
+      "where": "tools/content-schema/native-gameplay/build_spell_item_identities.py",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "xml_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "exact_error": "Selected Item identity requires independently qualified source revision",
+      "evidence": "tools/content-schema/quest-authoring/samples/questpc2-rotten-membership-facts.json",
+      "upstream_checked": "origin/claude/happy-davinci-ijz3wy-qengine2 at279a9cff8; independent membership still pins201189f/8a4a526c; no matching Summer proof."
+    },
+    {
+      "feature": "item-on-target wave progression with four counters, source-bound summons, player damage and monster-empty completion",
+      "quests": [
+        "The Demon Oak Quest"
+      ],
+      "where": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "source": "Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/demon_oak/actions_demon_oak.lua:67-126",
+      "source_sha256": "1ac4c709df9ea270bdea461c7bb0f5f77d413b3a6d02a919077f94d35c2596ab",
+      "reuse_check": "qengine2 at15ac677d3 has no matching generic effect; current NativeRule/effects declarations checked. Existing NPC payment/exchange owner can be reused for Oldrak separately."
     }
   ],
   "active_owned_work": {
@@ -2357,5 +2401,6 @@
       "Rotten Blood Quest",
       "Soul War Quest"
     ]
-  }
+  },
+  "last_pushed_sha": "6758be404bd6d037161c7f224a50c99ed8ab9af7"
 }
