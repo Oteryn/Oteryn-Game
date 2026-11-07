@@ -302,7 +302,7 @@
     "title": "Killing in the Name of... Quest",
     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -310,9 +310,7 @@
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
-    "blocker": {
-      "missing_piece": "Complete chosen campaign PG passed in 179.886708384s; final static checks and regeneration validation are in progress before whole-entry promotion."
-    },
+    "blocker": null,
     "first_unqualified_stage": {
       "key": "s11",
       "kind": "complete",
@@ -345,7 +343,7 @@
         "exact three achievements and no additional reward on a subsequent report"
       ]
     },
-    "disposition": "authoring",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
     "mechanism": "none",
     "round": "L7",
@@ -357,7 +355,14 @@
         "duration_seconds": 179.886708384,
         "proof": "cloud-hunting-campaign-proof.json"
       }
-    ]
+    ],
+    "qualification": {
+      "scope": "complete chosen eleven-stage campaign",
+      "proof": "cloud-hunting-campaign-proof.json",
+      "commit": "89ebe9ef9fccaadd3db132e6493f59cd01429aaa",
+      "postgres_duration_seconds": 179.886708384,
+      "reward_binding": "10000 extra XP and 5000 gold units as 50 platinum coins; original source task rewards retained"
+    }
   },
   {
     "title": "Kilmaresh Quest",
