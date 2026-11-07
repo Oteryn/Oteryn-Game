@@ -1,3 +1,17 @@
+# Forgotten strict validation checkpoint — 2026-11-07 14:38 UTC
+
+WholePG88.533725484s, HeartPG80.646798132s and first12 of17 final gates
+PASS, including strict Clippy215.086s. Pin refresh/check, content/world/fmt
+remain in validator session53796. Source is committed at99c0040be. Push
+this evidence checkpoint now; no source edits during final generation.
+Then finalize with /tmp/questpc7-finalize-forgotten.py and push qualification.
+Four will remain after qualification. Feaster generic bounded-USE plan and
+missing Thaian authoring plan are closed in /tmp/questpc7-bounded-world-
+counter-plan.md and /tmp/questpc7-feaster-thaian-plan.md. Public Wiki revisions
+419674/368970 give Para Norbert/The Thaian cells; boss Thaian revision445240
+has HP50000. Full quest revision421868 supplies missing item/site facts.
+No more investigations on these facts before concrete PG RED/implementation.
+
 # Forgotten whole native route GREEN — 2026-11-07 14:28 UTC
 
 Actual PG18.6 RED42.191567216s→GREEN88.533725484s. Source approach walk
