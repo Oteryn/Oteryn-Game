@@ -934,3 +934,55 @@ This checkpoint covers wire validation. The production death-mint owner still
 requires Channel identity; Instance corpse custody and native Primal hook
 composition remain to be implemented. The Primal production room remains
 unqualified with `SourceHookUnavailable`; W10 is unfinished.
+
+### W10 native Instance corpse and loot owner
+
+Donor: Crystal `201189f`,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,94`
+requires corpse 39530 alongside personal boss rewards. Migration **1152** extends
+native creature-death reservations and receipts with exact Instance identity.
+It preserves Channel identity, existing row immutability checks, work-unit
+charges, materialization stamping, corpse capacity and atomic receipt/audit
+proofs. The source key uses the existing assignment encoding: Channel tag 1,
+activity Instance tag 3; runtime/custody Instance kind remains 2. Legacy Channel
+intent bindings retain version 1; Instance bindings use version 2 so their
+business-intent framing is disjoint. No command/capability/mechanic/registry IDs
+were allocated.
+
+Combat now passes the committed death's actual scope and native occurrence
+bytes into this owner. The same owner mints the corpse on Instance Ground and
+its loot into that corpse, using the actual Ground root's item lane and key-33
+lock. The narrow Instance placement proof requires the same complete death
+cause, frozen reservation, current assignment, fresh corpse and same-transaction
+audit. Existing accepted placement causes remain installed.
+
+`physical_instance_death_reaches_the_mint_cause_without_channel_aliasing` ran red
+with `AuthorityRejected` after an actual carrier lethal commit, then green.
+The PostgreSQL case
+`native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+exposed and fixed the generated-key/immutability interaction, the missing
+native-corpse Instance placement cause and the Channel-only corpse-root lock.
+It passed in 4.816s, then passed again with a real Channel control in **5.053s**.
+It checks corpse and loot commits, exact scope, immutable audit, replay, wrong
+lane, same-UUID Channel alias, unowned Instance and stale generation. The focused
+46-test set passed in 5.062s (build/run 82.480s). Audit tag/golden regeneration and
+pin refresh produced no changes; the world pin remains
+`6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671`.
+
+The owner decision replaced full reverse-dependent nextest runs with focused
+mechanic tests and workspace compilation. The old 25-package run at `2f291e493`
+was stopped as directed after 2,140 cases: 2,137 passed, one client guild-war
+transport-gate race failed and two running tests were interrupted. Its complete
+log was retained outside the repository. No test was disabled or deleted; the
+legacy Channel replay assertions remain.
+
+This is a native corpse-owner component proof. Production Primal hook
+composition, qualification and the complete encounter chain remain unfinished;
+W10, W11 and W16 are not DONE. The Primal qualification case still reaches
+`SourceHookUnavailable` before publication.
+
+Final focused validation for this owner step: workspace/all-target check passed
+in 188.849s, changed-crate/all-target clippy with warnings denied in 64.504s,
+workspace fmt check in 15.245s, duplicate-migration check against fetched
+`origin/main` (`1ae39c7fb`) in 0.367s and pin-check in 28.617s. Pin refresh and
+audit tag/golden regeneration used repository tooling and changed no artifacts.
