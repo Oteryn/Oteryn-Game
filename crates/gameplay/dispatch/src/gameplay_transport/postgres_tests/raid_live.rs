@@ -14,6 +14,16 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn wevents_postgres_bank_native_robber() -> TestResult {
+    run_case(
+        "wevents_bank_robber",
+        "raid:world-events.bank-robbery-thais",
+        1,
+        false,
+    )
+}
+
+#[test]
 fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
     run_case("raids_global_badger_e2e", "raid:badger", 100, false)
 }
@@ -150,6 +160,22 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         );
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
+    if key == "raid:world-events.bank-robbery-thais" {
+        let reward = native
+            .reward_table()
+            .row("oteryn:creature.jesse_the_wicked")
+            .map_err(debug)?;
+        let bag = reward
+            .loot_table
+            .entries
+            .iter()
+            .find(|entry| entry.item.production_key == "oteryn:item.tibia.i13429")
+            .ok_or("guaranteed stolen-gold loot")?;
+        assert_eq!(
+            (bag.min_count, bag.max_count, bag.probability_ppm),
+            (1, 1, Some(1_000_000))
+        );
+    }
     let digest = active.identity().server_artifact_digest();
     let firing = id(91);
     let key = ProductionKey::new(key).map_err(debug)?;
@@ -333,7 +359,12 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         let mut occupied = std::collections::BTreeSet::new();
         for status in &statuses {
             assert!(status.alive);
-            assert_eq!(status.boss, boss);
+            assert_eq!(
+                status.boss,
+                selected
+                    .boss_entries
+                    .contains(&(status.identity.wave, status.identity.entry))
+            );
             let RaidSpawnOutcome::Placed(actor) = status.outcome else {
                 return Err("missing actor".into());
             };

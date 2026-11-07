@@ -24,6 +24,31 @@
         }
       },
       "policy": "CONTRACT-NOTES.md#kingsday-implementation-policy"
+    },
+    {
+      "key": "raid:world-events.bank-robbery-thais",
+      "event": "bank_robbery",
+      "member": 0,
+      "condition": "recovery",
+      "name": "Thais bank robbery",
+      "creature": "oteryn:creature.jesse_the_wicked",
+      "source_name": "Jesse the Wicked",
+      "count": 1,
+      "interval_ms": 3600000,
+      "area": {
+        "from": {
+          "x": 32336,
+          "y": 32233,
+          "floor": 7
+        },
+        "to": {
+          "x": 32339,
+          "y": 32235,
+          "floor": 7
+        }
+      },
+      "policy": "CONTRACT-NOTES.md#bank-robbery-implementation-policy",
+      "boss": true
     }
   ]
 }

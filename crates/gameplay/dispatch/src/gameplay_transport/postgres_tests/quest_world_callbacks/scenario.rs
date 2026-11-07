@@ -147,7 +147,7 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        if name == "qengine-rewards-kingsday" {
+        if name == "qengine-rewards-kingsday" || name == "qengine-rewards-bank" {
             owner.reset_epoch = event_epoch;
         }
         owner.movement_cells = &cells;

@@ -447,3 +447,36 @@ Rust combat tool (**15 cases / 776 creatures**) against the complete current
 loot admission; generated reports/runtime values and registration were refreshed
 through tooling. Final six-crate cargo check and strict clippy each passed in
 **2m34s**. Formatting and tooling pin refresh/check passed; World pin unchanged.
+
+## Bank Robbery qualification
+
+Bank Robbery is **QUALIFIED**. The final native actor case passed with executed
+marker `wevents_bank_robber` **65.333512195 s**, **1 passed**
+(`/tmp/wevents-bank-actor-pg-green.log`). It loads Jesse's admitted native reward
+row and guaranteed bag, places the real native boss at the declared public
+source area, checks the admitted boss marker and commits actual HP death.
+The prior fixture failure compared that marker against an end-policy switch;
+the assertion now derives expected identity from the admitted boss-entry set.
+The successful NPC case is independently recorded above (**135.149640147 s**);
+it uses a sealed native source/placement and frozen kill proof fixture, not a
+claim that its input MINT fixture substitutes for the physical actor test.
+
+Together with the production hourly/service PG proof (**8.205666004 s**), this
+closes the native activation, current-epoch service denial, actual actor/loot
+admission, source-bound recovery, reward/achievement, replay and reset paths.
+The public Thais escape alley, 10‰ hourly draw and first-success-per-day scope
+are documented conservative policy where no complete donor scheduler survived.
+Jesse's guaranteed stolen-gold bag, Naji's registered bank callback and donor
+corpse chain have explicit file:line+SHA evidence. Source code wins the bag
+weight conflict. Only this title's WORLDCHG-Q row changes.
+
+Final cargo check and strict library clippy passed the six changed crates, each
+in **2m34s**. Source Item/corpse tests and the four native loot tests passed;
+fmt and mounted-source formatting passed. Final tooling pin refresh/check
+passed with unchanged World pin
+`d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
+
+The native NPC greeting/service admission unit passed (**1 / 46.59 s**), the
+focused World lifecycle/cost/catalogue run passed **15 tests**, and the full
+content registration reproducibility check passed (**42 generated files**).
+Logs: `/tmp/wevents-bank-{npc-unit,model-final,registration-check}.log`.

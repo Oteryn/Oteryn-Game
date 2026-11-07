@@ -40,6 +40,17 @@ pub(super) async fn input_item(
     n: u64,
     carried: bool,
 ) -> TestResult {
+    input_item_with_cause(owner, fence, offering, n, carried, None).await
+}
+
+pub(super) async fn input_item_with_cause(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    offering: &oteryn_gameplay_quests::quest::world_callbacks::Offering,
+    n: u64,
+    carried: bool,
+    cause: Option<crate::durability::item_mint::ItemMintCause>,
+) -> TestResult {
     use crate::durability::{
         item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest},
         item_mint::{
@@ -65,20 +76,22 @@ pub(super) async fn input_item(
             owner.character,
             owner.holder,
             ItemMintRequest {
-                cause: ItemMintCause::for_test(
-                    owner.world_id,
-                    owner.channel_id,
-                    fence.scope_ownership_generation,
-                    1,
-                    n,
-                    TypedDefinitionRef {
-                        family: "LootTable".into(),
-                        production_key: "fixture:quest-callbacks".into(),
-                        revision_ref: "definition-r1".into(),
-                    },
-                    "fixture:quest-callbacks".into(),
-                    0,
-                ),
+                cause: cause.unwrap_or_else(|| {
+                    ItemMintCause::for_test(
+                        owner.world_id,
+                        owner.channel_id,
+                        fence.scope_ownership_generation,
+                        1,
+                        n,
+                        TypedDefinitionRef {
+                            family: "LootTable".into(),
+                            production_key: "fixture:quest-callbacks".into(),
+                            revision_ref: "definition-r1".into(),
+                        },
+                        "fixture:quest-callbacks".into(),
+                        0,
+                    )
+                }),
                 item: definition,
                 quantity: u32::from(offering.count),
                 ground: GroundPlacement {

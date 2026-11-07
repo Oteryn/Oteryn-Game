@@ -47,8 +47,13 @@ pub(super) async fn consume_reward_inputs(
         .chain(&callback.present)
         .map(|i| i.item.as_str())
         .collect();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
+    let bound_event = callback.world_event.as_ref().and_then(|binding| {
+        (binding.event == oteryn_gameplay_world_change::timed::EventKind::BankRobbery
+            && binding.action == oteryn_gameplay_world_change::timed::Input::Recover)
+            .then_some(binding.event.key())
+    });
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) AND ($4::text IS NULL OR EXISTS(SELECT 1 FROM game_item_mint_receipts m JOIN game_world_timed_kill_receipts k ON k.world_id=m.death_world_id AND k.occurrence=game_world_event_death_key(m.death_world_id,m.death_channel_id,m.death_scope_ownership_generation,m.death_actor_local_id,m.death_actor_local_generation) JOIN game_world_reset_active a ON a.world_id=k.world_id AND a.reset_epoch=k.cycle_id WHERE m.item_instance_id=i.item_instance_id AND m.death_world_id=encode($2,'hex')::uuid AND m.loot_table_production_key='oteryn:loot.creature.jesse_the_wicked' AND k.event_key=$4)) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).bind(bound_event).fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Ok(false);
     }

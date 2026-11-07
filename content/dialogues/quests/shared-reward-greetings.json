@@ -72,6 +72,15 @@
       ]
     },
     {
+      "npc": "oteryn:npc.naji",
+      "greet": "Welcome to the Tibian bank, |PLAYERNAME| What can I do for you?",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/naji.lua:76-80:sha256:7752587c14e87d611edc01ee3723afb75fa08c2f29aded246ad458353ed7c1ac"
+      ]
+    },
+    {
       "npc": "oteryn:npc.navigator",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",

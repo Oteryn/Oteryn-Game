@@ -49,7 +49,7 @@
       "key": "bank_robbery",
       "title": "Bank Robbery Mini World Change",
       "quest": "oteryn:quest.authored.bank_robbery_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -82,10 +82,28 @@
           "url": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154"
         }
       ],
-      "reason": "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1.",
-      "missing_facts": [
-        "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1."
-      ]
+      "reason": "Native hourly robbery, current-day source-bound bag recovery, banker closure and atomic reward/reset.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "bank_robbery",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.bank-robbery-thais",
+            "member": 0,
+            "condition": "recovery"
+          }
+        ],
+        "services": [
+          {
+            "npc": "oteryn:npc.naji",
+            "service": "bank"
+          }
+        ]
+      }
     },
     {
       "key": "bored",

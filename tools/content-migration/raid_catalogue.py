@@ -487,7 +487,7 @@ def authored_event_raids(root: Path, creatures: dict, placements: dict) -> list[
         if len(declarations) != 1 or binding not in declarations[0].get("binding", {}).get("raids", []):
             raise ValueError("WEVENTS_RAID_OWNER_BINDING")
         area = copy.deepcopy(rule["area"])
-        record = {"key": rule["key"], "name": rule["name"], "wiki_area": "Thais", "boss_names": [],
+        record = {"key": rule["key"], "name": rule["name"], "wiki_area": rule.get("area_name", "Thais"), "boss_names": [rule["source_name"]] if rule.get("boss", False) else [],
             "wiki_records": [], "wiki_sources": [], "sources": [source], "variant_group": None,
             "inactive_reasons": [], "source_conflicts": [rule["policy"]],
             "schedule": {"kind": "calendar", "interval_ms": rule["interval_ms"], "start_immediately": True,
@@ -496,7 +496,7 @@ def authored_event_raids(root: Path, creatures: dict, placements: dict) -> list[
             "variants": [{"key": rule["key"].replace("raid:", ""), "announcements": [], "unresolved": [],
                 "sources": [source], "waves": [{"delay_ms": 0, "entries": [{"creature": rule["creature"],
                     "source_name": rule["source_name"], "amount": {"min": rule["count"], "max": rule["count"]},
-                    "area": area, "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": False,
+                    "area": area, "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": rule.get("boss", False),
                     "source": source}]}]}]}
         qualify(record, creatures, placements)
         records.append(record)
@@ -727,7 +727,8 @@ def main() -> int:
     for path, raw in generated.items():
         destination = args.root / path
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(raw)
+        if not destination.exists() or destination.read_bytes() != raw:
+            destination.write_bytes(raw)
     index = json.loads(generated[INDEX])
     print(f"raid catalogue: total={index['record_count']} active={index['active_count']} kinds={index['totals']}")
     return 0

@@ -41787,6 +41787,107 @@
     {
       "active": true,
       "boss_names": [
+        "Jesse the Wicked"
+      ],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
+      "key": "raid:world-events.bank-robbery-thais",
+      "kind": "calendar",
+      "name": "Thais bank robbery",
+      "schedule": {
+        "interval_ms": 3600000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#bank-robbery-implementation-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.bank-robbery-thais",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 1,
+                    "min": 1
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32336,
+                      "y": 32233
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32339,
+                      "y": 32235
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32336_32233_7-32339_32235_7",
+                  "boss": true,
+                  "creature": "oteryn:creature.jesse_the_wicked",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
+                  },
+                  "source_name": "Jesse the Wicked",
+                  "spawn_mode": "area"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Thais",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [
         "Horestis"
       ],
       "end": {
@@ -41921,7 +42022,7 @@
           "evidence": "OTERYN_AUTHORED_POLICY",
           "line": 1,
           "policy": "content/quests/world-event-raid-policy.json",
-          "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+          "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
         }
       ],
       "variant_group": null,
@@ -41934,7 +42035,7 @@
               "evidence": "OTERYN_AUTHORED_POLICY",
               "line": 1,
               "policy": "content/quests/world-event-raid-policy.json",
-              "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+              "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
             }
           ],
           "unresolved": [],
@@ -41975,7 +42076,7 @@
                     "evidence": "OTERYN_AUTHORED_POLICY",
                     "line": 1,
                     "policy": "content/quests/world-event-raid-policy.json",
-                    "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+                    "sha256": "bdc634e5b294a728e83c1eb61ae3fbfd6b8c69451bc42a5466513cd9510abd4f"
                   },
                   "source_name": "Orc Warlord",
                   "spawn_mode": "area"
@@ -42580,8 +42681,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 5,
-      "total": 9
+      "active": 6,
+      "total": 10
     },
     "city": {
       "active": 2,

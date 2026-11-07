@@ -60,6 +60,11 @@ fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }
 #[test]
+fn wevents_postgres_bank_recovery_reward() -> TestResult {
+    scenario("qengine-rewards-bank")
+}
+
+#[test]
 fn wevents_postgres_kingsday_royal_achievement() -> TestResult {
     scenario("qengine-rewards-kingsday")
 }
@@ -630,6 +635,7 @@ pub(super) async fn exercise(
         "qengine-rewards-spring-claim" => "spring-nest-claim",
         "qengine-rewards-spring-buy" => "spring-nest-buy",
         "qengine-rewards-kingsday" => "kingsday-loyal-subject",
+        "qengine-rewards-bank" => "bank-robbery-recovery",
         _ => return Err("unknown reward scenario".into()),
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
@@ -664,6 +670,9 @@ pub(super) async fn exercise(
     }
     if key == "kingsday-loyal-subject" {
         kingsday_fixture(owner, h).await?;
+    }
+    if key == "bank-robbery-recovery" {
+        bank_fixture(owner, h).await?;
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
@@ -770,6 +779,20 @@ pub(super) async fn exercise(
             );
         }
     }
+    if key == "bank-robbery-recovery" {
+        let before = counts(h).await?;
+        assert_eq!(
+            talk(owner, admitted, npc, command, &callback.keywords[0]).await?,
+            NpcIntentDisposition::Rejected
+        );
+        command += 1;
+        assert_eq!(
+            counts(h).await?,
+            before,
+            "an ordinary bag cannot reopen the bank or claim rewards"
+        );
+        bank_provenance(owner, admitted, h, at, npc, &mut command, &callback).await?;
+    }
     if key == "outfox-helmet" || key == "spring-nest-buy" {
         capacity_refusal(owner, admitted, h, npc, command, &callback).await?;
         command += 1;
@@ -867,6 +890,30 @@ pub(super) async fn exercise(
                 s.set
             }
         );
+    }
+    if key == "bank-robbery-recovery" {
+        let f = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        owner
+            .root
+            .preview_hireling_bank(
+                owner.character,
+                owner.holder,
+                f.item_fence(),
+                None,
+                None,
+                "oteryn:npc.naji".into(),
+            )
+            .await
+            .map_err(debug)?;
+        let remaining:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i13429'").fetch_one(&h.pool).await?;
+        assert_eq!(remaining, 1, "the unrelated ordinary bag remains untouched");
+        let phase:String=sqlx::query_scalar("SELECT state->>'phase' FROM game_world_timed_events WHERE world_id=encode($1,'hex')::uuid AND event_key='bank_robbery' AND cycle_id=$2")
+            .bind(owner.world_id.as_bytes().as_slice()).bind(i64::try_from(owner.reset_epoch)?).fetch_one(&h.pool).await?;
+        assert_eq!(phase, "Victory");
     }
     for input in &callback.take {
         let consumed:i64=sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_quest_callback_consumptions WHERE transition_key=$1 AND before_item->>'definition_production_key'=$2").bind(&callback.key).bind(&input.item).fetch_one(&h.pool).await?;
@@ -1230,6 +1277,17 @@ pub(super) fn event_fixture_epoch(
     name: &str,
     world: crate::foundation::WorldId,
 ) -> TestResult<u64> {
+    if name == "qengine-rewards-bank" {
+        use crate::durability::world_event::changes::timed::{EventKind, hourly_trigger_draw};
+        for epoch in 1_u64..=10000 {
+            let draw =
+                hourly_trigger_draw(world, EventKind::BankRobbery, i64::try_from(epoch)?, 1)?;
+            if (u128::from(draw) * 1000) >> 64 < 10 {
+                return Ok(epoch);
+            }
+        }
+        return Err("no native robbery fixture draw".into());
+    }
     if name != "qengine-rewards-kingsday" {
         return Ok(1);
     }
@@ -1283,5 +1341,244 @@ async fn kingsday_fixture(
         .root
         .set_world_event_clock_for_test(Some(at))
         .map_err(debug)?;
+    Ok(())
+}
+
+async fn bank_fixture(owner: &mut ComposedFreshAdmission<'_, '_, '_>, h: &Harness) -> TestResult {
+    let world = owner.world_id;
+    let epoch = owner.reset_epoch;
+    let at = 1_934_078_400_000_i64;
+    let digest = owner
+        .active_generation
+        .ok_or("generation")?
+        .identity()
+        .server_artifact_digest();
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'kingsday-native-fixture',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+        .bind(world.as_bytes().as_slice()).bind(i64::try_from(epoch)?).bind(digest.as_slice()).bind(at).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    let mut tx = h.pool.begin().await?;
+    let state = crate::durability::world_event::changes::timed::poll(
+        &mut tx,
+        world,
+        epoch,
+        crate::durability::world_event::changes::timed::EventKind::BankRobbery,
+        at,
+    )
+    .await?
+    .ok_or("selected celebration")?;
+    assert_eq!(
+        state.wave, 0,
+        "attendance does not require the first arena wave"
+    );
+    assert_eq!(serde_json::to_value(state)?["phase"], "Dormant");
+    let active = crate::durability::world_event::changes::timed::poll(
+        &mut tx,
+        world,
+        epoch,
+        crate::durability::world_event::changes::timed::EventKind::BankRobbery,
+        at + 3_600_000,
+    )
+    .await?
+    .ok_or("hourly robbery")?;
+    assert_eq!(serde_json::to_value(active)?["phase"], "Active");
+    tx.commit().await?;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at + 3_600_000))
+        .map_err(debug)?;
+    Ok(())
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one existing wire fixture and its native source proof"
+)]
+async fn bank_provenance(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    at: Position,
+    npc: EntityRef,
+    command: &mut u64,
+    callback: &RewardCallback,
+) -> TestResult {
+    use crate::content::ProductionKey;
+    use crate::durability::item_mint::{ItemMintCause, TypedDefinitionRef};
+    use crate::durability::raid_runner::{CommittedRaidAction, RaidPlacementOutcome};
+    use crate::durability::raid_schedule::{
+        CalendarRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
+    };
+    use crate::durability::world_event::changes::timed::{NativeKillOutcome, NativeKillRequest};
+    use oteryn_gameplay_encounter_rules::raid::{CatalogueSchedule, RaidCatalogue};
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "fence")?
+        .ok_or("fence")?;
+    let key = ProductionKey::new("raid:world-events.bank-robbery-thais").map_err(debug)?;
+    let catalogue = RaidCatalogue::embedded().map_err(debug)?;
+    let raid = catalogue.get(&key).ok_or("native robbery raid")?;
+    let digest = owner
+        .active_generation
+        .ok_or("generation")?
+        .identity()
+        .server_artifact_digest();
+    let firing = super::fixture::id(181);
+    let selected = raid.select(digest, firing).map_err(debug)?;
+    let CatalogueSchedule::Calendar {
+        window: Some(window),
+        interval_ms: Some(interval_ms),
+        repeat_persistent,
+        start_immediately,
+    } = raid.schedule
+    else {
+        return Err("robbery schedule".into());
+    };
+    let now = 1_934_078_400_000_i64 + 3_600_000;
+    let check = RaidSchedulerCheck {
+        world: owner.world_id,
+        channel: owner.channel_id,
+        generation: fence.scope_ownership_generation,
+        reset_epoch: owner.reset_epoch,
+        now_ms: now,
+        bundle_digest: digest,
+        candidates: vec![RaidScheduleCandidate {
+            key,
+            definition: selected.definition.clone(),
+            eligible: true,
+            calendar: None,
+            firing_id: firing,
+            global_margin_ms: 0,
+            lua: None,
+            calendar_window: Some(CalendarRaidScheduleCandidate {
+                window: window.window(),
+                interval_ms,
+                repeat_persistent,
+                start_immediately,
+            }),
+        }],
+    };
+    assert_eq!(
+        owner
+            .root
+            .check_raid_schedules(owner.character, owner.holder, check)
+            .await?
+            .firings
+            .len(),
+        1
+    );
+    let wave = owner
+        .root
+        .advance_raid_run(
+            owner.holder,
+            firing,
+            owner.channel_id,
+            fence.scope_ownership_generation,
+            selected.definition,
+            now,
+        )
+        .await?
+        .ok_or("robber wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+        return Err("robber action".into());
+    };
+    assert_eq!(creatures.len(), 1);
+    let source = creatures[0].identity;
+    owner
+        .root
+        .acknowledge_raid_effect(
+            owner.holder,
+            wave.identity,
+            vec![RaidPlacementOutcome {
+                identity: source,
+                placed: true,
+            }],
+            now,
+        )
+        .await?;
+    let cause = ItemMintCause::for_test(
+        owner.world_id,
+        owner.channel_id,
+        fence.scope_ownership_generation,
+        1,
+        201,
+        TypedDefinitionRef {
+            family: "LootTable".into(),
+            production_key: "oteryn:loot.creature.jesse_the_wicked".into(),
+            revision_ref: "definition-r1".into(),
+        },
+        "fixture:robbery-loot".into(),
+        0,
+    );
+    super::quest_world_callbacks::input_item_with_cause(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: at,
+            item: "oteryn:item.tibia.i13429".into(),
+            count: 1,
+        },
+        201,
+        true,
+        Some(cause),
+    )
+    .await?;
+    let before = counts(h).await?;
+    assert_eq!(
+        talk(owner, admitted, npc, *command, &callback.keywords[0]).await?,
+        NpcIntentDisposition::Rejected,
+        "a loot MINT without the admitted native robbery kill cannot recover the bank"
+    );
+    *command += 1;
+    assert_eq!(counts(h).await?, before);
+    let mut occurrence = Vec::new();
+    occurrence.extend_from_slice(owner.world_id.as_bytes());
+    occurrence.extend_from_slice(owner.channel_id.as_bytes());
+    occurrence.extend_from_slice(&fence.scope_ownership_generation.get().to_be_bytes());
+    occurrence.extend_from_slice(&1_u32.to_be_bytes());
+    occurrence.extend_from_slice(&201_u64.to_be_bytes());
+    let request = NativeKillRequest {
+        source: oteryn_gameplay_entities::carrier::RaidSpawnIdentity {
+            firing_id: firing,
+            wave: source.wave,
+            entry: source.entry,
+            index: source.index,
+        },
+        occurrence,
+        occurred_at_ms: now,
+        participants: vec![fence.character_id],
+    };
+    assert_eq!(
+        owner
+            .root
+            .credit_timed_world_kill(
+                owner.character,
+                owner.holder,
+                fence.runtime_scope,
+                fence.scope_ownership_generation,
+                owner.reset_epoch,
+                request.clone()
+            )
+            .await?,
+        NativeKillOutcome::Applied
+    );
+    assert_eq!(
+        owner
+            .root
+            .credit_timed_world_kill(
+                owner.character,
+                owner.holder,
+                fence.runtime_scope,
+                fence.scope_ownership_generation,
+                owner.reset_epoch,
+                request
+            )
+            .await?,
+        NativeKillOutcome::AlreadyApplied
+    );
     Ok(())
 }

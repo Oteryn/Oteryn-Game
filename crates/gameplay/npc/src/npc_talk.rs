@@ -251,7 +251,8 @@ impl NpcTalkBook {
                 .services
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
-                .any(|service| service.bank);
+                .any(|service| service.bank)
+                || event_bank_npc(&reference.key);
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if reference.key
                 == "oteryn:npc.grizzly_adams"
             {
@@ -399,11 +400,7 @@ impl NpcTalkBook {
                         && travel_routes.is_empty(),
                     travel_routes,
                     premium_services,
-                    bank: npc
-                        .services
-                        .iter()
-                        .filter_map(|reference| model.services().get(reference))
-                        .any(|service| service.bank),
+                    bank,
                     greetings: reward_messages
                         .filter(|m| !m.greetings.is_empty())
                         .map_or_else(
@@ -461,6 +458,47 @@ impl NpcTalkBook {
 
 /// Source-qualified native finale speakers. A script-backed NPC outside this exact
 /// set remains unavailable through the native conversation consumer.
+// An explicitly published event service is a native admission, never inferred
+// from profession, dialogue text or the presence of a reward callback.
+fn event_bank_npc(npc: &str) -> bool {
+    static BANKERS: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    BANKERS
+        .get_or_init(|| {
+            let Ok(value) = serde_json::from_str::<serde_json::Value>(include_str!(
+                "../../../../content/encounters/world-changes/owner-catalogue.json"
+            )) else {
+                return Vec::new();
+            };
+            value["entries"]
+                .as_array()
+                .filter(|entries| entries.len() <= 256)
+                .into_iter()
+                .flatten()
+                .filter(|entry| {
+                    entry["status"] == "QUALIFIED"
+                        && entry["trigger"]["kind"] == "timed"
+                        && entry["trigger"]["owner"] == "world_event::changes::timed"
+                })
+                .flat_map(|entry| {
+                    entry["binding"]["services"]
+                        .as_array()
+                        .filter(|rules| rules.len() <= 16)
+                        .into_iter()
+                        .flatten()
+                })
+                .filter(|rule| rule["service"] == "bank")
+                .filter_map(|rule| {
+                    rule["npc"]
+                        .as_str()
+                        .filter(|key| key.starts_with("oteryn:npc.") && key.len() <= 256)
+                        .map(str::to_owned)
+                })
+                .collect()
+        })
+        .iter()
+        .any(|key| key == npc)
+}
+
 fn endgame_greeting(key: &str) -> Option<&'static str> {
     Some(match key {
         // SRV6: exact final-report speaker; Crystal kesar_the_younger_day.lua:286.
@@ -626,6 +664,11 @@ mod tests {
             .get("oteryn:npc.king_tibianus")
             .ok_or("royal conversation")?;
         assert_eq!(king.greetings, ["hail king", "salutations king"]);
+        assert!(
+            book.get("oteryn:npc.naji")
+                .ok_or("native robbery banker")?
+                .bank()
+        );
         for name in [
             "morgan",
             "navigator",

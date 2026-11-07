@@ -658,6 +658,49 @@
         "https://tibia.fandom.com/index.php?curid=76245&oldid=994341:body-sha256:0b67e7e6c7047759d08c7efec385a5d1ab30586518258f185cec9466cfa0cef3",
         "oteryn-policy:CONTRACT-NOTES.md#kingsday-implementation-policy"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/bank-robbery-recovery",
+      "quest": "oteryn:quest.authored.bank_robbery_mini_world_change",
+      "npc": "oteryn:npc.naji",
+      "keywords": [
+        "stolen gold",
+        "robbery"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "repeatable": true,
+      "world_event": {
+        "event": "bank_robbery",
+        "action": "Recover"
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/bank-robbery/recovery",
+          "minimum": -1,
+          "maximum": 1000000,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i13429",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 10
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/honest_finder",
+      "reply": [
+        "You recovered the stolen gold. Our bank is open again. Thank you!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154:body-sha256:a865de3250f6abd2e432be0b265a88cb14e6bc202b07661af28f2f9cd35d5cc1",
+        "oteryn-policy:CONTRACT-NOTES.md#bank-robbery-implementation-policy"
+      ]
     }
   ]
 }
