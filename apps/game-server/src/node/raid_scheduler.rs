@@ -147,11 +147,15 @@ fn candidates(
                 CatalogueSchedule::Calendar {
                     window,
                     interval_ms,
+                    repeat_persistent,
+                    start_immediately,
                     repeat,
                 } => {
                     candidate.calendar_window = Some(CalendarRaidScheduleCandidate {
                         window: window.ok_or(RaidError::InvalidCalendar)?.window(),
                         interval_ms: interval_ms.ok_or(RaidError::InvalidCalendar)?,
+                        repeat_persistent: *repeat_persistent,
+                        start_immediately: *start_immediately,
                         repeat: *repeat,
                     });
                 }

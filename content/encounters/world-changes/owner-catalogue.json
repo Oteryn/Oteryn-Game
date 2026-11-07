@@ -49,7 +49,7 @@
       "key": "bank_robbery",
       "title": "Bank Robbery Mini World Change",
       "quest": "oteryn:quest.authored.bank_robbery_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -82,10 +82,28 @@
           "url": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154"
         }
       ],
-      "reason": "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1.",
-      "missing_facts": [
-        "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1."
-      ]
+      "reason": "Native hourly robbery, current-day source-bound bag recovery, banker closure and atomic reward/reset.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "bank_robbery",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.bank-robbery-thais",
+            "member": 0,
+            "condition": "recovery"
+          }
+        ],
+        "services": [
+          {
+            "npc": "oteryn:npc.naji",
+            "service": "bank"
+          }
+        ]
+      }
     },
     {
       "key": "bored",
@@ -184,7 +202,7 @@
       "key": "chyllfroest",
       "title": "Chyllfroest Mini World Change",
       "quest": "oteryn:quest.chyllfroest_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -197,6 +215,12 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:1-22",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "72a5b54d8759917fd75072692cef0e01e67beb70305b5839d32e1135f2322f84"
         }
       ],
       "source_refs": [
@@ -217,10 +241,13 @@
           "url": "https://tibia.fandom.com/index.php?curid=76215&oldid=887140"
         }
       ],
-      "reason": "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established.",
-      "missing_facts": [
-        "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established."
-      ]
+      "reason": "April1 through May1 inclusive, AID50000 closed-season bridge return to32063,31091,7 on ordinary player movement. Existing island spawns remain native, as in the donor player-only entry guard.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "chyllfroest"
+      }
     },
     {
       "key": "deeplings",
@@ -325,7 +352,7 @@
       "key": "devovorga_s_essence",
       "title": "Devovorga's Essence Mini World Change",
       "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -362,14 +389,24 @@
           "url": "https://tibia.fandom.com/index.php?curid=76217&oldid=944253"
         }
       ],
-      "reason": "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent.",
-      "missing_facts": [
-        "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent."
-      ],
+      "reason": "Native Vengoth gates debit exact incarnation costs through the fenced quest and World owners, with native encounter preflight and room reservation.",
+      "missing_facts": [],
       "trigger": {
-        "kind": "at_reset",
-        "chance_permille": 16,
-        "duration": "until_next_reset"
+        "kind": "timed",
+        "event": "devovorga_s_essence",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 16
+        }
+      },
+      "binding": {
+        "native_actions": [
+          52720,
+          52721,
+          52722,
+          52723,
+          52724
+        ]
       }
     },
     {
@@ -482,7 +519,7 @@
     {
       "key": "flower_month",
       "title": "Flower Month",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "crates/gameplay/world-change/src/daily.rs",
@@ -495,13 +532,26 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/raids/world_changes/flower_month.lua:1-65",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb"
         }
       ],
       "source_refs": [],
-      "reason": "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved.",
-      "missing_facts": [
-        "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved."
-      ]
+      "reason": "June startup/save admission; indefinite four-area cycle, 25 Dryads per wave, 15-minute rotation and shared 250-attempt budget. Existing raid owner retains creatures until reset. Donor wins over wiki five-wave account.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "flower_month"
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "oteryn:raid.raid.dryad_invasion"
+      }
     },
     {
       "key": "fury_gates",
@@ -750,7 +800,7 @@
       "key": "insectoid_invasion",
       "title": "Insectoid Invasion World Change",
       "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -783,10 +833,35 @@
           "url": "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
         }
       ],
-      "reason": "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound.",
-      "missing_facts": [
-        "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound."
-      ]
+      "reason": "Native Greenshore invasion, reserved source Scouts, synchronized bounded population and shared restoration/reset.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "insectoid_invasion",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 100
+        }
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.greenshore-invasion",
+            "member": 0,
+            "condition": "population"
+          }
+        ],
+        "static_spawns": [
+          {
+            "key": "oteryn:spawn.x32210_y32056_z7",
+            "creature": "oteryn:creature.insectoid_scout"
+          },
+          {
+            "key": "oteryn:spawn.x32210_y32063_z7",
+            "creature": "oteryn:creature.insectoid_scout"
+          }
+        ]
+      }
     },
     {
       "key": "jungle_camp",
@@ -834,7 +909,7 @@
       "key": "kingsday",
       "title": "Kingsday Mini World Change",
       "quest": "oteryn:quest.authored.kingsday_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -871,14 +946,24 @@
           "url": "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
         }
       ],
-      "reason": "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent.",
-      "missing_facts": [
-        "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent."
-      ],
+      "reason": "Celebration snapshot, hourly native exhibition and source royal greeting with participation-bound Loyal Subject.",
+      "missing_facts": [],
       "trigger": {
-        "kind": "at_reset",
-        "chance_permille": 24,
-        "duration": "until_next_reset"
+        "kind": "timed",
+        "event": "kingsday",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 24
+        }
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.kingsday-arena",
+            "member": 0,
+            "condition": "hourly"
+          }
+        ]
       }
     },
     {
@@ -1288,7 +1373,7 @@
       "key": "rise_of_devovorga",
       "title": "Rise of Devovorga",
       "quest": "oteryn:quest.authored.rise_of_devovorga",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1321,10 +1406,62 @@
           "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791"
         }
       ],
-      "reason": "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent.",
-      "missing_facts": [
-        "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent."
-      ]
+      "reason": "Synchronized seasonal five-stage native raid sequence, bounded retries, final-defeat participation and fenced container reward.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "rise_of_devovorga",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.rise-anmothra",
+            "member": 0,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-chikhaton",
+            "member": 1,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-irahsae",
+            "member": 2,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-phrodomo",
+            "member": 3,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-teneshpar",
+            "member": 4,
+            "condition": "incarnation"
+          },
+          {
+            "key": "raid:world-events.rise-devovorga",
+            "member": 5,
+            "condition": "final"
+          },
+          {
+            "key": "raid:world-events.rise-bloom_of_doom",
+            "member": 6,
+            "condition": "mutation"
+          },
+          {
+            "key": "raid:world-events.rise-spawn_of_devovorga",
+            "member": 7,
+            "condition": "mutation"
+          },
+          {
+            "key": "raid:world-events.rise-vulnerable_cocoon",
+            "member": 8,
+            "condition": "cocoon"
+          }
+        ]
+      }
     },
     {
       "key": "river_runs_deep",
@@ -1465,7 +1602,7 @@
       "key": "spring_into_life",
       "title": "Spring into Life",
       "quest": "oteryn:quest.authored.spring_into_life",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1498,10 +1635,27 @@
           "url": "https://tibia.fandom.com/index.php?curid=59009&oldid=1099118"
         }
       ],
-      "reason": "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent.",
-      "missing_facts": [
-        "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent."
-      ]
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "event": "spring_into_life",
+        "owner": "world_event::changes::timed"
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.spring-nest-1",
+            "member": 1,
+            "condition": "hatch"
+          },
+          {
+            "key": "raid:world-events.spring-nest-2",
+            "member": 2,
+            "condition": "hatch"
+          }
+        ]
+      },
+      "reason": "Two verified public nests share seasonal hatch clocks; native placement acknowledges hatching and participation admits a sequenced surprise-nest reward. Calendar and merchant price are explicit Oteryn policy."
     },
     {
       "key": "stampede",
@@ -1796,7 +1950,7 @@
       "key": "the_mummy_s_curse",
       "title": "The Mummy's Curse World Change",
       "quest": "oteryn:quest.the_mummys_curse_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1809,6 +1963,12 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "data-global/scripts/actions/worldchanges/the_mummys_curse/horestis_jars.lua:18-122",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "6e47be40083c0ff174c454940382f891f96d7c304c999457e5165ab98d24751a"
         }
       ],
       "source_refs": [
@@ -1829,10 +1989,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=55049&oldid=1084983"
         }
       ],
-      "reason": "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved.",
-      "missing_facts": [
-        "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved."
-      ]
+      "reason": "Shared ordered jars AID50006-50010, per-jar failed-attempt cooldown, one Horestis admission, native item1603 wall at277000ms and item3514 barrier at1200000ms. Owner single-boss decision removes the duplicate delayed summon.",
+      "missing_facts": [],
+      "trigger": {
+        "kind": "timed",
+        "owner": "world_event::changes::timed",
+        "event": "mummys_curse"
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:world-events.horestis"
+      }
     },
     {
       "key": "their_masters_voice",

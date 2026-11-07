@@ -1,0 +1,1267 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/annihilator-entry",
+      "quest": "oteryn:quest.the_annihilator",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33226,
+          "y": 31671,
+          "floor": -13
+        },
+        "unique": 30025,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": {
+          "minimum_level": 100,
+          "players": [
+            {
+              "to": {
+                "x": 33222,
+                "y": 31659,
+                "floor": -13
+              },
+              "from": {
+                "x": 33225,
+                "y": 31671,
+                "floor": -13
+              }
+            },
+            {
+              "to": {
+                "x": 33221,
+                "y": 31659,
+                "floor": -13
+              },
+              "from": {
+                "x": 33224,
+                "y": 31671,
+                "floor": -13
+              }
+            },
+            {
+              "to": {
+                "x": 33220,
+                "y": 31659,
+                "floor": -13
+              },
+              "from": {
+                "x": 33223,
+                "y": 31671,
+                "floor": -13
+              }
+            },
+            {
+              "to": {
+                "x": 33219,
+                "y": 31659,
+                "floor": -13
+              },
+              "from": {
+                "x": 33222,
+                "y": 31671,
+                "floor": -13
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 33219,
+                "y": 31657,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            },
+            {
+              "position": {
+                "x": 33221,
+                "y": 31657,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            },
+            {
+              "position": {
+                "x": 33223,
+                "y": 31659,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            },
+            {
+              "position": {
+                "x": 33224,
+                "y": 31659,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            },
+            {
+              "position": {
+                "x": 33220,
+                "y": 31661,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            },
+            {
+              "position": {
+                "x": 33222,
+                "y": 31661,
+                "floor": -13
+              },
+              "creature": "oteryn:creature.angry_demon"
+            }
+          ],
+          "room_min": {
+            "x": 33217,
+            "y": 31655,
+            "floor": -13
+          },
+          "room_max": {
+            "x": 33225,
+            "y": 31663,
+            "floor": -13
+          }
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-101"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-plate",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32225,
+          "y": 32268,
+          "floor": -9
+        },
+        "unique": 25010,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 430,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:6-16"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-plate-out",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32225,
+          "y": 32268,
+          "floor": -9
+        },
+        "unique": 25010,
+        "action": null,
+        "appearance": 431
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32225,
+            "y": 32282,
+            "floor": -9
+          },
+          "appearance": 429,
+          "replacement": 7767
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": 431,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/movement-stair.lua:24-33"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thais-lighthouse-portals",
+      "quest": "oteryn:quest.thais_lighthouse_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32225,
+          "y": 32285,
+          "floor": -10
+        },
+        "unique": 30005,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": {
+          "appearance": 1949,
+          "lifetime_us": null,
+          "portals": [
+            {
+              "position": {
+                "x": 32232,
+                "y": 32276,
+                "floor": -9
+              },
+              "destination": {
+                "x": 32225,
+                "y": 32274,
+                "floor": -10
+              }
+            },
+            {
+              "position": {
+                "x": 32225,
+                "y": 32276,
+                "floor": -10
+              },
+              "destination": {
+                "x": 32230,
+                "y": 32276,
+                "floor": -9
+              }
+            }
+          ]
+        },
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:17-46"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/triangle-tower-lever",
+      "quest": "oteryn:quest.triangle_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32573,
+          "y": 32121,
+          "floor": -7
+        },
+        "unique": 30034,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": {
+          "position": {
+            "x": 32566,
+            "y": 32119,
+            "floor": -7
+          },
+          "remove": 1270,
+          "create": 1025
+        },
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/triangle_tower_quest/actions_triangle_tower_lever.lua:3-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-entry",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 32629,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32968,
+        "y": 32631,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": "south",
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-exit",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32967,
+          "y": 32630,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32971,
+        "y": 32620,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": "east",
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cliff",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32966,
+          "y": 32626,
+          "floor": -5
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32968,
+        "y": 32626,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": {
+          "position": {
+            "x": 32968,
+            "y": 32626,
+            "floor": -5
+          },
+          "effect": 54
+        },
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-splash",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 32630,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": {
+          "position": {
+            "x": 32968,
+            "y": 32630,
+            "floor": -7
+          },
+          "effect": 54
+        },
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spring-nest-1",
+      "quest": "oteryn:quest.authored.spring_into_life",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32344,
+          "y": 31604,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 52601,
+        "appearance": 14098
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spring_into_life/participation",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This nest is dormant or you have already joined its current hatch.",
+      "success_message": "You have helped prepare the nest. Return after it hatches.",
+      "effects": {
+        "world_event": {
+          "event": "spring_into_life",
+          "action": {
+            "BeginObject": 1
+          }
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32647-32650:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spring-nest-2",
+      "quest": "oteryn:quest.authored.spring_into_life",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33977,
+          "y": 32646,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 52602,
+        "appearance": 14098
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spring_into_life/participation",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This nest is dormant or you have already joined its current hatch.",
+      "success_message": "You have helped prepare the nest. Return after it hatches.",
+      "effects": {
+        "world_event": {
+          "event": "spring_into_life",
+          "action": {
+            "BeginObject": 2
+          }
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/items/items.xml:32647-32650:sha256:c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-water",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32057,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52670,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The shared bucket is full or the invasion has ended.",
+      "success_message": "You add water to the shared bucket.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Fill": 0
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-1",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32205,
+          "y": 32059,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52671,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 1
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-2",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32060,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52672,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 2
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/insect-restoration-3",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32206,
+          "y": 32061,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52673,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/insectoid-invasion/restoration",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "This fire is already out, the bucket is empty, or the invasion has ended.",
+      "success_message": "You extinguish the blaze.",
+      "effects": {
+        "world_event": {
+          "event": "insectoid_invasion",
+          "action": {
+            "Extinguish": 3
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#wevents-greenshore-restoration-policy"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-season-reward",
+      "quest": "oteryn:quest.authored.rise_of_devovorga",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32970,
+          "y": 31580,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52710,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rise_of_devovorga/reward",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The season is not victorious, you did not defeat the final boss, or this reward was already claimed.",
+      "success_message": "You receive your reward for defeating Devovorga.",
+      "effects": {
+        "world_event": {
+          "event": "rise_of_devovorga",
+          "action": "Reward",
+          "minimum_level": 160
+        },
+        "item_reward": {
+          "item": "oteryn:item.tibia.i9601",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i11666",
+              "count": 5
+            },
+            {
+              "item": "oteryn:item.tibia.i281",
+              "count": 3
+            },
+            {
+              "item": "oteryn:item.tibia.i9058",
+              "count": 5
+            }
+          ]
+        },
+        "achievement": "oteryn:achievement/i_did_my_part"
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "minimum_level": 160
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-0",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31572,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52720,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 0
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31572,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.anmothra"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 2,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-1",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31573,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52721,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 1
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31573,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.chikhaton"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 5,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-2",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31574,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52722,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 2
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31574,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.irahsae"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 8,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-3",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31575,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52723,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 3
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31575,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.phrodomo"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 12,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/devovorga-essence-4",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32969,
+          "y": 31576,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 52724,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/devovorga_s_essence/entry",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The gate is inactive, the room is occupied, or you lack the required tentacle pieces.",
+      "success_message": "Your offering is accepted. Face the incarnation.",
+      "effects": {
+        "world_event": {
+          "event": "devovorga_s_essence",
+          "action": {
+            "Enter": 4
+          }
+        },
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32968,
+                "y": 31576,
+                "floor": -7
+              },
+              "to": {
+                "x": 32965,
+                "y": 31567,
+                "floor": -7
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32966,
+                "y": 31567,
+                "floor": -7
+              },
+              "creature": "oteryn:creature.wevents.teneshpar"
+            }
+          ],
+          "room_min": {
+            "x": 32964,
+            "y": 31565,
+            "floor": -7
+          },
+          "room_max": {
+            "x": 32966,
+            "y": 31569,
+            "floor": -7
+          }
+        }
+      },
+      "sources": [
+        "oteryn-policy:CONTRACT-NOTES.md#devovorga-world-event-policy"
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11666",
+        "count": 16,
+        "replacement": null,
+        "target_replacement": null
+      }
+    }
+  ]
+}

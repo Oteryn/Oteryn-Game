@@ -150,6 +150,7 @@ pub struct DailyCandidates {
     pub trader_percent: u8,
     pub stampede_permille: u16,
     pub fire_earth_permille: u16,
+    pub timed: crate::daily_timed::Candidates,
 }
 
 /// An admitted static layer identity, reconstructed from its owned persisted name.
@@ -160,6 +161,8 @@ pub type DailyLayer = &'static str;
 #[serde(deny_unknown_fields)]
 pub struct DailyWorldChanges {
     pub reset_epoch: u64,
+    #[serde(default)]
+    pub timed: crate::daily_timed::Selection,
     #[serde(default, deserialize_with = "deserialize_fury_gate")]
     pub fury_gates: Option<DailyLayer>,
     #[serde(default = "default_fury_exit", deserialize_with = "deserialize_layer")]
@@ -203,6 +206,7 @@ impl DailyWorldChanges {
                 thawing_percent: THAWING_PERCENT,
                 voice_percent: THEIR_MASTERS_VOICE_PERCENT,
                 trader_percent: ORIENTAL_TRADER_PERCENT,
+                timed: Default::default(),
                 stampede_permille: 125,
                 fire_earth_permille: 199,
             },
@@ -246,6 +250,7 @@ impl DailyWorldChanges {
         let fury_gates = fury_active.then_some(fury_exit);
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
+            timed: candidates.timed.select(month, day, &mut draw),
             stampede,
             fire_from_the_earth,
             world_counters: true,
@@ -280,9 +285,18 @@ impl DailyWorldChanges {
 
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
-        (self.reset_epoch != 0 && self.flower_month)
-            .then_some(ROSEMARIE)
-            .into_iter()
+        [
+            (self.reset_epoch != 0 && (self.flower_month || self.timed.spring))
+                .then_some(ROSEMARIE),
+            self.timed
+                .bank
+                .then_some(("oteryn:npc.naji", (32_342, 32_229, 7))),
+            self.timed
+                .kingsday
+                .then_some(("oteryn:npc.king_tibianus", (32_311, 32_172, 6))),
+        ]
+        .into_iter()
+        .flatten()
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.
@@ -346,6 +360,7 @@ mod tests {
         assert_eq!(
             all,
             DailyWorldChanges {
+                timed: Default::default(),
                 reset_epoch: 9,
                 fury_gates: Some("fury_gates/abdendriel"),
                 fury_exit: "fury_gates/abdendriel",

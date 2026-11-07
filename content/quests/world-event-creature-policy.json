@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "classification": "OTERYN_AUTHORED_POLICY",
+  "baseline": "oteryn:creature.chikhaton",
+  "policy": "Native event and paid-encounter actors. Public pinned literal health/defence/speed/appearance facts win when available. Physical melee only; existing native approximation formula. Missing appearance uses Chikhaton; incomplete converted melee uses Cave Rat. Mutation actors use a conservative 1000 HP rule; Bloom and Cocoon are passive. No invented ordinary corpse or loot. Quest and World owners deliver fenced rewards. These are explicitly authored combat approximations, not complete donor monster parity.",
+  "actors": [
+    {
+      "name": "anmothra",
+      "display_name": "Anmothra",
+      "health": 7000,
+      "source_experience": 15000,
+      "armor": 10,
+      "defense": 5,
+      "source_speed": 200,
+      "look": null,
+      "melee": {
+        "kind": "reuse",
+        "value": "oteryn:creature.cave_rat"
+      },
+      "source": {
+        "repository": "soul4soul/converted-tibiawiki-monster-data",
+        "revision": "a2cccf99fccc547e13720704f99cd0125f22f82f",
+        "path": "tfs revscriptsys/Anmothra.lua",
+        "sha256": "f2fbfc4e6bd51d5c338d96abfd9c1a9bb24f7ea8a329ed79fe71f2a8f0f94711",
+        "line": 17,
+        "url": "https://github.com/soul4soul/converted-tibiawiki-monster-data/blob/a2cccf99fccc547e13720704f99cd0125f22f82f/tfs%20revscriptsys/Anmothra.lua"
+      }
+    },
+    {
+      "name": "irahsae",
+      "display_name": "Irahsae",
+      "health": 35000,
+      "source_experience": 15000,
+      "armor": 10,
+      "defense": 5,
+      "source_speed": 0,
+      "look": null,
+      "melee": {
+        "kind": "reuse",
+        "value": "oteryn:creature.cave_rat"
+      },
+      "source": {
+        "repository": "soul4soul/converted-tibiawiki-monster-data",
+        "revision": "a2cccf99fccc547e13720704f99cd0125f22f82f",
+        "path": "tfs revscriptsys/Irahsae.lua",
+        "sha256": "a0ef65c05bf48aa5ead6f0fb8bd451e42ff2e4fad482d53f924ddac4867b2160",
+        "line": 17,
+        "url": "https://github.com/soul4soul/converted-tibiawiki-monster-data/blob/a2cccf99fccc547e13720704f99cd0125f22f82f/tfs%20revscriptsys/Irahsae.lua"
+      }
+    },
+    {
+      "name": "teneshpar",
+      "display_name": "Teneshpar",
+      "health": 15000,
+      "source_experience": 20000,
+      "armor": 80,
+      "defense": 0,
+      "source_speed": 170,
+      "look": 241,
+      "melee": {
+        "kind": "range",
+        "value": 550
+      },
+      "source": {
+        "repository": "fifth-empearl/fencore",
+        "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "path": "data-otservbr-global/monster/teneshpar.lua",
+        "sha256": "d1faede5a81ca84fc06f0c3f6d37e61d8e0bc8d05bfe5d191ed8f61edc012b07",
+        "line": 21,
+        "url": "https://github.com/fifth-empearl/fencore/blob/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/monster/teneshpar.lua"
+      }
+    },
+    {
+      "name": "phrodomo",
+      "display_name": "Phrodomo",
+      "health": 90000,
+      "source_experience": 44000,
+      "armor": 155,
+      "defense": 165,
+      "source_speed": 240,
+      "look": 12,
+      "melee": {
+        "kind": "formula",
+        "value": [
+          392,
+          300
+        ]
+      },
+      "source": {
+        "repository": "fifth-empearl/fencore",
+        "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "path": "data-otservbr-global/monster/phrodomo.lua",
+        "sha256": "78ed2e396f95cb2d516f453bdf7d5b205f24c5a174355140e6eaaf3066481830",
+        "line": 21,
+        "url": "https://github.com/fifth-empearl/fencore/blob/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/monster/phrodomo.lua"
+      }
+    },
+    {
+      "name": "devovorga",
+      "display_name": "Devovorga",
+      "health": 500000,
+      "source_experience": 50000,
+      "armor": 155,
+      "defense": 165,
+      "source_speed": 240,
+      "look": 354,
+      "melee": {
+        "kind": "formula",
+        "value": [
+          392,
+          500
+        ]
+      },
+      "source": {
+        "repository": "fifth-empearl/fencore",
+        "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "path": "data-otservbr-global/monster/devovorga.lua",
+        "sha256": "32f3e3a4854a0e30c223bc58beb1a1d307128afcae17267e32bcf815ff3c1361",
+        "line": 21,
+        "url": "https://github.com/fifth-empearl/fencore/blob/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/monster/devovorga.lua"
+      }
+    },
+    {
+      "name": "bloom_of_doom",
+      "display_name": "Bloom of Doom",
+      "health": 1000,
+      "source_experience": 0,
+      "armor": 0,
+      "defense": 0,
+      "source_speed": 0,
+      "look": null,
+      "melee": {
+        "kind": "passive",
+        "value": null
+      },
+      "source": null
+    },
+    {
+      "name": "spawn_of_devovorga",
+      "display_name": "Spawn of Devovorga",
+      "health": 1000,
+      "source_experience": 0,
+      "armor": 0,
+      "defense": 0,
+      "source_speed": 100,
+      "look": null,
+      "melee": {
+        "kind": "reuse",
+        "value": "oteryn:creature.scorpion"
+      },
+      "source": null
+    },
+    {
+      "name": "vulnerable_cocoon",
+      "display_name": "Vulnerable Cocoon",
+      "health": 1000,
+      "source_experience": 0,
+      "armor": 0,
+      "defense": 0,
+      "source_speed": 0,
+      "look": null,
+      "melee": {
+        "kind": "passive",
+        "value": null
+      },
+      "source": null
+    }
+  ]
+}

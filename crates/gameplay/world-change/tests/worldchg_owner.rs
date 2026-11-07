@@ -53,20 +53,34 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert!(entry["binding"].is_object(), "{key}");
-            let mut active = all;
-            if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
-                use oteryn_gameplay_world_change::counter::CounterKind as K;
-                active.counter_stages[kind.index()] = match kind {
-                    K::FireFeathered => 3,
-                    K::Overhunting => 2,
-                    _ => 1,
-                };
+            if oteryn_gameplay_world_change::timed::EventKind::from_key(key).is_some() {
+                let event = oteryn_gameplay_world_change::timed::EventKind::from_key(key)
+                    .ok_or("unknown qualified event")?;
+                assert_eq!(entry["trigger"]["kind"], "timed");
+                assert_eq!(entry["trigger"]["owner"], "world_event::changes::timed");
+                assert_eq!(entry["trigger"]["event"], event.key());
+                assert!(
+                    !is_active(&all, key),
+                    "timed event cannot bypass its own admission"
+                );
+            } else {
+                assert!(entry["binding"].is_object(), "{key}");
+                let mut active = all;
+                if let Some(kind) =
+                    oteryn_gameplay_world_change::counter::CounterKind::from_key(key)
+                {
+                    use oteryn_gameplay_world_change::counter::CounterKind as K;
+                    active.counter_stages[kind.index()] = match kind {
+                        K::FireFeathered => 3,
+                        K::Overhunting => 2,
+                        _ => 1,
+                    };
+                }
+                if key == "stampede" {
+                    assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+                }
+                assert!(is_active(&active, key), "{key}");
             }
-            if key == "stampede" {
-                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-            }
-            assert!(is_active(&active, key), "{key}");
         } else {
             assert_eq!(entry["status"], "HELD");
             if key == "fury_gates" {
@@ -76,7 +90,7 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             }
         }
     }
-    assert_eq!((ready, qualified), (0, 12));
+    assert_eq!((ready, qualified), (0, 21));
     assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",
@@ -150,6 +164,7 @@ fn worldchg_authored_candidate_probabilities_control_selection() {
             5,
             12,
             DailyCandidates {
+                timed: Default::default(),
                 thawing_percent: percent,
                 voice_percent: percent,
                 trader_percent: percent,
@@ -179,6 +194,7 @@ fn worldchg_stampede_uses_accepted_daily_gate_and_preserves_legacy_snapshots()
             5,
             1,
             DailyCandidates {
+                timed: Default::default(),
                 thawing_percent: 0,
                 voice_percent: 0,
                 trader_percent: 0,

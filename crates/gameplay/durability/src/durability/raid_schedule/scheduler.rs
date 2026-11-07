@@ -122,6 +122,12 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(RaidSchedulerOutcome::default());
             }
+            let mut timed_events = std::collections::BTreeMap::new();
+            for kind in oteryn_gameplay_world_change::timed::EventKind::ALL {
+                if let Some(state) = crate::durability::world_event::changes::timed::poll(
+                    &mut tx, request.world, request.reset_epoch, kind, request.now_ms,
+                ).await? { timed_events.insert(kind.key(), state); }
+            }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
             // Retire previous-epoch firings before checking a new admitted epoch.
@@ -131,6 +137,12 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_world_raid_scheduler_clocks(world_id,reset_epoch,last_end_at_ms) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch,last_end_at_ms=EXCLUDED.last_end_at_ms WHERE game_world_raid_scheduler_clocks.reset_epoch<EXCLUDED.reset_epoch")
                 .bind(request.world.as_bytes().as_slice()).bind(request.reset_epoch.to_string()).bind(request.now_ms).execute(&mut *tx).await?;
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
+            if let Some(state) = timed_events.get_mut("rise_of_devovorga") {
+                crate::durability::world_event::changes::timed::schedules::reconcile_stage_firings(&mut tx,request.world,request.reset_epoch,oteryn_gameplay_world_change::timed::EventKind::RiseOfDevovorga,state).await?;
+            }
+            if let Some(state) = timed_events.get_mut("spring_into_life") {
+                crate::durability::world_event::changes::timed::schedules::reconcile_hatches(&mut tx, request.world, request.reset_epoch, state, request.now_ms).await?;
+            }
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
@@ -141,9 +153,19 @@ impl DurabilityRoot {
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
-                if let Some(required) = requirements.get(candidate.key.as_str())
-                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
-                    continue;
+                use crate::durability::world_event::changes::timed::schedules;
+                let event_rule = schedules::raid_rule(candidate.key.as_str())?;
+                if let Some((kind, rule)) = &event_rule
+                    && !timed_events.get(kind.key()).is_some_and(|state| schedules::admits(state, rule, request.now_ms))
+                { continue; }
+                if let Some(required) = requirements.get(candidate.key.as_str()) {
+                    use oteryn_gameplay_world_change::timed::Phase;
+                    let admitted = match required.as_str() {
+                        "flower_month" => timed_events.get("flower_month").is_some_and(|event| event.phase == Phase::Active),
+                        "the_mummy_s_curse" => timed_events.get("mummys_curse").is_some_and(|event| event.phase == Phase::Victory),
+                        _ => world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)),
+                    };
+                    if !admitted { continue; }
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
@@ -156,7 +178,10 @@ impl DurabilityRoot {
                     .map_err(|_| DurabilityError::InvalidStoredState)? {
                     Some(before) => before,
                     None => {
-                        let initial = RaidSchedule::initial(request.reset_epoch, request.now_ms)
+                        let initial_at = if candidate.calendar_window.as_ref().is_some_and(|window| window.start_immediately) {
+                            request.now_ms.saturating_sub(oteryn_gameplay_encounter_rules::raid::CHECK_INTERVAL_MS)
+                        } else { request.now_ms };
+                        let initial = RaidSchedule::initial(request.reset_epoch, initial_at)
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         storage::insert_schedule(&mut tx, request.world, &candidate.key, &initial).await
                             .map_err(|_| DurabilityError::Unavailable)?;
@@ -198,11 +223,13 @@ impl DurabilityRoot {
                     // Startup-activated repeating cycles belong to the committed reset date,
                     // so a delayed reset cannot start the next month's source early.
                     let (month,day) = if window.repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
-                    let in_window = window.window.contains(month,day)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let in_window = if candidate.key.as_str()=="oteryn:raid.raid.dryad_invasion" {
+                        timed_events.get("flower_month").is_some_and(|event|event.phase==oteryn_gameplay_world_change::timed::Phase::Active)
+                    } else { window.window.contains(month, day)
+                        .map_err(|_| DurabilityError::InvalidStoredState)? };
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
+                    let persistent_fired = !window.repeat_persistent && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,
@@ -228,9 +255,20 @@ impl DurabilityRoot {
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
                     if source_kind == 1 { legacy_running = true; }
+                    if let Some((kind, rule)) = &event_rule {
+                        let state = timed_events.get_mut(kind.key()).ok_or(DurabilityError::InvalidStoredState)?;
+                        schedules::record_firing(&mut tx,request.world,request.reset_epoch,*kind,rule,state,candidate.firing_id).await?;
+                    }
+                    if let Some(kind) = requirements.get(candidate.key.as_str()).and_then(|key| oteryn_gameplay_world_change::timed::EventKind::from_key(key))
+                        && let Some(state) = timed_events.get(kind.key())
+                    {
+                        use crate::durability::world_event::changes::timed::{RaidOrigin, seal_raid_origin};
+                        seal_raid_origin(&mut tx,candidate.firing_id,&RaidOrigin::from_state(kind,request.reset_epoch,0,state)?).await?;
+                    }
                     fired.push((candidate.firing_id, candidate.key));
                 }
             }
+            crate::durability::world_event::changes::timed::schedules::retire_stale(&mut tx, request.world, request.now_ms).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(RaidSchedulerOutcome { firings: fired, retry_activity })
         })).await

@@ -63,15 +63,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
-        let close = callback
-            .lever
-            .is_some_and(|pair| after.appearance_id == pair[1]);
-        if close && !callback.reversible {
+        let close = callback.trigger == Trigger::StepOut
+            || callback
+                .lever
+                .is_some_and(|pair| after.appearance_id == pair[1]);
+        if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
+        if let Some(appearance) = callback.effects.transform {
+            let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
+                return UseDisposition::Rejected;
+            };
+            after = replacement;
+        }
+        let projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
+            Ok(projection) => projection,
+            Err(result) => return result,
+        };
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
@@ -81,6 +92,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             after = replacement;
+        }
+        if let Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+            position,
+            create: Some(_),
+            ..
+        }) = &projection
+        {
+            let Some(at) = runtime
+                .read_actor_position(actor)
+                .ok()
+                .and_then(|p| native(p.position()))
+            else {
+                return UseDisposition::Rejected;
+            };
+            if super::super::map_door::doorway_occupied(runtime, actor, at, *position) {
+                return UseDisposition::Occupied;
+            }
         }
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
@@ -149,7 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let teleport = match callback.teleport {
-            Some(to) => match crate::map::floor::prepare_quest_callback_teleport(
+            Some(to) => match crate::map::floor::prepare_quest_callback_teleport_facing(
                 runtime,
                 self.movement_cells,
                 actor,
@@ -158,6 +186,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 local(to),
                 blocked,
                 &closed,
+                callback.effects.facing.map(super::effects::facing),
             ) {
                 Ok(proof) => Some(proof),
                 Err(_) => return UseDisposition::NotPossible,
@@ -169,6 +198,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .quest_callback_capacity(key, expected_revision, callback.passages.len())
         {
             return UseDisposition::Exhausted;
+        }
+        let mut room_reservation = None;
+        if let Some(encounter) = callback.effects.encounter.as_ref()
+            && !callback.storage.is_empty()
+            && !self.has_pending_quest_callback(session)
+        {
+            let admission = self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+                false,
+            );
+            if admission != UseDisposition::Committed {
+                #[cfg(test)]
+                eprintln!(
+                    "native paid encounter preview {}: {admission:?}",
+                    callback.key
+                );
+                return admission;
+            }
+            let Some(reservation) = map.facts.reserve_encounter_room(
+                map.overlay.base(),
+                tile(encounter.room_min),
+                tile(encounter.room_max),
+            ) else {
+                return UseDisposition::Occupied;
+            };
+            room_reservation = Some(reservation);
         }
         if callback.storage.is_empty()
             && world_callbacks::world_change_requirement(&callback.key).is_some()
@@ -234,16 +297,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    room_reservation: room_reservation.take(),
                 });
                 record.context.get_or_insert(context).clone()
             } else {
                 return UseDisposition::Rejected;
             };
-            let outcome = slot
-                .commit_world_callback(
-                    self.root,
-                    self.character,
-                    self.holder,
+            let outcome = self
+                .commit_bound_world_callback(
+                    slot,
                     fence,
                     QuestTransitionRequest {
                         transition_key: callback.key.clone(),
@@ -254,6 +316,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context,
                 )
                 .await;
+            #[cfg(test)]
+            if callback.effects.encounter.is_some() {
+                eprintln!(
+                    "native paid encounter transaction {}: {outcome:?}",
+                    callback.key
+                );
+            }
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
             match outcome {
                 Ok(
@@ -283,7 +352,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     self.schedule_quest_refresh(session);
                 }
-                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_error)) => {
+                    #[cfg(test)]
+                    eprintln!("native quest callback {} unavailable: {_error:?}", callback.key);
                     // A storage error can hide a committed receipt; reconcile its original cause.
                     return UseDisposition::Rejected;
                 }
@@ -302,8 +373,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        // Dryad watersplash54 is source metadata only until a live Item
-        // presentation consumer exists; the existing teleport owner still commits.
+        if callback.effects.encounter.is_some() {
+            if let Ok(pending) = self.states.quest_callbacks.records.lock()
+                && let Some(reservation) = pending
+                    .get(&session)
+                    .and_then(|record| record.room_reservation.as_ref())
+            {
+                reservation.release();
+            }
+            let outcome = self.execute_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+                true,
+            );
+            if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                pending.remove(&session);
+            }
+            if outcome == UseDisposition::Committed
+                && let Some(message) = success_message
+            {
+                self.states.chat.push_quest_feedback(session, &message);
+            }
+            return outcome;
+        }
         if !map.facts.apply_quest_callback(
             key,
             expected_revision,
@@ -311,8 +410,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &passages,
             &replacements,
             close,
+            projection.as_ref(),
         ) {
             return UseDisposition::Rejected;
+        }
+        if callback
+            .effects
+            .portals
+            .as_ref()
+            .is_some_and(|pair| pair.lifetime_us.is_some())
+        {
+            states.owner_wake.notify_one();
         }
         if oteryn_gameplay_quests::quest::shared_world_progress::binding(&callback.key).is_some_and(
             |binding| {
@@ -349,6 +457,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
+        }
+        if let Some(magic) = &callback.effects.magic {
+            map.facts
+                .emit_movement_effect(tile(magic.position), magic.effect);
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);

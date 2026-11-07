@@ -40,7 +40,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::prepare_quest_callback_teleport;
+pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
 pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -167,8 +167,14 @@ impl FloorTable {
         for tile in self.positions() {
             let cell = (i32::from(tile.x), i32::from(tile.y), -i32::from(tile.floor));
             if ground(cell) == Ground::Walkable
-                && follow(self, &ground, &|_| true, &|pos| self.teleport(pos), cell)
-                    == Err(Refusal::Chain)
+                && follow(
+                    self,
+                    &ground,
+                    &|_| true,
+                    &|pos| self.teleport(pos),
+                    cell,
+                    &|cell| self.mask(cell),
+                ) == Err(Refusal::Chain)
             {
                 return Err(tile);
             }
@@ -254,7 +260,10 @@ pub fn resolve_landing(
     origin: Cell,
     direction: CardinalStep,
 ) -> Result<Cell, Refusal> {
-    resolve_landing_with_exhaust(table, ground, landable, origin, direction).map(|(cell, _)| cell)
+    resolve_landing_with_exhaust(table, ground, landable, origin, direction, &|cell| {
+        table.mask(cell)
+    })
+    .map(|(cell, _)| cell)
 }
 
 fn resolve_landing_with_exhaust(
@@ -263,8 +272,9 @@ fn resolve_landing_with_exhaust(
     landable: impl Fn(Cell) -> bool,
     origin: Cell,
     direction: CardinalStep,
+    mask: &impl Fn(Cell) -> u8,
 ) -> Result<(Cell, bool), Refusal> {
-    resolve_landing_with_teleports(table, ground, landable, origin, direction, |at| {
+    resolve_landing_with_teleports(table, ground, landable, origin, direction, mask, |at| {
         table.teleport(at)
     })
 }
@@ -275,6 +285,7 @@ fn resolve_landing_with_teleports(
     landable: impl Fn(Cell) -> bool,
     origin: Cell,
     direction: CardinalStep,
+    mask: &impl Fn(Cell) -> u8,
     teleport: impl Fn(TilePos) -> Option<TilePos>,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = match direction {
@@ -287,17 +298,18 @@ fn resolve_landing_with_teleports(
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(table, &ground, &landable, &teleport, next),
+        Ground::Walkable => follow(table, &ground, &landable, &teleport, next, mask),
     }
 }
 
 /// `internalMoveCreature`'s successive `queryDestination`, from the entered tile `next`.
 fn follow(
-    table: &FloorTable,
+    _table: &FloorTable,
     ground: &impl Fn(Cell) -> Ground,
     landable: &impl Fn(Cell) -> bool,
     teleport: &impl Fn(TilePos) -> Option<TilePos>,
     mut next: Cell,
+    floor_mask: &impl Fn(Cell) -> u8,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
@@ -311,19 +323,19 @@ fn follow(
         if ground(next) == Ground::Blocked {
             return Err(Refusal::Blocked);
         }
-        let mask = table.mask(next);
+        let mask = floor_mask(next);
         if mask == 0 {
             return land(next, changed_floor);
         }
         let target = if mask & DOWN != 0 {
             let below = (next.0, next.1, next.2 + 1);
             let shifted = |dx: i32, dy: i32| (below.0 + dx, below.1 + dy, below.2);
-            if table.mask(shifted(0, -1)) & SOUTHALT != 0 {
+            if floor_mask(shifted(0, -1)) & SOUTHALT != 0 {
                 shifted(0, -2)
-            } else if table.mask(shifted(-1, 0)) & EASTALT != 0 {
+            } else if floor_mask(shifted(-1, 0)) & EASTALT != 0 {
                 shifted(-2, 0)
             } else if ground(below) != Ground::Absent {
-                let below_mask = table.mask(below);
+                let below_mask = floor_mask(below);
                 let mut offset = (0, 0);
                 for (flag, dx, dy) in [
                     (NORTH, 0, 1),
@@ -421,7 +433,14 @@ fn current_teleport(cells: &NativeEntryMovementCells, at: TilePos) -> Option<Til
 /// NEWHAVEN-TELEPORT-1 (WORLD-INTERACTION-0 §6.5): whether `cell` of the bundle `cells` run over
 /// teleports. Monsters never enter such a tile; a fixture or source World has no teleports.
 pub fn is_teleport(cells: &NativeEntryMovementCells, cell: LogicalCell) -> bool {
-    pos(cell.x, cell.y, cell.z).is_some_and(|at| current_teleport(cells, at).is_some())
+    let authored =
+        pos(cell.x, cell.y, cell.z).is_some_and(|at| current_teleport(cells, at).is_some());
+    authored
+        || match cells.index() {
+            NativeMovementCollisionIndex::Bundle(index) => pos(cell.x, cell.y, cell.z)
+                .is_some_and(|at| index.map().facts.quest_portal_destination(at, 0).is_some()),
+            _ => false,
+        }
 }
 
 /// The landing rule's PZ part (WORLD-INTERACTION-0 §3.3, §6.6) over the bundle `cells`: an actor
@@ -572,6 +591,18 @@ fn destination(
         landable_of(cells, pz_blocked, closed),
         (origin.x, origin.y, floor),
         direction,
+        &|cell| {
+            if let NativeMovementCollisionIndex::Bundle(index) = cells.index()
+                && let Some(at) = pos(cell.0, cell.1, cell.2)
+                && let Some(mask) = index
+                    .map()
+                    .facts
+                    .quest_callback_floor_mask(index.map().overlay.base(), at)
+            {
+                return mask;
+            }
+            table.mask(cell)
+        },
         |at| current_teleport(cells, at),
     )
     .map_err(movement_error)?;

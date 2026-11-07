@@ -6,7 +6,12 @@ use super::{
 };
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod effects;
+mod encounter;
+mod event_objects;
+mod event_reward;
 mod execute;
+mod mummy;
 mod rewards;
 mod soul_war_reward;
 
@@ -42,6 +47,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    room_reservation: Option<crate::map::facts::EncounterRoomReservation>,
 }
 
 /// A World observation is retained only until the native actor/object CAS. It is
@@ -61,6 +67,7 @@ pub(super) struct PendingCallbacks {
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
+    mummy: std::sync::Mutex<std::collections::HashMap<GameSessionId, mummy::Pending>>,
     #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
@@ -248,9 +255,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
+            let disposition = match self.commit_bound_world_callback(&mut slot, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), &permit, context).await {
+                std::sync::Arc::clone(catalogue), &permit, context,
+            ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -278,6 +286,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
+        if self
+            .states
+            .quest_callbacks
+            .mummy
+            .lock()
+            .map_or(true, |pending| pending.contains_key(&session))
+        {
+            return true;
+        }
         if self.states.grizzly_boss.has_pending(session) {
             return true;
         }
@@ -399,6 +416,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_mummy_use(session).await {
+            return false;
+        }
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }
@@ -553,6 +573,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_mummy_jar(actor, command, map, target).await {
+            return Some(outcome);
+        }
         if let Some(outcome) = self.use_soul_war_reward(actor, command, map, target).await {
             return Some(outcome);
         }
@@ -705,10 +728,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         origin: MovementPositionSnapshot,
         entered: MovementPositionSnapshot,
     ) -> MovementPositionSnapshot {
+        let entered = if origin.position() != entered.position() {
+            self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepOut)
+                .await
+        } else {
+            entered
+        };
+        let entered = self
+            .step_dynamic_quest_portal(permit, actor, session, entered)
+            .await;
+        self.step_quest_trigger(permit, actor, session, origin, entered, Trigger::StepIn)
+            .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
+    async fn step_quest_trigger(
+        &self,
+        permit: &SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        origin: MovementPositionSnapshot,
+        entered: MovementPositionSnapshot,
+        trigger: Trigger,
+    ) -> MovementPositionSnapshot {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
-        let Some(at) = native(entered.position()) else {
+        let selected_position = if trigger == Trigger::StepOut {
+            origin.position()
+        } else {
+            entered.position()
+        };
+        let Some(at) = native(selected_position) else {
             return entered;
         };
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
@@ -723,7 +777,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == Trigger::StepIn && matches(map, c, key))
+                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
                         .map(move |c| (c, key)),
                 )
             })
@@ -840,6 +894,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        room_reservation: None,
                     });
                     pending.origin = Some(origin);
                 }
@@ -848,7 +903,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and source trigger"
+    )]
     fn refuse_quest_step(
         &self,
         optional_pvp: Option<bool>,

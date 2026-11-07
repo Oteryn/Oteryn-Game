@@ -19,9 +19,17 @@ pub struct NativeRaidSpawnSpec {
     revision: Box<str>,
     content: [u8; 32],
     boss: bool,
+    timed_event: bool,
 }
 
 impl NativeRaidSpawnSpec {
+    /// The committed firing's immutable origin marks only these native actors.
+    /// This annotation is not authority; the World writer rechecks that origin.
+    pub fn with_timed_world_event(mut self) -> Self {
+        self.timed_event = true;
+        self
+    }
+
     pub fn qualified(
         creature: &str,
         revision: &str,
@@ -36,6 +44,7 @@ impl NativeRaidSpawnSpec {
             revision: copy_native_summon_key(revision)?,
             content,
             boss,
+            timed_event: false,
         })
     }
 }
@@ -92,6 +101,19 @@ impl RaidSpawnLedger {
 }
 
 impl ChannelRuntimeV1 {
+    /// Frozen on the lethal owner turn. Exact actor generations keep recycled
+    /// slots from inheriting another firing's participation source.
+    pub fn timed_world_raid_source(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<RaidSpawnIdentity>, CarrierError> {
+        self.owner_fence()?;
+        Ok(self.raid_spawns.receipts.values().find_map(|receipt| {
+            (receipt.spec.timed_event && receipt.outcome == RaidSpawnOutcome::Placed(actor))
+                .then_some(receipt.identity)
+        }))
+    }
+
     fn check_raid_stamp(&self, stamp: RuntimeWorkStamp) -> Result<(), CarrierError> {
         if !self.owner_fence()?.accepts_stamp(stamp) {
             return Err(CarrierError::WrongScope);

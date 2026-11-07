@@ -54,6 +54,7 @@ mod monk;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
+mod reward_callbacks;
 mod service_context;
 mod session_transfer;
 mod threatened_dreams;
@@ -759,6 +760,11 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
+    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
@@ -979,30 +985,17 @@ pub(super) async fn npc_bank_talk(
         BankNpcIntent::Transfer { name, .. } => Some(name.clone()),
         _ => None,
     };
-    let preview_result = if crate::durability::house_hireling::npc_identity(&npc_key).is_some() {
-        admission
-            .root
-            .preview_hireling_bank(
-                admission.character,
-                admission.holder,
-                fence,
-                coins.clone(),
-                recipient,
-                npc_key.clone(),
-            )
-            .await
-    } else {
-        admission
-            .root
-            .preview_npc_bank(
-                admission.character,
-                admission.holder,
-                fence,
-                coins.clone(),
-                recipient,
-            )
-            .await
-    };
+    let preview_result = admission
+        .root
+        .preview_hireling_bank(
+            admission.character,
+            admission.holder,
+            fence,
+            coins.clone(),
+            recipient,
+            npc_key.clone(),
+        )
+        .await;
     let preview = match preview_result {
         Ok(preview) => preview,
         Err(BankError::Unavailable(_)) => return unknown(),

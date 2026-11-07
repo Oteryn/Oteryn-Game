@@ -42,6 +42,8 @@ pub struct CatalogueRaid {
     pub variants: Vec<CatalogueVariant>,
     pub end: CatalogueEnd,
     #[serde(default)]
+    pub shared_wave_attempt_budget: Option<u8>,
+    #[serde(default)]
     pub requires_world_change: Option<CatalogueWorldChange>,
 }
 
@@ -102,6 +104,10 @@ pub enum CatalogueSchedule {
     Calendar {
         window: Option<CatalogueWindow>,
         interval_ms: Option<u32>,
+        #[serde(default)]
+        repeat_persistent: bool,
+        #[serde(default)]
+        start_immediately: bool,
         #[serde(default)]
         repeat: bool,
     },
@@ -282,6 +288,7 @@ pub struct SelectedRaid {
     pub boss_entries: BTreeSet<(u16, u16)>,
     pub spawn_modes: BTreeMap<(u16, u16), CatalogueSpawnMode>,
     pub end_policy: RaidEndPolicy,
+    pub shared_wave_attempt_budget: Option<u8>,
 }
 
 impl RaidCatalogue {
@@ -335,6 +342,12 @@ impl CatalogueRaid {
     }
 
     pub fn validate(&self) -> Result<(), RaidError> {
+        if self
+            .shared_wave_attempt_budget
+            .is_some_and(|budget| budget == 0 || budget > 250)
+        {
+            return Err(RaidError::InvalidDefinition);
+        }
         if !self.active || !self.inactive_reasons.is_empty() || self.variants.is_empty() {
             return Err(RaidError::InvalidDefinition);
         }
@@ -509,6 +522,7 @@ impl CatalogueRaid {
             boss_entries,
             spawn_modes,
             end_policy: self.end.policy()?,
+            shared_wave_attempt_budget: self.shared_wave_attempt_budget,
         })
     }
 }
@@ -524,8 +538,8 @@ mod tests {
         let catalogue = RaidCatalogue::embedded()?;
         // RAIDS-GLOBAL 2026-11-01 replaces the former single-Badger catalogue:
         // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities.
-        assert_eq!(catalogue.records().len(), 239);
-        assert_eq!(catalogue.active().count(), 136);
+        assert_eq!(catalogue.records().len(), 254);
+        assert_eq!(catalogue.active().count(), 151);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

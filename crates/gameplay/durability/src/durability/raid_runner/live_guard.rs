@@ -36,6 +36,17 @@ pub async fn raid_effect_pending_in_transaction(
     {
         return Err(DurabilityError::Unavailable);
     }
+    let timed_origin =
+        crate::durability::world_event::changes::timed::schedules::lock_origin(tx, id.firing_id)
+            .await?;
+    if !crate::durability::world_event::changes::timed::schedules::origin_current(
+        tx,
+        timed_origin.as_ref(),
+    )
+    .await?
+    {
+        return Err(DurabilityError::Unavailable);
+    }
     let firing = sqlx::query("SELECT uuid_send(world_id) AS world_id,reset_epoch::text,bundle_digest,state FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(id.firing_id.as_slice()).fetch_optional(&mut **tx).await?
         .ok_or(DurabilityError::Unavailable)?;

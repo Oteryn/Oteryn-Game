@@ -1,0 +1,388 @@
+{
+  "schema": 1,
+  "raids": [
+    {
+      "key": "raid:world-events.kingsday-arena",
+      "event": "kingsday",
+      "member": 0,
+      "condition": "hourly",
+      "name": "Kingsday exhibition arena",
+      "creature": "oteryn:creature.orc_warlord",
+      "source_name": "Orc Warlord",
+      "count": 2,
+      "interval_ms": 3600000,
+      "area": {
+        "from": {
+          "x": 32304,
+          "y": 32184,
+          "floor": 7
+        },
+        "to": {
+          "x": 32308,
+          "y": 32188,
+          "floor": 7
+        }
+      },
+      "policy": "CONTRACT-NOTES.md#kingsday-implementation-policy"
+    },
+    {
+      "key": "raid:world-events.bank-robbery-thais",
+      "event": "bank_robbery",
+      "member": 0,
+      "condition": "recovery",
+      "name": "Thais bank robbery",
+      "creature": "oteryn:creature.jesse_the_wicked",
+      "source_name": "Jesse the Wicked",
+      "count": 1,
+      "interval_ms": 3600000,
+      "area": {
+        "from": {
+          "x": 32336,
+          "y": 32233,
+          "floor": 7
+        },
+        "to": {
+          "x": 32339,
+          "y": 32235,
+          "floor": 7
+        }
+      },
+      "policy": "CONTRACT-NOTES.md#bank-robbery-implementation-policy",
+      "boss": true
+    },
+    {
+      "key": "raid:world-events.greenshore-invasion",
+      "event": "insectoid_invasion",
+      "member": 0,
+      "condition": "population",
+      "name": "Greenshore Insectoid invasion",
+      "creature": "oteryn:creature.insectoid_scout",
+      "source_name": "Insectoid Scout",
+      "count": 2,
+      "interval_ms": 90000,
+      "area_name": "Greenshore",
+      "area": {
+        "from": {
+          "x": 32208,
+          "y": 32058,
+          "floor": 7
+        },
+        "to": {
+          "x": 32209,
+          "y": 32060,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32208,
+          "y": 32058,
+          "floor": 7
+        },
+        {
+          "x": 32209,
+          "y": 32060,
+          "floor": 7
+        }
+      ],
+      "policy": "CONTRACT-NOTES.md#insectoid-invasion-implementation-policy"
+    },
+    {
+      "key": "raid:world-events.rise-anmothra",
+      "event": "rise_of_devovorga",
+      "member": 0,
+      "condition": "incarnation",
+      "name": "Rise of Devovorga: anmothra",
+      "creature": "oteryn:creature.wevents.anmothra",
+      "source_name": "Anmothra",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31570,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31570,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31570,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-chikhaton",
+      "event": "rise_of_devovorga",
+      "member": 1,
+      "condition": "incarnation",
+      "name": "Rise of Devovorga: chikhaton",
+      "creature": "oteryn:creature.chikhaton",
+      "source_name": "Chikhaton",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32970,
+          "y": 31572,
+          "floor": 7
+        },
+        "to": {
+          "x": 32970,
+          "y": 31572,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32970,
+          "y": 31572,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-irahsae",
+      "event": "rise_of_devovorga",
+      "member": 2,
+      "condition": "incarnation",
+      "name": "Rise of Devovorga: irahsae",
+      "creature": "oteryn:creature.wevents.irahsae",
+      "source_name": "Irahsae",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-phrodomo",
+      "event": "rise_of_devovorga",
+      "member": 3,
+      "condition": "incarnation",
+      "name": "Rise of Devovorga: phrodomo",
+      "creature": "oteryn:creature.wevents.phrodomo",
+      "source_name": "Phrodomo",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        },
+        "to": {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-teneshpar",
+      "event": "rise_of_devovorga",
+      "member": 4,
+      "condition": "incarnation",
+      "name": "Rise of Devovorga: teneshpar",
+      "creature": "oteryn:creature.wevents.teneshpar",
+      "source_name": "Teneshpar",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31578,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31578,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31578,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-devovorga",
+      "event": "rise_of_devovorga",
+      "member": 5,
+      "condition": "final",
+      "name": "Rise of Devovorga: devovorga",
+      "creature": "oteryn:creature.wevents.devovorga",
+      "source_name": "Devovorga",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-bloom_of_doom",
+      "event": "rise_of_devovorga",
+      "member": 6,
+      "condition": "mutation",
+      "name": "Rise of Devovorga: bloom of doom",
+      "creature": "oteryn:creature.wevents.bloom_of_doom",
+      "source_name": "Bloom Of Doom",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-spawn_of_devovorga",
+      "event": "rise_of_devovorga",
+      "member": 7,
+      "condition": "mutation",
+      "name": "Rise of Devovorga: spawn of devovorga",
+      "creature": "oteryn:creature.wevents.spawn_of_devovorga",
+      "source_name": "Spawn Of Devovorga",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        },
+        "to": {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32970,
+          "y": 31576,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    },
+    {
+      "key": "raid:world-events.rise-vulnerable_cocoon",
+      "event": "rise_of_devovorga",
+      "member": 8,
+      "condition": "cocoon",
+      "name": "Rise of Devovorga: vulnerable cocoon",
+      "creature": "oteryn:creature.wevents.vulnerable_cocoon",
+      "source_name": "Vulnerable Cocoon",
+      "count": 1,
+      "interval_ms": 60000,
+      "area_name": "Vengoth",
+      "area": {
+        "from": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        },
+        "to": {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      },
+      "points": [
+        {
+          "x": 32968,
+          "y": 31574,
+          "floor": 7
+        }
+      ],
+      "boss": true,
+      "policy": "CONTRACT-NOTES.md#devovorga-world-event-policy"
+    }
+  ]
+}

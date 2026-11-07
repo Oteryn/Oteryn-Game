@@ -165,10 +165,12 @@ class RaidCatalogueTest(unittest.TestCase):
         flower = next(r for r in rows if r["key"].endswith("dryad_invasion"))
         self.assertTrue(flower["active"])
         self.assertEqual(flower["inactive_reasons"], [])
-        self.assertTrue(flower["schedule"]["repeat"])
+        self.assertTrue(flower["schedule"]["repeat_persistent"])
         self.assertEqual(flower["schedule"]["interval_ms"], 3600000)
         self.assertEqual([wave["delay_ms"] for wave in flower["variants"][0]["waves"]], [0, 900000, 1800000, 2700000])
         self.assertTrue(all(wave["entries"][0]["spawn_mode"] == "shared_area" for wave in flower["variants"][0]["waves"]))
+        self.assertTrue(flower["schedule"]["repeat_persistent"])
+        self.assertEqual(len(flower["variants"][0]["waves"]), 4)
         cycle = flower["donor_cycle"]
         self.assertEqual(cycle["interval_ms"], 900000)
         self.assertEqual(len(cycle["areas"]), 4)

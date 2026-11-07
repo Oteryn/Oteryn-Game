@@ -1,0 +1,469 @@
+{
+  "schema": 1,
+  "bindings": [
+    {
+      "position": [
+        32056,
+        31087,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32056,
+        31088,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32057,
+        31086,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32057,
+        31087,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32058,
+        31085,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32058,
+        31086,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32059,
+        31084,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32059,
+        31085,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32060,
+        31083,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32060,
+        31084,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32061,
+        31083,
+        7
+      ],
+      "item": null,
+      "action": 50000,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3087,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32991,
+        32721,
+        8
+      ],
+      "item": 12511,
+      "action": 50006,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3104,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32940,
+        32778,
+        9
+      ],
+      "item": 12511,
+      "action": 50007,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3109,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32985,
+        32772,
+        10
+      ],
+      "item": 12511,
+      "action": 50008,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3114,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32936,
+        32752,
+        11
+      ],
+      "item": 12511,
+      "action": 50009,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3119,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32979,
+        32737,
+        12
+      ],
+      "item": 12511,
+      "action": 50010,
+      "unique": null,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/startup/tables/item.lua",
+        "line": 3124,
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd"
+      }
+    },
+    {
+      "position": [
+        32344,
+        31604,
+        6
+      ],
+      "item": 14098,
+      "action": 52601,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z06-x126-y123.b3",
+        "region_sha256": "1d806e1732b6f958c33bf75e8981a730603fda4959c2bea4b0fa9b90a9d9c4ac"
+      }
+    },
+    {
+      "position": [
+        33977,
+        32646,
+        6
+      ],
+      "item": 14098,
+      "action": 52602,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z06-x132-y127.b3",
+        "region_sha256": "4e1ea1caa375784daad020cad4d706fed1bb4c832585316962a2e790ab54ce04"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32057,
+        7
+      ],
+      "item": null,
+      "action": 52670,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32205,
+        32059,
+        7
+      ],
+      "item": null,
+      "action": 52671,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32060,
+        7
+      ],
+      "item": null,
+      "action": 52672,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32206,
+        32061,
+        7
+      ],
+      "item": null,
+      "action": 52673,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x125-y125.b3",
+        "region_sha256": "268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262"
+      }
+    },
+    {
+      "position": [
+        32970,
+        31580,
+        7
+      ],
+      "item": null,
+      "action": 52710,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31572,
+        7
+      ],
+      "item": null,
+      "action": 52720,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31573,
+        7
+      ],
+      "item": null,
+      "action": 52721,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31574,
+        7
+      ],
+      "item": null,
+      "action": 52722,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31575,
+        7
+      ],
+      "item": null,
+      "action": 52723,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    },
+    {
+      "position": [
+        32969,
+        31576,
+        7
+      ],
+      "item": null,
+      "action": 52724,
+      "unique": null,
+      "source": {
+        "policy": "content/quests/world-event-object-policy.json",
+        "sha256": "a48996c71e16fd65f6ed213c456f214dc7746a2aefcfe8be95de9b7d708032f6",
+        "region": "content/world/placements/region-z07-x128-y123.b3",
+        "region_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d"
+      }
+    }
+  ]
+}

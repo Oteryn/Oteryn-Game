@@ -39,7 +39,7 @@ pub(super) async fn world_current(
     crate::durability::db::lock_admission_relations(tx).await?;
     // The reset owner locks its active epoch and rejects RETIRING. The immutable
     // firing supplies the expected epoch/pin, not the independently read truth.
-    let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
+    let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND NOT EXISTS(SELECT 1 FROM game_world_raid_retirements r WHERE r.firing_id=f.firing_id) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
         .bind(firing.as_slice()).fetch_optional(&mut **tx).await?;
     Ok(current.unwrap_or(false))
 }
@@ -101,6 +101,10 @@ pub(super) async fn decode(
             if rows.is_empty() || rows.len() > usize::from(MAX_CREATURES) {
                 return Err(DurabilityError::InvalidStoredState);
             }
+            let timed_event =
+                crate::durability::world_event::changes::timed::raid_origin(tx, id.firing_id)
+                    .await?
+                    .is_some();
             let mut creatures = Vec::with_capacity(rows.len());
             for creature in rows {
                 let identity = RaidCreatureIdentity {
@@ -113,6 +117,7 @@ pub(super) async fn decode(
                 let key: String = creature.try_get("creature_key")?;
                 let anchor: String = creature.try_get("anchor_key")?;
                 creatures.push(RaidCreaturePlan {
+                    timed_event,
                     identity,
                     creature: ProductionKey::new(&key)
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -229,6 +234,9 @@ pub(super) async fn acknowledge(
     if !current(tx, node, id.firing_id, id.channel, id.generation).await? {
         return Ok(RaidWrite::CompareFailed);
     }
+    let timed_origin =
+        crate::durability::world_event::changes::timed::schedules::lock_origin(tx, id.firing_id)
+            .await?;
     // Scheduler startup/reconciliation owns this clock before firing rows.
     // Only terminal ACKs update it; their immutable effect kind can be read
     // without taking the later firing lock and creating a lock-order cycle.
@@ -298,6 +306,16 @@ pub(super) async fn acknowledge(
     }
     if state == 2 {
         return Ok(RaidWrite::Replayed);
+    }
+    if matches!(effect.action, CommittedRaidAction::Wave { .. }) {
+        crate::durability::world_event::changes::timed::schedules::acknowledge_hatch(
+            tx,
+            timed_origin.as_ref(),
+            outcomes.values().any(|placed| *placed),
+            id.firing_id,
+            now,
+        )
+        .await?;
     }
     if matches!(
         effect.action,

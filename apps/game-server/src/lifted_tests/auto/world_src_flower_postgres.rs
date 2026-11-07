@@ -76,6 +76,8 @@ async fn exercise(h: &Harness, active_june: bool) -> TestResult {
         window,
         interval_ms,
         repeat,
+        repeat_persistent,
+        start_immediately,
     } = &raid.schedule
     else {
         return Err("flower calendar".into());
@@ -99,6 +101,8 @@ async fn exercise(h: &Harness, active_june: bool) -> TestResult {
                 window: window.ok_or("window")?.window(),
                 interval_ms: interval_ms.ok_or("interval")?,
                 repeat: *repeat,
+                repeat_persistent: *repeat_persistent,
+                start_immediately: *start_immediately,
             }),
         }],
     };

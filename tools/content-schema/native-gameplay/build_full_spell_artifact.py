@@ -570,22 +570,32 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
-    # FORGECREATURE: this resource is added by the live fiend's death classification,
-    # rather than by every creature's static loot table. Preserve core admission facts.
-    sliver = facts.get('oteryn:item.tibia.i37109')
-    if sliver is not None:
-        # FORGECREATURE admits this resource through its native Item profile;
-        # the legacy definition deliberately remains reference-only.
-        _, profiles = read(item_definitions / 'spell-native-profiles.json')
-        ref = sliver['item']
+    # Closed native cohorts may qualify physical custody while their historical
+    # canonical import remains reference-only. Loot uses that same exact profile
+    # admission, including the robbery bag and the live Forge resource.
+    native_resources = [key for key in ('oteryn:item.tibia.i37109', 'oteryn:item.tibia.i13429',
+                                         'oteryn:item.tibia.i18150', 'oteryn:item.tibia.i18151',
+                                         'oteryn:item.tibia.i18152', 'oteryn:item.tibia.i18153')
+                        if key in facts]
+    profiles = read(item_definitions / 'spell-native-profiles.json')[1] if native_resources else {'records': []}
+    for key in native_resources:
+        fact = facts.get(key)
+        if fact is None:
+            continue
+        ref = fact['item']
         exact = {'family': ref['family'], 'production_key': ref['key'],
                  'revision_ref': ref['revision']}
         admitted = [row for row in profiles['records']
                     if row['production_definition'] == exact]
         if len(admitted) != 1:
-            raise ValueError('Forge resource requires one exact native Item profile')
-        sliver['materializable'] = admitted[0]['admission']['materializable'] is True
-        name(sliver['item'])
+            raise ValueError('Native loot resource requires one exact native Item profile: ' + key)
+        fact['materializable'] = admitted[0]['admission']['materializable'] is True
+        container = admitted[0].get('semantics', {}).get('container', {})
+        if container.get('state') == 'KNOWN':
+            capacity = container['value'].get('capacity', {})
+            if capacity.get('state') == 'KNOWN':
+                fact['container_capacity'] = capacity['value']
+        name(ref)
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
     order = lambda rows: [rows[key] for key in sorted(rows, key=lambda key: key.encode('utf-8'))]

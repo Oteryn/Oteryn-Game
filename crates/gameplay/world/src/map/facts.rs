@@ -34,9 +34,13 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod encounter_reservations;
+mod native_bindings;
+pub use encounter_reservations::EncounterRoomReservation;
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
+pub use quest_callbacks::{EventObjectProjection, QuestCallbackProjection};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -77,6 +81,8 @@ pub enum FactsRefusal {
     Load(LoadError),
     /// A palette Item key that the §1.6 index lacks or places at another `id`.
     ItemReference,
+    /// Malformed or conflicting authored startup selector metadata.
+    ObjectBindings,
 }
 
 impl From<LoadError> for FactsRefusal {
@@ -118,13 +124,16 @@ pub struct BundleFacts {
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
     placements: Vec<(u64, Placement)>,
+    /// Source-bound canopic jars; indexed once while loading sectors.
+    event_objects: Vec<(u16, u64)>,
+    native_bindings: Option<&'static native_bindings::Bindings>,
     /// Ascending `(tile, source House id)`, retained from the bundle's tile fact.
     houses: Vec<(TilePos, u32)>,
     house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
-    callbacks: Mutex<Arc<CallbackStates>>,
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
 
@@ -156,11 +165,13 @@ impl BundleFacts {
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let movement_definitions = [
-            1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076,
-            14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            1025, 1603, 3514, 12506, 12511, 1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053,
+            14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077,
+            26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
+        .chain(native_bindings::projection_appearances())
         .filter_map(|id| {
             let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
             Some((
@@ -183,11 +194,13 @@ impl BundleFacts {
             movement_definitions,
             ids: unique,
             placements: Vec::new(),
+            event_objects: Vec::new(),
+            native_bindings: Some(native_bindings::load()?),
             houses: Vec::new(),
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
-            callbacks: Mutex::default(),
+            callbacks: Arc::new(Mutex::default()),
             monster_steps: Mutex::default(),
         })
     }
@@ -217,26 +230,34 @@ impl BundleFacts {
             let top = tile.items.iter().filter(|item| item.depth == 0);
             let mut blocks = false;
             for (ordinal, item) in top.enumerate() {
+                let mut attrs = item.attrs.clone();
+                let appearance = self
+                    .palette
+                    .get(item.palette as usize)
+                    .map_or(0, |entry| entry.facts.appearance_id);
+                if let Some(bindings) = self.native_bindings {
+                    native_bindings::apply(bindings, pos, ordinal, appearance, &mut attrs);
+                }
                 let door = self
                     .palette
                     .get(item.palette as usize)
                     .map_or(PaletteDoor::No, |entry| entry.door);
                 let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::level_door_of(u32::from(entry.facts.appearance_id))
-                        .and(item.attrs.action)
+                        .and(attrs.action)
                         .filter(|action| *action > 0)
                         .map(|action| u32::from(action).saturating_sub(1000))
                 });
                 let required_storage = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::quest_door_of(u32::from(entry.facts.appearance_id))
-                        .and(item.attrs.action)
+                        .and(attrs.action)
                         .filter(|action| *action > 0)
                 });
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
                 if tile.house != 0
                     && door != PaletteDoor::No
-                    && let Some(number) = item.attrs.door.filter(|number| *number != 0)
+                    && let Some(number) = attrs.door.filter(|number| *number != 0)
                 {
                     self.house_doors.push((pos, tile.house, number));
                 }
@@ -250,13 +271,11 @@ impl BundleFacts {
                 // Key and level door actions are interpreted by this owner. Quest and other
                 // bindings retain their existing owner and remain sealed here.
                 let key_action = matches!(door, PaletteDoor::Pair { key_door: true, .. })
-                    && !bound_without_action(&item.attrs);
-                let level_action = required_level.is_some()
-                    && item.attrs.unique.is_none()
-                    && item.attrs.door.is_none();
-                let quest_action = required_storage.is_some()
-                    && item.attrs.unique.is_none()
-                    && item.attrs.door.is_none();
+                    && !bound_without_action(&attrs);
+                let level_action =
+                    required_level.is_some() && attrs.unique.is_none() && attrs.door.is_none();
+                let quest_action =
+                    required_storage.is_some() && attrs.unique.is_none() && attrs.door.is_none();
                 let missing_predicate =
                     self.palette
                         .get(item.palette as usize)
@@ -269,7 +288,7 @@ impl BundleFacts {
                         });
                 let door = if dropped
                     || missing_predicate
-                    || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
+                    || (bound(&attrs) && !key_action && !level_action && !quest_action)
                 {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
@@ -285,6 +304,9 @@ impl BundleFacts {
                     blocks |= closed_solid;
                     continue;
                 };
+                if let Some(action @ 50006..=50010) = attrs.action {
+                    self.event_objects.push((action, key));
+                }
                 match door {
                     PaletteDoor::Pair {
                         open,
@@ -299,7 +321,7 @@ impl BundleFacts {
                             open_solid,
                             open,
                             locked,
-                            item.attrs.action,
+                            attrs.action,
                             required_level,
                             required_storage,
                         );
@@ -311,19 +333,32 @@ impl BundleFacts {
                     }
                     PaletteDoor::No => {}
                 }
+                // The pickup proof must observe the same effective attributes as USE.
+                let restored_tile = (attrs != item.attrs).then(|| {
+                    let mut restored = tile.clone();
+                    if let Some(entry) = restored
+                        .items
+                        .iter_mut()
+                        .filter(|entry| entry.depth == 0)
+                        .nth(ordinal)
+                    {
+                        entry.attrs = attrs.clone();
+                    }
+                    restored
+                });
+                let pickup_tile = restored_tile.as_ref().unwrap_or(tile);
                 let placement = Placement {
                     palette: item.palette,
-                    bound: dropped || bound(&item.attrs),
+                    bound: dropped || bound(&attrs),
                     dropped,
-                    count: item
-                        .attrs
+                    count: attrs
                         .count
                         .filter(|count| (1..=100).contains(count))
                         .unwrap_or(1),
-                    sub_type: item.attrs.charges.unwrap_or(0),
-                    attrs: item.attrs.clone(),
+                    sub_type: attrs.charges.unwrap_or(0),
+                    attrs: attrs.clone(),
                     pickup: pickup::eligibility(
-                        tile,
+                        pickup_tile,
                         sector.floor,
                         ordinal as u8,
                         self.palette
