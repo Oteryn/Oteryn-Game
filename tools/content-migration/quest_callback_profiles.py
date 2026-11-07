@@ -155,6 +155,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # proof; the existing runtime key lowering owns the actual atomic mint.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
     from quest_chest_bindings import panpipe_key_claim
+    sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
+    import container_native
 
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
@@ -251,6 +253,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        # Reuse the exact scoped native charge projection from source claim
+        # authoring; the canonical Item remains unchanged and every guard below stays active.
+        if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
+            definition = container_native.native_charge_item(definition, present.get(key))
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']

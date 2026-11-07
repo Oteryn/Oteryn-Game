@@ -16,7 +16,8 @@ class KeyDoorProfileTests(unittest.TestCase):
                                   (1630, 'DOOR', False), (1631, 'DOOR', True),
                                   (1632, 'DOOR', True), (1633, 'DOOR', False), (1646, 'DOOR', True),
                                   (1647, 'DOOR', False), (2967, 'KEY', False),
-                                  (2968, 'KEY', False), (6264, 'DOOR', True),
+                                  (2968, 'KEY', False), (5102, 'DOOR', True),
+                                  (5103, 'DOOR', False), (6264, 'DOOR', True),
                                   (6265, 'DOOR', False)]:
             with self.subTest(item=item):
                 row = profiles.get(f'oteryn:item.tibia.i{item}')

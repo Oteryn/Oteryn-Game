@@ -37,7 +37,7 @@ fn desert_dungeon_four_station_rite_uses_real_fenced_players() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Desert party scenario panicked")??;
     println!(
@@ -47,7 +47,7 @@ fn desert_dungeon_four_station_rite_uses_real_fenced_players() -> TestResult {
     Ok(())
 }
 
-fn scenario() -> TestResult {
+pub(super) fn scenario(earned: bool) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "desert_party_rite", false, false).await?;
@@ -81,18 +81,40 @@ fn scenario() -> TestResult {
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = super::source_world_crop::world(
+        if earned {
+            for key in ["oteryn:item.tibia.i5102", "oteryn:item.tibia.i5103"] {
+                assert!(
+                    native.item_policy(key, "definition-r1").is_some(),
+                    "source level20 gate requires native profile {key}"
+                );
+            }
+        }
+        let start = if earned {
+            TilePos {
+                x: 32673,
+                y: 32101,
+                floor: -8,
+            }
+        } else {
+            START
+        };
+        let load_source = if earned {
+            super::source_world_crop::compiled_region
+        } else {
+            super::source_world_crop::world
+        };
+        let world = load_source(
             TilePos {
                 x: 32665,
-                y: 32069,
+                y: if earned { 32059 } else { 32069 },
                 floor: -8,
             },
             TilePos {
                 x: 32681,
-                y: 32096,
-                floor: -8,
+                y: if earned { 32102 } else { 32096 },
+                floor: if earned { -7 } else { -8 },
             },
-            START,
+            start,
             native,
         )?;
         let key = crate::map::view::placement_key(
@@ -110,6 +132,9 @@ fn scenario() -> TestResult {
                 .quest_callback_matches(key, Some(30030), None, Some(2772)),
             "source lever startup UID30030 missing"
         );
+        if earned {
+            super::desert_earned_route::assert_source_bindings(&world)?;
+        }
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -120,7 +145,7 @@ fn scenario() -> TestResult {
             generation.identity().client_artifact_digest(),
             activated.frame_binding().digest(),
             world.map_revision_digest(),
-            (i32::from(START.x), i32::from(START.y), 8),
+            (i32::from(start.x), i32::from(start.y), 8),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -169,7 +194,7 @@ fn scenario() -> TestResult {
         ));
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        select_movement(&owner, &mut admitted)?;
+        select_movement(&owner, &mut admitted, earned)?;
         let equipment_fence = current(&owner, admitted.game_session_id)
             .await?
             .item_fence();
@@ -331,6 +356,9 @@ fn scenario() -> TestResult {
             real_sessions, 4,
             "every station uses an independently admitted Character"
         );
+        if earned {
+            super::desert_earned_route::enter(&mut owner, &mut admitted).await?;
+        }
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
         let target = |revision| WorldObjectTarget {
@@ -339,11 +367,11 @@ fn scenario() -> TestResult {
         };
         // First pull only transforms. A missing member on the return pull consumes nothing.
         assert_eq!(
-            pull(&owner, &mut admitted, 1, &target(0)).await?,
+            pull_next(&owner, &mut admitted, &target(0)).await?,
             UseDisposition::Committed
         );
         assert_eq!(
-            pull(&owner, &mut admitted, 2, &target(1)).await?,
+            pull_next(&owner, &mut admitted, &target(1)).await?,
             UseDisposition::Rejected
         );
         assert_eq!(burns(&h).await?, 0);
@@ -351,13 +379,19 @@ fn scenario() -> TestResult {
             owner.bundle_map().ok_or("map")?.facts.object_revision(key),
             2
         );
-        relocate(
-            &owner,
-            deps.actor,
-            admitted.game_session_id,
-            party.stations[2].from,
-        )
-        .await?;
+        if earned {
+            super::desert_earned_route::walk_to(&mut owner, &mut admitted, party.stations[2].from)
+                .await?;
+        } else {
+            relocate(
+                &owner,
+                deps.actor,
+                admitted.game_session_id,
+                party.stations[2].from,
+            )
+            .await?;
+        }
+
         // Every item is born through native MINT/TRANSFER/DROP. Omit the fourth altar.
         for (n, offering) in callback.offerings.iter().take(3).enumerate() {
             let mut input = offering.clone();
@@ -377,11 +411,11 @@ fn scenario() -> TestResult {
         }
         let before = positions(&owner, &members).await?;
         assert_eq!(
-            pull(&owner, &mut admitted, 3, &target(2)).await?,
+            pull_next(&owner, &mut admitted, &target(2)).await?,
             UseDisposition::Committed
         );
         assert_eq!(
-            pull(&owner, &mut admitted, 4, &target(3)).await?,
+            pull_next(&owner, &mut admitted, &target(3)).await?,
             UseDisposition::Rejected
         );
         assert_eq!(positions(&owner, &members).await?, before);
@@ -400,35 +434,52 @@ fn scenario() -> TestResult {
             false,
         )
         .await?;
-        // A wrong live member vocation refuses before the durable transaction.
         let swapped = party.stations[0].from;
-        relocate(
-            &owner,
-            members[0].0,
-            members[0].1,
-            Position {
-                x: swapped.x + 1,
-                ..swapped
-            },
-        )
-        .await?;
-        relocate(&owner, members[1].0, members[1].1, swapped).await?;
+        if earned {
+            super::desert_earned_route::walk_to(
+                &mut owner,
+                &mut admitted,
+                Position {
+                    x: START.x,
+                    y: START.y,
+                    floor: START.floor,
+                },
+            )
+            .await?;
+        } else {
+            relocate(
+                &owner,
+                members[0].0,
+                members[0].1,
+                Position {
+                    x: swapped.x + 1,
+                    ..swapped
+                },
+            )
+            .await?;
+            relocate(&owner, members[1].0, members[1].1, swapped).await?;
+        }
         assert_eq!(
-            pull(&owner, &mut admitted, 5, &target(4)).await?,
+            pull_next(&owner, &mut admitted, &target(4)).await?,
             UseDisposition::Committed
         );
         assert_eq!(
-            pull(&owner, &mut admitted, 6, &target(5)).await?,
+            pull_next(&owner, &mut admitted, &target(5)).await?,
             UseDisposition::Rejected
         );
         assert_eq!(burns(&h).await?, 0);
-        relocate(&owner, members[1].0, members[1].1, party.stations[1].from).await?;
-        relocate(&owner, members[0].0, members[0].1, swapped).await?;
+        if earned {
+            super::desert_earned_route::walk_to(&mut owner, &mut admitted, party.stations[2].from)
+                .await?;
+        } else {
+            relocate(&owner, members[1].0, members[1].1, party.stations[1].from).await?;
+            relocate(&owner, members[0].0, members[0].1, swapped).await?;
+        }
         durable_refusals(&owner, &h, &members, &callback).await?;
         // Lost acknowledgement after the one immutable offering commit: no member
         // moves until reconciliation, and no peer may bypass the pending rite.
         assert_eq!(
-            pull(&owner, &mut admitted, 7, &target(6)).await?,
+            pull_next(&owner, &mut admitted, &target(6)).await?,
             UseDisposition::Committed
         );
         let before = positions(&owner, &members).await?;
@@ -437,7 +488,8 @@ fn scenario() -> TestResult {
             .quest_callbacks
             .interrupt_after_commit
             .store(true, std::sync::atomic::Ordering::Release);
-        let interrupted = pull(&owner, &mut admitted, 8, &target(7)).await;
+        let successful_command = admitted.continuity.next_command_id;
+        let interrupted = pull_next(&owner, &mut admitted, &target(7)).await;
         assert!(
             interrupted.is_err(),
             "an unknown durable outcome closes without an acknowledgement"
@@ -467,7 +519,7 @@ fn scenario() -> TestResult {
             8
         );
         assert_eq!(
-            pull(&owner, &mut admitted, 8, &target(7)).await?,
+            pull(&owner, &mut admitted, successful_command, &target(7)).await?,
             UseDisposition::Committed,
             "exact original command replays the reconciled outcome"
         );
@@ -498,6 +550,9 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(builds, 4);
+        if earned {
+            super::desert_earned_route::earn(&mut owner, &mut admitted, &h).await?;
+        }
         drop(owner);
         drop(evidence);
         drop(authority);
@@ -519,10 +574,15 @@ async fn current(
 fn select_movement(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    diagonals: bool,
 ) -> TestResult {
     let offered = owner.offered_capabilities();
     let mut selected = std::collections::BTreeSet::new();
     let mut pending = vec![11];
+    if diagonals {
+        pending.push(13);
+        pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+    }
     while let Some(key) = pending.pop() {
         if selected.insert(key) {
             pending.extend(
@@ -543,6 +603,14 @@ fn select_movement(
         )
         .ok_or("selected")?;
     Ok(())
+}
+async fn pull_next(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    target: &WorldObjectTarget,
+) -> TestResult<UseDisposition> {
+    let command = admitted.continuity.next_command_id;
+    pull(owner, admitted, command, target).await
 }
 async fn pull(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

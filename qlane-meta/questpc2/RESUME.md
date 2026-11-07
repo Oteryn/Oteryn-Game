@@ -1,3 +1,175 @@
+# Latest GREEN: complete Desert Dungeon source route
+
+Whole Desert Dungeon QUALIFIED,1/35 now (34remaining before ownership exclusions).
+BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json records real PG18.6
+RED source-profile52.75s and cardinal-route101.97s, GREEN full earned route129.181s,
+then combined remote66caf4fd0 GREEN126.049s and old rite regression62.372s.
+Actual level20 gate, literal negotiated8-direction STEP, source four-vocation
+rite/refusals/lost-ack all-member recovery, both once-only chests/replay, native
+bag atomicity and full250charges, source stairs to floor7 all proved.
+Native profiles differ from66caf4fd0 ONLY by5102/5103 additions; no old rows changed.
+Generic optional capability371, gated real keypad client/session, strict core
+extension registration, one-owner grid CAS, checked3x rounded pacing. Source facts
+and hashes in batch record. Cardinal API/legacy wire/facing/AI route guards retained.
+
+Final checks:11cratecheck108.678s; alltargets/allfeatures clippy-Dwarnings204.838s;
+fmt14.439s; architecture5.057s;123content172.425s command/2.61s runtime;
+5World56.358s/53.90s; pin27.062s digest4990f60ce3fbb5a9d8d7f20e4f660fb3b5b12b7b1a6e1adf77b1e23865504ae4.
+Pure World15, protocol2, clientinput1, session no-bytes1, duration1, registration1
+with negative mutations, merged charged/container17, native generation42 all pass.
+Two test-only expect lint findings fixed via Result propagation; no test weakened.
+No full PG suite/nextest. No frozen candidate, PR or independent readiness claim.
+
+NEXT NOW: commit exact owner identity/trailers, fetch/merge if moved, fast-forward
+push this green batch. Then continue owned entries, starting source Elvenbane
+fixed route/Dragon+five defenders/treasure composition. Its authored recipe is
+in tools/content-schema/quest-authoring/samples/authored68/recipes.json, reference
+pages2733rev683844 and8007rev265159 retained; retrieve exact native source selectors
+and reuse other-lane mechanisms first. Other PC owns ongoing Annihilator final
+chest/exit/claimed-door continuation; do not duplicate its combat work.
+Authoring WIP stash questpc2-desert-earned-green-integration is retained safely;
+restored changes are in checkout. No source copies or executables in Git.
+
+# Latest: complete earned Desert route PG GREEN; integrated validation next
+
+Complete source route passed PostgreSQL18.6 runtime129.181s, command358.657s,
+1case /tmp/questpc2-desert-earned-route-route.log, DESERT_EARNED_ROUTE completion
+marker. Both native chests/replays, full250charges, physical bag atomicity,
+source stairs exit and negotiated diagonal timing/revision assertions all pass.
+Integrated remote66caf4fd0 by FF then restored WIP; retain the other PC native
+Annihilator combat/Item custody work. Generated conflicts resolved by repository
+native regeneration (session60438). cargo fmt done(session91271). Then run
+OTERYN_STEP_WAIT_RECEIPTS=1 python3 /tmp/questpc2-desert-earned-final.py: complete
+earned route on combined content, focused rite regression, duration/session/protocol
+checks, fmt/check/clippy for11changed crates, architecture/content/World/pin.
+Qualification is pending these checks. No completed work must be redone later.
+
+# Active update: diagonal owner and client checks pass; earned PG running
+
+Last pushed green remains907bdacd9. World movement15 tests pass (single diagonal
+revision, stale proof refusal, cardinal API unchanged); client keypad profile1,
+strict contract-bound core-extension registration1 with negative mutations,
+protocol2 checks pass. Summon movement duration also uses checked3x cost.
+Current session27637 runs complete earned PG with OTERYN_STEP_WAIT_RECEIPTS=1,
+capabilities13+371 selected only for earned scenario. Poll it and inspect marker,
+duration and assertions; do not infer qualification from compilation.
+Remote fetched66caf4fd0 contains other PC native Annihilator combat/item work;
+merge/reuse after current PG iteration, preserving both source data admissions.
+No source map geometry or lever solidity changed. Full compiled region preserves
+teleport/floor attrs; BFS only searches admitted cells then uses literal wire STEP.
+
+# Latest active prerequisite: generic opt-in diagonal movement
+
+Workspace restart preserved checkout and WIP. Last pushed green907bdacd9.
+The expanded source route passed real level20 gate and20literal steps to lever,
+then actual PG18.6 failed101.97s: no cardinal walk32673,32087->32673,32085.
+Goal is physically surrounded by solid source lever/pillars/altar; all checked
+qengine2/pc3..8 latest branches still only4directions. Source importer confirms
+2772/2773 BOTHsolidtrue; DO NOT make lever walkable or alter source geometry.
+Native source8-neighbour walking is required and is this lane's engine work.
+
+Implemented WIP: World GridStep8 with source-compatible pub-use CardinalStep name,
+source sealed step/delta/facing adapters, actor_movement3x duration using checked_mul,
+safe delta() replacing cardinal4array indexes; cardinal AI route vocabulary still
+refuses unsupported diagonal node proposals. Protocol StepDirection adds5..8 BUT
+legacy decode_step_intent remains closed4. New decode_step_intent_profile/selected
+requires371. Connection route/house/input classification use negotiated profile.
+State/entity facing stays4: encoder guard and turn reject diagonal facing.
+New optional cap371 (fresh seven-lane union free; max370) runtime+contract+golden
+via tools/contracts/update_capability_golden.py. Proto enum annotation updated.
+Pacing receipt helpers retain111150 legacy bound; opt-in profile333450 (3x), only
+with13+371. Core check World/Encounters/Dispatch/protocol succeeded46.83s before
+restart (log /tmp/questpc2-diagonal-profile-check.log). NOT PG GREEN.
+
+NEXT: add meaningful protocol/core diagonal tests; finish real native client support
+(crates/session: capability_support.rs allow371, session_commands.rs and recovery.rs
+refuse diagonal send when unselected, session_exchange.rs decode_step_result_profile;
+client-domain StepDir8, client-simulation exhaustiveness if needed; apps/client
+0013paced protocol mapping, windows_shell input, four-facing renderer). Real input
+platform already maps Numpad1/3/7/9 to HID89/91/95/97; choose native NumPad diagonal
+bindings gated by negotiated371, preserve arrows/offline input. UI feature metadata
+and golden tooling must follow current feature conventions. Inspect nearest AGENTS.
+NativePG BFS currently ONLY4dir. Add4diagonal enum vectors and select371 ONLYearned
+scenario (existing false rite stays4), then rerun full earned source route. No fixture
+teleport bypass. SourceDoor/onceClaim/Native250charge/exit assertions stay intact.
+
+Retained donor facts: Canary04b83b5 src/utils/tools.cpp:581-620 maps all8dirs,
+blob932a9ad778c7524c0c78e813a639c5dac2668529 sha256
+28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19;
+creature.cpp:1607-1626 rounds base duration then multiplies diagonal cost,
+blob89a4af117d4de4e9373ddcb96c2513006c22c6ab sha256
+f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683;
+creature.hpp:45 constant WALK_DIAGONAL_EXTRA_COST=3, blob
+0daf29f4cce526952d1a1e1fd4d5fb3fedcd3dd1 sha256
+0a405bbf7e92606e37d407266e809a39323218727b79b2deb275bd309b2c5fad.
+Raw cpp files only/tmp, never commit reference copies.
+
+A native registration consumer also needed the SAME exact scoped charged projection:
+quest_callback_profiles.py now reuses container_native.native_charge_item (already
+publishedpc4 implementation), keeps global Item unchanged and all existing guards.
+16focused consumer tests passed111.259s including partial/missing/foreign proof
+atomic refusal; register42 --check passed afterward. All source/charge pure checks
+previously recorded are green. Whole scope stays0/35 pending full source route.
+
+# Current: earned Desert route implementation is in PG iteration
+
+907bdacd9 is pushed. BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json
+records actual PG18.6 RED52.75s missing5102. Published pc4/5 gate profiles reused
+EXACTLY through existing key-door generator; all own prior IDs retained. Scoped
+native_charge_item/claim_items reused for ONLYdesert2, global Item unchanged;
+source_charged_reward rejects partial1/249/251 and mismatched native bindings.
+Only desert2 canonical reward changed.4new charge,2door,13container,11chest tests
+pass. Captured two source chest UIDs and level20 action1020 with tooling; exact
+3attribute-only B3 semantic diff, no geometry changes. Pin4990f60ce3fbb5a9d8d7f20e4f660fb3b5b12b7b1a6e1adf77b1e23865504ae4.
+
+ACTIVE runner /tmp/questpc2-desert-earned-route.py, session96613, log
+/tmp/questpc2-desert-earned-route-route.log. Test renamed
+ desert_dungeon_native_gate_rite_earned_rewards_and_exit. Native compile running.
+True scenario starts initiator OUTSIDE source gate32673,32101,z8, uses level20
+native gate, walks via literal protocol STEP to lever and station (no initiating
+fixture teleport), party rite with immutable recovery, physical both chest USE,
+exact duplicate/new-command once refusal, native coin+bag+4child custody/one bag
+transaction, exact250 native definition/absent timed state, source stairs1947
+at32671,32060 north to floor7. No whole claim until all of this proves GREEN.
+
+source_world_crop now supports bounded multiple committed source floors without
+geometry edits; earned path uses floors8/7 and y32059..32102. Regular false rite
+case retains original focused negative fixtures; its ingress IDs now derive from
+continuity so physical walking may consume commands, and immutable success replay
+uses its exact saved ID. It MUST be rerun once after earned case green. New BFS
+only proposes source walk cells through production checker; actual protocol STEP
+executes/validates every edge. It never commits search teleport proofs.
+
+If compile/runtime fails, fix actual issue and retry same PG case. Native charged
+profile semantics/root bag proof are asserted; do not weaken them. Then scoped
+Dispatch check/clippy-Dwarnings,fmt, content123/World5/pin + generator/capture checks;
+update metadata, commit/push green and continue scope. Stairs north source XML
+3915-3917, door5102/3 XML14508/14513; pinned source files remain outside Git.
+
+# Active next batch: Desert source gate and earned rewards
+
+Previous green mechanism907bdacd9 is PUSHED. New PG case
+ desert_dungeon_earned_source_route_requires_gate_and_chest_bindings is compiling
+RED using /tmp/questpc2-desert-earned-red.py (tool session37950). New wrapper
+calls desert_party_rite::scenario(true); false retains the prior mechanism case.
+Current true branch checks missing native5102/5103, level action1020 and both
+chest6157/6158 selectors. Extend it with actual native gate/earned route before
+any whole-quest qualification; bindings alone are never whole evidence.
+
+Reuse discovered: pc4@ab8ccdf0b and pc5@3f79d826a ALREADY have5102/5103 in
+key-door-item-profiles via the same existing generator. Do not add another
+profile overlay. Union those2IDs into OUR build_key_door_profiles.py and
+key_door_item_profiles.py sets, retaining1631/6264/6265 and all prior tests.
+Regenerate with /tmp/questpc2-party-native-source; source XML lines14508/14513.
+Other qengine2/pc3/6/7/8 branches do not have those profiles. Reuse their profile
+bytes/generator method; runtime level_door_of already knows the exact pair.
+
+Do not modify generated inputs during the running RED build. After real PG RED,
+port scoped charge functions, author source-normalization guard/tests and source
+bindings, then extend the physical route.6crate check/clippy/content/World/pin
+checks were green for907bdacd9. Root7.4GiB free, /tmp1.6GiB used; preserved native
+Dispatch incremental0clhrjm82foyu. No Cargo profiles/flags changed.
+
 # Green batch: Desert Dungeon reusable party rite
 
 BATCH-desert-party-rite-mechanism-2026-11-07.json records3actual PG cases:

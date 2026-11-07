@@ -22,6 +22,85 @@ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor cap
 ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
 
 
+# Reuse native charged custody only for this lane's exact source claim.
+CHARGED_QUEST_CLAIMS = {'canary:reward-claim/kv/desert2': 3084}
+
+
+def native_charge_item(item, profile):
+    """Use existing native custody only when canonical physical/custody facts agree."""
+    if item is None or profile is None:
+        return item
+    identity = item['identity']
+    key = identity['key']
+    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    semantics = profile['semantics']
+    binding = profile['production_binding']
+    if (charges is None or profile['production_definition'] != {
+            'family': 'Item', 'production_key': key, 'revision_ref': identity['revision']}
+            or binding['target'] != identity or binding['disposition'] != 'EXACT'
+            or profile['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                        'legal_destinations': ['CharacterInventory', 'Ground']}
+            or item.get('stack_class') != 'NonStackable'
+            or fact(item, 'charges', 'count') != charges
+            or fact({'semantics': semantics}, 'charges', 'count') != charges
+            or semantics['container'] != {'state': 'NOT_APPLICABLE'}
+            or semantics['temporal'] != {'state': 'NOT_APPLICABLE'}):
+        return item
+
+    def agrees(accepted, observed):
+        if isinstance(accepted, dict):
+            return accepted.get('state') == 'UNKNOWN' or isinstance(observed, dict) and all(
+                field in observed and agrees(value, observed[field]) for field, value in accepted.items())
+        return accepted == observed
+
+    if (not all(agrees(item['semantics'][field], semantics[field]) for field in
+                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+            or any(fact({'semantics': semantics}, 'physical', field) is not True
+                   for field in ('movable', 'pickupable'))
+            or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
+        return item
+    qualified = copy.deepcopy(item)
+    qualified['materializable'] = True
+    return qualified
+
+
+def claim_items(pilot_key, items):
+    item = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    if item is None:
+        return items
+    key = f'oteryn:item.tibia.i{item}'
+    root = Path(__file__).resolve().parents[3]
+    profiles = json.loads((root / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+    matches = [p for p in profiles['records'] if p['production_definition']['production_key'] == key]
+    if len(matches) != 1:
+        return items
+    return {**items, key: native_charge_item(items.get(key), matches[0])}
+
+
+def source_charged_reward(pilot_key, reward, items):
+    """A source charge argument grants one full instance only on an exact native match."""
+    source_id = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    if source_id is None:
+        return reward
+    key = f'oteryn:item.tibia.i{source_id}'
+    original = items.get(key)
+    projected = claim_items(pilot_key, items).get(key)
+    if original is None or projected is original:
+        raise ValueError('QUEST_CHEST_CHARGE_NATIVE_MATCH')
+    charges = fact(projected, 'charges', 'count')
+    result, matched = [], 0
+    for item, count in reward:
+        if item == source_id:
+            if count != charges:
+                raise ValueError('QUEST_CHEST_CHARGE_EXACT_SOURCE')
+            count = 1
+            matched += 1
+        result.append([item, count])
+    if matched != 1:
+        raise ValueError('QUEST_CHEST_CHARGE_SOURCE_CARDINALITY')
+    return result
+
+
 def source():
     raw = SOURCE.read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:

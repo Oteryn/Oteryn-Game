@@ -24,6 +24,8 @@ ITEM_ACCESS = {
 }
 # Crystal door_level.lua:65-83. Restoring a reward must retain its source level gate.
 LEVEL_ACCESS = {
+    **{f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020)
+       for i in (1, 2)},
     **{f"oteryn:reward-claim.kv.orcfortress{i}": ((32981, 31760, 9), 6264, 1040)
        for i in range(1, 4)},
     "oteryn:reward-claim.kv.naginata": ((32353, 32073, 11), 1646, 1040),
@@ -93,6 +95,8 @@ def capture(source_root, selected, root=ROOT):
     import lua_tables
     sys.path.insert(0, str(ROOT / "tools/content-schema/reward-claim-authoring"))
     import poison_daggers
+    import container_native
+    import reward_claim_authoring
 
     raw = (source_root / "data-global/startup/tables/chest.lua").read_bytes()
     if hashlib.sha256(raw).hexdigest() != TABLE_SHA256:
@@ -100,6 +104,9 @@ def capture(source_root, selected, root=ROOT):
     entries = {f["key"]: (f["line"], lua_tables.as_python(f["value"]))
                for f in lua_tables.assignments(raw.decode(), {"ChestUnique"})["ChestUnique"]["fields"]}
     claims, rows = claim_definitions(root), []
+    needs_charges = any(claims[key].get('provenance', {}).get('pilot_key')
+                        in container_native.CHARGED_QUEST_CLAIMS for key in selected)
+    items = reward_claim_authoring.load_items() if needs_charges else {}
     for key in sorted(selected):
         definition = claims[key]
         if not supported_claim(definition):
@@ -116,8 +123,11 @@ def capture(source_root, selected, root=ROOT):
                       for item in placement["reward"]["items"]]
             container = placement["reward"].get("container")
             container_id = int(container["key"].rsplit(".i", 1)[1]) if container else None
+            source_reward = container_native.source_charged_reward(
+                definition.get('provenance', {}).get('pilot_key'),
+                poison_daggers.source_reward(unique, position, setting["reward"]), items)
             if (setting["itemPos"] != position or setting["itemId"] != placement["appearance_tibia_id"]
-                    or poison_daggers.source_reward(unique, position, setting["reward"]) != reward
+                    or source_reward != reward
                     or setting.get("container") != container_id):
                 raise ValueError("QUEST_CHEST_SOURCE_SELECTOR_OR_REWARD_DRIFT")
             if panpipe_key_claim(definition) and (
@@ -135,9 +145,11 @@ def capture(source_root, selected, root=ROOT):
         position, appearance, action = LEVEL_ACCESS[key]
         field = next(f for f in level_fields if f["key"] == action)
         value = lua_tables.as_python(field["value"])
+        groups = value if isinstance(value, list) else [value]
         if not any(p == dict(zip("xyz", position)) and group["itemId"] in (False, appearance)
-                   for group in value if isinstance(value, list)
-                   for p in group["itemPos"]):
+                   for group in groups if isinstance(group, dict)
+                   for p in (group["itemPos"] if isinstance(group["itemPos"], list)
+                             else [group["itemPos"]])):
             raise ValueError("QUEST_CHEST_LEVEL_ACCESS_SOURCE_DRIFT")
         row = doors.setdefault(position, {"position": list(position), "appearance": appearance,
                                          "action": action, "source_line": field["line"], "claims": []})

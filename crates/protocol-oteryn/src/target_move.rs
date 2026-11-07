@@ -22,6 +22,9 @@ pub fn encode_target_move_intent(intent: TargetMoveIntent) -> Result<Vec<u8>, Wo
             (0x0a, crate::world_spatial::encode_position(&position))
         }
         TargetMoveIntent::Turn(direction) => {
+            if direction.is_diagonal() {
+                return Err(WorldSpatialError::Malformed);
+            }
             (0x1a, crate::world_spatial::encode_step_intent(direction))
         }
         TargetMoveIntent::Follow(target) => (

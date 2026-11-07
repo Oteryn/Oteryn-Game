@@ -702,6 +702,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            // TURN keeps its existing cardinal-only contract.
+            _ => return false,
         };
         movement.commit_turn(expected, facing).is_ok()
     }

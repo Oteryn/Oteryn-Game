@@ -196,6 +196,23 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_MISSING'):
             self.admit()
 
+    def test_charged_child_requires_an_exact_existing_native_charge_proof(self):
+        for change in ('partial', 'foreign_target', 'missing'):
+            document = copy.deepcopy(self.document)
+            row = next(r for r in document['records']
+                       if r['production_definition']['production_key'] == 'oteryn:item.tibia.i3084')
+            if change == 'partial':
+                row['semantics']['charges']['value']['count']['value'] = 249
+            elif change == 'foreign_target':
+                row['production_binding']['target']['revision'] = 'foreign'
+            else:
+                document['records'].remove(row)
+            self.generated[PROFILE] = json.dumps(document).encode()
+            before = dict(self.generated)
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_NOT_ADMITTED'):
+                self.admit()
+            self.assertEqual(self.generated, before, 'refused charge proof must not partially update generated outputs')
+
     def test_grizzly_icon_and_every_complete_chest_child_have_native_profiles(self):
         self.admit()
         rows = {row['production_definition']['production_key']: row
@@ -206,7 +223,11 @@ class QuestCallbackProfiles(unittest.TestCase):
                 for placement in record['definition'].get('native_contents', {}).get('placements', []):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
-        self.assertEqual(len(expected), 130)
+        # Desert2 adds exactly its three previously absent child identities;
+        # the existing canonical root and fourth child were already in this closure.
+        self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
+                         'oteryn:item.tibia.i3077'} <= expected)
+        self.assertEqual(len(expected), 133)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)
