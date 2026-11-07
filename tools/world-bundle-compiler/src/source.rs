@@ -9,6 +9,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+mod authored_cells;
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -146,7 +148,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
         &read(&root.join("content/world/placements/index.json"))?,
         "placements index",
     )?;
-    let regions = index
+    let mut regions = index
         .get("shards")
         .and_then(Value::as_array)
         .ok_or_else(|| Error::Format("placements index has no shards".into()))?
@@ -165,6 +167,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
             None => Err(Error::Format("placements shard is not a path".into())),
         })
         .collect::<Result<Vec<_>, _>>()?;
+    authored_cells::apply(root, selected, &index, &mut regions)?;
     let mut families = Families::default();
     for shard in shards(&root.join("content/world/transitions"), "teleports-")? {
         families.add_teleports(&shard)?;

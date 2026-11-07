@@ -1934,6 +1934,47 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "npcfix-book-world-distinct-retail-cells",
+      "before_commit": "bc4296300e520c9301806e97a3b52b3b56c3dccc",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Emberwing_(NPC)&oldid=427831 and Grovebeast_(NPC)&oldid=427839; normalized coordinate facts and revision hashes recorded in lane evidence. Znozel existing authored retail provenance.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.emberwing",
+          "name": "Emberwing",
+          "expected": {
+            "x": 32574,
+            "y": 32622,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.grovebeast_npc",
+          "name": "Grovebeast",
+          "expected": {
+            "x": 32622,
+            "y": 32622,
+            "floor": -11
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.znozel",
+          "name": "Znozel",
+          "expected": {
+            "x": 32822,
+            "y": 31248,
+            "floor": -7
+          },
+          "before": {
+            "x": 32822,
+            "y": 31248,
+            "floor": -7
+          }
+        }
+      ]
     }
   ]
 }

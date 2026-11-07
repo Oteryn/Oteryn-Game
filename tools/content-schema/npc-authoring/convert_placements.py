@@ -76,7 +76,7 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
                 "origin": "wiki",
                 **({"title": candidate["wiki"]["title"]} if "title" in candidate["wiki"] else {}),
                 **({"pageid": candidate["wiki"]["pageid"]} if "pageid" in candidate["wiki"] else {}),
-                "repository": WIKI_REPOSITORY,
+                "repository": candidate["wiki"].get("repository", WIKI_REPOSITORY),
                 "revid": candidate["wiki"]["revid"],
             }
         ]

@@ -35,6 +35,8 @@ pub struct NpcGeneratedReplies {
 /// Display name from the NPC key slug (`oteryn:npc.a_seagull` is `A Seagull`).
 pub(super) fn npc_display_name(key: &str) -> String {
     let slug = key.rsplit('.').next().unwrap_or(key);
+    // Reference page disambiguators identify the NPC, not its spoken name.
+    let slug = slug.strip_suffix("_npc").unwrap_or(slug);
     slug.split('_')
         .filter(|word| !word.is_empty())
         .map(|word| {
