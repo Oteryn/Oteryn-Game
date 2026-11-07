@@ -680,3 +680,26 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## SRVENC W02: Instance corpse mint owner (2026-11-07)
+
+Allocation: migration `1100_instance_creature_mint.sql` (assigned 1100–1109),
+plus next-free authored protobuf field 6 on `CreatureDeathOccurrenceRefV1`.
+No new command, capability, mechanic ordinal or registry entry.
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/creatures/creature.cpp:711-721,777-782` creates a physical corpse even
+for personal-reward bosses. The existing DUR-03 owner now preserves the exact
+Channel or Instance cause, lane, assignment, reservation, receipt, Ground
+custody and audit envelope. Historical Channel bindings/bytes remain unchanged.
+Migration 1100 preserves namespace separation and source-race custody proofs.
+
+Validation: combat 41/41 (3.63 s), durability 707/707 (74.74 s), check
+(145.267 s), clippy `-D warnings` (109.135 s); isolated PostgreSQL 18.6
+migration/namespace/immutability/race-guard proof (12.530 s). The native
+production-boss and ordinary Instance dispatch cases are being validated
+separately; no complete W02 production-room qualification is claimed here.
+
+ENCX coordination: fetched and merged `81f2f0414` from
+`origin/claude/happy-davinci-ijz3wy-encx`. No SRVENC change to
+`endgame_entry.rs`; its shared composition remains ENCX-owned.

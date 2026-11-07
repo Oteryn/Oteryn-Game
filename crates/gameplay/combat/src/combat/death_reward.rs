@@ -430,14 +430,23 @@ fn ground_placement(
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
     let mut corpse_ref = Vec::with_capacity(52);
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
+    // Crystal src/creatures/creature.cpp:711-721,777-782: the physical corpse stays on the
+    // actual death tile; tagged Instance provenance cannot alias a Channel.
+    match death.runtime_scope() {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            corpse_ref.extend_from_slice(channel_id.as_bytes())
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+            corpse_ref.extend_from_slice(b"instance:");
+            corpse_ref.extend_from_slice(&instance_id);
+        }
+    }
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
@@ -474,13 +483,6 @@ async fn settle_loot(
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_race: Option<BestiaryRace>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
@@ -1300,8 +1302,8 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
-        // This Channel fixture must still preserve its existing replay identity.
+        // Historical Channel placement keeps its original replay identity when
+        // the distinct Instance namespace is admitted by the same mint owner.
         let placement_a =
             ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
         let placement_b =
