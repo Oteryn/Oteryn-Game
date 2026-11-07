@@ -20,7 +20,7 @@ class SharedSourceCorpseTests(unittest.TestCase):
     def test_actual_source_gathering_profiles_keep_their_existing_authoring(self):
         shared=self.shared();self.assertEqual(len(shared),2)
         result=self.apply(shared)
-        self.assertEqual(len(result['records']),191)
+        self.assertEqual(len(result['records']),199)
         for expected in shared:
             self.assertIn(expected,result['records'])
 

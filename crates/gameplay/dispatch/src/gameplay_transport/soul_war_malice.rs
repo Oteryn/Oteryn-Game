@@ -243,3 +243,118 @@ async fn apply(
     }
     Ok(())
 }
+
+/// The original timer state is retained through detached Map/name reads.
+#[derive(Clone)]
+pub(super) struct PreparedMaliceTimer {
+    boss: ExactActorRef,
+    clock: MaliceRoom,
+}
+pub(super) fn prepare_due_timer(
+    states: &ChannelSpellStates,
+    cutoff_us: u64,
+    now_us: u64,
+) -> Option<PreparedMaliceTimer> {
+    let owner = states.soul_war_callbacks.malice.as_ref()?;
+    let due = owner.clock.next_due_ms()?.checked_mul(1_000)?;
+    (due <= cutoff_us && due <= now_us).then(|| PreparedMaliceTimer {
+        boss: owner.boss,
+        clock: owner.clock.clone(),
+    })
+}
+pub(super) fn due_timer_cells() -> [MovementLocalPosition; 1] {
+    [CAGE_AT]
+}
+
+/// Synchronous publication while the detached read transaction still holds
+/// its actual Item locks. No SQL, fresh Think or invented callback clock.
+pub(super) fn publish_due_timer(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &crate::movement::monster_map::MonsterMap,
+    prepared: &PreparedMaliceTimer,
+    names: &[super::source_names::SourceNamedActor],
+    now: u64,
+) -> Result<(), ()> {
+    let owner = states.soul_war_callbacks.malice.as_ref().ok_or(())?;
+    if owner.boss != prepared.boss
+        || owner.clock != prepared.clock
+        || !map.matches(runtime)
+        || !shared::qualifies_source(runtime, native)
+        || !runtime.soul_war_white_tile_source_current(&owner.source)
+    {
+        return Err(());
+    }
+    let source = Arc::clone(&owner.source);
+    let named_cage = super::source_names::creature_named(names, "Soul Cage")?;
+    let named_boss = super::source_names::creature_named(names, "Goshnar's Malice")?;
+    let mut next = prepared.clock.clone();
+    let effects = next.advance(now / 1_000, named_cage.is_some(), named_boss.is_some());
+    // Player/NPC aliases require their real removal owner. Retain this timer
+    // rather than forging a creature removal or silently skipping precedence.
+    if effects.contains(&MaliceEffect::RemoveCage)
+        && named_cage
+            .is_some_and(|actor| actor.role != super::source_names::SourceNameRole::Creature)
+    {
+        return Err(());
+    }
+    if effects.contains(&MaliceEffect::SpawnCage) && map.blocks_solid(CAGE_AT).is_none() {
+        return Err(());
+    }
+    if effects.contains(&MaliceEffect::BuffMalice)
+        && named_boss
+            .is_some_and(|actor| actor.role != super::source_names::SourceNameRole::Creature)
+    {
+        return Err(());
+    }
+    for effect in effects {
+        match effect {
+            MaliceEffect::SpawnCage => {
+                // This source create is forced. A proved existing centre is
+                // sufficient even when occupied/solid; absent is not a tile.
+                if map.blocks_solid(CAGE_AT).is_none() {
+                    return Err(());
+                }
+                let _ = runtime.spawn_soul_war_child_from_source(
+                    &source,
+                    CAGE,
+                    CAGE_AT,
+                    |current, _| map.matches(current).then_some(true),
+                );
+            }
+            MaliceEffect::RemoveCage => {
+                if let Some(actor) = named_cage {
+                    runtime
+                        .remove_encounter_actor(actor.actor)
+                        .map_err(|_| ())?;
+                    states.monster_melee.creature_ai.remove(actor.actor);
+                }
+            }
+            MaliceEffect::BuffMalice => {
+                if let Some(actor) = named_boss {
+                    if actor.role != super::source_names::SourceNameRole::Creature {
+                        return Err(());
+                    }
+                    shared::change(
+                        runtime,
+                        actor.actor,
+                        SoulWarCreatureChange::Buff {
+                            defense: 10,
+                            reflection: 10,
+                            maximum_health: 0,
+                            health: 0,
+                        },
+                    )?;
+                }
+            }
+            MaliceEffect::RevertTilesAndDamage => {
+                shared::white::apply(runtime, states, room, native, &source, now)?;
+            }
+            MaliceEffect::CreateWhiteTiles => return Err(()),
+        }
+    }
+    states.soul_war_callbacks.malice.as_mut().ok_or(())?.clock = next;
+    Ok(())
+}

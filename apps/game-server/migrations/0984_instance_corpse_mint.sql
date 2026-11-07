@@ -856,3 +856,63 @@ GRANT EXECUTE ON FUNCTION game_outburst_boss_catalogue_activate(TEXT,UUID,UUID,N
 
 
 DO $$ BEGIN EXECUTE format('ALTER FUNCTION %I.game_outburst_boss_catalogue_activate(TEXT,UUID,UUID,NUMERIC,UUID,NUMERIC,BYTEA,NUMERIC,BYTEA,BYTEA,TEXT) SET search_path=pg_catalog,%I,pg_temp',current_schema(),current_schema()); END $$;
+
+-- Crystal Item::transformItem starts the target ItemType lifetime. Preserve
+-- Game.createItem's unstarted decay; only this sealed footprint transform starts
+-- the native 43297 (248 seconds, remove) policy on the existing scoped timer.
+DO $migration$
+DECLARE body TEXT; begin_at INTEGER;
+BEGIN
+ body:=pg_get_functiondef('game_spell_field_temporal_schedule_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'source transform temporal proof layout changed'; END IF;
+ EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+ IF NEW.source_transaction_id IS NOT NULL AND EXISTS (
+   SELECT 1 FROM game_spell_item_lines l WHERE l.transaction_id=NEW.source_transaction_id
+    AND l.ordinal=NEW.source_ordinal AND l.item_instance_id=NEW.item_instance_id AND l.operation_kind=7
+ ) THEN
+  DECLARE r game_spell_item_receipts%ROWTYPE; l game_spell_item_lines%ROWTYPE; op JSONB; clock JSONB;
+  BEGIN
+   SELECT * INTO r FROM game_spell_item_receipts WHERE transaction_id=NEW.source_transaction_id;
+   SELECT * INTO l FROM game_spell_item_lines WHERE transaction_id=NEW.source_transaction_id AND ordinal=NEW.source_ordinal;
+   op:=convert_from(r.intent,'UTF8')::jsonb->'operations'->(NEW.source_ordinal-1);
+   clock:=op->'intrinsic_decay';
+   IF r.cause_kind IS DISTINCT FROM 3 OR r.runtime_scope_kind IS DISTINCT FROM 2 OR r.channel_id IS NOT NULL
+    OR r.creature_definition_key NOT IN ('oteryn:creature.vemiath','oteryn:creature.bakragore')
+    OR r.spell_family IS DISTINCT FROM 'Creature' OR r.spell_production_key IS DISTINCT FROM r.creature_definition_key
+    OR r.spell_revision IS DISTINCT FROM 'definition-r1' OR r.creature_definition_revision IS DISTINCT FROM 'definition-r1'
+    OR r.binding IS DISTINCT FROM sha256(r.intent) OR r.catalog_digest IS DISTINCT FROM NEW.content_digest
+    OR r.created_xact_id IS DISTINCT FROM pg_current_xact_id() OR l.created_xact_id IS DISTINCT FROM r.created_xact_id
+    OR NEW.created_xact_id IS DISTINCT FROM r.created_xact_id
+    OR (l.world_id,l.runtime_scope_kind,l.channel_id,l.instance_id) IS DISTINCT FROM (r.world_id,r.runtime_scope_kind,r.channel_id,r.instance_id)
+    OR l.operation_kind IS DISTINCT FROM 7 OR l.quantity_before IS DISTINCT FROM 1 OR l.quantity_after IS DISTINCT FROM 1
+    OR l.item_instance_id IS DISTINCT FROM NEW.item_instance_id OR l.content_generation_digest IS DISTINCT FROM NEW.content_digest
+    OR l.definition_family IS DISTINCT FROM 'Item' OR l.definition_production_key IS DISTINCT FROM 'oteryn:item.tibia.i43297'
+    OR l.definition_revision IS DISTINCT FROM 'definition-r1'
+    OR convert_from(r.intent,'UTF8')::jsonb#>>'{source_event,rule}' IS DISTINCT FROM 'rotten-blood.footprint.transform'
+    OR op->>'kind' IS DISTINCT FROM 'transform_ground'
+    OR op->'before' IS DISTINCT FROM jsonb_build_object('family','Item','key','oteryn:item.tibia.i43590','revision','definition-r1')
+    OR op->'definition' IS DISTINCT FROM jsonb_build_object('family','Item','key','oteryn:item.tibia.i43297','revision','definition-r1')
+    OR jsonb_typeof(clock) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(clock))<>3
+    OR jsonb_typeof(clock->'original_execution_us') IS DISTINCT FROM 'string'
+    OR (clock->>'original_execution_us') !~ '^[0-9]{1,20}$'
+    OR (clock->>'original_execution_us')::numeric IS NULL OR (clock->>'original_execution_us')::numeric NOT BETWEEN 0 AND 18446744073709551615
+    OR jsonb_typeof(clock->'execution_unix_ms') IS DISTINCT FROM 'number'
+    OR jsonb_typeof(clock->'duration_millis') IS DISTINCT FROM 'number'
+    OR (clock->>'execution_unix_ms')::bigint IS NULL OR (clock->>'execution_unix_ms')::bigint<=0
+    OR (clock->>'execution_unix_ms')::bigint>r.occurred_at_unix_ms
+    OR (clock->>'duration_millis')::bigint IS DISTINCT FROM 248000
+    OR NEW.source_stage IS DISTINCT FROM 1 OR NEW.duration_millis IS DISTINCT FROM 248000
+    OR NEW.expires_at_unix_ms IS DISTINCT FROM (clock->>'execution_unix_ms')::bigint+248000
+    OR NEW.definition_family IS DISTINCT FROM 'Item' OR NEW.definition_production_key IS DISTINCT FROM 'oteryn:item.tibia.i43297'
+    OR NEW.definition_revision IS DISTINCT FROM 'definition-r1'
+    OR NEW.target_family IS NOT NULL OR NEW.target_production_key IS NOT NULL OR NEW.target_revision IS NOT NULL
+    OR NEW.blocks_movement OR NEW.blocks_projectile OR NEW.immovable_block_solid
+    OR NOT EXISTS(SELECT 1 FROM game_spell_item_audit_outbox a WHERE a.transaction_id=r.transaction_id
+      AND a.event_id=r.event_id AND a.envelope=r.intent AND a.envelope_sha256=r.binding AND a.created_xact_id=r.created_xact_id)
+   THEN RAISE EXCEPTION 'source transform timer requires exact same-XID footprint and native ItemType policy' USING ERRCODE='23514'; END IF;
+   RETURN NULL;
+  END;
+ END IF;
+$arm$ from begin_at for 5);
+END $migration$;

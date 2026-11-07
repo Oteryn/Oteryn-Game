@@ -11,12 +11,12 @@ pub enum MaliceEffect {
     RevertTilesAndDamage,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CageTimerKind {
     Spawn,
     Remove,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CageTimer {
     due: u64,
     kind: CageTimerKind,
@@ -27,7 +27,7 @@ const MAX_CAGE_TIMERS: usize = 128;
 const MAX_CAGE_DEATHS: usize = 64;
 
 /// The source closure's timers, scoped to the accepted party Instance (D26).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MaliceRoom {
     accumulated_ms: u64,
     last_think: Option<ThinkOccurrence>,

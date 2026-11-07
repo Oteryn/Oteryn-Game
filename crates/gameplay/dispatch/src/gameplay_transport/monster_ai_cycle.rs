@@ -48,11 +48,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        if !self
+            .drive_spite_global_due(now.get())
+            .await
+            .unwrap_or(false)
+        {
+            return;
+        }
         if !self.drain_w01_death_item_expiry(&permit, now.get()).await {
             return;
         }
         self.activity_runtimes
             .gc_rotten_area_caches(*self.world_id.as_bytes(), now.get());
+        match self
+            .drain_detached_malice_before_source_death(&permit, now.get())
+            .await
+        {
+            Ok(true) | Err(()) => return,
+            Ok(false) => {}
+        }
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.

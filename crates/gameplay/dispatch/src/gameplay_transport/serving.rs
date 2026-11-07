@@ -108,6 +108,11 @@ pub async fn serve_gameplay(
             .map(|client| std::sync::Arc::new(tokio::sync::Mutex::new(client))),
         store_purchases: owners.store_purchases,
     };
+    // Capture actual registered source execution time before startup awaits,
+    // rather than anchoring a GlobalEvent to its first Think or a boss birth.
+    let registered_global_us = authority.owner_now().get();
+    authority.register_world_spite_global(registered_global_us).await
+        .map_err(|_| GameplayServeError::OwnerUnavailable)?;
     authority
         .states
         .boss_activity_handoff

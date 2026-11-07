@@ -111,6 +111,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
             );
             let prepared = callback.prepare_current_write(&runtime).map_err(debug)?;
             if reserve_target {
+                oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt::install_companion_policies(native, &mut runtime).map_err(debug)?;
                 let key = "oteryn:creature.goshnar_s_spite";
                 let policy = runtime.companion_policy(key).map_err(debug)?;
                 let target = runtime
@@ -286,6 +287,96 @@ fn srx3_spite_registered_global_qualifies_actual_published_world_without_private
     });
     eprintln!(
         "SRX3_SPITE_GLOBAL_PUBLISHED_WORLD elapsed={:?}",
+        started.elapsed()
+    );
+    result
+}
+
+#[test]
+fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_after_fourteen_seconds_postgres()
+-> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("srx3-spite-global-owner", || {
+        run(async |admin| {
+            reset();
+            let scene = super::srx3_soul_war_world_fixture::source_world(MovementLocalPosition {
+                x: 33742,
+                y: 31639,
+                floor: 14,
+            })?;
+            let deps = scene.dependencies()?;
+            let h =
+                Harness::create_with_admission_seed(admin, "srx3_spite_global_owner", false, false)
+                    .await?;
+            let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+            super::house_transfer::prepare_owned_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.evidence = &evidence.evidence;
+            owner.active_generation = scene.controller.active();
+            owner.rooms =
+                crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
+            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            let mut admitted = deps.admitted;
+            prepare_player(&h, &owner, &mut admitted, 500).await?;
+            let registered = owner.owner_now().get();
+            assert!(
+                owner
+                    .register_world_spite_global(registered)
+                    .await
+                    .map_err(debug)?,
+                "actual published World registered callback prerequisite"
+            );
+            {
+                let runtime = owner.runtime.lock().await;
+                assert!(
+                    runtime
+                        .source_registered_creature_census()
+                        .map_err(debug)?
+                        .is_empty(),
+                    "the Global owner requires no boss or fake Creature parent"
+                );
+                let states = owner.states.spell_states.try_lock().map_err(debug)?;
+                assert_eq!(
+                    states.spite_global.next_due_us(),
+                    Some(registered + 14_000_000)
+                );
+            }
+            owner.drain_monster_melee().await;
+            let before: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                before, 0,
+                "no first-Think or boss-birth shortcut before source14s"
+            );
+            tokio::time::sleep(std::time::Duration::from_secs(14)).await;
+            assert!(owner.owner_now().get() >= registered + 14_000_000);
+            eprintln!("SRX3_REGISTERED_WORLD_GLOBAL_ACTUAL_FOURTEEN_SECOND_OWNER_REACHED");
+            owner.drain_monster_melee().await;
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:create' AND operation_count=1 AND creature_placement IS NULL").fetch_one(&h.pool).await?;
+            assert_eq!(
+                count, 1,
+                "one actual source dispatch creates one field at its selected literal anchor without a boss"
+            );
+            owner.drain_monster_melee().await;
+            let replay: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE cause_kind=4 AND creature_occurrence LIKE '%:create'").fetch_one(&h.pool).await?;
+            assert_eq!(replay, 1, "one dispatch, no reroll or catchup batch");
+            Ok(())
+        })
+    });
+    eprintln!(
+        "SRX3_SPITE_GLOBAL_REAL_WORLD_OWNER elapsed={:?}",
         started.elapsed()
     );
     result

@@ -145,6 +145,15 @@ pub(super) async fn exercise(
         );
         assert_eq!(row.try_get::<String, _>("minted_transaction_id")?, mint);
         assert_eq!(row.try_get::<String, _>("stack_ordinal")?, ordinal);
+        if expected == "oteryn:item.tibia.i43297" {
+            let schedules: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_field_temporal_schedules s JOIN game_spell_item_receipts r ON r.transaction_id=s.source_transaction_id WHERE s.item_instance_id=$1::uuid AND s.source_stage=1 AND s.duration_millis=248000 AND s.target_family IS NULL AND s.target_production_key IS NULL AND s.target_revision IS NULL AND r.cause_kind=3 AND r.runtime_scope_kind=2 AND r.instance_id=encode($2,'hex')::uuid AND s.definition_production_key='oteryn:item.tibia.i43297' AND s.expires_at_unix_ms=(convert_from(r.intent,'UTF8')::jsonb->'operations'->(s.source_ordinal-1)->'intrinsic_decay'->>'execution_unix_ms')::bigint+248000",
+            ).bind(&item).bind(instance_id.as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                schedules, 1,
+                "same-UID native transform starts its intrinsic248s clock at the retained source execution"
+            );
+        }
         let mut tx = h.pool.begin().await?;
         crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
             .await

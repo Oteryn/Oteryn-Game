@@ -49,6 +49,119 @@ impl PreparedSourceDeathAction {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Drain one genuinely older Malice callback without retaining any volatile
+    /// owner guard across SQL. Other timer families retain their own FIFO gate.
+    pub(super) async fn drain_detached_malice_before_source_death(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        now: u64,
+    ) -> Result<bool, ()> {
+        let has_source_head = {
+            let runtime = self.runtime.lock().await;
+            runtime.has_pending_source_creature_deaths()
+        };
+        if !has_source_head {
+            return Ok(false);
+        }
+        let room = self.effective_rooms().gate_monster_ai().ok_or(())?;
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(())?;
+        let (notice, timer, map_plan, names_plan, scope, generation) = {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
+            let Some(notice) = runtime.next_source_creature_death().map_err(|_| ())? else {
+                return Ok(false);
+            };
+            let cutoff = notice.enqueued_at_us().ok_or(())?;
+            let Some(timer) = soul_war_malice::prepare_due_timer(&states, cutoff, now) else {
+                return Ok(false);
+            };
+            let due = states
+                .soul_war_callbacks
+                .malice
+                .as_ref()
+                .ok_or(())?
+                .next_due_ms()
+                .and_then(|due| due.checked_mul(1_000))
+                .ok_or(())?;
+            if states
+                .native_callbacks
+                .next_due_time()
+                .into_iter()
+                .chain(states.soul_war_callbacks.next_native_due_without_malice())
+                .chain(states.primal_callbacks.next_due_us())
+                .chain(states.rotten_blood_callbacks.next_due_time())
+                .any(|other| other <= due && other <= now)
+            {
+                return Ok(false);
+            }
+            let objects = self.door.try_lock().map_err(|_| ())?;
+            let map_plan = crate::movement::monster_map::PreparedMonsterMapRead::prepare(
+                &runtime,
+                room,
+                &objects,
+                &soul_war_malice::due_timer_cells(),
+            )
+            .ok_or(())?;
+            let names = self.prepare_source_names(&runtime, &["Soul Cage", "Goshnar's Malice"])?;
+            (
+                notice,
+                timer,
+                map_plan,
+                names,
+                runtime.binding().runtime_scope(),
+                runtime.binding().scope_generation().get(),
+            )
+        };
+        let names = self.read_source_names(permit, &names_plan).await?;
+        let mut context = (
+            self,
+            permit,
+            map_plan,
+            Some(names),
+            notice,
+            timer,
+            room,
+            native,
+            scope,
+            generation,
+            now,
+        );
+        self.root.try_issue_semantic_pass().map_err(|_| ())?
+            .run_with_context(&mut context, |holder, deadline, context| {
+                Box::pin(async move {
+                    let (owner, permit, map_plan, names, notice, timer, room, native, scope, generation, now) = context;
+                    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
+                    let authority = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+                        &mut tx, permit, owner.root, owner.character, owner.holder, *scope, *generation,
+                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let read = map_plan.read(&mut tx, &authority).await
+                        .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                    {
+                        let mut runtime = owner.runtime.lock().await;
+                        let mut states = owner.states.spell_states.try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        let objects = owner.door.try_lock()
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        if runtime.next_source_creature_death().ok().flatten().as_ref() != Some(&*notice) {
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        let view = read.into_current_view(&runtime, room, &objects, native)
+                            .ok_or(crate::durability::DurabilityError::Unavailable)?;
+                        let names = owner.seal_source_names(&runtime, names.take().ok_or(crate::durability::DurabilityError::Unavailable)?)
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        soul_war_malice::publish_due_timer(&mut runtime, &mut states, room, native,
+                            &view, timer, &names, *now)
+                            .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    }
+                    tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    Ok(true)
+                })
+            }).await.map_err(|_| ())
+    }
+
     /// Execute a retained copied action after the read Map transaction and all
     /// volatile guards have ended. Unknown outcomes keep the exact payload.
     pub(super) async fn finish_prepared_source_death_action(
@@ -141,6 +254,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .soul_war_callbacks
             .next_native_due()
             .into_iter()
+            .chain(states.spite_global.next_due_us())
             .chain(states.primal_callbacks.next_due_us())
             .chain(states.rotten_blood_callbacks.next_due_time())
             .chain(states.native_callbacks.next_due_time())

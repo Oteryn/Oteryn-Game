@@ -1,4 +1,6 @@
-//! Normal damage fails the exact source Lua positive-health blood predicate.
+//! Accepted authoring13.7 Q6a requires a real Player hit to leave a pool.
+//! This explicitly supersedes the historical donor-only signed/no-pool inference;
+//! raw signed event inputs for every other policy remain unchanged.
 //! Use an actual pinned source map/native body and real Character writers;
 //! no fictional boss recipe or source-coordinate authority is introduced.
 use super::fixture::{Harness, debug, run};
@@ -7,8 +9,7 @@ use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
-fn srx3_cloak_actual_normal_player_hit_does_not_mint_positive_health_blood_postgres() -> TestResult
-{
+fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -153,25 +154,23 @@ fn srx3_cloak_actual_normal_player_hit_does_not_mint_positive_health_blood_postg
                     cloak.health < cloak.maximum_health,
                     "actual canonical auto attack must damage the native Cloak before testing its signed health-event predicate"
                 );
-                assert!(
-                    runtime
-                        .pending_cloak_blood_events(64)
-                        .map_err(debug)?
-                        .is_empty(),
-                    "normal source damage enters Lua negative and must not satisfy primaryDamage>0"
+                assert_eq!(
+                    runtime.pending_cloak_blood_events(64).map_err(debug)?.len(),
+                    1,
+                    "Q6a real Player hit must retain its genuine canonical HP-event before testing the physical MINT consumer"
                 );
             }
             owner.drain_monster_melee().await;
             let blood:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_lines l USING(transaction_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.cause_kind=2 AND r.spell_family='Encounter' AND r.spell_production_key='oteryn:encounter.soul_war_taint_zones' AND r.runtime_scope_kind=1 AND r.channel_id=encode($1,'hex')::uuid AND l.operation_kind=1 AND l.definition_production_key='oteryn:item.tibia.i33854' AND g.scope_kind=1 AND g.channel_id=r.channel_id").bind(owner.channel_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
-                blood, 0,
-                "normal signed damage does not create the source positive-health blood Item"
+                blood, 1,
+                "Q6a accepted Player hit must create one real first-stage blood Item through the existing physical owner"
             );
             owner.drain_monster_melee().await;
             let replay:i64=sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts r JOIN game_spell_item_lines l USING(transaction_id) WHERE r.cause_kind=2 AND r.spell_production_key='oteryn:encounter.soul_war_taint_zones' AND r.channel_id=encode($1,'hex')::uuid AND l.operation_kind=1 AND l.definition_production_key='oteryn:item.tibia.i33854'").bind(owner.channel_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
-                replay, 0,
-                "normal damage retry remains without a blood Item"
+                replay, 1,
+                "normal owner retry must not mint the acknowledged blood event twice"
             );
             drop(owner);
             drop(authority);

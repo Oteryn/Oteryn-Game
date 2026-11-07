@@ -357,7 +357,7 @@ Both exact pinned engines pass ordinary damage to `onHealthChange` as negative v
 
 Consequently the literal positive-only guards in Malice/Cage Lua reflection and Cloak blood do not react to ordinary damage (`soul_war_mechanics.lua:22–26,44–48,809–824`). This does not disable the independent native C++ reflection owner. Positive healing still satisfies Cage's10% predicate before clamping; Malice's primary physical/death selector excludes ordinary healing. The two earlier unsigned-damage Lua reflection tests had incorrect expected contracts. Their replacements require zero additional Lua reflection for ordinary damage, retain Cage's positive-healing case and all replay checks, and leave the separate C++ postmitigation/cap regression intact. The fresh33k target run took57.21s (six cases: three controls passed, three target failures). Ordinary Malice/Cage damage incorrectly reduced caster HP to0/93 instead of retaining185, while the positive Cage healing, energy-negative and independent C++ cap/replay controls passed. The production Lua predicate was then restricted to actual Player-positive healing; the independent C++ damage branch was preserved. Fresh GREEN verification remains pending. The old unsigned tests are not counted as source-rule proof.
 
-The actual normal-hit Cloak PG case now proves real native HP loss followed by no positive-health blood event/MINT. A positive-MINT play test requires an actual permitted positive-healing producer: native IH/UH reject monsters, Heal Friend requires a player-name target, Mass Healing excludes ordinary Cloak, monster healing uses caster0 and damage-healing response uses a null attacker. No permissive target bypass or invented Player heal is introduced merely to make that test pass. The positive branch remains literal, while its ordinary gameplay producer is still unproved.
+Historical donor-only contract (superseded by accepted Q6a below): the normal-hit Cloak PG case was written to require real native HP loss followed by no positive-health blood event/MINT. A positive-MINT play test requires an actual permitted positive-healing producer: native IH/UH reject monsters, Heal Friend requires a player-name target, Mass Healing excludes ordinary Cloak, monster healing uses caster0 and damage-healing response uses a null attacker. No permissive target bypass or invented Player heal is introduced merely to make that test pass. The positive branch remains literal, while its ordinary gameplay producer is still unproved.
 
 Event ordering is also precise: Lua health callbacks precede Wheel additions, for both healing (`game.cpp:7827–7841`) and damage (:7933–7948). Cruelty's multiplier therefore belongs after armor/resistance but before Wheel; Cage's positive-healing reflection uses the pre-Wheel input. Earlier post-Wheel planning text is superseded by this exact source trace. No corresponding Cruelty production filter had yet been mounted when this correction was found. Wiki checks remain wiki-pending.
 
@@ -391,7 +391,7 @@ The timing boundary is later than the lethal command's synchronous `record_batch
 
 The earlier per-roster preparation adaptation had no owner acceptance receipt. D26 and the Instance ownership baseline isolate internal mutable encounter state; they do not say that an unrelated Player's public preparation may be excluded. Literal Crystal `rottenEssences.lua:74–94` checks the global flavor first, sets it and burns the activating Player flag. `bakragore.lua:531–541` reads any positive global flavor on FIRST think, with no who-lit/roster predicate; its570–608 clears flags and fixed visuals. Entry-time consumption is also too early if another Player activates a flavor before that first think. The pending implementation must therefore retain source-Channel/generation/activation/reset provenance at entry and atomically capture/consume that shared external phase at the actual first native think. Its own counters and timers remain Instance-local. The current mounted per-roster/entry-mask subset is superseded and is not claimed as completed gameplay; it requires correction before runtime qualification. No owner rule-change question is needed to preserve the donor behavior.
 
-### Cloak positive-health caller closure
+### Historical donor-only Cloak positive-health caller closure
 
 The read-only audit [srx3-cloak-positive-heal-caller-closure.json](../../agents/evidence/srx3-cloak-positive-heal-caller-closure.json) verifies all8185 Crystal Lua files against the exact pinned tree and records73 selected Lua/C++/Item sources. Its repository audit tool also checks four Canary comparators. Both healing runes reject an actual numeric Monster target; Canary's superfluous `getNumber(1073762188)` argument does not change the numeric target getter. Player self heals, named-player heals, both named-monster area whitelists, party regeneration, familiar/support paths and monster healing helpers provide no ordinary Player-to-wild-Cloak healing caller. The broad test healing rune is disabled by its `#example.lua` filename (`scripts.cpp:127–137`).
 
@@ -403,7 +403,7 @@ The corrected global schema executed in BEGIN/ROLLBACK in56.076ms (initial techn
 
 A full pinned-world map replay with the repository OTBM parser found exactly one inactive placement of each flavor:43983 at33085,32398,15;43497 at33076,32389,15;43987 at33067,32398,15;43985 at33076,32407,15 (82.460485s; `/tmp/srx3-public-flame-placement-audit.log`). No duplicate inactive flame or live-object reset is invented for tests. Two new real wire targets separately check the literal no-essence TRUE/no-feedback/no-burn branch and the already-global-active TRUE/literal-feedback/retained-essence branch. The latter has an explicitly labelled historical global1/unlit initial fixture with an unrelated offline audit Character, imported before fresh proofs. It is only a defensive boundary test, not proof of a normal activation journey. Both targets decode actual Chat domain12 feedback and await fresh execution before any GREEN claim.
 
-### Positive Cloak health-event caller closure: expanded pinned census
+### Historical donor-only positive Cloak health-event caller closure: expanded pinned census
 
 The reproducible audit `tools/content-schema/native-gameplay/audit_srx3_cloak_heal_callers.py`
 now verifies all 8,185 Crystal Lua blobs before indexing every runtime root. Its
@@ -426,6 +426,14 @@ facts supplement the previously recorded rune/name-target/familiar and CPP
 callback-sign proofs. They do not turn a positive canonical HP-owner unit into
 an admitted Player gameplay caller. The final source-inert classification and
 normal-auto negative play test remain separate review obligations.
+
+## Accepted Cloak Q6a overrides the donor-only positive-sign inference
+
+The owner answer in [authoring13.7 Q6a](../OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:1226) explicitly requires a player's **hit** to leave the pool. The signed CPP/Lua trace and healing-caller audit above remain evidence about the literal donor, but do not authorize dropping this accepted mechanic. Their proposed source-inert disposition and negative normal-hit play contract are superseded. This is a narrow accepted Cloak difference, not a global absolute-value normalization of health-event arguments.
+
+The producer must first prove that this actual owner path invokes onHealthChange. A normal signed Player hit then qualifies under Q6a; Player attribution on OriginNONE reflection does not. Actual NULL/nonPlayer controls, full absorption, canonical positive healing, replay and Unknown-commit reservation checks remain separate. The existing first-stage33854 presence rule prevents another MINT while that stage exists; later stage34006/34007 is not interchangeable with33854.
+
+The current real PostgreSQL obligation is `srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres`: real native auto damage, a genuine retained canonical HP-event prerequisite, one physical33854 Item from the existing Item writer, and no duplicate on owner retry. The test now explains this accepted-contract correction. The physical MINT caller is still pending its fresh target result and implementation; neither a positive canonical owner unit nor the older donor-only audit proves that gameplay chain complete.
 
 ## Conditional43860 factory existence and exact Item kind
 

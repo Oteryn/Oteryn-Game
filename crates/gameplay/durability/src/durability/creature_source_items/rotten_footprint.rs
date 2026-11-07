@@ -20,6 +20,7 @@ pub struct RottenFootprintCallback {
     phase: usize,
     due_us: u64,
     execution_us: Option<u64>,
+    intrinsic_decay_clock: Option<SourceIntrinsicDecayClock>,
 }
 pub struct RottenFootprintReceipt {
     pub receipt: CreatureGroundReceipt,
@@ -170,6 +171,7 @@ impl RottenFootprintCallback {
             phase: 0,
             due_us: event.observed_us(),
             execution_us: None,
+            intrinsic_decay_clock: None,
         })
     }
     /// Retain the first actual callback turn before SQL can yield. Unknown
@@ -189,6 +191,34 @@ impl RottenFootprintCallback {
                 .finalize()
                 .into();
         }
+        Ok(next)
+    }
+    pub fn needs_intrinsic_decay_clock(&self) -> bool {
+        self.phase < self.source.definitions.len()
+            && self.phase > 0
+            && self.source.definitions[self.phase].decay.is_some()
+            && self.intrinsic_decay_clock.is_none()
+    }
+    pub fn with_intrinsic_decay_clock(
+        &self,
+        sample: RottenFootprintClockSample,
+        sampled_owner_us: u64,
+    ) -> Result<Self> {
+        let execution = self
+            .execution_us
+            .ok_or(SpellItemError::Rejected("source execution absent"))?;
+        if !self.needs_intrinsic_decay_clock() {
+            return Err(SpellItemError::Rejected("source decay clock already bound"));
+        }
+        let clock = sample.project(
+            self.cause.scope,
+            self.cause.scope_generation,
+            self.cause.cast,
+            execution,
+            sampled_owner_us,
+        )?;
+        let mut next = self.clone();
+        next.intrinsic_decay_clock = Some(clock);
         Ok(next)
     }
     pub fn runtime_scope(&self) -> crate::foundation::RuntimeScopeRefV1 {
@@ -255,6 +285,7 @@ impl RottenFootprintCallback {
             cause,
             phase,
             execution_us: None,
+            intrinsic_decay_clock: None,
             due_us: self
                 .execution_us
                 .unwrap_or(self.due_us)
@@ -337,6 +368,7 @@ pub async fn execute_rotten_footprint_in_transaction(
                     DurableGroundItemTransform {
                         current: reserved,
                         target: definitions[callback.phase].clone(),
+                        intrinsic_decay_clock: callback.intrinsic_decay_clock.clone(),
                         blocks_movement: false,
                         blocks_projectile: false,
                     },
@@ -370,12 +402,111 @@ pub async fn execute_rotten_footprint_in_transaction(
     })
 }
 
+/// Opaque DATA sampled under the same actual scoped Item authority. A sample
+/// can only be attached to its original execution, scope and generation.
+#[derive(Debug)]
+pub struct RottenFootprintClockSample {
+    scope: crate::foundation::RuntimeScopeRefV1,
+    generation: u64,
+    cast: [u8; 32],
+    unix_ms: i64,
+}
+
+impl RottenFootprintClockSample {
+    fn project(
+        self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        generation: u64,
+        cast: [u8; 32],
+        execution: u64,
+        sampled_owner_us: u64,
+    ) -> Result<SourceIntrinsicDecayClock> {
+        if self.scope != scope || self.generation != generation || self.cast != cast {
+            return Err(SpellItemError::Rejected("source decay clock binding"));
+        }
+        let elapsed_ms = sampled_owner_us
+            .checked_sub(execution)
+            .ok_or(SpellItemError::Rejected("source decay clock regression"))?
+            / 1000;
+        let execution_unix_ms = self
+            .unix_ms
+            .checked_sub(
+                i64::try_from(elapsed_ms)
+                    .map_err(|_| SpellItemError::Rejected("source decay clock overflow"))?,
+            )
+            .filter(|value| *value > 0)
+            .ok_or(SpellItemError::Rejected("source decay epoch underflow"))?;
+        Ok(SourceIntrinsicDecayClock {
+            original_execution_us: execution,
+            execution_unix_ms,
+            sampled_owner_us,
+            sampled_unix_ms: self.unix_ms,
+        })
+    }
+}
+
 struct FootprintContext<'a> {
     permit: &'a crate::durability::spell_owner_commit::SpellLanePermit,
     callback: &'a RottenFootprintCallback,
     now_us: u64,
 }
 impl DurabilityRoot {
+    pub async fn sample_rotten_footprint_clock(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        callback: &RottenFootprintCallback,
+    ) -> Result<RottenFootprintClockSample> {
+        let record = creature_item_recovery_record(recovery, self)?;
+        let node = node.clone();
+        let scope = callback.runtime_scope();
+        let generation = callback.scope_generation();
+        let mut context = FootprintContext {
+            permit,
+            callback,
+            now_us: 0,
+        };
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                    let result: Result<RottenFootprintClockSample> = async {
+                        let authority = assert_spell_item_scope_with_recovery(
+                            &mut tx,
+                            context.permit,
+                            &record,
+                            &node,
+                            scope,
+                            generation,
+                        )
+                        .await?;
+                        check_scope_transaction(&mut tx, &authority).await?;
+                        if !context.callback.needs_intrinsic_decay_clock()
+                            || !context.callback.execution_started()
+                        {
+                            return Err(SpellItemError::Rejected(
+                                "source decay clock not required",
+                            ));
+                        }
+                        let unix_ms: i64 = sqlx::query_scalar(
+                            "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                        )
+                        .fetch_one(&mut *tx)
+                        .await?;
+                        Ok(RottenFootprintClockSample {
+                            scope,
+                            generation,
+                            cast: context.callback.cause.cast,
+                            unix_ms,
+                        })
+                    }
+                    .await;
+                    Ok(result)
+                })
+            })
+            .await?
+    }
     pub async fn commit_rotten_footprint_callback(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -426,5 +557,49 @@ impl DurabilityRoot {
                 })
             })
             .await?
+    }
+}
+
+#[cfg(test)]
+mod intrinsic_clock_tests {
+    use super::*;
+    fn scope(instance: u8) -> crate::foundation::RuntimeScopeRefV1 {
+        let bytes = [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: crate::foundation::WorldId::decode(&bytes).expect("world"),
+            instance_id: [instance; 16],
+        }
+    }
+    fn sample() -> RottenFootprintClockSample {
+        RottenFootprintClockSample {
+            scope: scope(1),
+            generation: 9,
+            cast: [3; 32],
+            unix_ms: 1_000_000,
+        }
+    }
+    #[test]
+    fn source_intrinsic_clock_preserves_elapsed_and_retained_retry_deadline() {
+        let original = sample()
+            .project(scope(1), 9, [3; 32], 2_000_000, 7_000_000)
+            .unwrap();
+        assert_eq!(original.execution_unix_ms, 995_000);
+        assert_eq!(original.execution_unix_ms + 248_000, 1_243_000);
+        // A retry retains this proof rather than sampling a new epoch.
+        let retained = original.clone();
+        assert_eq!(retained, original);
+        // A late first attempt keeps the already-expired original deadline.
+        let late = sample()
+            .project(scope(1), 9, [3; 32], 0, 300_000_000)
+            .unwrap();
+        assert_eq!(late.execution_unix_ms + 248_000, 948_000);
+    }
+    #[test]
+    fn source_intrinsic_clock_refuses_foreign_scope_generation_or_execution() {
+        assert!(sample().project(scope(2), 9, [3; 32], 0, 0).is_err());
+        assert!(sample().project(scope(1), 10, [3; 32], 0, 0).is_err());
+        assert!(sample().project(scope(1), 9, [4; 32], 0, 0).is_err());
+        assert!(sample().project(scope(1), 9, [3; 32], 2, 1).is_err());
+        assert!(sample().project(scope(1), 9, [3; 32], 0, u64::MAX).is_err());
     }
 }

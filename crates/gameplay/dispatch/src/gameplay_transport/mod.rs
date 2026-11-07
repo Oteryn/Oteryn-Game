@@ -179,6 +179,7 @@ mod soul_war_world_raid;
 mod soulpit;
 mod source_death;
 mod source_names;
+mod spite_global;
 pub use soulpit::runtime as soulpit_runtime;
 pub use soulpit::{
     BossActivityHandoff, BossActivityHandoffSlot, SoulpitCoreSelection, SoulpitEntryIntent,

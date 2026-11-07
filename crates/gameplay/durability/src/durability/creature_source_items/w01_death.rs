@@ -294,6 +294,7 @@ pub async fn execute_w01_death_ground_in_transaction(
                     )
                     .await?,
                     target,
+                    intrinsic_decay_clock: None,
                     blocks_movement: false,
                     blocks_projectile: false,
                 },

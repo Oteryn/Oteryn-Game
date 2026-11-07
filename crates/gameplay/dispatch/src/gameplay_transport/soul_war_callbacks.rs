@@ -102,6 +102,12 @@ impl SoulWarCallbacks {
     }
     /// Real source scheduler work, including lethal notices not consumed yet.
     pub(super) fn next_native_due(&self) -> Option<u64> {
+        self.next_native_due_with_malice(true)
+    }
+    pub(super) fn next_native_due_without_malice(&self) -> Option<u64> {
+        self.next_native_due_with_malice(false)
+    }
+    fn next_native_due_with_malice(&self, include_malice: bool) -> Option<u64> {
         self.greed
             .next_due_ms()
             .into_iter()
@@ -114,7 +120,12 @@ impl SoulWarCallbacks {
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
             }))
-            .chain(self.malice.as_ref().and_then(|owner| owner.next_due_ms()))
+            .chain(
+                self.malice
+                    .as_ref()
+                    .filter(|_| include_malice)
+                    .and_then(|owner| owner.next_due_ms()),
+            )
             .chain(
                 self.megalomania
                     .as_ref()

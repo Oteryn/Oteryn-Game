@@ -33,14 +33,15 @@ pub use primal_pod::{
     primal_pod_step_item_indices,
 };
 pub use rotten_footprint::{
-    RottenFootprintCallback, RottenFootprintReceipt, execute_rotten_footprint_in_transaction,
+    RottenFootprintCallback, RottenFootprintClockSample, RottenFootprintReceipt,
+    execute_rotten_footprint_in_transaction,
 };
 pub use rotten_portal::{
     RottenPortalCallback, RottenPortalSource, execute_rotten_portal_callback_in_transaction,
 };
-pub use w01_death::{W01DeathGroundCallback, W01DeathGroundReceipt};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+pub use w01_death::{W01DeathGroundCallback, W01DeathGroundReceipt};
 type ProfileAbilityProposal = crate::foundation::profile_schedule::ProfileAbilityProposal<
     crate::content::ProjectV2DefinitionRef,
     crate::content::ProjectV2Magnitude,
@@ -252,7 +253,20 @@ where
                     || !t.target.ground_destination
                     || t.target.stack_maximum != 1
                     || t.target.container_capacity.is_some()
-                    || t.target.decay.is_some()
+                    || match (&t.target.decay, &t.intrinsic_decay_clock) {
+                        (None, None) => false,
+                        (Some(decay), Some(clock)) => {
+                            r.definition.production_key != "oteryn:item.tibia.i43590"
+                                || t.target.definition.production_key != "oteryn:item.tibia.i43297"
+                                || t.target.definition.revision_ref != "definition-r1"
+                                || decay.duration_millis != 248_000
+                                || decay.target.is_some()
+                                || clock.execution_unix_ms <= 0
+                                || !matches!(cause, ScopedGroundCauseRef::Creature(c)
+                                    if c.event_rule == Some(CreatureEventRule::RottenFootprintTransform))
+                        }
+                        _ => true,
+                    }
                     || !t.target.decay_chain.is_empty()
                     || !cause.source_items().contains(&t.target.definition)
                     || t.target.content_generation_digest != cause.content()
@@ -273,13 +287,18 @@ where
                 {
                     return Err(SpellItemError::Rejected("closed source Ground transform"));
                 }
-                (
-                    r.item_instance_id,
-                    serde_json::json!({"kind":"transform_ground","id":r.item_instance_id,
+                let mut value = serde_json::json!({"kind":"transform_ground","id":r.item_instance_id,
                     "before":reference(&r.definition),"definition":reference(&t.target.definition),
                     "revision":r.state_revision,"ordinal":r.top_down_ordinal,"quantity":r.quantity,
-                    "placement":ground(&r.placement),"blocks_movement":t.blocks_movement,"blocks_projectile":t.blocks_projectile}),
-                )
+                    "placement":ground(&r.placement),"blocks_movement":t.blocks_movement,"blocks_projectile":t.blocks_projectile});
+                if let Some(clock) = &t.intrinsic_decay_clock {
+                    value["intrinsic_decay"] = serde_json::json!({
+                        "original_execution_us":clock.original_execution_us.to_string(),
+                        "execution_unix_ms":clock.execution_unix_ms,
+                        "duration_millis":248_000,
+                    });
+                }
+                (r.item_instance_id, value)
             }
 
             SpellItemOperation::MintGround {
@@ -449,6 +468,13 @@ where
                     None,
                 )
                 .await?;
+                if let Some(clock) = &t.intrinsic_decay_clock {
+                    crate::durability::spell_item_temporal::schedule_source_scope_intrinsic_transform_in_transaction(
+                        tx, authority, transaction, &t.target, r.item_instance_id,
+                        u32::try_from(index + 1).map_err(|_| SpellItemError::Rejected("source transform ordinal"))?,
+                        clock.execution_unix_ms,
+                    ).await?;
+                }
             }
             SpellItemOperation::MintGround {
                 item_instance_id,

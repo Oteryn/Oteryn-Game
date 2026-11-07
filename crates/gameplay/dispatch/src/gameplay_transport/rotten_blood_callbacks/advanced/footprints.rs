@@ -117,7 +117,36 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
                     None
                 }
             };
-            let Some(callback) = callback else { return };
+            let Some(mut callback) = callback else { return };
+            if callback.needs_intrinsic_decay_clock() {
+                let sample = match self
+                    .root
+                    .sample_rotten_footprint_clock(permit, self.character, self.holder, &callback)
+                    .await
+                {
+                    Ok(sample) => sample,
+                    Err(_) => return,
+                };
+                // Pair the fenced epoch sample with this SAME owner clock as
+                // soon as the read returns. Retain before any physical write.
+                let sampled_owner_us = self.owner_now().get();
+                let started = match callback.with_intrinsic_decay_clock(sample, sampled_owner_us) {
+                    Ok(started) => Arc::new(started),
+                    Err(_) => return,
+                };
+                let mut states = self.states.spell_states.lock().await;
+                let Some(pending) = states
+                    .rotten_blood_callbacks
+                    .advanced
+                    .footprints
+                    .iter_mut()
+                    .find(|pending| Arc::ptr_eq(&pending.callback, &callback))
+                else {
+                    return;
+                };
+                pending.callback = Arc::clone(&started);
+                callback = started;
+            }
             let outcome = match self
                 .root
                 .commit_rotten_footprint_callback(

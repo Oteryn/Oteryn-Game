@@ -433,6 +433,53 @@ pub async fn drain_due_field_chains_in_transaction(
     Ok(changed)
 }
 
+/// Item::transform starts the authentic target ItemType decay. This closed
+/// source edge uses the existing scoped temporal owner, including Instances.
+pub(super) async fn schedule_source_scope_intrinsic_transform_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    transaction_id: [u8; 16],
+    definition: &QualifiedItemDefinition,
+    item: [u8; 16],
+    ordinal: u32,
+    original_execution_unix_ms: i64,
+) -> Result<(), SpellItemError> {
+    check_scope_transaction(tx, authority).await?;
+    let decay = definition
+        .decay
+        .as_ref()
+        .ok_or(SpellItemError::Rejected("source transform decay missing"))?;
+    if definition.definition.family != "Item"
+        || definition.definition.production_key != "oteryn:item.tibia.i43297"
+        || definition.definition.revision_ref != "definition-r1"
+        || decay.duration_millis != 248_000
+        || decay.target.is_some()
+        || !definition.decay_chain.is_empty()
+        || !definition.materializable
+        || !definition.ground_destination
+        || definition.stack_maximum != 1
+        || definition.container_capacity.is_some()
+        || ordinal == 0
+        || original_execution_unix_ms <= 0
+    {
+        return Err(SpellItemError::Rejected(
+            "closed source transform decay policy",
+        ));
+    }
+    let deadline =
+        original_execution_unix_ms
+            .checked_add(248_000)
+            .ok_or(SpellItemError::Rejected(
+                "source transform deadline overflow",
+            ))?;
+    sqlx::query("INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest,blocks_movement,blocks_projectile,immovable_block_solid) VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,$3,248000,$4,'Item','oteryn:item.tibia.i43297','definition-r1',NULL,NULL,NULL,$5,false,false,false)")
+        .bind(item.as_slice()).bind(transaction_id.as_slice())
+        .bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("source transform ordinal"))?)
+        .bind(deadline).bind(definition.content_generation_digest.as_slice())
+        .execute(&mut **tx).await?;
+    Ok(())
+}
+
 pub(super) async fn schedule_source_scope_field_chain_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
