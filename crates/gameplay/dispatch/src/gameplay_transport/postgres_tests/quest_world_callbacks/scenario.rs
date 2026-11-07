@@ -723,6 +723,8 @@ fn scenario_case(
                 &owner, &admitted, &h, deps.actor, name,
             )
             .await?;
+        } else if curos && name.contains("-progress-") {
+            super::super::uneasy_curos_progress::exercise(&mut owner, &admitted, &h, name).await?;
         } else if curos {
             super::super::uneasy_curos::exercise(&mut owner, &admitted, &h, name).await?;
         } else if elathriel {

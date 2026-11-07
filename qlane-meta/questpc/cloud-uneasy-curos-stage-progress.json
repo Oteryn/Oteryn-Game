@@ -1,0 +1,18 @@
+{
+  "status": "WIP_REPORT_BRIEF_COMPILE_FINAL_PG_PENDING",
+  "baseline": "deccd7462",
+  "postgres": "PostgreSQL18.6",
+  "red_cases_seconds": {
+    "report": 86.370237549,
+    "brief": 86.8107452
+  },
+  "green_no_kill_seconds": 88.837396923,
+  "red_point": "NPC start commits two flags and real native Renegade death changes door0->1; mission report leaves questline1 instead of2 because source report/brief rules absent.",
+  "implementation": "Source generator now emits exact report1+door1->questline2 and briefing2->3 with preceding Frontier guards. Final tome grant still disabled.",
+  "static_check": "PASS quests/dispatch1m22s; generator --check PASS",
+  "pin_refresh": "Running; capture generated results before final proof.",
+  "raw_sha256": "0951c69580cd0d8ad06e359d0aa7d4395212b4d2dfad054dd30ce4cefc60a9d5",
+  "stored_sha256": "0951c69580cd0d8ad06e359d0aa7d4395212b4d2dfad054dd30ce4cefc60a9d5",
+  "whole_title_promoted": false,
+  "reuse_found": "Existing map/facts/quest_callbacks.rs start_movement_decay and source_item_cycle.rs owner-fenced idle expiry can support crystal10s; extend/reuse, no parallel timer owner."
+}

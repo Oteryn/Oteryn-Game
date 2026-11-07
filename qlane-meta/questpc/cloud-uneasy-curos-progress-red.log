@@ -1,0 +1,94 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 52s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-dc2d45c3f744ff68)
+
+running 3 tests
+UNEASY_CUROS_PROGRESS actual_postgresql=true PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+UNEASY_CUROS_PROGRESS actual_postgresql=true PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+UNEASY_CUROS_PROGRESS actual_postgresql=true PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_briefs_after_native_death_report has been running for over 60 seconds
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_refuses_report_without_death has been running for over 60 seconds
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_reports_native_renegade_death has been running for over 60 seconds
+oteryn-game-server kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.renegade_orc
+
+thread 'report' (188782) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/uneasy_curos_progress.rs:168:5:
+assertion `left == right` failed: Curos must accept actual native death credit
+  left: 1
+ right: 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+UNEASY_CUROS_PROGRESS POSTGRES_CASE_FAILED case=report duration=86.370237549s
+Error: "composed PostgreSQL scenario thread panicked"
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_reports_native_renegade_death ... FAILED
+oteryn-game-server kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.renegade_orc
+
+thread 'brief' (188783) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/uneasy_curos_progress.rs:168:5:
+assertion `left == right` failed: Curos must accept actual native death credit
+  left: 1
+ right: 2
+UNEASY_CUROS_PROGRESS POSTGRES_CASE_FAILED case=brief duration=86.8107452s
+Error: "composed PostgreSQL scenario thread panicked"
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_briefs_after_native_death_report ... FAILED
+UNEASY_CUROS_PROGRESS POSTGRES_CASE_COMPLETED case=no-kill duration=88.837396923s
+test gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_refuses_report_without_death ... ok
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_briefs_after_native_death_report
+    gameplay_transport::monk_save::postgres_tests::uneasy_curos_progress::uneasy_curos_progress_reports_native_renegade_death
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 2626 filtered out; finished in 88.84s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

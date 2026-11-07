@@ -1,3 +1,17 @@
+## Curos report/brief compiled WIP — 2026-11-07
+ActualPG18.6 report86.370237549s andbrief86.8107452s RED: actualNPCstart
+setsDoor0/QL1, realnativeRenegade deathsetsDoor1, butreportleavesQL1expected2.
+No-kill88.837396923s PASS. Sourceprogramme nowhasstart/report/brief exact
+201189literalreplies andFrontier16/18precedence guards; finaltome disabled.
+Quests/dispatchCheck1m22s PASS, sourcegencheckPASS. Pinrefreshrunning.
+NEXT awaitpinfinish, final3PG +strict/fmt/checktool outputs, pushGREEN.
+Thencrystal40030 andfinal10217grant/nativeDoorBoss route. Foundexistinggeneric
+map/facts/quest_callbacks.rs start_movement_decay (revision-checked restore)
+and source_item_cycle.rs owner-fenced idleexpiry: REUSE for10s crystal instead
+ofnewqueue/SQLowner. OriginalLuaaddEvent isChannel-local transient map effect.
+Other-lane refresh96QUALIFIED titles, Uneasy notelsewhere; update skipswhenfinal.
+Max15minpush; fetchexacttarget/mergeFETCH_HEAD; noforce/rebase/main/PR.
+
 ## Curos native acceptance GREEN — 2026-11-07
 ActualPG18.6 correctedfullcase set: start97.595232695s,precedence97.627157253s,
 missing98.56090553s. Exactsourcegreet; nativeCurosat33174,31394,z7; foreign
@@ -14,7 +28,7 @@ missions/exact10217grant, nativequestdoor/Renegade spawn, crystal40030 transform
 10186->10187 for10sec andQuestline3->4. qworldb06d40852 calendar/state owner
 not mapobjecttimer; inspectexistingquest world mutation owner beforeextending
 generically. No missingengine handoff. Beforepush fetch exacttarget/mergeFETCH_HEAD,
-max15min; neverforce/rebase/main/PR. PR3020 lastOPEN15:?? (actualinspection14:36).
+max15min; neverforce/rebase/main/PR. PR3020 last inspected OPEN at14:36.
 
 ## Curos partial PG / generated deployment mirror checkpoint — 2026-11-07
 Productionstrict4crates PASS8m16s, newsourcegreet/sourceplacement nativePG

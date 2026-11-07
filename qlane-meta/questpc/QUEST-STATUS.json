@@ -8715,6 +8715,11 @@
       "dragonlord_regression": "PASS actualPG106.606954443s under new world pin",
       "deployment_pin_mirror": "Compiler-generated topology fields included; no deployment performed",
       "pin_check": "Running before corrected acceptance rerun"
+    },
+    "curos_later_stages": {
+      "status": "WIP_REPORT_BRIEF_COMPILE_FINAL_PG_PENDING",
+      "proof": "cloud-uneasy-curos-stage-progress.json",
+      "red_point": "NPC start commits two flags and real native Renegade death changes door0->1; mission report leaves questline1 instead of2 because source report/brief rules absent."
     }
   },
   "engine_progress": {

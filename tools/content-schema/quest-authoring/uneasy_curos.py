@@ -27,7 +27,17 @@ reply=[json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"',say[1])]
 assert len(reply)==8 and any('seek out this rebel commander' in s for s in reply)
 def storage(track,op,value):return dict(kind='storage',track=track,op=op,value=value)
 rule=dict(key='oteryn:quest-npc/an_uneasy_alliance_quest/curos/start',quest=QUEST,npc=NPC,trigger='say',keywords=['mission'],guards=[storage(PREFIX+'the_new_frontier/questline','ne',16),storage(PREFIX+'the_new_frontier/questline','ne',18),storage(PREFIX+'the_new_frontier/mission06','ge',5),storage(LINE,'lt',1)],reply=reply,effects=[dict(kind='set',track=LINE,value=1),dict(kind='set',track=DOOR,value=0)],sources=[ref(line(marker)),ref(line('setStorageValue(AnUneasyAlliance.Questline, 1)')),ref(line('setStorageValue(AnUneasyAlliance.QuestDoor, 0)'))])
-program=dict(schema=1,program_key='oteryn:quest-npc-program.uneasy-curos',quest=QUEST,tracks=[dict(key=DOOR,quest=QUEST,initial=0,min=0,max=1,sources=[ref(line('setStorageValue(AnUneasyAlliance.QuestDoor, 0)'))]),dict(key=LINE,quest=QUEST,initial=0,min=0,max=5,sources=[ref(line('setStorageValue(AnUneasyAlliance.Questline, 1)'))])],rules=[rule],source_files=[dict(path=SOURCE,sha256=SHA,revision=REV)])
+def progress_rule(name,marker,guards,stage):
+ start=text.index(marker);end=text.find('\n\t\telseif ',start+len(marker));chunk=text[start:end if end>=0 else len(text)]
+ say=re.search(r'npcHandler:say\((.*?)\s*,\s*npc,\s*creature\)',chunk,re.S)
+ assert say and f'setStorageValue(AnUneasyAlliance.Questline, {stage})' in chunk
+ replies=[json.loads(s) for s in re.findall(r'"(?:\\.|[^"\\])*"',say[1])]
+ assert replies
+ return dict(key=f'oteryn:quest-npc/an_uneasy_alliance_quest/curos/{name}',quest=QUEST,npc=NPC,trigger='say',keywords=['mission'],guards=[storage(PREFIX+'the_new_frontier/questline','ne',16),storage(PREFIX+'the_new_frontier/questline','ne',18)]+guards,reply=replies,effects=[dict(kind='set',track=LINE,value=stage)],sources=[ref(line(marker)),ref(line(f'setStorageValue(AnUneasyAlliance.Questline, {stage})'))])
+report=progress_rule('report','elseif player:getStorageValue(AnUneasyAlliance.Questline) == 1 and player:getStorageValue(AnUneasyAlliance.QuestDoor) == 1 then',[storage(LINE,'eq',1),storage(DOOR,'eq',1)],2)
+brief=progress_rule('brief','elseif player:getStorageValue(AnUneasyAlliance.Questline) == 2 then',[storage(LINE,'eq',2)],3)
+assert len(report['reply'])==1 and len(brief['reply'])==5
+program=dict(schema=1,program_key='oteryn:quest-npc-program.uneasy-curos',quest=QUEST,tracks=[dict(key=DOOR,quest=QUEST,initial=0,min=0,max=1,sources=[ref(line('setStorageValue(AnUneasyAlliance.QuestDoor, 0)'))]),dict(key=LINE,quest=QUEST,initial=0,min=0,max=5,sources=[ref(line('setStorageValue(AnUneasyAlliance.Questline, 1)'))])],rules=[rule,report,brief],source_files=[dict(path=SOURCE,sha256=SHA,revision=REV)])
 base=json.loads((ROOT/'content/dialogues/quests-2/npc-greetings.json').read_text())
 default=next(n for n in base['npcs'] if all(n[k]['source']['path']=='data/npclib/npc_system/npc_handler.lua' for k in ['farewell','walkaway']))
 greet='Be greeted blank skin.';assert f'MESSAGE_GREET, "{greet}"' in text
@@ -37,4 +47,4 @@ for relative,value in [('content/dialogues/quest-rules-supplemental/uneasy-curos
  target=ROOT/relative;render=json.dumps(value,indent=2)+'\n'
  if args.check:assert target.read_text()==render,relative
  else:target.parent.mkdir(parents=True,exist_ok=True);target.write_text(render)
-print('Curos: source-bound acceptance, two atomic flags, exact greeting; no later stages enabled yet')
+print('Curos: source-bound acceptance, death report and crystal briefing; final tome stage remains disabled')

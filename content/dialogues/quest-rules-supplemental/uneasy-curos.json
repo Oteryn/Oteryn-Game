@@ -86,6 +86,102 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:81",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:82"
       ]
+    },
+    {
+      "key": "oteryn:quest-npc/an_uneasy_alliance_quest/curos/report",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 16
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 18
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "With the death of their leader, the rebels return to our camps one by one, deeply humiliated. It might be a wise decision to let a useful tool like you continue to exist."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:83",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:85"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/an_uneasy_alliance_quest/curos/brief",
+      "quest": "oteryn:quest.an_uneasy_alliance_quest",
+      "npc": "oteryn:npc.curos",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 16
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "op": "ne",
+          "value": 18
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "We are aware that the lizards use magic to spy on us. In the Dragonblaze Mountains north of here, there is a tower which can only be entered through one of their underground fortresses. ...",
+        "In this tower, there must be some accessory used for magical scrying. Some pond, a crystal ball, or a mirror maybe - it has to be something shiny. ...",
+        "Usually we would send one of our youngsters on such a mission, but we are few and there is little new blood in our ranks. ...",
+        "We can't send a Mooh'Tah master on such a trivial assignment, neither can we use orcs for an infiltration mission. ...",
+        "This is your chance to show us your potential. Infiltrate this tower and destroy their scrying device. Once you have blinded our enemy, we might respect you somewhat more."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/curos.lua:94"
+      ]
     }
   ],
   "source_files": [

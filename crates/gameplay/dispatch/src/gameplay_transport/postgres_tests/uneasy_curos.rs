@@ -52,7 +52,7 @@ fn scenario(case: &'static str) -> TestResult {
     );
     result
 }
-fn source_placement() -> TestResult {
+pub(super) fn source_placement() -> TestResult {
     let path = std::path::Path::new(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../content/world/npc-placements"
@@ -81,7 +81,7 @@ fn source_placement() -> TestResult {
 /// Controlled prerequisite only: this does not qualify The New Frontier itself.
 /// The normal fenced writer seeds both foreign guard values; target NPC code uses
 /// its unchanged production catalogue and no fixture rule is installed there.
-async fn prerequisite(
+pub(super) async fn prerequisite(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     precedence: bool,
