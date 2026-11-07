@@ -150,9 +150,18 @@ async fn kill(
         .find(|o| o.key == format!("oteryn:quest-death/questpc7-grimvale-{name}"))
         .ok_or("objective")?;
     let p = objective.guardian.as_ref().ok_or("guardian")?.position;
-    let target = guardian(owner, p)
-        .await?
-        .ok_or_else(|| format!("missing active native {name}"))?;
+    let observed_guardian = guardian(owner, p).await?;
+    if observed_guardian.is_none() {
+        let runtime = owner.runtime.lock().await;
+        eprintln!(
+            "GRIMVALE_GUARDIAN_DIAGNOSTIC name={name} policy={:?} player={:?} center={p:?}",
+            runtime
+                .companion_policy(&objective.creature)
+                .map(|policy| policy.maximum_health),
+            runtime.read_actor_position(a.runtime_actor.ok_or("actor")?)
+        );
+    }
+    let target = observed_guardian.ok_or_else(|| format!("missing active native {name}"))?;
     super::questpc7_native_deaths::lethal_creature(
         owner,
         a,
@@ -160,7 +169,10 @@ async fn kill(
         nonce,
         &format!("oteryn:creature.{name}"),
     )
-    .await
+    .await?;
+    // Retire the settled death before starting the next respawn interval.
+    owner.refresh_quest_session(a.game_session_id, false).await;
+    Ok(())
 }
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -171,6 +183,7 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("QUESTPC7_GRIMVALE_STORY POSTGRES_STARTED version={version}");
+    super::questpc7_native_deaths::prepare_native_hunter(owner, a).await?;
     let rows = callbacks()?;
     let entry = callback(&rows, "entry")?;
     let mut selected = a.continuity.selected_capabilities.as_slice().to_vec();
@@ -285,7 +298,9 @@ pub(super) async fn exercise(
         );
     }
     assert_eq!(value(owner, a, TRACK).await?, 6);
-    let [rhargu] = super::classic_quests::install(owner, a, ["oteryn:npc.rhargu"]).await?;
+    let [rhargu, domizian] =
+        super::classic_quests::install(owner, a, ["oteryn:npc.rhargu", "oteryn:npc.domizian"])
+            .await?;
     let mut sequence = a.continuity.next_command_id;
     super::questpc7_outfit_items::talk(owner, a, rhargu, &mut sequence, "feud").await?;
     assert_eq!(value(owner, a, TRACK).await?, 7);
@@ -310,7 +325,7 @@ pub(super) async fn exercise(
     }
     passage(owner, a, callback(&rows, "hyaena-passage")?).await?;
     assert_eq!(value(owner, a, TRACK).await?, 9);
-    let [domizian] = super::classic_quests::install(owner, a, ["oteryn:npc.domizian"]).await?;
+
     let mut sequence = a.continuity.next_command_id;
     super::questpc7_outfit_items::talk(owner, a, domizian, &mut sequence, "pardon").await?;
     assert_eq!(value(owner, a, TRACK).await?, 10);

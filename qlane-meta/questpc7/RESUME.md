@@ -1,3 +1,25 @@
+# Grimvale full route compiling checkpoint after35 native deaths — 2026-11-07
+
+Publish source now under15-minute rule. Full source/test compiled in
+/tmp/questpc7-grimvale-story-green7.log; PG running in35700. Last actual
+PG120.196789455s proved all35 native kills, exact quotas, five blossoms, trap
+consumption/replay, four leaders, Rhargu and Domizian approach. Exact red was
+AlreadyPlaced from installing a second NPC table. Test now installs both
+existing contacts once, retains both actor identities, and budgets the exact
+six-actor peak (player, two retained afflicted, two contacts, one active hunt).
+Native-hunter bootstrap is a reusable test helper; existing source policies
+were always available. Post-death retirement now precedes the next61-second
+respawn interval, following prior native hunt test cadence. No quota/guard
+is weakened; world callback cohort assertion is71 with all negatives intact.
+
+Next: inspect green7, fix any actual remaining runtime issue, then immediately
+push PG GREEN checkpoint. Validation runner is prepared at
+/tmp/questpc7-grimvale-story-validation.py (15 focused gates). It performs
+idle-only cache cleanup before retained PG/check builds; current disk free
+is low. No source change while pin compiler runs; stage source before refresh.
+After all gates PASS, update ledger to QUALIFIED, remove stale remaining_work
+for Grimvale, push, and continue remaining six. Do not end while ACTIVE exists.
+
 # Whole Grimvale compiling WIP — 2026-11-07
 
 Push now under owner15-minute rule. Source compiles;27 authoring tests pass.

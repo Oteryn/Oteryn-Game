@@ -189,7 +189,10 @@ fn scenario_case(
             1,
             "runtime-scope-assignment:1",
             // These two cases keep five source NPCs and one player alive.
-            if name == "questpc7-friends" {
+            if name == "qengine-rewards-grimvale-story" {
+                // Player, two retained afflicted guardians, two contacts, one active hunt.
+                6
+            } else if name == "questpc7-friends" {
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
             } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {

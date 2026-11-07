@@ -44,6 +44,44 @@ async fn spawn(owner:&ComposedFreshAdmission<'_, '_, '_>, at:MovementLocalPositi
     Ok(actor)
 }
 
+/// Install the activated native policy table and bind the real admitted attacker.
+/// This arranges runtime authority only; no quest counter, item or death is seeded.
+pub(super) async fn prepare_native_hunter(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    native
+        .install_companion_policies(&mut *owner.runtime.lock().await)
+        .map_err(debug)?;
+    let actor = admitted.runtime_actor.ok_or("player")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    Ok(())
+}
+
+
 pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>, admitted:&mut AdmittedSession,h:&Harness)->TestResult{
     let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
     eprintln!("QUESTPC7_NATIVE_DEATHS POSTGRES_STARTED version={version}");

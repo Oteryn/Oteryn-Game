@@ -508,3 +508,9 @@ quest is completed or seeded. Physical item facts come from pinned source XML
 Earned travel reuses the existing preserve-state quest receipt owner so fresh
 requirements run inside the normal fenced transaction. The legacy read-only
 transport contract still refuses requirements; that guard is not relaxed.
+
+The first hunt PG failure was fixture authority, not absent Werewolf source.
+The active source profile already exists. The new case now invokes reusable
+prepare_native_hunter, matching previous Grave/Ferumbras test bootstrap: install
+the activated policy table and bind the actual admitted attacker lease. No
+creature policy, guardian constraint or subject quest state is fabricated.

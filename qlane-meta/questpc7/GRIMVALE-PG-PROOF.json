@@ -22,5 +22,28 @@
     ]
   },
   "authoring_tests": 27,
-  "transport": "Existing fenced preserve-state transition retains fresh requirements; legacy read-only requirements remain refused."
+  "transport": "Existing fenced preserve-state transition retains fresh requirements; legacy read-only requirements remain refused.",
+  "guardian_diagnostic": {
+    "seconds": 44.73,
+    "log": "/tmp/questpc7-grimvale-story-green4.log",
+    "result": "InvalidCreatureTarget because new fixture omitted standard native policy bootstrap",
+    "correction": "Reusable prepare_native_hunter installs activated native policies and binds admitted attacker; no policy/progress changes"
+  },
+  "expanded_red_after_native_bootstrap": {
+    "seconds": 120.196789455,
+    "log": "/tmp/questpc7-grimvale-story-green6.log",
+    "passed": [
+      "all35 required native deaths with exact quotas",
+      "physical blossoms and silvered trap consumption/replay",
+      "four distinct leaders",
+      "Rhargu conversation",
+      "twenty Werehyaenas and earned Domizian approach"
+    ],
+    "point": "AlreadyPlaced when fixture attempted second NPC-table installation",
+    "correction": "Install both existing contacts once; charge exact six-actor peak; reuse Domizian actor"
+  },
+  "current_run": {
+    "log": "/tmp/questpc7-grimvale-story-green7.log",
+    "state": "compiled; full PG route running"
+  }
 }
