@@ -1,3 +1,27 @@
+# MAINRED1107 repair evidence
+
+Base: `4508fd2f1d31ba316792ec05a968f9101daa67f9`.
+
+## Node boot provisioning
+
+The native manifest pins cosmetics, starting-loadout item profiles and item
+profile updates. Node boot and the deployment/test stagers omitted those
+three providers, causing `NativeGameplayInput::from_manifest` to report
+`native gameplay provisioning file` before the operator's expected grant
+refusal. Their staging allowlists now include all three known file pins;
+repository containment and exact SHA-256 checks remain mandatory.
+
+Red: `python3 -m unittest test_qualification_tools.StagingTests` failed on
+missing cosmetics; the new test executing the actual node-boot staging
+here-document reproduced the same omission (0.137 s). Green: from
+`tools/qualification/spells`, `python3 -m unittest test_qualification_tools`
+passed all 16 tests in 0.718 s. `bash -n tools/qualification/node_boot/run.sh`
+and `git diff --check` passed. Full node boot requires `sudo`, which is absent
+in this environment; the actual staging code is covered by the regression.
+No migrations or protocol numbers are allocated.
+
+The retained producer notes follow.
+
 # Integrated producer contract notes
 
 Package GPROD-PKG composes all three deliveries below on current main. The delivery

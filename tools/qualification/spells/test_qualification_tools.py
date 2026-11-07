@@ -3,6 +3,8 @@ import copy
 import importlib.util
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -100,6 +102,22 @@ class ProvisioningTests(unittest.TestCase):
 
 
 class StagingTests(unittest.TestCase):
+    def test_node_boot_stages_every_file_the_canonical_manifest_pins(self):
+        run_sh = (ROOT / 'tools/qualification/node_boot/run.sh').read_text()
+        script = run_sh.split("<<'PY_STAGE'\n", 1)[1].split('\nPY_STAGE', 1)[0]
+        manifest = ROOT / 'content/spells.manifest.json'
+        document = json.loads(manifest.read_bytes())
+        pinned = {k: v for k, v in document.items() if isinstance(v, dict) and 'sha256' in v}
+        with tempfile.TemporaryDirectory() as temp:
+            staged = Path(temp) / 'staged'
+            subprocess.run([sys.executable, '-', str(manifest), str(ROOT), str(staged)],
+                           input=script, text=True, capture_output=True, check=True)
+            for field, pin in pinned.items():
+                source = (manifest.parent / pin['path']).resolve()
+                target = staged / source.relative_to(ROOT.resolve())
+                self.assertTrue(target.is_file(), f'{field} is pinned but not staged by node boot')
+                self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), pin['sha256'])
+
     def test_both_stagers_select_every_manifest_pin_including_item_keys(self):
         spec = importlib.util.spec_from_file_location(
             'stage_gameplay', ROOT / 'deploy/synology-game/stage_gameplay.py')
