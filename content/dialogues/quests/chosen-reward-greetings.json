@@ -108,6 +108,16 @@
         "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
         "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
       ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your wrath mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: explicit opening mission keyword for the chosen recipe."
+      ]
     }
   ]
 }

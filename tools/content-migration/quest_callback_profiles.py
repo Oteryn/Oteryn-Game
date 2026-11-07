@@ -254,6 +254,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        import questpc8_nail_custody
+        definition = questpc8_nail_custody.callback_definition(root, present.get(key), definition)
         identity = definition['identity']
         if key in authored_keys and key not in present:
             import authored_quest_timed_custody

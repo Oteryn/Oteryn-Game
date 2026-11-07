@@ -1,3 +1,16 @@
+# Active checkpoint: Wrath opening source admission
+
+WIP scaffold pushed4b624995b167c7d14dd7171adf9274041ebb46ed.
+Own native RED executed PostgreSQL101.964s (first Zalamon greeting rejected).
+Production opening callback/greeting and source NPC scope are now authored.
+Generation exposed953 legacy NonStackable versus admitted harvest stack100.
+questpc8_nail_custody.py reuses exact pinned source facts without canonical edits;
+two focused adapter regression tests passed. Workspace all-target check PASS3m20s;
+fmt PASS. Provider generation and focused native case are still pending.
+A transient GitHub authentication failure recovered on the next branch fetch.
+No credential files were inspected.
+Full Wrath remains unqualified; item-look disguise remains qengine2-owned.
+
 # Wrath opening native RED checkpoint21:03UTC
 
 Current work is a supported opening slice, not full quest completion. Added native

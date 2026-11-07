@@ -726,3 +726,14 @@ and refusal on either changed canonical data or changed XML.
 - Father's exact deferred receipt/XP proof is unchanged except its ambiguous
   PL/pgSQL variable name, fixed forward in1306. Actual PG cast check confirms
   xid8-to-xid is supported; no cast workaround or proof relaxation is needed.
+
+- Wrath opening uses source Zalamon at33354,31410,8 and consumes exactly three
+  nails953 plus one wood5901 for crate11328. Source: Crystal201189f
+  https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua
+  The selected keyword "wrath mission" is an explicit authored conversation
+  adaptation. This opening does not claim whole-quest completion.
+- Callback import encountered canonical953 NonStackable with UNKNOWN stack
+  facts, conflicting with the already accepted harvest StackCapable100 profile.
+  A27-line local adapter reuses only its exact SHA256-pinned native stack at the
+  callback boundary, preserving canonical bytes and rejecting source drift.
+  No admission check is weakened; three nails remain mandatory.

@@ -9,8 +9,15 @@
     "log_sha256": "7d7519ff96b4f0cfd73548a0b073802285a95155da08b1d1ffb172515f1f0cf3"
   },
   "compile_gate": {
-    "workspace_all_targets": "PASS5m56s",
+    "workspace_all_targets": "PASS3m20s; production authoring present",
     "fmt": "PASS"
   },
-  "remaining": "Admit source NPC/greeting and exact crate output, then run GREEN; subsequent item-look disguise still QENGINE2-owned"
+  "remaining": "Admit source NPC/greeting and exact crate output, then run GREEN; subsequent item-look disguise still QENGINE2-owned",
+  "item_admission": {
+    "red": "Direct existing callback validator rejects953 canonical NonStackable versus pinned harvest StackCapable",
+    "green": "2 local adapter regression tests passed in0.518s; production generation still running",
+    "canonical_mutated": false,
+    "source_packet_sha256": "75d32d5a109da7c9c5e51c3d977d8e02dc7682bab01216892d600881fbe11b42",
+    "test_file": "tools/content-migration/test_questpc8_nail_custody.py"
+  }
 }
