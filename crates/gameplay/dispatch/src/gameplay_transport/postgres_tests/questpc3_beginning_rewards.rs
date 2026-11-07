@@ -58,6 +58,7 @@ enum Scenario {
     Equipment,
     Damage,
     CarlosLessons,
+    CarlosFood,
 }
 
 #[test]
@@ -105,6 +106,32 @@ fn questpc3_beginning_carlos_five_lessons_use_native_dialogue() -> TestResult {
         })?
         .join()
         .map_err(|_| "Carlos lessons panicked")??;
+    Ok(())
+}
+
+#[test]
+fn questpc3_beginning_carlos_accepts_either_food_without_consumption() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("QUESTPC3_CARLOS_FOOD POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            let started = std::time::Instant::now();
+            let result = std::panic::catch_unwind(|| scenario(Scenario::CarlosFood));
+            eprintln!(
+                "QUESTPC3_CARLOS_FOOD POSTGRES_CASE_COMPLETED duration_ms={} success={}",
+                started.elapsed().as_millis(),
+                matches!(&result, Ok(Ok(())))
+            );
+            match result {
+                Ok(result) => result.map_err(|error| error.to_string()),
+                Err(panic) => std::panic::resume_unwind(panic),
+            }
+        })?
+        .join()
+        .map_err(|_| "Carlos food panicked")??;
     Ok(())
 }
 
@@ -165,6 +192,7 @@ fn scenario(mode: Scenario) -> TestResult {
             "zirella_quest_log",
             "carlos_npc_greet_storage",
             "carlos_quest_log",
+            "carlos_npc_trade_storage",
         ]
         .into_iter()
         .map(|name| {
@@ -230,7 +258,7 @@ fn scenario(mode: Scenario) -> TestResult {
             vec![1, 1],
             "source legs are distinct nonstackable Items"
         );
-        if matches!(mode, Scenario::CarlosLessons) {
+        if matches!(mode, Scenario::CarlosLessons | Scenario::CarlosFood) {
             let [carlos] =
                 super::classic_quests::install(&owner, &admitted, ["oteryn:npc.carlos"]).await?;
             let items_before: i64 =
@@ -308,6 +336,125 @@ fn scenario(mode: Scenario) -> TestResult {
                 items_after, items_before,
                 "outfit and hunt instructions grant no physical items"
             );
+            if matches!(mode, Scenario::CarlosFood) {
+                for (index, input) in [None, Some((3578, 115_u8)), Some((3582, 116_u8))]
+                    .into_iter()
+                    .enumerate()
+                {
+                    if let Some((ident, instance)) = input {
+                        let mut tx = h.pool.begin().await?;
+                        // Only fixture input creation uses the established seed path.
+                        // Real NPC callbacks execute after this transaction commits.
+                        sqlx::query("SET LOCAL session_replication_role=replica")
+                            .execute(&mut *tx)
+                            .await?;
+                        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+                            .bind(id(instance).as_slice()).bind(id(42).as_slice()).bind(format!("oteryn:item.tibia.i{ident}")).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                        sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
+                            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(instance).as_slice()).bind((index + 2).to_string()).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                        tx.commit().await?;
+                    }
+                    assert_eq!(
+                        quantity(&h, "oteryn:item.tibia.i3577").await?,
+                        0,
+                        "only the second source alternative is carried"
+                    );
+                    owner.clock_origin = owner
+                        .clock_origin
+                        .checked_sub(std::time::Duration::from_secs(2))
+                        .ok_or("clock")?;
+                    let fence = owner
+                        .current_quest_fence(admitted.game_session_id)
+                        .await
+                        .map_err(|()| "fence")?
+                        .ok_or("fence")?;
+                    let result = owner
+                        .npc_talk(
+                            admitted.runtime_actor.ok_or("actor")?,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: 4680 + u64::try_from(index)?,
+                                item_fence: Some(fence.item_fence()),
+                            },
+                            NpcTalkIntent {
+                                npc_actor: carlos,
+                                text: "yes".into(),
+                            },
+                        )
+                        .await;
+                    assert!(!result.unknown);
+                    let positive = index == 2;
+                    let greet = super::classic_quests::progress(
+                        &owner,
+                        &admitted,
+                        &authority,
+                        &format!("{BASE}carlos_npc_greet_storage"),
+                    )
+                    .await?;
+                    let log = super::classic_quests::progress(
+                        &owner,
+                        &admitted,
+                        &authority,
+                        &format!("{BASE}carlos_quest_log"),
+                    )
+                    .await?;
+                    let trade = super::classic_quests::progress(
+                        &owner,
+                        &admitted,
+                        &authority,
+                        &format!("{BASE}carlos_npc_trade_storage"),
+                    )
+                    .await?;
+                    eprintln!(
+                        "QUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case={} greet={} log={} trade={} duration_ms={}",
+                        index,
+                        greet,
+                        log,
+                        trade,
+                        started.elapsed().as_millis()
+                    );
+                    assert_eq!(
+                        greet,
+                        if positive { 6 } else { 5 },
+                        "ham alone must satisfy the second source food alternative; empty/fish must not advance"
+                    );
+                    assert_eq!(log, if positive { 6 } else { 5 });
+                    if positive {
+                        assert_eq!(trade, 1);
+                        assert_eq!(result.disposition, NpcIntentDisposition::Ok);
+                    } else {
+                        assert!(trade < 1);
+                    }
+                    let items: i64 = sqlx::query_scalar(
+                        "SELECT count(*) FROM game_item_instances WHERE lifecycle=1",
+                    )
+                    .fetch_one(&h.pool)
+                    .await?;
+                    assert_eq!(
+                        items,
+                        items_before + i64::try_from(index)?,
+                        "read-only food evidence neither mints nor consumes an item"
+                    );
+                    if index > 0 {
+                        assert_eq!(quantity(&h, FISH).await?, 1);
+                    }
+                    if positive {
+                        assert_eq!(quantity(&h, "oteryn:item.tibia.i3582").await?, 1);
+                    }
+                }
+                super::classic_quests::talk(&mut owner, &admitted, carlos, 4685, "yes").await?;
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+                )
+                .bind("oteryn:quest-reward/questpc3/beginning-carlos/food-evidence")
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(
+                    receipts, 1,
+                    "repeating confirmation cannot create another eligibility receipt"
+                );
+                assert_eq!(quantity(&h, "oteryn:item.tibia.i3582").await?, 1);
+            }
             return Ok(());
         }
         let [santiago, zirella] = super::classic_quests::install(

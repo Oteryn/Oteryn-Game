@@ -851,82 +851,12 @@
       }
     ],
     "current_batch": {
-      "id": "beginning-carlos-lessons-01",
-      "phase": "GREEN; commit and push this five-entry source NPC batch",
-      "scope": "Five source Carlos greeting/outfit/favor/hunting lessons, natural initial state throughGreet5/log5; return greeting cannot repeat receipts; no physical grants",
-      "red_log": "/tmp/questpc3-carlos-lessons-red.log",
-      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L85-L105;#L145-L166",
-      "native_placement": "Existing source placement32082,32263,7; reuse imported nativeNPC, no new placement or world data",
-      "whole_entry_status": "Four whole quests remain IN_PROGRESS; implement missing mechanisms as needed, no deferral.",
-      "red_proof": {
-        "duration_ms": 89399,
-        "log": "/tmp/questpc3-carlos-lessons-red.log",
-        "sha256": "98a2b763afff4f6cb441814382fae8167f0046bb4065e1146d4fab27f35ec9ed",
-        "error": "classic_quests.rs:147 command4600 hi: actualNoConversation vs expectedOk; POSTGRES_CASE_COMPLETED89399ms success=false",
-        "diagnosis": "npc_command.rs:546 explicitly rejects placedNPC withnoTalkBookentry. npc_talk.rs source-shared reward_messages admits greeting onlywhen source dataexists. NativeCarlosplacementalreadyvalid; no fixture repair or test loosening required."
-      },
-      "source_sha256": "0893e67944b91900a4cc5fb2e803895f63b1b436ab8556aa78097e00559f94fb",
-      "implementation": "New disjointbeginning-carlos producer preserves all foreignrecords; Carlosnativegreeting,5once-onlyGreet/logmilestones1..5,5read-onlyreturnoffers; no physical/outfit/XP grant, no generic engine duplication.",
-      "checks_so_far": {
-        "authoring": "14 tests9.865sPASS; new and existing producer --checkPASS",
-        "green_log": "/tmp/questpc3-carlos-lessons-green.log",
-        "strict_checks": "session36330: fmt/check/Clippy3crates allfeatures/alltargets -Dwarnings; callbackunits/NPCtalkunits/content123 sequential"
-      },
-      "checks": {
-        "authoring": {
-          "log": "/tmp/questpc3-carlos-authoring.log",
-          "sha256": "c9652d708094ee5d42bd048a633c67b3ad2cef96cd1da1264ca9986c53573f44",
-          "proof": "14passed9.865s; exact five source states, no value grants, return greeting predicates, all foreign callbacks/offers/greetings preserved; new+existing NPC producer --checkPASS"
-        },
-        "fmt": {
-          "log": "/tmp/questpc3-carlos-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "proof": "cargo fmt --all -- --checkPASS; mounted test explicitlyrustfmt"
-        },
-        "check": {
-          "log": "/tmp/questpc3-carlos-check.log",
-          "sha256": "a573e366179887debc6edf5c36aac023de4da1ab47e69d2ccc6f8db7bd2e8ac4",
-          "proof": "dispatch/quests/NPC allfeaturesPASS2m22 including lock waiting"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-carlos-clippy.log",
-          "sha256": "23db3e87f601c0f2ac983e22e8c0e5a47e007aa2819a090ff0af8be229b5bd37",
-          "proof": "dispatch/quests/NPC allfeatures/alltargets -DwarningsPASS1m03"
-        },
-        "callback_units": {
-          "log": "/tmp/questpc3-carlos-callback-units.log",
-          "sha256": "63013aa0decb96547f867fef7ba8d0d3c103c606c076c21bad9e36c827b3652b",
-          "proof": "5passed1.14s incl unchanged legacy hash and bounded callbacks"
-        },
-        "npc_units": {
-          "log": "/tmp/questpc3-carlos-npc-units.log",
-          "sha256": "d949dafa802d33df635a3d5577b3e39c08957a12cd3581e098743e516ce6a9e9",
-          "proof": "17 targeted native NPCtalk admission tests passed138.35s"
-        },
-        "postgres_green": {
-          "log": "/tmp/questpc3-carlos-lessons-green.log",
-          "sha256": "8dc0b4d038d91eeb51a05475ac4600e907e62c567d3d8077721e2f8b9b935f1b",
-          "proof": "1passed102.50s/102489ms actualPG; realnativeCarloshi/yes authorall5Greet/logstates1..5; no positivefixtureprogress;5once-onlyreceipts, noItemgrant, returngreetingcannotrepeat"
-        },
-        "content": {
-          "log": "/tmp/questpc3-carlos-content.log",
-          "sha256": "202660e518bd87a510ef56ef310e655c729ce79d784c7456506752cca8f5ad0b",
-          "proof": "123 content tests passed3.74s"
-        },
-        "pin_scope": {
-          "log": "/tmp/questpc3-carlos-pin-scope.log",
-          "sha256": "0c77036d6583f46fc66d236ba2cad115f9a34c778ab354606c091cdcaffd1f48",
-          "proof": "No changed/untracked compiler INPUT_PATHS; retain exact e9059b986 world/input pin/repository proofs. No new placement/item/creature/world change; no pins edited."
-        }
-      },
-      "authored_sources": {
-        "producer": "/tmp/questpc3-carlos-producer.py -> tools/content-schema/quest-authoring/questpc3_carlos_lessons.py",
-        "authoring_tests": "/tmp/questpc3-carlos-authoring-tests.py -> tools/content-schema/quest-authoring/test_questpc3_carlos_lessons.py",
-        "rule": "Producer and tests COPIED/APPLIED only after realPG RED; do not copy again"
-      },
-      "review": "Read all changed source/test/data, source donor milestone branches and native TalkBook admission. Each authored storage successor leaves its accepted range; greeting/topic revisions use existing NPC owner and receipts. No physical/outfit/XP/completion effects; source grants remain with separate owners. Foreign registries preserved, no old assertion skipped/loosened, no new persistence/protocol/fencing owner or world-pin input. No blocking finding.",
-      "next": "Carlos food evidence: source accepts meat3577 OR ham3582 without consumption,5/log5->6/log6 and Trade1; implement generic present_any after realPG RED. Seven refreshed otherlane callback definitions have no alternative/absence predicate; reuse existing locked carried scan. Then wire actual successful source sale through generic trade/quest participant and continue tutorial/world mechanisms; four whole quests remain.",
-      "next_dependency_check": {
+      "id": "beginning-carlos-food-01",
+      "phase": "GREEN; commit and push generic any-of evidence + source Carlos food eligibility",
+      "scope": "Generic any-of carried evidence; source Carlos accepts meat3577 OR ham3582, no consumption; actual five lessons beforeempty/fish/HAM-only input cases;5/log5->6/log6/Trade1, one receipt on repeatedyes",
+      "red_log": "/tmp/questpc3-carlos-food-red.log",
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L168-L177",
+      "dependency_check": {
         "qengine2": {
           "head": "cd721d65c04118e9161d744d797ae98eb34b80af",
           "reward_callback_alternative_or_absence_matches": "",
@@ -963,7 +893,105 @@
           "exit": 1
         }
       },
-      "source_hook_observation": "Crystal and Canary define onTradeRequest locally but never register CALLBACK_ON_TRADE_REQUEST; their onSell quest hook is also not wired to source progression. When implementing intended tutorial sale, document conservative source repair: actual committed sale of >=1meat/ham with Trade1/Greet6 advances to7; no report-only grant. Existing source Service already buys exactly3577/3582 at2gp each."
+      "reuse": "Existing durability/quest_world_callback.rs consume_reward_inputs holds Character root and locks bounded carried candidate Item rows before physical mutation; extend predicates generically, no new SQL persistence owner. Seven refreshed otherlane reward callback definitions have no alternative/absence predicate.",
+      "whole_entry_status": "Four whole quests remain IN_PROGRESS, shared mechanism is ours to implement.",
+      "supplementary_red": {
+        "log": "/tmp/questpc3-carlos-food-profile-red.log",
+        "sha256": "9b267b33e455c737cda625855b15630a0abf6b437881ce4c534569187eb57954",
+        "proof": "1 profile-closure test failed6.434s, missing both alternatives from generated native policy; production unchanged."
+      },
+      "prepared_core_not_applied": "/tmp/questpc3-food-core.py: optional present_any with default empty/legacy-compatible NUL-domain binding; bounded distinct positive requirements; existing locked carried scan OR; complete alternative native-profile closure/schema/docs/skill. Do not apply before actualPG RED.",
+      "fixture_correction": {
+        "log": "/tmp/questpc3-carlos-food-red-fixture.log",
+        "duration_ms": 94211,
+        "error": "item MINT must commit its location, cause receipt and audit event together as its reserved transaction at line3909",
+        "fix": "Use existing physical-input fixture transaction-local seed role for fish/Ham creation only, exactly as equipment and hand-in fixtures. Actual NPC callback executes after transaction committed with normal guards. No production change or assertion weakened. Rerun RED until HAMpositive feature failure reached."
+      },
+      "red_proof": {
+        "duration_ms": 95447,
+        "log": "/tmp/questpc3-carlos-food-red.log",
+        "sha256": "ea3fd677d2702732934cee4796c6c37c18834e50baf10c003bf8eb2db8cd9666",
+        "proof": "Five realNPCintro milestonesPASS; empty/fish unchanged5/log5/Trade0; HAMONLYactual5vsrequired6 at95297ms; POSTGRES_CASE_COMPLETED95447ms success=false."
+      },
+      "implementation": "Applied core+authoring scripts once. Optional present_any bounded/distinct/positive with legacy-compatible binding extension; existing locked carried scan checks one complete alternative, no debit. Nativeprofile closure includes all choices. Source sixth callback5/log5->6/log6/Trade1 andstage6returnoffer. Priorfive authoring assertions retained; new validator/closure/food tests.",
+      "checks_so_far": {
+        "authoring": "15PASS11.585s",
+        "native_profiles": "16PASS111.526s, includes new alternative closure test",
+        "green": "session40253 stillcompiling/log/tmp/questpc3-carlos-food-green.log",
+        "native": "session81429 first41registrationPASS, drift-checkrunning",
+        "strict": "session92253 queuedfmt/check/Clippy4crates,6callbackunits/content123"
+      },
+      "green_proof": {
+        "log": "/tmp/questpc3-carlos-food-green.log",
+        "sha256": "3ee60dda3d24b9b890f64248054b628391931f9ba838ee125903d07391701ef3",
+        "duration_ms": 107260,
+        "proof": "Five sourceintro milestonesPASS, empty/fish5/log5/Trade0; HAMONLY6/log6/Trade1; no consumption/MINT, repeatedyesonefoodreceipt."
+      },
+      "generated_delta": "Native41regen+checkPASS. Only item3577 marketability metadata completed;3582 food360s andmarketability metadata completed fromretainedsources. No weight/stack/quantity changed, no loot/prey physics delta. Profiles alreadycontainedbothdefinitions; no new rows. World compiler INPUT_PATHS changed by native profiles: pin-refresh+pin-check running via repository compiler binary (source unchanged).",
+      "checks": {
+        "authoring": {
+          "log": "/tmp/questpc3-carlos-food-authoring.log",
+          "sha256": "6b67673ce7b402d0145b94801c3ae857c8b618896d9703ebf5156f04d5319d08",
+          "tail": "...............\n----------------------------------------------------------------------\nRan 15 tests in 11.585s\n\nOK\n"
+        },
+        "profiles": {
+          "log": "/tmp/questpc3-carlos-food-profiles.log",
+          "sha256": "d594ef88a1de6d8144403393307876ca78155e0dd6242137233c251ea5bcf6b9",
+          "tail": "................\n----------------------------------------------------------------------\nRan 16 tests in 111.526s\n\nOK\n"
+        },
+        "native": {
+          "log": "/tmp/questpc3-carlos-food-native.log",
+          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+          "tail": "+ python3 tools/content-migration/register_spell_families.py\nPASS registered spell import files=41 activation=false\n+ python3 tools/content-migration/register_spell_families.py --check\nPASS registered spell import files=41 activation=false\n"
+        },
+        "fmt": {
+          "log": "/tmp/questpc3-carlos-food-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tail": ""
+        },
+        "check": {
+          "log": "/tmp/questpc3-carlos-food-check.log",
+          "sha256": "c5e74d99d59cf482886f3c883e52040f241117211932b95d6ee2a9d096afe270",
+          "tail": "g oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 57s\n"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-carlos-food-clippy.log",
+          "sha256": "b86a4821b7f0092a27ce83a6239e4357c87ce5c38621e33af5ee1369d28bf30f",
+          "tail": "-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)\n    Checking oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 00s\n"
+        },
+        "callback-units": {
+          "log": "/tmp/questpc3-carlos-food-callback-units.log",
+          "sha256": "257d2974edc3aae805868af0315bc0835b04e07e3836e074190388457abcedbf",
+          "tail": " v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.67s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)\n\nrunning 6 tests\ntest quest::reward_callbacks::tests::legacy_callbacks_keep_their_existing_reward_binding ... ok\ntest quest::reward_callbacks::tests::health_loss_is_positive_once_only_and_content_bound ... ok\ntest quest::reward_callbacks::tests::alternative_evidence_is_bounded_distinct_positive_and_content_bound ... ok\ntest quest::reward_callbacks::tests::reward_value_and_premium_terms_change_the_quest_definition_hash ... ok\ntest quest::reward_callbacks::tests::repeatable_equipment_checks_are_bounded_value_free_and_content_bound ... ok\ntest quest::reward_callbacks::tests::qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 261 filtered out; finished in 1.87s\n\n"
+        },
+        "content": {
+          "log": "/tmp/questpc3-carlos-food-content.log",
+          "sha256": "17578a5f4796bba616cb4bc3d084661d02bb3fc1c1a566bf51ec1de65b1c414b",
+          "tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 4.46s\n\n"
+        },
+        "repository": {
+          "log": "/tmp/questpc3-carlos-food-repository.log",
+          "sha256": "cf2ca51e145dbca5b11dd5515d6ce07118fa3134d2185552b10b7899adfa4138",
+          "tail": "f deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 5 tests\n..test bed_promotion_is_idempotent_on_the_committed_world has been running for over 60 seconds\ntest full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package has been running for over 60 seconds\ntest repository_package_recaptures_and_rewrites_without_identity_or_layer_drift has been running for over 60 seconds\n...\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 121.85s\n\n"
+        },
+        "green": {
+          "log": "/tmp/questpc3-carlos-food-green.log",
+          "sha256": "3ee60dda3d24b9b890f64248054b628391931f9ba838ee125903d07391701ef3",
+          "tail": "3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=105920\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=106048\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=106189\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=106432\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=106535\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=106707\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=107260\nQUESTPC3_CARLOS_FOOD POSTGRES_CASE_COMPLETED duration_ms=107260 success=true\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_accepts_either_food_without_consumption ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 107.26s\n\n"
+        },
+        "pin-refresh": {
+          "log": "/tmp/questpc3-carlos-food-pin-refresh.log",
+          "sha256": "c3514621c8d0f98f75fd7fb34d09bb30c7e0fcb8ebcdc994d515d550e0b28424",
+          "tail": "{\n  \"inputs_digest\": \"aa67e504d66f2e4948207f8b7f5376994ac169e42d8b41cc1a39cc02de3dcf28\",\n  \"pins\": [\n    {\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"previous\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
+        },
+        "pin-check": {
+          "log": "/tmp/questpc3-carlos-food-pin-check.log",
+          "sha256": "4bb8bd58a3d1d41d5a8862325bf47694fec7d186aa9be7b889e97c2c384af2b5",
+          "tail": "{\n  \"inputs_digest\": \"aa67e504d66f2e4948207f8b7f5376994ac169e42d8b41cc1a39cc02de3dcf28\",\n  \"pins\": [\n    {\n      \"bytes\": 31102319,\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
+        }
+      },
+      "review": "Reviewed all changed Rust, profile admission, source producer/schema/docs and tests. Source callback accepts one full meat/ham requirement under existing Character root/locked custody scan, no consumption or value grant. Each storage successor leaves accepted range; exact source cause receipt prevents repetition. Absent present_any retains every previous hash. Fixture-only local seed setup corrected before required actualfeatureRED; production constraints and all assertions unchanged. No new persistence or protocol owner. Generated profiles complete retained food/marketability only, weights/stacks/quantities unchanged; pins regenerated with repository compiler. No blocking finding.",
+      "next": "Implement generic successful-trade quest participant and source Carlos sale/report/bridge, then remaining Beginning ground-branch/cart and coat replacement plus all FirstDragon/TaintedSoul/ThreatenedDreams routes. Reuse refreshed upstream mechanisms first. Four whole quests remain; no final summary."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2472,7 +2500,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T06:23:00.113000+00:00",
+    "updated_at": "2026-11-07T06:48:50.058110+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2579,106 +2607,125 @@
       }
     },
     "previous_batch": {
-      "id": "beginning-damage-lesson-01",
-      "phase": "GREEN; commit and push this coherent reusable health owner + source lesson batch",
-      "scope": "SourceSantiagoGreet9->10/log8 with20physicalLuaHP loss; normalcase, retainedlost-ack/replay/noHPdoubleapply throughsharedQuestandconditionowners",
-      "red_log": "/tmp/questpc3-beginning-damage-red.log",
-      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L180-L188",
-      "reused": "stage_item_health_loss in spell/actor_conditions/item_actions.rs:33 preservesLuaarmor/originbypass,mana-shield/survival; novelty_item_owner.rs showsretainedsuccessor/death/fences/classifiedreceipt. Questdialoguecommit/reconcile retainsoriginalcause andhookforunknownack.",
-      "dependency_heads": {
-        "qengine2": "3b0c2d9e23c68f1e1bece0f39643ba836077dfe2",
-        "questpc2": "8536146524ad9cc4af542c76049334c4b8dabdeb",
-        "questpc4": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
-        "questpc5": "dcc8f5272c6f6dcd5dda7cf68975e5f5bbd4e928",
-        "questpc6": "53d5648b88e48bed2b9f27545334c21ea6f37028",
-        "questpc7": "e7a5aac32f9dc903f7cb884414c66d4504ebcd3c",
-        "questpc8": "1d0b9e8d79fa5710b5ee61f9ef91afbe74ea736c",
-        "questl2": "96d03398ff4fa6a4b4600bce114209738e072d5f"
-      },
-      "upstream_check": "No declarativeNPC/worldcallbackhealth/vitaleffect inrefreshedqengine2,PC2/4-8/L2; implementreusableQuestcause participant usingexistinghealthowner, noSQLhealthwriter.",
-      "whole_entry_status": "FourownedwholequestsremainIN_PROGRESS; noengine deferral.",
+      "id": "beginning-carlos-lessons-01",
+      "phase": "GREEN; commit and push this five-entry source NPC batch",
+      "scope": "Five source Carlos greeting/outfit/favor/hunting lessons, natural initial state throughGreet5/log5; return greeting cannot repeat receipts; no physical grants",
+      "red_log": "/tmp/questpc3-carlos-lessons-red.log",
+      "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L85-L105;#L145-L166",
+      "native_placement": "Existing source placement32082,32263,7; reuse imported nativeNPC, no new placement or world data",
+      "whole_entry_status": "Four whole quests remain IN_PROGRESS; implement missing mechanisms as needed, no deferral.",
       "red_proof": {
-        "duration_ms": 92139,
-        "marker": "QUESTPC3_BEGINNING_DAMAGE POSTGRES_ASSERTION_REACHED lost_ack=false before_hp=185 after_hp=185 duration_ms=92013",
-        "failure": "Expected 165 HP from source addHealth(-20), actual 185 HP",
-        "sha256": "0ceb938638afdb008de56117a4be79ef96f83b2cdc37580707d8b95bcea7c779"
+        "duration_ms": 89399,
+        "log": "/tmp/questpc3-carlos-lessons-red.log",
+        "sha256": "98a2b763afff4f6cb441814382fae8167f0046bb4065e1146d4fab27f35ec9ed",
+        "error": "classic_quests.rs:147 command4600 hi: actualNoConversation vs expectedOk; POSTGRES_CASE_COMPLETED89399ms success=false",
+        "diagnosis": "npc_command.rs:546 explicitly rejects placedNPC withnoTalkBookentry. npc_talk.rs source-shared reward_messages admits greeting onlywhen source dataexists. NativeCarlosplacementalreadyvalid; no fixture repair or test loosening required."
       },
-      "implementation": "Optional positive health_loss extends callback binding only when present; existing stage_item_health_loss stages exact successor/death before durable command. ChannelSpellStates retains cause/fence/revision, blocks competing resource commits, prunes on lifecycle; NPC normal/reconcile settles original cause once, unknown retained. No SQL health writer.",
+      "source_sha256": "0893e67944b91900a4cc5fb2e803895f63b1b436ab8556aa78097e00559f94fb",
+      "implementation": "New disjointbeginning-carlos producer preserves all foreignrecords; Carlosnativegreeting,5once-onlyGreet/logmilestones1..5,5read-onlyreturnoffers; no physical/outfit/XP grant, no generic engine duplication.",
       "checks_so_far": {
-        "callback_units": "5 passed,1.40s incl legacy binding/positive health/bound amount/value-free repeats",
-        "source_authoring": "11 passed18.009s; native41 regeneration running"
-      },
-      "green_proof": {
-        "log": "/tmp/questpc3-beginning-damage-green.log",
-        "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
-        "duration_ms": 131694,
-        "proof": "1 passed131.71s; normal185->165HP;lostack165->145HP; exactcause-onlyrecovery,norepeatHP/mana; sourceGreet10/log8,2receipts."
+        "authoring": "14 tests9.865sPASS; new and existing producer --checkPASS",
+        "green_log": "/tmp/questpc3-carlos-lessons-green.log",
+        "strict_checks": "session36330: fmt/check/Clippy3crates allfeatures/alltargets -Dwarnings; callbackunits/NPCtalkunits/content123 sequential"
       },
       "checks": {
-        "callback_units": {
-          "log": "/tmp/questpc3-damage-callback-unit.log",
-          "sha256": "a17a8a41a810e3ff48e2017ed35ec9d9741d3f97ad1c1255379ebdeaf91e7e5e",
-          "proof": "5 callback tests passed1.40s; absent-health legacy binding unchanged; positive/bound health and value-free repeated checks"
-        },
         "authoring": {
-          "log": "/tmp/questpc3-damage-authoring.log",
-          "sha256": "f14de230b3a7882ca6208582fde46bb2ca804882f6e0ec1b2c8c45f9c68e85d4",
-          "proof": "11 source authoring tests passed18.009s"
-        },
-        "native": {
-          "log": "/tmp/questpc3-damage-native.log",
-          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
-          "proof": "41nativeproviders regenerated and drift-checked, unchanged generated data"
+          "log": "/tmp/questpc3-carlos-authoring.log",
+          "sha256": "c9652d708094ee5d42bd048a633c67b3ad2cef96cd1da1264ca9986c53573f44",
+          "proof": "14passed9.865s; exact five source states, no value grants, return greeting predicates, all foreign callbacks/offers/greetings preserved; new+existing NPC producer --checkPASS"
         },
         "fmt": {
-          "log": "/tmp/questpc3-damage-fmt.log",
+          "log": "/tmp/questpc3-carlos-fmt.log",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "proof": "cargo fmt --all -- --check; mounted test rustfmt explicitly; PASS"
+          "proof": "cargo fmt --all -- --checkPASS; mounted test explicitlyrustfmt"
         },
         "check": {
-          "log": "/tmp/questpc3-damage-check-final.log",
-          "sha256": "10ff220a1ee3f8e5577bd1982816e903942d3eb16b7cf56f694027b7cbbf14ce",
-          "proof": "dispatch/quests allfeatures PASS; reported5m03 includes build-lock waiting"
+          "log": "/tmp/questpc3-carlos-check.log",
+          "sha256": "a573e366179887debc6edf5c36aac023de4da1ab47e69d2ccc6f8db7bd2e8ac4",
+          "proof": "dispatch/quests/NPC allfeaturesPASS2m22 including lock waiting"
         },
         "clippy": {
-          "log": "/tmp/questpc3-damage-clippy.log",
-          "sha256": "17f9db003c3ef540445a69c126f4d3d119508feaad3877e13e5e9600133c53b5",
-          "proof": "dispatch/quests allfeatures/alltargets -Dwarnings PASS"
+          "log": "/tmp/questpc3-carlos-clippy.log",
+          "sha256": "23db3e87f601c0f2ac983e22e8c0e5a47e007aa2819a090ff0af8be229b5bd37",
+          "proof": "dispatch/quests/NPC allfeatures/alltargets -DwarningsPASS1m03"
+        },
+        "callback_units": {
+          "log": "/tmp/questpc3-carlos-callback-units.log",
+          "sha256": "63013aa0decb96547f867fef7ba8d0d3c103c606c076c21bad9e36c827b3652b",
+          "proof": "5passed1.14s incl unchanged legacy hash and bounded callbacks"
+        },
+        "npc_units": {
+          "log": "/tmp/questpc3-carlos-npc-units.log",
+          "sha256": "d949dafa802d33df635a3d5577b3e39c08957a12cd3581e098743e516ce6a9e9",
+          "proof": "17 targeted native NPCtalk admission tests passed138.35s"
         },
         "postgres_green": {
-          "log": "/tmp/questpc3-beginning-damage-green.log",
-          "sha256": "2610528bc9ac4c3a58261e36ce63f5f6f8b69fb4148b05bda3bd7321f269727e",
-          "proof": "1 passed131.71s;131694ms actualPG; normal185->165HP/lostack165->145HP, exactoriginalcause reply recovery/nodoubleHP;Greet10/log8,2receipts"
-        },
-        "reward_regression": {
-          "log": "/tmp/questpc3-damage-reward-regression.log",
-          "sha256": "d8d7ba68e7cc8fc454dce032b289f15ed86e22aaec43c686ee3d668c20834523",
-          "proof": "1passed146.20s/146194ms actualPG; physicallegs/fish/XP/Zirella unchanged"
-        },
-        "equipment_regression": {
-          "log": "/tmp/questpc3-damage-equipment-regression.log",
-          "sha256": "6b1223eb26258e6df67f3cb2725db706b2d5651b0d28dcfcb9925eadf01366ae",
-          "proof": "1passed147.92s/147913ms actualPG; missinggear/coat-only/wornarmor/onceclub unchanged"
+          "log": "/tmp/questpc3-carlos-lessons-green.log",
+          "sha256": "8dc0b4d038d91eeb51a05475ac4600e907e62c567d3d8077721e2f8b9b935f1b",
+          "proof": "1passed102.50s/102489ms actualPG; realnativeCarloshi/yes authorall5Greet/logstates1..5; no positivefixtureprogress;5once-onlyreceipts, noItemgrant, returngreetingcannotrepeat"
         },
         "content": {
-          "log": "/tmp/questpc3-damage-content.log",
-          "sha256": "5af87cb9b7c06014995ac16366b7c6711c6f7f1572bcf7fb5218b697cd4f2292",
-          "proof": "123passed5.92s"
+          "log": "/tmp/questpc3-carlos-content.log",
+          "sha256": "202660e518bd87a510ef56ef310e655c729ce79d784c7456506752cca8f5ad0b",
+          "proof": "123 content tests passed3.74s"
         },
         "pin_scope": {
-          "log": "/tmp/questpc3-damage-pin-scope.log",
-          "sha256": "69bfcdcc9548b5777b0bad85b10e739e67184238c360d7580953c6f44fe23ecc",
-          "proof": "No changed/untracked path intersects repository compiler INPUT_PATHS; retain existing exact e9059b986 world/input pin/repository proofs. No world data or pins changed."
+          "log": "/tmp/questpc3-carlos-pin-scope.log",
+          "sha256": "0c77036d6583f46fc66d236ba2cad115f9a34c778ab354606c091cdcaffd1f48",
+          "proof": "No changed/untracked compiler INPUT_PATHS; retain exact e9059b986 world/input pin/repository proofs. No new placement/item/creature/world change; no pins edited."
         }
       },
-      "review": "Read all changed source, original source health branch, callback binding/validation, live participant reservation/fences/revisions/death/lifecycle, normal/refusal/unknown/reconcile paths, and unchanged legacy regression assertions. No new SQL/persistence owner, protocol, credentials, item economics or pin changes. Exact existing health routine reused; positive amount is content-bound; no second application from receipt replay. No blocking finding.",
-      "next": "After push, apply /tmp/questpc3-next-carlos-test.py once for realPG RED on five Carlos greeting/outfit/hunt lessons; author source NPC callbacks generically with disjoint beginning-carlos prefix. No production Carlos change yet. Continue all four whole quests."
+      "authored_sources": {
+        "producer": "/tmp/questpc3-carlos-producer.py -> tools/content-schema/quest-authoring/questpc3_carlos_lessons.py",
+        "authoring_tests": "/tmp/questpc3-carlos-authoring-tests.py -> tools/content-schema/quest-authoring/test_questpc3_carlos_lessons.py",
+        "rule": "Producer and tests COPIED/APPLIED only after realPG RED; do not copy again"
+      },
+      "review": "Read all changed source/test/data, source donor milestone branches and native TalkBook admission. Each authored storage successor leaves its accepted range; greeting/topic revisions use existing NPC owner and receipts. No physical/outfit/XP/completion effects; source grants remain with separate owners. Foreign registries preserved, no old assertion skipped/loosened, no new persistence/protocol/fencing owner or world-pin input. No blocking finding.",
+      "next": "Carlos food evidence: source accepts meat3577 OR ham3582 without consumption,5/log5->6/log6 and Trade1; implement generic present_any after realPG RED. Seven refreshed otherlane callback definitions have no alternative/absence predicate; reuse existing locked carried scan. Then wire actual successful source sale through generic trade/quest participant and continue tutorial/world mechanisms; four whole quests remain.",
+      "next_dependency_check": {
+        "qengine2": {
+          "head": "cd721d65c04118e9161d744d797ae98eb34b80af",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc2": {
+          "head": "a1a96a04fe99991f0a0eaedeb648583e1781c01b",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc4": {
+          "head": "5d078c61f301d5317c3c86cd5edad8fb49af056b",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc5": {
+          "head": "f3f6a43fbbdb929bf2244a95cd2d5b80c743948e",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc6": {
+          "head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc7": {
+          "head": "cc44f84dd26c3357cbdac3c4accf48a3744f3baf",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        },
+        "questpc8": {
+          "head": "805a061415355a68a924b3b32d02023fe608fc97",
+          "reward_callback_alternative_or_absence_matches": "",
+          "exit": 1
+        }
+      },
+      "source_hook_observation": "Crystal and Canary define onTradeRequest locally but never register CALLBACK_ON_TRADE_REQUEST; their onSell quest hook is also not wired to source progression. When implementing intended tutorial sale, document conservative source repair: actual committed sale of >=1meat/ham with Trade1/Greet6 advances to7; no report-only grant. Existing source Service already buys exactly3577/3582 at2gp each."
     },
     "previous_publication": {
-      "head": "6843827386ec154df1f27e805cc5383999b33baf",
+      "head": "514d5036db051fbbc7e800f5dd6f04e085bec9e3",
       "pushed": true,
       "remote_verified": true,
-      "batch": "beginning-damage-lesson-01"
+      "batch": "beginning-carlos-lessons-01"
     },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
@@ -3660,6 +3707,149 @@
           }
         },
         "source_hook_observation": "Crystal and Canary define onTradeRequest locally but never register CALLBACK_ON_TRADE_REQUEST; their onSell quest hook is also not wired to source progression. When implementing intended tutorial sale, document conservative source repair: actual committed sale of >=1meat/ham with Trade1/Greet6 advances to7; no report-only grant. Existing source Service already buys exactly3577/3582 at2gp each."
+      },
+      "beginning-carlos-food-01": {
+        "id": "beginning-carlos-food-01",
+        "phase": "GREEN; commit and push generic any-of evidence + source Carlos food eligibility",
+        "scope": "Generic any-of carried evidence; source Carlos accepts meat3577 OR ham3582, no consumption; actual five lessons beforeempty/fish/HAM-only input cases;5/log5->6/log6/Trade1, one receipt on repeatedyes",
+        "red_log": "/tmp/questpc3-carlos-food-red.log",
+        "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/carlos.lua#L168-L177",
+        "dependency_check": {
+          "qengine2": {
+            "head": "cd721d65c04118e9161d744d797ae98eb34b80af",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc2": {
+            "head": "a1a96a04fe99991f0a0eaedeb648583e1781c01b",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc4": {
+            "head": "5d078c61f301d5317c3c86cd5edad8fb49af056b",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc5": {
+            "head": "f3f6a43fbbdb929bf2244a95cd2d5b80c743948e",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc6": {
+            "head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc7": {
+            "head": "cc44f84dd26c3357cbdac3c4accf48a3744f3baf",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          },
+          "questpc8": {
+            "head": "805a061415355a68a924b3b32d02023fe608fc97",
+            "reward_callback_alternative_or_absence_matches": "",
+            "exit": 1
+          }
+        },
+        "reuse": "Existing durability/quest_world_callback.rs consume_reward_inputs holds Character root and locks bounded carried candidate Item rows before physical mutation; extend predicates generically, no new SQL persistence owner. Seven refreshed otherlane reward callback definitions have no alternative/absence predicate.",
+        "whole_entry_status": "Four whole quests remain IN_PROGRESS, shared mechanism is ours to implement.",
+        "supplementary_red": {
+          "log": "/tmp/questpc3-carlos-food-profile-red.log",
+          "sha256": "9b267b33e455c737cda625855b15630a0abf6b437881ce4c534569187eb57954",
+          "proof": "1 profile-closure test failed6.434s, missing both alternatives from generated native policy; production unchanged."
+        },
+        "prepared_core_not_applied": "/tmp/questpc3-food-core.py: optional present_any with default empty/legacy-compatible NUL-domain binding; bounded distinct positive requirements; existing locked carried scan OR; complete alternative native-profile closure/schema/docs/skill. Do not apply before actualPG RED.",
+        "fixture_correction": {
+          "log": "/tmp/questpc3-carlos-food-red-fixture.log",
+          "duration_ms": 94211,
+          "error": "item MINT must commit its location, cause receipt and audit event together as its reserved transaction at line3909",
+          "fix": "Use existing physical-input fixture transaction-local seed role for fish/Ham creation only, exactly as equipment and hand-in fixtures. Actual NPC callback executes after transaction committed with normal guards. No production change or assertion weakened. Rerun RED until HAMpositive feature failure reached."
+        },
+        "red_proof": {
+          "duration_ms": 95447,
+          "log": "/tmp/questpc3-carlos-food-red.log",
+          "sha256": "ea3fd677d2702732934cee4796c6c37c18834e50baf10c003bf8eb2db8cd9666",
+          "proof": "Five realNPCintro milestonesPASS; empty/fish unchanged5/log5/Trade0; HAMONLYactual5vsrequired6 at95297ms; POSTGRES_CASE_COMPLETED95447ms success=false."
+        },
+        "implementation": "Applied core+authoring scripts once. Optional present_any bounded/distinct/positive with legacy-compatible binding extension; existing locked carried scan checks one complete alternative, no debit. Nativeprofile closure includes all choices. Source sixth callback5/log5->6/log6/Trade1 andstage6returnoffer. Priorfive authoring assertions retained; new validator/closure/food tests.",
+        "checks_so_far": {
+          "authoring": "15PASS11.585s",
+          "native_profiles": "16PASS111.526s, includes new alternative closure test",
+          "green": "session40253 stillcompiling/log/tmp/questpc3-carlos-food-green.log",
+          "native": "session81429 first41registrationPASS, drift-checkrunning",
+          "strict": "session92253 queuedfmt/check/Clippy4crates,6callbackunits/content123"
+        },
+        "green_proof": {
+          "log": "/tmp/questpc3-carlos-food-green.log",
+          "sha256": "3ee60dda3d24b9b890f64248054b628391931f9ba838ee125903d07391701ef3",
+          "duration_ms": 107260,
+          "proof": "Five sourceintro milestonesPASS, empty/fish5/log5/Trade0; HAMONLY6/log6/Trade1; no consumption/MINT, repeatedyesonefoodreceipt."
+        },
+        "generated_delta": "Native41regen+checkPASS. Only item3577 marketability metadata completed;3582 food360s andmarketability metadata completed fromretainedsources. No weight/stack/quantity changed, no loot/prey physics delta. Profiles alreadycontainedbothdefinitions; no new rows. World compiler INPUT_PATHS changed by native profiles: pin-refresh+pin-check running via repository compiler binary (source unchanged).",
+        "checks": {
+          "authoring": {
+            "log": "/tmp/questpc3-carlos-food-authoring.log",
+            "sha256": "6b67673ce7b402d0145b94801c3ae857c8b618896d9703ebf5156f04d5319d08",
+            "tail": "...............\n----------------------------------------------------------------------\nRan 15 tests in 11.585s\n\nOK\n"
+          },
+          "profiles": {
+            "log": "/tmp/questpc3-carlos-food-profiles.log",
+            "sha256": "d594ef88a1de6d8144403393307876ca78155e0dd6242137233c251ea5bcf6b9",
+            "tail": "................\n----------------------------------------------------------------------\nRan 16 tests in 111.526s\n\nOK\n"
+          },
+          "native": {
+            "log": "/tmp/questpc3-carlos-food-native.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "tail": "+ python3 tools/content-migration/register_spell_families.py\nPASS registered spell import files=41 activation=false\n+ python3 tools/content-migration/register_spell_families.py --check\nPASS registered spell import files=41 activation=false\n"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-carlos-food-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "tail": ""
+          },
+          "check": {
+            "log": "/tmp/questpc3-carlos-food-check.log",
+            "sha256": "c5e74d99d59cf482886f3c883e52040f241117211932b95d6ee2a9d096afe270",
+            "tail": "g oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Checking oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 57s\n"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-carlos-food-clippy.log",
+            "sha256": "b86a4821b7f0092a27ce83a6239e4357c87ce5c38621e33af5ee1369d28bf30f",
+            "tail": "-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)\n    Checking oteryn-gameplay-spell-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell-rules)\n    Checking oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)\n    Checking oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)\n    Checking oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)\n    Checking oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)\n    Checking oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)\n    Checking oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)\n    Checking oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)\n    Checking oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 00s\n"
+          },
+          "callback-units": {
+            "log": "/tmp/questpc3-carlos-food-callback-units.log",
+            "sha256": "257d2974edc3aae805868af0315bc0835b04e07e3836e074190388457abcedbf",
+            "tail": " v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.67s\n     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)\n\nrunning 6 tests\ntest quest::reward_callbacks::tests::legacy_callbacks_keep_their_existing_reward_binding ... ok\ntest quest::reward_callbacks::tests::health_loss_is_positive_once_only_and_content_bound ... ok\ntest quest::reward_callbacks::tests::alternative_evidence_is_bounded_distinct_positive_and_content_bound ... ok\ntest quest::reward_callbacks::tests::reward_value_and_premium_terms_change_the_quest_definition_hash ... ok\ntest quest::reward_callbacks::tests::repeatable_equipment_checks_are_bounded_value_free_and_content_bound ... ok\ntest quest::reward_callbacks::tests::qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 261 filtered out; finished in 1.87s\n\n"
+          },
+          "content": {
+            "log": "/tmp/questpc3-carlos-food-content.log",
+            "sha256": "17578a5f4796bba616cb4bc3d084661d02bb3fc1c1a566bf51ec1de65b1c414b",
+            "tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\nnote: the lint level is defined here\n   --> vendor/tokio-1.53.1/src/lib.rs:9:5\n    |\n  9 |     missing_docs,\n    |     ^^^^^^^^^^^^\n\nwarning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 123 tests\n....................................................................................... 87/123\n....................................\ntest result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 4.46s\n\n"
+          },
+          "repository": {
+            "log": "/tmp/questpc3-carlos-food-repository.log",
+            "sha256": "cf2ca51e145dbca5b11dd5515d6ce07118fa3134d2185552b10b7899adfa4138",
+            "tail": "f deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency\n   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14\n    |\n260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |              ^^^^^^^^^^^^\n    |\n    = note: `#[warn(deprecated)]` on by default\nhelp: replace the use of the deprecated method\n    |\n260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {\n    |\n\n\nrunning 5 tests\n..test bed_promotion_is_idempotent_on_the_committed_world has been running for over 60 seconds\ntest full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package has been running for over 60 seconds\ntest repository_package_recaptures_and_rewrites_without_identity_or_layer_drift has been running for over 60 seconds\n...\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 121.85s\n\n"
+          },
+          "green": {
+            "log": "/tmp/questpc3-carlos-food-green.log",
+            "sha256": "3ee60dda3d24b9b890f64248054b628391931f9ba838ee125903d07391701ef3",
+            "tail": "3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=3 actual_greet=3 actual_log=3 duration_ms=105920\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=4 actual_greet=4 actual_log=4 duration_ms=106048\nQUESTPC3_CARLOS_LESSONS POSTGRES_ASSERTION_REACHED stage=5 actual_greet=5 actual_log=5 duration_ms=106189\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=0 greet=5 log=5 trade=0 duration_ms=106432\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=1 greet=5 log=5 trade=0 duration_ms=106535\nQUESTPC3_CARLOS_FOOD POSTGRES_ASSERTION_REACHED case=2 greet=6 log=6 trade=1 duration_ms=106707\nQUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=107260\nQUESTPC3_CARLOS_FOOD POSTGRES_CASE_COMPLETED duration_ms=107260 success=true\ntest gameplay_transport::monk_save::postgres_tests::questpc3_beginning_rewards::questpc3_beginning_carlos_accepts_either_food_without_consumption ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2569 filtered out; finished in 107.26s\n\n"
+          },
+          "pin-refresh": {
+            "log": "/tmp/questpc3-carlos-food-pin-refresh.log",
+            "sha256": "c3514621c8d0f98f75fd7fb34d09bb30c7e0fcb8ebcdc994d515d550e0b28424",
+            "tail": "{\n  \"inputs_digest\": \"aa67e504d66f2e4948207f8b7f5376994ac169e42d8b41cc1a39cc02de3dcf28\",\n  \"pins\": [\n    {\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"previous\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
+          },
+          "pin-check": {
+            "log": "/tmp/questpc3-carlos-food-pin-check.log",
+            "sha256": "4bb8bd58a3d1d41d5a8862325bf47694fec7d186aa9be7b889e97c2c384af2b5",
+            "tail": "{\n  \"inputs_digest\": \"aa67e504d66f2e4948207f8b7f5376994ac169e42d8b41cc1a39cc02de3dcf28\",\n  \"pins\": [\n    {\n      \"bytes\": 31102319,\n      \"digest\": \"5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973\",\n      \"world\": \"oteryn\"\n    }\n  ]\n}\n"
+          }
+        },
+        "review": "Reviewed all changed Rust, profile admission, source producer/schema/docs and tests. Source callback accepts one full meat/ham requirement under existing Character root/locked custody scan, no consumption or value grant. Each storage successor leaves accepted range; exact source cause receipt prevents repetition. Absent present_any retains every previous hash. Fixture-only local seed setup corrected before required actualfeatureRED; production constraints and all assertions unchanged. No new persistence or protocol owner. Generated profiles complete retained food/marketability only, weights/stacks/quantities unchanged; pins regenerated with repository compiler. No blocking finding.",
+        "next": "Implement generic successful-trade quest participant and source Carlos sale/report/bridge, then remaining Beginning ground-branch/cart and coat replacement plus all FirstDragon/TaintedSoul/ThreatenedDreams routes. Reuse refreshed upstream mechanisms first. Four whole quests remain; no final summary."
       }
     },
     "completed_batches": [

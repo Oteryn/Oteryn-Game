@@ -50,6 +50,9 @@ pub struct RewardCallback {
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
+    /// At least one complete carried requirement must hold; inputs remain untouched.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub present_any: Vec<ItemAmount>,
     /// Read-only canonical durable equipment slots, checked under the Character root lock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub equipped_slots: Vec<u8>,
@@ -123,6 +126,11 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         digest.update(b"\0quest-reward-health-loss-v1\0");
         digest.update(amount.to_be_bytes());
     }
+    if !callback.present_any.is_empty() {
+        digest.update(b"\0quest-reward-present-any-v1\0");
+        digest
+            .update(serde_json::to_vec(&callback.present_any).map_err(|error| error.to_string())?);
+    }
     Ok(digest.finalize().into())
 }
 
@@ -160,6 +168,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
         let tracks: BTreeSet<_> = c.storage.iter().map(|s| &s.track).collect();
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
+        let alternatives: BTreeSet<_> = c.present_any.iter().map(|s| &s.item).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
@@ -199,6 +208,11 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
+                .iter()
+                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.present_any.len() > 8
+            || alternatives.len() != c.present_any.len()
+            || c.present_any
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.take.len() > 8
@@ -314,6 +328,41 @@ mod tests {
                 189, 203, 104, 136, 202, 26, 238, 6, 117, 167, 127, 82, 231, 202
             ]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn alternative_evidence_is_bounded_distinct_positive_and_content_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| !callback.present_any.is_empty())
+            .ok_or("alternative callback")?;
+        let document = |callback: &RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        let original = reward_binding(&callback)?;
+        let mut changed = callback.clone();
+        changed.present_any[0].count += 1;
+        assert_ne!(reward_binding(&changed)?, original);
+        assert!(parse(&document(&changed)).is_ok());
+        changed.present_any[0].count = 0;
+        assert!(parse(&document(&changed)).is_err());
+        changed = callback.clone();
+        changed.present_any.push(changed.present_any[0].clone());
+        assert!(parse(&document(&changed)).is_err());
+        changed.present_any = (1..=9)
+            .map(|id| ItemAmount {
+                item: format!("oteryn:item.tibia.i{id}"),
+                count: 1,
+            })
+            .collect();
+        assert!(parse(&document(&changed)).is_err());
+        changed = callback.clone();
+        changed.present_any[0].item = "unqualified-input".into();
+        assert!(parse(&document(&changed)).is_err());
+        changed.present_any.clear();
+        assert_ne!(reward_binding(&changed)?, original);
+        assert!(parse(&document(&changed)).is_ok());
         Ok(())
     }
 

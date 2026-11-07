@@ -138,6 +138,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         for callback in json.loads(shared.read_bytes())['callbacks']:
             npc_inputs.update(item['item'] for item in callback.get('take', []))
             npc_inputs.update(item['item'] for item in callback.get('present', []))
+            npc_inputs.update(item['item'] for item in callback.get('present_any', []))
             reward = callback.get('give')
             if reward:
                 keys.add(reward['item'])

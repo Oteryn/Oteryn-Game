@@ -244,6 +244,11 @@
             }
           ]
         },
+        "present_any": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/input" }
+        },
         "present": {
           "type": "array",
           "maxItems": 8,

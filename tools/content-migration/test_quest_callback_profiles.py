@@ -72,6 +72,22 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(row['semantics']['physical']['value']['weight'],
                              {'state': 'KNOWN', 'value': weight})
 
+    def test_any_of_evidence_carries_every_alternative_into_native_admission(self):
+        wanted = {'oteryn:item.tibia.i3577', 'oteryn:item.tibia.i3582'}
+        self.document['records'] = [row for row in self.document['records']
+                                    if row['production_definition']['production_key'] not in wanted]
+        self.generated[PROFILE] = json.dumps(self.document).encode()
+        (self.root / 'content/quests/shared-reward-callbacks.json').write_text(json.dumps({
+            'callbacks': [{'present_any': [{'item': key, 'count': 1} for key in sorted(wanted)],
+                           'take': [], 'give': None}]}))
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        self.assertTrue(wanted <= rows.keys(), 'every alternative needs its own admitted native policy')
+        for key in wanted:
+            self.assertTrue(rows[key]['admission']['materializable'])
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()
         rows = [r for r in json.loads(self.generated[PROFILE])['records']

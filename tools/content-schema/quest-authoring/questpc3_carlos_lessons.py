@@ -39,6 +39,15 @@ def documents():
                      "storage": [storage(GREET, low, high, value), storage(LOG, low, high, value)],
                      "take": [], "give": None, "outfit": None, "achievement": None,
                      "reply": [reply], "sources": [f"{SOURCE}#L{line}"]})
+    rows.append({"key": PREFIX + "food-evidence", "quest": QUEST, "npc": NPC,
+                 "keywords": ["yes", "help", "ok"], "topic": 5, "next_topic": 6,
+                 "storage": [storage(GREET, 5, 5, 6), storage(LOG, 5, 5, 6),
+                             storage(BASE + "carlos_npc_trade_storage", -1, 0, 1)],
+                 "present_any": [{"item": "oteryn:item.tibia.i3577", "count": 1},
+                                 {"item": "oteryn:item.tibia.i3582", "count": 1}],
+                 "take": [], "give": None, "outfit": None, "achievement": None,
+                 "reply": ["That smells delicious. Ask me for a trade and I will pay two gold pieces for each piece of meat or ham."],
+                 "sources": [SOURCE + "#L168-L177"]})
     offers = []
     for stage, topic, reply in [
         (1, 1, "Shall I explain how to change your outfit?"),
@@ -46,6 +55,7 @@ def documents():
         (3, 3, "Could you help me find some food?"),
         (4, 4, "Will you bring me meat or ham from a rabbit or deer?"),
         (5, 5, "Did your hunt succeed? Have you brought meat or ham?"),
+        (6, 6, "Do you still have meat or ham? Ask me for a trade to sell it."),
     ]:
         offers.append({"npc": NPC, "keywords": ["hi", "hello", "greetings"],
                        "topic": 0, "next_topic": topic,
