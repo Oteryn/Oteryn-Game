@@ -73,6 +73,7 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("POSTGRES_DATABASE_READY l6_room_raise version={version}");
+    verify_lane_migrations(h).await?;
     let before = if name.ends_with("-lower") {
         -1
     } else if name.ends_with("-equal") {
@@ -195,4 +196,33 @@ async fn commit(
 }
 async fn snapshot(h: &Harness) -> TestResult<Vec<serde_json::Value>> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('tracks',(SELECT jsonb_agg(to_jsonb(t) ORDER BY track_key) FROM game_character_quest_tracks t),'receipts',(SELECT jsonb_agg(to_jsonb(r) ORDER BY committed_character_revision) FROM game_character_quest_receipts r),'revision',(SELECT character_revision::text FROM game_character_roots LIMIT 1))").fetch_all(&h.pool).await?)
+}
+
+async fn verify_lane_migrations(h: &Harness) -> TestResult {
+    let expected: Vec<(i64, Vec<u8>)> = oteryn_gameplay_durability::GAME_MIGRATOR
+        .iter()
+        .filter(|migration| (1250..=1258).contains(&migration.version))
+        .map(|migration| (migration.version, migration.checksum.to_vec()))
+        .collect();
+    assert_eq!(
+        expected.len(),
+        9,
+        "all lane migrations use the assigned range"
+    );
+    let actual: Vec<(i64, Vec<u8>)> = sqlx::query_as(
+        "SELECT version, checksum FROM _sqlx_migrations WHERE version BETWEEN 1250 AND 1258 AND success ORDER BY version",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(
+        actual, expected,
+        "actual PostgreSQL versions and SQLx checksums match the owning embedded migrator"
+    );
+    let obsolete: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM _sqlx_migrations WHERE version IN (1060,1061,1062,1063,1064,1065,1070,1071,1072)",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        obsolete, 0,
+        "fresh lane qualification cannot install obsolete migration numbers"
+    );
+    eprintln!("POSTGRES_MIGRATION_REGISTRY_VERIFIED versions=1250-1258 checksums=9 obsolete=0");
+    Ok(())
 }

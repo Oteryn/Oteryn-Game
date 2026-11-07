@@ -3775,7 +3775,7 @@
       "repeatable_floor_expiry": {
         "status": "QUALIFIED",
         "scope": "Exact original deadline, same UID/mint, Ground/direct/nested/equipped repeated cycles through existing fenced owner; no whole Ancient Tombs claim",
-        "migration": "1063_floor_transform_expiry.sql"
+        "migration": "1253_floor_transform_expiry.sql"
       },
       "floor_source_presentation": {
         "status": "QUALIFIED",
@@ -3813,9 +3813,9 @@
       "carried_item_conditional_step": {
         "status": "QUALIFIED",
         "scope": "Generic fenced physical absence/debit branch receipt and prepared movement; sourceUID3950/3951/3952 carried-key routes in composed PG room, exact replay and no invented Quest progress",
-        "migration": "1065_carried_step_branches.sql",
+        "migration": "1255_carried_step_branches.sql",
         "whole_quest": "No whole Ancient Tombs or native alias qualification from this slice",
-        "additional_recipe_migration": "1070_remaining_tomb_carried_recipes.sql",
+        "additional_recipe_migration": "1256_remaining_tomb_carried_recipes.sql",
         "qualified_source_uids": [
           3950,
           3951,
@@ -3930,7 +3930,7 @@
           12122,
           12123
         ],
-        "migration": "1071_shared_world_switch_leases.sql",
+        "migration": "1257_shared_world_switch_leases.sql",
         "postgres": {
           "status": "GREEN",
           "version": "18.6",
@@ -4063,7 +4063,7 @@
       "shared_world_switch_personal_expiry": {
         "status": "QUALIFIED",
         "scope": "Generic original online actor/session server-timer consequences: Thalas<=0\u21921, Diprath<=1\u21922, Ashnone; immutable source/quest outcome audit, upper-guard no-ops, wrong-actor/future/absent/repeat/replay boundaries. Native source binding and whole quest remain active obligations.",
-        "migration": "1072_quest_source_expiry.sql",
+        "migration": "1258_quest_source_expiry.sql",
         "postgres": {
           "status": "GREEN",
           "version": "18.6",
@@ -4943,8 +4943,8 @@
         "spirit_reconciliation": {
           "head": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
           "status": "VALIDATING",
-          "migration": "1065_carried_step_branches.sql",
-          "published_migration_preserved": "1064_quest_reward_completion.sql",
+          "migration": "1255_carried_step_branches.sql",
+          "published_migration_preserved": "1254_quest_reward_completion.sql",
           "scope": "Preserve full Spirit qualification and exact retained wills/atomic completion support; only own unpublished numeric allocation changes."
         }
       },
@@ -5162,8 +5162,8 @@
         "spirit_reconciliation": {
           "head": "18f87a584f777b2fbfc6e9e108d72218161f9e9b",
           "status": "GREEN_AND_PUSHED",
-          "migration": "1065_carried_step_branches.sql",
-          "published_migration_preserved": "1064_quest_reward_completion.sql",
+          "migration": "1255_carried_step_branches.sql",
+          "published_migration_preserved": "1254_quest_reward_completion.sql",
           "scope": "Preserve full Spirit qualification and exact retained wills/atomic completion support; only own unpublished numeric allocation changes.",
           "native_profiles": {
             "incoming": 3624,
@@ -5311,7 +5311,7 @@
           "expected": "script33025,32868,z8",
           "marker": "POSTGRES_DATABASE_READY l6_carried_step"
         },
-        "migration": "1070_remaining_tomb_carried_recipes.sql",
+        "migration": "1256_remaining_tomb_carried_recipes.sql",
         "migration_claim": "Allocator main916/openPR969; own reserved1060..1079; choose1070 to avoid concurrent lower allocations. No published migration edits.",
         "native_profiles": {
           "before": 3627,
@@ -5431,7 +5431,7 @@
           "expected": "Committed",
           "marker": "POSTGRES_DATABASE_READY l6_shared_switch"
         },
-        "migration": "1071_shared_world_switch_leases.sql",
+        "migration": "1257_shared_world_switch_leases.sql",
         "implementation": "World/map/reset serialized bounded500 active leases; exact original20min PG deadlines; active physical placement dedup; immutable full same-XID lease/recipe audit; source/live-session/generation/activation fences; original-intent replay before current projection checks; mismatched replay intent refused",
         "initial_wire_smoke": {
           "result": "3 passed / 0 failed53.60s",
@@ -5865,7 +5865,7 @@
         "observed": "Expired real Thalas lease leaves personal track-1 instead of1",
         "log": "/tmp/questpc4-switch-treasure-red.log"
       },
-      "migration": "1072_quest_source_expiry.sql",
+      "migration": "1258_quest_source_expiry.sql",
       "allocator": "Fresh main max916/openPR969; lane reserved1060..1079;1072 unique",
       "implementation": [
         "Sealed original lease occurrence in server_timer namespace, no player-command substitution",
@@ -6369,7 +6369,7 @@
       "remote_verified": true
     },
     "room_raise_batch_19": {
-      "status": "GREEN_READY_TO_FF_PUSH",
+      "status": "GREEN_PUSHED",
       "previous_pushed_head": "ce3d18208a008b9826b1f03407dfcd5688d74e4d",
       "scope": "Reusable monotone source room progress; five PG fixture cases lower/equal/higher/refusal/i64MAX+replay",
       "source_contract": "CONTRACT-NOTES.md batch19, exact retainedblob hashes/lines and primary frozen evidence distinguished",
@@ -6459,10 +6459,12 @@
           "frozen_hash": "1passed0failed1.41s"
         }
       },
-      "compiled_green_checkpoint_pushed_head": "33f14e21daf5881760e76e2e19abccea447fbfaf"
+      "compiled_green_checkpoint_pushed_head": "33f14e21daf5881760e76e2e19abccea447fbfaf",
+      "pushed_head": "925ac96a97a06a0f7fc9e5c5f2283b856384171e",
+      "remote_verified": true
     },
     "migration_registry_batch_20": {
-      "status": "AUDITED_PENDING_RENUMBER",
+      "status": "GREEN_READY_TO_FF_PUSH",
       "owner_range": "1250-1269",
       "planned": {
         "1060": "1250",
@@ -6478,7 +6480,129 @@
       "qbase": "None of coordinator listed files are present; no QBASE rename needed",
       "qengine2": "0999..1002 byteidentical69609ef781c4e66d9c25fa61392c1ec0b6680033;1003..1006absentunused, no variants",
       "main": "4508fd2f1 freshlyfetched,0998+1095present,0999..1006absent;3020notyetintegrated, preserve exact QENGINE2 files",
-      "next": "Finishinflightcompiler then gitmv9files, updateallreferences, owningpinrefresh, duplicatecheck andfocused actualPG, commit/freshfetch/FFpush and report list+head"
+      "next": "CommitallGREEN, exactfreshlane fetch+ancestrycheck+FFpush, report9filenames+head andresume17wholeentries. Nextownmigration1259.",
+      "renames": [
+        {
+          "old": "apps/game-server/migrations/1060_floor_assembly.sql",
+          "new": "apps/game-server/migrations/1250_floor_assembly.sql",
+          "sha256": "42fbd6a8f2240a311084fb3e7d492fa7f7c8c5ef66854d3f64936b01736933bc"
+        },
+        {
+          "old": "apps/game-server/migrations/1061_reward_container_fluids.sql",
+          "new": "apps/game-server/migrations/1251_reward_container_fluids.sql",
+          "sha256": "c7c6de7ab084a241b2fa6d2105212a3699c22de16453e0459edce2328a5123d8"
+        },
+        {
+          "old": "apps/game-server/migrations/1062_floor_transform.sql",
+          "new": "apps/game-server/migrations/1252_floor_transform.sql",
+          "sha256": "08c7802570eb31362fc25bd92fc7a63855cbfe21096eb66ede469b70d4fd1ffa"
+        },
+        {
+          "old": "apps/game-server/migrations/1063_floor_transform_expiry.sql",
+          "new": "apps/game-server/migrations/1253_floor_transform_expiry.sql",
+          "sha256": "906ab935283d9ff47487edced287e3b11dc70a95a37450cd2b2f93acf98fcacc"
+        },
+        {
+          "old": "apps/game-server/migrations/1064_quest_reward_completion.sql",
+          "new": "apps/game-server/migrations/1254_quest_reward_completion.sql",
+          "sha256": "afd7a287ab9417e02a7b3215cd4478790ee8139ed634fb3cdab8e581592f9b0c"
+        },
+        {
+          "old": "apps/game-server/migrations/1065_carried_step_branches.sql",
+          "new": "apps/game-server/migrations/1255_carried_step_branches.sql",
+          "sha256": "bbd022eaba15376c453656baaebc9bfc93c845fa4b75f7dd50fe216c2fbdf4bc"
+        },
+        {
+          "old": "apps/game-server/migrations/1070_remaining_tomb_carried_recipes.sql",
+          "new": "apps/game-server/migrations/1256_remaining_tomb_carried_recipes.sql",
+          "sha256": "6b4e9ae12137c2544e437f0d16161b1761686b90df982fa012001f826a45b5a4"
+        },
+        {
+          "old": "apps/game-server/migrations/1071_shared_world_switch_leases.sql",
+          "new": "apps/game-server/migrations/1257_shared_world_switch_leases.sql",
+          "sha256": "be638f6ca262e5e36fa32c685f9f959b4a2edd3686d3817eed52078b4be75e05"
+        },
+        {
+          "old": "apps/game-server/migrations/1072_quest_source_expiry.sql",
+          "new": "apps/game-server/migrations/1258_quest_source_expiry.sql",
+          "sha256": "af4b339c3f71f5a3bef88f605da6c5bb04b0663997229c0de6aad29e4aa7f925"
+        }
+      ],
+      "references_updated": [
+        "qlane-meta/questpc4/QUEST-STATUS.json",
+        "qlane-meta/questpc4/RESUME.md",
+        "tools/content-schema/quest-authoring/shared-reward-callbacks.md"
+      ],
+      "owner_registry": "MIGRATION-REGISTRY.md",
+      "next_free": 1259,
+      "sql_content": "All9SQLbyteidentical; no schema changes or body variants. This coordinator registry correction replays focused PG, not a new runtime mechanic/PGRED claim.",
+      "pin_refresh": {
+        "status": "PASS",
+        "tool": "cargo run --locked --offline --release -p oteryn-world-bundle-compiler -- pin-refresh .",
+        "log": "/tmp/questpc4-migration-pin-refresh.log",
+        "digest": "f970b97d1976c5b587f04448aac5828729c0819dd76b113a66a5bc196101dbd7",
+        "unchanged": true
+      },
+      "duplicate_check": "PASS beforebuild",
+      "postgres": {
+        "status": "GREEN",
+        "session": 16935,
+        "logs": [
+          "/tmp/questpc4-migration-pg.log",
+          "/tmp/questpc4-migration-altar-pg.log",
+          "/tmp/questpc4-migration-timer-pg.log"
+        ],
+        "cases": {
+          "l6-room-raise-higher": {
+            "seconds": 75.663585506,
+            "log": "/tmp/questpc4-migration-pg.log"
+          },
+          "l6-room-raise-lower": {
+            "seconds": 82.777775668,
+            "log": "/tmp/questpc4-migration-pg.log"
+          },
+          "l6-room-raise-equal": {
+            "seconds": 88.668432122,
+            "log": "/tmp/questpc4-migration-pg.log"
+          },
+          "l6-room-raise-extreme": {
+            "seconds": 98.341562953,
+            "log": "/tmp/questpc4-migration-pg.log"
+          },
+          "l6-room-raise-refusal": {
+            "seconds": 57.668577457,
+            "log": "/tmp/questpc4-migration-pg.log"
+          },
+          "l6-floor-assembly-native": {
+            "seconds": 59.073349969,
+            "log": "/tmp/questpc4-migration-altar-pg.log"
+          },
+          "l6-tomb-switch-treasure-expired-12121": {
+            "seconds": 55.076457914,
+            "log": "/tmp/questpc4-migration-timer-pg.log"
+          }
+        },
+        "marker": "POSTGRES_MIGRATION_REGISTRY_VERIFIED versions=1250-1258 checksums=9 obsolete=0",
+        "version": "18.6",
+        "passed": 7,
+        "failed": 0,
+        "ignored": 0,
+        "room_seconds": 133.33,
+        "registry_marker_count": 5
+      },
+      "gates": {
+        "session": 75597,
+        "script": "/tmp/questpc4-migration-gates.sh",
+        "scope": "durability/dispatchfmt/check/clippy alltargets/features; owningembeddedmigrationunit;duplicates/diff"
+      },
+      "checks": {
+        "fmt": "PASS",
+        "check": "PASS durability/dispatch alltargets/features6m57s includesbuildlock wait",
+        "clippy": "PASS durability/dispatch alltargets/features -Dwarnings3m00s",
+        "embedded_registry_unit": "1passed0failed0.00s pureunit, compile1m16s; actualPGverification is separate7case proof",
+        "duplicates_diff": "PASS"
+      },
+      "main_recheck": "4508fd2f1d31ba316792ec05a968f9101daa67f9 at12:06UTC;0999..1006/1200..1209 absent,3020notinmain"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
@@ -7391,7 +7515,7 @@
       "repeatable_floor_expiry": {
         "status": "QUALIFIED",
         "scope": "Exact original deadline, same UID/mint, Ground/direct/nested/equipped repeated cycles through existing fenced owner; no whole Ancient Tombs claim",
-        "migration": "1063_floor_transform_expiry.sql"
+        "migration": "1253_floor_transform_expiry.sql"
       },
       "floor_source_presentation": {
         "status": "QUALIFIED",
@@ -7978,7 +8102,7 @@
         "repeatable_floor_expiry": {
           "status": "QUALIFIED",
           "scope": "Exact original deadline, same UID/mint, Ground/direct/nested/equipped repeated cycles through existing fenced owner; no whole Ancient Tombs claim",
-          "migration": "1063_floor_transform_expiry.sql"
+          "migration": "1253_floor_transform_expiry.sql"
         }
       },
       "qualification": "Reconciled375a7f532 whole Mead with83b747db6 reusable floor transform/expiry. All five integration PG cases and four-crate gates passed; whole Ancient Tombs remains in progress.",

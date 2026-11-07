@@ -155,4 +155,4 @@ the generated donor packet.
 `completes` is an optional boolean, omitted when false. A true value lowers to
 the existing owning Quest completion transition. Its source proof must match
 the same transaction's Quest receipt and completed revision, enforced by
-`1064_quest_reward_completion.sql`. It grants no outfit or item by itself.
+`1254_quest_reward_completion.sql`. It grants no outfit or item by itself.
