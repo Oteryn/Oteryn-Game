@@ -14,6 +14,16 @@ use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
+fn wevents_postgres_insect_native_population() -> TestResult {
+    run_case(
+        "wevents_insectoid_invasion",
+        "raid:world-events.greenshore-invasion",
+        2,
+        false,
+    )
+}
+
+#[test]
 fn wevents_postgres_bank_native_robber() -> TestResult {
     run_case(
         "wevents_bank_robber",
@@ -190,15 +200,16 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         .map_err(debug)?;
     let first_anchor = &selected.definition.waves[0].entries[0].area_anchor;
     let mut area = *selected.areas.get(first_anchor).ok_or("source area")?;
-    assert_eq!(
-        selected.areas.len(),
-        if flower {
-            4
-        } else if phased_boss {
-            2
-        } else {
-            1
-        }
+    let declared_areas: std::collections::BTreeSet<_> = selected
+        .definition
+        .waves
+        .iter()
+        .flat_map(|wave| wave.entries.iter().map(|entry| &entry.area_anchor))
+        .collect();
+    assert!(
+        declared_areas
+            .iter()
+            .all(|anchor| selected.areas.contains_key(*anchor))
     );
     for (_, source_area) in selected
         .areas
@@ -226,7 +237,12 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
     } else {
         assert!(selected.definition.announcements.is_empty());
     }
-    let entry_x = if mummy { area.from.x - 1 } else { area.from.x };
+    let single = selected.areas.values().any(|area| area.from == area.to);
+    let entry_x = if mummy || single {
+        area.from.x - 1
+    } else {
+        area.from.x
+    };
     let from = (u16::try_from(entry_x)?, u16::try_from(area.from.y)?);
     let to = (u16::try_from(area.to.x)?, u16::try_from(area.to.y)?);
     let native_floor = i8::try_from(area.from.floor.checked_neg().ok_or("native floor")?)?;
@@ -246,10 +262,7 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
         .ok_or("catalogue raid")?
         .select(bundle_digest, firing)
         .map_err(debug)?;
-    let first_area = selected
-        .areas
-        .get(&selected.definition.waves[0].entries[0].area_anchor)
-        .ok_or("first source spawn area")?;
+
     let room = deps
         .room
         .bundle_view(
@@ -372,7 +385,17 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position();
-            assert!(first_area.contains(RaidPosition {
+            let entry = selected
+                .definition
+                .waves
+                .get(usize::from(status.identity.wave))
+                .and_then(|wave| wave.entries.get(usize::from(status.identity.entry)))
+                .ok_or("source entry")?;
+            let source_area = selected
+                .areas
+                .get(&entry.area_anchor)
+                .ok_or("entry source area")?;
+            assert!(source_area.contains(RaidPosition {
                 x: at.x,
                 y: at.y,
                 floor: at.floor
@@ -382,7 +405,7 @@ async fn scenario(harness: &Harness, key: &str, expected: usize, boss: bool) -> 
             assert!(snapshot.maximum_health > 0);
             assert_eq!(
                 snapshot.state.policy.definition_key,
-                selected.definition.waves[0].entries[0].creature.as_str()
+                entry.creature.as_str()
             );
         }
         statuses

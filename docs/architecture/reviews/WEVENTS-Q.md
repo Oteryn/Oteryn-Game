@@ -531,3 +531,27 @@ substitution and removal of the World binding. Quests locked check and strict
 all-feature library clippy pass (`wevents-insect-authored-*-final.log`). The
 restoration callbacks preserve a transaction-only track accepting the existing
 -1/0 initial values; all progression and reset authority stays in World state.
+
+### Insectoid Invasion qualification
+
+`wevents-insect-native-pg-final.log`: **2 passed**, 286.80 s. Real PostgreSQL
+execution markers are `RAIDS_GLOBAL POSTGRES_CASE_COMPLETED
+wevents_insectoid_invasion duration=68.697362736s` and `WEVENTS PG EXECUTED:
+insect native USE duration=286.803194228s success=true`. Native Scouts are placed
+at both source points, preserve source-entry identity/HP, survive persistent raid
+completion and enter the native death path. Four separate literal production USE
+scenarios exercise the bucket and each fire, including capacity/repeated-action
+refusal and committed shared state. The fixture now follows ground revisions
+and leaves exact spawn points unoccupied; actor checks use each source entry.
+
+The owner PG restoration proof, reset models, projection ownership test, native
+selector/B3 verification and compiler pin verification are recorded above.
+Insectoid Invasion is QUALIFIED for this explicit World mechanism and restoration
+policy; its historical personal ten-kill recipe is separate reference material.
+
+Strict dispatch clippy, including the library test target, passed with
+`--all-features --lib --tests -- -D warnings` (`wevents-insect-native-clippy.log`).
+Locked dispatch check and workspace fmt check also passed for the qualification
+checkpoint (`wevents-insect-qualification-check.log`, 2m 51s, and
+`wevents-insect-qualification-fmt.log`); explicit mounted-test rustfmt and staged
+whitespace checks passed.

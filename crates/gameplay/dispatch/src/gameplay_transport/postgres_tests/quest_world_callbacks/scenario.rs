@@ -213,7 +213,10 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name.starts_with("spring-nest-") {
+        if name.starts_with("insect-restoration") {
+            super::super::qengine_access::insect_use(&mut owner, &mut admitted, &h, trigger)
+                .await?;
+        } else if name.starts_with("spring-nest-") {
             super::super::qengine_access::spring_use(&mut owner, &mut admitted, &h, trigger)
                 .await?;
         } else if outfit_world {

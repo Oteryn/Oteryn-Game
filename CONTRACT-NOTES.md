@@ -229,3 +229,8 @@ The selected public tiles are verified against
 `268c6b75fad682c6d9baeadc6563c2cace27d8414caa66ca538b49687a6dc262`.
 Victory removes the event population and projections; reset starts fresh state.
 These restoration details are Oteryn policy, not claimed donor behavior.
+
+### Insectoid Invasion implementation policy
+
+The Greenshore shared restoration rule, native coordinates and source hashes are
+specified above under [WEVENTS: Greenshore restoration policy](#wevents-greenshore-restoration-policy).

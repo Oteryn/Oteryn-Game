@@ -1102,3 +1102,118 @@ pub(super) async fn spring_use(
     assert_eq!(credited, 1);
     Ok(())
 }
+
+#[test]
+fn wevents_postgres_insect_native_water_use() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("insect-native-use", || {
+        for (name, x, y) in [
+            ("insect-restoration-water", 32206, 32057),
+            ("insect-restoration-1", 32205, 32059),
+            ("insect-restoration-2", 32206, 32060),
+            ("insect-restoration-3", 32206, 32061),
+        ] {
+            super::quest_world_callbacks::scenario(name, Position { x, y, floor: -7 }, false)?;
+        }
+        Ok(())
+    });
+    eprintln!(
+        "WEVENTS PG EXECUTED: insect native USE duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) async fn insect_use(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    trigger: Position,
+) -> TestResult {
+    let at = 1_934_078_400_000_i64;
+    let epoch = (1..=4095)
+        .find(|epoch| {
+            crate::durability::world_event::changes::roll(owner.world_id, *epoch, at)
+                .is_ok_and(|d| d.timed.insectoid)
+        })
+        .ok_or("insect selected day")?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'insect-native-use',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+        .bind(owner.world_id.as_bytes().as_slice()).bind(i64::try_from(epoch)?).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    owner.reset_epoch = epoch;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at))
+        .map_err(debug)?;
+    let fire = match (trigger.x, trigger.y) {
+        (32205, 32059) => Some(1),
+        (32206, 32060) => Some(2),
+        (32206, 32061) => Some(3),
+        _ => None,
+    };
+    if fire.is_some() {
+        use crate::durability::world_event::changes::timed::{self, EventKind, Input};
+        let mut tx = h.pool.begin().await?;
+        let mut state = timed::poll(
+            &mut tx,
+            owner.world_id,
+            epoch,
+            EventKind::InsectoidInvasion,
+            at,
+        )
+        .await?
+        .ok_or("insect fixture state")?;
+        for _ in 0..3 {
+            state
+                .advance(EventKind::InsectoidInvasion, at, Input::Fill(0), 0)
+                .map_err(debug)?;
+        }
+        sqlx::query("UPDATE game_world_timed_events SET state=$2 WHERE world_id=encode($1,'hex')::uuid AND event_key='insectoid_invasion'")
+            .bind(owner.world_id.as_bytes().as_slice()).bind(serde_json::to_value(state)?).execute(&mut *tx).await?;
+        tx.commit().await?;
+        assert_eq!(
+            use_lever(owner, admitted, 1, trigger, 0).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(
+            use_lever(owner, admitted, 2, trigger, 1).await?,
+            UseDisposition::Rejected
+        );
+    } else {
+        for sequence in 1..=3 {
+            assert_eq!(
+                use_lever(owner, admitted, sequence, trigger, sequence - 1).await?,
+                UseDisposition::Committed
+            );
+        }
+        assert_eq!(
+            use_lever(owner, admitted, 4, trigger, 3).await?,
+            UseDisposition::Rejected
+        );
+    }
+    let state = owner
+        .root
+        .timed_world_event(
+            owner.world_id,
+            epoch,
+            crate::durability::world_event::changes::timed::EventKind::InsectoidInvasion,
+        )
+        .await?
+        .ok_or("insect state")?;
+    assert_eq!(
+        state.lifecycle.objects.get(&0).ok_or("bucket")?.units(),
+        if fire.is_some() { 2 } else { 3 }
+    );
+    if let Some(member) = fire {
+        assert!(!state.lifecycle.objects.get(&member).ok_or("fire")?.lit());
+    }
+    Ok(())
+}
