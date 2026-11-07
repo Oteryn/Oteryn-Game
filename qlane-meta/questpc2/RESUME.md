@@ -1,3 +1,44 @@
+# Focused six-Item custody slice GREEN; publish now
+
+OwnPG3/3PASS133.133s; real six-Item custody case59.452s, PostgreSQL180006,
+SQLdistinct6/quantity6. Source regressionPASS0.591s with full nonselected record
+hash preservation. WorkspacealltargetsPASS6m32s,fmtPASS,dispatchclippyPASS5m29s.
+Item/Mount equivalencePASS after all registered authoring stages; pin-refresh
+PASS on retry after memory pressure,duplicate migration checkPASS. No active
+build cache removed.1914selected content+dispatch units continue with no failures
+observed; do not claim full-unit completion yet. Publish under PREPUSH-2 cadence
+exception and continue observing full run. Full proof is
+BATCH-rotten-source-item-custody-2026-11-07.json. No new whole quest qualification.
+
+# Six Rotten Blood Item custody admissions: focused GREEN, push this slice
+
+Last push81bc6b5b46f0e9c31ba35617f5ddcfda1829afb1. Main3032 validation finished:
+698/698durability unitsPASS314.521s and ownPG2/2PASS67.798s; receipt updated.
+New actual mint/custody PG test RED35.586s on180006:43501 DefinitionNotFound.
+After bounded source admission GREEN3/3PG133.133s, newcase59.452s; exact SQL
+carried custody distinct6/quantity6. No use effects and no new whole qualification.
+Canonicalweights150/450 retained;2 already admitted native zero weights retained.
+All34105 other canonical and3687 other native full records hash-identical.
+Source regression GREEN0.591s after6RED subcases; source capture2GREEN2.702s.
+
+Canonical/native regeneration finished. Run registered AUTHORING_TOOLS after
+canonical stage: raid_catalogue restores Raid family lock counts (omitting it
+causes LOCK_COUNTS). Final equivalence validator running. Central evidence/matrix/
+audit goldens refreshed. Workspace alltargetsPASS6m32s incl lock wait,fmtPASS.
+Dispatch clippy still running;1914non-full-PG content+dispatch units running,
+no failures observed yet. PREPUSH-2 allows cadence publication when these
+additional units remain pending, provided generation/check/fmt pass. Preserve
+exact pending status in proof. Never count filtered/ignored cases as passing.
+
+Next finish checks/pins/dup, fetch main+actual lane refspec, commit/push bycadence.
+Then finish1914unitrun and address all failures together. Current source data
+must stay unchanged while those runtime-data-reading cases continue.
+Next source work: remaining6 identity membership proofs and3 absentXML Items;
+private boss48-slot support and callbacks still requested fromqengine2.
+No tests weakened/skipped/deleted, no runtime engine feature added. Small
+native authoring API accepts already verified profile sets; default importer,
+binding, exact charge/time and physical fact ownership guards remain intact.
+
 # Compiling main3032 plus source facts checkpoint; publish now
 
 Main47db34f09 merged. Reused its exact apply_input_rows body; removed duplicate

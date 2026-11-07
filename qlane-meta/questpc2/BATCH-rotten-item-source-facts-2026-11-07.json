@@ -1,6 +1,6 @@
 {
   "batch": "six Rotten Blood Item source facts",
-  "state": "COMPILES_SOURCE_FACTS_GREEN_MAIN3032_TESTS_PENDING",
+  "state": "SOURCE_FACTS_AND_MAIN3032_GREEN",
   "runtime_admission": false,
   "use_effects_admitted": false,
   "new_qualified_quests": 0,
@@ -61,7 +61,7 @@
   "next": "Apply these exact source-proven core facts through the existing content owners and prove real Item materialization; preserve source identity and private-loot guards.",
   "main_merge": {
     "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-    "state": "COMPILES_TESTS_PENDING",
+    "state": "GREEN",
     "conflicts_resolved": "Reuse main apply_input_rows and delete the duplicate mutate_input layer; retain the lane carried-only wrapper, its NpcItemPermit and its negative test.",
     "semantic_change": "None; unchanged SQL and owner checks.",
     "required_tests": [
@@ -73,11 +73,9 @@
     "fmt": "PASS",
     "native_generated_outputs": "44 reproduced exactly",
     "source_tests": "2PASS2.975s",
-    "pending_tests": [
-      "698 selected durability units",
-      "real NPC20-item/10000XP hand-in",
-      "Rotten Blood endgame corpse path"
-    ],
-    "publication_authority": "PREPUSH-2 cadence exception after steps1,2,4; step3 remains pending."
+    "pending_tests": [],
+    "publication_authority": "PREPUSH-2 cadence exception after steps1,2,4; step3 remains pending.",
+    "durability_units": "698/698 PASS314.521s",
+    "own_postgres": "2/2 PASS67.798s; real NPC20-item/10000XP and Rotten corpse"
   }
 }

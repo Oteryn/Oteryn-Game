@@ -30,6 +30,7 @@ fn scenario_case(
         || matches!(
             name,
             "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
+                | "questpc2-rotten-source-items"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -273,6 +274,8 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if elvenbane {
             super::super::elvenbane_native_goals::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "questpc2-rotten-source-items" {
+            super::super::questpc2_rotten_source_items::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-xp" {
             super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "catalogue-npc-calendar" {

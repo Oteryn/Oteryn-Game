@@ -95,7 +95,7 @@ def apply_admissions(definitions, root=ROOT):
             definition.update(replacement)
 
 
-def admit_native(root, generated, profile_path, manifest_path, order, canonical, *, item_ids=None):
+def admit_native(root, generated, profile_path, manifest_path, order, canonical, *, item_ids=None, qualified_profiles=None):
     keys = {f'oteryn:item.tibia.i{i}' for i in (selected(root) if item_ids is None else item_ids)}
     definitions = {}
     for path in (root / 'content/items/definitions').glob('items-*.json'):
@@ -106,7 +106,12 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical,
     if set(definitions) != keys or any(not d['materializable'] for d in definitions.values()):
         raise ValueError('NATIVE_GOAL_LOOT_CANONICAL_CLOSURE')
     source = importer(root)
-    observed_profiles = profiles(root, {int(key.rsplit('.i', 1)[1]) for key in keys})
+    observed_profiles = profiles(root, {int(key.rsplit('.i', 1)[1]) for key in keys}) if qualified_profiles is None else qualified_profiles
+    if set(observed_profiles) != keys:
+        raise ValueError('NATIVE_GOAL_LOOT_SOURCE_PROFILE_SET')
+    if any(profile['production_definition'] != dict(family='Item', production_key=key, revision_ref='definition-r1')
+           for key, profile in observed_profiles.items()):
+        raise ValueError('NATIVE_GOAL_LOOT_SOURCE_PROFILE_IDENTITY')
     document = json.loads(generated[profile_path])
     for key in sorted(keys):
         definition, observed = definitions[key], observed_profiles[key]

@@ -11,7 +11,7 @@ REVISION = '00ce02a57ca5a12e48f32a3476e37471167e4c3f'
 XML_SHA = '13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece'
 GROUPS = ('physical', 'stack', 'container', 'charges', 'temporal')
 
-def capture(root):
+def capture(root, *, profiles_only=False):
     declaration = json.loads((root / DIRECTORY / 'corpus-input.json').read_bytes())
     archive = root / DIRECTORY / declaration['path']
     if hashlib.sha256(archive.read_bytes()).hexdigest() != declaration['sha256']:
@@ -34,6 +34,8 @@ def capture(root):
     bindings = source.binding_index(inputs[shared.BINDINGS])
     profiles = [source.profile(i, xml[i], objects[i], physical[i], bindings, None) for i in sorted(IDS)]
     bound = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': profiles}, bindings, IDS)['records']
+    if profiles_only:
+        return bound
     records = []
     for i, profile in zip(sorted(IDS), bound, strict=True):
         start = re.search(rb'<item\b[^>]*\bid="' + str(i).encode() + rb'"', xml_raw).start()

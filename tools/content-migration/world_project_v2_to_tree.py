@@ -174,6 +174,8 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import questpc2_soul_loot_items
     questpc2_soul_loot_items.apply_admissions(definitions, root)
+    import questpc2_rotten_loot_items
+    questpc2_rotten_loot_items.apply_admissions(definitions, root)
 
 
 def main() -> int:

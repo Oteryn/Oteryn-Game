@@ -729,3 +729,31 @@ under the owner cadence exception).
 The clone fetch refspec tracks only main. Explicit own-branch destination
 refspecs now refresh its remote-tracking ref too; always use them before push,
 then merge actual remote movement. Never rely on the stale historical lane ref.
+
+
+## Runtime admission of the six ready Rotten Blood Items (in progress)
+
+Real PG RED: rotten_source_items_materialize_into_exact_character_custody ran
+35.586s against PostgreSQL180006 and refused43501 with DefinitionNotFound.
+The test uses the production native definition lookup, mint, transfer and
+carried-custody query. The other two selected PG cases passed. Source regression
+also refused all six canonical definitions before the admission change.
+
+Existing canonical physical facts remain authoritative: essences43501-43504
+retain weight150, cursed wood43899 and geode43900 retain450. The two already
+admitted native43899/43900 records retain their own qualified zero weights.
+The four new native essence profiles receive canonical150, not a retune of
+accepted facts. All34105 nonselected canonical records and3687 nonselected native
+records have frozen complete-record hashes in the regression. No use effects
+are admitted by this Item custody slice.
+
+A small authoring hook supplies the six fully source-verified profiles to the
+existing native custody merger, which retains binding, exact charges/time and
+physical fact-owner checks. Default callers still use the original pinned
+importer. New profile sets must match all six selected Item identities exactly.
+The generic encounter importer still refuses arbitrary alternate XML scopes;
+its44158-only guard is unchanged. No runtime quest-engine feature is added.
+
+Post-main3032 validation finished:698 selected durability units PASS314.521s,
+NPC hand-in and Rotten corpse PG cases PASS2/2 in67.798s. No pending failures
+remain from that merge; publish the final receipt with the next green slice.

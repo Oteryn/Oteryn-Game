@@ -1757,10 +1757,13 @@
     }
   },
   "current_batch": {
-    "name": "six Rotten Blood Item source facts",
-    "state": "COMPILES_SOURCE_FACTS_GREEN_MAIN3032_TESTS_PENDING",
-    "scope": "Six normalized source fact candidates; no runtime/use admission, production Rust or additional quest qualification.",
-    "proof": "qlane-meta/questpc2/BATCH-rotten-item-source-facts-2026-11-07.json"
+    "name": "Six Rotten Blood source Item custody admissions",
+    "state": "FOCUSED_GREEN_UNIT_RUN_PENDING",
+    "scope": "Canonical6 and native4 new admissions; preserve2 already qualified native physics, all34105/3687 nonselected records; no use effects or whole quest qualification.",
+    "pg_red": "35.586s PG180006:43501 DefinitionNotFound",
+    "pg_green": "3/3PASS133.133s; six exact carried Items in59.452s",
+    "next": "Finish compile/fmt, clippy and pin regeneration, then cadence push with additional unit tests explicitly pending.",
+    "proof": "qlane-meta/questpc2/BATCH-rotten-source-item-custody-2026-11-07.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -2214,12 +2217,12 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "batch": "six Rotten Blood Item source facts",
-    "state": "COMPILES_SOURCE_FACTS_GREEN_MAIN3032_TESTS_PENDING",
-    "runtime_admission": false,
-    "use_effects_admitted": false,
-    "new_qualified_quests": 0,
-    "items": [
+    "batch": "six Rotten Blood Item custody admissions",
+    "state": "FOCUSED_GREEN_UNIT_RUN_PENDING",
+    "canonical_admissions": 6,
+    "new_native_profiles": 4,
+    "existing_native_physical_records_preserved": 2,
+    "source_ids": [
       43501,
       43502,
       43503,
@@ -2227,74 +2230,50 @@
       43899,
       43900
     ],
-    "helper_lines": 49,
-    "source": {
-      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-      "path": "data/items/items.xml",
-      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
-      "lines": [
-        75234,
-        75237,
-        75240,
-        75243,
-        76732,
-        76736
-      ]
+    "no_use_effects_added": true,
+    "new_qualified_quests": 0,
+    "pg": {
+      "version_num": 180006,
+      "red_seconds": 35.586,
+      "red_error": "oteryn:item.tibia.i43501: real mint/custody refused: DefinitionNotFound",
+      "green_cases": 3,
+      "green_runtime_seconds": 133.133,
+      "new_item_case_seconds": 59.452,
+      "new_item_marker": "distinct=6 quantity=6",
+      "new_item_completion_seconds": 59.405815035
     },
-    "weight_default_witness": {
-      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
-      "path": "src/items/items.hpp",
-      "line": 282,
-      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
-      "value": "int32_t weight = 0;"
+    "source_regression": {
+      "red_subcases": 6,
+      "green_seconds": 0.591,
+      "preserved_nonselected_canonical": 34105,
+      "preserved_nonselected_native": 3687,
+      "canonical_outside_sha256": "b83fd262a10f1578d0d7bdcfed726eba76f24dbf1fd9ff28086741a89b105046",
+      "native_outside_sha256": "27e185646aaa583954bf0248661b43ff1b402b255e1ea06933eb611381456ffe"
     },
-    "red": [
-      "missing producer ModuleNotFoundError",
-      "missing generated fact packet: executed2.973s"
-    ],
-    "green": {
-      "source_tests": 2,
-      "source_test_seconds": 2.854,
-      "postgres_cases": 2,
-      "postgres_runtime_seconds": 63.83,
-      "postgres_version_num": 180006,
-      "soul_war_seconds": 63.204,
-      "rotten_blood_seconds": 63.827,
-      "workspace_all_targets_check": "PASS2m15s",
-      "fmt": "PASS",
-      "postgres_scope": "These2PG cases passed before main3032; fresh post-merge cases are pending and not counted as passing."
-    },
-    "rust_crates_changed": [
-      "oteryn-gameplay-durability"
-    ],
-    "prior_batch_final_unit_result": {
-      "selected": 1326,
-      "passed": 1326,
-      "failed": 0,
-      "duration_seconds": 1024.412
-    },
-    "next": "Apply these exact source-proven core facts through the existing content owners and prove real Item materialization; preserve source identity and private-loot guards.",
-    "main_merge": {
-      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-      "state": "COMPILES_TESTS_PENDING",
-      "conflicts_resolved": "Reuse main apply_input_rows and delete the duplicate mutate_input layer; retain the lane carried-only wrapper, its NpcItemPermit and its negative test.",
-      "semantic_change": "None; unchanged SQL and owner checks.",
-      "required_tests": [
-        "durability default non-full-PG unit selection",
-        "real NPC20-item/10000XP hand-in",
-        "Rotten Blood endgame corpse path"
+    "unit_run": {
+      "selected": 1914,
+      "packages": [
+        "oteryn-gameplay-content",
+        "oteryn-gameplay-dispatch"
       ],
-      "workspace_all_targets": "PASS1m39s on resource-recovered retry",
-      "fmt": "PASS",
-      "native_generated_outputs": "44 reproduced exactly",
-      "source_tests": "2PASS2.975s",
-      "pending_tests": [
-        "698 selected durability units",
-        "real NPC20-item/10000XP hand-in",
-        "Rotten Blood endgame corpse path"
-      ],
-      "publication_authority": "PREPUSH-2 cadence exception after steps1,2,4; step3 remains pending."
-    }
+      "state": "RUNNING no failures observed",
+      "filter": "not test(postgres) & not test(::db_tests::)",
+      "log": "/tmp/questpc2-rotten-source-items-unit-tests.log",
+      "passed_at_snapshot": 598
+    },
+    "workspace_check": "PASS6m32s including build-lock wait",
+    "fmt": "PASS",
+    "generation": "canonical+native provider pipeline completed; registered authoring tools reapplied (Raid family lock count restored); central binding evidence, matrix, audit goldens refreshed",
+    "main_merge_prior_batch": {
+      "main": "47db34f09",
+      "durability_units": "698/698PASS314.521s",
+      "own_pg": "2/2PASS67.798s"
+    },
+    "clippy": "PASS5m29s -D warnings",
+    "item_mount_equivalence": "PASS34111Items/252Mounts after registered authoring stages",
+    "pin_refresh": "PASS on resource-recovered retry",
+    "duplicate_migrations": "PASS",
+    "publication_authority": "PREPUSH-2 cadence exception: focused mechanic/PG/check/fmt/generation green;1914-crate-unit selection continues with no failures observed."
   },
   "engine_requests": [
     {

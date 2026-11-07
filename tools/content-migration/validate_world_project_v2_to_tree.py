@@ -298,6 +298,11 @@ def source_loot_stack_promotions(root: Path) -> dict[str, int]:
     for key, profile in native_goal_loot_items.profiles(root, selected_ids).items():
         require(key not in profiles or profiles[key] == profile, "SOURCE_LOOT_STACK_OWNER_CONFLICT")
         profiles[key] = profile
+    import questpc2_rotten_loot_items
+    for profile in questpc2_rotten_loot_items.source.capture(root, profiles_only=True):
+        key = profile['production_definition']['production_key']
+        require(key not in profiles or profiles[key] == profile, "SOURCE_LOOT_STACK_OWNER_CONFLICT")
+        profiles[key] = profile
     return {key: maximum for key, profile in profiles.items()
             if (maximum := source_loot_stack_max(profile)) is not None}
 
