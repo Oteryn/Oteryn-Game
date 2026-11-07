@@ -1,6 +1,8 @@
+mod state;
 pub use oteryn_session::CommandStatus;
 pub use oteryn_session::hireling;
 use oteryn_session::{Session, SessionError, SessionStream};
+pub use state::{HirelingRefusal, HirelingState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HirelingCommand(pub hireling::Request);

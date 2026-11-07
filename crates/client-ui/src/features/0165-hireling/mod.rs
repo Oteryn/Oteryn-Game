@@ -1,5 +1,5 @@
 pub use oteryn_client_runtime::hireling::{
-    CommandStatus, HirelingCommand, HirelingResponse, hireling,
+    CommandStatus, HirelingCommand, HirelingRefusal, HirelingResponse, HirelingState, hireling,
 };
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
@@ -62,18 +62,21 @@ pub fn apply_result(panel: &mut HirelingPanel, response: &HirelingResponse) -> b
     if panel.pending.take().is_none() {
         return false;
     }
-    match (response.status, response.active) {
-        (CommandStatus::Accepted, Some(active))
-        | (CommandStatus::DuplicateReplay, Some(active)) => {
-            panel.active = Some(active);
+    let mut state = HirelingState {
+        selected: panel.selected,
+        active: panel.active,
+    };
+    match state.apply_response(response) {
+        Ok(()) => {
+            panel.active = state.active;
             panel.feedback = Some("The server confirmed the hireling status");
             true
         }
-        (CommandStatus::Rejected, _) => {
+        Err(HirelingRefusal::Rejected) => {
             panel.feedback = Some("The server refused the hireling request");
             false
         }
-        _ => {
+        Err(_) => {
             panel.feedback = Some("The server returned an invalid hireling response");
             false
         }
