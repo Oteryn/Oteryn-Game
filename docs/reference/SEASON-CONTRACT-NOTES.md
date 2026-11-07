@@ -730,3 +730,23 @@ remaining red point is
 provider (missing carpet 37365). Source capture/admission preservation tests pass.
 
 All future notes for this lane live in this file, not repository-root notes.
+
+### Native policy integration checkpoint
+
+The native provider now admits the captured decoration policies through
+`register_spell_families.py`, preserving earlier specialized Item semantics.
+SRX Item updates retain the source-qualified top-order facts. Santa's existing
+canonical present container 6510 (five slots) and snowball 2992 are captured by
+the separate seasonal native importer; no replacement identities are invented.
+
+The actual combined provider has 4,958 records. Item admission now has a
+separate 8,192-record cap; the existing 16 MiB Item byte cap and 4,096-record
+Creature/Presentation caps remain intact. The source-qualification and overflow
+regression `w18_native_item_top_order_and_furniture_cohort_keep_input_bounds`
+passes (18.15 s), and all six decoration/seasonal source policy tests pass
+(1.513 s). This fixes the previous missing-carpet policy red point.
+
+This is still a WIP integration checkpoint, not W18 completion. Published
+House USE remains the earlier balloon-only owner until the pending decoration
+receipt, static overlay and presentation implementations are validated and
+committed. No new command, capability or mechanic ordinal is allocated here.

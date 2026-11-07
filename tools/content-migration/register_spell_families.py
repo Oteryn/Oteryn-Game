@@ -406,13 +406,21 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Retain established native owners while admitting every shop and chest Item.
     import grizzly_shop_profiles
-    import quests_2_emperor_item_profiles
     import quest_callback_profiles
+    import quests_2_emperor_item_profiles
     grizzly_shop_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     quests_2_emperor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import itemhold_q
     itemhold_q.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Crystal santa_claus.lua:111-119 places these gifts through the ordinary
+    # admitted container and stack owners, rather than a seasonal Item alias.
+    import seasonal_item_profiles
+    seasonal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # W18 source recipes use admitted Item identities and retain earlier owners'
+    # policies; only qualified rotation/USE and top-order facts are enriched.
+    import house_decoration_actions
+    house_decoration_actions.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)

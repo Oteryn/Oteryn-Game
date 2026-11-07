@@ -7,12 +7,19 @@ PATH = 'content/items/definitions/srx1-item-updates.json'
 
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
+    import house_decoration_actions
     import srx1_potion_variants
     import writing_item_admission
     base = generated[profile_path]
     overlay = {profile_path: base, manifest_path: generated[manifest_path]}
     for module in (dispenser_item_profiles, srx1_potion_variants, writing_item_admission):
         module.admit(root, overlay, profile_path, manifest_path, order, canonical)
+    # W18 source top-order facts enrich the final specialized rows only. Reapplying
+    # generic furniture transforms here would overwrite the writing owner's policy.
+    enriched = json.loads(overlay[profile_path])
+    house_decoration_actions.apply_top_order(
+        enriched['records'], json.loads((root / house_decoration_actions.PROFILES).read_bytes()))
+    overlay[profile_path] = canonical(enriched)
     original = {row['production_definition']['production_key']: row
                 for row in json.loads(base)['records']}
     updates = [row for row in json.loads(overlay[profile_path])['records']
