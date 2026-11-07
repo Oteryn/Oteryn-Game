@@ -24,14 +24,16 @@ pub(super) fn source_boss(
     // Crystal data-global/monster/raids/grand_mother_foulscale.lua:5-25,40-46,78-97:
     // the production case uses unchanged native boss classification/HP/corpse/loot.
     // The original rat cases retain their explicitly test-only classification.
-    let creature = if production { "oteryn:creature.grand_mother_foulscale" } else { "oteryn:creature.rat" };
+    let creature = if production {
+        "oteryn:creature.grand_mother_foulscale"
+    } else {
+        "oteryn:creature.rat"
+    };
     let policy = native
         .policies()
         .policies()
         .iter()
-        .find(|policy| {
-            policy.definition_key == creature && policy.reward_boss == Some(true)
-        })
+        .find(|policy| policy.definition_key == creature && policy.reward_boss == Some(true))
         .ok_or("compiled native reward-boss fixture")?;
     let row = native
         .reward_table()
@@ -191,7 +193,10 @@ pub(super) async fn settle_and_collect(
     let corpse: (i64, bool, Vec<u8>) = sqlx::query_as(
         "SELECT count(*) OVER (), g.channel_id IS NULL, uuid_send(g.instance_id) FROM game_item_mint_receipts r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.loot_purpose_key='CORPSE_MATERIALIZATION' AND g.scope_kind=2",
     ).fetch_one(&h.pool).await?;
-    assert_eq!((corpse.0, corpse.1, corpse.2.as_slice()), (1, true, instance_id.as_slice()));
+    assert_eq!(
+        (corpse.0, corpse.1, corpse.2.as_slice()),
+        (1, true, instance_id.as_slice())
+    );
     if late {
         let terminal: (i16, bool, bool, i64) = sqlx::query_as(
             "SELECT state,defeat_id IS NULL,terminal_at IS NULL,deadline FROM game_boss_room_activities",
@@ -354,6 +359,9 @@ pub(super) async fn settle_and_collect(
         .spell_lane_permit()
         .await
         .ok_or("exact Instance lane")?;
+    let other_entitlements: serde_json::Value = sqlx::query_scalar(
+        "SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY item_ordinal),'[]'::jsonb) FROM game_boss_reward_items i WHERE death_id=encode($1,'hex')::uuid AND item_ordinal<>$2",
+    ).bind(death.as_slice()).bind(ordinal).fetch_one(&h.pool).await?;
     let first = h
         .root
         .collect_boss_rewards(
@@ -367,14 +375,11 @@ pub(super) async fn settle_and_collect(
         )
         .await?
         .ok_or("actual Instance collection")?;
-    let total: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items WHERE death_id=encode($1,'hex')::uuid")
-        .bind(death.as_slice()).fetch_one(&h.pool).await?;
-    if policy.definition_key == "oteryn:creature.rat" {
-        assert_eq!(total, 1, "the original source rat fixture has exactly one reward");
-    }
+    // Item selection reports the remaining quantity of this ordinal; other
+    // source loot rolls retain their own personal entitlements.
     assert_eq!(
         (first.status, first.moved, first.remaining),
-        (BossRewardCollectionStatus::Collected, 1, u32::try_from(total - 1)?)
+        (BossRewardCollectionStatus::Collected, 1, 0)
     );
     let replay = h
         .root
@@ -390,6 +395,16 @@ pub(super) async fn settle_and_collect(
         .await?
         .ok_or("retained Instance collection")?;
     assert_eq!(replay, first);
+    let retained_others: serde_json::Value = sqlx::query_scalar(
+        "SELECT coalesce(jsonb_agg(to_jsonb(i) ORDER BY item_ordinal),'[]'::jsonb) FROM game_boss_reward_items i WHERE death_id=encode($1,'hex')::uuid AND item_ordinal<>$2",
+    ).bind(death.as_slice()).bind(ordinal).fetch_one(&h.pool).await?;
+    assert_eq!(
+        retained_others, other_entitlements,
+        "Item selection and replay preserve every unselected source entitlement"
+    );
+    assert_eq!(sqlx::query_scalar::<_, i64>(
+        "SELECT count(*) FROM game_boss_reward_items WHERE death_id=encode($1,'hex')::uuid AND collected_transaction_id IS NOT NULL",
+    ).bind(death.as_slice()).fetch_one(&h.pool).await?, 1);
     drop(permit);
     let audit: Vec<u8> = sqlx::query_scalar("SELECT a.envelope FROM game_boss_reward_item_collections c JOIN game_item_audit_outbox a USING(event_id)")
         .fetch_one(&h.pool).await?;

@@ -823,3 +823,17 @@ is currently red at an added Terrain optional-field fixture initializer. Actual
 PostgreSQL instance custody and scoped publication regressions remain pending.
 The source geometry/projectile closure and movement behavior checks continue
 in the next checkpoint. No full-row completion is claimed here.
+
+## W03 Instance personal reward qualification
+
+Real PostgreSQL tests now pass for the unchanged production Grand Mother
+Foulscale profile inside an Instance (83.742s), native Instance reward custody
+and identical replay (92.657s), physical native chest chain (44.391s), and the
+production boss physical chest chain (42.447s). Source remains Crystal
+201189f grand_mother_foulscale.lua:5-25,40-46,78-97 and utils_definitions.hpp:646.
+Item selection reports remaining quantity for its selected ordinal. Assertions
+retain the exact original Collected/1/0 result and additionally prove every
+unselected entitlement is byte-identical after collection and replay, with
+exactly one collected ordinal. No source chance/count or Item custody rule
+changed. No numbers allocated. Source Sugar entry qualification continues
+separately; its current red is exact source profile digest mismatch.
