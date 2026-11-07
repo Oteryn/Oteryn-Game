@@ -87,3 +87,19 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   shared Reward10102 claim: value1 seals against the player; closed5113
   teleports onto the target and opens5114, closing checks occupancy.
   The source defines no escape timer or all-six-kill reward predicate.
+
+- Corrected door-close interpretation: a present creature is displaced, not
+  automatically refused. Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b
+  data/libs/functions/creature.lua:174-210, retained
+  blob2ab1104989a5d1f50669dbb1e2d2aeef2f7c8dec, SHA256
+  a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7:
+  query E,S,N,W with IGNOREBLOCKCREATURE, refuse if all fail, then teleport.
+  Game keeps native collision/PZ/owner fences, and refuses multiple occupants
+  rather than closing a solid tile over the remaining creatures.
+- Source data/scripts/movements/closing_door.lua:58-90, retained
+  blob1f977deb40366e3db24fbb3276fe84728778e268, SHA256
+  e81594eae44ae08a8ef0175fef4480359362c94c84ba2a3628debfe698b5fd78,
+  preserves generic quest-door step-out close after the player leaves.
+  Opening requires a sealed proof of the future open state of exactly the
+  selected door; bypassing the closed-door predicate alone cannot bypass the
+  actual movement-cell collision index. Other solids/doors stay blocking.

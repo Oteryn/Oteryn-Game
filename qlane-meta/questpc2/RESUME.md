@@ -1,3 +1,47 @@
+# Active reward-door slice
+
+Latest source facts: BATCH-annihilator-door-source-facts-2026-11-07.json.
+Only these notes/status are in this checkpoint. Runtime/data/authoring changes
+remain LOCAL and are not yet GREEN. Continue the active source door slice;
+do not duplicate effects.encounter, re-run finished reward cohorts as new work,
+or promote a whole quest from an isolated door/entry test.
+
+PG RED18.6/2.90s proves missing callback. A subsequent PG18.6/43.58s refused
+StartNotEnterable because the fixture started on a closed door; corrected to
+adjacent walkable start. Two compile attempts then hit os error28, not PG.
+Current test: annihilator_reward_door_tracks_the_real_shared_claim. Latest
+log /tmp/questpc2-annihilator-door-opening-final.log. It must prove opening,
+replay, E-priority occupied-door displacement/close, actual shared chest claim,
+claimed open/close refusal, step-out close, exact unrelated claim and stale fence.
+
+Read CONTRACT-NOTES for exact donor helper facts: occupied close pushes E,S,N,W
+with IGNOREBLOCKCREATURE. Do not preserve the initial mistaken occupied refusal.
+Native opening needs a future-open collision proof for exactly one selected
+door; ordinary sealed teleports still see it as blocked before the CAS.
+The native door book owns appearance/collision/revision; the carrier rolls back
+if the final door CAS refuses. No shadow quest progress or duplicate claim.
+
+Five changed Rust crates: quests, durability, entities, world, dispatch. Check
+and clippy all targets/features -Dwarnings after the final source correction.
+The schema gate unit and full-carrier rollback unit already passed; run scoped
+content_ integration, World repository and tooling pin checks before publication.
+Python5source/effect cases and3group-source cases pass. The native registration
+check ran; raid_catalogue.py then restored its baseline registration exactly.
+Only the authored shared-access callback should differ under content/.
+
+Disk recovery retains source/PG and latest caches. Current clippy incremental
+path098tcw7aevych is symlinked byte-for-byte to /tmp after SHA256 verification.
+Two lossless failed-test executable archives are in /tmp; ledgers record hashes.
+Reclaimed only unlocked superseded sessions/executables. No broad clean, flags,
+profiles, disabled incremental or installations. Do not accumulate extra RAM
+archives during compiler frontends. Cargo normal scoped runs source env.sh.
+
+Fetch exact lane before every push; compare FETCH_HEAD, merge advances, never
+force/rebase/main/PR. Preserve blakinio identity and task trailers. Whole L3
+remains0/35. Continue after every green push; no external-engine deferrals.
+
+Prior continuation (conflicting next-step prose superseded):
+
 # Current continuation — group owner reuse
 
 Latest slice: BATCH-group-owner-reuse-2026-11-07.json. Fast-forwarded the lane
