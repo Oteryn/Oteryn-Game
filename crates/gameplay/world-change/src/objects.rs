@@ -31,6 +31,9 @@ impl SharedObjectState {
     pub fn revision(&self) -> u64 {
         self.revision
     }
+    pub fn ready_at(&self) -> Option<i64> {
+        self.ready_ms
+    }
     pub fn units(&self) -> u16 {
         self.units
     }

@@ -92,3 +92,31 @@ fn wevents_fire_requires_water_and_celebration_continues_after_victory() -> Resu
     assert_eq!(kings.wave, 1);
     Ok(())
 }
+
+#[test]
+fn wevents_hatch_ack_is_versioned_and_rearms_without_erasing_reward_history()
+-> Result<(), &'static str> {
+    let mut state = EventState::for_kind(EventKind::SpringIntoLife, 0, 10_000_000)?;
+    state.advance(EventKind::SpringIntoLife, 100, Input::BeginObject(1), 0)?;
+    let version = state.lifecycle.objects[&1].revision();
+    assert!(
+        !state
+            .lifecycle
+            .complete_hatch(1, version, 100, 60 * MINUTE)?
+    );
+    assert!(
+        state
+            .lifecycle
+            .complete_hatch(1, version, 100 + 60 * MINUTE, 60 * MINUTE)?
+    );
+    assert!(
+        !state
+            .lifecycle
+            .complete_hatch(1, version, 101 + 60 * MINUTE, 60 * MINUTE)?
+    );
+    assert_eq!(state.lifecycle.last_success_ms[&1], 100 + 60 * MINUTE);
+    assert!(!state.object_ready(1, 100 + 60 * MINUTE));
+    assert!(state.object_ready(1, 100 + 120 * MINUTE));
+    state.lifecycle.validate()?;
+    Ok(())
+}

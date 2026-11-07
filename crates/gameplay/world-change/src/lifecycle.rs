@@ -14,6 +14,10 @@ pub struct LifecycleState {
     pub failed_attempts: u32,
     pub objects: BTreeMap<u16, SharedObjectState>,
     pub firing_versions: BTreeMap<u16, u64>,
+    #[serde(default)]
+    pub last_success_ms: BTreeMap<u16, i64>,
+    #[serde(default)]
+    pub last_firing: BTreeMap<u16, [u8; 16]>,
     pub successful_spawns: BTreeSet<u16>,
     pub failed_spawns: BTreeSet<u16>,
 }
@@ -21,6 +25,9 @@ pub struct LifecycleState {
 impl LifecycleState {
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.stage > 8
+            || self.last_success_ms.len() > 128
+            || self.last_firing.len() > 128
+            || self.last_success_ms.values().any(|at| *at < 0)
             || self.objects.len() > 128
             || self.firing_versions.len() > 128
             || self.successful_spawns.len() > 128
@@ -43,6 +50,8 @@ impl LifecycleState {
         self.mask = 0;
         self.first_defeat_ms = None;
         self.firing_versions.clear();
+        self.last_firing.clear();
+        self.last_success_ms.clear();
         self.successful_spawns.clear();
         self.failed_spawns.clear();
         Ok(())
@@ -57,6 +66,30 @@ impl LifecycleState {
             return Err("unknown event object");
         };
         state.begin(now, delay)
+    }
+    /// Only the admitted object revision may acknowledge a hatch. Replays cannot
+    /// restart its timer, and later cycles retain the last successful hatch time.
+    pub fn complete_hatch(
+        &mut self,
+        member: u16,
+        version: u64,
+        now: i64,
+        delay: i64,
+    ) -> Result<bool, &'static str> {
+        let Some(object) = self.objects.get(&member) else {
+            return Err("unknown event object");
+        };
+        if object.revision() != version || !self.ready(member, now) {
+            return Ok(false);
+        }
+        // Work on a clone so invalid clocks/overflow never partially reset state.
+        let mut next = object.clone();
+        next.reset()?;
+        next.begin(now, delay)?;
+        self.objects.insert(member, next);
+        self.last_success_ms.insert(member, now);
+        self.note_spawn(member, true)?;
+        Ok(true)
     }
     /// The return value describes a new physical placement, not an admission request.
     pub fn note_spawn(&mut self, member: u16, placed: bool) -> Result<bool, &'static str> {
