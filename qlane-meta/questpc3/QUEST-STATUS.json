@@ -5239,7 +5239,7 @@
     },
     "current_batch": {
       "batch": "first_dragon_life_20",
-      "phase": "IN_PROGRESS: three native StepIn callbacks authored after genuine PG RED; post-main GREEN and PREPUSH-2 gates pending",
+      "phase": "COMPILING_WIP_PUSH: PREPUSH-2 steps1/2/4PASS; step3 pending under explicit cadence exception; life-site qualification not claimed",
       "entries": [
         "AID25002 DesertTile once",
         "AID25003 StoneSculptureTile once",
@@ -5263,10 +5263,17 @@
       ],
       "checks": {
         "world_change_units": "21PASS 0.062s /tmp/questpc3-prepush2-world-change-unit.log",
-        "workspace_all_targets": "RUNNING /tmp/questpc3-prepush2-workspace-check.log",
+        "workspace_all_targets": "PASS1m26s /tmp/questpc3-prepush2-publish-workspace-check.log; preceding full compatibility PASS7m30s",
         "content_regeneration": "RUNNING repository native/tree route /tmp/questpc3-prepush2-targeted-regenerate.log",
         "postgres_green": "PENDING after generated files settle",
-        "remaining_changed_crate_units": "PENDING; PREPUSH-2 cadence exception only if30min deadline reached"
+        "remaining_changed_crate_units": "PENDING: client-assets, client-ui, game-server, gameplay-content, dispatch, durability, encounter-rules, foundation, npc, quests, social, world; world-change21PASS",
+        "generated": "PASS native43 drift-check; binding evidence and all373 matrix regenerated; Item34111/Mount252 equivalence main phasePASS; existing RewardClaim339 and blessing8 registry restored by producers; trailing imbue24families/72tiers and craft129 --checkPASS; materialized97/97 and world metadataPASS; duplicate-migration checkCLEAR",
+        "fmt": "PASS /tmp/questpc3-prepush2-publish-fmt.log",
+        "pins": "PASS official cargo release pin-refresh; world digest unchanged319a8f2f4eb80c6e591da852e23889ea6a1105e44c2bcaafb96337428c588289",
+        "pending": [
+          "post-merge First Dragon lava and three-life-site real PG cases",
+          "unit suites for oteryn-client-assets, oteryn-client-ui, oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch, oteryn-gameplay-durability, oteryn-gameplay-encounter-rules, oteryn-gameplay-foundation, oteryn-gameplay-npc, oteryn-gameplay-quests, oteryn-gameplay-social, oteryn-gameplay-world"
+        ]
       }
     },
     "diagnosis": {
@@ -5478,7 +5485,7 @@
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
     "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
-    "phase": "Batch19 six lava bindings PG-qualified and pushed; batch20 three life sites active; main merged, PREPUSH-2 regeneration/checks underway",
+    "phase": "Publishing compiling batch20 +two main integrations; next run focused PG lava/life cases and12remaining crate units, collect failures together, then continue First Dragon quiz using existing main NPC owner",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
       "phase": "Forward1110 guard namespace/ACL hardening applied after actualPG RED; GREEN/regressions and deterministic gates running",
@@ -9850,14 +9857,18 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T21:35:52.620581+00:00",
+    "updated_at": "2026-11-07T22:07:41.815625+00:00",
     "standing_validation_rule": "PREPUSH-2: fetch+merge main before every push; regenerate generated files/pins/central lists with repo tooling; every changed-crate unit suite plus own real-PG cases; workspace all-targets check and fmt. At30min, may push compiling generated state with step3 tests explicitly pending.",
     "main_merge_validation": {
       "main": "e1ca3e003",
       "merge_commit": "0943c20b7",
       "conflicts": "7 resolved: main visibility/roll integration, combine Callback fields, generated incoming receipt/variant inputs refreshed by repository tooling",
       "compatibility": "29 lane QuestTransition literals explicitly world_changeNone; Stampede capture/restore retained via main NativeDecision, historical missing flag defaultsfalse;21unitPASS",
-      "regeneration_route": "No content/world inputs changed; five materializer-source diffs only ignore default-public visibility, serialized public field omitted. Full legacy replay stopped; use repo tree/native generators, inventory repin and official final pin-refresh; validate Item/Mount equivalence/world-metadata."
+      "regeneration_route": "No content/world inputs changed; five materializer-source diffs only ignore default-public visibility, serialized public field omitted. Full legacy replay stopped; use repo tree/native generators, inventory repin and official final pin-refresh; validate Item/Mount equivalence/world-metadata.",
+      "latest_main": "f641d8d6c",
+      "latest_merge": "6d2751f1b",
+      "latest_conflicts": "6 conflicts resolved: retain Santiago/Rookgaard plus native NPC book admission; both map/chest and Grizzly producers preserved; derived native inputs refreshed",
+      "compatibility_fixes": "3 incoming one-root reward requests backpack_outputsfalse; existing NPC sealed item permit and existing Spell channel permit route through one shared SQL writer viaunder50-line helper; canonical blessing registration regenerated from8existing rows rather than incoming stale4"
     },
     "standing_engine_rule": {
       "owner": "qengine2",

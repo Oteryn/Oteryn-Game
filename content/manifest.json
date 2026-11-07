@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 339
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -84,7 +84,7 @@
     },
     "Service.Blessing": {
       "index": "content/services/blessings/index.json",
-      "records": 4
+      "records": 8
     },
     "Service.Promotion": {
       "index": "content/services/promotion/index.json",
@@ -398,6 +398,9 @@
     },
     {
       "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+    },
+    {
+      "path": "content/interactions/reward_claims/reward-claims-scripted-rs.json"
     },
     {
       "path": "content/items/definitions/items-00000-00499.json"
@@ -736,7 +739,7 @@
       "path": "content/services/bank/index.json"
     },
     {
-      "path": "content/services/blessings/blessing-00000-00003.json"
+      "path": "content/services/blessings/blessing-00000-00007.json"
     },
     {
       "path": "content/services/blessings/index.json"
@@ -1007,7 +1010,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3626,
+          "record_count": 3658,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1015,7 +1018,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "0460b8a17656a13c9148b6518c821f079f0f10560cbc614edddb16cf8a485204"
+          "sha256": "be0fd4da9940d82d710b3fe3cb42ee257ce852b4dd6b4d8e57e7691f569c5eb5"
         },
         {
           "creates_canonical_identities": false,

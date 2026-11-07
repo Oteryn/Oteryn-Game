@@ -32,6 +32,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
     let request = RewardClaimMintRequest {
+        backpack_outputs: false,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

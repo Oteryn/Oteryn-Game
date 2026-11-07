@@ -544,6 +544,7 @@ def main() -> int:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+        run(["python3", "tools/content-migration/questpc3_blessing_registration.py"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
