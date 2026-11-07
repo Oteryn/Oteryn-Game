@@ -738,3 +738,17 @@ rotation decisions, maximum-length accepted keys, two-direction counter states,
 wrong-World payload rejection, missing-bound-decision refusal, native death replay,
 quest/travel gates, and real world-event dispatch. Pin refresh regenerated the
 same world bytes; the physical-case rerun and final lint/pin-check remain pending.
+
+### Final allocated-migration qualification
+The final physical PostgreSQL rerun passed in 122.43 seconds, exercising persisted
+active/inactive Fury Gates overlays and retained exits, Grimvale native
+spawn/death/respawn substitution, and Their Master's Voice fungus boundaries and
+restart. Together with the 57.98-second real-dispatch case, these qualify the
+three titles' shared world-state paths. The separate generic quest and travel
+fixtures establish reusable state gating; they do not claim complete title NPC
+stories. The allocated migrations are exactly:
+- `1320_world_change_calendar.sql`
+- `1321_world_change_occurrence_decisions.sql`
+- `1322_world_change_decision_required.sql`
+Independent review of the bounded-RNG and missing-occurrence fixes reported no
+concrete P0/P1 findings.
