@@ -16,7 +16,7 @@ fn draconia_container_stock_replay() -> TestResult {
 fn draconia_container_stock_rejects_forged_origin() -> TestResult {
     scenario("forged")
 }
-fn scenario(case: &'static str) -> TestResult {
+pub(super) fn scenario(case: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

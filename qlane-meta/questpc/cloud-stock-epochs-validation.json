@@ -1,0 +1,99 @@
+{
+  "scope": "shared source-stock cache identity across activated reset epochs",
+  "result": "PASS",
+  "qualified_titles_added": 0,
+  "red": "cloud-stock-epochs-red-validation.json",
+  "green": [
+    {
+      "case": "draconia_container_stock_epoch-replay",
+      "postgres": "18.6",
+      "duration_seconds": 50.114174652,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_epoch-view",
+      "postgres": "18.6",
+      "duration_seconds": 50.142277481,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_epoch-observer",
+      "postgres": "18.6",
+      "duration_seconds": 50.179889087,
+      "result": "GREEN"
+    }
+  ],
+  "green_wall_seconds": 50.18,
+  "production_reset": {
+    "case": "world_reset_atomic_activation_calendar_house_refusal_and_dispatch_remint",
+    "postgres": "18.6",
+    "duration_seconds": 95.472639687,
+    "retired": 57,
+    "reminted": 57,
+    "epoch": 1,
+    "result": "GREEN"
+  },
+  "implementation": "Five added lines bind cached shared Ground projections to reset_epoch as well as generation/scope/base digest; existing durable MINT/TRANSFER and reset lifecycle unchanged",
+  "boundary": "Three source probes seed completed activation state; separate production reset test exercises actual retirement/activation/remint and rollback/House guards. No full-title promotion yet.",
+  "checks": {
+    "fmt": "PASS",
+    "check": "PASS1m31s",
+    "clippy": "PASS changed dispatch all targets/all features -D warnings6m43s including lock wait",
+    "generation": "PASS exact source capture check",
+    "pins": "PASS digest174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62 unchanged"
+  },
+  "logs": {
+    "green": {
+      "path": "cloud-stock-epochs-green.log",
+      "raw_sha256": "c48805d800adfabe4525641ff2ae82188aed1ebd172816a17568f4c719bb815b",
+      "sha256": "cc7d4fde64f17ab4378ff794664412add722bc744d01835f7ef0a3f51a6f21db",
+      "normalization": "EOF only"
+    },
+    "reset_lifecycle": {
+      "path": "cloud-stock-epochs-reset_lifecycle.log",
+      "raw_sha256": "cbd7ad13002fbc6a4b20e9afa51a2c9c92ac923bdccd6a3a0749dd196fabd2a3",
+      "sha256": "e9327a7ba628973f487aa533eaeac3dba98162f29c5745c0386284f5d2e82535",
+      "normalization": "EOF only"
+    },
+    "check": {
+      "path": "cloud-stock-epochs-check.log",
+      "raw_sha256": "fb32e4e54de29fe60490e528190c18278698ab6e937c39953d6a1aa0416d0a88",
+      "sha256": "fb32e4e54de29fe60490e528190c18278698ab6e937c39953d6a1aa0416d0a88",
+      "normalization": "EOF only"
+    },
+    "clippy": {
+      "path": "cloud-stock-epochs-clippy.log",
+      "raw_sha256": "0a3ffb4cf6353976a532e7d9c55184c5f426272c6454ee9a7c29d90a6a41b84c",
+      "sha256": "0a3ffb4cf6353976a532e7d9c55184c5f426272c6454ee9a7c29d90a6a41b84c",
+      "normalization": "EOF only"
+    },
+    "fmt": {
+      "path": "cloud-stock-epochs-fmt.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "EOF only"
+    },
+    "generation": {
+      "path": "cloud-stock-epochs-generation.log",
+      "raw_sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "normalization": "EOF only"
+    },
+    "pins": {
+      "path": "cloud-stock-epochs-pins.log",
+      "raw_sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "normalization": "EOF only"
+    }
+  },
+  "review": {
+    "findings": [],
+    "checked": [
+      "cache identity uses durable epoch independently of unchanged frame/base",
+      "two distinct real admitted characters see same source stock before/after withdrawal and replenishment",
+      "old epoch handles refuse; literal current command replay mints no duplicate",
+      "one immutable3001 key per shared epoch",
+      "production reset conservation and fencing retained"
+    ]
+  }
+}

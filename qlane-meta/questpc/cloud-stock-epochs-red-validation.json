@@ -1,0 +1,53 @@
+{
+  "scope": "source stock reset cache identity",
+  "state": "RED3: real admitted observer now reproduces identical stale-cache boundary",
+  "cases": [
+    {
+      "case": "draconia_container_stock_epoch-replay",
+      "duration_seconds": 48.201692592,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "case": "draconia_container_stock_epoch-view",
+      "duration_seconds": 48.235670894,
+      "postgres": "18.6",
+      "result": "RED"
+    },
+    {
+      "case": "draconia_container_stock_epoch-observer",
+      "duration_seconds": 48.953629275,
+      "postgres": "18.6",
+      "result": "FIXTURE_ERROR_EXCLUDED"
+    }
+  ],
+  "reason": "Epoch1 returns cached empty epoch0 view, expected one shared key",
+  "observer_boundary": "Initial guest fence failure is excluded from feature RED; reuse real observer admission seed and rerun unchanged assertions",
+  "log": {
+    "path": "cloud-stock-epochs-initial-red.log",
+    "raw_sha256": "3c2a65e6d4a423cdda02d9dd6a8d2189a855ecdb54ef9fa7929a0765693b828c",
+    "sha256": "3c2a65e6d4a423cdda02d9dd6a8d2189a855ecdb54ef9fa7929a0765693b828c",
+    "normalization": "EOF only"
+  },
+  "fresh_refs": {
+    "qengine2": "38232aafd",
+    "questpc2": "5a26f9a0e",
+    "questpc3": "6146ee945",
+    "questpc4": "ce3d18208",
+    "questpc5": "6675a9937",
+    "questpc6": "53d5648b8",
+    "questpc7": "cc57399ca",
+    "questpc8": "2e0c95551"
+  },
+  "reuse": "No refreshed branch has reset_epoch in the shared Ground-cache guard; retain existing view/MINT/reset owners and add the missing cache identity here",
+  "observer_corrected": {
+    "case": "draconia_container_stock_epoch-observer",
+    "postgres": "18.6",
+    "duration_seconds": 47.16751445,
+    "result": "RED",
+    "log": "cloud-stock-epochs-observer-red.log",
+    "raw_sha256": "fa13b120d92e8149c03a9be2adca7a375c90f17cdebb60e640d26015d0752b84",
+    "sha256": "fa13b120d92e8149c03a9be2adca7a375c90f17cdebb60e640d26015d0752b84",
+    "normalization": "EOF only"
+  }
+}

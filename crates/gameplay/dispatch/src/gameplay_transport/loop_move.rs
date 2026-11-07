@@ -150,6 +150,8 @@ impl ItemLoopContent for NativeItemWeights<'_> {
 /// the map view shows each with.
 #[derive(Debug)]
 pub struct LoopGroundOverlay {
+    /// Bound by the source reader before this projection enters the Channel cache.
+    reset_epoch: u64,
     overlay: ChannelOverlay,
     facts: HashMap<[u8; 16], EntryFacts>,
     field_pin: ([u8; 32], [u8; 32], u64),
@@ -236,6 +238,7 @@ impl LoopGroundOverlay {
             }
         }
         Self {
+            reset_epoch: 0,
             overlay,
             facts,
             field_pin,
@@ -396,6 +399,7 @@ pub async fn loop_ground(
     let (epoch, cached) = admission.states.loop_ground.cached();
     if let Some(cached) = cached.filter(|cached| {
         cached.field_pin == field_pin
+            && cached.reset_epoch == admission.reset_epoch
             && cached.overlay.runtime_scope() == scope
             && cached.overlay.base().digest() == base.digest()
     }) {
@@ -444,6 +448,7 @@ pub async fn loop_ground(
             LoopGroundOverlay::build_for_scope(base.clone(), scope, index, field_pin, items)
         }
     };
+    built.reset_epoch = admission.reset_epoch;
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
     let pending: Vec<_> = admission
         .states

@@ -507,3 +507,13 @@ this mechanic. Parent5972 capacity10 comes from the existing pinned Canary impor
 at99902524e052f37574194466c2949c576e4ab269, without hand-authored item overrides.
 Fresh qengine2 9c581fd10 and questpc2–8 refs contain no MapBase container opener;
 reuse existing views, map MINT, replay and reset ownership and implement that gap here.
+
+### Reset projection identity probe
+Source stock's durable uniqueness is per world/channel/base digest/reset epoch.
+The next PG probes seed the durable *result* of a completed reset activation,
+retain the same live Channel cache, and read epoch1 through the production source
+reader. They qualify cache/source behavior, not reset publication or quiescence.
+Retain and rerun `world_reset_atomic_activation_calendar_house_refusal_and_dispatch_remint`
+for the production reset lifecycle. Never label a seeded activation pointer as a
+full production reset. The observer probe uses a distinct admitted runtime actor,
+session and character lease, following the existing pressure-gate fixture.

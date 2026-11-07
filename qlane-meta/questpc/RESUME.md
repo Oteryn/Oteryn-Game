@@ -1,3 +1,24 @@
+## Shared stock epoch/cache GREEN — 2026-11-07
+ActualPG3 GREEN50.18s wall: replay50.114174652s,view50.142277481s,
+observer50.179889087s. Distinct real admitted character sees shared once-per-epoch
+withdrawal; epoch1 replenishes reused cache; old handles refuse; replay no duplicate.
+InitialRED2 + corrected real observerRED47.16751445s retained; initial guest setup
+failure excluded. Cache now includes reset_epoch (5 lines). StrictClippy/check/fmt/
+source check/pins PASS. Actual production reset lifecycle GREEN95.472639687s,
+PostgreSQL180006,57retired/57reminted,epoch1; rollback/House/fence guards retained.
+Proof cloud-stock-epochs-validation.json. No whole-title promotion.
+Fresh other-lane scan86QUALIFIED titles,40local unfinished skipped; Draconia remains ours.
+
+URGENT NEXT owner migration registry. PR3020 OPEN at inspection. QENGINE2 current
+69609ef78 exact0999callbacks equals ours; exact1000payments equals our1096.
+Consume all exact0999-1006 from QENGINE2, move sharedQBASE0969->1200,
+1000corruptor->1201,1001npc_revision->1202,1002viola->1203,1003book->1204,
+1004Father->1205 unchanged/atomic11. Move lane-own1005Marlin,1006Raid,1007MapKey,
+1008NpcSources,1097Stateless,1098PaidOccurrence into1290-1299 in dependency order.
+Use git mv, update all live references/schema assertions, duplicate check, pins, focusedPG.
+Report final list/head. Never copy/variant QENGINE0999-1006. IfPRmerges merge main.
+Then resume framed stock interaction and final Draconia source-route qualification.
+
 Published source-container mechanic cc0b08f71, all checks/actualPG3 GREEN.
 Proof logs normalized only at EOF; validation retains raw and normalized SHA256.
 Next remains two-player/reset/full route.

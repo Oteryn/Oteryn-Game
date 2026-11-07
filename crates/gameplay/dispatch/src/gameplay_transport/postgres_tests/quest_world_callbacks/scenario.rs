@@ -429,9 +429,10 @@ fn scenario_case(
             None
         };
         prepare_current_session(&h).await?;
-        if route
+        if (route
             && super::super::draconia_route::gate(super::super::draconia_route::source(name)?.0)
-                .is_some()
+                .is_some())
+            || (container_stock && name.ends_with("-epoch-observer"))
         {
             h.seed_pvp_target().await?;
             super::super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
@@ -699,6 +700,9 @@ fn scenario_case(
             super::super::raid_tokens::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if container_stock && name.contains("-epoch-") {
+            super::super::draconia_stock_epochs::exercise(&deps, &mut owner, &admitted, &h, name)
                 .await?;
         } else if container_stock {
             super::super::draconia_container_stock::exercise(
