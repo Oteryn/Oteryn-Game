@@ -703,3 +703,20 @@ separately; no complete W02 production-room qualification is claimed here.
 ENCX coordination: fetched and merged `81f2f0414` from
 `origin/claude/happy-davinci-ijz3wy-encx`. No SRVENC change to
 `endgame_entry.rs`; its shared composition remains ENCX-owned.
+
+## SRVENC W03: production boss to physical personal chest (2026-11-07)
+
+The unchanged Grand Mother Foulscale production profile now has an actual
+native lethal -> settlement queue -> physical chest browse/take -> live Item
+in the recipient's equipped backpack -> identical command replay test.
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data-global/monster/raids/grand_mother_foulscale.lua:5-25,40-46,78-97` supplies
+classification, HP, corpse and complete loot. Reward chest source:
+`src/utils/utils_definitions.hpp:646` (19250). The corridor remains explicitly
+test-authored; it does not substitute for boss room source geometry.
+
+Real PostgreSQL 18.6 validation: production boss chain
+`boss_rewards_postgres_production_boss_lethal_to_personal_item_custody`
+PASS 47.285 s; original rat/native replay chain PASS 52.636 s. No numbers
+allocated. Separate Instance corpse cases are currently red: drain returns
+Deferred; this row does not conceal or bypass that W02 integration failure.
