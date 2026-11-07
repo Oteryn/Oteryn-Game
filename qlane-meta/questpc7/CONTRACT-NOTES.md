@@ -514,3 +514,24 @@ The active source profile already exists. The new case now invokes reusable
 prepare_native_hunter, matching previous Grave/Ferumbras test bootstrap: install
 the activated policy table and bind the actual admitted attacker lease. No
 creature policy, guardian constraint or subject quest state is fabricated.
+
+## Heart shared mechanisms — 2026-11-07
+
+The128 static-description bound is distinct from32 live guardians. Cooling
+metadata no longer exhausts the lifetime quota after32 completed objectives;
+live actor admission remains bounded independently. All existing spatial,
+source, quota, occupancy and corpse-pinning predicates remain.
+
+The owner explicitly requires missing shared quest-engine features to be
+implemented. Yana's retained lines185–187 name Powerful Strike, Void and
+Vampirism and contain the missing defeat check. The selected Heart completion
+now serves as the native learning entitlement for shrine application of those
+three tier3 families. This closes that portion of the former Global-profile
+quest-unlock omission; no arbitrary unrelated quest or scalar storage alias
+can substitute. Native completion is immutable and already fenced, so no
+duplicate entitlement table or new SQL migration is introduced. The fresh
+coherent quest snapshot must have the same Character revision as the durable
+apply fence. Basic/intricate, other unconfigured families and ordinary filled
+scroll/etcher use retain their existing policies. Whole native PG proof of
+refusal before learning and actual paid powerful apply is required before
+qualification; parser units alone do not qualify the feature or quest.

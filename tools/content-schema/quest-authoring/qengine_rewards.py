@@ -33,7 +33,7 @@ def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'jorge', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
-        'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias')]
+        'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'yana')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua',
@@ -327,6 +327,8 @@ def build():
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
     generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives})
     generated['content/quests/native-world-callback-bindings.json'] = encoded({'schema':1,'bindings':hoist_bindings})
+    knowledge = load_module('questpc7_knowledge','tools/content-schema/quest-authoring/questpc7_knowledge.py')
+    generated['content/quests/imbuement-knowledge.json'] = encoded(knowledge.build(ROOT, inputs, PIN))
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'

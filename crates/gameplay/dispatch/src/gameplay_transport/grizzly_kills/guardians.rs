@@ -12,6 +12,8 @@ pub(super) struct GuardianSlot {
     retry_at: u64,
 }
 
+const MAX_LIVE_GUARDIANS: usize = 32;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Copy admission already checked the Character fence. Only present players
     /// with an active objective request a spawn. Occupancy and actor exhaustion
@@ -95,6 +97,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         for objective in &requested {
+            let live_guardians = cache
+                .guardians
+                .iter()
+                .filter(|slot| slot.actor.is_some())
+                .count();
             let Some(guardian) = &objective.guardian else {
                 continue;
             };
@@ -105,7 +112,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 index
             } else {
-                if cache.guardians.len() >= 32 {
+                if cache.guardians.len() >= death_objectives::MAX_OBJECTIVES {
                     continue;
                 }
                 cache.guardians.push(GuardianSlot {
@@ -116,7 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cache.guardians.len() - 1
             };
             let slot = &mut cache.guardians[index];
-            if slot.actor.is_some() || now < slot.retry_at {
+            if slot.actor.is_some() || now < slot.retry_at || live_guardians >= MAX_LIVE_GUARDIANS {
                 continue;
             }
             slot.retry_at = now.saturating_add(5_000_000);

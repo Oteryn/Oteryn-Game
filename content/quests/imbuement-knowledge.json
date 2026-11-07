@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "rules": [
+    {
+      "family": 1,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
+      ]
+    },
+    {
+      "family": 11,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
+      ]
+    },
+    {
+      "family": 12,
+      "tier": 3,
+      "any_completed_quests": [
+        "oteryn:quest.heart_of_destruction_quest"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
+      ]
+    }
+  ]
+}

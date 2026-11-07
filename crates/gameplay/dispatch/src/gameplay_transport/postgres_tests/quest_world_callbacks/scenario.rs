@@ -311,7 +311,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "qengine-rewards-grimvale-story" {
+        if name == "qengine-rewards-heart-story" {
+            super::super::questpc7_heart_story::exercise(&mut owner,&mut admitted,&h).await?;
+        } else if name == "qengine-rewards-grimvale-story" {
             super::super::questpc7_grimvale_story::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale::contacts(&mut owner,&mut admitted,&h).await?;
