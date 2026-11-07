@@ -1,5 +1,6 @@
 //! Transient combat overlays use server positions, including the own actor and hidden attackers.
-//! Until official effect sprites are resolved, magic effects use an expanding hit pulse.
+//! Item effects retain their donor colours; fireworks expand into eight emissive sparks.
+//! Other magic effects retain the existing hit pulse until official sprites are resolved.
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
@@ -64,9 +65,11 @@ impl PlayView {
                         number(batch, view, atlas, [center, top - 12.0], value)?;
                     }
                 }
-                PresentationEventKind::MagicEffect { position, .. }
-                    if position.floor == self.floor && progress < 0.5 =>
-                {
+                PresentationEventKind::MagicEffect {
+                    position,
+                    effect_id,
+                    ..
+                } if position.floor == self.floor && progress < 0.5 => {
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -74,6 +77,39 @@ impl PlayView {
                     let [x, y] = view.tile_to_screen(tile);
                     let half = view.tile_px() as f32 / 2.0;
                     let radius = 4.0 + progress * 24.0;
+                    // Crystal utils_definitions.hpp: FIREWORK_YELLOW/RED/BLUE = 29/30/31.
+                    let color = match effect_id {
+                        1 | 14 | 30 => PresentationColor::Red,
+                        7 => PresentationColor::Orange,
+                        16 => PresentationColor::PastelRed,
+                        24 => PresentationColor::SkyBlue,
+                        27 => PresentationColor::White,
+                        28 => PresentationColor::LightGreen,
+                        31 => PresentationColor::Blue,
+                        _ => PresentationColor::Yellow,
+                    };
+                    if matches!(effect_id, 29..=31) {
+                        for [dx, dy] in [
+                            [-1.0, 0.0],
+                            [1.0, 0.0],
+                            [0.0, -1.0],
+                            [0.0, 1.0],
+                            [-0.7, -0.7],
+                            [-0.7, 0.7],
+                            [0.7, -0.7],
+                            [0.7, 0.7],
+                        ] {
+                            pixel(
+                                batch,
+                                view,
+                                atlas,
+                                [x + half + dx * radius, y + half + dy * radius],
+                                [3.0, 3.0],
+                                color,
+                            )?;
+                        }
+                        continue;
+                    }
                     for [dx, dy, w, h] in [
                         [-radius, -radius, radius * 2.0, 2.0],
                         [-radius, radius, radius * 2.0, 2.0],
@@ -86,7 +122,7 @@ impl PlayView {
                             atlas,
                             [x + half + dx, y + half + dy],
                             [w, h],
-                            PresentationColor::Yellow,
+                            color,
                         )?;
                     }
                 }

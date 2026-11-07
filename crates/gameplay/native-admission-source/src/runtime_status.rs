@@ -194,7 +194,7 @@ pub fn decode_response(raw: &[u8]) -> Result<Delivery, SourceError> {
 /// those of another purpose.
 pub struct RuntimeStatusDescriptor(ProducerDescriptor);
 
-fn leaf_spki(chain: &[CertificateDer<'_>]) -> Result<Vec<u8>, SourceError> {
+pub(crate) fn leaf_spki(chain: &[CertificateDer<'_>]) -> Result<Vec<u8>, SourceError> {
     let leaf = chain.first().ok_or(SourceError::InvalidDescriptor)?;
     let parsed = rustls::server::ParsedCertificate::try_from(leaf)
         .map_err(|_| SourceError::InvalidDescriptor)?;

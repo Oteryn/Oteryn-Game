@@ -1,6 +1,8 @@
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WeaponProficiencyPanel {
     pub selected: bool,
+    pub catalogue_offset: u32,
+    pub catalogue: Option<oteryn_client_runtime::weapon_proficiency::ProficiencyCataloguePage>,
     pub open: bool,
     pub pending: bool,
     pub command_kind: u32,
@@ -12,5 +14,7 @@ pub struct WeaponProficiencyPanel {
     pub revision: u64,
     pub shaping_choice: u8,
     pub result: Option<String>,
+    pub page: Option<oteryn_client_runtime::weapon_proficiency::ProficiencyPage>,
+    pub requested_offset: u32,
     pub feedback: Option<&'static str>,
 }

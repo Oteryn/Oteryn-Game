@@ -5,8 +5,8 @@ mod health;
 mod stages;
 use super::ProjectV2DefinitionRef;
 pub use gaz::QualifiedGazEvents;
-pub use health::{NativeHealthEventKind, QualifiedNativeHealthEvent, requires_native_health_event};
 pub(crate) use health::policies as health_event_policies;
+pub use health::{NativeHealthEventKind, QualifiedNativeHealthEvent, requires_native_health_event};
 pub use stages::{QualifiedNativeCallbackStage, source_callback_area};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

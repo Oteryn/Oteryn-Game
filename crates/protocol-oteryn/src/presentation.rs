@@ -20,17 +20,20 @@ use std::collections::BTreeSet;
 
 pub use crate::charm_wire::CyclopediaWireError as PresentationWireError;
 use crate::charm_wire::{
-    push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes, read_uint32,
-    read_varint, set_once, WireResult,
+    WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
+    read_uint32, read_varint, set_once,
 };
-use crate::world_spatial::{decode_position, encode_position, ActorPosition};
-use crate::world_spatial_entities::{EntityRef, ENTITY_IDENTITY_BYTES};
+use crate::world_spatial::{ActorPosition, decode_position, encode_position};
+use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `PRESENTATION_V1`: no command type, state domains 19 and 20, requires 6.
 pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
 /// B24: independently negotiated private ambience; capability 23 remains unchanged.
 pub const CAPABILITY_AMBIENT_SOUND_V1: u32 = 288;
 pub const STATE_DOMAIN_AMBIENT_SOUND: u32 = 101;
+/// NX-5 item-only visual effects, independently negotiated from S17 presentation.
+pub const CAPABILITY_ITEM_EFFECTS_V1: u32 = 350;
+pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 104;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [
@@ -845,6 +848,28 @@ pub fn decode_actor_cooldowns(payload: &[u8]) -> WireResult<ActorCooldowns> {
     };
     check_cooldowns(&cooldowns)?;
     Ok(cooldowns)
+}
+
+/// Item-only subset of the bounded presentation codec. No casting or audio surface is enabled.
+pub fn encode_item_effect_batch(events: &[PresentationEvent]) -> WireResult<Vec<u8>> {
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    encode_presentation_batch(events)
+}
+
+pub fn decode_item_effect_batch(payload: &[u8]) -> WireResult<Vec<PresentationEvent>> {
+    let events = decode_presentation_batch(payload)?;
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    Ok(events)
 }
 
 #[cfg(test)]

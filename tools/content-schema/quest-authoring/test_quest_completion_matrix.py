@@ -75,14 +75,14 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
-        # W15b qualifies Mad Mage room 3's full-charge amulet as one more ready claim.
-        self.assertEqual(124, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(127, self.result["summary"]["reward_claim_placements"])
+        # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
+        self.assertEqual(125, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(128, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 16,
-                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 40,
-                "REWARD_CLAIM_USE_PENDING": 49,
+                "REWARD_CLAIM_DATA_PENDING": 13,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
+                "REWARD_CLAIM_USE_PENDING": 50,
             },
             self.result["summary"]["reward_claim_owner_state"],
         )

@@ -28,6 +28,20 @@ where
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
     // that its objects carry their item handles under capability 4.
     let mut payloads = Vec::new();
+    let cast_chat_active = admitted.continuity.selected_capabilities.contains(291)
+        && admitted.continuity.selected_capabilities.contains(290);
+    if cast_chat_active {
+        payloads.push(
+            crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
+                domain_id: 103,
+                revision: 1,
+                snapshot_type: 1,
+                payload: oteryn_protocol_oteryn::cast::Message::CasterChatEmpty
+                    .encode()
+                    .map_err(|_| ServeEnd::Disconnected)?,
+            },
+        );
+    }
     if let Some(payload) = authority
         .activity_scope_snapshot(*admitted)
         .await
@@ -207,6 +221,8 @@ async fn live<A: FreshAdmissionAuthority>(
         npc_active,
         combat_sent,
     } = sessions;
+    let cast_chat_active =
+        selected_capabilities.contains(291) && selected_capabilities.contains(290);
     let combat_active = combat_sent.is_some();
     let snapshot::WorldSnapshot {
         world_map,
@@ -245,14 +261,15 @@ async fn live<A: FreshAdmissionAuthority>(
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     // SPELL-D8 §8.2: only an actor with `ACTOR_VITALS` has a Serene evaluation to run.
-    let serene = (has_vitals || spell_catalog.is_some()).then(|| {
-        let mut serene = tokio::time::interval_at(
-            tokio::time::Instant::now() + SERENE_EVALUATION,
-            SERENE_EVALUATION,
-        );
-        serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-        serene
-    });
+    let serene = (has_vitals || spell_catalog.is_some() || selected_capabilities.contains(290))
+        .then(|| {
+            let mut serene = tokio::time::interval_at(
+                tokio::time::Instant::now() + SERENE_EVALUATION,
+                SERENE_EVALUATION,
+            );
+            serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            serene
+        });
     // QUEST-LOG-WIRE-1: only a session with domain 16 looks for a changed quest copy.
     let quest_log_refresh = quest_log.is_some().then(|| {
         let mut refresh = tokio::time::interval_at(
@@ -263,7 +280,7 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh
     });
     // CHAT-WIRE-1: only a session with domain 12 drains its queued lines.
-    let chat_refresh = chat_active.then(|| {
+    let chat_refresh = (chat_active || cast_chat_active).then(|| {
         let mut refresh =
             tokio::time::interval_at(tokio::time::Instant::now() + CHAT_REFRESH, CHAT_REFRESH);
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -319,6 +336,7 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        cast_chat_revision: u64::from(cast_chat_active),
         require_session_binding: false,
         spell_catalog,
         integrity,
@@ -334,8 +352,11 @@ async fn live<A: FreshAdmissionAuthority>(
         revision,
         sequence,
         ambient_revision: 0,
+        item_effects_revision: 0,
         sound_cursor: if selected_capabilities
-            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1)
+            || selected_capabilities
+                .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
             || selected_capabilities
                 .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1)
         {

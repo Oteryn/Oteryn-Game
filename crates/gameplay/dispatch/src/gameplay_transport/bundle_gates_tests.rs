@@ -83,6 +83,11 @@ const INVENTORY: &[Entry] = &[
             ),
             ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+            // SRX-2/P01: charm regressions select live targets through the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/srx2_charm_consumers.rs",
+                2,
+            ),
             // TASKBOARD-P04: real party kill/capture replay fixture uses the existing attack gate.
             (
                 "gameplay_transport/postgres_tests/party_xp/bounty_talisman.rs",
@@ -254,6 +259,8 @@ const INVENTORY: &[Entry] = &[
         state: Gate::AllocatedOpen { task: "TK-W19" },
         calls: &[
             ("gameplay_transport/cosmetic_item_use.rs", 1),
+            // Carried-fluid dispensers retain the native ground owner proof.
+            ("gameplay_transport/item_craft/dispenser.rs", 1),
             ("gameplay_transport/item_craft/planting.rs", 1),
             ("gameplay_transport/novelty_ground_use.rs", 1),
         ],
@@ -818,6 +825,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    // The carried-fluid fixture supplies an action room and no qualified room.
+    (
+        "gameplay_transport/postgres_tests/item_craft_carried_fluid.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     (

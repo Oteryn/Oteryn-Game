@@ -78,6 +78,7 @@ fn srx3_native_creature_icons_decode_into_native_labels_and_clear_on_removal()
         );
         scene.set_presentations(
             &[VisibleAppearance {
+                forge_stacks: None,
                 light: None,
                 entity: decoded.entities[0].clone(),
                 look: None,

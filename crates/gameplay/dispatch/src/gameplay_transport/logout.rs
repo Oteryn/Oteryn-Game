@@ -362,6 +362,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.release_premium(controller.account_id, session);
             // This already-gone path only forgot fences; keep broader retirement cleanup separate.
             self.states.fence_holders.forget(session);
+            let absent = {
+                let runtime = self.runtime.lock().await;
+                runtime
+                    .prove_player_session_absent_in(session, current.current_runtime_scope())
+                    .ok()
+                    .flatten()
+            };
+            let Some(absent) = absent else {
+                return GraceExpiryResult::Unknown;
+            };
+            if self
+                .root
+                .acknowledge_account_closure_offline(self.character, self.holder, absent)
+                .await
+                .is_err()
+            {
+                return GraceExpiryResult::Unknown;
+            }
             return GraceExpiryResult::Released;
         }
         self.retire_reconciled(controller.account_id, session, actor)

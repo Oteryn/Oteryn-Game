@@ -4,7 +4,6 @@ use crate::durability::character_progression::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, SourceStepOccurrence};
-use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::durability::spell_items_abi::SpellGroundTarget;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
@@ -243,16 +242,6 @@ impl SoulWarSourceStep {
         result[1..].copy_from_slice(&hash.finalize());
         result
     }
-    pub(super) fn context(&self) -> QuestWorldContext {
-        QuestWorldContext {
-            map_revision: self.target.map_revision.clone(),
-            content_revision: self.target.content_revision.clone(),
-            placement_context: self.target.placement_context.clone(),
-            reset_epoch: self.epoch,
-            actor_placement: self.actor.placement_identity(),
-            movement_revision: self.movement.revision(),
-        }
-    }
     pub fn kind(&self) -> SourceStepKind {
         self.kind
     }
@@ -291,17 +280,6 @@ impl SoulWarSourceStep {
     }
     pub fn map_revision_digest(&self) -> [u8; 32] {
         self.map
-    }
-    /// Revalidated actual Ground/conditional consumption stays in the existing
-    /// Quest callback Item writer and the same caller-owned transaction.
-    pub(super) async fn consume(
-        &self,
-        _tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
-        _fence: CurrentCharacterGameplayFence,
-        _changes: &[oteryn_gameplay_quests::quest::QuestTrackChange],
-        _permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-    ) -> std::result::Result<bool, crate::durability::DurabilityError> {
-        Ok(false)
     }
 }
 
@@ -446,7 +424,7 @@ mod tests {
             first.binding(fence.character_id, &a),
             second.binding(fence.character_id, &b)
         );
-        assert_eq!(first.context().movement_revision, committed.revision());
+        assert_eq!(first.movement.revision(), committed.revision());
         assert!(
             SoulWarSourceStep::from_current_owner(
                 &runtime,

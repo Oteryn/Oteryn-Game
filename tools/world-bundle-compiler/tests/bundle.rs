@@ -451,7 +451,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v6\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v7\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);
@@ -715,7 +715,7 @@ fn srx3_source_static_bundle_capability_is_required_only_for_used_qualified_surf
     let mut registry = Registry::default();
     registry.add_catalogue(
         "WorldObject",
-        include_bytes!("../../../content/world/objects/objects-12932-13053.json"),
+        include_bytes!("../../../content/world/objects/objects-12932-13055.json"),
     )?;
     registry.add_catalogue(
         "Terrain",

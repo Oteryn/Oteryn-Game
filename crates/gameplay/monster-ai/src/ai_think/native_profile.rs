@@ -236,6 +236,10 @@ impl CreatureAiTable {
 }
 
 #[cfg(test)]
+#[path = "native_profile_tests.rs"]
+mod tests;
+
+#[cfg(test)]
 #[path = "native_profile/native_activity_tests.rs"]
 mod native_activity_tests;
 

@@ -28,12 +28,15 @@ pub(super) fn initialize<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
+    outbox.mechanics_status_initialize(session.feature_selected(384));
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
     outbox.battle_instinct_status_initialize(session.feature_selected(278));
     outbox.skill_progress_initialize(session.feature_selected(279));
     outbox.skill_display_initialize(session.feature_selected(370));
     outbox.party_effects_initialize(session.feature_selected(280));
+    outbox.potion_durations_initialize(session.feature_selected(381));
+    outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
     outbox.task_board_initialize(session.task_board_selected());
     outbox.stash_initialize(session.stash_selected());

@@ -325,6 +325,7 @@ pub struct FreshAdmissionStore {
     // Rare Activity release proofs must not enlarge every ordinary admission
     // and reconnect future. Clones retain the same immutable, revalidated proof.
     departed_activity: Option<std::sync::Arc<super::activity_handoff::DepartedActivityRelease>>,
+    staff_loss: Option<ControlLossEpochRefV1>,
     offline_activity_mismatch:
         Option<std::sync::Arc<super::activity_handoff::OfflineActivityMismatchRelease>>,
     guards: AdmissionGuardStore,
@@ -494,6 +495,7 @@ impl FreshAdmissionStore {
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
+            staff_loss: None,
             offline_activity_mismatch: None,
         }
     }
@@ -2059,6 +2061,29 @@ impl FreshAdmissionStore {
         self.release_current_claims(current, now, account_id).await
     }
 
+    /// Signed staff removal of the exact recorded loss, independent of its
+    /// grace deadline. Uses the same current-claims save/terminal transaction.
+    pub async fn release_staff_lost_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Reconnectable
+            || current.current_control_loss_epoch() != Some(epoch)
+            || current.current_transport().is_some()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        let mut staff = self.clone();
+        staff.staff_loss = Some(epoch);
+        staff.release_current_claims(current, now, account_id).await
+    }
+
     /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): terminal release, with no successor, of a
     /// RECONNECTABLE session whose resume passed every check but the capability check. The
     /// client gave up the same-session path by changing its supported set, so its fresh
@@ -2108,6 +2133,7 @@ impl FreshAdmissionStore {
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
+            staff_loss: None,
             offline_activity_mismatch: None,
         }
     }

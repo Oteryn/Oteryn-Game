@@ -277,6 +277,7 @@ pub(super) async fn execute_proposals(
     proposals: &[ProfileAbilityProposal],
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
@@ -286,6 +287,7 @@ pub(super) async fn execute_proposals(
             if let Some(source) = composed::source_for(runtime, native, proposal) {
                 composed::execute(
                     runtime, states, attack, room, native, map, &source, proposal, parties, now,
+                    charms,
                 )
                 .await;
             }
@@ -361,7 +363,12 @@ pub(super) async fn execute_proposals(
                 &mut spells,
                 runtime,
                 stamp,
-                states,
+                &mut super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+                    states,
+                    attack,
+                    catalogue: charms,
+                    root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+                },
                 &parent_source,
                 proposal,
                 &mut reader,
@@ -1320,6 +1327,10 @@ pub(super) async fn drain_due(
     map: &mut CurrentMonsterMap<'_, '_>,
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
-    timers::drain(runtime, states, attack, room, native, map, parties, now).await;
+    timers::drain(
+        runtime, states, attack, room, native, map, parties, now, charms,
+    )
+    .await;
 }

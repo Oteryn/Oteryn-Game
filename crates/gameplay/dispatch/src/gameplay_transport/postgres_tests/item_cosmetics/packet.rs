@@ -10,7 +10,7 @@ pub(super) const FUNGUS: &str = "oteryn:outfit.item_use_fungus_proposed";
 pub(super) const AFFLICTED: &str = "oteryn:outfit.item_use_afflicted_proposed";
 pub(super) const MOUNT: &str = "oteryn:mount.item_use_steed_proposed";
 
-fn source_look(packet: &Value, look: u32) -> TestResult<Value> {
+pub(super) fn source_look(packet: &Value, look: u32) -> TestResult<Value> {
     for shard in packet["source_shards"].as_array().ok_or("shards")? {
         let source: Value = serde_json::from_str(shard["json"].as_str().ok_or("source JSON")?)?;
         for record in source["records"].as_array().ok_or("records")? {

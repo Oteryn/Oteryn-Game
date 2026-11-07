@@ -415,13 +415,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 &mut map, current, &parties, now).await?;
                         }
                         physical_spell::execute_proposals(runtime, states, attack, room, native,
-                            &mut map, current, &parties, now).await;
+                            &mut map, current, &parties, now, owner.imported_charms).await;
                     }
                     physical_spell::drain_due(runtime, states, attack, room, native,
-                        &mut map, &parties, now).await;
+                        &mut map, &parties, now, owner.imported_charms).await;
                     Ok(())
                 }.await;
                 callback_result.map_err(|()| crate::durability::DurabilityError::Unavailable)?;
+
                 drop(map);
                 let next_due = next_due.into_iter()
                     .chain(primal_due)

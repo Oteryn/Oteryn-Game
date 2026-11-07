@@ -61,6 +61,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
     /// catch-up), never a backlog.
     pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
+        self.drain_auto_attacks_at_time(None).await;
+    }
+
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn drain_auto_attacks_at(
+        &self,
+        now: SemanticTimeMicros,
+    ) {
+        self.drain_auto_attacks_at_time(Some(now)).await;
+    }
+
+    async fn drain_auto_attacks_at_time(&self, now: Option<SemanticTimeMicros>) {
         let Some(room) = self.effective_rooms().gate_auto_attack() else {
             return;
         };
@@ -92,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             talismans.insert(session, snapshot);
         }
-        let now = self.owner_now();
+        let now = now.unwrap_or_else(|| self.owner_now());
         let mut runtime = self.runtime.lock().await;
         let digest = runtime.content_pin().server_artifact_digest();
         if runtime.owner_fence().is_err()
@@ -207,6 +219,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
+            if runtime
+                .actor_staff_visibility(entry.actor)
+                .is_ok_and(|flags| flags.0)
+            {
+                entry.clear_target();
+                continue;
+            }
             if unavailable_source_players.contains(&entry.actor.placement_identity()) {
                 continue;
             }
@@ -968,6 +987,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Source-qualified leaf damage uses the existing independent replay stream.
                 // It neither consumes another player command nor re-enters Charm evaluation.
                 let mut lethal_result = result;
+                if result.applied && result.health_before > result.health_after {
+                    for outcome in &outcomes {
+                        if let Some(CharmEffectOutcome::PreventCreatureFlee { duration_ms }) =
+                            charm_combat::effect(outcome)
+                            && runtime.companion_snapshot(target).is_ok_and(|s| {
+                                s.health > 0
+                                    && s.state.master.is_none()
+                                    && !s.state.policy.is_familiar
+                            })
+                            && let Some(until) =
+                                now.get().checked_add(u64::from(duration_ms) * 1_000)
+                        {
+                            let creature = crate::content::ProjectV2DefinitionRef {
+                                family: crate::content::ProjectV2Family::Creature,
+                                key: snapshot.state.policy.definition_key.clone(),
+                                revision: snapshot.state.policy.definition_revision.clone(),
+                            };
+                            if states.monster_melee.creature_ai.state(target).is_none() {
+                                let _ = states.monster_melee.creature_ai.admit_native_creature(
+                                    &runtime,
+                                    content,
+                                    target,
+                                    &creature,
+                                    now.get(),
+                                );
+                            }
+                            states
+                                .monster_melee
+                                .creature_ai
+                                .apply_fatal_hold(target, until);
+                        }
+                        if let Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) =
+                            charm_combat::effect(outcome)
+                        {
+                            charm_combat::paralyse_creature(
+                                &mut runtime,
+                                entry.actor,
+                                entry.session,
+                                target,
+                                duration_ms,
+                                &root,
+                                swing_occurrence(
+                                    entry.actor,
+                                    swing.lineage,
+                                    ordinal,
+                                    b"committed-hit",
+                                ),
+                                now.get(),
+                            );
+                        }
+                    }
+                }
                 if result.applied
                     && result.health_after > 0
                     && result.health_before > result.health_after
@@ -1045,6 +1116,112 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         session: entry.session,
                         actor: entry.actor,
                     };
+                    // Canary 47dfd51f iobestiary.cpp:51-97: Carnage affects only the four
+                    // cardinal neighbouring monsters. Source damage never re-enters charms.
+                    for outcome in &outcomes {
+                        let Some(CharmEffectOutcome::AreaDamageAroundKill { damage, amount }) =
+                            charm_combat::effect(outcome)
+                        else {
+                            continue;
+                        };
+                        let origin = snapshot.position;
+                        let neighbours: Vec<_> = runtime
+                            .visible_entities()
+                            .creatures
+                            .into_iter()
+                            .filter_map(|creature| {
+                                let candidate = runtime.companion_snapshot(creature.actor).ok()?;
+                                let at = candidate.position;
+                                (creature.actor != target
+                                    && candidate.health > 0
+                                    && candidate.state.master.is_none()
+                                    && !candidate.state.policy.is_familiar
+                                    && candidate.state.policy.flags.attackable
+                                    && at.floor == origin.floor
+                                    && ((at.x == origin.x && at.y.abs_diff(origin.y) == 1)
+                                        || (at.y == origin.y && at.x.abs_diff(origin.x) == 1)))
+                                    .then_some(creature.actor)
+                            })
+                            .collect();
+                        for neighbour in neighbours {
+                            let occurrence =
+                                swing_occurrence(neighbour, swing.lineage, ordinal, b"carnage");
+                            let Ok(draw) =
+                                oteryn_simulation_determinism::deterministic_decision_u64(
+                                    &root,
+                                    occurrence,
+                                    "charm.carnage-armor",
+                                    0,
+                                )
+                            else {
+                                continue;
+                            };
+                            let Some(amount) = charm_combat::damage_amount(
+                                &runtime, neighbour, damage, amount, draw,
+                            )
+                            .filter(|amount| *amount > 0) else {
+                                continue;
+                            };
+                            let stream = format!(
+                                "charm-carnage:{}:{}:{}",
+                                swing.lineage.command_id().get(),
+                                outcome.charm_key,
+                                hex(&target.placement_identity())
+                            );
+                            let Ok(child) = runtime.commit_source_damage(
+                                neighbour,
+                                entry.actor,
+                                entry.session,
+                                stream.as_bytes(),
+                                u64::from(ordinal),
+                                amount,
+                                now.get() / 1_000,
+                            ) else {
+                                continue;
+                            };
+                            if child.applied {
+                                kills.boss_damage_dealt(
+                                    &runtime,
+                                    neighbour,
+                                    entry.actor,
+                                    entry.session,
+                                );
+                                states.analyser.impact_amount(
+                                    entry.actor,
+                                    entry.session,
+                                    u64::try_from(
+                                        child.health_before.saturating_sub(child.health_after),
+                                    )
+                                    .unwrap_or(0),
+                                    Some(super::super::analyser::charm_element(damage.element)),
+                                );
+                                record_hit_activity(
+                                    entry,
+                                    &runtime,
+                                    content,
+                                    neighbour,
+                                    now,
+                                    &child,
+                                    &mut activity_cells,
+                                );
+                                if child.health_after == 0 {
+                                    settle_kill(
+                                        entry,
+                                        &mut runtime,
+                                        kills,
+                                        self.reward_table(),
+                                        self.imported_charms,
+                                        &activity_cells,
+                                        &states,
+                                        neighbour,
+                                        lethal,
+                                        now,
+                                        false,
+                                    );
+                                }
+                            }
+                        }
+                    }
                     settle_kill(
                         entry,
                         &mut runtime,
@@ -1478,6 +1655,10 @@ pub(super) fn select_swing(
 ) -> Option<SelectedSwing> {
     let target = entry.state.target()?;
     let player = states.get(runtime, entry.actor, entry.session)?;
+    if states.player_hidden_from(runtime, entry.actor, target, now) {
+        entry.clear_target();
+        return None;
+    }
     if states.is_dead(entry.actor) {
         entry.clear_target();
         return None;

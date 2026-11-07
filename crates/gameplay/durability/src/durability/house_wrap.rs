@@ -11,6 +11,8 @@ use sqlx::Row;
 
 mod purchased_kit;
 pub(crate) use purchased_kit::record_purchased_kit;
+mod catalogue;
+pub use catalogue::{HouseFurnitureCandidate, HouseFurnitureCatalogue};
 
 pub struct HouseWrapCommand {
     pub house: HouseId,

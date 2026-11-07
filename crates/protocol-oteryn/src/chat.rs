@@ -22,10 +22,10 @@ pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
-    push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes, read_uint32,
-    read_varint, set_once, WireResult,
+    WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
+    read_uint32, read_varint, set_once,
 };
-use crate::world_spatial::{decode_position, encode_position, ActorPosition};
+use crate::world_spatial::{ActorPosition, decode_position, encode_position};
 use crate::world_spatial_entities::ENTITY_IDENTITY_BYTES;
 
 /// Registered capability `CHAT_V1`: command type 13, state domain 12.

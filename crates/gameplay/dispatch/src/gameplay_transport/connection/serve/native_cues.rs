@@ -327,6 +327,9 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
             })
             .collect();
         if !events.is_empty() {
+            if session.selected_capabilities.contains(290) {
+                authority.cast_effects(session.admitted, &events).await;
+            }
             let payload = if native_wire {
                 oteryn_protocol_oteryn::native_map_cues::encode_native_map_presentation_batch(
                     &events,

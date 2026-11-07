@@ -118,7 +118,7 @@ impl FeeBurnCause {
             Self::NpcTravel { service, .. } if service.starts_with("oteryn:service.travel.") => {
                 Ok(())
             }
-            Self::AreaDonation { area: 1, .. } => Ok(()),
+            Self::AreaDonation { area: 1..=1024, .. } => Ok(()),
             Self::NpcRepair { occurrence, repair }
                 if repair.occurrence.as_slice() == occurrence =>
             {

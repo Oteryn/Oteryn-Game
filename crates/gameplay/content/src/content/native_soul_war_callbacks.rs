@@ -306,9 +306,11 @@ mod health_tests {
                 .count(),
             14
         );
-        assert!(!policies
-            .iter()
-            .any(|p| p.key == "oteryn:creature.goshnar_s_greed"));
+        assert!(
+            !policies
+                .iter()
+                .any(|p| p.key == "oteryn:creature.goshnar_s_greed")
+        );
         let target = document
             .records
             .iter_mut()

@@ -17,6 +17,7 @@ use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_bou
 use oteryn_gameplay_progression::hit_training::SkillFamily;
 
 pub(in crate::gameplay_transport) struct IncomingCharm<'a> {
+    pub source: ExactActorRef,
     pub catalogue: &'a dyn CharmCatalogueRead,
     pub root: GameplayDecisionRoot,
     pub occurrence: DecisionOccurrenceId,
@@ -178,6 +179,35 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 },
             );
             for outcome in &outcomes {
+                match charm_combat::effect(outcome) {
+                    Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
+                        charm_combat::paralyse_creature(
+                            runtime,
+                            target,
+                            session,
+                            source,
+                            duration_ms,
+                            &charm.root,
+                            charm.occurrence,
+                            now.get(),
+                        );
+                    }
+                    Some(
+                        effect @ (CharmEffectOutcome::Haste { .. }
+                        | CharmEffectOutcome::CleanseOneNegativeCondition),
+                    ) => {
+                        self.states.apply_player_charm_condition(
+                            runtime,
+                            target,
+                            session,
+                            effect,
+                            &charm.root,
+                            charm.occurrence,
+                            now.get(),
+                        );
+                    }
+                    _ => {}
+                }
                 let Some(CharmEffectOutcome::ReflectDamage { damage, amount }) =
                     charm_combat::effect(outcome)
                 else {
@@ -248,6 +278,7 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         magnitude: u32,
         now: OwnerTime,
     ) -> Option<CreatureHit> {
+        let was_dead = self.states.is_dead(target);
         // Zero/fully blocked/dodged primary hits do not attach melee conditions.
         // The admitted source's nonzero primary and secondary state commit together.
         if magnitude > 0
@@ -283,6 +314,18 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     &[],
                     source.stamp,
                 )?;
+            if !was_dead && let (Some(death), Some(charm)) = (receipt.death, &self.charm) {
+                self.attack.capture_death_charm(
+                    runtime,
+                    self.states,
+                    charm.catalogue,
+                    target,
+                    target_session,
+                    charm.source,
+                    death.occurrence_bytes(),
+                    &charm.root,
+                );
+            }
             return Some(CreatureHit {
                 damage: crate::ability::creature_bite::CreatureDamage {
                     applied: receipt.applied,
@@ -297,7 +340,7 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 .prey_percent(runtime, target, target_session, c.race, 2, now.get())
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
-        self.states.apply_creature_damage_kind(
+        let hit = self.states.apply_creature_damage_kind(
             runtime,
             target,
             target_session,
@@ -309,7 +352,20 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     .as_ref()
                     .and_then(|charm| super::super::analyser::race(charm.race)),
             ),
-        )
+        )?;
+        if !was_dead && let (Some(death), Some(charm)) = (hit.death, &self.charm) {
+            self.attack.capture_death_charm(
+                runtime,
+                self.states,
+                charm.catalogue,
+                target,
+                target_session,
+                charm.source,
+                death,
+                &charm.root,
+            );
+        }
+        Some(hit)
     }
 
     fn target_armor(

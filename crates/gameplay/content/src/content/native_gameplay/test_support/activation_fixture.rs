@@ -17,7 +17,28 @@ fn activate(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
-    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied).unwrap();
+    try_activate_input(world, supplied).unwrap()
+}
+
+/// Qualify a fixture once, then use the same sealed activation checks as the node entry path.
+/// Fixture issuance is derived from that qualified room; production issuances remain independent.
+pub fn try_activate_input(
+    world: oteryn_protocol_oteryn::WorldId,
+    supplied: &NativeGameplayInput,
+) -> Result<
+    (
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+    ),
+    crate::content::NativeEntryActivationError,
+> {
+    use crate::content::NativeEntryActivationError;
+    supplied
+        .validate_cosmetics_pin()
+        .map_err(crate::content::ProjectError::from)
+        .map_err(NativeEntryActivationError::Qualification)?;
+    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied)
+        .map_err(NativeEntryActivationError::Qualification)?;
     let issuance = NativeEntryActivationIssuance {
         world_id: world,
         activation_sequence: 1,
@@ -26,15 +47,13 @@ fn activate(
         frame_binding_digest: room.frame_binding().digest(),
     };
     let mut controller = ContentActivationController::new();
-    let pin = activate_native_entry_room_with_gameplay(
+    let pin = crate::content::activation::activate_qualified_native_entry_room(
         &mut controller,
         &NodeBootQuiescence::before_channel_runtime(),
-        world,
         &issuance,
-        supplied,
-    )
-    .unwrap();
-    (controller, pin)
+        room,
+    )?;
+    Ok((controller, pin))
 }
 
 pub fn activated_with_loot_tables(
@@ -205,6 +224,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // Exact native corpse/yield producer admission now qualifies sixteen source
     // reward bosses. Four further admitted corpses retain unresolved loot yields;
     // those rows must remain refused rather than silently dropping their Items.
+    // Shared demon, vampire and dragon bodies retain independent loot qualification.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
@@ -212,6 +232,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     let mut inadmissible = 0;
     let mut inadmissible_loot = 0;
     let mut admitted = Vec::new();
+    let mut shared_body = Vec::new();
     for policy in &bosses {
         let record = source
             .creature_profiles()
@@ -252,6 +273,18 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             && matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.grand_mother_foulscale"
+                    | "oteryn:creature.orshabaal"
+                    | "oteryn:creature.the_weakened_count"
+            )
+        {
+            shared_body.push(policy.definition_key.as_str());
+        }
+        if materializable_corpse.is_some()
+            && matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.an_observer_eye"
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.the_weakened_count"
                     | "oteryn:creature.gravelord_oshuran"
@@ -270,6 +303,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .reward_table()
                 .row(&policy.definition_key)
                 .map_err(|reason| format!("{}: {reason:?}", policy.definition_key))?;
+            if matches!(
+                policy.definition_key.as_str(),
+                "oteryn:creature.armenius_creature" | "oteryn:creature.grand_mother_foulscale"
+            ) {
+                assert!(!row.loot_table.entries.is_empty());
+            }
             assert_eq!(
                 row.corpse_item,
                 Some(LootDefinitionRef::new(
@@ -363,6 +402,17 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.murcion",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.vemiath"
+        ]
+    );
+    shared_body.sort_unstable();
+    assert_eq!(
+        shared_body,
+        [
+            "oteryn:creature.an_observer_eye",
+            "oteryn:creature.armenius_creature",
+            "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.orshabaal",
+            "oteryn:creature.the_weakened_count",
         ]
     );
     assert_eq!(bosses.len(), 387);

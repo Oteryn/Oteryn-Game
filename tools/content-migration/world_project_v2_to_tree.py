@@ -201,6 +201,8 @@ def main() -> int:
     extend_boss_movement_references(item_records, ROOT)
     from boss_corpse_terminal_reference import extend_records as extend_corpse_terminal_reference
     extend_corpse_terminal_reference(item_records, ROOT)
+    from itemhold_q import apply_admissions as apply_quest_item_holds
+    apply_quest_item_holds(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -685,6 +687,16 @@ def main() -> int:
             ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
             if family not in quest_families],
     })
+    # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
+    # Repin only after proving the old digest and every selected row against
+    # the exact pre-change base; ordinary source-capture validation stays strict.
+    from grizzly_shop_profiles import refresh_canonical_input_pins
+    refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
+    import condition_potion_profiles
+    refresh_canonical_input_pins(
+        ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
+        packet_path=condition_potion_profiles.PATH,
+        keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

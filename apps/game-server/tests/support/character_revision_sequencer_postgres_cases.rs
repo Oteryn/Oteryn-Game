@@ -218,12 +218,38 @@ impl Harness {
     ) -> TestResult<Self> {
         Self::create_seeded(admin, tag, initialized, seed_session, false).await
     }
+    #[allow(
+        dead_code,
+        reason = "C19b native dispatch scenarios create a root under the new interpretation"
+    )]
+    pub(super) async fn create_newhaven(admin: String, tag: &str) -> TestResult<Self> {
+        Self::create_seeded_with_starter(admin, tag, false, false, false, "newhaven-starter-r1")
+            .await
+    }
     async fn create_seeded(
         admin: String,
         tag: &str,
         initialized: bool,
         seed_session: bool,
         appearance: bool,
+    ) -> TestResult<Self> {
+        Self::create_seeded_with_starter(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            appearance,
+            "starter-1",
+        )
+        .await
+    }
+    async fn create_seeded_with_starter(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        appearance: bool,
+        starter: &str,
     ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
@@ -251,6 +277,7 @@ impl Harness {
             } else {
                 CreationFixture::Historical
             },
+            starter,
         )
         .await?;
         Ok(Self {
@@ -280,7 +307,7 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
+fn bootstrap_binding(appearance: bool, observer: bool, starter: &str) -> Vec<u8> {
     let original_id = id;
     let id = |tag| {
         original_id(if observer && ![42, 43].contains(&tag) {
@@ -302,7 +329,7 @@ fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
     binding.extend_from_slice(&id(42));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&120_i64.to_be_bytes());
-    for value in ["profile-1", "ruleset-1", "content-1", "starter-1"] {
+    for value in ["profile-1", "ruleset-1", "content-1", starter] {
         binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
@@ -393,6 +420,7 @@ async fn seed_character(
     initialized: bool,
     seed_session: bool,
     creation: CreationFixture,
+    starter: &str,
 ) -> TestResult {
     let appearance = creation != CreationFixture::Historical;
     let observer = creation == CreationFixture::Observer;
@@ -410,12 +438,19 @@ async fn seed_character(
         "Fixture Hero"
     };
     if !observer {
-        sqlx::query(
-            "INSERT INTO game_character_interpretations VALUES \
-         (1,'profile-1','ruleset-1','content-1','starter-1',1)",
-        )
-        .execute(pool)
-        .await?;
+        if starter == "starter-1" {
+            sqlx::query(
+                "INSERT INTO game_character_interpretations VALUES \
+             (1,'profile-1','ruleset-1','content-1','starter-1',1)",
+            )
+            .execute(pool)
+            .await?;
+        } else {
+            // The operator's actual append-only interpretation owner selects the new
+            // template before root creation; no immutable existing root is rewritten.
+            sqlx::query("SELECT game_character_configure_interpretation('profile-1','ruleset-1','content-1',$1)")
+                .bind(starter).execute(pool).await?;
+        }
     }
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
         .bind(id(40).as_slice())
@@ -424,13 +459,14 @@ async fn seed_character(
     sqlx::query(
         "INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1',$5,$4)",
+          1,1,'profile-1','ruleset-1','content-1',$6,$5,$4)",
     )
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
     .bind(if appearance { Some(2_i16) } else { None })
     .bind(name)
+    .bind(starter)
     .execute(pool)
     .await?;
     sqlx::query(
@@ -443,7 +479,7 @@ async fn seed_character(
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(appearance, observer, starter))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
@@ -458,7 +494,7 @@ async fn seed_character(
          (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(appearance, observer, starter))
     .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;

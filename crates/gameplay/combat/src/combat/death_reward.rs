@@ -485,6 +485,7 @@ async fn settle_loot(
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
+    corpse_race: Option<BestiaryRace>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
         (None, None) if loot_table.entries.is_empty() => return Ok(None),
@@ -521,14 +522,20 @@ async fn settle_loot(
     // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
     // place of a loot table (D3 §4.1).
     let corpse_definition = to_typed_definition(corpse_item);
+    let mut corpse_cause = ItemMintCause::from_creature_death(
+        death,
+        corpse_definition.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
+        0,
+    )
+    .map_err(CombatDeathRewardLootError::Corpse)?;
+    if let Some(race) = corpse_race {
+        corpse_cause = corpse_cause
+            .with_corpse_race(race)
+            .map_err(CombatDeathRewardLootError::Corpse)?;
+    }
     let corpse_request = ItemMintRequest {
-        cause: ItemMintCause::from_creature_death(
-            death,
-            corpse_definition.clone(),
-            CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
-            0,
-        )
-        .map_err(CombatDeathRewardLootError::Corpse)?,
+        cause: corpse_cause,
         item: corpse_definition,
         quantity: 1,
         ground: ground_placement(death, corpse, ground)
@@ -816,6 +823,17 @@ pub async fn settle_creature_death_rewards<const N: usize>(
     slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    settle_creature_death_rewards_inner(permit, facts, session, slot, input, None).await
+}
+
+async fn settle_creature_death_rewards_inner<const N: usize>(
+    permit: &SpellLanePermit,
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    input: CreatureDeathRewardInput<N>,
+    corpse_race: Option<BestiaryRace>,
+) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     let principal = admit_principal(&facts, &input)?;
     let mut committed_loot = Vec::new();
     let loot = settle_loot(
@@ -830,6 +848,7 @@ pub async fn settle_creature_death_rewards<const N: usize>(
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
+        corpse_race,
     )
     .await;
 
@@ -955,7 +974,15 @@ pub async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
             reward_revision: progression.reward_revision.clone(),
         });
     let principal = admit_principal(&facts, &input)?;
-    let rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let rewards = settle_creature_death_rewards_inner(
+        permit,
+        facts,
+        session,
+        slot,
+        input,
+        bestiary.race.clone(),
+    )
+    .await?;
     let boss = bestiary.boss.clone();
     let bestiary = match binding {
         Some(binding) => {
@@ -992,7 +1019,15 @@ pub async fn settle_creature_death_rewards_with_party_experience<const N: usize>
             policy_revision: p.policy_revision,
             reward_revision: p.reward_revision,
         });
-    let mut rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let mut rewards = settle_creature_death_rewards_inner(
+        permit,
+        facts,
+        session,
+        slot,
+        input,
+        bestiary.race.clone(),
+    )
+    .await?;
     rewards.xp = xp;
     let boss = bestiary.boss.clone();
     let bestiary = match binding {

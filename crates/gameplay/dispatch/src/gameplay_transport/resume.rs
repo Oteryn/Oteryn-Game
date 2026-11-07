@@ -190,12 +190,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let token = std::str::from_utf8(attempt.recovery_material).map_err(|_| Rejected)?;
         let key_id = fresh_grant_signing_key_id(token).ok_or(Rejected)?;
-        let account_id = canonical_uuid(&controller.account_id);
-        self.evidence
-            .refresh_recovery(self.root, self.holder, &account_id, &key_id)
+        let account =
+            crate::domain::AccountId::from_bytes(controller.account_id).map_err(|_| Rejected)?;
+        if self
+            .root
+            .staff_account_banned(self.character, account)
             .await
-            .map_err(|_| Unavailable)?;
-
+            .map_err(|_| Unavailable)?
+        {
+            return Err(Rejected);
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone())
             .with_house_lifecycle_owner(self.holder);
         let session_id = lost.game_session_id;
@@ -207,6 +211,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if session.session_state() != GameSessionState::Reconnectable {
             return Err(Rejected);
         }
+        let fence = super::item_fence_of(session).ok_or(Rejected)?;
+        if fence.connection_generation.get() != lost.continuity.connection_generation
+            || self
+                .root
+                .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
+                .await
+                .map_err(|_| Unavailable)?
+        {
+            return Err(Rejected);
+        }
+        let account_id = canonical_uuid(&controller.account_id);
+        self.evidence
+            .refresh_recovery(self.root, self.holder, &account_id, &key_id)
+            .await
+            .map_err(|_| Unavailable)?;
+
         let (loss, loss_decided_at) = store
             .owning_loss(session_id, epoch)
             .await

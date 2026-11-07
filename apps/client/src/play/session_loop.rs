@@ -46,7 +46,7 @@ pub async fn run_session<T: Stepper>(
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
-                        54 | 55 | 115 | 150 => outbox.properties_result(&command, &result),
+                        54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
@@ -60,10 +60,13 @@ pub async fn run_session<T: Stepper>(
                         225 => outbox.boss_difficulty_result(&result),
                         250 => outbox.hireling_management_result(&result),
                         276 => outbox.condition_status_result(&result),
+                        384 => outbox.mechanics_status_result(&result),
                         277 => outbox.rest_status_result(&result),
                         278 => outbox.battle_instinct_status_result(&result),
                         279 | 370 => outbox.skill_progress_result(&result),
                         280 => outbox.party_effects_result(&result),
+                        381 => outbox.potion_durations_result(&result),
+                        382 => outbox.death_protection_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

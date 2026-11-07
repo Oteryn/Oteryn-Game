@@ -126,12 +126,20 @@ impl Scene {
                 self.actor_draws.push((tile, draws));
             }
             if self.view.contains(tile) {
-                let mut label = entity
+                let mut marker = None;
+                oteryn_client_ui::forge_creature::protocol::replace(
+                    &mut marker,
+                    entity.kind == oteryn_session::EntityKind::Creature,
+                    entry.forge_stacks,
+                );
+                let name = entity
                     .display_name
                     .as_ref()
-                    .and_then(|name| name.as_str().ok())
-                    .unwrap_or_default()
-                    .to_owned();
+                    .and_then(|name| name.as_str().ok());
+                let mut label = name
+                    .or_else(|| marker.map(|_| "Creature"))
+                    .map(|name| oteryn_client_ui::forge_creature::label(name, marker))
+                    .unwrap_or_default();
                 let icons = oteryn_client_ui::native_creature_icons::labels(entity).join(" ");
                 if !icons.is_empty() {
                     if !label.is_empty() {

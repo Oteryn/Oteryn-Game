@@ -89,13 +89,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let objects = owner.door.lock().await;
                 let mut map = CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 let random = RaidRandom::new(seed, step.identity.firing_id);
+                let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;
                 let mut placement = PlacementContext {
                     random: &random, selected, bundle: index.map(),
                     remaining_reads: usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS),
+                    stamp, firing: step.identity.firing_id,
                 };
                 let retained: BTreeSet<_> = runtime.raid_creatures(step.identity.firing_id)
                     .map_err(|_| DurabilityError::Unavailable)?.into_iter().map(|row| row.identity).collect();
-                let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;
+
                 let CommittedRaidAction::Wave { creatures, .. } = &step.action else {
                     return Err(DurabilityError::InvalidStoredState);
                 };
@@ -166,6 +168,8 @@ struct PlacementContext<'a> {
     selected: &'a SelectedRaid,
     bundle: &'a crate::map::boot::BundleMap,
     remaining_reads: usize,
+    stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+    firing: [u8; 16],
 }
 
 impl PlacementContext<'_> {
@@ -189,7 +193,7 @@ impl PlacementContext<'_> {
     async fn select(
         &mut self,
         map: &mut CurrentMonsterMap<'_, '_>,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         plan: &RaidCreaturePlan,
     ) -> Result<Option<RaidPosition>, DurabilityError> {
         let area = *self
@@ -219,6 +223,26 @@ impl PlacementContext<'_> {
                 for attempt in 0..RAID_PLACEMENT_ATTEMPTS {
                     let at = area
                         .candidate(
+                            self.random,
+                            identity.wave,
+                            identity.entry,
+                            identity.index,
+                            attempt,
+                        )
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if self.admits(map, runtime, at).await? {
+                        return Ok(Some(at));
+                    }
+                }
+                Ok(None)
+            }
+            CatalogueSpawnMode::SharedArea => {
+                while let Some(attempt) = runtime
+                    .spend_raid_shared_attempt(self.stamp, self.firing, identity.wave)
+                    .map_err(|_| DurabilityError::Unavailable)?
+                {
+                    let at = area
+                        .candidate_shared(
                             self.random,
                             identity.wave,
                             identity.entry,

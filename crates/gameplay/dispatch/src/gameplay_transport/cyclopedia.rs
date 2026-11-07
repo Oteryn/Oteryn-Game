@@ -70,11 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let (Some(actor), Some(fence), Some(area)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            self.cyclopedia_content(),
-        ) else {
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
         let Ok(intent) = wire::decode_request(kind, payload) else {
@@ -149,6 +145,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: position.at.y,
             floor: position.at.floor,
         };
+        // Membership is resolved from the server-owned position, never the legacy wire alias.
+        let Some(area) = content::admit_at(self, at) else {
+            return GuildReply::Rejected;
+        };
         let action = match intent.operation {
             0 => MapAction::Query,
             1 => MapAction::Start,
@@ -159,7 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let derive =
             |tag: &[u8]| super::npc_trade_command::derived(tag, admitted.game_session_id, id.get());
-        let fee = if matches!(action, MapAction::Donate(_)) {
+        let fee_definitions = if matches!(action, MapAction::Donate(_)) {
             let Some((gold, platinum, crystal)) =
                 super::npc_command::bank_coin_definitions(self, &runtime)
             else {
@@ -178,6 +178,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 production_key: "oteryn:item.tibia.i2854".into(),
                 revision_ref: revision.into(),
             };
+            Some((gold, platinum, crystal, fallback))
+        } else {
+            None
+        };
+        drop(runtime);
+        let fee = if let Some((gold, platinum, crystal, fallback)) = fee_definitions {
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, fence.character_id)
@@ -223,6 +229,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             binding: hash.finalize().into(),
             occurrence: derive(b"cyclopedia:occurrence"),
             bundle: area.digest,
+            area: area.area,
+            legacy_area: area.legacy_area,
+            subarea: area.subarea,
+            subareas: area.subareas,
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
@@ -231,6 +241,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             event: derive(b"cyclopedia:event"),
             now: super::npc_trade_command::unix_ms_now(),
         };
+        {
+            let mut runtime = self.runtime.lock().await;
+            let binding = runtime.binding();
+            if binding.runtime_scope() != fence.runtime_scope
+                || binding.scope_generation() != fence.scope_ownership_generation
+                || runtime.owner_fence().is_err()
+                || !runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                || super::bundle_map_position(&mut runtime, self.movement_cells, actor).is_none_or(
+                    |position| {
+                        position.at.x != at.x
+                            || position.at.y != at.y
+                            || position.at.floor != at.floor
+                    },
+                )
+            {
+                return GuildReply::Rejected;
+            }
+        }
         match slot
             .cyclopedia(
                 self.root,
@@ -243,7 +273,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(bytes) if wire::decode_result(&bytes).is_ok() => {
-                drop(runtime);
                 drop(slot);
                 // The donation is complete; respawn initialization acquires its own lane.
                 drop(trade_permit);

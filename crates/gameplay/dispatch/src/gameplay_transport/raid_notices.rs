@@ -33,6 +33,7 @@ struct Recipient {
 struct NoticeState {
     recipients: HashMap<GameSessionId, Recipient>,
     published: BTreeMap<NoticeKey, Arc<ServerMessage>>,
+    staff_published: HashMap<String, (Option<GameSessionId>, Arc<ServerMessage>)>,
 }
 
 #[derive(Default)]
@@ -222,6 +223,55 @@ impl ServerMessageHub {
             .published
             .retain(|(firing, _, _), _| *firing != identity.firing_id);
         Ok(())
+    }
+
+    /// NX-1 publication uses this Channel's current recipient snapshot.
+    pub(super) fn staff_publish(
+        &self,
+        operation: &str,
+        target: Option<GameSessionId>,
+        text: &str,
+    ) -> Result<(), ()> {
+        let message = if target.is_some() {
+            ServerMessage::StatusText(text.into())
+        } else {
+            ServerMessage::Warning(text.into())
+        };
+        encode_server_message(&message).map_err(|_| ())?;
+        let mut state = self.state.lock().map_err(|_| ())?;
+        if let Some((old_target, previous)) = state.staff_published.get(operation) {
+            return if *old_target == target && previous.as_ref() == &message {
+                Ok(())
+            } else {
+                Err(())
+            };
+        }
+        if state.staff_published.len() >= 1024
+            || target.is_some_and(|session| !state.recipients.contains_key(&session))
+            || state.recipients.iter().any(|(session, recipient)| {
+                target.is_none_or(|target| target == *session)
+                    && recipient.queue.len() >= MAX_ANNOUNCEMENTS
+            })
+        {
+            return Err(());
+        }
+        let message = Arc::new(message);
+        for (session, recipient) in &mut state.recipients {
+            if target.is_none_or(|target| target == *session) {
+                recipient.queue.push_back(Arc::clone(&message));
+            }
+        }
+        state
+            .staff_published
+            .insert(operation.to_owned(), (target, message));
+        drop(state);
+        self.changed.notify_waiters();
+        Ok(())
+    }
+    pub(super) fn staff_forget(&self, operation: &str) {
+        if let Ok(mut state) = self.state.lock() {
+            state.staff_published.remove(operation);
+        }
     }
 
     pub(super) fn take(

@@ -219,7 +219,8 @@ fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError>
             item_definition_ref,
             quantity,
             ..
-        } | EntityDetail::ObjectWithAppearance {
+        }
+        | EntityDetail::ObjectWithAppearance {
             item_definition_ref,
             quantity,
             ..
@@ -312,7 +313,8 @@ fn encode_entity(
             item_definition_ref,
             quantity,
             item_handle,
-        } | EntityDetail::ObjectWithAppearance {
+        }
+        | EntityDetail::ObjectWithAppearance {
             item_definition_ref,
             quantity,
             item_handle,
@@ -437,7 +439,9 @@ fn decode_entity(
             0x60 if fields.light => once(&mut light_color, varint_u32(input, &mut cursor)?)?,
             0x78 if fields.native_objects => {
                 let id = u16::try_from(varint_u32(input, &mut cursor)?)
-                    .ok().and_then(NonZeroU16::new).ok_or(WorldSpatialError::Malformed)?;
+                    .ok()
+                    .and_then(NonZeroU16::new)
+                    .ok_or(WorldSpatialError::Malformed)?;
                 once(&mut native_appearance, id)?;
             }
             0x72 if fields.native_icons => {
@@ -526,9 +530,18 @@ fn decode_entity(
         let item_definition_ref = item.ok_or(WorldSpatialError::Malformed)?;
         let quantity = quantity.ok_or(WorldSpatialError::Malformed)?;
         if let Some(appearance_id) = native_appearance {
-            EntityDetail::ObjectWithAppearance { item_definition_ref, quantity, item_handle, appearance_id }
+            EntityDetail::ObjectWithAppearance {
+                item_definition_ref,
+                quantity,
+                item_handle,
+                appearance_id,
+            }
         } else {
-            EntityDetail::Object { item_definition_ref, quantity, item_handle }
+            EntityDetail::Object {
+                item_definition_ref,
+                quantity,
+                item_handle,
+            }
         }
     };
     let entity = WorldSpatialEntity {
@@ -602,8 +615,14 @@ fn unique_item_handles<'a>(
 ) -> Result<(), WorldSpatialError> {
     let mut seen = BTreeSet::new();
     for entity in entities {
-        if let EntityDetail::Object { item_handle: Some(handle), .. }
-            | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. } = entity.detail
+        if let EntityDetail::Object {
+            item_handle: Some(handle),
+            ..
+        }
+        | EntityDetail::ObjectWithAppearance {
+            item_handle: Some(handle),
+            ..
+        } = entity.detail
             && !seen.insert(handle)
         {
             return Err(WorldSpatialError::Malformed);
@@ -1650,7 +1669,7 @@ mod tests {
         light: true,
         party_icons: false,
         native_icons: false,
-            native_objects: false,
+        native_objects: false,
     };
     const BRIGHTEST: EntityLight = EntityLight {
         level: u8::MAX,

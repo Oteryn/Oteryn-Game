@@ -171,6 +171,7 @@ impl CreatureAiTable {
                 .and_then(|facts| facts.monster_ai.and_then(|ai| ai.challenged_to))
                 .is_some_and(|(_, until_ms)| now_us / 1_000 < until_ms);
             let fleeing = !state.is_summon
+                && now_us >= state.fatal_hold_until
                 && !forced_target_holds
                 && !current_challenge
                 && state.forced_distance.is_none_or(|until| now_us >= until)

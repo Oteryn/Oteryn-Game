@@ -2505,6 +2505,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
             attack.settle_pacified_target(&runtime, &states, actor, session);
+            attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
             let state = attack.combat_state(actor, session, self.owner_now());
             (
                 legacy.as_ref().and_then(|r| r.creature).or(state.target),

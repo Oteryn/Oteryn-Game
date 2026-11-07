@@ -69,7 +69,7 @@ start_floor = -7
 profile_revision = "profile.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-starter_template_revision = "starter.1"
+starter_template_revision = "newhaven-starter-r1"
 
 [assignment]
 # Declared by Game ops, starts at 1, never decreases; equal in node.toml [platform.runtime_status]

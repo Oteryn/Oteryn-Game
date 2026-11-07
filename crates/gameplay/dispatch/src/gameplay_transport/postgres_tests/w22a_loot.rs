@@ -213,7 +213,17 @@ pub(super) async fn before_kill(
     }
     if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
         use_wealth_duplex(owner, h, actor, session).await?;
-        return age_wealth_duplex(h, session, matches!(case, Case::DuplexOnlineSpent)).await;
+        let online = matches!(case, Case::DuplexOnlineSpent);
+        age_wealth_duplex(h, session, online).await?;
+        return super::cl6_status::check_timer(
+            owner,
+            actor,
+            session,
+            "wealth_duplex",
+            !online,
+            3_600_000,
+        )
+        .await;
     }
     if !matches!(CASE.get(), Some(Case::Gut)) {
         return Ok(());
@@ -325,6 +335,7 @@ async fn use_wealth_duplex(
         (1, 1, 1),
         "one unit, one burn, one effect"
     );
+    super::cl6_status::check_timer(owner, actor, session, "wealth_duplex", true, 3_600_000).await?;
     Ok(())
 }
 

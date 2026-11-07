@@ -515,6 +515,7 @@ def native_corpse_capacity(ref: dict, profile: dict) -> int | None:
     if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
             and profile['admission']['legal_destinations'] == ['Ground']):
         return capacity
+    # GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX, domain/loot_data.rs:6.
     return capacity if type(capacity) is int and 1 <= capacity <= 30 else None
 
 

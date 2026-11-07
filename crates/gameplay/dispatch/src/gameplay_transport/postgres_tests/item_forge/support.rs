@@ -22,6 +22,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 #[derive(Debug, Clone, Copy)]
 pub(in super::super) enum Case {
     Conversions,
+    CurrentDust,
     DustLimit,
     DustCap,
     Refusals,
@@ -137,6 +138,9 @@ pub(in super::super) fn scenario(case: Case) -> TestResult {
             ));
         }
         match case {
+            Case::CurrentDust => {
+                super::super::nx8_forge_projection::exercise(&h, &owner, &mut admitted).await?
+            }
             Case::Conversions => super::conversions(&h, &owner, &mut admitted).await?,
             Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
             Case::DustCap => super::dust_cap(&h, &owner, &mut admitted).await?,
@@ -322,6 +326,21 @@ pub(in super::super) async fn exchange_raw(
     admitted: &mut AdmittedSession,
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    exchange_typed(
+        owner,
+        admitted,
+        protocol::item_forge::COMMAND_TYPE_ITEM_FORGE,
+        payload,
+    )
+    .await
+}
+
+pub(in super::super) async fn exchange_typed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command_type: u32,
+    payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let current = *admitted;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -330,10 +349,11 @@ pub(in super::super) async fn exchange_raw(
         end
     };
     let exercise = async {
-        let result = send(
+        let result = send_command(
             &mut client,
             current.continuity.connection_generation,
             current.continuity.next_command_id,
+            command_type,
             payload,
         )
         .await?;
@@ -390,22 +410,6 @@ pub(in super::super) fn server_end_summary(end: &ConnectionEnd) -> String {
     } else {
         kind
     }
-}
-
-async fn send(
-    client: &mut tokio::io::DuplexStream,
-    generation: u64,
-    id: u64,
-    payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
-    send_command(
-        client,
-        generation,
-        id,
-        protocol::item_forge::COMMAND_TYPE_ITEM_FORGE,
-        payload,
-    )
-    .await
 }
 
 pub(in super::super) async fn send_command(

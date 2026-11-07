@@ -11,6 +11,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.selected_capabilities.contains(290) {
+        authority.cast_refresh(session.admitted).await;
+    }
     let changed = authority
         .tick_vitals(session.actor, session.admitted.game_session_id)
         .await;
@@ -106,6 +109,34 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.cast_chat_revision > 0 {
+        for payload in authority.cast_live_chat(session.admitted).await {
+            let revision = session
+                .cast_chat_revision
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let frame = encode_state_delta(
+                session.generation,
+                sequence,
+                103,
+                session.cast_chat_revision,
+                revision,
+                1,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            session.cast_chat_revision = revision;
+        }
+    }
     super::native_cues::refresh(stream, authority, session).await?;
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
@@ -135,6 +166,9 @@ where
         session.admitted.continuity.chat_revision = chat_revision;
         if write_frame(stream, &frame).await.is_err() {
             return Err(ServeEnd::Disconnected);
+        }
+        if session.selected_capabilities.contains(290) {
+            authority.cast_heard(session.admitted, &line).await;
         }
         // A marker takes no slot, so only a real line frees one.
         if !matches!(line, ChatLine::Dropped) {
@@ -413,6 +447,17 @@ where
         .await
         .ok_or(ServeEnd::Disconnected)?;
     }
+    refresh_newhaven_inventory(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        session.item_view.as_mut(),
+        session.container_views.as_mut(),
+        &mut session.sequence,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.
@@ -570,7 +615,10 @@ where
     let ambient_selected = session
         .selected_capabilities
         .contains(wire::CAPABILITY_AMBIENT_SOUND_V1);
-    if !presentation_selected && !ambient_selected {
+    let item_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_ITEM_EFFECTS_V1);
+    if !presentation_selected && !ambient_selected && !item_selected {
         return Ok(());
     }
     let Some((cursor, mut events)) = authority
@@ -592,9 +640,21 @@ where
         ambient_sound(stream, session, cue_id).await?;
     }
 
+    if session.selected_capabilities.contains(290) {
+        authority.cast_effects(session.admitted, &events).await;
+    }
+    let item_events: Vec<_> = events
+        .iter()
+        .copied()
+        .filter(|event| {
+            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+        })
+        .collect();
     events.retain(|event| {
         presentation_selected
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
+            && !(item_selected
+                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
     for (index, event) in events.iter_mut().enumerate() {
         event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
@@ -628,6 +688,9 @@ where
         session.sequence = sequence;
         session.admitted.continuity.server_sequence = sequence;
         session.admitted.continuity.presentation_revision = revision;
+    }
+    if !item_events.is_empty() {
+        item_effects(stream, session, &item_events).await?;
     }
     session.sound_cursor = cursor;
     Ok(())
@@ -670,5 +733,39 @@ pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
     session.ambient_revision = revision;
     session.sequence = sequence;
     session.admitted.continuity.server_sequence = sequence;
+    Ok(())
+}
+
+async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let payload = wire::encode_item_effect_batch(events).map_err(|_| ServeEnd::Disconnected)?;
+    let revision = session
+        .item_effects_revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_ITEM_EFFECTS,
+        session.item_effects_revision,
+        revision,
+        1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    session.item_effects_revision = revision;
     Ok(())
 }

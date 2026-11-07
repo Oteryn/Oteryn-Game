@@ -399,6 +399,65 @@ fn combat_review_same_tile_values_reserve_separate_lines_in_order()
 }
 
 #[test]
+fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::presentation::{
+        decode_item_effect_batch, encode_item_effect_batch,
+    };
+    let mut rendered = Vec::new();
+    for effect_id in [29, 30, 31, 28, 27, 24] {
+        let event = PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::MagicEffect {
+                position: oteryn_session::ActorPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 7,
+                },
+                effect_id,
+                source: PresentationSource::Others,
+            },
+        };
+        let bytes = encode_item_effect_batch(&[event]).map_err(|e| format!("{e:?}"))?;
+        let decoded = decode_item_effect_batch(&bytes).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(decoded, vec![event]);
+        let (link, _commands, outbox) = crate::play::play_channel();
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+        let base = view.scene().sprites().len();
+        outbox.push(vec![oteryn_session::SessionEvent::ItemEffects(
+            AppliedDelta {
+                server_sequence: 42,
+                base_revision: 0,
+                new_revision: 1,
+                value: decoded,
+            },
+        )]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        // Fix the animation instant so comparisons prove the server effect ID is used.
+        let now = std::time::Instant::now();
+        for cue in &mut view.visuals {
+            cue.received = now;
+        }
+        view.project_presentation(now)?;
+        let quads = view.scene().sprites().instances()[base..].to_vec();
+        assert!(!quads.is_empty());
+        rendered.push(quads);
+        view.advance_presentation(now + VISUAL_LIFETIME)?;
+        assert_eq!(view.scene().sprites().len(), base);
+    }
+    for (i, one) in rendered.iter().enumerate() {
+        for other in &rendered[i + 1..] {
+            assert_ne!(
+                one, other,
+                "distinct donor effect IDs must produce distinct native visuals"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn srx3_native_missile_mailbox_reaches_scene_and_expires() -> Result<(), Box<dyn std::error::Error>>
 {
     let (link, _commands, outbox) = crate::play::play_channel();

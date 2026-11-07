@@ -67,16 +67,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<world_spatial::ChannelEntities> {
         use world_spatial::VisibleKind;
         let runtime = self.runtime.lock().await;
-        if let Some(view) =
+        let states = self.states.spell_states.lock().await;
+        let now = self.owner_now();
+        if let Some(mut view) =
             house_hireling_view::entities(&runtime, actor, self.owner_now().get() / 1_000).ok()?
         {
+            view.entities.retain(|entry| {
+                !states.player_ref_hidden_from(
+                    &runtime,
+                    actor,
+                    world_spatial::EntityRef {
+                        identity: entry.identity,
+                        generation: entry.generation,
+                    },
+                    now,
+                )
+            });
+            self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
         let frame = self.wire_position_frame(&runtime)?;
         let visible = runtime.visible_entities();
-        // Reuse the existing runtime -> spell_states LIGHTS lock and census
-        // for source-key presentation; no detached actor/status store.
-        let states = self.states.spell_states.lock().await;
+        // Reuse the same spell-state guard for visibility, source icons and
+        // LIGHTS; never reacquire the held mutex during this projection.
         let census = runtime.positioned_melee_census().ok();
         let entities = (visible
             .players
@@ -89,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|entry| (VisibleKind::Creature, entry)),
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
+        .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
             source_icons: source_icons(
                 &runtime,
@@ -181,13 +195,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        Some(world_spatial::ChannelEntities {
+        let mut view = world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
             observer: actor.placement_identity(),
             entities,
             lights,
             observed_at_ms: now_us / 1_000,
-        })
+        };
+        self.states.staff_world.filter(actor, &mut view);
+        Some(view)
     }
 }
 

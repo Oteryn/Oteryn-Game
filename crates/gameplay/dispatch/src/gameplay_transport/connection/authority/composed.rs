@@ -5,6 +5,9 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
+        self.refresh_staff(admitted).await
+    }
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         Some(self.root)
@@ -538,6 +541,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 admitted.continuity.connection_generation,
             )
             .await;
+    }
+
+    fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
+        self.states
+            .tutorial_sessions
+            .take_inventory_changed(session)
     }
 
     fn take_tutorial_notice(
@@ -1094,6 +1103,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_dispenser_action(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_dispenser(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,
@@ -1482,6 +1503,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
+    }
+    async fn account_closure_check(&self, admitted: AdmittedSession) -> bool {
+        let Some(controller) = admitted.controller else {
+            return false;
+        };
+        if !self
+            .root
+            .account_closure_requested(self.character, controller.account_id)
+            .await
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        // In-fight/activity refusals close the transport and use normal durable
+        // loss reconciliation. They never count as offline proof for the job.
+        let _ = self.logout_activity_closure(admitted).await;
+        true
     }
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await

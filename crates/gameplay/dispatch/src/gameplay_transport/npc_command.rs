@@ -41,11 +41,13 @@ mod dark_trails;
 mod endgame;
 mod grizzly;
 mod grizzly_shop;
+mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
 mod isle_of_evil;
 mod liquid_black;
 mod monk;
+mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
 mod service_context;
@@ -776,6 +778,16 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return planegazer_finale::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
