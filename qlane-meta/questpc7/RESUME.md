@@ -1,3 +1,28 @@
+# Two complete outfit routes PG GREEN; pins finishing — 2026-11-07
+
+Fiend Slayer GREEN78.263s and Hand of the Inquisition GREEN78.217s on
+actual PG18.6 include all selected token MINT/use/addon milestones, full
+achievements, final completion and ordinary appearance selection.
+OUTFIT-ITEMS-PG-PROOF.json contains the exact fixture boundary.
+Shared guard RED73.227s preceded implementation. No own stages were seeded.
+
+Retained Sam PG74.653s,16 authoring tests, reward callback units, strict
+all-target/all-feature Clippy, Cargo check,123 content and5 world tests pass.
+Repository generation/placement/registration checks pass. Pin refresh/check
+and final fmt are finishing in session92659, script
+/tmp/questpc7-outfit-items-validation.py. No full workspace/PG suite was run.
+
+After all9 records in /tmp/questpc7-outfit-items-recovered-tail.json are green,
+run /tmp/questpc7-outfit-items-finalize.py, stage generated pins plus deployment
+companion if changed, commit the complete source slice and push immediately.
+19 ACTIVE stays pending final checks; the finalizer accurately closes2.
+
+Formal Dress drafts are /tmp/questpc7-formal-producer.py and
+/tmp/questpc7-world-requirements-patch.py. The latter must be split so schema
+and source declarations precede the missing-Premium RED, then apply the
+durable gate/dispatch portion for GREEN. Do not apply it before the current
+fully tested source slice is committed/pushed. Finish Formal Dress next.
+
 # Native consumptive outfit checkpoint — 2026-11-07
 
 Last full green product slice136d3e35a is pushed. The next batch has actual

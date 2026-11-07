@@ -310,7 +310,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "outfit_item_progress": {
-      "state": "Ownership RED executed; native route GREEN test running; full entry remains ACTIVE",
+      "state": "Complete native route PG GREEN and source/content/world checks GREEN; final pins/fmt finishing",
       "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
     }
   },
@@ -1131,7 +1131,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "outfit_item_progress": {
-      "state": "Ownership RED executed; native route GREEN test running; full entry remains ACTIVE",
+      "state": "Complete native route PG GREEN and source/content/world checks GREEN; final pins/fmt finishing",
       "proof": "qlane-meta/questpc7/OUTFIT-ITEMS-PG-PROOF.json"
     }
   },
