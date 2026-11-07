@@ -7,7 +7,7 @@
   "generic_mechanisms": [
     {
       "name": "atomic multi-track transitions",
-      "status": "QUALIFIED",
+      "status": "IN_PROGRESS",
       "postgres_test": "questl2_eleven_tracks_commit_atomically",
       "maximum_tracks": 16,
       "migration": 1210,
@@ -40,6 +40,14 @@
         "duration_seconds": 48.602533763,
         "passed": 1,
         "failed": 0
+      },
+      "canonical_main_regression": {
+        "result": "RED",
+        "duration_seconds": 43.885595413,
+        "test": "questl2_eleven_tracks_commit_atomically",
+        "log": "/tmp/l2-pushed-focused-postgres2.log",
+        "root_cause": "Main1314 replaces1210 receipt capacity16 with8, except its exact Father NPC eleven-track acceptance. Rust QuestState still admits16.",
+        "engine_request": "qengine2 must reconcile canonical1314 and existing1210; no test weakening or duplicate migration added."
       }
     },
     {
@@ -721,8 +729,15 @@
     },
     {
       "title": "A Piece of Cake",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "engine_request": "Bind personal quest progress and reward gates to existing SEASON extraction/bite receipts; reuse season16cba2868 rather than duplicate the world-event engine.",
+      "source_review": {
+        "npc": "data-global/npc/biff_the_baker.lua:50-99",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d",
+        "personal_recipe": "tools/content-schema/quest-authoring/samples/completion242/recipes.json:1; canonical quest oteryn:quest.a_piece_of_cake chooses20 substances, extraction, bite and Cake Backpack20347"
+      }
     },
     {
       "title": "A Pirate's Death to Me",
@@ -1414,13 +1429,25 @@
     },
     {
       "title": "Djinn War Efreet",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "initial_red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 5.03,
+        "log": "/tmp/l2-djinn-initial-red-postgres.log",
+        "point": "Required complete mission callbacks are absent; native full scenario remains mandatory after binding."
+      }
     },
     {
       "title": "Djinn War Marid",
-      "status": "PENDING",
-      "evidence": []
+      "status": "IN_PROGRESS",
+      "evidence": [],
+      "initial_red": {
+        "postgres_version": "18.6",
+        "duration_seconds": 5.002,
+        "log": "/tmp/l2-djinn-initial-red-postgres.log",
+        "point": "Required complete mission callbacks are absent; native full scenario remains mandatory after binding."
+      }
     },
     {
       "title": "Gravedigger of Drefia",
@@ -3459,5 +3486,50 @@
       "log": "/tmp/l2-qnpcfx-final-pin-refresh.log",
       "inputs_digest": "8f9e3848b6ccf98b9d0914f7faa46142968dee26a2d842a4b0c5815c29bb58af"
     }
+  },
+  "post_merge_pg_regressions": {
+    "head": "4528570a6",
+    "tests": 5,
+    "passed": 4,
+    "failed": 1,
+    "duration_seconds": 468.214,
+    "log": "/tmp/l2-pushed-focused-postgres2.log",
+    "green": [
+      "fathers_burden_eight_handins_cape_experience_and_replay",
+      "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+      "questl2_knowledge_batch_tomes_full_journey",
+      "questl2_sam_full_player_journey"
+    ],
+    "red": "questl2_eleven_tracks_commit_atomically; main1314 cap mismatch requested from qengine2"
+  },
+  "djinn_batch": {
+    "entries": [
+      "Djinn War Efreet",
+      "Djinn War Marid"
+    ],
+    "red": {
+      "postgres_version": "18.6",
+      "passed": 0,
+      "failed": 2,
+      "duration_seconds": 5.037,
+      "efreet_probe_seconds": 5.004901571,
+      "marid_probe_seconds": 4.97106661,
+      "log": "/tmp/l2-djinn-initial-red-postgres.log",
+      "failure": "Complete mission bindings absent; native full journey is mandatory after bindings exist."
+    },
+    "prepush2": {
+      "workspace": "PASS /tmp/l2-djinn-wip-workspace.log (354s)",
+      "fmt": "PASS /tmp/l2-djinn-wip-fmt.log",
+      "native_generated": "PASS /tmp/l2-djinn-wip-native-generated-check.log",
+      "central_generated": "PASS /tmp/l2-djinn-wip-central-generated-check.log",
+      "pin_refresh": "PASS /tmp/l2-djinn-wip-pin-refresh.log"
+    },
+    "pending": [
+      "Finish collecting changed-crate unit failures; retry disk-exhaustion failures after cleanup",
+      "Fix source reward-boss fixture regression without weakening source loot checks",
+      "qengine2 reconciliation of main1314 receipt cap versus existing1210",
+      "Author Djinn bindings and complete both physical player journeys",
+      "Final Clippy rerun"
+    ]
   }
 }

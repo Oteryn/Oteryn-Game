@@ -32,3 +32,30 @@ Draconia's genuine earlier L2 native-callback hashes go through main's existing
 predecessor map; a newly activated donor NPC programme never acquires invented
 source history. Unknown hashes remain refused. The full quest crate passes
 303 tests, with no ignored or filtered cases (20.67 seconds).
+
+Cake investigation: Biff's donor script uses the shared200-substance stage,
+not a personal20-item exchange (Crystal9f5a72c,
+data-global/npc/biff_the_baker.lua:50-99, SHA256
+a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d).
+The accepted chosen completion recipe explicitly replaces world totals with a
+personal20-substance campaign, while retaining extraction and cake-bite steps.
+Reuse SEASON16cba2868's existing Cake custody/extraction/bite implementation;
+request the quest-progress bridge from qengine2. A20-item hand-in alone cannot
+qualify the complete recipe. No new world-event engine is authored in L2.
+
+Post-merge PG regression: four real journeys pass on4528570a6 (Father's eight
+hand-ins86.680607778s, Father atomic acceptance83.099677349s, Tomes123.258276695s,
+Sam125.095789195s). The generic atomic-eleven case fails43.885595413s with
+game_character_quest_receipt_effects_shape: main1314 replaces the wider1210
+constraint with8, while Rust's catalogue still accepts16. The exact Father
+exception remains green. Request canonical reconciliation from qengine2; do not
+weaken the generic regression or change main's historical migration.
+
+Djinn source review: Crystal9f5a72c quest_system2.lua:2-9,30-38,361-475
+(SHA25604990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635)
+binds literal map-USE of UID2285/3024 to one carried lamp3231, a fresh output
+3243 and Mission03 1->2. Reuse existing world callback carried inputs and
+item_reward rather than inventing USE_WITH or a second lamp engine. Bo'Ques
+requires cookbook3234 and awards three sapphires3029; Rata'Mari consumes
+cheese3607 and issues report3232. Both initial PG binding probes are RED
+with actual18.6 server markers and five-second durations before authoring.
