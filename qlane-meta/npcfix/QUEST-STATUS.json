@@ -3546,7 +3546,12 @@
         "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
         "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
       },
-      "scope_limit": "Reward and reusable clock participant qualified. Whole Fading NPC still requires real placement and literal cooldown refusal/topic reset."
+      "scope_limit": "Reward and reusable clock participant qualified. Whole Fading NPC still requires real placement and literal cooldown refusal/topic reset.",
+      "merged_validation": {
+        "physical_delivery": "5e463759f",
+        "pin_check": "PASS ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+        "note": "Merge preserved both source/qualification histories; only independent physical-placement data and metadata changed from the validated runtime component."
+      }
     }
   }
 }
