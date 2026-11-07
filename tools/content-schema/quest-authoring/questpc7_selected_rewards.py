@@ -129,3 +129,33 @@ def append_eligibility_starts(root, callbacks, inputs, pin):
             'reply': ['Bring back my crossbow from the cultist cache.' if slug == 'hunter' else 'Collect 2500 radiant attire scraps for the basic outfit.'],
             'sources': [f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
                 f'{source_pin}:{source_path}:1-{len(inputs[source_path].splitlines())}:sha256:{hashlib.sha256(inputs[source_path]).hexdigest()}']})
+
+
+def append_tokens(root, callbacks, inputs, pin):
+    import hashlib
+    import json
+    for path in sorted((root/'content/quests/definitions').glob('quests-*.json')):
+        raw=path.read_bytes()
+        for index,row in enumerate(json.loads(raw)['records']):
+            definition=row['definition']
+            if definition['identity']['key']!='oteryn:quest.hunting_for_tokens':continue
+            recipe=definition.get('recipe') or definition['oteryn_recipe']['payload']['recipe']
+            if [(s['kind'],s['count']) for s in recipe['stages']] != [('talk',1),('collect',20),('use',20),('complete',1)] or recipe['repeat']['kind']!='once' or recipe['requirements']['prerequisites']:
+                raise ValueError('QUESTPC7_TOKEN_SELECTED_RECIPE_DRIFT')
+            source='data-global/npc/jorge.lua'
+            if b'name = "Abacus", id = 19151' not in inputs[source] or b'doPlayerRemoveItem(creature, 19083, 20)' not in inputs[source]:
+                raise ValueError('QUESTPC7_JORGE_EXACT_TOKEN_SOURCE_DRIFT')
+            sources=[f'canonical:{path.relative_to(root).as_posix()}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
+                     f'crystal:{pin}:{source}:61,115,125-128:sha256:{hashlib.sha256(inputs[source]).hexdigest()}']
+            for name,before,after,take,give,completes,reply in [
+                ('replica rewards',-1,0,[],None,False,'Bring twenty Silver Raid Tokens and ask for an {abacus replica}.'),
+                ('abacus replica',0,1,[{'item':'oteryn:item.tibia.i19083','count':20}],{'item':'oteryn:item.tibia.i19151','count':1,'contents':[]},False,'Your twenty Silver Raid Tokens paid for this Abacus replica. Ask to {finish the commission}.'),
+                ('finish the commission',1,2,[],None,True,'Your replica commission is complete. Enjoy your Abacus!'),
+            ]:
+                callbacks.append({'key':'oteryn:quest-reward/questpc7-tokens-'+name.replace(' ','-'),
+                    'quest':definition['identity']['key'],'npc':'oteryn:npc.jorge','keywords':[name],'topic':0,'next_topic':0,
+                    'storage':[{'track':'oteryn:quest-progress/questpc7/tokens/programme','minimum':before,'maximum':before,'set':after}],
+                    'requirements':{'min_level':recipe['requirements']['min_level'],'premium':recipe['requirements']['premium'],'completed_quests':[]},'take':take,'give':give,
+                    'outfit':None,'achievement':None,'completes':completes,'reply':[reply],'sources':sources})
+            return
+    raise ValueError('QUESTPC7_TOKEN_CANONICAL_MISSING')

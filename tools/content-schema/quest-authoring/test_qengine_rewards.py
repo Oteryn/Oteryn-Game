@@ -58,6 +58,16 @@ class QuestRewards(unittest.TestCase):
         for position in [(33078,32015),(33079,32015),(33080,32015)]:
             self.assertEqual(tiles[position],[10113],position)
 
+    def test_selected_jorge_replica_consumes_exact_twenty_and_completes_once(self):
+        rows=[c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/questpc7-tokens-')]
+        self.assertEqual(len(rows),3)
+        exchange=next(c for c in rows if c['give'])
+        self.assertEqual(exchange['take'],[{'item':'oteryn:item.tibia.i19083','count':20}])
+        self.assertEqual(exchange['give'],{'item':'oteryn:item.tibia.i19151','count':1,'contents':[]})
+        self.assertEqual(sum(c['completes'] for c in rows),1)
+        self.assertTrue(all(c['npc']=='oteryn:npc.jorge' for c in rows))
+        self.assertEqual([c['storage'][0]['minimum'] for c in rows if c['completes']],[1])
+
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell (current Wiki anchor one tile south is within her source walk radius); QUESTPC7: selected Golden commission at King Tibianus' source candidate cell",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QUESTPC: Viola Lost Wisdom at the reviewed Newhaven Magic Shop source cell (current Wiki anchor one tile south is within her source walk radius); QUESTPC7: selected Golden commission at King Tibianus' source candidate cell; QUESTPC7: Jorge selected twenty-token Abacus replica at retained source candidate cell",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sweaty_cyclops",
@@ -26,6 +26,7 @@
     "oteryn:npc.henricus",
     "oteryn:npc.hyacinth",
     "oteryn:npc.isimov",
+    "oteryn:npc.jorge",
     "oteryn:npc.kasmir",
     "oteryn:npc.kepar",
     "oteryn:npc.king_tibianus",

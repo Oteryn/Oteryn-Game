@@ -668,3 +668,62 @@ World reward/completion/backpack outputs are available on peer questpc8 and
 should be reused for the remaining cache routes, preserving our NPC exchange,
 exact charge, fee/counter and Father atomicity. Hydra Egg stays ordinary nest
 pickup/reset; do not turn it into a made-up UID reward chest.
+
+## Hunting for Tokens slice in progress after cc44f84dd push
+
+Native mechanism source cc44f84dd pushed06:01UTC; all prior checks GREEN.
+Cleaned inactive incremental caches only after Cargo/compilers were idle, retaining
+PG dispatch cache; disk11GB free before next build. Continue the small exact
+Hunting for Tokens route before the world-output slice; existing exchange owner
+already supports it. Whole route PG18.6 RED74.289942757s: Jorge admitted, missing
+selected intro callback. Source callback/profile/placement generation now passes;
+Jorge51st NPC/52nd placement, two newly admitted physical Items19083/19151.
+Authoring19 and profile3 tests pass. Current PG GREEN log:
+`/tmp/questpc7-tokens-green.log`. Native wire commands cover fresh intro,
+premature completion,19token refusal,24tokens -> exact20 debit/one Abacus,
+duplicate no-charge,actual completion and repeat completion without output.
+No subject quest-state seeds; carried resources use the existing fenced fixture.
+Finish PG and required checks, update TOKENS-PG-PROOF/status, commit/push; then
+continue the remaining ACTIVE entries. No approval or ownership question.
+
+Tokens full native-wire PG18.6 GREEN74.80261656s after selecting normal
+capabilities3/6/25 (first fixed-source attempt correctly refused malformed
+unnegotiated protocol). All assertions retained. Native19token refusal,24->4
+exact debit,one Abacus,premature/duplicate non-effects and durable completion
+pass. Generator/placement/register --check reproduce. Source staged before
+pin refresh because pin inputs digest reads the git index. Current runner:
+`/tmp/questpc7-tokens-validation.py`; progress/results same prefix. Keep whole
+quest ACTIVE until required checks finish; then qualify and push source.
+
+## Refreshed cross-lane qualification decision (06:17UTC)
+
+Qengine2 now82278cf6c6ff1ab092121f1074a0b908f98232ad marks the exact
+canonical Hunter Outfits entry QUALIFIED in L1-08 (implementation21140f8fe).
+Full male/female NPC stories PG18.6 pass91.07388077/84.564699197s, legacy
+neutral regression, strict checks,content123/world5 and pin follow-ons closed.
+Apply the owner's explicit skip rule for already QUALIFIED entries and L1
+QSPLIT ownership; no duplicated Hunter programme. Record the source native
+owner separately: oteryn:quest.outfit_and_addon_quests. That is not a rename
+of our catalogue Hunter identity or a claim of a newly authored cache path.
+Source proof includes introduction,crossbow,leathers,wings,three steels,Legola
+Premium gloves,both sex masks and ordinary catalogues with no outfit seeds.
+15 ACTIVE remain while Tokens finishes checks; after Tokens qualification14.
+Questpc8 refreshed805a061415355a68a924b3b32d02023fe608fc97 adds no other
+qualified overlap. Reuse updated peer mechanisms as needed; do not ask ownership.
+
+## Hunting for Tokens fully GREEN and qualified
+
+PG18.6 RED74.289942757s -> GREEN74.80261656s, complete real NPC wire
+programme without state seeds;19tokens refuse,24->4 exact debit,one Abacus,
+premature/duplicate non-effects and actual completion. Authoring19,profiles3,
+all three generator checks,Sam PG74.621s command duration,focused reward/world
+units,check,strict clippy,content123/world5,pin refresh/check and fmt pass.
+Pin tool refreshes both world pin and deployment companion; commit both.
+Hunter is externally QUALIFIED at qengine2 82278cf6c6ff1ab092121f1074a0b908f98232ad,
+full two-sex stories with native General owner recorded separately. No duplicate
+Hunter work.14 ACTIVE whole quests remain after this batch. Push now and
+continue generic world reward/completion support or next small Hoist/Fire-Fighter
+route using qualified native death counters. Source world item_reward, completion
+and backpack outputs already exist on questpc8; reuse selectively, preserving
+our read-only hoist/remote transport, exact exchange/charge behavior, fee/counter
+proofs and Father eleven-track atomicity. Hydra Egg is ordinary nest pickup/reset.

@@ -157,3 +157,16 @@ The additional native guardian uses one existing empty ground tile,60s respawn,
 normal occupancy/pinned-corpse checks and no source map binary edits.
 Keep Hidden Threats ACTIVE until its valuables and complete route are qualified;
 this first slice qualifies the reusable native death/guardian mechanism only.
+
+### Hunting for Tokens exact selected route
+
+The retained Crystal9f data-global/npc/jorge.lua SHA256
+127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0
+lines61,115,125-128 explicitly binds Abacus19151 and exactly20 Silver Raid
+Tokens19083. The same bytes are available at the public raw URL recorded in
+TOKENS-PG-PROOF.json; generation reads only the committed corpus. Preserve the
+canonical once-only selected programme while leaving unrelated souvenir offers
+outside its qualification. Jorge's retained Canary/Crystal source candidates
+agree at(32204,32292,-6). Add that placement through existing tooling; qualify
+both physical items through the canonical accepted-first importer. Inputs in
+the PG fixture are carried resources, not a claim about raid/event acquisition.

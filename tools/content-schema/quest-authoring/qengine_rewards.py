@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'jorge', 'henricus', 'the_forgemaster', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
         'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -288,6 +288,7 @@ def build():
     selected = load_module('questpc7_selected_rewards', 'tools/content-schema/quest-authoring/questpc7_selected_rewards.py')
     selected.append_golden(ROOT, callbacks, offers, inputs, PIN)
     selected.append_friends(ROOT, callbacks, offers, inputs, PIN)
+    selected.append_tokens(ROOT, callbacks, inputs, PIN)
     selected.append_eligibility_starts(ROOT, callbacks, inputs, PIN)
     programmes.append(ROOT, callbacks, inputs, PIN)
     formal_worlds = programmes.append_formal(ROOT, callbacks, inputs, PIN)

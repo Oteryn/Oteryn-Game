@@ -1469,7 +1469,7 @@
     "title": "Hunter Outfits Quest",
     "canonical": "oteryn:quest.hunter_outfits_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1488,33 +1488,7 @@
         "log": ".questpc7/lane-rewards-pg.log:385"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Recover Elane's Crossbow from the chosen cult-route cache.",
-      "targets": [
-        "Elane's Crossbow"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Hunter Outfits, Hunter first addon, Hunter second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00000-00099.json:1#/records/44/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
@@ -1525,43 +1499,61 @@
       "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
       "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
       "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "82278cf6c6ff1ab092121f1074a0b908f98232ad",
+      "implementation_sha": "21140f8fe",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "status_sha256": "ccebd9e52a6b58012edee949894440b97cc40edb022f124cd525b8de098a5dda",
+      "batch": "L1-08",
+      "scope": "Complete Elane introduction, crossbow, two-leather recipe, enchanted wings, three steels, and Legola premium sniper gloves. Both sex-specific source addon permutations, partial recipes, replay, six immutable grants, intermediate and final normal catalogues. No outfit stage seeded.",
+      "native_owner_canonical": "oteryn:quest.outfit_and_addon_quests",
+      "postgres_version": "18.6",
+      "case_seconds": [
+        91.07388077,
+        84.564699197
+      ],
+      "evidence": [
+        "qlane-meta/qengine2/RESUME.md:L1-08 QUALIFIED and closed follow-ons",
+        "qlane-meta/qengine2/CONTRACT-NOTES.md:86-99"
+      ],
+      "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
     }
   },
   {
     "title": "Hunting for Tokens Quest",
     "canonical": "oteryn:quest.hunting_for_tokens",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Gather twenty Silver Raid Tokens.",
-      "targets": [
-        "Silver Raid Token"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose each exact token recipe and source NPC dispatch on the implemented atomic carried exchange owner; add any required money/state operand support to that same transaction and qualify the complete route with PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/61/definition",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
-        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs:230"
+    "qualification": {
+      "kind": "complete selected Hunting for Tokens native NPC wire route",
+      "proof": "qlane-meta/questpc7/TOKENS-PG-PROOF.json",
+      "test": "questpc7_hunting_for_tokens_exact_twenty_and_once_only_abacus",
+      "postgres": "18.6",
+      "red_seconds": 74.289942757,
+      "green_seconds": 74.80261656,
+      "scope": [
+        "fresh subject programme with no quest progress seeds",
+        "native Jorge admission and native NPC wire conversation",
+        "premature completion cannot bypass exchange",
+        "19 carried tokens refused without debit, output or advancement",
+        "two carried token stacks totaling24 consumed by exactly20",
+        "one native Abacus19151 delivered; four tokens remain",
+        "repeat exchange request creates no second debit or Abacus",
+        "durable selected quest completion through native NPC wire",
+        "repeat completion retains exactly one exchange source receipt"
       ],
-      "attempts": [
-        "Read the exact twenty-token/one-Abacus recipe and item-resolution hold; traced the generic writer and its Father-only exception before considering a lane NPC hook. No independent consume-then-mint transaction was introduced.",
-        "The ordered plain-item consume/output/progress mechanism is implemented and PG-tested on three Hot Cuisine recipes, including refusal rollback and replay. Token recipes themselves still require source composition and their own full-route proof."
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
       ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded.",
-      "source_recipe_requirement": "Jorge must atomically consume exactly twenty Silver Raid Tokens and deliver one chosen Abacus replica with the quest receipt."
+      "generic_owner": "Existing exact carried exchange/MINT/quest transaction; new canonical physical profiles19083/19151 and retained Jorge placement."
     }
   },
   {

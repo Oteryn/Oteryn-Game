@@ -2444,6 +2444,120 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-tokens-abacus-replica",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "abacus replica"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19083",
+          "count": 20
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i19151",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Your twenty Silver Raid Tokens paid for this Abacus replica. Ask to {finish the commission}."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-tokens-finish-the-commission",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "finish the commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": true,
+      "reply": [
+        "Your replica commission is complete. Enjoy your Abacus!"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-tokens-replica-rewards",
+      "quest": "oteryn:quest.hunting_for_tokens",
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "replica rewards"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": false,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Bring twenty Silver Raid Tokens and ask for an {abacus replica}."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",
