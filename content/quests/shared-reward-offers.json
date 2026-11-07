@@ -632,18 +632,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.cledwyn",
-      "keywords": [
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
       "npc": "oteryn:npc.costello",
       "keywords": [
         "holy water"
