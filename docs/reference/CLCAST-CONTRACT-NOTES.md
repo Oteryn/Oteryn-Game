@@ -138,3 +138,30 @@ After workspace restoration, code head
 on the assigned remote branch. All nine focused native cast tests passed again
 (0.609 s wall), and workspace architecture validation passed again (4.184 s).
 This verification adds no implementation, allocation or migration changes.
+
+
+## S17 integration with main 1ae39c7fb
+
+Merged QENGINE2/QBASE through a merge commit. Canonical main migrations
+0999–1008 remain; CLCAST adds no migrations (1130–1139 remain reserved).
+Main's SRVWLD notes are unchanged. Its incoming root notes are preserved
+byte-for-byte at `docs/reference/QENGINE2-CONTRACT-NOTES.md`; no root notes remain.
+
+The serial real-PG run exposed an idle caster fixture while the viewer was
+awaiting media: S17b rejected Stop and S17c reported an unusable viewer.
+The fixture now services caster probes and roster deltas concurrently with
+viewer waits, using the existing cancellation-safe FrameReader. All assertions
+and deadlines remain intact. Donor: Canary `livestream.cpp:486,541` (independent
+playing and viewer connections). The rerun passed all three real-dispatch cases:
+S17a 7.035 s, S17b 51.344 s, S17c 65.904 s (125.69 s total test execution).
+
+Native regeneration passed (226.738 s); World content/imports have no lane
+differences from main. Release pin-refresh passed (95.989 s), pin-check passed
+(67.461 s), and workspace architecture passed (4.247 s). The focused cast run
+passed 56 cases, all six wire contract cases passed, and the two touched
+session capability/route closure cases passed. Eight changed-crate clippy
+checks with all targets/features and `-D warnings` passed (852.971 s wall,
+including build-lock wait). Final fmt passed (25.238 s).
+
+Final `cargo check --workspace --all-targets` passed (941.958 s wall, including
+build-lock wait). Duplicate-migration check passed against the staged merge tree.

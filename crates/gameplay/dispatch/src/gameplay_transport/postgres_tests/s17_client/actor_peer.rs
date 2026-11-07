@@ -1,13 +1,14 @@
 use super::super::{TestResult, fixture::debug};
 use crate::gameplay_transport::{
     connection::AdmittedSession,
-    tcp_tls::{read_frame, write_frame},
+    tcp_tls::{FrameReader, read_frame, write_frame},
 };
 use oteryn_dev_client::{client_runtime as oteryn_client_runtime, client_ui as oteryn_client_ui};
 use oteryn_protocol_oteryn::{self as wire, cast::Message};
 use tokio::io::{AsyncWriteExt, DuplexStream};
 pub(super) struct Peer {
     stream: DuplexStream,
+    reader: FrameReader,
     generation: u64,
     next: u64,
     sequence: u64,
@@ -30,6 +31,7 @@ impl Peer {
         }
         Ok(Self {
             stream,
+            reader: FrameReader::default(),
             generation: admitted.continuity.connection_generation,
             next: admitted.continuity.next_command_id,
             sequence: admitted.continuity.server_sequence,
@@ -47,7 +49,13 @@ impl Peer {
         })
     }
     async fn read(&mut self) -> TestResult<Option<(wire::CommandStatus, Vec<u8>)>> {
-        let bytes = read_frame(&mut self.stream).await?;
+        let bytes = self.reader.next(&mut self.stream).await?;
+        self.received(bytes).await
+    }
+    async fn received(
+        &mut self,
+        bytes: Vec<u8>,
+    ) -> TestResult<Option<(wire::CommandStatus, Vec<u8>)>> {
         let envelope = wire::decode_wire_envelope(&bytes).map_err(debug)?;
         assert_eq!(envelope.connection_generation(), self.generation);
         if envelope.message_type() == wire::MessageType::LivenessProbe {
@@ -99,6 +107,36 @@ impl Peer {
                 Ok(None)
             }
             _ => Ok(None),
+        }
+    }
+    // Canary livestream.cpp:486,541: watching does not suspend the caster's
+    // playing connection. Keep its probes and roster deltas serviced concurrently.
+    pub async fn observe<F: std::future::Future>(&mut self, future: F) -> TestResult<F::Output> {
+        use std::{
+            future::{Future, poll_fn},
+            task::Poll,
+        };
+        let mut future = std::pin::pin!(future);
+        loop {
+            let frame = {
+                let mut read = std::pin::pin!(self.reader.next(&mut self.stream));
+                poll_fn(|cx| {
+                    if let Poll::Ready(frame) = read.as_mut().poll(cx) {
+                        return Poll::Ready(Ok(frame));
+                    }
+                    future.as_mut().poll(cx).map(Err)
+                })
+                .await
+            };
+            match frame {
+                Ok(bytes) => {
+                    assert!(
+                        self.received(bytes?).await?.is_none(),
+                        "no command is pending while observing"
+                    );
+                }
+                Err(output) => return Ok(output),
+            }
         }
     }
     pub async fn exchange(
