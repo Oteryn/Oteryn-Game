@@ -29,6 +29,7 @@ mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod bundle_map_position;
+mod cake_event;
 mod capabilities;
 mod cast_observer;
 mod channel_states;

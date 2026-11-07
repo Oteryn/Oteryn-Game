@@ -892,6 +892,17 @@ pub trait FreshAdmissionAuthority {
         async { LoopMoveResult::Refused(LoopMoveRefusal::Rejected) }
     }
 
+    /// Authenticated446 extends only actual named-House container capacity.
+    fn move_loop_item_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        request: LoopMove,
+        _house_capacity_v2: bool,
+    ) -> impl Future<Output = LoopMoveResult> {
+        self.move_loop_item(actor, command, request)
+    }
+
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
     /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
     fn observe_item_target(
@@ -970,6 +981,17 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
+    }
+
+    /// Legacy authorities keep capability14's original20 bound.
+    fn observe_container_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<CurrentCharacterItemFence>,
+        target: ItemKey,
+        _house_capacity_v2: bool,
+    ) -> impl Future<Output = Option<ContainerObservation>> {
+        self.observe_container(actor, fence, target)
     }
 
     /// Current observer-relative icons. Unavailable facts produce no update.

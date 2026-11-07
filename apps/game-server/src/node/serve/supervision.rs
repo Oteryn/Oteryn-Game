@@ -196,7 +196,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 &loops_stop
             ),
             both(
-                timed_npc_loop(runtime, timed_npcs, &loops_stop),
+                timed_npc_loop(root, material.world, runtime, timed_npcs, &loops_stop),
                 account_closure_offline_loop(
                     root,
                     authority,
@@ -344,6 +344,8 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
 }
 
 async fn timed_npc_loop(
+    root: &DurabilityRoot,
+    world: WorldId,
     runtime: &Mutex<ChannelRuntimeV1>,
     mut timed_npcs: bundle_npcs::TimedNpcSpawns,
     stop: &CancellationToken,
@@ -360,6 +362,12 @@ async fn timed_npc_loop(
         let Some(now) = crate::world_clock::now_utc_ms() else {
             continue;
         };
+        // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:456-483: a committed next-save
+        // flag controls appearance/removal; transient read failure keeps known state.
+        match root.cake_brutus_present(world).await {
+            Ok(present) => timed_npcs.set_brutus_present(present),
+            Err(_) => event("event=cake_brutus_projection state=retry"),
+        }
         let mut runtime = runtime.lock().await;
         if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
             event(&format!(

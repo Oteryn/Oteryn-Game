@@ -210,6 +210,11 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
     {
         let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ) {
+            view = view.with_house_container_capacity();
+        }
         if admitted
             .continuity
             .selected_capabilities
@@ -360,6 +365,13 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             payload: views_snapshot.payload,
         });
         let views = ContainerViewState::default();
+        let views = if admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ) {
+            views.with_house_container_capacity()
+        } else {
+            views
+        };
         container_views = Some(
             if admitted
                 .continuity

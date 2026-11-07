@@ -387,7 +387,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                 // and one out of reach is TOO_FAR; anything else takes the corpse path.
                 let container = match (key, &*container_views) {
-                    (Some(key), Some(_)) => authority.observe_container(actor, admitted.item_fence, key).await,
+                    (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
                     _ => None,
                 };
                 let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));

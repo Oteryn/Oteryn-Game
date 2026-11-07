@@ -211,6 +211,60 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    /// Crystal201189f data-global/scripts/lib/a_piece_of_cake_config.lua:242-243,470
+    /// creates this exact NPC with extended=true, force=true. The caller must
+    /// qualify its literal source tile against the active map before this
+    /// placement; force bypasses actor occupancy, never Channel ownership.
+    pub fn place_cake_brutus_npc(&mut self) -> Result<ExactActorRef, NpcPlacementError> {
+        self.carrier
+            .validate_current_continuity(&self.continuity)
+            .map_err(NpcPlacementError::Carrier)?;
+        self.owner_fence().map_err(NpcPlacementError::Carrier)?;
+        let placement = NpcPlacement {
+            x: 33303,
+            y: 32064,
+            floor: -7,
+            direction: MovementFacing::South,
+        };
+        self.admit_npc(
+            Arc::from("oteryn:npc.brutus_the_baker"),
+            placement,
+            self.pinned_position_context(),
+        )
+    }
+
+    /// Retires only this exact current dynamic NPC. A stale generation never
+    /// removes another NPC subsequently allocated in the same carrier slot.
+    pub fn remove_dynamic_npc_actor(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<(), NpcPlacementError> {
+        self.carrier
+            .validate_current_continuity(&self.continuity)
+            .map_err(NpcPlacementError::Carrier)?;
+        self.owner_fence().map_err(NpcPlacementError::Carrier)?;
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return Ok(());
+        };
+        let generation = match &self.carrier.slots[index] {
+            Slot::NpcOccupied {
+                generation,
+                hireling: None,
+                ..
+            } if *generation == actor.0.actor_local_generation.0 => *generation,
+            _ => return Err(NpcPlacementError::Carrier(CarrierError::WrongScope)),
+        };
+        let free = u32::try_from(index)
+            .map_err(|_| NpcPlacementError::Carrier(CarrierError::CapacityArithmeticOverflow))?;
+        self.carrier.slots[index] = Slot::VacantReusable {
+            generation,
+            next_free: self.carrier.free_head,
+        };
+        self.carrier.free_head = Some(free);
+        self.carrier.occupied.retain(|held| *held != free);
+        Ok(())
+    }
+
     /// NPC-BEHAVIOUR-0 §3.1: one actor per placement, allocated in frame order under the pinned
     /// Movement context, once, at Channel start. `admitted` answers whether the loaded NPC
     /// catalogue has the key and does not hold it (§7). In a `production` World an NPC it

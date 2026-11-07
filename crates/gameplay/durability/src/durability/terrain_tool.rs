@@ -134,9 +134,16 @@ impl DurabilityRoot {
             if !fence_is_live(&mut tx, &fence, &node).await? { return Err(DurabilityError::Unavailable); }
             sqlx::query("WITH due AS (SELECT world_id,channel_id,placement,reset_epoch FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND map_revision=$3 AND content_generation=$4 AND reset_epoch=$5 AND decay_at_unix_ms <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint ORDER BY decay_at_unix_ms,placement LIMIT 32 FOR UPDATE) UPDATE game_terrain_tool_transforms t SET state_item_id=t.decay_states[t.decay_step+1],object_revision=t.object_revision+1,decay_step=t.decay_step+1,decay_at_unix_ms=CASE WHEN t.decay_step+1 < cardinality(t.decay_states) THEN t.decay_at_unix_ms+t.decay_delays[t.decay_step+2] ELSE NULL END FROM due WHERE (t.world_id,t.channel_id,t.placement,t.reset_epoch)=(due.world_id,due.channel_id,due.placement,due.reset_epoch)")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch).execute(&mut **tx).await?;
-            let rows = sqlx::query("SELECT placement,object_revision,state_item_id FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND map_revision=$3 AND content_generation=$4 AND reset_epoch=$5 ORDER BY placement LIMIT 1025")
+            let rows = sqlx::query("SELECT placement,object_revision,state_item_id,cake_event_year FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND map_revision=$3 AND content_generation=$4 AND reset_epoch=$5 ORDER BY placement LIMIT 9217")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch).fetch_all(&mut **tx).await?;
-            if rows.len()>1024 { return Err(DurabilityError::InvalidStoredState); }
+            if rows.len()>9216 { return Err(DurabilityError::InvalidStoredState); }
+            let mut ordinary=0_usize;
+            let mut cake=0_usize;
+            for row in &rows {
+                if row.try_get::<Option<i32>,_>("cake_event_year")?.is_some(){cake+=1;}else{ordinary+=1;}
+            }
+            if ordinary>1024||cake>8192{return Err(DurabilityError::InvalidStoredState);}
+
             let result = rows.into_iter().map(|row| Ok(TerrainState { placement: row.try_get("placement")?, revision: row.try_get("object_revision")?, item: u32::try_from(row.try_get::<i64,_>("state_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)? })).collect::<Result<Vec<_>,DurabilityError>>()?;
             tx.commit(deadline).await?;
             Ok(result)

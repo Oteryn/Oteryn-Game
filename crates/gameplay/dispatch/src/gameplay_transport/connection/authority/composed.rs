@@ -623,6 +623,40 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         loop_move::observe_container(self, actor, fence, target).await
     }
 
+    async fn move_loop_item_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::LoopMove,
+        house_capacity_v2: bool,
+    ) -> item_move::LoopMoveResult {
+        loop_move::move_loop_item_with_house_capacity(
+            self,
+            actor,
+            command,
+            request,
+            house_capacity_v2,
+        )
+        .await
+    }
+
+    async fn observe_container_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: item_view::ItemKey,
+        house_capacity_v2: bool,
+    ) -> Option<container_view::ContainerObservation> {
+        loop_move::observe_container_with_house_capacity(
+            self,
+            actor,
+            fence,
+            target,
+            house_capacity_v2,
+        )
+        .await
+    }
+
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.

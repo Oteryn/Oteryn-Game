@@ -123,6 +123,10 @@ impl DurabilityRoot {
             }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
+            // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:388-405 phase gate is preceded
+            // by the current durable event phase/timer settlement under this
+            // same fenced world lock; no detached worker advances the event.
+            crate::durability::cake_event::settle_current_world(&mut tx, request.world, request.reset_epoch).await?;
             // Retire previous-epoch firings before checking a new admitted epoch.
             // Their channel effects become LOST cleanup on the normal runner path.
             sqlx::query("UPDATE game_world_raid_firings SET state=3 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch<>$2::text::numeric AND state=1")

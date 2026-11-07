@@ -285,10 +285,28 @@ pub(super) async fn prepare_channel(
         npc_boot,
         &seasonal,
         |position| {
-            bundle
-                .as_ref()
-                .is_some_and(|world| world.enterable(position))
+            bundle.as_ref().is_some_and(|world| {
+                if (position.x, position.y, position.floor) == (33303, 32064, -7) {
+                    // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:470 force=true bypasses collision on
+                    // this exact source tile. A plain captured tile needs no
+                    // floor/teleport redirection; unresolved redirects refuse
+                    // qualification rather than silently placing incorrectly.
+                    world
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_some()
+                        && !world.floors().contains(position)
+                        && world.floors().teleport(position).is_none()
+                } else {
+                    world.enterable(position)
+                }
+            })
         },
+    );
+    timed_npcs.set_brutus_present(
+        root.cake_brutus_present(material.world)
+            .await
+            .map_err(|_| BootError::Readiness("Cake Brutus projection"))?,
     );
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).

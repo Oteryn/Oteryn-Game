@@ -22,6 +22,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             format!("oteryn:item.tibia.i{kit}"),
             format!("oteryn:item.tibia.i{kit}"),
         ),
+        Case::ContainerCapacity => (
+            "oteryn:item.tibia.i10210".to_owned(),
+            "oteryn:item.tibia.i10210".to_owned(),
+        ),
         Case::Container => (
             "oteryn:item.tibia.i34276".to_owned(),
             "oteryn:item.tibia.i34276".to_owned(),
@@ -49,6 +53,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::TimedNearExpiry
             | Case::TimedWrap
             | Case::Container
+            | Case::ContainerCapacity
             | Case::CarpetTile { .. }
     );
     let evidence = RecoverySource::start(h).await?;
@@ -153,20 +158,29 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) SELECT encode($1,'hex')::uuid,r.account_id,r.world_id,r.lifecycle,r.character_revision,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,'Balloon House Owner',r.sex FROM game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid")
         .bind(id(101).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+    // Timed wrapping exercises the actual owner-only wrap contract; every
+    // ordinary decoration case continues to enter as a separately authorized guest.
+    let house_owner = if case == Case::TimedWrap {
+        id(41)
+    } else {
+        id(101)
+    };
     sqlx::query(include_str!(
         "../../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
     ))
     .bind(id(42).as_slice())
     .bind(HOUSE)
-    .bind(id(101).as_slice())
+    .bind(house_owner.as_slice())
     .execute(&h.pool)
     .await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
+    if case != Case::TimedWrap {
+        sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
         .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     let role: String = sqlx::query_scalar(
         "SELECT role FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
@@ -176,7 +190,14 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     .bind(id(41).as_slice())
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(role, "GUEST");
+    assert_eq!(
+        role,
+        if case == Case::TimedWrap {
+            "OWNER"
+        } else {
+            "GUEST"
+        }
+    );
     sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,1")
         .bind(id(42).as_slice()).bind(HOUSE).execute(&h.pool).await?;
     h.root
@@ -206,6 +227,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         | Case::TimedNearExpiry
         | Case::TimedWrap => &[4, 6, 11, 15, 18, 49, 86, 445],
         Case::Container => &[4, 6, 11, 12, 14, 15, 18, 49, 86],
+        Case::ContainerCapacity => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 446],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
         Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
             &[4, 6, 11, 15, 18, 49, 86]
@@ -218,14 +240,17 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             .ok_or("House USE offers")?;
     let contents = if matches!(case, Case::CarpetTile { .. }) {
         vec![(before_key, 1), (other_key.as_str(), 1)]
-    } else if case == Case::Container {
+    } else if matches!(case, Case::Container | Case::ContainerCapacity) {
         vec![(before_key, 1), (INNER, 1), ("oteryn:item.tibia.i3031", 10)]
     } else if case == Case::Nested {
         vec![(before_key, 1), (INNER, 1)]
     } else {
         vec![(before_key, 1)]
     };
-    if matches!(case, Case::Nested | Case::Container) {
+    if matches!(
+        case,
+        Case::Nested | Case::Container | Case::ContainerCapacity
+    ) {
         // Capability 12 reads the existing equipment owner even with no worn items.
         // Its independent activation fact must agree with the live runtime pin.
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
@@ -252,6 +277,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::Decoration(_, _)
             | Case::NativeNoop(_)
             | Case::Container
+            | Case::ContainerCapacity
             | Case::StaticAqueduct
             | Case::TimedRotation
             | Case::TimedNearExpiry
@@ -324,7 +350,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,1,encode($5,'hex')::uuid)")
             .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(&position).bind(id(74).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
-            .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(101).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
+            .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(house_owner.as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     } else if case == Case::Nested {
         sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
             .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
@@ -388,6 +414,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if let Case::BedKit(kit) = case {
         return super::super::house_base_decorations::bed_scenario(&owner, h, admitted, kit).await;
+    }
+    if case == Case::ContainerCapacity {
+        return super::container::capacity_scenario(&owner, h, admitted).await;
     }
     if case == Case::Container {
         return super::container::scenario(&owner, h, admitted).await;

@@ -1,3 +1,8 @@
+--446 changes only an independently current House proof's slot ceiling.
+ALTER TABLE game_item_loop_move_lines
+ DROP CONSTRAINT game_item_loop_move_lines_to_capacity_check,
+ ADD CONSTRAINT game_item_loop_move_lines_to_capacity_check CHECK(to_capacity BETWEEN 0 AND 25);
+
 -- W18 extends the existing item-loop receipt/line proof chain for the current
 -- named House. The item instance and nested custody writers remain unchanged.
 -- Crystal src/items/containers/container.cpp:478-566,617-647
@@ -46,7 +51,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
    AND NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.parent_item_instance_id=p_item)
    AND NOT EXISTS(SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=p_item)
    AND (SELECT count(*) FROM game_item_nested_entries n WHERE n.parent_item_instance_id=p_item)<=a.capacity
-   AND game_house_container_tree_valid(p_item))
+   AND a.capacity<=p.capacity_limit AND game_house_container_tree_valid(p_item))
 $$;
 
 CREATE FUNCTION game_house_container_loop_prepare(p_transaction UUID,p_session UUID,p_character UUID,
@@ -54,7 +59,7 @@ CREATE FUNCTION game_house_container_loop_prepare(p_transaction UUID,p_session U
  p_world UUID,p_house TEXT,p_position BYTEA,p_source UUID,p_destination UUID,p_capacities JSONB,p_secret BYTEA)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE r game_item_loop_move_receipts%ROWTYPE;h game_item_house_interior_locations%ROWTYPE;
- i game_item_instances%ROWTYPE;root_id UUID;cap INTEGER;
+ i game_item_instances%ROWTYPE;root_id UUID;cap INTEGER;capacity_limit INTEGER;
 BEGIN
  SELECT * INTO r FROM game_item_loop_move_receipts WHERE transaction_id=p_transaction AND created_xact_id=pg_current_xact_id();
  IF r.transaction_id IS NULL OR r.game_session_id IS DISTINCT FROM p_session OR r.character_id IS DISTINCT FROM p_character
@@ -67,14 +72,16 @@ BEGIN
   OR game_house_access_tile(p_world,p_house,p_position) IS DISTINCT FROM TRUE THEN
   RAISE EXCEPTION 'House container move requires current named-House receipt' USING ERRCODE='23514'; END IF;
  PERFORM game_house_disposition_fence_check(p_world,p_house,NULL,FALSE);
+ capacity_limit:=coalesce((p_capacities->>'house_capacity_limit')::integer,20);
+ IF capacity_limit NOT IN(20,25) THEN RAISE EXCEPTION 'unsupported House capacity codec bound' USING ERRCODE='23514'; END IF;
  INSERT INTO game_house_container_loop_proofs VALUES(p_transaction,p_session,p_character,p_connection,p_lease,p_scope,
-  p_world,p_house,p_node,p_node_revision,p_position,p_source,p_destination,r.content_digest,pg_current_xact_id());
+  p_world,p_house,p_node,p_node_revision,p_position,p_source,p_destination,r.content_digest,capacity_limit,pg_current_xact_id());
  FOR root_id IN SELECT DISTINCT x FROM unnest(ARRAY[p_source,p_destination]) x WHERE x IS NOT NULL ORDER BY x LOOP
   SELECT * INTO h FROM game_item_house_interior_locations WHERE item_instance_id=root_id FOR UPDATE;
   SELECT * INTO i FROM game_item_instances WHERE item_instance_id=root_id FOR UPDATE;
   cap:=(p_capacities->>replace(root_id::text,'-',''))::integer;
   IF h.item_instance_id IS NULL OR i.item_instance_id IS NULL OR h.world_id<>p_world OR h.house_key<>p_house
-   OR i.lifecycle<>1 OR i.quantity<>1 OR cap IS NULL OR cap NOT BETWEEN 1 AND 20
+   OR i.lifecycle<>1 OR i.quantity<>1 OR cap IS NULL OR cap NOT BETWEEN 1 AND capacity_limit
    OR game_house_container_reachable(h.spatial_position,p_position) IS DISTINCT FROM TRUE THEN
    RAISE EXCEPTION 'House container root/capacity is not current and reachable' USING ERRCODE='23514'; END IF;
   INSERT INTO game_house_container_roots VALUES(root_id,p_world,p_house,i.definition_family,
@@ -126,6 +133,16 @@ RETURNS TABLE(item UUID) LANGUAGE sql STABLE SECURITY DEFINER AS $$
  ) SELECT item FROM tree LIMIT 501
 $$;
 
+-- Preserve the registered Store coin pouch exception,0227_quick_loot_settings.sql:66-73.
+CREATE FUNCTION game_house_container_coin_pouch_destination(p game_house_container_loop_proofs,l game_item_loop_move_lines)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
+ SELECT l.to_kind=2 AND l.to_capacity=0 AND EXISTS(
+  SELECT 1 FROM game_item_instances parent JOIN game_item_character_inbox_locations loc USING(item_instance_id)
+  WHERE parent.item_instance_id=l.to_parent_item_instance_id AND parent.world_id=p.world_id
+   AND parent.definition_production_key='oteryn:item.tibia.i23721' AND loc.character_id=p.character_id
+   AND l.definition_production_key IN('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043'))
+$$;
+
 CREATE FUNCTION game_house_container_line_admit(l game_item_loop_move_lines)
 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE p game_house_container_loop_proofs%ROWTYPE;r game_item_loop_move_receipts%ROWTYPE;
@@ -138,6 +155,8 @@ BEGIN
   OR game_hireling_service_access_lock(p.game_session_id,p.character_id,p.connection_generation,p.lease_generation,
     p.scope_generation,p.node_id,p.node_revision,p.world_id,p.house_key) IS DISTINCT FROM TRUE THEN
   RAISE EXCEPTION 'House container line lacks current receipt' USING ERRCODE='23514'; END IF;
+ IF l.to_capacity=0 AND NOT game_house_container_coin_pouch_destination(p,l) THEN
+  RAISE EXCEPTION 'unlimited slots require the Character coin pouch in Inbox' USING ERRCODE='23514'; END IF;
  IF l.from_kind=0 THEN
   IF EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=l.item_instance_id) THEN
    RAISE EXCEPTION 'House container split identity already exists' USING ERRCODE='23514'; END IF;
@@ -242,15 +261,20 @@ BEGIN
  ELSIF l.to_kind=2 THEN
   SELECT * INTO n FROM game_item_nested_entries WHERE item_instance_id=l.item_instance_id;
   IF n.item_instance_id IS NULL OR n.world_id<>p.world_id OR n.parent_item_instance_id<>l.to_parent_item_instance_id
-   OR n.placed_transaction_id<>l.transaction_id OR l.to_capacity NOT BETWEEN 1 AND 20
-   OR (SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=n.parent_item_instance_id)>l.to_capacity THEN
+   OR n.placed_transaction_id<>l.transaction_id OR l.to_capacity NOT BETWEEN 0 AND 25
+   OR ((SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=n.parent_item_instance_id)>l.to_capacity AND l.to_capacity<>0) THEN
    RAISE EXCEPTION 'House container nested destination differs from exact line' USING ERRCODE='23514'; END IF;
   SELECT o.owner_character,o.depth INTO owner,dep FROM game_item_loop_owner(n.parent_item_instance_id) o;
-  IF owner=p.character_id AND dep>=1 THEN
+  IF l.to_capacity=0 THEN
+   IF NOT game_house_container_coin_pouch_destination(p,l) THEN
+    RAISE EXCEPTION 'House pickup coin pouch differs from its registered owner' USING ERRCODE='23514'; END IF;
+  ELSIF owner=p.character_id AND dep>=1 THEN
+   IF l.to_capacity>20 THEN RAISE EXCEPTION 'carried container retains existing20-entry bound' USING ERRCODE='23514'; END IF;
    IF game_item_loop_tree_size(p.character_id)>500 THEN RAISE EXCEPTION 'House pickup exceeds carried tree' USING ERRCODE='23514'; END IF;
   ELSE
    SELECT * INTO h FROM game_house_container_root(n.parent_item_instance_id);
    IF h.root IS NULL OR h.root IS DISTINCT FROM p.destination_root OR h.world<>p.world_id OR h.house<>p.house_key
+    OR l.to_capacity>p.capacity_limit
     OR game_house_container_reachable(h.position,p.actor_position) IS DISTINCT FROM TRUE
     OR NOT game_house_container_root_admitted(h.root) THEN
     RAISE EXCEPTION 'House container destination is outside current House graph' USING ERRCODE='23514'; END IF;
@@ -282,7 +306,7 @@ DECLARE body TEXT;old TEXT;
 BEGIN
  body:=pg_get_functiondef('game_item_loop_line_admit()'::regprocedure);
  IF position('BEGIN' IN body)=0 THEN RAISE EXCEPTION 'missing existing item line admission'; END IF;
- EXECUTE overlay(body placing E'BEGIN\n IF game_house_container_line_admit(NEW) THEN RETURN NEW; END IF;' from position('BEGIN' IN body) for 5);
+ EXECUTE overlay(body placing E'BEGIN\n IF game_house_container_line_admit(NEW) THEN RETURN NEW; END IF;\n IF NEW.to_capacity>20 THEN RAISE EXCEPTION ''larger slot ceiling requires current House proof'' USING ERRCODE=''23514''; END IF;' from position('BEGIN' IN body) for 5);
  body:=pg_get_functiondef('game_item_loop_line_proven()'::regprocedure);
  IF position('BEGIN' IN body)=0 THEN RAISE EXCEPTION 'missing existing item line proof'; END IF;
  EXECUTE overlay(body placing E'BEGIN\n IF game_house_container_line_proven(NEW) THEN RETURN NULL; END IF;' from position('BEGIN' IN body) for 5);
@@ -296,6 +320,7 @@ DO $$
 DECLARE f REGPROCEDURE;
 BEGIN
  FOREACH f IN ARRAY ARRAY[
+  'game_house_container_coin_pouch_destination(game_house_container_loop_proofs,game_item_loop_move_lines)'::regprocedure,
   'game_house_container_subtree(UUID)'::regprocedure,
   'game_house_container_reachable(BYTEA,BYTEA)'::regprocedure,
   'game_house_container_tree_valid(UUID)'::regprocedure,

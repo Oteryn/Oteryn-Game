@@ -9,6 +9,9 @@ use crate::durability::consume_transform::{ConsumeTransformRequest, HouseActionC
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[path = "house_item_use/presentation.rs"]
+mod presentation;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_house_event_item(
         &self,
@@ -157,6 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             context = context.with_decoration_base_items(base_items);
         }
+        let publication_house = context.house().clone();
         let result = self
             .root
             .consume_transform_in_house(self.holder, context, request, native)
@@ -169,61 +173,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(serde_json::Value::as_str)
                 == Some("house_decoration")
         {
-            let runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            let ids = result
-                .effects
-                .get("cues")
-                .and_then(serde_json::Value::as_array)
-                .map(|cues| {
-                    cues.iter()
-                        .filter_map(|cue| {
-                            cue.get("effect_id")
-                                .and_then(serde_json::Value::as_u64)
-                                .and_then(|id| u16::try_from(id).ok())
-                        })
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default();
-            if let Some(ground) = result.effects.get("ground") {
-                let position = ground
-                    .get("x")
-                    .and_then(serde_json::Value::as_i64)
-                    .and_then(|x| i32::try_from(x).ok())
-                    .zip(
-                        ground
-                            .get("y")
-                            .and_then(serde_json::Value::as_i64)
-                            .and_then(|y| i32::try_from(y).ok()),
-                    )
-                    .zip(
-                        ground
-                            .get("floor")
-                            .and_then(serde_json::Value::as_i64)
-                            .and_then(|floor| i16::try_from(floor).ok()),
-                    );
-                if let Some(((x, y), floor)) = position {
-                    states.publish_house_decoration_visuals(
-                        &runtime,
-                        actor,
-                        command.game_session_id,
-                        crate::foundation::MovementLocalPosition { x, y, floor },
-                        &ids,
-                    );
-                }
-            }
-            if let Some(speech) = result
-                .effects
-                .get("speech")
-                .and_then(serde_json::Value::as_str)
-            {
-                self.states.chat.publish_house_decoration_speech(
-                    &runtime,
+            presentation::publish(
+                &self.runtime,
+                &self.states.spell_states,
+                &self.states.chat,
+                presentation::Publication {
                     actor,
-                    command.game_session_id,
-                    speech,
-                );
-            }
+                    fence,
+                    house: &publication_house,
+                    effects: &result.effects,
+                },
+            )
+            .await;
         }
         // A current House source that disappeared or changed custody has a
         // definite refusal. Do not fall through to Channel-only item handlers.

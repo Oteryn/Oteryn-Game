@@ -73,6 +73,10 @@ const MAP_OFFERS: &[OfferedCapability] = &[
         id: 445,
         requires: &[49],
     },
+    OfferedCapability {
+        id: 446,
+        requires: &[14, 49],
+    },
 ];
 
 // Like the existing House-wrap fixture, boot only the bounded command set
@@ -124,6 +128,7 @@ enum Case {
     BedKit(u32),
     NativeNoop(u32),
     Container,
+    ContainerCapacity,
     CarpetTile { other: u32, removed: bool },
 }
 
@@ -254,7 +259,7 @@ fn w18_house_timed_near_expiry_rotation_advances_counterpart_phase() -> TestResu
     run_case(Case::TimedNearExpiry)
 }
 #[test]
-fn w18_house_timed_wrap_preserves_remaining_and_restores_deadline() -> TestResult {
+fn w18_house_timed_wrap_clears_timer_and_unwrap_restarts_full_duration() -> TestResult {
     run_case(Case::TimedWrap)
 }
 
@@ -265,6 +270,11 @@ fn w18_house_static_aqueduct_rotates_and_decays() -> TestResult {
 #[test]
 fn w18_house_bed_kit_replaces_both_tiles_and_replays() -> TestResult {
     run_case(Case::BedKit(831))
+}
+
+#[test]
+fn w18_house_container_capacity_v2_retains_legacy_bound_and_preserves_graph() -> TestResult {
+    run_case(Case::ContainerCapacity)
 }
 
 #[path = "house_balloon/container.rs"]

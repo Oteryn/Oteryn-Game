@@ -2,6 +2,9 @@
 use super::*;
 use crate::map::overlay::TilePos;
 
+const BRUTUS: &str = "oteryn:npc.brutus_the_baker";
+const BRUTUS_POSITION: (u16, u16, i8) = (33303, 32064, 7);
+
 const SANTA: &str = "oteryn:npc.santa_claus";
 
 // Crystal201189f data-global/npc/santa_claus.lua:1-25 identifies the native NPC;
@@ -51,6 +54,9 @@ fn key(index: usize) -> &'static str {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(super) struct SeasonalNpcSpawns {
+    brutus_admitted: bool,
+    brutus_present: bool,
+    brutus_actor: Option<crate::foundation::ExactActorRef>,
     positions: [bool; SANTA_POSITIONS.len()],
     actors: [Option<crate::foundation::ExactActorRef>; SANTA_POSITIONS.len()],
 }
@@ -72,14 +78,60 @@ impl SeasonalNpcSpawns {
                 && boot.is_some_and(|boot| boot.admits(key(index)))
                 && enterable(TilePos { x, y, floor: -z })
         });
+        let (x, y, z) = BRUTUS_POSITION;
         Self {
+            brutus_admitted: boot.is_some_and(|boot| boot.admits(BRUTUS))
+                && enterable(TilePos { x, y, floor: -z }),
+            brutus_present: false,
+            brutus_actor: None,
             positions,
             actors: [None; SANTA_POSITIONS.len()],
         }
     }
 
     pub(super) fn is_empty(self) -> bool {
-        !self.positions.iter().any(|admitted| *admitted)
+        !self.brutus_admitted && !self.positions.iter().any(|admitted| *admitted)
+    }
+
+    /// Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:456-483 and cake_server_save.lua:8-10: the persisted
+    /// next-save projection owns Brutus, independently of the stage-one calendar.
+    pub(super) fn set_brutus_present(&mut self, present: bool) {
+        self.brutus_present = present;
+    }
+
+    pub(super) fn reconcile_brutus(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+    ) -> Result<(), NpcPlacementError> {
+        if !self.brutus_admitted {
+            return Ok(());
+        }
+        if !self.brutus_present {
+            if let Some(actor) = self.brutus_actor {
+                runtime.remove_dynamic_npc_actor(actor)?;
+                self.brutus_actor = None;
+            }
+            return Ok(());
+        }
+        if self
+            .brutus_actor
+            .is_some_and(|actor| runtime.npc_key(actor) == Some(BRUTUS))
+        {
+            return Ok(());
+        }
+        // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:242-243.
+        let (x, y, z) = BRUTUS_POSITION;
+        if let Some(npc) = runtime.visible_entities().npcs.into_iter().find(|npc| {
+            runtime.npc_key(npc.actor) == Some(BRUTUS)
+                && npc.position.x == i32::from(x)
+                && npc.position.y == i32::from(y)
+                && npc.position.floor == i16::from(z)
+        }) {
+            self.brutus_actor = Some(npc.actor);
+            return Ok(());
+        }
+        self.brutus_actor = Some(runtime.place_cake_brutus_npc()?);
+        Ok(())
     }
 
     pub(super) fn tick(&mut self, runtime: &mut ChannelRuntimeV1) -> Result<(), NpcPlacementError> {
@@ -89,7 +141,7 @@ impl SeasonalNpcSpawns {
             .into_iter()
             .map(|npc| (npc.actor, npc.position))
             .collect();
-        let mut outcome = Ok(());
+        let mut outcome = self.reconcile_brutus(runtime);
         for (index, (x, y, z)) in SANTA_POSITIONS.into_iter().enumerate() {
             let floor = -z;
             let key = key(index);

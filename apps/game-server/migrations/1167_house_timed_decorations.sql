@@ -377,6 +377,35 @@ CREATE FUNCTION game_house_timed_decoration_wrap_pair(p_before TEXT,p_after TEXT
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE STRICT AS $$ SELECT
  (p_action=1 AND p_before IN('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969') AND p_after='oteryn:item.tibia.i23398') OR
  (p_action=2 AND p_before='oteryn:item.tibia.i23398' AND p_after IN('oteryn:item.tibia.i35949','oteryn:item.tibia.i35969')) $$;
+
+-- The generated 1161 forward predicate retains qualified Crystal XML
+-- wrapableto file:line evidence, including items.xml:67147-67154,67218-67225.
+-- Unwrap keeps exact item lineage;
+-- a fabricated kit without a matching prior wrap gains no placement authority.
+ALTER FUNCTION game_house_furniture_wrap_pair(UUID,TEXT,TEXT,SMALLINT)
+ RENAME TO game_house_furniture_wrap_pair_before_timers;
+CREATE FUNCTION game_house_furniture_wrap_pair(p_item UUID,p_before TEXT,p_after TEXT,p_action SMALLINT)
+RETURNS BOOLEAN LANGUAGE sql STABLE STRICT SECURITY DEFINER AS $$
+ WITH latest AS (
+  SELECT before_item,after_key FROM game_house_furniture_wrap_receipts
+  WHERE item_instance_id=p_item AND action=1
+  ORDER BY (before_item->>'state_revision')::numeric DESC LIMIT 1
+ )
+ SELECT (game_house_furniture_wrap_pair_before_timers(p_item,p_before,p_after,p_action)
+  AND (p_action<>2 OR NOT EXISTS(SELECT 1 FROM latest) OR EXISTS(SELECT 1 FROM latest
+   WHERE after_key=p_before AND before_item->>'definition_production_key'=p_after)))
+ OR (p_action=1 AND game_house_native_wrap_pair(p_before,p_after))
+ OR (p_action=2 AND game_house_native_wrap_pair(p_after,p_before)
+  AND EXISTS(SELECT 1 FROM latest WHERE after_key=p_before
+   AND before_item->>'definition_production_key'=p_after))
+$$;
+DO $migration$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_furniture_wrap_pair(UUID,TEXT,TEXT,SMALLINT) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $migration$;
+REVOKE ALL ON FUNCTION game_house_furniture_wrap_pair(UUID,TEXT,TEXT,SMALLINT),
+ game_house_furniture_wrap_pair_before_timers(UUID,TEXT,TEXT,SMALLINT)
+ FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+
 CREATE FUNCTION game_house_timed_decoration_wrap_complete(p_transaction UUID) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE r game_house_furniture_wrap_receipts%ROWTYPE; w game_item_timed_state_writes%ROWTYPE;
@@ -473,7 +502,7 @@ BEGIN
  EXECUTE replace(body,needle,hook||needle);
  body:=pg_get_functiondef('game_house_decoration_timed_deadline_stamp()'::regprocedure);
  needle:=' RETURN NEW;';
- hook:=E' IF EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts r WHERE r.transaction_id=NEW.transaction_id AND r.created_xact_id=pg_current_xact_id() AND r.action=2 AND r.item_instance_id=NEW.item_instance_id AND game_house_timed_decoration_wrap_pair(r.before_item->>''definition_production_key'',r.after_key,r.action)) THEN NEW.deadline_after:=NEW.committed_at+200000; END IF;\n';
+ hook:=E' IF EXISTS(SELECT 1 FROM game_house_furniture_wrap_receipts wr WHERE wr.transaction_id=NEW.transaction_id AND wr.created_xact_id=pg_current_xact_id() AND wr.action=2 AND wr.item_instance_id=NEW.item_instance_id AND game_house_timed_decoration_wrap_pair(wr.before_item->>''definition_production_key'',wr.after_key,wr.action)) THEN NEW.deadline_after:=NEW.committed_at+200000; END IF;\n';
  EXECUTE replace(body,needle,hook||needle);
  body:=pg_get_functiondef('game_item_timed_state_write_consistency_guard()'::regprocedure);
  needle:=substring(body from E'(?i)\\mBEGIN\\M');

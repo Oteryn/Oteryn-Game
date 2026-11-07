@@ -312,6 +312,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn refresh_terrain_tools(&self) {
+        if !self.refresh_cake_world_map().await {
+            return;
+        }
         let Some(scope) = self.terrain_scope() else {
             return;
         };

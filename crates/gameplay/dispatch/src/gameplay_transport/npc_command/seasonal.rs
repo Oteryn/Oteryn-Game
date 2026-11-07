@@ -422,6 +422,49 @@ pub(in crate::gameplay_transport) async fn resume(
 mod tests {
     use super::*;
     #[test]
+    fn w05d_all_normal_santa_items_have_materializable_native_facts() -> Result<(), String> {
+        let world = crate::foundation::WorldId::decode(&[
+            1, 155, 140, 0, 0, 42, 112, 0, 128, 0, 0, 0, 0, 0, 0, 42,
+        ])
+        .map_err(|error| format!("{error:?}"))?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+        let generation = controller.active().ok_or("normal active generation")?;
+        let native = generation
+            .native_gameplay()
+            .ok_or("normal native provider")?;
+        let mut items = std::collections::BTreeSet::from([6510]);
+        for group in 1..=10 {
+            items.extend(
+                santa_present_items(1, group)
+                    .ok_or("source normal group")?
+                    .iter()
+                    .copied(),
+            );
+        }
+        assert_eq!(items.len(), 16);
+        for item in items {
+            let definition = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: format!("oteryn:item.tibia.i{item}"),
+                revision_ref: "definition-r1".into(),
+            };
+            let facts =
+                super::super::super::item_ref_admission::generation_item_facts(native, &definition)
+                    .map_err(|error| format!("Santa item{item}: {error:?}"))?;
+            assert!(facts.weight.is_some(), "Santa item{item} weight");
+            assert!(
+                !matches!(facts.stack, ItemStackClass::Unknown),
+                "Santa item{item} stack class"
+            );
+            if item == 6510 {
+                assert_eq!(facts.container_capacity, Some(5));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn santa_topic_preserves_donor_left_boundary_and_plural_acceptance() {
         for accepted in ["present", "PRESENT", "a present?", "presents", "my_present"] {
             assert!(present_topic(accepted), "{accepted}");

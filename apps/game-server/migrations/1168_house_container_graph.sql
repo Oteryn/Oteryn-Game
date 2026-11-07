@@ -33,7 +33,7 @@ CREATE TABLE game_house_container_roots (
  definition_production_key TEXT NOT NULL,
  definition_revision_ref TEXT NOT NULL,
  content_digest BYTEA NOT NULL CHECK(octet_length(content_digest)=32),
- capacity SMALLINT NOT NULL CHECK(capacity BETWEEN 1 AND 20),
+ capacity SMALLINT NOT NULL CHECK(capacity BETWEEN 1 AND 25),
  admitted_transaction_id UUID NOT NULL,
  FOREIGN KEY(item_instance_id,world_id) REFERENCES game_item_instances(item_instance_id,world_id)
 );
@@ -55,6 +55,7 @@ CREATE TABLE game_house_container_loop_proofs (
  source_root UUID REFERENCES game_item_instances(item_instance_id),
  destination_root UUID REFERENCES game_item_instances(item_instance_id),
  content_digest BYTEA NOT NULL CHECK(octet_length(content_digest)=32),
+ capacity_limit SMALLINT NOT NULL DEFAULT 20 CHECK(capacity_limit IN(20,25)),
  created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id()
 );
 CREATE INDEX game_house_container_loop_proofs_character ON game_house_container_loop_proofs(character_id);

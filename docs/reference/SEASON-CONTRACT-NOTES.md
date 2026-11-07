@@ -885,3 +885,20 @@ handlers: folded26151 remains nonCarpet;51222/51223 have initialized raw id+flag
 in both pinned donor appearances and exact existing canonical references. The
 existing Carpet enum ordinal2 is reused. Nine source tests pass in1.982s and
 source-generator check passes. Shared native provider refresh remains required.
+
+### Native House capacity and Cake phase checkpoint
+
+Capability446 now negotiates the source-qualified25-entry House container
+projection through server snapshots, session decoding and the existing native
+container window. Legacy peers retain the20-entry bound. The new client case
+selects and opens entry25; runtime validation is pending at this checkpoint.
+
+Migration1166 mounts the shared Cake phase/window/bite receipts and native
+terrain projection. Source rules and citations are recorded in1166 and the
+Cake owner modules. This checkpoint does not claim annual rewards, regeneration
+or the complete seasonal row green.
+
+Reserved normal MapMINT House destination field66 is next field6+lane60;
+materialization House key66 and scope generation67 are next fields6/7+lane60
+in their separate message. These fields admit a named House interior through
+the existing materialization owner; no command or mechanic ID is added.

@@ -87,11 +87,18 @@ fn draft(request: wire::Request, definition: &str, target: Option<&TypedDefiniti
         let id=target.production_key.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;
         if target.family != "Item" || target.revision_ref != "definition-r1" || (!wrapped_trade_item(id) && furniture_catalog::wrapped_to(id) != Some(DECORATION_KIT_ITEM_ID)) { return None; }
         let kit=format!("oteryn:item.tibia.i{DECORATION_KIT_ITEM_ID}");
-        return match request.action {
-            wire::Action::Unwrap if definition==kit => Some(target.production_key.clone()),
+        let legacy_kit = furniture_catalog::wrapped_to(id)
+            .map(|id| format!("oteryn:item.tibia.i{id}"));
+        let proposed = match request.action {
+            wire::Action::Unwrap if definition==kit || legacy_kit.as_deref()==Some(definition) => Some(target.production_key.clone()),
             wire::Action::Wrap if definition==target.production_key => Some(kit),
             _ => None,
         };
+        if proposed.is_some() || request.action==wire::Action::Unwrap {
+            return proposed;
+        }
+        // A prior purchased/wrapped orientation cannot suppress a currently
+        // source-qualified forward pair after the same furniture was rotated.
     }
     request.expected_revision.checked_add(1)?;
     let source_id = definition.strip_prefix("oteryn:item.tibia.i")?.parse::<u32>().ok()?;

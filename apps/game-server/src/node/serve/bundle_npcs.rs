@@ -172,6 +172,10 @@ impl TimedNpcSpawns {
         self
     }
 
+    pub(super) fn set_brutus_present(&mut self, present: bool) {
+        self.seasonal.set_brutus_present(present);
+    }
+
     pub(super) fn is_empty(self) -> bool {
         !self.admitted.iter().any(|admitted| *admitted) && self.seasonal.is_empty()
     }
@@ -821,6 +825,85 @@ mod tests {
                 1
             );
         }
+    }
+
+    #[test]
+    fn w05d_brutus_follows_saved_projection_independently_of_calendar_and_actor_wandering() {
+        let key = "oteryn:npc.brutus_the_baker";
+        let boot = timed_boot(&[key]);
+        let mut runtime = channel_runtime_with(8);
+        let mut seasonal = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        assert!(
+            !seasonal.is_empty(),
+            "inactive eligible Brutus must keep projection refresh alive"
+        );
+        seasonal.tick(&mut runtime).expect("initially absent");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        seasonal.set_brutus_present(true);
+        seasonal
+            .tick(&mut runtime)
+            .expect("committed next-save flag");
+        let visible = runtime.visible_entities();
+        let npc = &visible.npcs[0];
+        assert_eq!(
+            (npc.position.x, npc.position.y, npc.position.floor),
+            (33303, 32064, 7)
+        );
+        let before = runtime
+            .borrow_movement_position()
+            .read(npc.actor)
+            .expect("current Brutus");
+        let mut moved = before.position();
+        moved.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(before, moved)
+            .expect("native wandering");
+        seasonal.tick(&mut runtime).expect("retains exact actor");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        seasonal.set_brutus_present(false);
+        seasonal.tick(&mut runtime).expect("source cleanup");
+        assert!(runtime.visible_entities().npcs.is_empty());
+        seasonal.tick(&mut runtime).expect("idempotent cleanup");
+        // Reallocation may reuse its carrier slot: a historical actor reference
+        // must never remove the successor when an old cleanup retries.
+        seasonal.set_brutus_present(true);
+        seasonal.tick(&mut runtime).expect("new occurrence");
+        let successor = runtime.visible_entities().npcs[0].actor;
+        assert_ne!(npc.actor, successor);
+        runtime
+            .remove_dynamic_npc_actor(npc.actor)
+            .expect("stale no-op");
+        assert_eq!(runtime.npc_key(successor), Some(key));
+    }
+
+    #[test]
+    fn w05d_brutus_force_placement_retains_existing_actor_on_exact_source_tile() {
+        let boot = timed_boot(&["oteryn:npc.brutus_the_baker"]);
+        let mut runtime = channel_runtime_with(8);
+        let blocker = runtime
+            .place_dynamic_npc(
+                "oteryn:npc.obstruction",
+                NpcPlacement {
+                    x: 33303,
+                    y: 32064,
+                    floor: -7,
+                    direction: MovementFacing::South,
+                },
+            )
+            .expect("existing actor");
+        let mut seasonal = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        seasonal.set_brutus_present(true);
+        seasonal
+            .tick(&mut runtime)
+            .expect("source force flag permits overlap");
+        assert_eq!(runtime.visible_entities().npcs.len(), 2);
+        seasonal.set_brutus_present(false);
+        seasonal
+            .tick(&mut runtime)
+            .expect("remove exact Brutus only");
+        assert_eq!(runtime.visible_entities().npcs.len(), 1);
+        assert_eq!(runtime.npc_key(blocker), Some("oteryn:npc.obstruction"));
     }
 
     /// The UTC instant of world minute `minute` on the production world clock.

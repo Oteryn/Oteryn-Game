@@ -15,6 +15,7 @@ pub(super) async fn observe(
     actor: ExactActorRef,
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
+    house_capacity_v2: bool,
 ) -> Option<ContainerObservation> {
     let fence = fence?;
     if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
@@ -55,18 +56,22 @@ pub(super) async fn observe(
         .read_item_loop_container(admission.character, fence.character_id, container)
         .await
         .ok()?;
-    let read = match carried {
-        Some(read) => Some(read),
-        None => admission
-            .root
-            .read_house_item_loop_container(
-                admission.character,
-                admission.holder,
-                &context,
-                container,
-            )
-            .await
-            .ok()?,
+    let (read, is_house) = match carried {
+        Some(read) => (Some(read), false),
+        None => (
+            admission
+                .root
+                .read_house_item_loop_container_with_capacity(
+                    admission.character,
+                    admission.holder,
+                    &context,
+                    container,
+                    house_capacity_v2,
+                )
+                .await
+                .ok()?,
+            true,
+        ),
     };
     let Some(read) = read else {
         return Some(ContainerObservation::Gone);
@@ -89,11 +94,16 @@ pub(super) async fn observe(
         }
     }
     let native = admission.active_generation?.native_gameplay()?;
+    let limit = if is_house && house_capacity_v2 {
+        oteryn_protocol_oteryn::container_tree::MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+    } else {
+        MAX_CONTAINER_VIEW_ENTRIES
+    };
     let capacity = generation_item_facts(native, &read.container.definition)
         .ok()
         .and_then(|facts| facts.container_capacity)
         .and_then(|capacity| u8::try_from(capacity).ok())
-        .filter(|capacity| (1..=MAX_CONTAINER_VIEW_ENTRIES).contains(&usize::from(*capacity)));
+        .filter(|capacity| (1..=limit).contains(&usize::from(*capacity)));
     let Some(capacity) = capacity else {
         return Some(ContainerObservation::NotAContainer);
     };
@@ -130,6 +140,7 @@ pub(super) async fn move_item(
     command: super::super::connection::UseCommand,
     request: super::super::item_move::LoopMove,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    house_capacity_v2: bool,
 ) -> super::super::item_move::LoopMoveResult {
     use super::super::item_move::{LoopMoveRefusal, LoopMoveResult, LoopTarget};
     use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
@@ -174,7 +185,7 @@ pub(super) async fn move_item(
     };
     let result = admission
         .root
-        .commit_house_item_loop_move(
+        .commit_house_item_loop_move_with_capacity(
             permit,
             admission.character,
             admission.holder,
@@ -188,6 +199,7 @@ pub(super) async fn move_item(
                 pickup_cell: None,
                 destination,
             },
+            house_capacity_v2,
         )
         .await;
     if matches!(result, Ok(Ok(_))) {
