@@ -2,7 +2,8 @@
 
 Owner scope: 2026-11-07, base `d34807f5b`, lane offset +60. No migration,
 command id, capability bit, mechanic ordinal or registry number is allocated.
-No workflow, Atlas exporter, production publication or activation is changed.
+No Atlas exporter, production publication or activation is changed. The owner
+has approved the catalogue artifact step in the existing protected-main Rust job.
 
 ## Shared loader and view
 
@@ -83,11 +84,19 @@ remain unchanged. No receipt or generated digest is hand-edited.
 
 ## CI-ready artifact build
 
-One-line workflow step for the owner to add (no workflow edit in this lane):
+Installed after `Build workspace` in `.github/workflows/rust.yml`, job `linux`:
 
 ```sh
 python3 tools/game-platform-catalog/build.py "$RUNNER_TEMP/game-platform-catalog.json"
 ```
+
+The next step verifies it with `producer.py verify`, then the existing pinned
+`actions/upload-artifact` action uploads JSON and `.json.sha256` as
+`game-platform-catalog`. Triggers, permissions, secrets and other workflow
+settings are unchanged. The exact workflow policy pin is regenerated with
+`python3 tools/game-platform-catalog/refresh_workflow_pin.py`; that helper accepts
+only these three approved steps over the previously pinned workflow. Its
+`--check` mode and policy mutation tests retain fail-closed pin validation.
 
 This checks that `content/` matches HEAD, invokes the Rust loader/view, and
 drives `producer.py` to write JSON plus `.json.sha256` outside the repository.
