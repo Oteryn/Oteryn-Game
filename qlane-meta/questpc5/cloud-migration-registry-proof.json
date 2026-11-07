@@ -20,14 +20,14 @@
       "static_field_rune": 57.148004662,
       "installed_numbers_sqlx_checksums_canonical_guards": 5.134153648
     },
-    "fmt": "PASS",
+    "fmt": "PASS final",
     "cargo_check_clippy": "pending",
-    "pins": "prior whole-Nimmersatt pin PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b; repeat after migration tests",
+    "pins": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b independent final pin-check; inputs20986f4e0c2d5f077fb3c5b1742153f169a9c2679d77e5a1ffa5003246a9c330",
     "cargo_check": "PASS16.78s dispatch+server",
     "strict_clippy": "PASS87s all targets/features -D warnings dispatch+server",
     "installed_registry_log": "/tmp/questpc5-migration-registry-installed2.log",
     "checksum_scope": "Actual PostgreSQL _sqlx_migrations success/checksum rows equal SHA384 of all17 exact installed SQL files.",
-    "final_new_test_lint": "active /tmp/questpc5-migration-registry-final-{check,clippy}.log with CARGO_INCREMENTAL=0"
+    "final_new_test_lint": "PASS check203s/clippy190s dispatch+server all targets/features -D warnings CARGO_INCREMENTAL=0"
   },
   "migrations": [
     {
@@ -116,5 +116,6 @@
       "sqlx_sha384": "e226637b5305a6acdf6419d46c1a17de98cae3852f806a51425c3cfadfa3cb8ca24f960ce8abe49962d742163541e914"
     }
   ],
-  "checksum_policy": "SQLx compile-time migrator embeds the renamed/replaced files and recomputes checksums. No checked-in SQLx checksum cache or explicit migration filename registry exists outside the updated reference."
+  "checksum_policy": "SQLx compile-time migrator embeds the renamed/replaced files and recomputes checksums. No checked-in SQLx checksum cache or explicit migration filename registry exists outside the updated reference.",
+  "status": "QUALIFIED_MIGRATION_REGISTRY"
 }

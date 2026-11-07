@@ -145,12 +145,11 @@
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
     "title": "Nimmersatt's Lair",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Whole route/check/clippy/World pin are green. Owner migration registry update active: canonicalQENGINE2 0999\u20131006, sharedQBASE1200\u20131205, own1270\u20131272; repeat focused PG before final qualification. No missing game mechanism.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected finite personal programme. Source-position Rascalio/Premium passage, northern20-snowball supply, twenty exact consumed inputs and final wall projection, current Premium hand-in, one44179 and durable completion. Authored permanent personal NPC/trial variant and conservative10oz collectible rule are explicit. Global raid scheduling and unselected monster encounters are outside this chosen recipe.",
     "input_canonical": "unresolved:questpc2:nimmersatt_s_lair",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00300-00351.json",
@@ -185,8 +184,18 @@
       "proof": "cloud-nimmersatt-whole-proof.json",
       "postgres_red_seconds": 97.889092733,
       "postgres_green_seconds": 96.207274321,
-      "state": "PG_GREEN_REQUIRED_CHECKS_ACTIVE",
-      "cargo_check": "PASS104s"
+      "state": "QUALIFIED",
+      "cargo_check": "PASS104s",
+      "migration_retest_postgres_seconds": 104.657881932
+    },
+    "qualification": {
+      "test": "questpc5_nimmersatt_rascalio_premium_twenty_hits_and_once_breath",
+      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "postgres_seconds": 104.657881932,
+      "proof": "cloud-nimmersatt-whole-proof.json",
+      "migration_registry_proof": "cloud-migration-registry-proof.json",
+      "quest_or_reward_seeds": false,
+      "world_digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
     }
   },
   {

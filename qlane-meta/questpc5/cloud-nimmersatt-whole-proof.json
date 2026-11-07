@@ -1,7 +1,7 @@
 {
   "slice": "Whole selected personal Nimmersatt route and reusable Oteryn plain collectible admission",
-  "whole_recipe_qualified": false,
-  "status": "PG_GREEN_REQUIRED_CHECKS_ACTIVE",
+  "whole_recipe_qualified": true,
+  "status": "QUALIFIED",
   "filter": "questpc5_nimmersatt_rascalio_premium_twenty_hits_and_once_breath",
   "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
   "red": {
@@ -43,7 +43,14 @@
     "fmt": "PASS",
     "cargo_check": "PASS104s",
     "strict_clippy": "PASS213s all changed crates, all targets/features, -D warnings after cache recovery",
-    "pin_check": "pending"
+    "pin_check": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b",
+    "migration_registry_retest": {
+      "nimmersatt_pg_seconds": 104.657881932,
+      "installed_17_sqlx_checksums_pg_seconds": 5.134153648,
+      "proof": "cloud-migration-registry-proof.json"
+    },
+    "final_migration_registry": "PASS actual17 SQLx checksums and five focused PostgreSQL cases; final fmt/check/clippy/pin green"
   },
-  "environment_recovery": "Verification initially encountered No space left on device. Removed only inactive Rust incremental caches after proving no live compiler; freed15GB; reran checks without skipping or weakening. Actual PG GREEN is positive-duration and independent."
+  "environment_recovery": "Verification initially encountered No space left on device. Removed only inactive Rust incremental caches after proving no live compiler; freed15GB; reran checks without skipping or weakening. Actual PG GREEN is positive-duration and independent.",
+  "scope": "Whole selected finite personal programme. Source-position Rascalio/Premium passage, northern20-snowball supply, twenty exact consumed inputs and final wall projection, current Premium hand-in, one44179 and durable completion. Authored permanent personal NPC/trial variant and conservative10oz collectible rule are explicit. Global raid scheduling and unselected monster encounters are outside this chosen recipe."
 }
