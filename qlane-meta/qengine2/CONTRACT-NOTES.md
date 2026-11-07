@@ -355,3 +355,23 @@ The complete additional vector joins the semantic intent only when nonempty,
 so old empty intents remain byte-identical. Receipt/reservation additional plans
 must match, and deferred guards prove every item, custody, audit and metadata
 before any commit. New guard arms preserve all installed owner arms.
+
+S06 construction source review (2026-11-07, next step, not qualification):
+Crystal revision9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+`data-global/scripts/actions/mounts/mounts.lua:20-36,40-41,70,234-253`,
+sha256bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f,
+contains the full seven-component Glider recipe, tin/uniwheel item-target rules,
+and locomotive target consumption. `data/items/items.xml:29950,30010,31157,31160,70198,70201`,
+sha256c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb,
+resolves the exact named target definitions12319,12800,37398. The current capture's
+self-target placeholders and guaranteed tin/uniwheel chance do not express these facts.
+Owner normalization decision: use the explicit config CHANCE40 as the success
+probability, consistent with the generic taming probability contract; the donor
+TYPE_ITEM branch reverses its comparison at237 and would otherwise fail even
+CHANCE100 locomotives almost always. Keep that donor defect as evidence, rather
+than adopting it as the native probability contract. Preserve both authored oil
+failure branches and their independent break/no-spend actions. Source-item
+normalization must retain all47 creature rules plus3 item targets and route
+Glider through one complete seven-piece recipe; never silently omit a source row.
+A clicked Ground Glider blueprint is only the trigger, following the donor's
+carried getItemCount/removeItem loop; consume the seven carried ingredients.

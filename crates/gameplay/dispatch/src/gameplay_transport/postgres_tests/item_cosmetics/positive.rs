@@ -13,6 +13,7 @@ pub(super) enum Case {
     Afflicted,
     ConcurrentGrant,
     RandomOutfit,
+    Glider { missing: bool },
 }
 
 #[path = "race.rs"]
@@ -114,6 +115,9 @@ pub(super) async fn execute(
     })
     .map_err(debug)?;
     match case {
+        Case::Glider { missing } => {
+            return super::glider::execute(owner, h, admitted, reference, missing).await;
+        }
         Case::RandomOutfit => {
             return super::stock::random_outfit(owner, h, admitted, reference, None).await;
         }

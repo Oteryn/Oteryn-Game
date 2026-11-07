@@ -883,3 +883,13 @@ GREEN3m59s; source producer check and fmtGREEN. Legacy single-item regression
 and required content auxiliaries executing. Whole W15b remainsAUTHORING for
 cooldown/random and remaining source variants. Next: S06 seven-piece glider
 RED test prepared, not yet run. Counts44QUALIFIED/22UNFINISHED.
+
+S06 construction compiling WIP tests: real dispatch Glider RED confirmed
+76.292884279s (all seven carried ingredients, actual USE returns NothingToUse).
+Ground-trigger and missing-piece cases still running. Three-case binary compiled
+7m48s; source facts and normalization decision in CONTRACT-NOTES. Generic recipe
+SQL/Python drafts in /tmp/qengine2-glider-piece-migration.sql and
+/tmp/qengine2-glider-authoring.py, not yet applied. Server auxiliary found one
+missed qualification-fixture initializer for W15b; uncommitted one-field fix is
+being verified. Legacy chest PG GREEN65.51s. Fresh questpc fetch15:06 found no
+new QUALIFIED matches for remaining22. Counts44/66.

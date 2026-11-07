@@ -3033,6 +3033,13 @@
             "content_integration": "123passed3.58s after recovering disk space",
             "world_repository": "5passed82.80s"
           }
+        },
+        "construction_step": {
+          "status": "RED",
+          "point": "Real wire USE with all seven source Glider pieces returns NothingToUse instead of Committed.",
+          "marker": "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
+          "log": "/tmp/qengine2-s06-glider-red.log",
+          "remaining": "Implement generic bounded complete piece recipes, source Glider grant and source item-target constructions."
         }
       },
       {
