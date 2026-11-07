@@ -13,11 +13,17 @@ fn native_objective_and_xp_share_one_postgres_transaction() -> TestResult {
     super::annihilator_route::native_objective_atomicity()
 }
 
+#[test]
+fn stale_native_objective_capture_is_terminal_on_xp_replay() -> TestResult {
+    super::annihilator_route::native_objective_stale_capture()
+}
+
 pub(super) async fn scenario(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     map: &crate::map::boot::BundleMap,
     pool: &sqlx::PgPool,
+    stale_capture: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
@@ -73,6 +79,27 @@ pub(super) async fn scenario(
                 track: native_goal.phase.clone(),
                 from: QuestComparison::Eq(-1),
                 effect: QuestEffectKind::Set(0),
+            },
+        ],
+        completes: false,
+        experience: None,
+    });
+    const ADVANCED: &str = "oteryn:quest-transition/elvenbane/fixture-earlier-captured-kill";
+    // Isolated seam precondition: an earlier captured kill can finish these
+    // tracks while this retained death is waiting for its XP turn.
+    transitions.push(QuestTransition {
+        key: ADVANCED.into(),
+        quest: rules::QUEST.into(),
+        effects: vec![
+            QuestEffect {
+                track: rules::PHASE.into(),
+                from: QuestComparison::Eq(2),
+                effect: QuestEffectKind::Set(3),
+            },
+            QuestEffect {
+                track: native_goal.counter.clone(),
+                from: QuestComparison::Eq(0),
+                effect: QuestEffectKind::Set(1),
             },
         ],
         completes: false,
@@ -232,6 +259,32 @@ pub(super) async fn scenario(
         Some(member.game_session_id),
         "freeze the exact-origin goal on this native death"
     );
+    if stale_capture {
+        let current = owner
+            .current_quest_fence(member.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("session")?;
+        let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
+        let advanced = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                current,
+                QuestTransitionRequest {
+                    transition_key: ADVANCED.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        member.game_session_id,
+                        CommandId::new(9002).map_err(debug)?,
+                    )),
+                },
+                owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(advanced, QuestTransitionOutcome::Committed(_)));
+    }
     let lane =
         crate::durability::spell_owner_commit::SpellLane::new(member.world_id, member.channel_id);
     let permit = lane.acquire().await.map_err(|_| "spell lane")?;
@@ -259,16 +312,27 @@ pub(super) async fn scenario(
         same_transaction,
         "native objective and XP cannot have a crash gap"
     );
-    let native_same_transaction: Option<bool> = sqlx::query_scalar("SELECT d.xmin=t.xmin AND t.value=1 FROM game_party_kill_xp_receipts d JOIN game_character_quest_tracks t ON t.character_id=d.principal_id WHERE d.death_key=$1 AND t.track_key=$2")
+    if stale_capture {
+        let counter: (i64, bool) = sqlx::query_as("SELECT t.value,d.xmin=t.xmin FROM game_party_kill_xp_receipts d JOIN game_character_quest_tracks t ON t.character_id=d.principal_id WHERE d.death_key=$1 AND t.track_key=$2")
+            .bind(crate::durability::party_kill_xp::encode_death_key(entry.facts.death))
+            .bind(&native_goal.counter).fetch_one(pool).await?;
+        assert_eq!(
+            counter,
+            (1, false),
+            "stale capture must retain prior credit without rewriting or granting it again"
+        );
+    } else {
+        let native_same_transaction: Option<bool> = sqlx::query_scalar("SELECT d.xmin=t.xmin AND t.value=1 FROM game_party_kill_xp_receipts d JOIN game_character_quest_tracks t ON t.character_id=d.principal_id WHERE d.death_key=$1 AND t.track_key=$2")
         .bind(crate::durability::party_kill_xp::encode_death_key(entry.facts.death))
         .bind(&native_goal.counter).fetch_optional(pool).await?;
-    assert_eq!(
-        native_same_transaction,
-        Some(true),
-        "exact-origin counter1 must commit with XP before any deferred queue drain"
-    );
+        assert_eq!(
+            native_same_transaction,
+            Some(true),
+            "exact-origin counter1 must commit with XP before any deferred queue drain"
+        );
+    }
     eprintln!(
-        "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true elapsed_ms={}",
+        "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true stale_capture={stale_capture} elapsed_ms={}",
         started.elapsed().as_millis()
     );
     Ok(())

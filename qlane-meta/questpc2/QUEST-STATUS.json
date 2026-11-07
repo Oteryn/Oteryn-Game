@@ -2015,19 +2015,22 @@
   },
   "native_goals_atomic_authoring": {
     "batch": "BATCH-native-goals-atomic-2026-11-07.json",
-    "state": "GREEN_COMPOSITION_SLICE",
+    "state": "GREEN_WITH_TERMINAL_CAPTURE_REPLAY",
     "base": "5a26f9a0e",
     "red_postgres_seconds": 75.68,
     "postgres_version": 180006,
     "red_point": "Exact-origin goal receipt absent from XP transaction, expected Some(true).",
     "check": "durability+dispatch PASS92s; fmt PASS",
-    "next": "Stale captured eligibility/retry proof, then source-wire full Elvenbane combat/atomic seven-item rewards/exit/journal.",
+    "next": "Actual source basement goal activation, full wire six defenders, atomic seven-item reward, source exit/journal.",
     "latest_pg_red_seconds": 82.9,
     "exact_error": "quest receipt is not at the current Character root revision",
     "authority_pg_green_seconds": 4.61,
     "defender_cases_pg_green_seconds": 82.78,
     "resolution_batch": "BATCH-native-objective-composition-2026-11-07.json",
-    "green_postgres_seconds": 78.1
+    "green_postgres_seconds": 78.1,
+    "terminal_batch": "BATCH-native-stale-capture-2026-11-07.json",
+    "terminal_pg_cases": 2,
+    "terminal_pg_seconds": 152.8
   },
   "migration_registry": {
     "batch": "BATCH-migration-registry-2026-11-07.json",

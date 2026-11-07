@@ -1,39 +1,34 @@
-# Active r2: combined native XP/Quest slice GREEN, continue
+# Active r2: terminal stale-capture replay GREEN, continue
 
-Latest BATCH-native-objective-composition-2026-11-07.json: PostgreSQL180006
-refined RED73.89s (two-receipt revision guard) -> GREEN78.10s/171ms marker.
-XP, original objective receipt and exact native counter1 share same transaction;
-replay stable. Old objective receipt/phase/replay asserts unchanged; new counter
-proof follows actual one-receipt-per-revision schema. Composite owner validates
-all sealed sources then merges bounded compatible same-quest effects and writes
-one receipt/revision. Single-component binding preserved; all SQL guards intact.
-Authorityguard PG GREEN4.61s; exact-origin2cases GREEN82.78s. Check37.12s,
-alltarget/allfeatureclippy-Dwarnings42.40s, fmt PASS. Four focused PGcases;
-no full suites. No content/pin inputs changed in this Rust-only slice.
+Latest BATCH-native-stale-capture-2026-11-07.json: actual PG180006 RED74.83s
+second XP settlement AuthorityRejected -> GREEN2cases152.80s. Fresh marker197ms,
+stale148ms; fresh native counter1 shares XP xmin, stale counter1 retains its
+prior transaction unchanged, original objective/receipt/phase/replay asserts
+remain. A captured intent that caps before settlement now seals a read-only
+current-phase effect under its original component binding in the XP transaction;
+no progress granted/re-written. Fresh-death audit and SQL guards untouched.
+Check36.58s, alltarget/allfeatureclippy-Dwarnings39.20s, fmt PASS. No content
+or pin inputs changed. ccc5bfd135fd8b90214db04d4a4ca04b3b2e59cc prior combined
+slice pushed. Current terminal fix ready to push immediately; continue next.
 
-NEXT IMMEDIATELY: focused stale-captured eligibility/retry PG proof. If all
-components have already capped/advanced by settlement, ensure a durable terminal
-no-grant outcome supports XP receipt replay; do not relax fresh-grant audit,
-SQL revision guards or old assertions. Then activate exact goals from actual
-source basement landing (currently53 rather than incoming41 route), real-wire
-Dragon+five defenders, atomic seven physical rewards and source exit/journal.
-Whole Elvenbane remains unfinished; continue remaining27. Push every green
-step and at least15minutes. Latest native READY/exe live; compiled with1240–44.
-Resourcecache prunes/restorations are in /tmp/questpc2-native-batch-* ledgers.
-Native and durability have multiple completed READY after build; retain newest
-only before another heavy compile. Inactive clippy/check archives are under
-/workspace/oteryn-env/retained-cache-archives/*native-batch-before-red.tar.gz.
-Latest RED executable archive questpc2-native-batch-refined-red-executable.gz;
-older positive atomic three-case archive retained; old combat exes retired.
+NEXT: add actual source exploration PG assertion that the exact goal cohort
+activates from the earned basement landing32598,31653,z8. Existing physical
+route already earns own phase1/poison/Dragon phase2; native cohort currently
+activates only at incoming selector32598,31641,z8. Compose actual first visit
+with cohort activation while retaining bounded native counters/caps and earlier
+kernel tests. Then actual wire Dragon+five upper defenders, atomic seven-item
+physical reward/capacity/replay and source exit/journal, whole Elvenbane qualify.
+No final while owned27 unfinished remain; push after every green step and at
+least15minutes. Use only own SQL range1240–49 (1240–44 occupied). Father11
+atomic; main/QENGINE/QBASE/other-lane registry rules remain binding.
 
-Migration registry slice f7aec72892d43debf7c3d8a491002eddbe8026b3 pushed:
-1240_al_dee_item_exchange.sql,1241_uzgod_obsidian_knife_exchange.sql,
-1242_seymour_present_exchange.sql,1243_native_encounter_progression_scope.sql,
-1244_instance_corpse_mint.sql. Exact SQL SHA256 unchanged; active references
-updated, duplicate/PG dynamic current-directory3.352s/fmt/check13.73s/
-clippy35.17s/pins PASS. QENGINE0999 identical source5a6de28c1; no QBASE files.
-Use1245–1249 for any further lane-only SQL. Never reuse main<=0998/1095,
-QENGINE0999–1006 or other lanes. Father11-track write remains indivisible.
+Current native READY/exe contains both cases and migrations1240–44; positive
+prior composition4PGcase archive questpc2-native-composition-green-four-postgres-cases.gz
+is retained. Latest stale RED archive questpc2-native-stale-capture-red-executable.gz.
+Cache prunes/archives/restorations in /tmp/questpc2-native-stale-* ledgers;
+current clippy/check caches may have superseded READY; prune only older completed
+versions while retaining newest. Root disk tight; archive inactive modes/retire
+superseded executable caches precisely, no broad clean/profile flags/credentials.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

@@ -28,11 +28,16 @@ enum Route {
     Combat,
     Complete,
     ObjectiveAtomicity,
+    ObjectiveAtomicityStale,
     ElvenbaneExploration,
 }
 
 pub(super) fn native_objective_atomicity() -> TestResult {
     run(Route::ObjectiveAtomicity)
+}
+
+pub(super) fn native_objective_stale_capture() -> TestResult {
+    run(Route::ObjectiveAtomicityStale)
 }
 
 pub(super) fn elvenbane_source_exploration() -> TestResult {
@@ -41,7 +46,10 @@ pub(super) fn elvenbane_source_exploration() -> TestResult {
 
 fn run(route: Route) -> TestResult {
     let combat = route != Route::Entry;
-    let start = if route == Route::ObjectiveAtomicity {
+    let start = if matches!(
+        route,
+        Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+    ) {
         Position {
             x: 32591,
             y: 31645,
@@ -297,7 +305,11 @@ fn run(route: Route) -> TestResult {
                     &owner,
                     member,
                     &build,
-                    index == 0 && route != Route::ObjectiveAtomicity,
+                    index == 0
+                        && !matches!(
+                            route,
+                            Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+                        ),
                 )
                 .await?;
             }
@@ -359,9 +371,18 @@ fn run(route: Route) -> TestResult {
             return Err("native bundle collision index".into());
         };
         let map = index.map();
-        if route == Route::ObjectiveAtomicity {
-            super::native_objective_atomic::scenario(&mut owner, &mut admitted[0], map, &h.pool)
-                .await?;
+        if matches!(
+            route,
+            Route::ObjectiveAtomicity | Route::ObjectiveAtomicityStale
+        ) {
+            super::native_objective_atomic::scenario(
+                &mut owner,
+                &mut admitted[0],
+                map,
+                &h.pool,
+                route == Route::ObjectiveAtomicityStale,
+            )
+            .await?;
             return Ok(());
         }
         if route == Route::ElvenbaneExploration {

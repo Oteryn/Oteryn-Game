@@ -393,3 +393,20 @@ receipt, binding the ordered closed component plan. No extra receipt per
 component is required. The added counter proof now asserts actual native
 counter1 and same-XP xmin; every original objective receipt/phase/replay
 assertion is retained. Run this refined case RED before the combined fix.
+
+## Native captured eligibility that caps before settlement
+
+The isolated retained-death PG case freezes a real native Dragon capture, then
+explicitly installs earlier prior credit before XP settlement. It does not
+qualify wire combat or whole-quest traversal. PostgreSQL180006 RED74.83s:
+second XP settlement returnedAuthorityRejected because the first XP commit had
+no Quest receipt after all component guards refused. The fresh-death audit
+correctly refused a new grant on replay; keep that guard.
+
+Seal this terminal no-grant result in the original XP transaction with one
+bounded read-only current-phase effect and the original component binding.
+Do not rewrite the already-earned counter or re-grant it. The receipt then
+replays before fresh-grant checks, preserving current phase and prior credit.
+The dedicated stale case asserts counter1 remains in its earlier transaction;
+the unchanged normal case still requires freshly earned counter1 in XP's
+transaction, plus the original receipt/phase/replay assertions in both cases.

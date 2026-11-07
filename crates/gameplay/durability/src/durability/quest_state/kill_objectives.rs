@@ -114,6 +114,13 @@ impl Binding {
         }
     }
 
+    fn phase_track(&self) -> &str {
+        match self {
+            Self::Objective(rule) => rule.phase_track,
+            Self::Goal(goal) => &goal.phase,
+        }
+    }
+
     fn creatures(&self, source: &NativeObjectiveDeath) -> Vec<&str> {
         match self {
             Self::Objective(rule)
@@ -324,7 +331,25 @@ pub async fn apply_batch_in_transaction(
         }
     }
     if merged.is_empty() {
-        return Ok(None);
+        // A retained capture may have capped while awaiting this death's XP
+        // turn. Seal the no-grant result now: a later XP replay cannot rely on
+        // a fresh-death audit or retroactively re-evaluate old eligibility.
+        let phase = rule.phase_track();
+        let definition = catalogue
+            .track(phase)
+            .ok_or(CharacterProgressionError::InvalidInput)?;
+        let value = stored.get(phase).copied().unwrap_or(definition.initial);
+        if !(definition.min..=definition.max).contains(&value) {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        merged.insert(
+            phase.into(),
+            QuestTrackChange {
+                track: phase.into(),
+                before: value,
+                after: value,
+            },
+        );
     }
     if merged.len() > limit {
         return Err(CharacterProgressionError::InvalidInput);
