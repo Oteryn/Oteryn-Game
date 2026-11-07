@@ -16,6 +16,7 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 # story/outfit reward sources have source-selector dispatch PostgreSQL proof.
 # Every other supported claim keeps its per-World qualification hold; reward
 # qualification does not certify access puzzles or a complete storyline.
+ITEMHOLD_ADMISSIONS = frozenset({"oteryn:reward-claim.kv.ornamentedshield", "oteryn:reward-claim.kv.powerring2", "oteryn:reward-claim.kv.triangletower"})
 EXPECTED_DENOMINATOR = 162
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",

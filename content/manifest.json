@@ -607,7 +607,13 @@
       "path": "content/items/definitions/items-34000-34110.json"
     },
     {
+      "path": "content/items/definitions/quest-loot-custody.json"
+    },
+    {
       "path": "content/items/definitions/spell-native-profiles.json"
+    },
+    {
+      "path": "content/items/definitions/srx1-item-updates.json"
     },
     {
       "path": "content/items/definitions/starting-loadout-profiles.json"
@@ -848,6 +854,9 @@
     },
     {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/quest-creature-item-profiles.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -1004,7 +1013,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3755,
+          "record_count": 3782,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1012,12 +1021,12 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "3d245da19da5d78c28b16f80c9ea9babc9e8d2534fc5a94f3f135072fc5e4512"
+          "sha256": "58b71cd9246611521d29edbbbf81f143d6ac258d085dcefb5988c5775e647a68"
         },
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/starting-loadout-profiles.json",
-          "record_count": 8,
+          "record_count": 13,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1025,7 +1034,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"
+          "sha256": "08c7126b73447929016e33fac7140a7027e7f16152fcfb2d8b28e326329e714c"
         }
       ],
       "Presentation": [

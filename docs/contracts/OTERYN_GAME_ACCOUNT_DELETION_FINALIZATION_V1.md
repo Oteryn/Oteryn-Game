@@ -3,7 +3,7 @@
 - Status: **CANDIDATE**, revision 1, PLAT3-CONTRACTS; contract/fixtures only.
 - Contract ID: `oteryn-game-account-deletion-finalization-v1`.
 - Producer/authority: Game for Characters and Game admission closure; Platform for web account
-  lifecycle, cancellation, credentials and `finalized_at`. All new adapters default off.
+  lifecycle, cancellation, credentials and `finalized_at`. Game producer defaults ON by owner decision 2026-11-06; Platform qualification remains separate.
 - Game baseline: `28c7d9ab7ff85baef47c9947554f623ff8b2a87c`.
 - Parents: `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` §§5, 8, 11, 13;
   `OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md` (CC) §§2–7, 15;
@@ -179,3 +179,12 @@ No runtime conformance or enablement is claimed.
   funds and entitlements, and assign operator handling for unresolved quarantine conflicts.
 - Accept CC v2 lifecycle variants/private projection routes and provide the actual review PR
   number before the pending lock can become validator-complete or canonical.
+
+## Game producer clarification (2026-11-06)
+
+The owner selected default ON for Game, with an explicit disable switch. See
+[CONTRACT-NOTES / PLATFORM CONFIG](fixtures/account-deletion/CONTRACT-NOTES.md)
+for the independently authenticated lifecycle-read extension, conservative configured
+owner policies, private quarantine backing and exact Platform fixture/config handoff.
+This supersedes candidate default-OFF wording for Game only; it does not claim
+Platform acceptance or deployment qualification.

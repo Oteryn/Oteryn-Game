@@ -27,8 +27,19 @@ use std::{
 pub const PURPOSE: &str = "OTERYN_GAME_CHARACTER_COMMANDS";
 /// The only issuer Game accepts intents from (§3), sent on every read.
 pub const ISSUER_AUTHORITY: &str = "OTERYN_PLATFORM_CHARACTER_AUTHORITY";
-/// The one command this consumer decides; any other is `CHAR_CMD_UNSUPPORTED`.
+/// The v1 creation command; closure commands below use the configured v2 producer.
 pub const CREATE_COMMAND: &str = "CreateCharacter";
+/// PLAT3 v2 closure commands, routed to the configured durable producer.
+pub const CLOSE_ACCOUNT_COMMAND: &str = "CloseAccount";
+pub const RESOLVE_ACCOUNT_CLOSURE_COMMAND: &str = "ResolveAccountClosure";
+
+#[must_use]
+pub fn account_deletion_command(command: &str) -> bool {
+    matches!(
+        command,
+        CLOSE_ACCOUNT_COMMAND | RESOLVE_ACCOUNT_CLOSURE_COMMAND
+    )
+}
 pub const PENDING_PATH: &str = "/internal/v1/game-auth/character-commands/pending";
 pub const READ_PATH: &str = "/internal/v1/game-auth/character-commands/read";
 pub const RECEIPT_PATH: &str = "/internal/v1/game-auth/character-commands/receipt";
@@ -68,7 +79,11 @@ pub(super) const fn response_bytes(operation: Operation) -> Option<usize> {
     match operation {
         Operation::ListPendingCharacterCommandsV1 => Some(LIST_RESPONSE_BYTES),
         Operation::ReadCharacterCommandIntentV1 => Some(INTENT_RESPONSE_BYTES),
-        Operation::PublishCharacterCommandReceiptV1 => Some(RECEIPT_RESPONSE_BYTES),
+        Operation::ReadAccountClosureLifecycleV1 => Some(2048),
+        Operation::PublishCharacterCommandReceiptV1
+        | Operation::PublishAccountClosureCommandReceiptV2
+        | Operation::PublishAccountClosureV1
+        | Operation::PublishAccountClosureWatermarkV1 => Some(RECEIPT_RESPONSE_BYTES),
         _ => None,
     }
 }
@@ -346,9 +361,14 @@ pub fn classify(status: u16, raw: &[u8]) -> Failure {
 
 /// Character-command client identity (§3): its own certificate and key, never
 /// those of the evidence, runtime-status or projection purposes.
+#[derive(Clone)]
 pub struct CommandDescriptor(ProducerDescriptor);
 
 impl CommandDescriptor {
+    pub fn producer(&self) -> &ProducerDescriptor {
+        &self.0
+    }
+
     /// `other_purposes` are the certificate chains of every other Platform
     /// identity this host holds; none may share the command public key.
     pub fn new(
@@ -451,6 +471,50 @@ pub enum Decision {
 
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
+    fn begin_closure_lifecycle_read(
+        &mut self,
+        _request: &super::account_closure::LifecycleRequest,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn quarantine_closure_publication(
+        &mut self,
+        _publication: &super::account_closure::Publication,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn lifecycle_recovery_generation(&self) -> Option<u64> {
+        None
+    }
+    fn observe_closure_lifecycle(
+        &mut self,
+        _request: &super::account_closure::LifecycleRequest,
+        _raw: &[u8],
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn next_closure_publication(
+        &mut self,
+    ) -> impl Future<Output = Option<super::account_closure::Publication>> + Send {
+        async { None }
+    }
+    fn acknowledge_closure_publication(
+        &mut self,
+        _publication: &super::account_closure::Publication,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+    fn acknowledge_receipt(
+        &mut self,
+        _command: &str,
+        _operation: &str,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
     fn decide(
         &mut self,
         command: &str,
@@ -745,7 +809,9 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let operation_id = entry.key.operation_id.as_str();
         let started = self.clock.elapsed();
         let intent;
-        let input = if command == CREATE_COMMAND {
+        let input = if matches!(command, CREATE_COMMAND | "TransferCharacterOwnership")
+            || account_deletion_command(command)
+        {
             let Ok(body) = encode_read(&self.source_authority, command, operation_id) else {
                 return Step::Settled(Settle::Done);
             };
@@ -782,6 +848,27 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         } else {
             Input::Unsupported
         };
+        if account_deletion_command(command)
+            && let Input::Intent(raw) = input
+            && let Some(recovery) = self.decider.lifecycle_recovery_generation()
+            && let Ok(request) = super::account_closure::LifecycleRequest::from_intent(
+                &self.source_authority,
+                raw,
+                recovery,
+            )
+        {
+            self.decider.begin_closure_lifecycle_read(&request).await;
+            if let Ok(body) = serde_json::to_string(&request)
+                && let Ok(response) = self
+                    .source
+                    .exchange(Operation::ReadAccountClosureLifecycleV1, &body)
+                    .await
+            {
+                self.decider
+                    .observe_closure_lifecycle(&request, &response)
+                    .await;
+            }
+        }
         let decision = self.decider.decide(command, operation_id, input).await;
         let (receipt, result_code) = match decision {
             Decision::Publish {
@@ -805,11 +892,28 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let Ok(body) = std::str::from_utf8(&receipt) else {
             return Step::Settled(Settle::Done);
         };
+        let publication_operation = if account_deletion_command(command) {
+            Operation::PublishAccountClosureCommandReceiptV2
+        } else {
+            Operation::PublishCharacterCommandReceiptV1
+        };
         let published = self
             .source
-            .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+            .exchange(publication_operation, body)
             .await
-            .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
+            .and_then(|raw| {
+                if account_deletion_command(command) {
+                    super::account_closure::decode_receipt_ack(&raw)
+                } else {
+                    decode_receipt_response(&raw)
+                }
+                .map_err(|_| Failure::InvalidResponse)
+            });
+        if published.is_ok() {
+            self.decider
+                .acknowledge_receipt(command, operation_id)
+                .await;
+        }
         let result = match published {
             Ok(()) if result_code == "CHAR_CMD_OPERATION_CONFLICT" => {
                 format!("{result_code} receipt=accepted alarm=operation_conflict")
@@ -832,6 +936,56 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             Err(f) if f.backs_off() => Step::Throttled,
             Err(_) => Step::Settled(Settle::Retry),
         }
+    }
+}
+
+/// Independent private-feed cadence: an unavailable/slow pending-intent page
+/// cannot starve closure receipt replay, projections or freshness heartbeats.
+/// Each publisher retains one bounded exchange at a time under the CC identity.
+pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, D: Decider>(
+    clock: C,
+    mut source: S,
+    mut decider: D,
+    event: fn(&str),
+) {
+    let mut backoff = POLL;
+    loop {
+        let mut delay = POLL;
+        if let Some(publication) = decider.next_closure_publication().await {
+            match source
+                .exchange(publication.operation, &publication.body)
+                .await
+            {
+                Ok(raw) => {
+                    backoff = POLL;
+                    let acknowledged = if publication.operation
+                        == Operation::PublishAccountClosureCommandReceiptV2
+                    {
+                        super::account_closure::decode_receipt_ack(&raw)
+                    } else {
+                        super::account_closure::decode_ack(&raw)
+                    };
+                    if acknowledged.is_ok() {
+                        decider.acknowledge_closure_publication(&publication).await;
+                    }
+                }
+                Err(failure)
+                    if failure == Failure::Conflict
+                        || (failure == Failure::NotFound
+                            && publication.operation
+                                == Operation::PublishAccountClosureCommandReceiptV2) =>
+                {
+                    (event)("event=account_closure alarm=publication_refused");
+                    decider.quarantine_closure_publication(&publication).await;
+                }
+                Err(failure) if failure.backs_off() => {
+                    backoff = backoff.saturating_mul(2).min(MAX_BACKOFF);
+                    delay = backoff;
+                }
+                Err(_) => {}
+            }
+        }
+        clock.sleep(delay).await;
     }
 }
 

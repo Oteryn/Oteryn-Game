@@ -195,6 +195,8 @@ def main() -> int:
     apply_container_fact(item_records, ROOT)
     from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
     apply_enchanting_admissions(item_records)
+    from itemhold_q import apply_admissions as apply_quest_item_holds
+    apply_quest_item_holds(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -677,12 +679,29 @@ def main() -> int:
             ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
             if family not in quest_families],
     })
+    # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
+    # Repin only after proving the old digest and every selected row against
+    # the exact pre-change base; ordinary source-capture validation stays strict.
+    from grizzly_shop_profiles import refresh_canonical_input_pins
+    refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
+    import condition_potion_profiles
+    refresh_canonical_input_pins(
+        ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
+        packet_path=condition_potion_profiles.PATH,
+        keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+    # Register native custody before claim authoring, and restore every embedded
+    # claim shard before the simulator compiles its Rust content consumer.
+    from register_spell_families import outputs as spell_outputs
+    for relative, data in spell_outputs(ROOT, include_prey=False).items():
+        destination = ROOT / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+    subprocess.run([sys.executable, str(ROOT / "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py"), "content"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.
-    from register_spell_families import outputs as spell_outputs
     for relative, data in spell_outputs(ROOT).items():
         destination = ROOT / relative
         destination.parent.mkdir(parents=True, exist_ok=True)

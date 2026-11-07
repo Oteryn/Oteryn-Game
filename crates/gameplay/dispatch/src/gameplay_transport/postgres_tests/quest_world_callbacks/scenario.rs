@@ -454,6 +454,15 @@ fn scenario_case(
                 expected_destination,
             )
             .await?;
+        } else if name.starts_with("dryad-garden-") {
+            super::super::srvwld_dryad_garden::exercise(
+                &owner,
+                &mut admitted,
+                deps.actor,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if matches!(
             name,
             "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"

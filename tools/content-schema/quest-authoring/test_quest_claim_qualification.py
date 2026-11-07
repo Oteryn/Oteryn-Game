@@ -1,5 +1,6 @@
 """Unit tests for the quest claim qualification audit."""
 
+import copy
 import importlib.util
 import json
 import tempfile
@@ -32,9 +33,17 @@ class QualificationTests(unittest.TestCase):
         # two Dawnport claims are excluded. Keep exact denominator detection.
         self.assertEqual(sum(counts.values()), 162)
 
+        ledger=qualification.read_json(qualification.LEDGER)
+        for key in qualification.ITEMHOLD_ADMISSIONS:
+            self.assertEqual(ledger['claims'][key]['disposition'],'blocked')
+            self.assertEqual(ledger['claims'][key]['dependency'],'QUEST-QUAL-1')
+
     def test_missing_row_is_rejected(self):
-        del self.ledger["claims"][next(iter(self.ledger["claims"]))]
-        self.assertTrue(any("missing claim" in error for error in self.check()))
+        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+            with self.subTest(claim=key):
+                ledger = copy.deepcopy(self.ledger)
+                del ledger["claims"][key]
+                self.assertIn(f"missing claim: {key}", self.check(ledger))
 
     def test_invented_test_is_rejected(self):
         record = next(iter(self.ledger["claims"].values()))

@@ -14,6 +14,12 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new()));
     }
+    if let Some(page) = wire::decode_catalogue_query(command.payload) {
+        return Some(match authority.house_furniture_catalogue(*admitted, page).await? {
+            Ok(catalogue) => Dispatch::Reply(CommandStatus::Accepted, catalogue.encode()?),
+            Err(refusal) => Dispatch::Reply(CommandStatus::Rejected, wire::Reply::Refused(refusal).encode()),
+        });
+    }
     let Some(request) = decode_request(
         admitted
             .continuity

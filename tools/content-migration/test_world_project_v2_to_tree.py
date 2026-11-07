@@ -110,6 +110,10 @@ def test_closed_weapon_metadata_admission():
             raise AssertionError("forged weapon packet accepted")
     print("ok test_closed_weapon_metadata_admission")
 source_claim_count = len(json.loads((ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
+# The independently source-bound Sam armour claim extends the historical chest corpus.
+extra_source_claims = json.loads((ROOT / "tools/content-schema/quest-authoring/native-source-claims.json").read_text())["claims"]
+assert {row["key"] for row in extra_source_claims} == {"crystalserver:reward-claim/quest/u7_5/sams_old_backpack/armor"}
+source_claim_count += len(extra_source_claims)
 project = json.loads((ROOT / "content/project.json").read_text(encoding="utf-8"))
 manifest = json.loads((ROOT / "content/manifest.json").read_text(encoding="utf-8"))
 lock = json.loads((ROOT / "content/content.lock.json").read_text(encoding="utf-8"))

@@ -83,3 +83,35 @@ fn party_does_not_consume_non_player_context_or_unrelated_batch_events() -> Resu
     assert!(oteryn_client_ui::prey::open_key(&events));
     Ok(())
 }
+
+#[test]
+fn party_member_effects_server_result_reaches_native_panel_and_removes() -> Result<(), Error> {
+    use oteryn_client_runtime::party::{CommandStatus, PartyResponse};
+    use oteryn_client_ui::party::{Intent, panel_text_at, party};
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.party_initialize(true, false);
+    let mut state = party::PartyResult::refused(party::PartyDisposition::Ok);
+    state.members.push(party::PartyEntry {
+        handle: 1,
+        name: "Friend".into(),
+        leader: false,
+        expires_at: 0,
+        party_spell_remaining_ms: Some([0, 120_000, 0, 0, 0]),
+    });
+    for (remaining, expected) in [(120_000, true), (0, false)] {
+        link.party_request(Intent::Refresh);
+        assert!(commands.try_recv().is_ok());
+        state.members[0].party_spell_remaining_ms = Some([0, remaining, 0, 0, 0]);
+        let bytes = party::encode_party_result(&state).map_err(|error| format!("{error:?}"))?;
+        outbox.party_result(&PartyResponse {
+            status: CommandStatus::Accepted,
+            operation: bytes.clone(),
+            view: Some(bytes),
+        });
+        assert_eq!(
+            panel_text_at(&link.party_panel(), 1_000).contains("Friend | Protect Party: 119s"),
+            expected
+        );
+    }
+    Ok(())
+}

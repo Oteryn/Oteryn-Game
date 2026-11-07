@@ -703,7 +703,7 @@ async fn tomes(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.extend([3, 6, 25]);
+    selected.extend([3, 6, 11, 25]);
     selected.sort_unstable();
     selected.dedup();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -719,6 +719,7 @@ async fn tomes(
         ["oteryn:npc.cael", "oteryn:npc.curos", "oteryn:npc.zalamon"],
     )
     .await?;
+    tome_access(owner, admitted, false).await?;
     assert_eq!(quantity(h, 10217).await?, 0);
     let find = |key: &str| {
         all.iter()
@@ -771,6 +772,20 @@ async fn tomes(
         12,
         "ten actual chests plus two actual NPC gifts"
     );
+    for n in 0..2 {
+        supply(
+            owner,
+            admitted,
+            3043,
+            18020 + n,
+            Position {
+                x: 33156,
+                y: 31229,
+                floor: -15,
+            },
+        )
+        .await?;
+    }
     for n in 1..=12 {
         let c = find(&format!("/l2-cael-tome-{n}"))?;
         if n == 7 {
@@ -793,6 +808,26 @@ async fn tomes(
                 .await?;
         assert_eq!(count, n);
         assert_eq!(quantity(h, 10217).await?, 12 - n);
+        if n == 5 {
+            tome_shop(owner, admitted, cael, n, 2965, NpcIntentDisposition::Stale).await?;
+        }
+        if n == 6 {
+            for item in [2965, 2966] {
+                tome_shop(owner, admitted, cael, n, item, NpcIntentDisposition::Ok).await?;
+                assert_eq!(quantity(h, item).await?, 1);
+            }
+        }
+        if n == 10 {
+            tome_shop(owner, admitted, cael, n, 10216, NpcIntentDisposition::Stale).await?;
+        }
+        if n == 11 {
+            tome_shop(owner, admitted, cael, n, 10216, NpcIntentDisposition::Ok).await?;
+            assert_eq!(quantity(h, 10216).await?, 1);
+        }
+        if n == 12 {
+            tome_shop(owner, admitted, cael, n, 10288, NpcIntentDisposition::Ok).await?;
+            assert_eq!(quantity(h, 10288).await?, 1);
+        }
     }
     for flag in ["snake_head_teleport", "corruption_hole", "zao_palace_doors"] {
         let v: i64 =
@@ -802,6 +837,12 @@ async fn tomes(
                 .await?;
         assert_eq!(v, 1);
     }
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_npc_trades")
+            .fetch_one(&h.pool)
+            .await?,
+        4
+    );
     let extra = find("/l2-cael-tome-13")?;
     assert_eq!(
         wire_reward(owner, admitted, cael, extra, false).await?.0,
@@ -850,6 +891,7 @@ async fn tomes(
         .await?,
         xp_after
     );
+    tome_access(owner, admitted, true).await?;
     Ok(())
 }
 
@@ -888,5 +930,185 @@ async fn tome_prerequisite(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    Ok(())
+}
+
+async fn tome_shop(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    stage: i64,
+    item: u32,
+    expected: NpcIntentDisposition,
+) -> TestResult {
+    use crate::content::npc_catalogue::quest_shops;
+    use oteryn_protocol_oteryn::npc_service::{
+        NpcTradeIntent, NpcTradeSide, encode_npc_trade_intent,
+    };
+    let book = owner.states.chat.npc_talk().ok_or("shop book")?;
+    let entry = book.get("oteryn:npc.cael").ok_or("Cael shop")?;
+    let shops = quest_shops::shops().map_err(debug)?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("shop native")?;
+    let visible: Vec<_> = entry
+        .offers()
+        .iter()
+        .filter(|offer| {
+            quest_shops::required(
+                shops,
+                "oteryn:npc.cael",
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )
+            .is_ok_and(|required| {
+                required.is_none_or(|r| quest_shops::eligible(r, |_| Some(stage)))
+            }) && crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: offer.item.key.clone(),
+                    revision_ref: offer.item.revision.clone(),
+                },
+            )
+            .is_ok()
+        })
+        .cloned()
+        .collect();
+    let runtime = owner.runtime.lock().await;
+    let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+        &runtime,
+        owner.active_generation,
+    )
+    .ok_or("shop index")?;
+    let target = format!("oteryn:item.tibia.i{item}");
+    let shown = oteryn_gameplay_npc::npc_command::projected(&visible, index)
+        .enumerate()
+        .find(|(_, (_, source))| source.item.key == target);
+    let (offer_index, price) = shown
+        .map(|(n, (o, _))| (n, o.unit_price))
+        .unwrap_or((visible.len(), 2500));
+    drop(runtime);
+    for text in ["hi", "trade"] {
+        let id = admitted.continuity.next_command_id;
+        let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
+            npc_actor: npc,
+            text: text.into(),
+        })
+        .map_err(debug)?;
+        super::super::quest_world_callbacks::wire(owner, admitted, id, 7, payload).await?;
+    }
+    let request = NpcTradeIntent {
+        npc_actor: npc,
+        catalogue_revision: book.catalogue_revision(),
+        offer_index: u32::try_from(offer_index)?,
+        side: NpcTradeSide::Buy,
+        quantity: 1,
+        expected_unit_price: price,
+    };
+    let payload = encode_npc_trade_intent(&request).map_err(debug)?;
+    let id = admitted.continuity.next_command_id;
+    let result =
+        super::super::quest_world_callbacks::wire(owner, admitted, id, 8, payload.clone()).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&result).map_err(debug)?,
+        expected
+    );
+    assert_eq!(
+        super::super::quest_world_callbacks::wire(owner, admitted, id, 8, payload).await?,
+        result,
+        "literal shop replay"
+    );
+    Ok(())
+}
+
+async fn tome_access(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    unlocked: bool,
+) -> TestResult {
+    use super::questl2_delivery_journeys::{at, refused_step, step};
+    use oteryn_protocol_oteryn::{world_object::UseDisposition, world_spatial::StepDirection};
+    step(owner, admitted, StepDirection::West).await?;
+    assert_eq!(
+        at(owner, admitted).await?,
+        Position {
+            x: 33003,
+            y: 31540,
+            floor: 0
+        }
+    );
+    if unlocked {
+        step(owner, admitted, StepDirection::East).await?;
+        assert_eq!(
+            at(owner, admitted).await?,
+            Position {
+                x: 33197,
+                y: 31347,
+                floor: -6
+            }
+        );
+        step(owner, admitted, StepDirection::South).await?;
+    } else {
+        refused_step(owner, admitted, StepDirection::East).await?;
+        step(owner, admitted, StepDirection::North).await?;
+    }
+    assert_eq!(
+        at(owner, admitted).await?,
+        Position {
+            x: 33344,
+            y: 31116,
+            floor: -7
+        }
+    );
+    if unlocked {
+        step(owner, admitted, StepDirection::East).await?;
+        assert_eq!(
+            at(owner, admitted).await?,
+            Position {
+                x: 33345,
+                y: 31116,
+                floor: -7
+            }
+        );
+    } else {
+        refused_step(owner, admitted, StepDirection::East).await?;
+    }
+    step(owner, admitted, StepDirection::North).await?;
+    assert_eq!(
+        at(owner, admitted).await?,
+        Position {
+            x: 33160,
+            y: 31265,
+            floor: -10
+        }
+    );
+    super::questl2_journeys::use_at(
+        owner,
+        admitted,
+        Position {
+            x: 33161,
+            y: 31265,
+            floor: -10,
+        },
+        if unlocked {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Locked
+        },
+    )
+    .await?;
+    step(owner, admitted, StepDirection::North).await?;
+    assert_eq!(
+        at(owner, admitted).await?,
+        Position {
+            x: 33156,
+            y: 31229,
+            floor: -15
+        }
+    );
     Ok(())
 }

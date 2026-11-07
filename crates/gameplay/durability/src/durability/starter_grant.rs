@@ -5,6 +5,10 @@
 //! The template's item must be a container of the active Content generation; otherwise nothing
 //! is written and the entry proceeds without a starter item (`NotAdmitted`).
 
+mod newhaven;
+
+pub use oteryn_gameplay_items::starter_grant::NewhavenStarterOutcome;
+
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::item_loop_move::ItemLoopContent;

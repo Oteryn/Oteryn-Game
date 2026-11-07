@@ -44,8 +44,13 @@
 - `stored_context_matches` (`durability/character_progression.rs`) requires all eight stored
   revisions to equal the request exactly. Any other value is `ProgressionContextMismatch`: the
   award or death write is refused. There is no progression migration path.
-- The request's profile, ruleset and content revisions must equal the Character root, and the
-  root must equal its latest `game_character_interpretations` row.
+- The request's profile, ruleset and content revisions must equal the Character root, and those
+  three root revisions must equal the latest `game_character_interpretations` row. The owner's
+  SRX-2 decision (2026-11-05, [accepted scope](../../reference/SRX-2.md)) permits only the starter
+  revision to remain historical when explicitly registered for that World. Registration comes
+  from trusted current interpretation configuration, never arbitrary root labels; runtime has
+  read permission only. All other revision, identity, session and authority checks remain current.
+  The root's recorded starter revision and existing items are never rewritten.
 - `initialize_character_progression` admits the row only while the Character root is at
   revision 1. A missing row after revision 1 is `InvalidStoredState`.
 - Every revision must pass `valid_revision`: at most 128 bytes, ASCII alphanumeric first,

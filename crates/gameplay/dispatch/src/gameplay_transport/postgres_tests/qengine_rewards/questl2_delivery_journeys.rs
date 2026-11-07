@@ -111,6 +111,17 @@ pub(crate) fn world(
                 }),
             });
         }
+        for appearance in [9874, 9875] {
+            data.manifest.palette.push(bundle::PaletteEntry {
+                id: reference(&format!("oteryn:item.tibia.i{appearance}"))
+                    .ok_or("native palace door")?
+                    .get()
+                    - 1,
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: bundle::Family::Item,
+                terrain: None,
+            });
+        }
         rows
     } else {
         Vec::new()
@@ -132,6 +143,22 @@ pub(crate) fn world(
     type FixtureCell = (u16, u16, i8);
     let mut portals: Vec<(FixtureCell, FixtureCell)> = Vec::new();
     let start = if name.ends_with("tomes") {
+        for (z, x0, x1, y0, y1) in [
+            (0, 33002, 33006, 31539, 31542),
+            (-6, 33196, 33198, 31346, 31349),
+            (-7, 33343, 33346, 31115, 31118),
+            (-10, 33159, 33162, 31264, 31268),
+        ] {
+            patch(z, x0, x1, y0, y1);
+        }
+        portals.extend([
+            ((33155, 31229, -15), (33003, 31540, 0)),
+            ((33003, 31539, 0), (33344, 31116, -7)),
+            ((33197, 31348, -6), (33344, 31116, -7)),
+            ((33344, 31115, -7), (33160, 31265, -10)),
+            ((33345, 31115, -7), (33160, 31265, -10)),
+            ((33160, 31264, -10), (33156, 31229, -15)),
+        ]);
         for (p, _) in &books {
             patch(p.floor, p.x - 2, p.x + 1, p.y - 1, p.y + 2);
         }
@@ -232,7 +259,7 @@ pub(crate) fn world(
             .get_mut(&(p.floor, p.x, p.y))
             .ok_or("source book tile")?
             .push(sector::Item {
-                palette: if books[n].1 == 2472 { 100 } else { 101 },
+                palette: if books[n].1 == 2472 { 3 } else { 4 },
                 depth: 0,
                 attrs: Default::default(),
             });
@@ -241,6 +268,19 @@ pub(crate) fn world(
             (p.x - 1, p.y + 1, p.floor),
             (next.x - 1, next.y, next.floor),
         ));
+    }
+    if name.ends_with("tomes") {
+        cells
+            .get_mut(&(-10, 33161, 31265))
+            .ok_or("palace door tile")?
+            .push(sector::Item {
+                palette: 5,
+                depth: 0,
+                attrs: sector::Attrs {
+                    action: Some(42730),
+                    ..Default::default()
+                },
+            });
     }
     for ((x, y, z), destination) in portals {
         cells
@@ -352,7 +392,7 @@ async fn supply(
     )
     .await
 }
-async fn at(
+pub(super) async fn at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult<Position> {
@@ -369,7 +409,7 @@ async fn at(
         floor: -i8::try_from(at.floor)?,
     })
 }
-async fn step(
+pub(super) async fn step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     d: oteryn_protocol_oteryn::world_spatial::StepDirection,
@@ -380,7 +420,7 @@ async fn step(
         .ok_or("paced clock")?;
     super::questl2_journeys::walk(owner, admitted, d).await
 }
-async fn refused_step(
+pub(super) async fn refused_step(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     d: oteryn_protocol_oteryn::world_spatial::StepDirection,

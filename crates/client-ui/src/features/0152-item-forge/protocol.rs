@@ -14,6 +14,17 @@ pub fn command(payload: Vec<u8>) -> ServerMechanicCommand {
     }
 }
 pub fn control_request(p: &mut ItemForgePanel) -> Option<ServerMechanicCommand> {
+    if p.query_current_dust {
+        return request(
+            p,
+            ServerMechanicCommand {
+                capability: 152,
+                command_type:
+                    oteryn_client_runtime::cui3::item_forge::COMMAND_TYPE_FORGE_DUST_QUERY,
+                payload: Vec::new(),
+            },
+        );
+    }
     let pair = p.operation.requires_pair();
     let r = Request {
         operation: p.operation,

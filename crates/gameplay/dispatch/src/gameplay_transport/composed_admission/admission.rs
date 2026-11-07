@@ -44,6 +44,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return Err(Rejected);
         }
+        if self
+            .root
+            .staff_account_banned(self.character, record.account_id)
+            .await
+            .map_err(|_| Unavailable)?
+        {
+            return Err(Rejected);
+        }
         let subject = FreshAdmissionSubject {
             account_id: canonical_uuid(record.account_id.as_bytes()),
             character_id: attempt.character_id,

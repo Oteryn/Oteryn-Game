@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "95a4291b0776f224e40e1a17f58c4b4e4d160ec49138878ae815054fe4c69d12"
+    "sha256": "4888ad259a7c744bb31de6129fdd4216ea92cb53132b6b72200660b02b08d5c9"
   },
   "changes": [
     {
@@ -315021,7 +315021,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "1c9741168cff0e11e23643982cfed5999242d19e2e64b2a4c83009bbd2ca2207"
+      "sha256": "1dc1f0600a11436b1dda68e9e836aafd32f8572d7ced2ca0e2c126968dd6a005"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",

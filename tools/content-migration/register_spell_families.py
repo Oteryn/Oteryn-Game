@@ -81,6 +81,13 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "path": Path(os.path.relpath(path, "content")).as_posix(),
             "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         }
+    cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
+    if (root / cosmetics).is_file():
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
+        manifest["cosmetics"] = {
+            "path": "cosmetics/outfits/native-cosmetics.json",
+            "sha256": hashlib.sha256((root / cosmetics).read_bytes()).hexdigest(),
+        }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
@@ -377,6 +384,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     starting_loadout_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_finish_newhaven_items
     quest_finish_newhaven_items.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import newhaven_starter_profiles
+    newhaven_starter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import enchanting_item_profiles
     enchanting_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Preserve every earlier owner cohort before adding the missing Task Board policies.
@@ -408,6 +417,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc5_father_item_profiles
     questpc5_father_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import itemhold_q
+    itemhold_q.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
@@ -415,6 +426,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
+    import quest_creature_item_profiles
+    quest_creature_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], provider_order)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
@@ -427,6 +440,11 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
+    # SRX-1 keeps the historical single-line provider byte-identical. The loader
+    # composes only the changed records from a separately pinned small supplement.
+    import srx1_profile_updates
+    srx1_profile_updates.generate(root, generated, item_path, NATIVE_MANIFEST,
+                                 provider_order, spell_import.canonical_bytes)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
     native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
     # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
@@ -457,7 +475,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     fragment = starting_loadout_profiles.FRAGMENT
     descriptors.setdefault("Item", []).append({
         "path": fragment, "sha256": hashlib.sha256(generated[fragment]).hexdigest(),
-        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": 8,
+        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "record_count": len(json.loads(generated[fragment])["records"]),
         "schema_contract": {"kind": "rust_serde", "path": spell_import.NATIVE_SCHEMA_CONTRACTS["item_profiles"]},
         "representation": "native_profile_overlay", "creates_canonical_identities": False,
         "runtime_activation": False,

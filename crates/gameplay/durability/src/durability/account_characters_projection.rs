@@ -30,7 +30,7 @@ pub const MAX_CHARACTER_TRANSACTION: Duration = Duration::from_secs(DB_PASS_DEAD
 // of the same (epoch, revision) is byte-identical.
 const SNAPSHOT: &str = "\
 WITH head AS (SELECT account_id FROM game_character_account_projection_outbox \
-              ORDER BY created_at, account_id LIMIT 1) \
+              WHERE NOT EXISTS(SELECT 1 FROM game_account_closures qc WHERE qc.account_id=game_character_account_projection_outbox.account_id AND qc.state='CANCELLING') ORDER BY created_at, account_id LIMIT 1) \
 SELECT h.account_id::text AS account_id, e.projection_epoch, p.projection_revision, \
        p.revised_at / 1000 AS observed_at, \
        r.character_id::text AS character_id, r.world_id::text AS world_id, r.name, r.lifecycle \
@@ -38,7 +38,7 @@ SELECT h.account_id::text AS account_id, e.projection_epoch, p.projection_revisi
   JOIN game_character_account_projections p USING (account_id) \
  CROSS JOIN game_character_account_projection_epoch e \
   LEFT JOIN LATERAL (SELECT character_id, world_id, name, lifecycle FROM game_character_roots \
-                      WHERE account_id = h.account_id ORDER BY character_id LIMIT $1) r ON true \
+                      WHERE account_id = h.account_id AND NOT game_account_closure_detached(character_id) ORDER BY character_id LIMIT $1) r ON true \
  ORDER BY r.character_id";
 
 /// `AVAILABLE` for the only admissible lifecycle; any other lifecycle is not

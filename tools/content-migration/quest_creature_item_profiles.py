@@ -17,11 +17,13 @@ def admit(root, generated, profile_path, order):
     xml=source.xml_index(xml_raw)
     objects=source.engine_items.load_appearance_objects(client_raw)
     bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
-    callbacks=json.loads(generated['content/quests/shared-kill-callbacks.json'])['callbacks']
+    callback_path='content/quests/shared-kill-callbacks.json'
+    callbacks=json.loads(generated.get(callback_path,(root/callback_path).read_bytes()))['callbacks']
     creatures={c['creature'] for c in callbacks}
     creature_path='content/creatures/definitions/spell-native-profiles.json'
+    creature_raw=generated.get(creature_path,(root/creature_path).read_bytes())
     wanted=set()
-    for record in json.loads((root/creature_path).read_bytes())['records']:
+    for record in json.loads(creature_raw)['records']:
         profile=record['profile']
         if profile['target']['key'] in creatures:
             corpse=profile['data']['profile']['details'].get('corpse_item')
@@ -71,5 +73,5 @@ def admit(root, generated, profile_path, order):
     generated[ADMISSIONS]=(json.dumps({'schema':'OTERYN_NATIVE_LOOT_CUSTODY_ADMISSIONS/v1','items':sorted(declarations,key=lambda r:r['key'])},indent=2)+'\n').encode()
     generated[PROOF]=(json.dumps({'schema':'OTERYN_QUEST_CREATURE_CUSTODY_PROFILES/v1',
         'sources':[{'path':shared.XML,'sha256':shared.XML_SHA},{'path':shared.CLIENT,'sha256':shared.CLIENT_SHA},
-                   {'path':creature_path,'sha256':hashlib.sha256((root/creature_path).read_bytes()).hexdigest()}],
+                   {'path':creature_path,'sha256':hashlib.sha256(creature_raw).hexdigest()}],
         'creatures':sorted(creatures),'records':packet['records']},ensure_ascii=False,indent=2)+'\n').encode()
