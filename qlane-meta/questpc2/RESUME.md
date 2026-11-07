@@ -1,3 +1,5 @@
+Latest inert authoring integration: BATCH-group-authoring-integration-2026-11-07.json; product proof remains464bdc05f. No duplicate group engine.
+
 # questpc2 — continue now
 
 AUTHORING on claude/happy-davinci-ijz3wy-questpc2. No PR/main/force/credentials.
@@ -5,7 +7,7 @@ Commit as blakinio with task trailers; fetch/merge newer lane head and FF push e
 
 Current GREEN: BATCH-source-corpse-integration-2026-11-07.json. Seven real PG18.6 cases passed: native Instance108.54s, five endgame510.46s, Channel104.71s. All10 validation groups green, including31audit/8owner/1migration/1private-loot units, changed11-crate check, all-targets/all-features clippy-Dwarnings,fmt. 28Python,123content integration,5World repository cases pass; generation checks and tooling pins pass. Exact proof in batch record. Whole L3 remains0 newly qualified; preserve finished N-Q and reward cohorts.
 
-NEXT: merge fetched inert source-authoring5c45cf2b7 and push the green integration. It adds no active data/runtime; run its3Python tests. qengine2@5a6de28c is ALREADY merged locally with atomic effects.encounter entry and native six-demon/four-player PG proof. Reuse quest_callbacks/encounter.rs and Carrier commit_quest_encounter_entry. Do not implement a parallel group_encounter schema/owner because the inert tool uses a different field name. Adapt source authoring to the existing owner when activating. Continue actual encounter/escape/door/reward paths and whole quests; entry/reward alone never equals whole qualification.
+Source-authoring5c45cf2b7 and key fixc63c6cc71 are now integrated; all3Python tests pass. No active data/runtime changed. NEXT: push the green integration FF, then continue whole source quests. qengine2@5a6de28c is ALREADY merged locally with atomic effects.encounter entry and native six-demon/four-player PG proof. Reuse quest_callbacks/encounter.rs and Carrier commit_quest_encounter_entry. Do not implement a parallel group_encounter schema/owner because the inert tool uses a different field name. Adapt source authoring to the existing owner when activating. Continue actual encounter/escape/door/reward paths and whole quests; entry/reward alone never equals whole qualification.
 
 Published migration1024 is immutable Git blob c89455d0a109379a848015f815f1e3a997b07b48. Instance corpse_ref tag3; Ground scope2; Channel bytes unchanged. Spite33867/Bakragore44012/Primal39530 canonically admitted and real native deaths/visible Item bindings PG verified. Do not redo corpse authoring. Private reward rows remain independent and strict. Keep declared source capacity apart from30/16actual resource budgets.
 
@@ -22,6 +24,60 @@ Read git log and this branch's remote before selecting the next batch. The owner
 requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
+
+Latest authoring correction: BATCH-group-source-key-2026-11-07.json.
+The required key is oteryn:quest-callback/annihilator/group-entry. The prototype
+short key was rejected by the native callback decoder (actual PG18.6,2.72s).
+The tool now emits the canonical key and refuses edited legacy data.3 Python
+authoring cases and the new Rust closed-callback load contract unit pass.
+No active callback/default hook/runtime changes are in this authoring commit.
+
+ACTIVE runtime/code/data remain local. The full group PG reached every core
+case: missing member, level99, occupied room, insufficient actor capacity with
+rollback, exact4 destinations/6 source demons, and accepted command replay.
+37.81s onPG18.6; final used-lever check returned Rejected for the relocated
+participant. No GREEN claimed. The matcher uses original bound placement;
+no matcher relaxation was made. The test now uses the still-outside bystander
+for shared used-lever rejection across Characters, and logs participant state.
+That rerun was stopped before execution by disk exhaustion. Rerun it now;
+current stable file is postgres_tests/group_encounters.rs. All source membership,
+rollback, exact spawn and replay assertions remain. Latest attempted log:
+/tmp/questpc2-group-entry-bystander-link.log (compile disk error, not PG proof).
+
+Disk recovery just reclaimed249 inactive incremental caches (current dispatch
+cache retained), preserving compiled libraries/test outputs, source and PG.
+Overlay now12GB free. No Cargo clean, flags/profiles changes or disabled
+incremental. Reclamation ledger /tmp/questpc2-inactive-incremental-recovery.json.
+Do final check/clippy on quests/entities/dispatch, fmt, source tool and native
+registration checks, content integration and world repository tests before runtime
+commit. No additional World/pin change is expected from the callback inventory.
+
+Latest authoring tool: BATCH-group-source-authoring-2026-11-07.json.
+Standalone group_encounter_callbacks.py verifies the exact retained source corpus,
+manifest and Git blob, then emits the four-player/six-Angry-Demon layout.3 authoring
+cases pass. No active callback data/default regeneration hook/runtime code in that
+publication. Latest runtime green is f1c59a37c, detailed below.
+
+ACTIVE LOCAL GROUP WORK: Callback.group_encounter schema and generic native
+commit_source_group rollback owner; dispatch group census checks real member
+sessions/fences/levels and sealed native destinations before world lever CAS.
+Two rollback units and two schema boundary units pass. Use entity --features
+test-support; omitting it failed existing fixture APIs, not accepted as a test.
+PG RED /tmp/questpc2-group-entry-red.log ran on18.6,2.61s: source callback absent.
+The PG group_encounters.rs test is still a RED skeleton: extend it to complete
+real four-character admission/USE and negative cases BEFORE generating the
+production callback and accepting GREEN. Do not count presence alone as proof.
+Current local regeneration hook changes and three existing Callback literal
+updates must stay with runtime/schema, not the standalone authoring commit.
+Dependencies.owner_from now permits the existing genuine multi-player fixture;
+world callback fixture includes the declared group cells. Complete the full PG
+fixture next. No current Cargo process is required for this continuation.
+
+Check fetched branch object IDs from the authoring batch record; none had an
+existing group_encounter implementation. FETCH_HEAD is authoritative: explicit
+git fetch origin <branch> does not update this checkout's stale origin tracking
+ref. Before every push fetch lane, merge FETCH_HEAD if needed, then push exact
+HEAD:claude/happy-davinci-ijz3wy-questpc2. Never force or rebase.
 
 Latest runtime publication: BATCH-source-corpse-admission-2026-11-07.json.
 Five real PG18.6 cases pass197.29s: one exact native Spite33867/Bakragore44012/

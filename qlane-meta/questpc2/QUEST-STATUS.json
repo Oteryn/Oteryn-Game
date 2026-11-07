@@ -1620,7 +1620,7 @@
   },
   "current_batch": {
     "state": "GREEN",
-    "record": "BATCH-source-corpse-integration-2026-11-07.json",
+    "record": "BATCH-group-authoring-integration-2026-11-07.json",
     "whole_quest_qualifications": 0
   },
   "completed_batch_records": [
@@ -1631,16 +1631,19 @@
     "BATCH-remote-integration-2026-11-07.json",
     "BATCH-corpse-materializer-2026-11-07.json",
     "BATCH-source-corpse-admission-2026-11-07.json",
-    "BATCH-source-corpse-integration-2026-11-07.json"
+    "BATCH-source-corpse-integration-2026-11-07.json",
+    "BATCH-group-source-authoring-2026-11-07.json",
+    "BATCH-group-source-key-2026-11-07.json",
+    "BATCH-group-authoring-integration-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Integrate fetched inert group-authoring5c45cf2b7, preserve existing effects.encounter runtime owner, push FF; continue whole source quest lifecycles.",
+    "task": "Push integrated green head FF, then complete owned whole encounter/escape/door/reward paths; no entry-only whole qualification.",
     "external_dependencies_to_wait_for": []
   },
   "remote_publications_reused": {
-    "sha": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+    "sha": "c63c6cc71234772960bebb68d0e9bf5fa62d8a6c",
     "records": [
       "BATCH-instance-corpse-root-2026-11-06.json",
       "BATCH-native-corpse-binding-2026-11-07.json",
@@ -1660,6 +1663,11 @@
     "source_corpse_integration_2026_11_07": {
       "record": "BATCH-source-corpse-integration-2026-11-07.json",
       "postgres_cases_passed": 7,
+      "whole_quest_qualifications": 0
+    },
+    "group_authoring_integration_2026_11_07": {
+      "record": "BATCH-group-authoring-integration-2026-11-07.json",
+      "python_cases_passed": 3,
       "whole_quest_qualifications": 0
     }
   },
