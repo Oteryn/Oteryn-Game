@@ -851,88 +851,142 @@
       }
     ],
     "current_batch": {
-      "id": "corpse-pilgrimage-threatened-merge",
-      "phase": "GREEN; commit and fast-forward publication next",
-      "local_green": "94f352d30",
-      "incoming": "c2e4b09406b4ea83cee9fc94d70e7a6beb057593",
-      "whole_entry_qualifications": "Pilgrimage alreadyQUALIFIED remotely; do notredo. Fourownedwholeentriesremain.",
-      "scope": "Retain complete tutorial loot source closure, both Item admission cohorts, native NPC placements/fullPilgrimage and3Threatenedexchanges. Regenerate providers/pins throughrepo tooling thencheck combinedsource.",
-      "checks_completed": {
+      "id": "beginning-equipment-club-01",
+      "phase": "GREEN; commit now, then merge fetched minimum-level feature and verify/push fast-forward",
+      "scope": [
+        "Santiago clothing check after coat chest",
+        "Returning stage-four clothing check without repeated value",
+        "Native club once with greet5/log4"
+      ],
+      "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
+      "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
+      "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+      "first_red": {
+        "log": "/tmp/questpc3-beginning-equipment-red.log",
+        "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
+        "proof": "Actual PostgreSQL case failed as intended, 0 passed/1 failed in92.91s: missing source clothing callback falls through with NPC Ok instead of guarded rejection. Production unchanged.",
+        "followup": "Add panic completion and pre-assertion markers, rerun marked RED before implementation."
+      },
+      "red": {
+        "log": "/tmp/questpc3-beginning-equipment-red-marked.log",
+        "sha256": "bc4b2f7a6e6886fad34ed4211fb78812699f4fb4134e4d7c8bd7b5de4ec3117e",
+        "proof": "0 passed/1 failed in93.28s; POSTGRES_ASSERTION_REACHED missing_gear_reply=Ok duration_ms=92784; POSTGRES_CASE_COMPLETED duration_ms=93271 success=false assertion_panicked=true"
+      },
+      "implemented": [
+        "Canonical durable occupied-slot predicates under the current Character root fence and same inventory transaction",
+        "Explicit repeatable checks: unchanged values only, no item debit/MINT, XP, outfit, achievement, blessing or completion",
+        "Santiago source checks at greet3/4, preserved precombat journal; exact club grant to greet5/log4",
+        "Admit only existing club3270 and coat3562 physical/nonstacking definitions; retain all other semantics",
+        "Keep legacy callback hashes unchanged when new fields are absent; domain-separated new terms are pinned"
+      ],
+      "slot_mapping": {
+        "durable_TORSO": 2,
+        "wire_Armor": 3,
+        "donor_CONST_SLOT_ARMOR": 4,
+        "proof": "crates/protocol-oteryn/src/item_view.rs:198-224; test derives durable_slot(EquipmentSlot::Armor), asserts both callback requirements match, then seeds that durable slot"
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L145-L175",
+        "imports/canary/items-xml/items.xml:8323-8331 club3270 weight2500/attack7/defense7",
+        "imports/canary/items-xml/items.xml:11198-11205 coat3562 weight2700/armor1; sha256=1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+      ],
+      "compatibility_proof": {
+        "red": "/tmp/questpc3-beginning-equipment-legacy-binding-red.log",
+        "green": "/tmp/questpc3-beginning-equipment-unit-green.log",
+        "legacy_golden_sha256": "cf296e2787bdf44b5278aeca2a60889ab6fabdcb6888ca1aee0675a77f52e7ca",
+        "result": "4 reward-callback units passed in1.16s, including unchanged legacy binding and strict value-free checks; final rerun pending after canonical-slot test enhancement"
+      },
+      "corrections": [
+        "Initial compile named nonexistent DurabilityError::InvalidInput; corrected to existing InvalidStoredState, then check/strictClippy passed. Final source check runs again after canonical-slot test enhancement.",
+        "Superseded pin-refresh stopped when correcting donor/wire/durable slot distinction; final source data uses durable2 before final pin refresh.",
+        "ENOSPC during staging recovered by removing obsolete unlocked completed incremental snapshots only; staging retried; source/PostgreSQL/newest/active snapshots retained."
+      ],
+      "first_positive": {
+        "log": "/tmp/questpc3-beginning-equipment-green.log",
+        "sha256": "7e63555ed248733e92413aaaf9b5507e9f449531db17b71656aea908f90fe66f",
+        "result": "2 existing Beginning regressions passed; new equipment case proved missing-gear rejection at156925ms, then failed at fixture insertion with PostgreSQL insufficient data left in message. New Item container placement_ordinal NUMERIC needs text::numeric, not binary i32; fixed binding only, all assertions unchanged.",
+        "duration": "3-case command171.39s; reward/XP completion150938ms; equipmentfixturefailure157207ms"
+      },
+      "green_log": "/tmp/questpc3-beginning-equipment-green-final.log",
+      "remote_pending_integration": "6bbb82ebebb296eb09bc5d125856ae33e6cda054 adds reusable minimum_level current-progression admission; preserve/reuse after localGREEN, extend schema/docs and combine NUL-domain bindings",
+      "checks": {
+        "pg_green": {
+          "log": "/tmp/questpc3-beginning-equipment-green-final.log",
+          "sha256": "e67eaac3e3f1ad608cc50953df723252450876677f205fa9a362497be13d3c32",
+          "proof": "1 passed, 0 failed,97.50s; POSTGRES_CASE_COMPLETED97489ms success=true; full3callback path andnegativegear/oncegrant"
+        },
+        "native_counter_pg": {
+          "log": "/tmp/questpc3-beginning-equipment-counter-regression.log",
+          "sha256": "d346a1930558a2675fa80d5d220884a02adb03deecbfa90af7fc69d379cc8f69",
+          "proof": "1 passed,0 failed,51.59s; completion51584ms; deathcannotreplacehandin"
+        },
+        "check_all_changed_crates": {
+          "log": "/tmp/questpc3-beginning-equipment-check-final.log",
+          "sha256": "f1d3967c589983ef16b6170095e121b3927112d6a3c72402c94188a4df4db79f",
+          "proof": "dispatch,durability,quests allfeatures PASS30.43s"
+        },
+        "clippy_all_changed_crates": {
+          "log": "/tmp/questpc3-beginning-equipment-clippy-final.log",
+          "sha256": "926c50db630b38724df75b3badb5308065d3c22ed9b322c96d3cfea9843574aa",
+          "proof": "all3crates allfeatures/alltargets -Dwarnings PASS1m19s"
+        },
+        "clippy_final_fixture": {
+          "log": "/tmp/questpc3-beginning-equipment-clippy-fixture-final.log",
+          "sha256": "6815a08625fc71c36827e1733b9ee441c95f42affe3c95b307d08bc06fcb5661",
+          "proof": "dispatchallfeatures/alltargets -Dwarnings PASS45.76s afterNUMERICfixturecast"
+        },
+        "callback_units": {
+          "log": "/tmp/questpc3-beginning-equipment-unit-final.log",
+          "sha256": "4ed2be9dd71cf7de3fded326b5224f4fc53f8e4fec9e8793476ffeb4bc3939be",
+          "proof": "4passed1.79s includingvaluefreechecks andlegacybinding"
+        },
+        "callback_profiles": {
+          "log": "/tmp/questpc3-beginning-equipment-profile-units.log",
+          "sha256": "79472ca836e9894c6f2436eb004da673d948a1a5eaa6b19e6eee67972ce44f99",
+          "proof": "15passed159.715s"
+        },
+        "foreign_authoring": {
+          "log": "/tmp/questpc3-beginning-equipment-foreign-authoring.log",
+          "sha256": "92bb104d70cead4c9fbd78d9137cf3bbceb9084e8185eb7502af201973934c8e",
+          "proof": "3passed3.316s; existingThreatened source programs/admissionspreserved"
+        },
+        "native_providers_final": {
+          "log": "/tmp/questpc3-beginning-equipment-native-final-check.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "proof": "41registeredproviders driftcheck PASS"
+        },
         "native_regeneration": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-regen.log",
-          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754"
+          "log": "/tmp/questpc3-beginning-equipment-regen.log",
+          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+          "proof": "41providers regeneratedandchecked PASS"
         },
         "fmt": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-fmt.log",
-          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        },
-        "check": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-check.log",
-          "sha256": "190c00bb3a2d7620c252fd41d594f426f771372c988baee092f838fa34f3f2ac"
-        },
-        "clippy": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-clippy.log",
-          "sha256": "c3832a74e481ee4bd078cf2d342168c7402c66bfb0281b0c91b49acc429ebeed"
-        },
-        "profile_units": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-profile-units.log",
-          "sha256": "a43191dfda5db3f568ca6ae8be22ea5fcf8195ba70791849786ab10403ba7616"
-        },
-        "authoring_units": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-authoring-units.log",
-          "sha256": "1c7cbdcf6d8eedef5b96940377675476c3d7be3cf24f9dfd50e94998ab6ed67d"
+          "log": "/tmp/questpc3-beginning-equipment-fmt-final.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "proof": "cargo fmt --all -- --check PASS; mountedRusttest explicitlyrustfmt"
         },
         "pin_refresh": {
-          "log": "/tmp/questpc3-corpse-route-inventory-merge-pin-refresh.log",
-          "sha256": "9db20d61837902590360b158028e475a29aa1b7f05425871388dad4419636a91"
-        },
-        "native_corpses_pg": {
-          "log": "/tmp/questpc3-merge-questpc3_tutorial_native_corpse_-pg.log",
-          "sha256": "116587959436ab99222b0062b32f0f5380c7ba715f9e99175798f98d2507f2c2"
-        },
-        "pilgrimage_full_route_pg": {
-          "log": "/tmp/questpc3-merge-quest_l4_pilgrimage_full_route_grants_five_blessings_and_once_reward-pg.log",
-          "sha256": "a24fc50ac19adb610b154020d2eaf963e4ea4b6fc58684c43283306e161e5f73",
-          "proof": "1 passed in 92.88s; POSTGRES_CASE_COMPLETED duration_ms=92874; five blessings, 20 platinum, eight receipts, completion"
-        },
-        "threatened_inventory_pg": {
-          "log": "/tmp/questpc3-merge-threatened_inventory_three_exact_physical_exchanges_are_atomic-pg.log",
-          "sha256": "dfdd86106e7026728420fcde529090010638cd4b3326efdbb2bd9bb288862bbc",
-          "proof": "1 passed in 91.68s; POSTGRES_CASE_COMPLETED duration_ms=91678; three physical exchanges and receipts"
-        },
-        "threatened_conversation_pg": {
-          "log": "/tmp/questpc3-merge-threatened_dreams_real_npc_source_start_fences_topics_and_recovers_lost_ack-pg.log",
-          "sha256": "95d99c380b2194e80cd95dd2e9a18711dcd5561905db59d29b5f5ceacc659cf4",
-          "proof": "1 passed in 90.26s; PostgreSQL scenario, source start/topic fence/lost acknowledgement regression"
-        },
-        "content": {
-          "log": "/tmp/questpc3-merge-content.log",
-          "sha256": "f63b44c19717ef98ced849db9cd1eb4ee43ed58bb2a6e073e4292cff3b1bc390",
-          "proof": "123 passed in 3.45s"
-        },
-        "repository": {
-          "log": "/tmp/questpc3-merge-repository.log",
-          "sha256": "c17c2e2e4f70d0c79c4810a5df2e40ec04da73395a5f84de68cd4daf63c14335",
-          "proof": "5 passed, 0 failed, 76.50s"
+          "log": "/tmp/questpc3-beginning-equipment-pin-refresh-final.log",
+          "sha256": "1f20b53fd4e2a104257e37b6b23ae267a73434cca02eed62b20a3b48bf54606e",
+          "proof": "inputs a9f1bd8f3099b624fba3bbae08a85ceae84f8665f23e254835e4a43f7efbbc44; worldunchanged084e8c18a46956687904b8fe2b7098e0896c02b001721d2ddb72663ce128f629"
         },
         "pin_check": {
-          "log": "/tmp/questpc3-merge-pin-check.log",
-          "sha256": "b00848fa2dc3c26dd055e66a2a4073277a52c142218468493892b2a7eb25750e",
-          "result": {
-            "inputs_digest": "b5d2007b527bd973653c79434df715d84954a299e2293e416c8e84f79048e74a",
-            "pins": [
-              {
-                "bytes": 31102241,
-                "digest": "084e8c18a46956687904b8fe2b7098e0896c02b001721d2ddb72663ce128f629",
-                "world": "oteryn"
-              }
-            ]
-          }
+          "log": "/tmp/questpc3-beginning-equipment-pin-check-final.log",
+          "sha256": "e7b547f08cc6c1718e920b889238e55e477f1f631a6de5cdd84a267d5f12648c",
+          "proof": "repository-built compiler PASS; sameinput/world,31102241bytes"
+        },
+        "content": {
+          "log": "/tmp/questpc3-beginning-equipment-content.log",
+          "sha256": "556b9b52a2c36a105dc83789b3fe0243a74be7a264c625426bbb6baae36ddea6",
+          "proof": "123passed2.84s"
+        },
+        "repository": {
+          "log": "/tmp/questpc3-beginning-equipment-repository.log",
+          "sha256": "b11ceaa294ec483bd84b9b35b7818910dc80a5f4a78bad198934055d900ccb04",
+          "proof": "5 passed,0 failed,59.44s"
         }
       },
-      "native_corpses_pg": "3 passed, 0 failed, 68.36s; native capture/completion markers; actual PostgreSQL, not skipped",
-      "command_correction": "Final pin check corrected an initial non-existent Cargo package (exit101) and missing output-directory argument (exit2). Exact repository command with package oteryn-world-bundle-compiler and /tmp output passed; no source/test failure.",
-      "review": "Read merged NPC topic fence, profile input/output closure, Item overlays, source callbacks, focused native tests and generated-only changes; no blocking finding. No PR/freeze requested."
+      "review": "Read shared SQL custody/equipment gate and root serialization, closed callback parser/value-free exception, legacy-compatible binding, canonical-slot source callbacks, strict2Item admission and full native PG assertions; all final checks pass. No blocking finding."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -2342,7 +2396,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T03:54:05.471460+00:00",
+    "updated_at": "2026-11-07T04:31:17.408308+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2448,11 +2502,95 @@
         }
       }
     },
-    "previous_batch": "pilgrimage_route_03 QUALIFIED",
+    "previous_batch": {
+      "id": "corpse-pilgrimage-threatened-merge",
+      "phase": "GREEN; commit and fast-forward publication next",
+      "local_green": "94f352d30",
+      "incoming": "c2e4b09406b4ea83cee9fc94d70e7a6beb057593",
+      "whole_entry_qualifications": "Pilgrimage alreadyQUALIFIED remotely; do notredo. Fourownedwholeentriesremain.",
+      "scope": "Retain complete tutorial loot source closure, both Item admission cohorts, native NPC placements/fullPilgrimage and3Threatenedexchanges. Regenerate providers/pins throughrepo tooling thencheck combinedsource.",
+      "checks_completed": {
+        "native_regeneration": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-regen.log",
+          "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754"
+        },
+        "fmt": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "check": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-check.log",
+          "sha256": "190c00bb3a2d7620c252fd41d594f426f771372c988baee092f838fa34f3f2ac"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-clippy.log",
+          "sha256": "c3832a74e481ee4bd078cf2d342168c7402c66bfb0281b0c91b49acc429ebeed"
+        },
+        "profile_units": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-profile-units.log",
+          "sha256": "a43191dfda5db3f568ca6ae8be22ea5fcf8195ba70791849786ab10403ba7616"
+        },
+        "authoring_units": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-authoring-units.log",
+          "sha256": "1c7cbdcf6d8eedef5b96940377675476c3d7be3cf24f9dfd50e94998ab6ed67d"
+        },
+        "pin_refresh": {
+          "log": "/tmp/questpc3-corpse-route-inventory-merge-pin-refresh.log",
+          "sha256": "9db20d61837902590360b158028e475a29aa1b7f05425871388dad4419636a91"
+        },
+        "native_corpses_pg": {
+          "log": "/tmp/questpc3-merge-questpc3_tutorial_native_corpse_-pg.log",
+          "sha256": "116587959436ab99222b0062b32f0f5380c7ba715f9e99175798f98d2507f2c2"
+        },
+        "pilgrimage_full_route_pg": {
+          "log": "/tmp/questpc3-merge-quest_l4_pilgrimage_full_route_grants_five_blessings_and_once_reward-pg.log",
+          "sha256": "a24fc50ac19adb610b154020d2eaf963e4ea4b6fc58684c43283306e161e5f73",
+          "proof": "1 passed in 92.88s; POSTGRES_CASE_COMPLETED duration_ms=92874; five blessings, 20 platinum, eight receipts, completion"
+        },
+        "threatened_inventory_pg": {
+          "log": "/tmp/questpc3-merge-threatened_inventory_three_exact_physical_exchanges_are_atomic-pg.log",
+          "sha256": "dfdd86106e7026728420fcde529090010638cd4b3326efdbb2bd9bb288862bbc",
+          "proof": "1 passed in 91.68s; POSTGRES_CASE_COMPLETED duration_ms=91678; three physical exchanges and receipts"
+        },
+        "threatened_conversation_pg": {
+          "log": "/tmp/questpc3-merge-threatened_dreams_real_npc_source_start_fences_topics_and_recovers_lost_ack-pg.log",
+          "sha256": "95d99c380b2194e80cd95dd2e9a18711dcd5561905db59d29b5f5ceacc659cf4",
+          "proof": "1 passed in 90.26s; PostgreSQL scenario, source start/topic fence/lost acknowledgement regression"
+        },
+        "content": {
+          "log": "/tmp/questpc3-merge-content.log",
+          "sha256": "f63b44c19717ef98ced849db9cd1eb4ee43ed58bb2a6e073e4292cff3b1bc390",
+          "proof": "123 passed in 3.45s"
+        },
+        "repository": {
+          "log": "/tmp/questpc3-merge-repository.log",
+          "sha256": "c17c2e2e4f70d0c79c4810a5df2e40ec04da73395a5f84de68cd4daf63c14335",
+          "proof": "5 passed, 0 failed, 76.50s"
+        },
+        "pin_check": {
+          "log": "/tmp/questpc3-merge-pin-check.log",
+          "sha256": "b00848fa2dc3c26dd055e66a2a4073277a52c142218468493892b2a7eb25750e",
+          "result": {
+            "inputs_digest": "b5d2007b527bd973653c79434df715d84954a299e2293e416c8e84f79048e74a",
+            "pins": [
+              {
+                "bytes": 31102241,
+                "digest": "084e8c18a46956687904b8fe2b7098e0896c02b001721d2ddb72663ce128f629",
+                "world": "oteryn"
+              }
+            ]
+          }
+        }
+      },
+      "native_corpses_pg": "3 passed, 0 failed, 68.36s; native capture/completion markers; actual PostgreSQL, not skipped",
+      "command_correction": "Final pin check corrected an initial non-existent Cargo package (exit101) and missing output-directory argument (exit2). Exact repository command with package oteryn-world-bundle-compiler and /tmp output passed; no source/test failure.",
+      "review": "Read merged NPC topic fence, profile input/output closure, Item overlays, source callbacks, focused native tests and generated-only changes; no blocking finding. No PR/freeze requested."
+    },
     "previous_publication": {
-      "batch": "native-counters-01",
-      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-      "remote_verified": true
+      "head": "0746ef43c530dfe9c9f460a7b802872793bec675",
+      "pushed": true,
+      "remote_verified": true,
+      "batch": "corpse-pilgrimage-threatened-merge"
     },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
@@ -2813,6 +2951,144 @@
         "native_corpses_pg": "3 passed, 0 failed, 68.36s; native capture/completion markers; actual PostgreSQL, not skipped",
         "command_correction": "Final pin check corrected an initial non-existent Cargo package (exit101) and missing output-directory argument (exit2). Exact repository command with package oteryn-world-bundle-compiler and /tmp output passed; no source/test failure.",
         "review": "Read merged NPC topic fence, profile input/output closure, Item overlays, source callbacks, focused native tests and generated-only changes; no blocking finding. No PR/freeze requested."
+      },
+      "beginning-equipment-club-01": {
+        "id": "beginning-equipment-club-01",
+        "phase": "GREEN; commit now, then merge fetched minimum-level feature and verify/push fast-forward",
+        "scope": [
+          "Santiago clothing check after coat chest",
+          "Returning stage-four clothing check without repeated value",
+          "Native club once with greet5/log4"
+        ],
+        "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
+        "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+        "first_red": {
+          "log": "/tmp/questpc3-beginning-equipment-red.log",
+          "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
+          "proof": "Actual PostgreSQL case failed as intended, 0 passed/1 failed in92.91s: missing source clothing callback falls through with NPC Ok instead of guarded rejection. Production unchanged.",
+          "followup": "Add panic completion and pre-assertion markers, rerun marked RED before implementation."
+        },
+        "red": {
+          "log": "/tmp/questpc3-beginning-equipment-red-marked.log",
+          "sha256": "bc4b2f7a6e6886fad34ed4211fb78812699f4fb4134e4d7c8bd7b5de4ec3117e",
+          "proof": "0 passed/1 failed in93.28s; POSTGRES_ASSERTION_REACHED missing_gear_reply=Ok duration_ms=92784; POSTGRES_CASE_COMPLETED duration_ms=93271 success=false assertion_panicked=true"
+        },
+        "implemented": [
+          "Canonical durable occupied-slot predicates under the current Character root fence and same inventory transaction",
+          "Explicit repeatable checks: unchanged values only, no item debit/MINT, XP, outfit, achievement, blessing or completion",
+          "Santiago source checks at greet3/4, preserved precombat journal; exact club grant to greet5/log4",
+          "Admit only existing club3270 and coat3562 physical/nonstacking definitions; retain all other semantics",
+          "Keep legacy callback hashes unchanged when new fields are absent; domain-separated new terms are pinned"
+        ],
+        "slot_mapping": {
+          "durable_TORSO": 2,
+          "wire_Armor": 3,
+          "donor_CONST_SLOT_ARMOR": 4,
+          "proof": "crates/protocol-oteryn/src/item_view.rs:198-224; test derives durable_slot(EquipmentSlot::Armor), asserts both callback requirements match, then seeds that durable slot"
+        },
+        "sources": [
+          "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L145-L175",
+          "imports/canary/items-xml/items.xml:8323-8331 club3270 weight2500/attack7/defense7",
+          "imports/canary/items-xml/items.xml:11198-11205 coat3562 weight2700/armor1; sha256=1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+        ],
+        "compatibility_proof": {
+          "red": "/tmp/questpc3-beginning-equipment-legacy-binding-red.log",
+          "green": "/tmp/questpc3-beginning-equipment-unit-green.log",
+          "legacy_golden_sha256": "cf296e2787bdf44b5278aeca2a60889ab6fabdcb6888ca1aee0675a77f52e7ca",
+          "result": "4 reward-callback units passed in1.16s, including unchanged legacy binding and strict value-free checks; final rerun pending after canonical-slot test enhancement"
+        },
+        "corrections": [
+          "Initial compile named nonexistent DurabilityError::InvalidInput; corrected to existing InvalidStoredState, then check/strictClippy passed. Final source check runs again after canonical-slot test enhancement.",
+          "Superseded pin-refresh stopped when correcting donor/wire/durable slot distinction; final source data uses durable2 before final pin refresh.",
+          "ENOSPC during staging recovered by removing obsolete unlocked completed incremental snapshots only; staging retried; source/PostgreSQL/newest/active snapshots retained."
+        ],
+        "first_positive": {
+          "log": "/tmp/questpc3-beginning-equipment-green.log",
+          "sha256": "7e63555ed248733e92413aaaf9b5507e9f449531db17b71656aea908f90fe66f",
+          "result": "2 existing Beginning regressions passed; new equipment case proved missing-gear rejection at156925ms, then failed at fixture insertion with PostgreSQL insufficient data left in message. New Item container placement_ordinal NUMERIC needs text::numeric, not binary i32; fixed binding only, all assertions unchanged.",
+          "duration": "3-case command171.39s; reward/XP completion150938ms; equipmentfixturefailure157207ms"
+        },
+        "green_log": "/tmp/questpc3-beginning-equipment-green-final.log",
+        "remote_pending_integration": "6bbb82ebebb296eb09bc5d125856ae33e6cda054 adds reusable minimum_level current-progression admission; preserve/reuse after localGREEN, extend schema/docs and combine NUL-domain bindings",
+        "checks": {
+          "pg_green": {
+            "log": "/tmp/questpc3-beginning-equipment-green-final.log",
+            "sha256": "e67eaac3e3f1ad608cc50953df723252450876677f205fa9a362497be13d3c32",
+            "proof": "1 passed, 0 failed,97.50s; POSTGRES_CASE_COMPLETED97489ms success=true; full3callback path andnegativegear/oncegrant"
+          },
+          "native_counter_pg": {
+            "log": "/tmp/questpc3-beginning-equipment-counter-regression.log",
+            "sha256": "d346a1930558a2675fa80d5d220884a02adb03deecbfa90af7fc69d379cc8f69",
+            "proof": "1 passed,0 failed,51.59s; completion51584ms; deathcannotreplacehandin"
+          },
+          "check_all_changed_crates": {
+            "log": "/tmp/questpc3-beginning-equipment-check-final.log",
+            "sha256": "f1d3967c589983ef16b6170095e121b3927112d6a3c72402c94188a4df4db79f",
+            "proof": "dispatch,durability,quests allfeatures PASS30.43s"
+          },
+          "clippy_all_changed_crates": {
+            "log": "/tmp/questpc3-beginning-equipment-clippy-final.log",
+            "sha256": "926c50db630b38724df75b3badb5308065d3c22ed9b322c96d3cfea9843574aa",
+            "proof": "all3crates allfeatures/alltargets -Dwarnings PASS1m19s"
+          },
+          "clippy_final_fixture": {
+            "log": "/tmp/questpc3-beginning-equipment-clippy-fixture-final.log",
+            "sha256": "6815a08625fc71c36827e1733b9ee441c95f42affe3c95b307d08bc06fcb5661",
+            "proof": "dispatchallfeatures/alltargets -Dwarnings PASS45.76s afterNUMERICfixturecast"
+          },
+          "callback_units": {
+            "log": "/tmp/questpc3-beginning-equipment-unit-final.log",
+            "sha256": "4ed2be9dd71cf7de3fded326b5224f4fc53f8e4fec9e8793476ffeb4bc3939be",
+            "proof": "4passed1.79s includingvaluefreechecks andlegacybinding"
+          },
+          "callback_profiles": {
+            "log": "/tmp/questpc3-beginning-equipment-profile-units.log",
+            "sha256": "79472ca836e9894c6f2436eb004da673d948a1a5eaa6b19e6eee67972ce44f99",
+            "proof": "15passed159.715s"
+          },
+          "foreign_authoring": {
+            "log": "/tmp/questpc3-beginning-equipment-foreign-authoring.log",
+            "sha256": "92bb104d70cead4c9fbd78d9137cf3bbceb9084e8185eb7502af201973934c8e",
+            "proof": "3passed3.316s; existingThreatened source programs/admissionspreserved"
+          },
+          "native_providers_final": {
+            "log": "/tmp/questpc3-beginning-equipment-native-final-check.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "proof": "41registeredproviders driftcheck PASS"
+          },
+          "native_regeneration": {
+            "log": "/tmp/questpc3-beginning-equipment-regen.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "proof": "41providers regeneratedandchecked PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-beginning-equipment-fmt-final.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "proof": "cargo fmt --all -- --check PASS; mountedRusttest explicitlyrustfmt"
+          },
+          "pin_refresh": {
+            "log": "/tmp/questpc3-beginning-equipment-pin-refresh-final.log",
+            "sha256": "1f20b53fd4e2a104257e37b6b23ae267a73434cca02eed62b20a3b48bf54606e",
+            "proof": "inputs a9f1bd8f3099b624fba3bbae08a85ceae84f8665f23e254835e4a43f7efbbc44; worldunchanged084e8c18a46956687904b8fe2b7098e0896c02b001721d2ddb72663ce128f629"
+          },
+          "pin_check": {
+            "log": "/tmp/questpc3-beginning-equipment-pin-check-final.log",
+            "sha256": "e7b547f08cc6c1718e920b889238e55e477f1f631a6de5cdd84a267d5f12648c",
+            "proof": "repository-built compiler PASS; sameinput/world,31102241bytes"
+          },
+          "content": {
+            "log": "/tmp/questpc3-beginning-equipment-content.log",
+            "sha256": "556b9b52a2c36a105dc83789b3fe0243a74be7a264c625426bbb6baae36ddea6",
+            "proof": "123passed2.84s"
+          },
+          "repository": {
+            "log": "/tmp/questpc3-beginning-equipment-repository.log",
+            "sha256": "b11ceaa294ec483bd84b9b35b7818910dc80a5f4a78bad198934055d900ccb04",
+            "proof": "5 passed,0 failed,59.44s"
+          }
+        },
+        "review": "Read shared SQL custody/equipment gate and root serialization, closed callback parser/value-free exception, legacy-compatible binding, canonical-slot source callbacks, strict2Item admission and full native PG assertions; all final checks pass. No blocking finding."
       }
     },
     "completed_batches": [
@@ -3181,7 +3457,8 @@
         "questpc7": "136d3e35a4af616053648cb23bfcd7ff3d71496f",
         "questpc8": "76000980a05ad9a79fa69d5f0f87c2c4910ac965",
         "questl2": "79fd117c3ba61ef0dc22a107aabf23f2dd9b5daa"
-      }
+      },
+      "draft_status": "Consumed and superseded: DO NOT REAPPLY either /tmp patch script. Final source uses durableTORSO2 and legacy-compatible digest, not the original draft."
     },
     "remote_qualified_pending_integration": {
       "head": "4c1c920f2",

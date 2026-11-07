@@ -50,6 +50,12 @@ pub struct RewardCallback {
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
+    /// Read-only canonical durable equipment slots, checked under the Character root lock.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub equipped_slots: Vec<u8>,
+    /// A repeated source check may never grant or consume durable value.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable_check: bool,
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
@@ -90,7 +96,19 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         callback.completes,
     ))
     .map_err(|error| error.to_string())?;
-    Ok(Sha256::digest(bytes).into())
+    let mut digest = Sha256::new();
+    digest.update(bytes);
+    // Empty optional predicates retain the original binding for unrelated
+    // callbacks. Nonempty terms extend it in a disjoint domain (JSON contains
+    // no literal NUL), so old in-flight receipts keep their exact definitions.
+    if !callback.equipped_slots.is_empty() || callback.repeatable_check {
+        digest.update(b"\0quest-reward-equipment-check-v1\0");
+        digest.update(
+            serde_json::to_vec(&(&callback.equipped_slots, callback.repeatable_check))
+                .map_err(|error| error.to_string())?,
+        );
+    }
+    Ok(digest.finalize().into())
 }
 
 #[derive(Deserialize)]
@@ -137,9 +155,27 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage
                 .iter()
                 .any(|s| !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum)
-            || c.storage
+            || (!c.repeatable_check
+                && c.storage
+                    .iter()
+                    .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
+            || (c.repeatable_check
+                && (!c.take.is_empty()
+                    || c.give.is_some()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()
+                    || c.blessing.is_some()
+                    || c.experience.is_some()
+                    || c.completes))
+            || (c.repeatable_check
+                && c.storage
+                    .iter()
+                    .any(|s| !s.preserve && (s.minimum != s.maximum || s.set != s.minimum)))
+            || c.equipped_slots.len() > 9
+            || c.equipped_slots.iter().collect::<BTreeSet<_>>().len() != c.equipped_slots.len()
+            || c.equipped_slots
                 .iter()
-                .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                .any(|slot| !(1..=10).contains(slot) || *slot == 9)
             || c.experience
                 .is_some_and(|value| !(1..=super::QUESTGATE0_RL_05).contains(&value))
             || c.present.len() > 8
@@ -247,6 +283,89 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn legacy_callbacks_keep_their_existing_reward_binding() -> Result<(), String> {
+        // Frozen before equipment/repeatable-check fields existed. Empty defaults
+        // must not invalidate unrelated in-flight reward definitions and receipts.
+        let text = r#"{"schema":1,"callbacks":[{"key":"oteryn:quest-reward/test","quest":"oteryn:quest.test","npc":"oteryn:npc.test","keywords":["yes"],"topic":0,"next_topic":0,"storage":[{"track":"oteryn:track","minimum":3,"maximum":3,"set":4}],"take":[],"give":null,"outfit":null,"achievement":null,"reply":["Reply."],"sources":["fixture"]}]}"#;
+        let callback = parse(text)?.into_iter().next().ok_or("callback")?;
+        assert_eq!(
+            reward_binding(&callback)?,
+            [
+                207, 41, 110, 39, 135, 189, 244, 75, 82, 120, 174, 202, 42, 96, 136, 154, 182, 250,
+                189, 203, 104, 136, 202, 26, 238, 6, 117, 167, 127, 82, 231, 202
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn repeatable_equipment_checks_are_bounded_value_free_and_content_bound() -> Result<(), String>
+    {
+        let mut callback = load()?.into_iter().next().ok_or("callback")?;
+        callback.take.clear();
+        callback.give = None;
+        callback.outfit = None;
+        callback.achievement = None;
+        callback.experience = None;
+        callback.blessing = None;
+        callback.completes = false;
+        callback.repeatable_check = true;
+        callback.equipped_slots = vec![4];
+        for storage in &mut callback.storage {
+            storage.preserve = false;
+            storage.set = storage.minimum;
+            storage.maximum = storage.minimum;
+        }
+        let accepts = |c: &RewardCallback| {
+            let value = serde_json::json!({"schema":1, "callbacks":[c]});
+            parse(&value.to_string()).is_ok()
+        };
+        assert!(accepts(&callback));
+        let mut mutating = callback.clone();
+        mutating.storage[0].maximum = mutating.storage[0].minimum + 1;
+        assert!(!accepts(&mutating));
+        let original_binding = reward_binding(&callback)?;
+        for slots in [vec![0], vec![9], vec![11], vec![4, 4]] {
+            let mut invalid = callback.clone();
+            invalid.equipped_slots = slots;
+            assert!(!accepts(&invalid));
+        }
+        for field in [
+            "take",
+            "give",
+            "outfit",
+            "achievement",
+            "experience",
+            "blessing",
+            "completes",
+        ] {
+            let mut invalid = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
+            invalid[field] = match field {
+                "take" => serde_json::json!([{"item":"oteryn:item.tibia.i3562","count":1}]),
+                "give" => serde_json::json!({"item":"oteryn:item.tibia.i3270","count":1}),
+                "outfit" => serde_json::json!({"outfit":"oteryn:outfit.citizen","addons":0}),
+                "achievement" => serde_json::json!("oteryn:achievement/test"),
+                "experience" => serde_json::json!(100),
+                "blessing" => serde_json::json!("oteryn:service.blessing.test"),
+                "completes" => serde_json::json!(true),
+                _ => return Err("unexpected test field".into()),
+            };
+            let text = serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string();
+            assert!(
+                parse(&text).is_err(),
+                "repeated checks cannot include {field}"
+            );
+        }
+        callback.equipped_slots = vec![1];
+        assert_ne!(reward_binding(&callback)?, original_binding);
+        callback.equipped_slots = vec![4];
+        callback.repeatable_check = false;
+        assert_ne!(reward_binding(&callback)?, original_binding);
+        assert!(!accepts(&callback));
+        Ok(())
+    }
+
     #[test]
     fn reward_value_and_premium_terms_change_the_quest_definition_hash() -> Result<(), String> {
         let callback = load()?.into_iter().next().ok_or("callback")?;

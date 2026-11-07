@@ -38,6 +38,26 @@ pub(super) async fn consume_reward_inputs(
     let super::quest_state::QuestCause::Command(command) = request.cause else {
         return Ok(false);
     };
+    // Equipment and item-transfer writers serialize on the same Character root.
+    // The slot primary key bounds this read to at most nine rows. Presence is
+    // proved in this transaction, never trusted from a conversation snapshot.
+    if !callback.equipped_slots.is_empty() {
+        let slots: Vec<i16> = callback
+            .equipped_slots
+            .iter()
+            .copied()
+            .map(i16::from)
+            .collect();
+        let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND e.slot=ANY($3::smallint[]) AND i.lifecycle=1 AND i.world_id=e.world_id AND i.definition_family='Item'")
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(&slots).fetch_one(&mut **tx).await?;
+        if occupied
+            != i64::try_from(slots.len()).map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(false);
+        }
+    }
     let keys: Vec<_> = callback
         .take
         .iter()
