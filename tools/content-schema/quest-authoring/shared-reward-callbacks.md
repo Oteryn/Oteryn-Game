@@ -30,6 +30,9 @@ Each record has these fields:
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
 | `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
+| `minimum_level` | Optional `1..65535`, checked against the locked durable progression row before any quest, item or XP effect. |
+| `experience` | Optional `1..100000000`, delivered by the existing quest XP obligation and progression owners. The obligation shares the item/quest transaction and replay identity. |
+| `completes` | Optional boolean, default false. A terminal callback marks its owning quest complete in the same transaction. |
 | `achievement` | Optional/null canonical `oteryn:achievement/<name>` from the admitted achievement catalogue. |
 | `reply` | One to eight response lines, each at most 512 UTF-8 bytes. |
 | `sources` | One to eight exact donor revision/path/hash citations. |

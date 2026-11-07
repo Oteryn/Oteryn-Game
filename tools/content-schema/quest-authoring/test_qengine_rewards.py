@@ -3,6 +3,7 @@ import copy
 import json
 import unittest
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 import qengine_rewards as q
 
 
@@ -54,13 +55,34 @@ class QuestRewards(unittest.TestCase):
                 q.validate_callbacks(bad)
 
     def test_original_fourteen_and_present_source_compositions_exist(self):
-        callbacks=self.callbacks['callbacks']
+        callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].startswith('oteryn:quest-reward/newhaven-')]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith('l1-')},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack','present-box'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
         self.assertEqual(sum(c['outfit'] is None for c in callbacks),4)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
+
+    def test_newhaven_is_exactly_four_additive_selected_recipe_callbacks(self):
+        import hashlib
+        old=[c for c in self.callbacks['callbacks'] if not c['key'].startswith('oteryn:quest-reward/newhaven-')]
+        self.assertEqual(hashlib.sha256(json.dumps(old,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+                         '0d6f65810f316f88810dfc6d67ed7b7f2d8c456657215f5f2afe49dc1a8d0e5a')
+        new={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/newhaven-')}
+        self.assertEqual(set(new),{'newhaven-welcome','newhaven-training-ready','newhaven-guardian','newhaven-wisdom'})
+        self.assertTrue(all(c['minimum_level']==2 and c['npc']=='oteryn:npc.gustavo_the_guard' for c in new.values()))
+        self.assertTrue(all(c['sources'][0].startswith('oteryn:selected-recipe:') for c in new.values()))
+        self.assertEqual(sum(c.get('experience',0) for c in new.values()),1600)
+        self.assertEqual(new['newhaven-guardian']['give'],{'item':'oteryn:item.tibia.i52732','count':1})
+        self.assertEqual(new['newhaven-wisdom']['give'],{'item':'oteryn:item.tibia.i3572','count':1})
+        self.assertEqual(new['newhaven-wisdom']['take'],[{'item':'oteryn:item.tibia.i51977','count':1}])
+        self.assertTrue(new['newhaven-wisdom']['completes'])
+        for field,values in [('experience',[0,-1,100000001]),('minimum_level',[0,65536])]:
+            for value in values:
+                bad=copy.deepcopy(self.callbacks)
+                bad['callbacks'][-1][field]=value
+                with self.assertRaises(ValidationError):
+                    q.validate_callbacks(bad)
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

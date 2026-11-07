@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "scope": "Reusable shared NPC level/item/XP/terminal quest transaction, four Newhaven callback definitions; component qualification only",
+  "whole_recipe_qualified": false,
+  "postgres": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "filter": "questpc5_newhaven_reward_level_item_xp_and_completion_are_atomic",
+    "red": {
+      "duration_seconds": 52.6,
+      "marker": "POSTGRES_CASE_STARTED newhaven_rewards server_version=18.6",
+      "failure": "unknown field minimum_level",
+      "log": "/tmp/questpc5-newhaven-rewards-red.log"
+    },
+    "green": {
+      "duration_seconds": 96.41216229,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-newhaven-xp success=true",
+      "log": "/tmp/questpc5-newhaven-rewards-green.log",
+      "assertions": [
+        "Real level1 refusal with unchanged items/XP/completion",
+        "Normal durable100XP establishes level2",
+        "Guardian52732 plus800XP delivered once",
+        "Same command and fresh repeats grant no extra value",
+        "Missing Book refuses scarf/XP/completion",
+        "Book51977 consumed and Scarf3572 plus800XP and quest completion commit",
+        "Completed quest cannot repeat rewards"
+      ]
+    },
+    "legacy": {
+      "filter": "qengine_rewards_hallowed_ground_exchange",
+      "duration_seconds": 92.38950955,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-hallowed success=true"
+    }
+  },
+  "checks": {
+    "python_units": 12,
+    "rust_callback_units": 2,
+    "generator_check": "PASS",
+    "old_callback_cohort": "exact SHA-256 preservation asserted",
+    "old_callback_plan_serialization": "exact JSON equality asserted for every prior callback",
+    "world_tree": "PASS34111Items/337RewardClaims including craft/Imbuement",
+    "fmt": "PASS",
+    "cargo_check": "PASS quests/durability/npc/dispatch21.39s",
+    "clippy": "PASS all-targets/all-features -D warnings quests/durability/npc/dispatch67s",
+    "world_pins": {
+      "refresh": "PASS",
+      "check": "PASS",
+      "inputs_digest": "937e2e7b603e7eb0fc069bb0f21d4d8902270c5785d0a3abef0a7c2ec8fcc59d",
+      "pins": [
+        {
+          "digest": "3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9",
+          "previous": "3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "implementation": "Existing locked progression row supplies minimum level; QuestTransition experience/completes reuse existing XP obligation and completion writers; no new authority or persistence owner",
+  "sources": [
+    "Canonical selected recipe content/quests/definitions/quests-00200-00299.json:/records/78/definition",
+    "Pinned Gustavo full source in tools/content-schema/quest-authoring/batches/quests4/newhaven.json; literal greetings130-132",
+    "See CONTRACT-NOTES.md for explicit current recipe versus superseded twenty-Muglex donor adaptation"
+  ]
+}

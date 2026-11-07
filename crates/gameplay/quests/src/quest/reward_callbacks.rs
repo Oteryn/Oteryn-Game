@@ -49,8 +49,20 @@ pub struct RewardCallback {
     pub give: Option<ItemReward>,
     pub outfit: Option<OutfitReward>,
     pub achievement: Option<String>,
+    /// Checked from the locked durable progression row before any value effect.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
+    /// Uses the existing quest XP obligation, never a separate reward writer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 
 #[derive(Deserialize)]
@@ -132,6 +144,10 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.achievement
                 .as_ref()
                 .is_some_and(|key| !slug(key, "oteryn:achievement/", b"_/-", 128))
+            || c.minimum_level
+                .is_some_and(|level| !(1..=65535).contains(&level))
+            || c.experience
+                .is_some_and(|amount| !(1..=super::QUESTGATE0_RL_05).contains(&amount))
             || c.sources.len() > 8
             || c.sources.iter().any(|s| s.is_empty() || s.len() > 1024)
             || c.sources.is_empty()
@@ -179,8 +195,8 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     },
                 })
                 .collect(),
-            completes: false,
-            experience: None,
+            completes: callback.completes,
+            experience: callback.experience,
         });
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
@@ -190,6 +206,45 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reward_experience_and_level_bounds_preserve_legacy_serialization() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        for (field, bad) in [
+            ("experience", 0),
+            ("experience", -1),
+            ("experience", super::super::QUESTGATE0_RL_05 + 1),
+            ("minimum_level", 0),
+            ("minimum_level", 65536),
+        ] {
+            let mut invalid = value.clone();
+            invalid["callbacks"][0][field] = bad.into();
+            assert!(parse(&invalid.to_string()).is_err(), "{field}={bad}");
+        }
+        for amount in [1, super::super::QUESTGATE0_RL_05] {
+            value["callbacks"][0]["experience"] = amount.into();
+            assert!(parse(&value.to_string()).is_ok());
+        }
+        let legacy: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        for row in legacy["callbacks"].as_array().ok_or("callbacks")? {
+            if row["key"]
+                .as_str()
+                .is_some_and(|key| key.starts_with("oteryn:quest-reward/newhaven-"))
+            {
+                continue;
+            }
+            let parsed: RewardCallback =
+                serde_json::from_value(row.clone()).map_err(|e| e.to_string())?;
+            assert_eq!(
+                serde_json::to_value(parsed).map_err(|e| e.to_string())?,
+                *row,
+                "defaulted fields must not change old durable reward plans"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn qengine_reward_callbacks_are_bounded_and_never_repeatable_value_grants() -> Result<(), String>
     {

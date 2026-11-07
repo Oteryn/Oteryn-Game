@@ -255,6 +255,12 @@ def build():
             line=inputs[origin][:matches[0].start()].count(b'\n')+1
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
+    import newhaven_rewards
+    newhaven_rewards.extend(callbacks, offers, greetings)
+    callbacks.sort(key=lambda c:c['key'])
+    greetings.sort(key=lambda c:c['npc'])
+    validate_callbacks({'schema':1,'callbacks':callbacks})
+    generated['content/quests/shared-reward-callbacks.json']=encoded({'schema':1,'callbacks':callbacks})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]

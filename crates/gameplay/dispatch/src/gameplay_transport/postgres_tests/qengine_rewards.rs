@@ -15,7 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
-fn scenario(name: &'static str) -> TestResult {
+pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -107,7 +107,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -590,6 +590,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-newhaven-xp" {
+        return super::questpc5_newhaven_rewards::exercise(owner, admitted, h, authority).await;
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
     }

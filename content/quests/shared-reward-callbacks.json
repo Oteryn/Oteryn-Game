@@ -444,6 +444,174 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/newhaven-guardian",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "mission",
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/native_run",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/troll_kills",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i52732",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The village is safer. Take this guardian ring. Recover the Book of Wisdom and bring it to me."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8"
+      ],
+      "minimum_level": 2,
+      "experience": 800
+    },
+    {
+      "key": "oteryn:quest-reward/newhaven-training-ready",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "mission",
+        "training"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/school",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/supply",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/native_run",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your tour is complete. Defeat ten Trolls on the training route, then report back."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8"
+      ],
+      "minimum_level": 2
+    },
+    {
+      "key": "oteryn:quest-reward/newhaven-welcome",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "welcome",
+        "newhaven",
+        "training"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Welcome to Newhaven. Visit the training school and the village supply point, then return for your defence task."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8"
+      ],
+      "minimum_level": 2
+    },
+    {
+      "key": "oteryn:quest-reward/newhaven-wisdom",
+      "quest": "oteryn:quest.newhaven_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "book",
+        "wisdom"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i51977",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3572",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the Book of Wisdom. Take this scarf and the rest of your training experience."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8"
+      ],
+      "minimum_level": 2,
+      "experience": 800,
+      "completes": true
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",

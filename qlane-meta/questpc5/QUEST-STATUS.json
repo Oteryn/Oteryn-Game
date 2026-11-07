@@ -36,7 +36,7 @@
     "title": "Newhaven Legion Helmet Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Both source prerequisites must complete: Gustavo Protect the Village and Viola Lost Wisdom. Their Guardian Ring52732/Scarf3572 rewards are canonically nonmaterializable, so granting prerequisite progress alone would bypass required item/XP completion.",
+    "blocker": "Selected recipe has no formal quest prerequisites: implement/prove both Gustavo and Viola contacts, the training-cave descent, exact corpse helmet USE and nearby forcefield return. The former item-admission and stronger separate-mission prerequisite text is superseded by the canonical chosen recipe.",
     "from_lanes": [
       "questpc2"
     ],
@@ -67,7 +67,7 @@
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Item closure implemented; active next slice is the selected tutor welcome, school/supply exploration, native ten-Troll goal, actual Book recovery/hand-in and complete 1600XP rewards. Shared native-goal implementation exists on questpc6 and will be reused.",
+    "blocker": "Active next slice: real tutor welcome, school/supply exploration, native ten-Troll goal, actual Book acquisition and complete source route. Shared item/XP/completion reward support is implemented and PostgreSQL-qualified.",
     "from_lanes": [
       "questpc2"
     ],
@@ -91,6 +91,12 @@
       "postgres_native_mint_seconds": 53.100254427,
       "proof": "cloud-newhaven-items-proof.json",
       "whole_recipe_qualified": false
+    },
+    "native_reward_progress": {
+      "proof": "cloud-newhaven-rewards-proof.json",
+      "postgres_red_seconds": 52.6,
+      "postgres_green_seconds": 96.41216229,
+      "scope": "Shared level gate, item plus XP milestone, Book consumption and terminal callback; component predicates are deliberately seeded; full native route pending"
     }
   },
   {

@@ -46,6 +46,15 @@
       ]
     },
     {
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "greet": "Those bloody goblins are too close to the village for my liking.",
+      "farewell": "Take care!",
+      "walkaway": "Take care!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:130-132:sha256:fcbad64774a465f75e29c353bb11fb0d9745193a7902be42bdd3033e2152158f"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "greet": "Hello there.",
       "farewell": "Good bye.",

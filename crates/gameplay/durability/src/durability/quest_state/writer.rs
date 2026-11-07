@@ -393,6 +393,12 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
+                    let current_level: i64 = state.try_get("level")?;
+                    if reward_callback.as_ref().and_then(|callback| callback.minimum_level)
+                        .is_some_and(|minimum| current_level < i64::from(minimum))
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)
                     {

@@ -91,6 +91,12 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if name == "qengine-rewards-newhaven-xp" {
+            let version: String = sqlx::query_scalar("SHOW server_version")
+                .fetch_one(&h.pool)
+                .await?;
+            eprintln!("POSTGRES_CASE_STARTED newhaven_rewards server_version={version}");
+        }
         prepare_current_session(&h)
             .await
             .map_err(|e| format!("callback session: {e}"))?;

@@ -113,3 +113,20 @@ existing generic personal native kill mechanism from questpc6 commit390e024503a7
 for the selected Troll goal; keep immutable donor source evidence unchanged.
 Item source exact ranges: scarf11307-11314, wisdom book87353-87358, guardian
 ring88295-88302 in the pinned XML cited above.
+
+
+Shared Newhaven NPC reward composition (2026-11-07): generic optional
+minimum_level is checked from the locked progression row inside the existing
+quest transaction; experience lowers to the existing quest XP obligation;
+completes lowers to the existing terminal quest flag. Default fields are omitted
+from serialization, preserving all previous durable callback plans exactly.
+The chosen tutor role binds to existing canonical Gustavo, The Guard. Four
+source-derived callbacks provide welcome, tour confirmation, Guardian milestone
+and Book hand-in. The selected recipe's1600XP is split800/800 across the ring
+and scarf milestones. The component PG deliberately seeds ready quest predicates
+to isolate this mechanism; it does not qualify source exploration or native kills.
+Gustavo's literal greetings are extracted from the already committed full source
+in batches/quests4/newhaven.json and its exact content SHA, not a synthetic reply.
+The whole selected Legion recipe has requirements.prerequisites=[] and requires
+both conversations. The old status text requiring full completion of both
+separate source missions was stronger than that chosen recipe and is superseded.
