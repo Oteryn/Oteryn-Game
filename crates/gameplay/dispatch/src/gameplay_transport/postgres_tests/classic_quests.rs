@@ -56,23 +56,8 @@ pub(super) async fn install<const N: usize>(
     )
     .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
-    let source =
-        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
-    let native_npcs = source
-        .programs()
-        .iter()
-        .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
-        .chain(std::iter::once("oteryn:npc.viola"))
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>();
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
-    ));
-    owner
-        .states
-        .chat
-        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
+    owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model_with_native_quests(&model, &keys)));
+    owner.states.chat.admit(admitted.game_session_id, "Quest witness", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
     let fence = owner
         .current_quest_fence(admitted.game_session_id)

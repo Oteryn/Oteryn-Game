@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 
+mod caller_scope;
 mod dark_trails;
 mod isle_of_evil;
 
@@ -274,6 +275,9 @@ impl NpcTalkBook {
                     | "oteryn:npc.second_in_command_demeron"
             );
             let native_quest = stag || native_npcs.contains(&reference.key.as_str());
+            if !caller_scope::allows(&reference.key, native_quest) {
+                continue;
+            }
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -423,6 +427,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else if native_quest
                 && matches!(
                     reference.key.as_str(),

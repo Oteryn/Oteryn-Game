@@ -750,3 +750,25 @@ and refusal on either changed canonical data or changed XML.
 - Wrath's wire fixture must select NPC capability3, matching qualified Venore's
   native wire fixture, and import FreshAdmissionAuthority for that selection.
   Keep real lease binding, collision-checked source landing and all assertions.
+- QNPCFX integration reuses main's canonical NPC execution, Father hand-in,
+  reward mint and dispatch catalogue implementations. Additional lane regression
+  cases remain in questpc8_npc_program_regressions.rs; common acceptance uses
+  main's updated source cohort. No test or receipt assertion is discarded.
+- A32-line InputAuthority adapter retains the existing SpellLane channel check
+  and accepts only the canonical NPC owner's opaque, fenced NpcItemPermit for
+  plain NPC inputs. Both paths retain the Channel fence and identical atomic
+  debit/consumption proof. No permit is fabricated and quantities are unchanged.
+- Historic Spectulus/Palimuth conversations require an explicit native caller.
+  Read-only STEP_IN requires failure rollback; the qualified Secret Library
+  descent already declares it. The original mixed-mutation rejections remain.
+- Generated equipment membership preserves all3663 baseline identities and adds
+  174 source-bound identities after QNPCFX. The reviewed room and Type2 writer
+  generators validate the existing None-qualified room and tuple guard shapes.
+- Starter regression now composes the complete13 identities from the native
+  base and supplement, preserving legacy bytes and duplicate/stale rejection.
+  Queen loot assertions compare every admitted entry and nested source fact;
+  old unsupported bosses retain their original refusal checks.
+- Existing ITEMHOLD-Q exact source precedence qualifies necklace3083 at150 full
+  charges for Ornamented Shield only after pinned item/quest Wiki consensus.
+  The test now proves that default and rejects an unproved partial1 projection;
+  no production recipe, grant or outside-lane quest coverage is changed.

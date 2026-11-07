@@ -1176,23 +1176,55 @@ mod container_tests {
             let parsed = candidate(source.as_object().expect("definition"), &|_| true)
                 .expect("decoded")
                 .expect(suffix);
-            assert!(
-                parsed
-                    .placements
+            if suffix == "kv.ornamentedshield" {
+                // Existing ITEMHOLD-Q exact Wiki precedence admits this leaf at full150.
+                let necklace = parsed.placements[0]
+                    .contents
                     .iter()
-                    .all(|placement| placement.root_charges_remaining == Some(1)
-                        || placement
-                            .contents
-                            .iter()
-                            .any(|child| child.charges_remaining == Some(1)
-                                || child.fluid_subtype.is_some())),
-                "{suffix}: explicit instance state must survive projection"
-            );
+                    .find(|c| c.item.key().as_str() == "oteryn:item.tibia.i3083")
+                    .expect("exact necklace");
+                assert_eq!(necklace.count, 1);
+                assert_eq!(necklace.charges_remaining, None);
+                let profiles: Value = serde_json::from_slice(include_bytes!(
+                    "../../../../../content/items/definitions/spell-native-profiles.json"
+                ))
+                .expect("pinned Item facts");
+                let item = profiles["records"]
+                    .as_array()
+                    .expect("profiles")
+                    .iter()
+                    .find(|r| {
+                        r["production_definition"]["production_key"] == "oteryn:item.tibia.i3083"
+                    })
+                    .expect("exact source Item");
+                assert_eq!(
+                    item["semantics"]["charges"],
+                    serde_json::json!({"state":"KNOWN","value":{"count":{"state":"KNOWN","value":150}}})
+                );
+            } else {
+                assert!(
+                    parsed
+                        .placements
+                        .iter()
+                        .all(|placement| placement.root_charges_remaining == Some(1)
+                            || placement
+                                .contents
+                                .iter()
+                                .any(|child| child.charges_remaining == Some(1)
+                                    || child.fluid_subtype.is_some())),
+                    "{suffix}: explicit instance state must survive projection"
+                );
+            }
             let mut changed = source.clone();
             changed["native_contents"]
                 .as_object_mut()
                 .expect("projection")
                 .remove("source_difference");
+            if suffix == "kv.ornamentedshield" {
+                changed["native_contents"]["placements"][0]["contents"][2]["charges_remaining"] =
+                    1.into();
+                changed["data_holds"] = serde_json::json!([{"category":"source","code":"SOURCE_CHARGE_MISMATCH","placement_index":0,"reward_field":"items","reward_index":2}]);
+            }
             assert!(
                 candidate(changed.as_object().expect("definition"), &|_| true)
                     .expect("decoded")

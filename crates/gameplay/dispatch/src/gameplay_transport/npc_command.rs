@@ -79,8 +79,9 @@ struct SessionNpc {
     monk: Option<monk::Pending>,
     viola: Option<viola::Pending>,
     quest_dialogue: quest_dialogue::State,
-    endgame: Option<endgame::Pending>,
     catalogue: Option<catalogue::Pending>,
+    delayed_end: Option<catalogue::DelayedEnd>,
+    endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
     threatened_dreams: Option<threatened_dreams::Pending>,
@@ -257,6 +258,7 @@ impl NpcConversations {
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
+        catalogue::follow_end(self, chat, session);
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
             if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
@@ -765,6 +767,17 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return viola::apply(admission, actor, command, intent, step).await;
@@ -798,11 +811,6 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

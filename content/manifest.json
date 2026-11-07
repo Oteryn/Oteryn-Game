@@ -38,6 +38,10 @@
       "index": "content/encounters/definitions/index.json",
       "records": 108
     },
+    "Encounter.Raid": {
+      "index": "content/encounters/raids/index.json",
+      "records": 239
+    },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
       "records": 6126
@@ -367,6 +371,15 @@
     },
     {
       "path": "content/encounters/definitions/index.json"
+    },
+    {
+      "path": "content/encounters/raids/catalogue.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json"
+    },
+    {
+      "path": "content/encounters/raids/index.json"
     },
     {
       "path": "content/interactions/reward_claims/index.json"
@@ -997,7 +1010,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3801,
+          "record_count": 3802,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1005,7 +1018,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "1061517f66e7f5eebc27b891dcbb29f7aba0efb01a23112e2b8d9218913843f6"
+          "sha256": "46d36f7d4dd1160cfa6ad913c2171e104867cecb75f3f1eadc02cb13cdfccfca"
         },
         {
           "creates_canonical_identities": false,
