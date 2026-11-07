@@ -287,3 +287,20 @@ The normal appearance owner correctly rejected that mismatch. Outfit-only
 variant now uses the existing production_generation_with_source content-1
 helper, preserving original parent-only native fixture and all production
 validation. Actual final selection subsequently passed on PostgreSQL.
+
+S06 stock mount population (2026-11-07): active authoring had no mounts although
+51 qualified taming rules existed. Native rules retain their receipt-bearing
+mount identities, including legacy spellings; their source display names join
+to the mount XML after punctuation/suffix normalization. Other mounts reuse the
+existing declared identity when names agree, otherwise use the source name.
+No duplicate alias ownership is introduced. The sole non-name join is wind-up
+loco: crystal9f5a72c data-global/scripts/actions/mounts/mounts.lua:70 explicitly
+names mount194; data/XML/mounts.xml names194 Gloothomotive, look1459. This source
+identity is retained rather than guessing from the action label. Action sha
+bf241ac7938e044199b989a8c46a4b1ba787328dc44aab5d382fcb0ea7ec100f;
+mount XML sha e5ed55b01274d1e29472a43224ccdb579684f8967244e50e8927ce3858a392b8.
+All250 XML appearances are admitted by the existing pinned client corpus.
+Existing item-action grants additionally require equal mount ID and client look
+across their older source packet and this source; mismatches fail generation.
+Declaring a store mount never grants it: only existing proven acquisition
+receipts and provenance map to ownership. Source speed and Premium fields remain.

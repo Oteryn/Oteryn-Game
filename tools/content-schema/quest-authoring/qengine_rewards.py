@@ -30,7 +30,7 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+    paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn')]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
@@ -111,9 +111,9 @@ def build():
     scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
     for outfit in outfits:
         if outfit['key'] not in scoped:continue
-        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
-            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
@@ -132,6 +132,11 @@ def build():
                     mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
+                    'sha256': sha(inputs['data/XML/mounts.xml'])}
+    mount_population = load_module('qengine_mount_population', 'tools/content-schema/quest-authoring/qengine_mounts.py')
+    mounts, mount_mappings = mount_population.populate(ROOT, inputs, looks, mount_source, item_packet)
+    mappings.extend(mount_mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')
     palette_path = 'tools/game-atlas-appearances/export.py'
     palette_source = {'reference': palette_path + '#outfit_color', 'revision': 'rounded-hsi-133-v1',
@@ -142,7 +147,7 @@ def build():
         'source_appearances_sha256': manifest['inputs']['appearances']['sha256'],
         'palette': {'key': 'oteryn:palette.outfit', 'revision': 'rounded-hsi-133-v1',
                     'colours': [list(atlas.outfit_color(i)) for i in range(133)], 'source': palette_source},
-        'outfits': outfits, 'mounts': [], 'grant_mappings': mappings,
+        'outfits': outfits, 'mounts': mounts, 'grant_mappings': mappings,
         'fallbacks': {sex: {'outfit_key': 'oteryn:outfit.citizen', 'colours': [0, 0, 0, 0]}
                       for sex in ('female', 'male')}}
     cosmetics = load_module('qengine_cosmetics_authoring', 'tools/content-schema/cosmetics-authoring/cosmetics_authoring.py')
@@ -150,7 +155,7 @@ def build():
         'profile': {'kind': 'reference', 'revision': 'quest-cosmetics-r1', 'mount_speed_bonus': 10},
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
     for path in sorted(cosmetics.promotion_paths(doc)):
-        citation=palette_source if path == '/palette' else source
+        citation=palette_source if path == '/palette' else mount_source if path.startswith('/mounts/') else source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}

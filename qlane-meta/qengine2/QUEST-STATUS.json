@@ -2956,7 +2956,39 @@
         "status": "AUTHORING",
         "scope": "Complete outfit/addon/mount acquisition population and taming rules; generic real-dispatch PostgreSQL qualification.",
         "finding": "Stock active cosmetics authoring document has64outfits and0mounts; canonical252mounts and51taming rules already exist. Populate active artifact and exercise stock real dispatcher, preserving existing taming mechanics.",
-        "progress": "Compiling WIP: three stock-content real-dispatch PostgreSQL taming tests compiled in5m15s; executing RED before production changes. Exact missing binding: active cosmetics mounts=[] and no taming grant mappings."
+        "progress": "Source-backed250 mount definitions and43 item mappings; stock creature acquisition PG3/3GREEN. Threecrate checkGREEN; strictclippy/pins/world repository gates completing. S06 remainsAUTHORING for construction rules, additional acquisition coverage and full outfit population.",
+        "red": {
+          "log": "/tmp/qengine2-s06-stock-red.log",
+          "postgres": "18.6",
+          "cases": 3,
+          "passed": 0,
+          "failed": 3,
+          "duration_seconds": 134.68,
+          "point": "Valid stock taming USE returns NothingToUse before catalogue population."
+        },
+        "mount_population_step": {
+          "status": "GREEN",
+          "postgres": "18.6",
+          "red_log": "/tmp/qengine2-s06-stock-red.log",
+          "green_log": "/tmp/qengine2-s06-stock-green1.log",
+          "cases": [
+            {
+              "case": "StockOutcomes",
+              "duration_seconds": 176.750611241
+            },
+            {
+              "case": "StockMusicBox",
+              "duration_seconds": 188.233276093
+            },
+            {
+              "case": "StockItems",
+              "duration_seconds": 220.172686576
+            }
+          ],
+          "coverage": "47 creature rules, exact failure effects/consumption, equipment refusal, literal replay, account ownership, reload; 4 construction rules require separate cases",
+          "authoring_tests": 30,
+          "authoring_seconds": 66.753
+        }
       },
       {
         "id": "W15b",

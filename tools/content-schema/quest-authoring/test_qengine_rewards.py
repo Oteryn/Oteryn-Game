@@ -7,6 +7,25 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_stock_mounts_bind_every_taming_and_item_acquisition(self):
+        doc=self.author['document']
+        mounts={row['key']:row for row in doc['mounts']}
+        mappings={row['grant_key']:row for row in doc['grant_mappings']}
+        self.assertEqual(len(mounts),250)
+        taming=json.loads((q.ROOT/'content/cosmetics/taming.json').read_bytes())
+        for rule in taming:
+            self.assertIn(rule['mount_key'],mounts)
+            self.assertEqual(mappings[rule['grant_key']],{'grant_key':rule['grant_key'],
+                'target':{'kind':'Mount','mount_key':rule['mount_key']},
+                'compatible_provenance':['mount-taming-v1']})
+        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+        for grant in packet['grants']:
+            if grant['kind']=='mount':
+                mapping=mappings[grant['key']]
+                self.assertEqual(mounts[mapping['target']['mount_key']]['look']['id'],grant['look_type'])
+                self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
+        self.assertEqual(mounts['oteryn:content.mount.wind_up_loco']['look']['id'],1459)
+
     def test_endgame_native_bits_and_completed_parent_contract(self):
         rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
         for family,items,bits in [('revenant',[34075,34076],[2,1]),('decaying_defender',[43899,43900],[1,2])]:

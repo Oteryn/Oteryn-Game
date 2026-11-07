@@ -782,3 +782,13 @@ Fresh peer audit at questpc7 1eb71ca5e4aecc4ec967cf064eb582107f4ae59e adds Ferum
 Grave Danger QUALIFIED; native real-dispatch RED/GREEN proofs and ordinary
 earned outfit selection are retained in peer metadata, copied into local evidence.
 Skip both per cross-lane owner rule; counts now44/66,22remaining.
+
+S06 mount-population step: source-bound250 definitions +43 mount-item mappings,
+51taming rules bound42unique receipt identities. RED3cases134.68s; GREEN3cases
+220.17s total, exact markers176.750611241/188.233276093/220.172686576seconds
+in /tmp/qengine2-s06-stock-green1.log. All47creature rules exercise real wire
+USE, source draws/failure effects, exact charge, replay and ownership. Four
+construction rules are excluded by retained creature loop and need separate
+coverage before S06 qualification. Full authoring30passed66.753s; deterministic
+reproduction,fmt,3crate checkGREEN. Content integration123passed6.85s. Strict
+clippy, pin-refresh/check and world-repository5checks completing. Counts44/66.
