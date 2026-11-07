@@ -368,6 +368,7 @@ fn scenario() -> TestResult {
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
         let world = super::quest_world_callbacks::world(&Callback {
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
+            use_range: 1,
             trigger: Trigger::Use, selector: Selector { ordinal: None, position: Some(trigger), unique: None, action: None, appearance: None },
             lever: None, reversible: false, passages: vec![], teleport: None, storage: vec![],
             minimum_level: None, experience: None,

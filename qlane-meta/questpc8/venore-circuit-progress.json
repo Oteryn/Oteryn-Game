@@ -1,9 +1,9 @@
 {
-  "state": "Compiling full native circuit WIP",
+  "state": "Compiling bounded-reach implementation; native replay running",
   "postgres_duration_seconds": 108.761397422,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
   "log_sha256": "580efcd857185cf34d15e7d3f90190dc74362fb8a061230f6fbfcf1e6f3a7f06",
-  "exact_red_point": "Six exact native machines pass, including both northern/middle cranes using diagonal native landing cells. Southern saw33016,32142,z6 has nearest walkable cells33018,32141 and33019,32141, beyond the default one-cell interaction. Add a bounded authored tool-callback reach2 while preserving default reach1 and exact selector/custody guards.",
+  "exact_red_point": "Bounded same-floor tool range1/2 is implemented, with legacy1 omitted from serialization and strict position/tool/mutable-state admission. Full native replay now asserts TooFar at3 and must reach all nine machines. Recurring MINT still needs the explicit occurrence-key owner before qualification.",
   "native_walkable_chamber_cells": [
     [
       33008,
@@ -50,8 +50,8 @@
     "repeat_seconds": 72000
   },
   "checks": {
-    "quest_units": "8PASS",
-    "cargo_check_tests": "PASS3m15s",
-    "native_regeneration": "PASS41files"
+    "reach_units": "6PASS",
+    "compilation": "filtered dispatch test compiled6m09s",
+    "postgres": "running; previous native geometry RED108.761s retained"
   }
 }

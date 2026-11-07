@@ -430,7 +430,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(at) = native(expected.position()) else {
                         return UseDisposition::Rejected;
                     };
-                    if !super::map_door::reachable(at, resolved.pos) {
+                    if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
                         return UseDisposition::TooFar;
                     }
                     if !self.states.world_gate.lock()
@@ -475,7 +475,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !super::map_door::reachable(at, resolved.pos) {
+            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
                 return UseDisposition::TooFar;
             }
             if !callback.is_read_only() && !self

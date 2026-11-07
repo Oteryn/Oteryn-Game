@@ -1,3 +1,20 @@
+# Bounded tool reach compiles; full native rerun is executing
+
+Generic callback use_range1/2 is implemented and hashed; legacy1 remains
+omitted in serialization. Extended range requires exact-position USE, held
+tool and mutable state; floors still must match. Nine authored maintenance
+targets use2. Six focused tool tests pass; filtered dispatch test compiled
+6m09s. Native replay includes strict TooFar from a real three-cell landing
+with unchanged progress and oil, then all nine machines. PG is running.
+
+Do not qualify until the whole route and occurrence-specific MINT assertions
+pass. The existing reward owner still uses one Character-wide callback claim
+key. Draft reusable fix: /tmp/questpc8-enable-occurrence-mint.py and
+/tmp/questpc8_occurrence_mint.sql (range1303). Preserve original source
+placement identity. Fresh qengine2 head52e3dbacb has no occurrence option;
+its mature paid-exchange hash/function is reused. PR3020 remains OPEN.
+19of23remain QUALIFIED; four remain. Keep pushing every15minutes; do not end.
+
 # Six native Venore machines pass; southern saw needs bounded reach
 
 Actual PG108.761397422s passes all six northern/middle machine USE/replay/

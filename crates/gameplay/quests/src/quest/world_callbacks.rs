@@ -126,6 +126,12 @@ pub struct Callback {
     pub quest: String,
     pub trigger: Trigger,
     pub selector: Selector,
+    /// Bounded same-floor tool reach for large authored world targets.
+    #[serde(
+        default = "default_use_range",
+        skip_serializing_if = "is_default_use_range"
+    )]
+    pub use_range: u8,
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
@@ -163,7 +169,22 @@ pub struct Callback {
     pub sources: Vec<String>,
 }
 
+fn default_use_range() -> u8 {
+    1
+}
+fn is_default_use_range(value: &u8) -> bool {
+    *value == 1
+}
+
 impl Callback {
+    /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
+    #[must_use]
+    pub fn reaches(&self, actor: Position, target: Position) -> bool {
+        actor.floor == target.floor
+            && actor.x.abs_diff(target.x) <= u16::from(self.use_range)
+            && actor.y.abs_diff(target.y) <= u16::from(self.use_range)
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -225,6 +246,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         if !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
+            || !(1..=2).contains(&callback.use_range)
+            || (callback.use_range > 1
+                && (callback.trigger != Trigger::Use
+                    || selector.position.is_none()
+                    || callback.item_on_target.is_none()
+                    || callback.storage.is_empty()
+                    || callback.is_read_only()))
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none())

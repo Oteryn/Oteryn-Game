@@ -419,6 +419,7 @@ fn scenario_in_world(
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
+                use_range: 1,
                 selector: Selector {
                     ordinal: None,
                     position: Some(position(trigger)),

@@ -619,3 +619,20 @@ occurrence-key owner with an explicit portable-reward option, while retaining
 its exact unsigned command/Character/session hash and same-transaction source
 receipt proof. A changed-state predicate must reject free no-op replay. This
 is active implementation owned here, not a dependency on another lane.
+
+## Bounded large-machine tool reach
+
+The immutable B3 collision reader finds no walkable one-cell neighbour for
+the southern saw33016,32142,z6; nearest verified cells include33018,32141.
+Choose a uniform Oteryn maintenance reach of two cells for the nine exact
+construction targets. This is an authored gameplay rule, not a recovered
+Tibia range or a claim about a larger collision footprint. Native ground,
+object identities and ordinals remain unchanged.
+
+Generic use_range defaults to1 and is omitted when serialized at that value,
+so legacy callback bytes/hashes stay stable. The only admitted values are1/2;
+extended reach requires explicit USE position, held tool, mutable quest state
+and a same-floor actor. The production callback path applies the declared
+bound before mutation. Unit tests reject missing tool/position/state,0/3 and
+cross-floor reach. The native circuit also requires TooFar from a real
+three-cell landing with no quest/tool effect; no collision fixture is relaxed.

@@ -121,6 +121,26 @@ pub(super) async fn exercise(
     for item in [17513, 17514, 17617] {
         assert_eq!(quantity(h, item).await?, 1);
     }
+    let first = TilePos {
+        x: 33015,
+        y: 32022,
+        floor: -6,
+    };
+    arrive_in_rings(owner, admitted, first, 3..=3).await?;
+    refresh(owner, admitted).await;
+    let far_target = object_target(owner, first, 1)?;
+    assert_eq!(
+        use_target(owner, admitted, command, &far_target).await?,
+        UseDisposition::TooFar,
+        "declared large-machine reach remains bounded at two cells"
+    );
+    command += 1;
+    assert_eq!(progress(h, "stage").await?, 1);
+    assert_eq!(
+        quantity(h, 17513).await?,
+        1,
+        "out-of-reach use cannot consume the tool"
+    );
     arrive_near(
         owner,
         admitted,
@@ -151,7 +171,7 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 17513).await?, 1);
     for (index, (x, y, ordinal)) in MACHINES.into_iter().enumerate() {
         let at = TilePos { x, y, floor: -6 };
-        arrive_near(owner, admitted, at).await?;
+        arrive_with_range(owner, admitted, at, 2).await?;
         refresh(owner, admitted).await;
         let target = object_target(owner, at, ordinal)?;
         assert_eq!(
@@ -352,18 +372,31 @@ async fn arrive_near(
     admitted: &AdmittedSession,
     at: TilePos,
 ) -> TestResult {
+    arrive_with_range(owner, admitted, at, 1).await
+}
+async fn arrive_with_range(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    at: TilePos,
+    range: i32,
+) -> TestResult {
+    arrive_in_rings(owner, admitted, at, 1..=range).await
+}
+async fn arrive_in_rings(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    at: TilePos,
+    rings: std::ops::RangeInclusive<i32>,
+) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
     let cells = owner.movement_cells;
-    for (dx, dy) in [
-        (-1, 0),
-        (0, -1),
-        (1, 0),
-        (0, 1),
-        (-1, -1),
-        (-1, 1),
-        (1, -1),
-        (1, 1),
-    ] {
+    let offsets = rings.flat_map(|radius| {
+        (-radius..=radius).flat_map(move |dx| {
+            (-radius..=radius)
+                .filter_map(move |dy| (dx.abs().max(dy.abs()) == radius).then_some((dx, dy)))
+        })
+    });
+    for (dx, dy) in offsets {
         let x = u16::try_from(i32::from(at.x) + dx)?;
         let y = u16::try_from(i32::from(at.y) + dy)?;
         if cells.index().lookup(

@@ -166,3 +166,85 @@ fn plain_carried_tool_and_reward_share_the_bounded_input_owner() -> Result<(), S
     }
     Ok(())
 }
+
+#[test]
+fn declared_tool_reach_is_bounded_same_floor_and_legacy_stable() -> Result<(), String> {
+    let source = include_str!("../../../../../../content/quests/authored-world-callbacks.json");
+    let mut row: serde_json::Value = serde_json::from_str::<serde_json::Value>(source)
+        .map_err(|e| e.to_string())?["callbacks"]
+        .as_array()
+        .ok_or("callbacks")?
+        .iter()
+        .find(|c| c["key"] == "oteryn:quest-callback/authored-venore-machine-1")
+        .ok_or("machine")?
+        .clone();
+    let doc = |r: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[r]}).to_string();
+    let parsed = parse_with_provenance(&doc(&row), true)?;
+    let callback = parsed.first().ok_or("callback")?;
+    let target = Position {
+        x: 10,
+        y: 10,
+        floor: -6,
+    };
+    assert!(callback.reaches(
+        Position {
+            x: 12,
+            y: 11,
+            floor: -6
+        },
+        target
+    ));
+    assert!(!callback.reaches(
+        Position {
+            x: 13,
+            y: 10,
+            floor: -6
+        },
+        target
+    ));
+    assert!(!callback.reaches(
+        Position {
+            x: 10,
+            y: 10,
+            floor: -7
+        },
+        target
+    ));
+    for case in 0..5 {
+        let mut invalid = row.clone();
+        match case {
+            0 => invalid["use_range"] = 0.into(),
+            1 => invalid["use_range"] = 3.into(),
+            2 => invalid["item_on_target"] = serde_json::Value::Null,
+            3 => {
+                invalid["selector"]["position"] = serde_json::Value::Null;
+                invalid["selector"]["unique"] = 1.into();
+            }
+            _ => invalid["storage"] = serde_json::json!([]),
+        }
+        assert!(
+            parse_with_provenance(&doc(&invalid), true).is_err(),
+            "bounded tool reach case {case}"
+        );
+    }
+    row["use_range"] = 1.into();
+    let explicit = parse_with_provenance(&doc(&row), true)?;
+    row.as_object_mut().ok_or("row")?.remove("use_range");
+    let legacy = parse_with_provenance(&doc(&row), true)?;
+    assert_eq!(explicit, legacy);
+    assert!(
+        serde_json::to_value(&legacy[0])
+            .map_err(|e| e.to_string())?
+            .get("use_range")
+            .is_none()
+    );
+    assert!(!legacy[0].reaches(
+        Position {
+            x: 12,
+            y: 10,
+            floor: -6
+        },
+        target
+    ));
+    Ok(())
+}
