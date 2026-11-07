@@ -2576,6 +2576,18 @@
       "reply": [
         "Yes, I was informed what to do. Are you prepared to receive my line of the prayer?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.yonan",
+      "keywords": [
+        "regalia of suon"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "Do you have the four parts of the Regalia of Suon?"
+      ]
     }
   ]
 }

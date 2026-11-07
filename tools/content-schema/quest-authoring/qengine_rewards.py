@@ -17,6 +17,7 @@ from jsonschema import Draft202012Validator
 import questl2_rewards
 import questl2_shared_engine
 import questl2_deliveries
+import questl2_knowledge
 import questl2_carried_use
 import questl2_vampire
 
@@ -369,6 +370,7 @@ def build():
     questl2_vampire.append(callbacks, offers, declarations, inputs, PIN)
     questl2_carried_use.append(add, storage, callbacks, offers, declarations, inputs, PIN)
     questl2_deliveries.append(add, storage, callbacks, offers, declarations, inputs, PIN)
+    questl2_knowledge.append(add, callbacks, offers, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -396,6 +398,9 @@ def build():
                 # hand-ins still require the complete callback's own predicates.
                 if len(matches) != 2 or matches[0].group(1) != 'Oh! Hello! Hello! Did not notice!':
                     raise ValueError('Hairycles source greeting drift')
+                matches = matches[:1]
+            # Repeated source branches with identical text have one literal outcome.
+            if matches and len({m.group(1) for m in matches}) == 1:
                 matches = matches[:1]
             if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
             messages[field]=matches[0].group(1)

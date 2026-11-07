@@ -50,10 +50,137 @@ fn questl2_knowledge_batch_tomes_full_journey() -> TestResult {
 }
 
 pub(super) async fn exercise(
-    _owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    _admitted: &mut AdmittedSession,
-    _h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
     name: &str,
 ) -> TestResult {
+    if name.ends_with("regalia") {
+        return regalia(owner, admitted, h).await;
+    }
     Err(format!("full native player journey has not been composed yet: {name}").into())
+}
+
+async fn regalia(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::questl2_journeys::quantity;
+    let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|c| c.key.ends_with("/l2-regalia-combine"))
+        .ok_or("Yonan source exchange")?;
+    assert!(callback.is_paid_exchange());
+    assert!(callback.storage.is_empty());
+    let [npc] =
+        super::super::classic_quests::install_nearby(owner, admitted, ["oteryn:npc.yonan"]).await?;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("Regalia capabilities")?;
+    assert_eq!(
+        wire_reward(owner, admitted, npc, &callback, false).await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    let position = Position {
+        x: 33293,
+        y: 31677,
+        floor: -15,
+    };
+    for (n, item) in [31572, 31573, 31574].into_iter().enumerate() {
+        supply(owner, admitted, item, 16000 + u64::try_from(n)?, position).await?;
+    }
+    assert_eq!(
+        wire_reward(owner, admitted, npc, &callback, false).await?.0,
+        NpcIntentDisposition::Rejected
+    );
+    for item in 31572..=31574 {
+        assert_eq!(
+            quantity(h, item).await?,
+            1,
+            "missing fourth piece preserves all inputs"
+        );
+    }
+    assert_eq!(quantity(h, 31576).await?, 0);
+    supply(owner, admitted, 31575, 16003, position).await?;
+    let (disposition, _, command) = wire_reward(owner, admitted, npc, &callback, false).await?;
+    assert_eq!(disposition, NpcIntentDisposition::Ok);
+    for item in 31572..=31575 {
+        assert_eq!(quantity(h, item).await?, 0);
+    }
+    assert_eq!(quantity(h, 31576).await?, 1);
+    let before = counts(h).await?;
+    let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
+        npc_actor: npc,
+        text: "yes".into(),
+    })
+    .map_err(debug)?;
+    let replay =
+        super::super::quest_world_callbacks::wire(owner, admitted, command, 7, payload).await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&replay).map_err(debug)?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        counts(h).await?,
+        before,
+        "literal replay cannot burn or mint again"
+    );
+    for (n, item) in [31572, 31573, 31574, 31575].into_iter().enumerate() {
+        supply(owner, admitted, item, 16010 + u64::try_from(n)?, position).await?;
+    }
+    assert_eq!(
+        wire_reward(owner, admitted, npc, &callback, false).await?.0,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(
+        quantity(h, 31576).await?,
+        2,
+        "a new paid occurrence is allowed without artificial progress"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_tracks")
+            .fetch_one(&h.pool)
+            .await?,
+        0
+    );
+    Ok(())
+}
+
+async fn supply(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    item: u32,
+    n: u64,
+    position: Position,
+) -> TestResult {
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "supply fence")?
+        .ok_or("supply fence")?;
+    super::super::quest_world_callbacks::input_item(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position,
+            item: format!("oteryn:item.tibia.i{item}"),
+            count: 1,
+        },
+        n,
+        true,
+    )
+    .await
 }

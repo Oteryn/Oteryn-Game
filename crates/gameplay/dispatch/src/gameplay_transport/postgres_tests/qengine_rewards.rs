@@ -339,6 +339,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         return &["vampire lord token"];
     }
     match key.rsplit('/').next().unwrap_or(key) {
+        "l2-regalia-combine" => &["regalia of suon"],
         "l2-botany-start" | "l2-botany-return" => &["mission"],
         "l2-bone-start" => &["mission"],
         "outfox-start" => &["mission"],

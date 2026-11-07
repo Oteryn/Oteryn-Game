@@ -65,9 +65,9 @@ def capture(root=ROOT):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
-        # Accepted canonical weights outrank donor hypotheses. These two exact
+        # Accepted canonical weights outrank donor hypotheses. These exact
         # conflicts are pinned and checked, rather than admitting arbitrary drift.
-        weights = {23677: (2700, 200), 34210: (6660, 6659)}
+        weights = {23677: (2700, 200), 34210: (6660, 6659), 31576: (3400, 850)}
         if item_id in weights:
             canonical_weight, source_weight = weights[item_id]
             accepted_weight = definition['semantics']['physical']['value']['weight']

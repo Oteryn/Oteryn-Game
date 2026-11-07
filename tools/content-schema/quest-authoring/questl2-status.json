@@ -1199,7 +1199,32 @@
     {
       "title": "Kilmaresh",
       "status": "PENDING",
-      "evidence": []
+      "evidence": [
+        {
+          "postgres_test": "questl2_knowledge_batch_kilmaresh_regalia_full_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 2.818852458,
+            "result": "complete native journey binding absent",
+            "log": "/tmp/l2-knowledge-red.log"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-regalia",
+            "duration_seconds": 77.3660027,
+            "passed": 1,
+            "failed": 0,
+            "log": "/tmp/l2-regalia-native-pg.log"
+          },
+          "proves": [
+            "No parts and three parts refuse without input loss",
+            "Four distinct source parts consumed atomically for one Regalia",
+            "Literal transport replay cannot consume or mint again",
+            "Fresh paid exchange produces a second Regalia",
+            "No synthetic quest progress track is written"
+          ],
+          "sources": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yonan.lua:198-209:sha256:ab32c38fec7fc99be97b91ed19d79e64880c9ff955d58d8eee3504282f6e3848"
+        }
+      ]
     },
     {
       "title": "Kissing a Pig",
@@ -2850,7 +2875,7 @@
       "remaining": "Compose source NPC/world journeys and prove actual typed-fluid issue and hand-in before qualification."
     },
     "stateless_exchange_progress": {
-      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "status": "PG_GREEN_FINAL_CHECKS_PENDING",
       "reused_owner": "QENGINE2 canonical 1003/1004 stateless paid exchange",
       "domain_tests": {
         "passed": 9,
@@ -2861,7 +2886,9 @@
         "failed": 0,
         "log": "/tmp/l2-stateless-authoring.log"
       },
-      "remaining": "Native Yonan four-part exchange and replay/second purchase journey."
+      "remaining": "Native Yonan four-part exchange and replay/second purchase journey.",
+      "postgres_log": "/tmp/l2-regalia-native-pg.log",
+      "duration_seconds": 77.3660027
     }
   }
 }

@@ -311,3 +311,9 @@ track is introduced: the four source parts are the payment, native MINT is
 the output, and generic transition callers cannot execute value-only receipts.
 The catalogue exception forbids XP-only empty transitions. Native player
 journey qualification remains pending until the existing RED test passes.
+
+Regalia31576 keeps accepted canonical weight3400 against pinned donor XML850,
+using the existing finite weight-precedence check. Parts31572–31575 retain
+850 each. Yonan's three conditional greeting branches repeat the same literal
+text; the producer deduplicates identical literals and still rejects differing
+ambiguous greetings. Success text is the exact donor line209.
