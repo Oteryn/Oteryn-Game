@@ -5942,6 +5942,142 @@
       ]
     },
     {
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "key": "oteryn:quest-callback/l2-botany-book",
+      "selector": {
+        "position": {
+          "x": 33004,
+          "y": 31530,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2469
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/botany_almanach",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i11699",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2807-2813:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "key": "oteryn:quest-callback/l2-botany-sample-1",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 10735
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "effects": {
+        "present": [
+          {
+            "item": "oteryn:item.tibia.i11699",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i5908",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/tools/skinning.lua:224-250:sha256:2065a1ff806ab025efac6add9646e0a91084015d507b994e3dcf384365d37861"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "key": "oteryn:quest-callback/l2-botany-sample-2",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 10697
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "effects": {
+        "present": [
+          {
+            "item": "oteryn:item.tibia.i11699",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i5908",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/actions/tools/skinning.lua:224-250:sha256:2065a1ff806ab025efac6add9646e0a91084015d507b994e3dcf384365d37861"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/l2-father-scale",
       "quest": "oteryn:quest.a_father_s_burden_quest",
       "trigger": "use",

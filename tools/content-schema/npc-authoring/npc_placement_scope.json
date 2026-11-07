@@ -51,6 +51,7 @@
     "oteryn:npc.paulie",
     "oteryn:npc.percybald",
     "oteryn:npc.quentin",
+    "oteryn:npc.rabaz",
     "oteryn:npc.rahkem",
     "oteryn:npc.raymond_striker",
     "oteryn:npc.sam",
@@ -127,6 +128,13 @@
         "x": 32525,
         "y": 31905,
         "z": 8
+      }
+    ],
+    "oteryn:npc.rabaz": [
+      {
+        "x": 33009,
+        "y": 31532,
+        "z": 10
       }
     ]
   }

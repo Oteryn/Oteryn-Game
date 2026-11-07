@@ -129,3 +129,25 @@ NPC command. All world callback commits now update the admitted quest copy
 through its existing `apply` owner before publication. Recovered older receipts
 cannot overwrite a copy that no longer has their original revision; the ordinary
 refresh still reconciles recovery and XP obligations.
+
+L2 An Interest in Botany reuses the carried-evidence and direct-output owners.
+Crystal9f `data-global/npc/rabaz.lua:145-184`, SHA256
+`b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643`,
+sets DefaultStart/Questline to 1 and ChestDoor to 0 on acceptance. Its final
+hand-in consumes 11699 and grants Sedge Hat 11700, ten platinum coins 3035
+(1000 gold), 3000 XP and Questline 4. Hat and coins use one complete backpack
+MINT reservation; the PG journey compares their audit `created_xact_id` values
+to prove that both outputs were inserted in the same PostgreSQL transaction.
+`data-global/startup/tables/chest.lua:2807-2813`, SHA256
+`0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca`,
+places book 11699 in appearance-2469 chest (33004,31530,10). The served chest
+has no unique attribute, so the world callback binds its exact source cell and
+appearance. The native door at (33007,31536,10) is appearance 7721/action
+42965, mapped to the named ChestDoor track. Source value 0 grants entry under
+the existing native quest-door rule; absent storage remains locked.
+`data-global/scripts/actions/tools/skinning.lua:224-250,349`, SHA256
+`2065a1ff806ab025efac6add9646e0a91084015d507b994e3dcf384365d37861`,
+requires Obsidian Knife 5908 for the plant branch and a carried almanach 11699.
+Appearance 10735 advances stage 1 to 2; only then does appearance 10697 advance
+2 to 3. Both tools and plants remain intact. Rabaz is deployed at the reviewed
+source promotion-candidate cell (33009,31532,10).

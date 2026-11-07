@@ -166,7 +166,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),34)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 15)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 17)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

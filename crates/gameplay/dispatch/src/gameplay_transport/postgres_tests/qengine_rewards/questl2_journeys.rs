@@ -19,9 +19,12 @@ pub(crate) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
+    let botany = name.ends_with("botany");
     let bone = name.ends_with("bone");
     let sam = name.ends_with("sam");
-    let (x, y, floor, door, action, chest, unique) = if bone {
+    let (x, y, floor, door, action, chest, unique) = if botany {
+        (33007, 31536, -10, 7721, 42965, 2469, None)
+    } else if bone {
         (32408, 32107, -10, 103, 4205, 3133, None)
     } else if sam {
         (32455, 31967, -14, 1644, 40603, 2472, None)
@@ -68,16 +71,32 @@ pub(crate) fn world(
             ground_speed: None,
         }),
     });
+    if botany {
+        for (id, appearance) in [(4, 10735), (5, 10697)] {
+            data.manifest.palette.push(bundle::PaletteEntry {
+                id,
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
+    }
+    let min_x = if botany { x - 6 } else { x - 3 };
+    let min_y = if botany { y - 8 } else { y - 1 };
     data.manifest.world = bundle::Extent {
-        min_x: x - 3,
-        min_y: y - 1,
+        min_x,
+        min_y,
         max_x: x + 7,
         max_y: y + 3,
         floors: vec![floor],
     };
     let mut grouped: BTreeMap<(u16, u16), Vec<sector::Tile>> = BTreeMap::new();
-    for ty in y - 1..=y + 2 {
-        for tx in x - 3..=x + 6 {
+    for ty in min_y..=y + 2 {
+        for tx in min_x..=x + 6 {
             let mut items = vec![sector::Item {
                 palette: 0,
                 depth: 0,
@@ -96,7 +115,8 @@ pub(crate) fn world(
                     },
                 });
             }
-            if !bone && (tx, ty) == (x, y + 1) {
+            let chest_at = if botany { (x - 3, y - 6) } else { (x, y + 1) };
+            if !bone && (tx, ty) == chest_at {
                 items.push(sector::Item {
                     palette: 3,
                     depth: 0,
@@ -105,6 +125,22 @@ pub(crate) fn world(
                         ..Default::default()
                     },
                 });
+            }
+            if botany {
+                let plant = if (tx, ty) == (x - 4, y - 7) {
+                    Some(4)
+                } else if (tx, ty) == (x - 5, y - 7) {
+                    Some(5)
+                } else {
+                    None
+                };
+                if let Some(palette) = plant {
+                    items.push(sector::Item {
+                        palette,
+                        depth: 0,
+                        attrs: Default::default(),
+                    });
+                }
             }
             grouped
                 .entry((tx / 32, ty / 32))
@@ -147,10 +183,10 @@ pub(crate) fn world(
                 door:matches!(&policy.semantics.classification,ReferenceItemField::Known(c) if c.item_type==ReferenceItemField::Known(ReferenceItemType::Door))})
         }).map_err(debug)
 }
-async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
-async fn use_at(
+pub(super) async fn use_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     p: Position,
@@ -186,7 +222,7 @@ async fn use_at(
     );
     Ok(())
 }
-async fn walk(
+pub(super) async fn walk(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     d: oteryn_protocol_oteryn::world_spatial::StepDirection,

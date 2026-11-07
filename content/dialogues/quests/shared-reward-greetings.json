@@ -332,6 +332,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rabaz",
+      "greet": "Ah, a customer! Please feel free to browse my wares, |PLAYERNAME|.",
+      "farewell": "Good bye.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:195:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:196:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:197:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ]
+    },
+    {
       "npc": "oteryn:npc.rahkem",
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Good bye, |PLAYERNAME|.",

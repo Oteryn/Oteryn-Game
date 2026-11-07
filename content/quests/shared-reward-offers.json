@@ -1949,6 +1949,56 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Simply return to me after you have done that and we will discuss your reward. What do you say, are you in?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Well fantastic work, you gathered both samples! Now I can continue my work on the almanach, thank you very much for your help indeed. Can I take a look at my book please?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.rahkem",
       "keywords": [
         "stake"

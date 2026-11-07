@@ -5,14 +5,14 @@ import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
 
 
-NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS, *recipes.NPCS}))
+NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
 ITEMS = {
-    131, 4852, 227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    131, 4852, 11699, 227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
@@ -135,6 +135,19 @@ def append(callbacks, offers, inputs, pin):
         "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!",
         topic=1,source_text='player:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)',
         offer=(['mission','quest'],"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?"))
+    botany='u8_6/an_interest_in_botany/'
+    add('l2-botany-start','tibia_tales','rabaz',['yes'],
+        [state('u8_1/tibia_tales/default_start',-1,1,1),state(botany+'questline',-1,1,0),state(botany+'chest_door',-1,0,0)],
+        "Yes? Yes! That's the enthusiasm I need! Remember to bring a sharp knife to gather the samples, plants - even mutated deformed plants - are very sensitive you know. Off you go and be careful out there, Zao is no place for the feint hearted mind you.",
+        topic=1,source_text='player:setStorageValue(Storage.Quest.U8_6.AnInterestInBotany.Questline, 1)',
+        offer=(['mission'],"Simply return to me after you have done that and we will discuss your reward. What do you say, are you in?"))
+    add('l2-botany-return','tibia_tales','rabaz',['yes'],[state(botany+'questline',3,4)],
+        "Here, I always wore this comfortable hat when travelling, take it. It may be of use for you on further reconnaissances in Zao. Again you have my thanks, friend.",
+        topic=2,take=[(11699,1)],give=(11700,1),source_text='player:addItem(11700, 1)',
+        offer=(['mission'],"Well fantastic work, you gathered both samples! Now I can continue my work on the almanach, thank you very much for your help indeed. Can I take a look at my book please?"))
+    callbacks[-1]['give']['backpack_outputs']=[{'item':'oteryn:item.tibia.i3035','count':10}]
+    callbacks[-1]['experience']=3000
+
     bone = 'u8_1/tibia_tales/into_the_bone_pit'
     add('l2-bone-start', 'tibia_tales', 'muriel', ['yes'], [state(bone,-1,1,0)],
         "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ...",

@@ -1873,6 +1873,90 @@
       "minimum_level": 35
     },
     {
+      "key": "oteryn:quest-reward/l2-botany-return",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11699",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i11700",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3035",
+            "count": 10
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here, I always wore this comfortable hat when travelling, take it. It may be of use for you on further reconnaissances in Zao. Again you have my thanks, friend."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:171:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ],
+      "experience": 3000
+    },
+    {
+      "key": "oteryn:quest-reward/l2-botany-start",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.rabaz",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/chest_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Yes? Yes! That's the enthusiasm I need! Remember to bring a sharp knife to gather the samples, plants - even mutated deformed plants - are very sensitive you know. Off you go and be careful out there, Zao is no place for the feint hearted mind you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rabaz.lua:165:sha256:b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-elementalist-base",
       "quest": "oteryn:quest.elementalist_outfits_quest",
       "npc": "oteryn:npc.broken_servant_sentry",

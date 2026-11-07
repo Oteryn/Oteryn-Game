@@ -25,6 +25,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
         "qengine-rewards-l2-sam" => Some(Position{x:32455,y:31967,floor:-14}),
         "qengine-rewards-l2-outfox" => Some(Position{x:32467,y:31969,floor:-5}),
         "qengine-rewards-l2-bone" => Some(Position{x:32408,y:32107,floor:-10}),
+        "qengine-rewards-l2-botany" => Some(Position{x:33007,y:31536,floor:-10}),
         _=>None,
     };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
@@ -176,6 +177,9 @@ fn questl2_exchange_fixed_source_journey() -> TestResult {
     scenario("qengine-rewards-exchange-fixed")
 }
 
+#[path = "qengine_rewards/questl2_botany.rs"]
+mod questl2_botany;
+
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
 
@@ -259,6 +263,7 @@ async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "l2-botany-start" | "l2-botany-return" => &["mission"],
         "l2-bone-start" => &["mission"],
         "outfox-start" => &["mission"],
         "exchange-cyclops-start" => &["uth'lokr", "yes"],
@@ -764,6 +769,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name=="qengine-rewards-l2-botany" {
+        return questl2_botany::exercise(owner,admitted,h).await;
+    }
     if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone") {
         return questl2_journeys::exercise(owner,admitted,h,authority,name).await;
     }
