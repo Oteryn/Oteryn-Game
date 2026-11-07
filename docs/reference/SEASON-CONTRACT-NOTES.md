@@ -916,3 +916,12 @@ The generic backpack label remains unchanged. Native UI2 tests pass3.76s;
 depot regression passes4.59s; native shop+browse2 tests pass35.47s build/run.
 These checks preserve the legacy refusal cases and select the actual entry25.
 All721 protocol unit tests also pass0.59s execution.
+
+### Ruprecht canonical source capture
+
+The normal seasonal capture now retains48 records, adding all23 input/output
+identities used by Crystal Ruprecht's22 exchanges (the exact pinned script
+and line citations are recorded by seasonal_item_profiles.py). Existing
+canonical identities are reused. Four capture tests pass0.379s; no new number
+or migration is allocated. Actual NPC exchange callers remain in progress.
+Native provider registration awaits its required normal Prey model refresh.

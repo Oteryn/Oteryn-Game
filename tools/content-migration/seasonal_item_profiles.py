@@ -24,7 +24,14 @@ CANARY = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 CAKE_REWARDS = {14756, 20347, 20350, 28484, 28485, 28486}
 CAKE_MAP = {12085, 12086, 12147, 12148, 12152, 12153, 12154, 12155,
             12090, 12091, 12092, 12093, 12094, 12095}
-IDS = {6510, 2992, 12141, 2886, 2887} | CAKE_REWARDS | CAKE_MAP
+# Crystal201189f data-global/npc/ruprecht.lua:54-77 names22 offers;
+# :109-126 burns6496 for6526, or6526 tokens for one exact listed output.
+RUPRECHT_ITEMS = {6500, 20310, 174, 7527, 6531, 10346, 20315, 6511,
+                  10339, 20311, 20308, 20309, 20313, 10338, 21952, 6496,
+                  22879, 29947, 24394, 35692, 27591, 32746, 6526}
+RUPRECHT = 'data-global/npc/ruprecht.lua'
+RUPRECHT_BLOB = '6718df2ef51872c95a8fe2036add77d2623141bb'
+IDS = {6510, 2992, 12141, 2886, 2887} | CAKE_REWARDS | CAKE_MAP | RUPRECHT_ITEMS
 BRUTUS = 'data-global/npc/brutus_the_baker.lua'
 CAKE_CONFIG = 'data-global/scripts/lib/a_piece_of_cake_config.lua'
 CAKE_BITE = 'data-global/scripts/quests/a_piece_of_cake/actions_cake_bite.lua'
@@ -63,6 +70,10 @@ def capture(crystal, canary):
         if hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest() != expected:
             raise ValueError('SEASONAL_CAKE_POLICY_SOURCE_DRIFT:' + path)
         cake_policy_raw.append(('crystal', PIN, path, raw))
+    ruprecht_raw = (crystal / RUPRECHT).read_bytes()
+    if (hashlib.sha1(b'blob ' + str(len(ruprecht_raw)).encode() + b'\0' + ruprecht_raw).hexdigest()
+            != RUPRECHT_BLOB):
+        raise ValueError('SEASONAL_RUPRECHT_SOURCE_DRIFT')
     xml = source.xml_index(xml_raw)
     appearances = source.engine_items.load_appearance_objects(appearance_raw)
     physical = {row['server_item_id']: row for row in source.policies(appearance_raw, xml_raw, IDS)}
@@ -78,11 +89,13 @@ def capture(crystal, canary):
                             ('crystal', PIN, 'data/items/items.xml', xml_raw),
                             ('canary', CANARY, 'data/items/appearances.dat', appearance_raw),
                             ('crystal', PIN, SANTA, santa_raw),
-                            ('crystal', PIN, CAKE, cake_raw), *cake_policy_raw)],
+                            ('crystal', PIN, CAKE, cake_raw),
+                            ('crystal', PIN, RUPRECHT, ruprecht_raw), *cake_policy_raw)],
             'producer': SANTA + ':111-119',
             'cake_producer': CAKE + ':25-26',
             'cake_reward_producer': BRUTUS + ':99-158',
-            'cake_map_producer': CAKE_CONFIG + ':508-514', 'records': bound['records']}
+            'cake_map_producer': CAKE_CONFIG + ':508-514',
+            'ruprecht_producer': RUPRECHT + ':54-77,109-126', 'records': bound['records']}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
