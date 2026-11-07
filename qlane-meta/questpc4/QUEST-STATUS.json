@@ -3114,19 +3114,57 @@
       },
       {
         "canonical": "oteryn:quest.authored.small_ruby_quest",
-        "status": "IN_PROGRESS",
-        "blocker": "The production reset finalizer exists. Remaining: committed B3 mutable Item pickup/remint bridge; `NativeMovementCollisionIndex::Bundle` has no `source_world`, required by `CurrentNativeMapInitialization`. Actual reward is Item3030 count1 at (32437,32174,15), beneath Item2123. Preserve shared floor-reset custody; do not substitute a personal claim."
+        "status": "QUALIFIED",
+        "resolved_obligation": "The production reset finalizer exists. Remaining: committed B3 mutable Item pickup/remint bridge; `NativeMovementCollisionIndex::Bundle` has no `source_world`, required by `CurrentNativeMapInitialization`. Actual reward is Item3030 count1 at (32437,32174,15), beneath Item2123. Preserve shared floor-reset custody; do not substitute a personal claim.",
+        "qualification": {
+          "status": "QUALIFIED",
+          "scope": "Native B3 shared floor pickup and replenishment through the existing no-Houses reset seam. Source crop retains ground103/ruby3030(count1)/Fire Field2123. No personal once-claim, source_world fabrication or full-World housing readiness claim.",
+          "test": "l6_small_ruby_actual_reset_replenishes_and_refuses_old_epoch",
+          "red": {
+            "duration_seconds": 58.027020466,
+            "postgres_version": "18.6",
+            "log": "/tmp/questpc4-small-ruby-reset-baseline2.log",
+            "failure": "Actual pickup succeeded; Bundle House absence unavailable at unchanged reset gate"
+          },
+          "green": {
+            "duration_seconds": 125.403442219,
+            "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "marker": "POSTGRES_CASE_COMPLETED l6-small-ruby-reset success=true",
+            "log": "/tmp/questpc4-small-ruby-reset-combined.log",
+            "result": "1 passed / 0 failed"
+          },
+          "assertions": [
+            "literal advertised domain17 handle and command9 pickup",
+            "exact original-command replay and stale old handle",
+            "one map MINT per channel/bundle/placement/reset epoch; zero quest callback consumption",
+            "real production reset control-loss drain, fresh assignment and idempotent activation",
+            "new independently verified admission and new session/lease",
+            "reload unchanged native B3; second pickup merges exactly two carried rubies",
+            "active fresh fence refuses epoch0 key without writes",
+            "actual House marker, missing evidence or foreign scope refuses no-Houses qualification"
+          ],
+          "source": {
+            "path": "content/world/placements/region-z15-x126-y125.b3",
+            "sha256": "c98c013af49d6ed68b5d572f6ad9b0c8565dbbd4f94297df977b5e4976a114cc",
+            "position": [
+              32437,
+              32174,
+              15
+            ],
+            "ordinal": 1
+          }
+        }
       }
     ],
     "counts": {
-      "qualified": 1,
-      "unfinished": 20,
+      "qualified": 2,
+      "unfinished": 19,
       "blocked": 0,
       "skipped_external_owner": 2
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-floor-profiles-03",
+    "latest_batch": "cloud-physical-pickups-04",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3221,6 +3259,44 @@
           "incoming": 3598,
           "combined": 3606,
           "all_incoming_profiles_unchanged": true
+        }
+      },
+      "bundle_house_absence_and_native_reset_pickup": {
+        "status": "QUALIFIED",
+        "scope": "Native B3 shared floor pickup and replenishment through the existing no-Houses reset seam. Source crop retains ground103/ruby3030(count1)/Fire Field2123. No personal once-claim, source_world fabrication or full-World housing readiness claim.",
+        "test": "l6_small_ruby_actual_reset_replenishes_and_refuses_old_epoch",
+        "red": {
+          "duration_seconds": 58.027020466,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-small-ruby-reset-baseline2.log",
+          "failure": "Actual pickup succeeded; Bundle House absence unavailable at unchanged reset gate"
+        },
+        "green": {
+          "duration_seconds": 125.403442219,
+          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "marker": "POSTGRES_CASE_COMPLETED l6-small-ruby-reset success=true",
+          "log": "/tmp/questpc4-small-ruby-reset-combined.log",
+          "result": "1 passed / 0 failed"
+        },
+        "assertions": [
+          "literal advertised domain17 handle and command9 pickup",
+          "exact original-command replay and stale old handle",
+          "one map MINT per channel/bundle/placement/reset epoch; zero quest callback consumption",
+          "real production reset control-loss drain, fresh assignment and idempotent activation",
+          "new independently verified admission and new session/lease",
+          "reload unchanged native B3; second pickup merges exactly two carried rubies",
+          "active fresh fence refuses epoch0 key without writes",
+          "actual House marker, missing evidence or foreign scope refuses no-Houses qualification"
+        ],
+        "source": {
+          "path": "content/world/placements/region-z15-x126-y125.b3",
+          "sha256": "c98c013af49d6ed68b5d572f6ad9b0c8565dbbd4f94297df977b5e4976a114cc",
+          "position": [
+            32437,
+            32174,
+            15
+          ],
+          "ordinal": 1
         }
       }
     },
@@ -3359,5 +3435,77 @@
       "log": "/tmp/questpc4-engine-review-run4.log",
       "scope": "No model review completed; not counted as a clean review. Continue authorized implementation and work-branch pushes; do not claim final readiness."
     }
+  },
+  "physical_pickup_batch": {
+    "id": "cloud-physical-pickups-04",
+    "status": "IN_PROGRESS",
+    "entries": [
+      "oteryn:quest.authored.small_ruby_quest",
+      "oteryn:quest.skeleton_decoration_quest",
+      "oteryn:quest.authored.waterskin_of_mead_quest"
+    ],
+    "stage": "Small Ruby and generic Bundle House evidence QUALIFIED; green engine slice ready for commit/push. Continue19 active entries, beginning reward fluid states and shared containers. Existing independent-review service401 remains a final readiness limitation, not a clean review.",
+    "pushed_previous": "d9a95616349345c5fc565fedf07ab926652b6b4f",
+    "source_findings": [
+      "Small Ruby native tile32437,32174,z15: ground103, ruby3030(count1), Fire Field2123; west tile32436,32174 is source ground103.",
+      "Native skeleton6525 census found only two uncontained decorations in region-z15-x128-y125, at32786,32225,15 and32769,32244,15; neither is proof of the required barrel reward.",
+      "Pinned Skeleton spoiler URL oldid577794 returned HTTP402; missing facts are not a final blocker. Continue repository/alternate-source research, then document a conservative rule if no source exists.",
+      "Public https://www.tibiawiki.com.br/wiki/Skeleton_Decoration_Quest redirects to Shards walkthrough: Tyrsung reward89gp+1Shard+1Skeleton Decoration, consistent with pinned Crystal chest.lua2275-2281. Page SHA25663dda0682b6219715e7f3668a92f1d9f51c9cd8171b0e7bbbf69a50317ca68c2; no page copy committed.",
+      "Public https://www.tibiawiki.com.br/wiki/Waterskin_of_Mead_Quest redirects to The_Ice_Islands_Quest oldid431584, Waterskin additional mission section contains two route images. Images obtained with ordinary browser headers; maps do not identify coordinates by themselves.",
+      "Pinned Crystal201189f871d23597b82caf88fd611454a2ddefb8 src/utils/utils_definitions.hpp:456 defines FLUID_MEAD=16 (not legacy43). URL https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/utils/utils_definitions.hpp SHA25603ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d. Native waterskin2901 and fur bag7343 already materializable; fur bag capacity8. Shared reward fluid-state support remains to implement generically."
+    ],
+    "notes": "The existing MapBase owner already binds shared pickup receipts to bundle/placement/reset epoch. Verify it before authoring any duplicate initializer; no source_world fence will be weakened.",
+    "remote_reconciliation": {
+      "head": "579927e933b14222b4dd321be058d0a6b3fe1ab0",
+      "operation": "fast-forward merged existing helmet physical-admission slice; restored local authoring via stash; preserved both floor-profile and Small Ruby scenario routes",
+      "status": "Combined-tree test/check/clippy running"
+    },
+    "small_ruby_qualification": {
+      "status": "QUALIFIED",
+      "scope": "Native B3 shared floor pickup and replenishment through the existing no-Houses reset seam. Source crop retains ground103/ruby3030(count1)/Fire Field2123. No personal once-claim, source_world fabrication or full-World housing readiness claim.",
+      "test": "l6_small_ruby_actual_reset_replenishes_and_refuses_old_epoch",
+      "red": {
+        "duration_seconds": 58.027020466,
+        "postgres_version": "18.6",
+        "log": "/tmp/questpc4-small-ruby-reset-baseline2.log",
+        "failure": "Actual pickup succeeded; Bundle House absence unavailable at unchanged reset gate"
+      },
+      "green": {
+        "duration_seconds": 125.403442219,
+        "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "marker": "POSTGRES_CASE_COMPLETED l6-small-ruby-reset success=true",
+        "log": "/tmp/questpc4-small-ruby-reset-combined.log",
+        "result": "1 passed / 0 failed"
+      },
+      "assertions": [
+        "literal advertised domain17 handle and command9 pickup",
+        "exact original-command replay and stale old handle",
+        "one map MINT per channel/bundle/placement/reset epoch; zero quest callback consumption",
+        "real production reset control-loss drain, fresh assignment and idempotent activation",
+        "new independently verified admission and new session/lease",
+        "reload unchanged native B3; second pickup merges exactly two carried rubies",
+        "active fresh fence refuses epoch0 key without writes",
+        "actual House marker, missing evidence or foreign scope refuses no-Houses qualification"
+      ],
+      "source": {
+        "path": "content/world/placements/region-z15-x126-y125.b3",
+        "sha256": "c98c013af49d6ed68b5d572f6ad9b0c8565dbbd4f94297df977b5e4976a114cc",
+        "position": [
+          32437,
+          32174,
+          15
+        ],
+        "ordinal": 1
+      }
+    },
+    "engine_slice_status": "GREEN",
+    "validation": [
+      "Real PostgreSQL18.6 reset/pickup125.403442219s,1/0",
+      "Content missing-evidence negative1/0",
+      "World actual House/scope negative1/0",
+      "Combined cargo check all targets/features1m31s",
+      "Combined clippy all targets/features -D warnings3m39s",
+      "Final cargo fmt --all --check and git diff --check"
+    ]
   }
 }

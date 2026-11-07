@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let small_ruby = name.starts_with("l6-small-ruby");
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles";
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -41,7 +42,7 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(if ancient_instruments {
         "ancient-tombs-diprath-sign-1"
-    } else if classic_npc {
+    } else if classic_npc || small_ruby {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -106,6 +107,12 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if small_ruby {
+            let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+                .fetch_one(&h.pool)
+                .await?;
+            eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+        }
         prepare_current_session(&h)
             .await
             .map_err(|e| format!("callback session: {e}"))?;
@@ -122,15 +129,48 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = if small_ruby {
+            super::super::l6_world_pickups::small_ruby(
+                generation
+                    .native_gameplay()
+                    .ok_or("native pickup policies")?,
+            )?
+        } else {
+            world
+        };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame_binding = if small_ruby {
+            world.frame_binding_digest(deps.admitted.world_id)
+        } else {
+            activated.frame_binding().digest()
+        };
+        let bundle_room = if small_ruby {
+            Some(
+                activated
+                    .qualified_room()
+                    .bundle_view(
+                        cells.clone(),
+                        frame_binding,
+                        world.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: i32::from(trigger.x) - 1,
+                            y: i32::from(trigger.y),
+                            floor: -i16::from(trigger.floor),
+                        },
+                    )
+                    .ok_or("qualified native Bundle room")?,
+            )
+        } else {
+            None
+        };
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            frame_binding,
             world.map_revision_digest(),
             (
                 i32::from(trigger.x) - 1,
@@ -173,13 +213,20 @@ fn scenario_case(
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
+        if let Some(room) = bundle_room.as_ref() {
+            owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
+        }
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
         ));
-        if lever_fixture || target_swap || name.ends_with("-expiry") || name == "triangle-tower-lever" {
+        if lever_fixture
+            || target_swap
+            || name.ends_with("-expiry")
+            || name == "triangle-tower-lever"
+        {
             assert!(
                 owner
                     .states
@@ -201,7 +248,7 @@ fn scenario_case(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_binding.as_slice()).execute(&h.pool).await?;
         let fresh = super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -235,16 +282,112 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if floor_profiles {
+        if small_ruby {
+            super::super::l6_world_pickups::exercise(&owner, &mut admitted, &h, 0).await?;
+            if name.ends_with("-reset") {
+                let mut next = super::super::l6_world_pickups::cycle(
+                    &owner,
+                    admitted,
+                    &h,
+                    &authority,
+                    bundle_room.as_ref().ok_or("native reset room")?,
+                )
+                .await?;
+                drop(owner);
+                let reset_world = super::super::l6_world_pickups::small_ruby(
+                    generation
+                        .native_gameplay()
+                        .ok_or("native pickup policies")?,
+                )?;
+                let reset_cells = reset_world
+                    .movement_cells(activated.qualified_room().movement_cells())
+                    .map_err(debug)?;
+                let reset_frame = reset_world.frame_binding_digest(deps.admitted.world_id);
+                let reset_room = activated
+                    .qualified_room()
+                    .bundle_view(
+                        reset_cells.clone(),
+                        reset_frame,
+                        reset_world.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: origin.x,
+                            y: origin.y,
+                            floor: origin.floor,
+                        },
+                    )
+                    .ok_or("reset Bundle room")?;
+                let reset_pin = ChannelContentPin::from_activation(
+                    deps.admitted.world_id,
+                    2,
+                    generation.identity().server_artifact_digest(),
+                    generation.identity().client_artifact_digest(),
+                    reset_frame,
+                    reset_world.map_revision_digest(),
+                    (origin.x, origin.y, origin.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    deps.admitted.world_id,
+                    deps.admitted.channel_id,
+                    crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                    1,
+                    2,
+                    2,
+                    "runtime-scope-assignment:2",
+                    2,
+                    reset_pin,
+                )
+                .map_err(debug)?;
+                let reserved = runtime
+                    .reserve_fresh_session(next.game_session_id)
+                    .map_err(debug)?;
+                deps.actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(deps.actor, origin)
+                    .map_err(debug)?;
+                next.runtime_actor = Some(deps.actor);
+                deps.admitted = next;
+                deps.room = reset_room.clone();
+                *deps.runtime.lock().await = runtime;
+                let mut owner = deps.owner(&h, &authority);
+                owner.active_generation = Some(generation);
+                owner.movement_cells = &reset_cells;
+                owner.rooms =
+                    crate::gameplay_transport::SeamRooms::new(Some(&reset_room), Some(&reset_room));
+                owner.reset_epoch = h
+                    .root
+                    .active_world_reset_epoch(owner.world_id)
+                    .await?
+                    .ok_or("active reset epoch")?;
+                deps.initialize(&owner).await;
+                owner.admit_progression_session(&mut next).await;
+                super::super::l6_world_pickups::exercise(&owner, &mut next, &h, 1).await?;
+                super::super::l6_world_pickups::refuse_old_epoch(&owner, next, &h).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+        } else if floor_profiles {
             super::super::l6_floor_profiles::exercise(&mut owner, &mut admitted, &h, fence).await?;
         } else if ancient_instruments {
             super::super::l6_ancient_tombs::exercise(
-                &mut owner, &mut admitted, &h, &authority, fence, trigger,
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                trigger,
             )
             .await?;
         } else if name == "triangle-tower-wall" {
-            super::super::triangle_tower::exercise(&mut owner, &mut admitted, &world, &callback, trigger).await?;
-
+            super::super::triangle_tower::exercise(
+                &mut owner,
+                &mut admitted,
+                &world,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if outfit_world {
             super::super::qengine_access::exercise(
                 &mut owner,
@@ -366,9 +509,18 @@ fn scenario_case(
             .await?;
         } else if reusable_tool {
             super::super::l6_reusable_tools::exercise(
-                &mut owner, &mut admitted, &h, &authority, fence,
-                if name.ends_with("multitool") { "oteryn:item.tibia.i9598" } else { "oteryn:item.tibia.i3304" },
-            ).await?;
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                fence,
+                if name.ends_with("multitool") {
+                    "oteryn:item.tibia.i9598"
+                } else {
+                    "oteryn:item.tibia.i3304"
+                },
+            )
+            .await?;
         } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"

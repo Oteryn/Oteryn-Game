@@ -369,6 +369,11 @@ impl BundleFacts {
         self.doors.finish();
     }
 
+    /// Complete immutable House-marker presence after the boot scan finished.
+    pub(crate) fn has_house_tiles(&self) -> bool {
+        !self.houses.is_empty()
+    }
+
     /// Exact source membership of an authored House tile. A boolean House marker
     /// cannot admit movement into an adjacent House; ambiguous records grant none.
     pub fn house_id(&self, pos: TilePos) -> Option<u32> {
