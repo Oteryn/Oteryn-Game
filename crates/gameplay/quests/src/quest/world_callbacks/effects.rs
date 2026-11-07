@@ -191,13 +191,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             .present
             .iter()
             .any(|i| i.count == 0 || i.count > 100 || !super::super::valid_quest_key(&i.item))
-        || effects
-            .present
-            .iter()
-            .map(|i| &i.item)
-            .collect::<BTreeSet<_>>()
-            .len()
-            != effects.present.len()
+        || !super::super::reward_callbacks::unambiguous_items(&effects.present)
         || ((!effects.present.is_empty()
             || effects.temporary_item.is_some()
             || effects.remove_target)

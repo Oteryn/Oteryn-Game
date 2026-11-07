@@ -44,6 +44,11 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 100
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
         }
       }
     },
@@ -81,6 +86,11 @@
           "items": {
             "$ref": "#/$defs/item"
           }
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
         }
       }
     },

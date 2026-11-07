@@ -19,6 +19,9 @@ pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 pub struct ItemAmount {
     pub item: String,
     pub count: u16,
+    /// Native fluid subtype; zero requires an empty container on inputs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_subtype: Option<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -26,6 +29,9 @@ pub struct ItemAmount {
 pub struct ItemReward {
     pub item: String,
     pub count: u16,
+    /// Filled root rewards initialize the existing native fluid owner atomically.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_subtype: Option<u8>,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -201,23 +207,39 @@ pub(crate) fn valid_item_reward(r: &ItemReward) -> bool {
             && (1..=100).contains(&count)
     };
     item(&r.item, r.count)
+        && r.fluid_subtype
+            .is_none_or(|fluid| fluid != 0 && r.count == 1)
         && r.contents.len() <= 20
         && (r.contents.is_empty() || r.backpack_outputs.is_empty())
         && r.backpack_outputs.len() <= 19
-        && r.contents
-            .iter()
-            .chain(&r.backpack_outputs)
-            .all(|s| item(&s.item, s.count))
+        && r.contents.iter().chain(&r.backpack_outputs).all(|s| {
+            item(&s.item, s.count)
+                && s.fluid_subtype
+                    .is_none_or(|fluid| fluid != 0 && s.count == 1)
+        })
         && r.decay.as_ref().is_none_or(|decay| {
             decay.duration_millis > 0
                 && r.count == 1
                 && r.contents.is_empty()
                 && r.backpack_outputs.is_empty()
+                && r.fluid_subtype.is_none()
                 && decay.target.as_ref().is_none_or(|target| {
                     item(&target.key, 1)
                         && !target.revision.is_empty()
                         && target.revision.len() <= 512
                 })
+        })
+}
+
+/// Selectors may distinguish fluids of one Item, but cannot overlap an unqualified selector.
+pub(crate) fn unambiguous_items(items: &[ItemAmount]) -> bool {
+    let unique: BTreeSet<_> = items.iter().map(|i| (&i.item, i.fluid_subtype)).collect();
+    unique.len() == items.len()
+        && !items.iter().any(|a| {
+            a.fluid_subtype.is_none()
+                && items
+                    .iter()
+                    .any(|b| b.item == a.item && b.fluid_subtype.is_some())
         })
 }
 
@@ -362,19 +384,13 @@ fn parse_document(text: &str) -> Result<Document, String> {
         {
             return Err(format!("invalid reward participants {}", c.key));
         }
-        let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
-        let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
             || c.carried_item.as_ref().is_some_and(|item| {
-                c.take
-                    != [ItemAmount {
-                        item: item.clone(),
-                        count: 1,
-                    }]
+                (c.take.len() != 1 || c.take[0].item != *item || c.take[0].count != 1)
                     || c.storage.is_empty()
                     || c.give.is_some()
                     || c.fee.is_some()
@@ -422,7 +438,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 .iter()
                 .any(|r| !slug(&r.item, "oteryn:item.", b"._/:-", 256) || r.minimum > r.maximum)
             || c.present.len() > 8
-            || evidence.len() != c.present.len()
+            || !unambiguous_items(&c.present)
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
@@ -436,15 +452,16 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || !c.state_ops.is_empty()
                     || !c.participants.is_empty()
                     || c.take.len() != 1
-                    || c.take
-                        .first()
-                        .is_none_or(|take| take.item != bulk.item || take.count != 1)
+                    || c.take.first().is_none_or(|take| {
+                        take.item != bulk.item || take.count != 1 || take.fluid_subtype.is_some()
+                    })
                     || c.give.as_ref().is_none_or(|give| {
                         give.item != bulk.output
                             || give.count != bulk.base
                             || !give.contents.is_empty()
                             || !give.backpack_outputs.is_empty()
                             || give.decay.is_some()
+                            || give.fluid_subtype.is_some()
                     })
                     || c.fee.is_some()
                     || !c.present.is_empty()
@@ -465,7 +482,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     })
             })
             || c.take.len() > 8
-            || inputs.len() != c.take.len()
+            || !unambiguous_items(&c.take)
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
@@ -654,6 +671,76 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fluid_selectors_distinguish_contents_and_reject_overlaps() -> Result<(), String> {
+        let mut callback = load()?.into_iter().next().ok_or("callback")?;
+        callback.carried_item = None;
+        let value = |subtype| ItemAmount {
+            item: "oteryn:item.tibia.i2873".into(),
+            count: 1,
+            fluid_subtype: subtype,
+        };
+        callback.take = vec![value(Some(6)), value(Some(1))];
+        let document =
+            |c: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(
+            parse(&document(&callback)).is_ok(),
+            "different contents are distinct exact inputs"
+        );
+        callback.take.push(value(None));
+        assert!(
+            parse(&document(&callback)).is_err(),
+            "an unqualified selector would overlap the typed inputs"
+        );
+        callback.take = vec![value(Some(6)), value(Some(6))];
+        assert!(
+            parse(&document(&callback)).is_err(),
+            "duplicate fluid selectors remain ambiguous"
+        );
+        callback.take = vec![value(Some(0))];
+        assert!(
+            parse(&document(&callback)).is_ok(),
+            "empty input containers are representable without manufacturing a fluid state"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn filled_rewards_require_one_container_and_preserve_empty_serialization() -> Result<(), String>
+    {
+        let empty = serde_json::json!({"item":"oteryn:item.tibia.i2873","count":1,"contents":[]});
+        let mut reward: ItemReward =
+            serde_json::from_value(empty.clone()).map_err(|e| e.to_string())?;
+        assert!(valid_item_reward(&reward));
+        assert_eq!(
+            serde_json::to_value(&reward).map_err(|e| e.to_string())?,
+            empty
+        );
+        reward.fluid_subtype = Some(6);
+        assert!(valid_item_reward(&reward));
+        reward.count = 2;
+        assert!(
+            !valid_item_reward(&reward),
+            "one fluid state cannot initialize multiple copies"
+        );
+        reward.count = 1;
+        reward.fluid_subtype = Some(0);
+        assert!(
+            !valid_item_reward(&reward),
+            "empty output uses the legacy absent state"
+        );
+        reward.fluid_subtype = None;
+        reward.backpack_outputs = vec![ItemAmount {
+            item: "oteryn:item.tibia.i2873".into(),
+            count: 1,
+            fluid_subtype: Some(6),
+        }];
+        assert!(valid_item_reward(&reward));
+        reward.backpack_outputs[0].count = 2;
+        assert!(!valid_item_reward(&reward));
+        Ok(())
+    }
 
     #[test]
     fn repeatable_item_exchange_requires_an_explicit_cost() -> Result<(), String> {

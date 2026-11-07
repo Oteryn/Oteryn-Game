@@ -154,7 +154,7 @@ pub(super) async fn consume_reward_inputs(
     keys.extend(callback.inventory.iter().map(|r| r.item.as_str()));
     keys.sort_unstable();
     keys.dedup();
-    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key,coalesce(f.fluid_subtype,0::smallint) AS fluid_subtype FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item LEFT JOIN game_item_fluid_states f ON f.item_instance_id=i.item_instance_id AND f.world_id=i.world_id WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
     if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
@@ -189,7 +189,11 @@ pub(super) async fn consume_reward_inputs(
     for evidence in &callback.present {
         let mut needed = i64::from(evidence.count);
         for row in &rows {
-            if row.try_get::<&str, _>("definition_production_key")? == evidence.item {
+            if row.try_get::<&str, _>("definition_production_key")? == evidence.item
+                && evidence.fluid_subtype.is_none_or(|fluid| {
+                    row.try_get::<i16, _>("fluid_subtype").ok() == Some(i16::from(fluid))
+                })
+            {
                 let quantity: i64 = row.try_get("quantity")?;
                 needed -= needed.min(quantity);
             }
@@ -201,7 +205,7 @@ pub(super) async fn consume_reward_inputs(
     let mut remaining: std::collections::BTreeMap<_, _> = callback
         .take
         .iter()
-        .map(|i| (i.item.as_str(), i64::from(i.count)))
+        .map(|i| ((i.item.clone(), i.fluid_subtype), i64::from(i.count)))
         .collect();
     let mut inputs = Vec::new();
     for row in rows {
@@ -213,7 +217,14 @@ pub(super) async fn consume_reward_inputs(
         }
 
         let key: String = row.try_get("definition_production_key")?;
-        let Some(required) = remaining.get_mut(key.as_str()) else {
+        let fluid = u8::try_from(row.try_get::<i16, _>("fluid_subtype")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let selector = if remaining.contains_key(&(key.clone(), Some(fluid))) {
+            (key.clone(), Some(fluid))
+        } else {
+            (key, None)
+        };
+        let Some(required) = remaining.get_mut(&selector) else {
             continue;
         };
         let quantity: i64 = row.try_get("quantity")?;
@@ -317,9 +328,10 @@ pub(super) async fn consume(
             "SELECT i.quantity,i.item_instance_id::text AS item,c.location,c.kind FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
              JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 \
              AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             AND ($4::smallint IS NULL OR coalesce((SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id AND f.world_id=i.world_id),0)=$4) \
              ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
             .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
-            .bind(&required.item).fetch_all(&mut **tx).await?;
+            .bind(&required.item).bind(required.fluid_subtype.map(i16::from)).fetch_all(&mut **tx).await?;
         if rows.len() > 500 {
             return Ok(false);
         }

@@ -297,3 +297,10 @@ Existing QENGINE2, PC3, PC5 and PC8 heads were checked for reusable fluid hand-i
 and generic monster callbacks; no corresponding implementation was found there.
 The three new PG tests first prove missing bindings, then require full native
 journey execution; binding presence alone can never qualify these entries.
+Fluid selectors extend the existing Item/count shape with an optional native
+subtype. Empty inputs use subtype0; empty outputs keep the prior absent-state
+encoding. Different fluids of one Item are distinct selectors, and overlapping
+unqualified/qualified selectors are rejected. Root and child fluid outputs use
+QBASE1200's existing MINT initialization in the same transaction. L2 migration
+1217 binds exact subtype input counts and the complete output fluid plan without
+changing any canonical QENGINE2 migration or the native fluid state owner.

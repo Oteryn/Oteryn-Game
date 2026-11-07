@@ -383,6 +383,7 @@ pub(super) async fn exercise(
         let amount =
             |item: &(u16, u16)| oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
                 item: format!("oteryn:item.tibia.i{}", item.0),
+                fluid_subtype: None,
                 count: item.1,
             };
         let mut expected_take = take.iter().map(amount).collect::<Vec<_>>();
@@ -882,6 +883,7 @@ pub(super) async fn exercise(
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
                     item: "oteryn:item.tibia.i3043".into(),
+                    fluid_subtype: None,
                     count: 15,
                 },
                 &mut bags,
