@@ -748,3 +748,9 @@ s3b-content-1 versus Character root content-1 in retained failed test DB.
 Matching production-generation carrier fix is in working tree, all-target
 check session98749 not yet complete; publish its code immediately when compiled,
 then isolatedDecayPG. Exact red is content-revision guard, no longerEOF.
+
+Matching Decay carrier correction compiled: all-target/all-feature check of3
+changed crates passed6m34. Outfit variant now uses production generation bound
+tocontent-1, preserving the original parent-only canary variant. Immediate code
+WIP push, then isolatedDecayPG; last exact red remains appearance content guard
+s3b-content-1 versuscontent-1 after all accessories/achievement already passed.

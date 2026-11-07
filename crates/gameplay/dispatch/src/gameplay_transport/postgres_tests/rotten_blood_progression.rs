@@ -46,10 +46,13 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
-            world,
-            Some(include_bytes!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json")),
-        );
+        let source=Some(include_bytes!("../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json").as_slice());
+        let (controller, pin) = if qualify_outfit {
+            // Appearance selection must use the Character's actual content revision.
+            super::death_ml_loss_composed::production_generation_with_source(world,"content-1",source)?
+        } else {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world,source)
+        };
         let active = controller.active().ok_or("activated content")?;
         let native = active.native_gameplay().ok_or("native content")?;
         let room = pin.qualified_room().clone();
