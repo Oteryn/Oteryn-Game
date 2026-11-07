@@ -1377,3 +1377,8 @@ The native dispatch test binary compiles; this is not PostgreSQL execution proof
 ### Owner standing rule: full dependent-crate qualification before another push
 
 The freshly fetched origin/main is bbb3e06d0 (four new main commits). Compose it locally before the full unfiltered nextest matrix; no push until all failures are collected, grouped, repaired and the complete dependent set reruns green. The first reverse-normal-dependency closure contains22crates (recorded outside the repository). SRV9 pin-check passed in173.413s. The focused native command did not execute tests: compilation exhausted disk space. Completed task caches were removed, restoring10GiB; no source or prepared dependency cache was deleted. This local checkpoint is not PostgreSQL qualification.
+
+
+### Latest-main composition
+
+Merged origin/main bbb3e06d0 (MAINRED1107, SRVWLD, CLHUD and mechanics audit updates). The sole conflict was the old root contract deletion versus main's rename; preserve main's docs/reference/SRVWLD-CONTRACT-NOTES.md and keep no root CONTRACT-NOTES.md. No source lane branch or main branch is modified. Regenerate the reverse-dependent test closure for the composed tree and run the owner-mandated full nextest matrix before any push.

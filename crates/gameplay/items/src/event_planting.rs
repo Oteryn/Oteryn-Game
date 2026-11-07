@@ -240,7 +240,7 @@ pub fn planting_decays(after: u16) -> Vec<(u32, i64)> {
         .collect()
 }
 
-/// Captured only: Crystal201189f dryad_garden.lua:19 and utils_definitions.hpp:109.
+/// Crystal201189f dryad_garden.lua:19 and utils_definitions.hpp:109.
 /// The source teleports first, then emits CONST_ME_WATERSPLASH at the destination.
 pub const DRYAD_GARDEN_EFFECT_ID: u16 = 54;
 /// Captured only: Crystal201189f ice_flower_seeds.lua:6,13 uses CONST_ME_POFF.
