@@ -109,7 +109,10 @@ fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-lesson-guard")
 }
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
+    super::l6_world_pickups::native_scene(native, crops()?, &[])
+}
+pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups::NativeCrop>> {
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop};
     let bytes: [&'static [u8]; 5] = [
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -149,7 +152,7 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
             });
         }
     }
-    native_scene(native, crops, &[])
+    Ok(crops)
 }
 async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

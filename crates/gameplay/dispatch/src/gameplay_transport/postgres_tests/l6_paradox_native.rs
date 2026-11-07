@@ -268,7 +268,10 @@ fn appearance(
         .ok_or("native source facts")?
         .appearance_id)
 }
-fn ladder(owner: &ComposedFreshAdmission<'_, '_, '_>, pos: Position) -> TestResult<Option<u64>> {
+pub(super) fn ladder(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    pos: Position,
+) -> TestResult<Option<u64>> {
     let entries = owner
         .bundle_map()
         .ok_or("native map")?
@@ -289,7 +292,7 @@ fn ladder(owner: &ComposedFreshAdmission<'_, '_, '_>, pos: Position) -> TestResu
     }
     Ok(None)
 }
-async fn at(
+pub(super) async fn at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult<Position> {
@@ -340,7 +343,7 @@ async fn step(
     );
     Ok(())
 }
-async fn walk(
+pub(super) async fn walk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     target: Position,

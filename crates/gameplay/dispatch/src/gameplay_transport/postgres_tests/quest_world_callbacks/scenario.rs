@@ -31,6 +31,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_upper = name.starts_with("qengine-rewards-questpc4-paradox-upper-");
     let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
     let native_signs = name.starts_with("l6-native-signs-");
@@ -50,8 +51,11 @@ fn scenario_case(
         || native_flames
         || native_signs
         || diprath_room
-        || native_story;
-    let start = if native_story {
+        || native_story
+        || native_upper;
+    let start = if native_upper {
+        super::super::l6_paradox_upper::start(name)
+    } else if native_story {
         super::super::l6_paradox_story::start()
     } else if diprath_room {
         super::super::l6_diprath_room::start()?
@@ -305,7 +309,14 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_story {
+        let world = if native_upper {
+            super::super::l6_paradox_upper::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native upper policies")?,
+                name,
+            )?
+        } else if native_story {
             super::super::l6_paradox_story::world(
                 generation
                     .native_gameplay()
@@ -429,7 +440,7 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if native_story {
+            if native_story || (native_upper && name.ends_with("-complete")) {
                 6
             } else if classic_npc {
                 5

@@ -7445,6 +7445,23 @@
         "checked_at": "2026-11-07 15:12 UTC",
         "result": "No QENGINE2/QBASE migrations; conditional merge not applicable."
       }
+    },
+    "paradox_upper_batch_27": {
+      "status": "COMPILED_SCAFFOLD_PG_PENDING",
+      "previous_pushed_head": "ef8e62af9",
+      "decision_at": "2026-11-07 15:30 UTC",
+      "scope": "Source-native food floors4/5 and protected upper-climb arrival; three focused native cases. Full lower-to-upper whole climb and Riddler remain required.",
+      "source_document": "content/quests/authoring/paradox-tower.md; existing qualified food callback bindings preserved.",
+      "native_facts": "/tmp/questpc4-paradox-upper-native-facts.json independently decoded original levers/food cells/ladders/landings on floors4,3,2; original decoration/House/attrs retained.",
+      "authority": "Reuse actual NPC story for combined eligibility, Root typed XP for isolated mechanic cases, typed Root food mint setup, real native USE/STEP/advertised-ladder commands. No SQL quest flags or food counts.",
+      "red_session": 91610,
+      "red_log": "/tmp/questpc4-paradox-upper-red.log",
+      "checkpoint_decision": "New authored final arrival at32479,31905,z2; guards story5, fourth-floor arrival1, both exact food opening counters>=0; set bound climb-complete1 at level30. Guard is selected recipe progress, not recovered donor storage.",
+      "production": "Climb checkpoint callback absent until actual PostgreSQL behavior RED. Existing food mechanics are already implemented, do not duplicate them.",
+      "next_sql": 1259,
+      "whole_entries_remaining": 17,
+      "compiled": "5m00s",
+      "publication": "Compiled test scaffold checkpoint; combined PostgreSQL route running. No behavioral RED or production climb callback yet."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
