@@ -25,7 +25,8 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(
         name,
-        "nx6-wayfarer"
+        "catalogue-npc"
+            | "nx6-wayfarer"
             | "classic-quests-npc"
             | "classic-rottin-disrepair"
             | "threatened-dreams-npc"
@@ -189,7 +190,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if let Some(expected_destination) = stateless_destination {
+        if name == "catalogue-npc" {
+            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if let Some(expected_destination) = stateless_destination {
             super::stateless::exercise(
                 &owner,
                 &mut admitted,

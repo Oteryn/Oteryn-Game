@@ -227,6 +227,8 @@ pub fn load_embedded_quest_state(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
+    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 

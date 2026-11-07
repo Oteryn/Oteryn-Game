@@ -680,3 +680,7 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## QNPCFX integration facts (2026-11-07)
+
+The shared durable NPC executor is imported from questpc-pc2, rather than duplicated. Its source planner currently rejects non-storage effects except the bounded plain-item exchange and the existing Tereban XP participant. Calendar input now derives from the supplied epoch seconds; locked evaluation obtains those from PostgreSQL transaction time. NPC months use UTC, matching the existing daily reward month ledger; raid scheduling separately uses Europe/Berlin. qengine2 retains outfit/addon ownership. No QNPCFX title is qualified by this import alone.
