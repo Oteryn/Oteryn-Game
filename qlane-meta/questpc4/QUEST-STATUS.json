@@ -7351,15 +7351,15 @@
       }
     },
     "paradox_story_batch_26": {
-      "status": "COMPILED_FIXTURE_RED_WIP_CHECKPOINT",
+      "status": "COMPILED_BEHAVIORAL_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
       "decision_at": "2026-11-07 14:34 UTC",
       "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
       "source_document": "content/quests/authoring/paradox-tower.md; retained Crystal9f5a72c source SHA matches cited primary files for new contacts.",
       "native_facts": "/tmp/questpc4-paradox-npc-native-facts.json independently decoded source centers/west approaches; no House/attrs/geometry changes.",
       "authority": "Same catalogue-admitted-key NPC placement check as production boot; real protocol NPC conversations preserve topics within one connection. Typed XP owner arranges level30, no SQL quest progress seeds.",
-      "red_session": 20347,
-      "red_log": "/tmp/questpc4-paradox-story-red2.log",
+      "red_session": 29191,
+      "red_log": "/tmp/questpc4-paradox-story-red3.log",
       "production": "New NPC callbacks remain absent until actual PostgreSQL RED. Reuse existing NPC callbacks, read-only topic offers and account achievement grant.",
       "next_sql": 1259,
       "whole_entries_remaining": 17,
@@ -7377,6 +7377,17 @@
         "error": "Carrier(CapacityExceeded) placing five NPCs with only four free carrier slots",
         "classification": "Fixture setup failure, not missing-story behavioral RED",
         "fixes": "Reserve six slots only for native story; use native story start as initial trigger/floor; use paradox-story family to reuse existing premium fixture setup."
+      },
+      "checkpoint_head": "776b3c721",
+      "fixture_correction": "Six reserved actor slots only for native story; qengine scenario trigger/native entry matches Oldrak start/floor6; paradox-story name family reuses existing premium fixture setup. Catalogue admission and actor-capacity enforcement retained.",
+      "behavioral_red": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_paradox_story",
+        "seconds": 96.281633475,
+        "compiled": "4m46s",
+        "actual": "Native NPC placement and Oldrak story1 succeed; Zoltan crunor's caress command refused",
+        "expected": "Exact ordered Zoltan contact advances story1->2",
+        "log": "/tmp/questpc4-paradox-story-red3.log"
       }
     }
   },

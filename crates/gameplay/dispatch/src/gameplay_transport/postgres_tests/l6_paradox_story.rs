@@ -98,15 +98,15 @@ fn run(name: &'static str) -> TestResult {
 }
 #[test]
 fn l6_paradox_story_native_ordered() -> TestResult {
-    run("qengine-rewards-questpc4-story-ordered")
+    run("qengine-rewards-questpc4-paradox-story-ordered")
 }
 #[test]
 fn l6_paradox_story_native_out_of_order() -> TestResult {
-    run("qengine-rewards-questpc4-story-out-of-order")
+    run("qengine-rewards-questpc4-paradox-story-out-of-order")
 }
 #[test]
 fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
-    run("qengine-rewards-questpc4-story-lesson-guard")
+    run("qengine-rewards-questpc4-paradox-story-lesson-guard")
 }
 pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};

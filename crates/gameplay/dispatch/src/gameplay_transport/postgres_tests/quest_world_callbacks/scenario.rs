@@ -31,7 +31,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
-    let native_story = name.starts_with("qengine-rewards-questpc4-story-");
+    let native_story = name.starts_with("qengine-rewards-questpc4-paradox-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
     let native_signs = name.starts_with("l6-native-signs-");
     let native_flames = name.starts_with("l6-native-flames-");
@@ -429,7 +429,9 @@ fn scenario_case(
             1,
             1,
             "runtime-scope-assignment:1",
-            if classic_npc {
+            if native_story {
+                6
+            } else if classic_npc {
                 5
             } else if monk {
                 4
