@@ -236,6 +236,16 @@
           "/tmp/questpc4-puzzle-map-use-pg.log"
         ],
         "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
+      },
+      "world_admission_component": {
+        "status": "GREEN_MERGED_READY_TO_FF_PUSH",
+        "proof": "QUEST-STATUS.json#/world_admission_batch",
+        "whole_entry": "IN_PROGRESS",
+        "scopes": [
+          "exact food4/food5 open/debit/free close/reopen",
+          "physical STEP admission",
+          "renamed+stripped protected-track refusal"
+        ]
       }
     },
     {
@@ -555,7 +565,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms.",
+        "missing_piece": "Native tomb assembly/switch/gate counterparts, original-online-actor treasure consequences, and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates or physical switch restoration.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",
@@ -586,7 +596,8 @@
         ],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
         "kind": null,
-        "dependency": null
+        "dependency": null,
+        "historical_missing_piece": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms."
       },
       "sources": [
         {

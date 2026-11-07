@@ -495,12 +495,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let mut success_message = if callback.storage.is_empty() {
+        let durable = !callback.storage.is_empty() && !(close && callback.opening_only);
+        let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
             None
         };
-        if !callback.storage.is_empty() {
+        if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
             else {

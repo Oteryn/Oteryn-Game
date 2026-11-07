@@ -71,3 +71,16 @@ fixed source sequence and learned-rule prerequisite. See pinned
 `data-global/npc/riddler.lua:118-144`, SHA256
 198907507cb4bf3c40b7c00abdf75a5ebb0e260e6e1b18683a39b652b711dc8a,
 <https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/riddler.lua>.
+
+The fourth/fifth food-lever bindings now use the existing fenced offering owner
+with a bounded personal operation counter solely to compose exact inputs with the
+prepared map projection. It is not evidence that the donor stored such a counter.
+The global ladder can close without spending or writing personal progress. Every
+new opening requires all source food definitions again. The fourth-floor arrival
+flag is authored progress at the native landing, not an invented source UID or a
+claim of donor quest-storage parity.
+
+Public Crystal201189f copies of `action_four_floor_lever.lua:1-49` and
+`action_fifth_floor_lever.lua:1-41` have been SHA256 checked against the above
+repository9f5a72c bytes and are identical. The original source guard and reward
+claims remain held; these bindings qualify only the selected Oteryn behavior.

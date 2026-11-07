@@ -3227,14 +3227,15 @@
       {
         "canonical": "oteryn:quest.the_ancient_tombs_quest",
         "status": "IN_PROGRESS",
-        "blocker": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms.",
+        "blocker": "Native tomb assembly/switch/gate counterparts, original-online-actor treasure consequences, and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates or physical switch restoration.",
         "partial_qualification": {
           "scope": "Five successful instrument USE transitions, position/appearance binding independently checked against native B3; literal STEP approach, replay and fail-closed out-of-order/completed-attempt tests. Not tomb collision, source wrong-instrument damage/reset, doors, drops, assembly or whole quest.",
           "test": "l6_ancient_tombs_instruments_real_use_persists_order_and_replay",
           "log": ".questpc4/logs/l6-ancient-instruments-native.log",
           "duration_seconds": 76.447324078,
           "result": "1 passed / 0 failed"
-        }
+        },
+        "historical_blocker": "The seven-pharaoh item assembly and Ashmunrah access/reward composition remain unbound; the existing seventeen callbacks cover only part of the tomb mechanisms."
       },
       {
         "canonical": "oteryn:quest.cradle_of_monsters",
@@ -5586,6 +5587,113 @@
         "clippy": "PASS same changed crates/all targets/features -D warnings2m55s",
         "duplicates_diff": "PASS schema numbers and staged/unstaged diff",
         "pins": "No generated/native/world input change; existing pin unchanged"
+      },
+      "merge": {
+        "status": "GREEN",
+        "local_green": "e3202f845bc383994113b3525b09384959f819a9",
+        "incoming": "2d8bd8c5c8d728f85ee44b74d47b9973aa359271",
+        "retained": "Incoming exact physical progress bindings/opening-only inputs/3637 native profiles/a36 pin and all prior green qualifications; our original timer projection and six cases retained",
+        "stage": "All merged gates green; commit required-author merge and fresh-fetch fast-forward push immediately",
+        "pin_check": {
+          "status": "GREEN",
+          "log": "/tmp/questpc4-switch-timer-merge-pin.log",
+          "digest": "a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+          "inputs": "Byte-identical to incoming2d8bd8c5c content/tool artifacts"
+        },
+        "regression_script": "/tmp/questpc4-switch-timer-merge-regressions.sh",
+        "postgres": {
+          "status": "GREEN",
+          "version": "18.6",
+          "cases": 12,
+          "groups": [
+            {
+              "log": "/tmp/questpc4-switch-timer-merge-pg.log",
+              "passed": 6,
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-timer-expired-12121",
+                  "duration_seconds": 124.037397753
+                },
+                {
+                  "marker": "l6-tomb-switch-timer-fresh-12121",
+                  "duration_seconds": 124.115826961
+                },
+                {
+                  "marker": "l6-tomb-switch-timer-expired-12123",
+                  "duration_seconds": 143.78828146
+                },
+                {
+                  "marker": "l6-tomb-switch-timer-expired-12122",
+                  "duration_seconds": 144.444044063
+                },
+                {
+                  "marker": "l6-tomb-switch-timer-forged-12121",
+                  "duration_seconds": 68.952327172
+                },
+                {
+                  "marker": "l6-tomb-switch-timer-repeat-12121",
+                  "duration_seconds": 71.697562158
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-timer-merge-admission-pg.log",
+              "passed": 3,
+              "cases": [
+                {
+                  "marker": "qengine-rewards-questpc4-admission-physical",
+                  "duration_seconds": 134.826105896
+                },
+                {
+                  "marker": "qengine-rewards-questpc4-admission-opening-five",
+                  "duration_seconds": 144.052471813
+                },
+                {
+                  "marker": "qengine-rewards-questpc4-admission-opening",
+                  "duration_seconds": 145.107649182
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-timer-merge-shadow-pg.log",
+              "passed": 1,
+              "cases": [
+                {
+                  "marker": "qengine-rewards-questpc4-paradox-shadow",
+                  "duration_seconds": 92.190178621
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-timer-merge-native-pg.log",
+              "passed": 1,
+              "cases": [
+                {
+                  "marker": "l6-tomb-native-present-3950",
+                  "duration_seconds": 58.043347377
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-switch-timer-merge-gate-pg.log",
+              "passed": 1,
+              "cases": [
+                {
+                  "marker": "l6-tomb-gate-open-50135",
+                  "duration_seconds": 74.451308624
+                }
+              ]
+            }
+          ]
+        },
+        "checks": {
+          "fmt": "PASS",
+          "check": "PASS content/quests/world/durability/dispatch all targets/features7m54s including build wait",
+          "clippy": "PASS same5crates/all targets/features -D warnings2m55s",
+          "units": "12 world_callbacks1.23s +2 admission_binding0.02s,0 failures",
+          "pin": "PASS a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+          "duplicates_diff": "PASS"
+        }
       }
     }
   },
@@ -7117,6 +7225,17 @@
           "log": "/tmp/questpc4-mead-floor-merge-clippy.log"
         }
       }
+    },
+    {
+      "incoming_head": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
+      "scope": "Shared switch leases1071 and source Tomb gates; preserve local admission batch and incoming shared implementation",
+      "metadata_scalar_conflicts": [
+        {
+          "path": "/generic_puzzle_batch/status",
+          "local": "PUSHED",
+          "incoming": "PRESERVED_AND_MERGED_GREEN"
+        }
+      ]
     }
   ],
   "next_source_observations": {
@@ -7619,7 +7738,7 @@
     }
   },
   "generic_puzzle_batch": {
-    "status": "PRESERVED_AND_MERGED_GREEN",
+    "status": "PUSHED",
     "whole_entry_status": "Paradox IN_PROGRESS; counts4QUALIFIED/17active/2external exclusions unchanged",
     "postgres_components": {
       "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
@@ -7730,6 +7849,333 @@
       },
       "compatibility": "Incoming carried_step Callback constructor defaults ActorKind::Player and empty readonly requirements. Serialization omits both defaults; source branches and all old profiles preserved.",
       "reuse_next": "Incoming native_scene multi-crop/teleport-attested helper already solves Paradox multifloor scene assembly; extend only for missing projection palette entries, preserving all old single-crop bytes."
+    },
+    "pushed_head": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
+    "remote_verified": true
+  },
+  "world_admission_batch": {
+    "status": "GREEN_MERGED_READY_TO_FF_PUSH",
+    "previous_pushed_head": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
+    "scope": [
+      "exact reusable food debit when opening, free close",
+      "physical-only world checkpoint binding",
+      "registered protected-track ownership prevents renamed and stripped binding bypass"
+    ],
+    "test_log": "/tmp/questpc4-world-admission-red.log",
+    "session": 29823,
+    "test_count": 3,
+    "implementation_started": true,
+    "whole_entry": "Paradox IN_PROGRESS; no qualification change",
+    "planned_reuse": [
+      "existing WorldCallback durable offering owner and prepared projections",
+      "PC3 SetWithBinding tag7 plus a checked bound addition effect for repeated input callbacks",
+      "PC6 Ground movement projection delegation already pushed",
+      "incoming native_scene multifloor helper already merged; do not duplicate it"
+    ],
+    "rule": "Capture actual PG RED before implementation; extend probes into meaningful exact-debit/close/physical source tests before any GREEN claim.",
+    "red": {
+      "log": "/tmp/questpc4-world-admission-red.log",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "cases": {
+        "opening_only_unknown_field": 52.588568529,
+        "requires_world_admission_unknown_field": 51.489982592,
+        "renamed_stripped_binding_committed_protected_story": 89.599955017
+      },
+      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
+    },
+    "implemented": [
+      "opening_only durable work only on opening, restricted value-free close",
+      "requires_world_admission binding and exact world primary transition",
+      "checked AddWithBinding encodingtag8, legacy bytes unchanged",
+      "shared exact primary transition builder for NPC lowering/admission",
+      "cached registered protected-track ownership; renamed+stripped writes refused",
+      "bound-source admission for prepared ladder/input projections; monster/read-only exclusions retained"
+    ],
+    "contract": "qlane-meta/questpc4/WORLD-ADMISSION-CONTRACT.md",
+    "component_green": {
+      "shadow_pg": {
+        "log": "/tmp/questpc4-admission-shadow-green.log",
+        "seconds": 91.484554563,
+        "postgres": "18.6",
+        "passed": 1
+      },
+      "units": {
+        "log": "/tmp/questpc4-admission-units1.log",
+        "passed": 10,
+        "seconds": 1.47,
+        "frozen_hashes": "unchanged Outfits/IceIslands/Spirit"
+      }
+    },
+    "real_flow_tests": {
+      "status": "GREEN",
+      "log": "/tmp/questpc4-world-admission-flow1.log",
+      "session": 86646,
+      "cases": [
+        "six exact food debits/open/transaction/free close/reopen",
+        "two exact mushroom debits/open/free close/reopen",
+        "generic writer refusal then real STEP progress"
+      ],
+      "physical_green": {
+        "postgres": "18.6",
+        "seconds": 53.862482693,
+        "log": "/tmp/questpc4-world-admission-flow1.log"
+      },
+      "food_red": {
+        "four_seconds": 53.554437775,
+        "five_seconds": 54.113960692,
+        "error": "DefinitionNotFound for exact native inputs; no substitute definitions used"
+      },
+      "rerun": {
+        "session": 76050,
+        "log": "/tmp/questpc4-world-admission-flow3.log",
+        "cargo_build_jobs": 1,
+        "reason": "prior compiler SIGKILL under concurrent7.5GiB pin check; no PG result from that failed build"
+      },
+      "latest": {
+        "log": "/tmp/questpc4-world-admission-flow3.log",
+        "passed": 3,
+        "failed": 1,
+        "seconds": 144.37,
+        "postgres": "18.6",
+        "green_seconds": {
+          "fifth_food_pair": 55.091661985,
+          "renamed_stripped_binding": 92.034091377,
+          "physical_checkpoint": 52.333423145
+        },
+        "failure": "six inputs: completed set USE returned Rejected; durable state unchanged on earlier missing/wrong inputs",
+        "diagnostic_log": "/tmp/questpc4-admission-six-diagnostic.log"
+      },
+      "fixture_repair": {
+        "root_cause": "quest_world_callbacks::world creates the ladder landing but omitted presence.position itself when outside the default rectangle; food4 target32476,31904,-4 is absent, so production prepare_quest_projection correctly rejects before SQL admission",
+        "diagnostic_log": "/tmp/questpc4-admission-six-diagnostic.log",
+        "seconds": 54.144996832,
+        "repair": "add declared item_presence source tile to composed fixture; preserve production projection guard and all exact input/free-close/reopen assertions",
+        "rerun_log": "/tmp/questpc4-world-admission-final-pg.log",
+        "rerun_session": 6828,
+        "scope": "four admission cases plus original NPC level, whole Mead and whole Spirit regressions"
+      }
+    },
+    "native_profiles": {
+      "producer": "tools/content-migration/register_spell_families.py",
+      "log": "/tmp/questpc4-admission-native-generate.log",
+      "files": 42,
+      "old": 3631,
+      "new": 3637,
+      "changed_old": 0,
+      "added": [
+        3537,
+        3543,
+        3587,
+        3589,
+        3590,
+        3593
+      ],
+      "audit": "/tmp/questpc4-admission-profile-audit.json"
+    },
+    "further_binding_guard": "Unknown no-op aliases touching protected tracks are also refused: ADD0 is a state writer operation, not the read-only predicate API.",
+    "pin_refresh": {
+      "producer": "oteryn-world-bundle-compiler pin-refresh",
+      "log": "/tmp/questpc4-admission-pin-refresh.log",
+      "previous": "7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+      "new": "a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+      "note": "Six newly admitted input definitions are also placed in the World; owning tool changed pin. Do not restore old pin manually."
+    },
+    "verification_resource_retry": {
+      "log": "/tmp/questpc4-world-admission-flow2.log",
+      "error": "rustc lib test exited signal9 SIGKILL, no PG cases started",
+      "observed_memory": "World pin-check process RSS7493728KiB concurrently with compiler in17GiB/no-swap container",
+      "action": "Wait for owning pin check; retry Cargo with CARGO_BUILD_JOBS=1, no pin compilation in parallel. No tests skipped or weakened."
+    },
+    "checks": {
+      "units": {
+        "passed": 11,
+        "seconds": 2.51,
+        "log": "/tmp/questpc4-admission-units2.log"
+      },
+      "check": {
+        "status": "PASS",
+        "duration": "4m32s",
+        "log": "/tmp/questpc4-admission-check-final.log"
+      },
+      "clippy": {
+        "status": "PASS",
+        "duration": "3m12s",
+        "all_targets": true,
+        "all_features": true,
+        "deny_warnings": true,
+        "log": "/tmp/questpc4-admission-clippy.log"
+      },
+      "producer_freshness": {
+        "status": "PASS",
+        "files": 42,
+        "log": "/tmp/questpc4-admission-native-check.log"
+      },
+      "pin": {
+        "status": "PASS",
+        "digest": "a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+        "bytes": 31102612,
+        "log": "/tmp/questpc4-admission-pin-check.log"
+      },
+      "final_fmt": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-admission-final-fmt.log"
+      },
+      "ladder_catalogue": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-admission-ladder-check.log"
+      },
+      "final_check": {
+        "status": "PASS",
+        "duration": "4m 51s",
+        "log": "/tmp/questpc4-admission-final-check.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "content",
+          "quests",
+          "durability",
+          "dispatch"
+        ]
+      },
+      "final_clippy": {
+        "status": "PASS",
+        "duration": "2m 41s",
+        "log": "/tmp/questpc4-admission-final-clippy.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "content",
+          "quests",
+          "durability",
+          "dispatch"
+        ],
+        "deny_warnings": true
+      }
+    },
+    "green": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "log": "/tmp/questpc4-world-admission-final-pg.log",
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 259.44,
+      "cases": {
+        "l6/waterskin-of-mead": 59.77322741,
+        "qengine-rewards-questpc4-paradox-shadow": 92.161026278,
+        "qengine-rewards-questpc4-paradox-level": 91.087838506,
+        "qengine-rewards-questpc4-spirit": 98.68731128,
+        "qengine-rewards-questpc4-admission-opening-five": 55.21071128,
+        "qengine-rewards-questpc4-admission-opening": 56.101003139,
+        "qengine-rewards-questpc4-admission-physical": 53.366528385
+      },
+      "scope": "Owned mechanism components and existing whole-entry regressions; whole Paradox remains IN_PROGRESS"
+    },
+    "remote_advancement": {
+      "head": "bd42f09bb",
+      "scope": "Shared switch leases1071 and source Tomb gates",
+      "action": "Commit local green batch, merge/reuse incoming, validate integration, push FF"
+    },
+    "qengine2_refresh": {
+      "head": "97cb9db79",
+      "reusable_later": "Carried document USE and repeatable source exchanges; no duplicate implementation",
+      "no_unrelated_content_merge": true
+    },
+    "integration": {
+      "status": "GREEN_READY_TO_FF_PUSH",
+      "local_green": "7f5e1720b",
+      "incoming": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
+      "preserved": [
+        "shared switch leases1071",
+        "source three Tomb gate predicates",
+        "exact opening-only inputs and free close",
+        "protected bound track ownership",
+        "fixture presence source tile and incoming formatting"
+      ],
+      "constructor_adaptation": "new shared callback fields bothfalse/default-skipped; all existing lowered hashes preserved",
+      "pg_log": "/tmp/questpc4-admission-merge-pg.log",
+      "session": 51495,
+      "cases": 6,
+      "scope": [
+        "food4 exact debit/free close/reopen",
+        "renamed+stripped NPC alias and locked level positive",
+        "shared switch12121 durable/replay",
+        "gate50135 closed",
+        "gate50135 open",
+        "native3956 carried present"
+      ],
+      "compile_retry": {
+        "first_log": "/tmp/questpc4-admission-merge-pg.log",
+        "error": "E0063 second shared-switch gate Callback constructor missing new default fields; no PG cases started",
+        "fix": "both incoming constructors opening_only=false/requires_world_admission=false",
+        "log": "/tmp/questpc4-admission-merge-pg2.log",
+        "session": 51233
+      },
+      "green_pg": {
+        "log": "/tmp/questpc4-admission-merge-pg2.log",
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "seconds": 212.89,
+        "postgres": "18.6",
+        "cases": {
+          "l6-tomb-gate-closed-50135": 77.297291044,
+          "qengine-rewards-questpc4-paradox-shadow": 101.597233972,
+          "l6-tomb-gate-open-50135": 79.102202689,
+          "l6-tomb-switch-12121": 54.826067827,
+          "qengine-rewards-questpc4-admission-opening": 56.191200803,
+          "l6-tomb-native-present-3956": 56.490299181
+        }
+      },
+      "units": {
+        "log": "/tmp/questpc4-admission-merge-units.log",
+        "passed": 22,
+        "seconds": 3.02,
+        "frozen_hashes": "Outfits/IceIslands/Spirit unchanged"
+      },
+      "content_and_pins": "All content paths byte-identical to localgreen7f5e1720b; prior owning generation/freshness/a36 pin-check remain exact",
+      "migration": "1071 byte-equal MERGE_HEAD; all numeric versions unique",
+      "check": {
+        "status": "PASS",
+        "duration": "4m 23s",
+        "log": "/tmp/questpc4-admission-merge-check.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "quests",
+          "durability",
+          "dispatch"
+        ]
+      },
+      "clippy": {
+        "status": "PASS",
+        "duration": "4m 25s",
+        "log": "/tmp/questpc4-admission-merge-clippy.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "quests",
+          "durability",
+          "dispatch"
+        ],
+        "deny_warnings": true
+      },
+      "fmt": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-admission-merge-fmt.log"
+      }
+    },
+    "lane_refresh": {
+      "questpc3": "009f5f9e1",
+      "questpc6": "53d5648b8",
+      "questpc8": "70a0d92af",
+      "qengine2": "97cb9db79",
+      "whole_entry_overlap_qualified": [],
+      "reuse_candidates": [
+        "PC3 retained rake/physical barrier repairs",
+        "PC6 completed Fibula path",
+        "PC8 shared authored scene progression and retained tool evacuation",
+        "qengine2 carried document USE and source exchanges"
+      ]
     }
   }
 }
