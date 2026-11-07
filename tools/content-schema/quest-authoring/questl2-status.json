@@ -2954,6 +2954,29 @@
         "status": "PASS",
         "duration": "5m19s",
         "log": "/tmp/l2-alliance-native-pg7.log"
+      },
+      "corpse_custody": {
+        "status": "PENDING_NATIVE_JOURNEY_PROOF",
+        "creature": "oteryn:creature.renegade_orc",
+        "source_corpse": 6001,
+        "decay_chain": [
+          4119,
+          4120,
+          4147
+        ],
+        "changed_loot_admissions": [
+          6001,
+          10196,
+          11479,
+          3410,
+          7378
+        ],
+        "loot_bindings_tables_probabilities": "UNCHANGED",
+        "source_proof": "tools/content-schema/native-gameplay/quest-creature-item-profiles.json",
+        "unit_tests": 4,
+        "shared_authoring_tests": 27,
+        "lane_authoring_tests": 21,
+        "pin_refresh": "/tmp/l2-corpse-pin-refresh.log"
       }
     }
   }

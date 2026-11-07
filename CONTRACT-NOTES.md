@@ -358,3 +358,18 @@ existing native kill reward tests, so unrelated armour/block balance cannot
 prevent the quest callback proof. The actual source creature, positive damage,
 native death queue and durable quest credit remain required; no quest death or
 progress is manufactured by this fixture.
+
+Native quest-creature custody derives exact corpse profiles and decay successors
+from the pinned item XML/appearance importer. Renegade Orc names corpse6001;
+Canary items.xml:16355-16360 (SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2)
+states a ten-slot container with ten-second decay to4119. The same source chain
+continues through4120 and4147. Existing native corpse/lifetime owners remain
+responsible for runtime custody and decay.
+The generic loot-custody projection refines only inert declarations explicitly
+listed by the bound quest creatures and their source loot. It preserves accepted
+canonical admissions and checks exact family/key/revision identity. Current
+changes admit6001 and reconcile already-native loot10196,11479,3410,7378;
+creature bindings, loot tables, probabilities and rewards remain byte-for-byte
+unchanged as JSON values. The ordinary complete loot builder retains its existing
+Corruptor guards; the scoped producer does not rewrite those unrelated tables.

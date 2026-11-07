@@ -368,7 +368,7 @@ def creature_products(appearances: Path = APPEARANCES) -> set:
             if record.get('flags', {}).get('market.category') == MARKET_CATEGORY_CREATURE_PRODUCTS}
 
 
-def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARANCES) -> dict:
+def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARANCES, native_profiles: dict | None = None) -> dict:
     """Admission facts of every Item definition, by key. The Forge resource's native
     admission is resolved separately below (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929). A
     `oteryn:item.tibia.i<client id>` Item in the client's "Creature Products" market category
@@ -395,6 +395,33 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
+    # Custody is owned by the admitted native provider when the canonical declaration
+    # is still inert. Never erase an already accepted canonical admission.
+    profiles_path=definitions/'spell-native-profiles.json'
+    admissions_path=definitions/'quest-loot-custody.json'
+    if native_profiles is None and profiles_path.is_file() and admissions_path.is_file():
+        _,declarations=read(admissions_path)
+        if declarations['schema']!='OTERYN_NATIVE_LOOT_CUSTODY_ADMISSIONS/v1':
+            raise ValueError('Native loot custody declaration schema')
+        selected={r['key'] for r in declarations['items']}
+        _,providers=read(profiles_path)
+        native_profiles={'records':[r for r in providers['records'] if r['production_definition']['production_key'] in selected]}
+    return refine_native_item_facts(facts,native_profiles or {})
+
+
+def refine_native_item_facts(facts: dict, native_profiles: dict) -> dict:
+    """Project exact accepted native custody into inert canonical loot declarations."""
+    for record in native_profiles.get('records',[]):
+        reference=record['production_definition']
+        fact=facts.get(reference['production_key'])
+        if fact is None or fact['materializable'] or not record['admission']['materializable']:
+            continue
+        if fact['item'] != {'family':reference['family'],'key':reference['production_key'],'revision':reference['revision_ref']}:
+            raise ValueError('Native loot custody identity differs from canonical declaration')
+        container=record['semantics']['container']
+        capacity=container.get('value',{}).get('capacity',{}) if container['state']=='KNOWN' else {}
+        fact['materializable']=True
+        fact['container_capacity']=capacity.get('value') if capacity.get('state')=='KNOWN' else None
     return facts
 
 
@@ -447,7 +474,7 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
 
 
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
-                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
+                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS, native_profiles: dict | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
@@ -466,7 +493,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             if definition['identity']['key'] in tables:
                 raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
             tables[definition['identity']['key']] = definition
-    facts = item_facts(item_definitions)
+    facts = item_facts(item_definitions,native_profiles=native_profiles)
     bindings, named, used = {}, {}, {}
 
     def name(ref):
@@ -523,12 +550,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
     order = lambda rows: [rows[key] for key in sorted(rows, key=lambda key: key.encode('utf-8'))]
-    line = lambda value: json.dumps(value, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
     lists = {'creature_loot': order(bindings),
              'tables': [{key: table[key] for key in ('identity', 'algorithm', 'entries')} for table in order(used)],
              'items': order(named)}
-    body = ',\n'.join(f'"{key}":[\n' + ',\n'.join(line(row) for row in rows) + '\n]' for key, rows in lists.items())
-    return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+    return encode_loot_tables({'schema':'OTERYN_NATIVE_LOOT_TABLES/v1',**lists})
+
+
+def encode_loot_tables(document: dict) -> bytes:
+    """Retain the bounded source section's one-record-per-line representation."""
+    if set(document) != {'schema','creature_loot','tables','items'} or document['schema']!='OTERYN_NATIVE_LOOT_TABLES/v1':
+        raise ValueError('Native loot section schema')
+    line=lambda value:json.dumps(value,ensure_ascii=False,separators=(',',':'),sort_keys=True)
+    body=',\n'.join(f'"{key}":[\n'+',\n'.join(line(row) for row in document[key])+'\n]' for key in ['creature_loot','tables','items'])
+    return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n'+body+'}\n').encode('utf-8')
 
 
 def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:

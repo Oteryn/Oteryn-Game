@@ -1,0 +1,100 @@
+{
+  "schema": "OTERYN_NATIVE_LOOT_CUSTODY_ADMISSIONS/v1",
+  "items": [
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i10196",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i11479",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i266",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3031",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3091",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3285",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3298",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3301",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3307",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3369",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3410",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3557",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3578",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i3725",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i4119",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i4120",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i4147",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i6001",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i7378",
+      "revision": "definition-r1"
+    }
+  ]
+}

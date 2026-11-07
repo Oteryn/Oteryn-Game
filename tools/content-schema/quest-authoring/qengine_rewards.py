@@ -437,6 +437,21 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,native.spell_import.canonical_bytes)
+    import quest_creature_item_profiles as creature_items
+    import build_full_spell_artifact as artifact
+    creature_items.admit(ROOT,generated,reward_items.PROFILE,native.provider_order)
+    raw=generated[reward_items.PROFILE]
+    profiles=json.loads(raw)
+    loot_document=json.loads((ROOT/'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+    selected={r['key'] for r in json.loads(generated[creature_items.ADMISSIONS])['items']}
+    artifact.refine_native_item_facts({f['item']['key']:f for f in loot_document['items']},
+        {'records':[r for r in profiles['records'] if r['production_definition']['production_key'] in selected]})
+    loot=artifact.encode_loot_tables(loot_document)
+    generated['tools/content-schema/native-gameplay/loot-tables.json']=loot
+    gameplay_manifest=json.loads(generated['content/spells.manifest.json'])
+    gameplay_manifest['item_profiles']['sha256']=sha(raw)
+    gameplay_manifest['loot_tables']['sha256']=sha(loot)
+    generated['content/spells.manifest.json']=native.spell_import.canonical_bytes(gameplay_manifest)
     return generated
 
 
