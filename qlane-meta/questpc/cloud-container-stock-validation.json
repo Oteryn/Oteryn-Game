@@ -1,0 +1,86 @@
+{
+  "scope": "source-declared shared native skeleton container stock3001",
+  "result": "PASS",
+  "qualified_titles_added": 0,
+  "source_capture": "tools/content-schema/world-authoring/samples/quest-container-stock.json",
+  "red": "cloud-container-stock-red-validation.json",
+  "green": [
+    {
+      "case": "draconia_container_stock_replay",
+      "postgres": "18.6",
+      "duration_seconds": 62.081279379,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_shared",
+      "postgres": "18.6",
+      "duration_seconds": 62.729988979,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_forged",
+      "postgres": "18.6",
+      "duration_seconds": 71.600899512,
+      "result": "GREEN"
+    }
+  ],
+  "wall_seconds": 71.6,
+  "proof": [
+    "existing empty native5972 opens with one silver2969",
+    "valid withdrawal mints immutable key_number3001 once",
+    "literal CommandRef replay is Moved without another MINT",
+    "durable shared placement receipts rebuild the empty pane",
+    "new command after consumption is stale",
+    "forged ordinal and reset epoch write no key"
+  ],
+  "boundary": "No complete-title promotion. Next prove second-player visibility, real reset replenishment and route composition.",
+  "logs": {
+    "pg": {
+      "path": "cloud-container-stock-green.log",
+      "sha256": "4e218f91d329ca78406af019a164785782311d0d22f7d9f01378dd0a86d8743a"
+    },
+    "check": {
+      "path": "cloud-container-stock-check.log",
+      "sha256": "05f54fb061b308f378e740a0487526ec08c4c310f2cd97a965322222e4cf2f15"
+    },
+    "clippy": {
+      "path": "cloud-container-stock-clippy.log",
+      "sha256": "a583fb04a57388a076a2770a00e6495f265a6c368916e001add945aaac42fb49"
+    },
+    "unit": {
+      "path": "cloud-container-stock-unit.log",
+      "sha256": "d5bddb829be2f9df2700ac2b7c13baac9ca2a4205cefc82201bdbb635f0a9d03"
+    },
+    "fmt": {
+      "path": "cloud-container-stock-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "generation": {
+      "path": "cloud-container-stock-generation.log",
+      "sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750"
+    },
+    "pins": {
+      "path": "cloud-container-stock-pins.log",
+      "sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed"
+    }
+  },
+  "review": {
+    "checked": [
+      "native non-house empty root only",
+      "absent reserved ordinal collision guard",
+      "existing map MINT/TRANSFER and scope/fence/replay guards retained",
+      "parent not hidden or minted",
+      "filled/bound/wrong containers untouched",
+      "no personal RewardClaim or fake death source"
+    ],
+    "findings": []
+  },
+  "checks": {
+    "fmt": "PASS: cargo fmt all/check plus explicit mounted PG modules",
+    "check": "PASS: changed crates, final3m11s including Cargo lock wait",
+    "clippy": "PASS: changed crates all targets/all features -D warnings,6m43s including lock wait",
+    "unit": "PASS:3 focused pure selector units; non-PG0.00s is not counted as PG execution",
+    "generation": "PASS: pinned source/native capture check",
+    "pins": "PASS: unchanged174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62; inputs ed2f5e73847894a993b7c5ea2665f82ac9d62ff70bb04b0ae94805d826b36c19"
+  }
+}

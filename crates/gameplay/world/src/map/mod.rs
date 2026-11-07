@@ -14,6 +14,7 @@ use oteryn_world_bundle::sector::{Budget, SECTOR_SIZE};
 use std::fmt;
 
 pub mod boot;
+pub mod container_stock;
 pub mod daily;
 pub mod door;
 mod door_registry;
@@ -140,6 +141,7 @@ pub use crate::content::world_reward_claims::UniqueEntry;
 pub struct WorldBase {
     pub subareas: oteryn_world_bundle::subarea::Table,
     digest: [u8; 32],
+    container_stocks: Vec<container_stock::ContainerStock>,
     content_revision: String,
     /// Ascending sector keys ([`sector_key`]), one per entry of `sectors`.
     keys: Vec<u32>,
@@ -260,6 +262,16 @@ impl<'a> TileView<'a> {
 }
 
 impl WorldBase {
+    /// Validated source-declared stock of an existing empty native container.
+    pub fn container_stock(
+        &self,
+        pos: overlay::TilePos,
+    ) -> Option<&container_stock::ContainerStock> {
+        self.container_stocks
+            .iter()
+            .find(|stock| stock.position == pos)
+    }
+
     /// The verified bundle digest.
     pub fn digest(&self) -> [u8; 32] {
         self.digest
@@ -434,6 +446,7 @@ fn load_daily_spawns(
         WorldBase {
             subareas: visited.manifest.subareas,
             digest: visited.digest,
+            container_stocks: builder.container_stocks,
             content_revision: visited.manifest.identity.content_revision,
             keys: builder.keys,
             rows,
@@ -481,6 +494,7 @@ fn palette(manifest: &Manifest) -> Vec<PaletteGround> {
 
 #[derive(Default)]
 struct Builder {
+    container_stocks: Vec<container_stock::ContainerStock>,
     palette: Option<Vec<PaletteGround>>,
     keys: Vec<u32>,
     sectors: Vec<SectorTiles>,
@@ -520,6 +534,9 @@ impl Builder {
         let mut occupied = [0u64; SECTOR_TILES / 64];
         let mut previous = None;
         for tile in &sector.tiles {
+            if let Some(stock) = container_stock::select(tile, sector.floor, palette) {
+                self.container_stocks.push(stock);
+            }
             let local = usize::from(tile.y.wrapping_sub(sector.sy * SECTOR_SIZE))
                 * usize::from(SECTOR_SIZE)
                 + usize::from(tile.x.wrapping_sub(sector.sx * SECTOR_SIZE));

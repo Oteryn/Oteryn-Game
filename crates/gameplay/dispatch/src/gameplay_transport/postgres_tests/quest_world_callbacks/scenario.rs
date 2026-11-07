@@ -33,6 +33,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let route = name.starts_with("draconia-route-");
+    let container_stock = name.starts_with("draconia-container-stock-");
     let departure = name == "departure-map-regression";
     let dropdown = name.starts_with("source-dropdown");
     let devil = name.starts_with("devil-helmet-source");
@@ -65,6 +66,7 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
         if classic_npc
+            || container_stock
             || route
             || departure
             || object_mutation
@@ -305,7 +307,17 @@ fn scenario_case(
             floor: -6,
         });
     }
-    let world = if route {
+    if container_stock {
+        callback.selector.unique = None;
+        callback.selector.action = None;
+        callback.selector.appearance = Some(5972);
+        callback.passages.clear();
+        callback.offerings.clear();
+        callback.teleport = None;
+    }
+    let world = if container_stock {
+        super::source_route_world(&callback, trigger, &[])?
+    } else if route {
         let cells =
             super::super::draconia_route::gate(super::super::draconia_route::source(name)?.0)
                 .map(|gate| {
@@ -688,6 +700,11 @@ fn scenario_case(
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if container_stock {
+            super::super::draconia_container_stock::exercise(
+                &owner, &admitted, &h, deps.actor, name,
+            )
+            .await?;
         } else if elathriel {
             super::super::draconia_elathriel::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if dragonlord {

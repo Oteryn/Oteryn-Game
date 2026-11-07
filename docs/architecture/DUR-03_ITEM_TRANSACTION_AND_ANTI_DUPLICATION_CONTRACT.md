@@ -1633,6 +1633,14 @@ unchanged.
     `depot` or `teleport` binding, no contents, and no `text`, `description`, `charges` or other
     attribute that the ItemInstance state cannot represent. Every other map-authored item is
     never pickupable.
+  - **Declared container stock.** ADR-0021 §4.4 also admits verified source stock in an
+    existing empty native non-house container, under the owner's quest execution instruction
+    of 2026-11-07. Its boot-validated reserved absent ordinal names the contained stock in the
+    same map cause; it never aliases a real base entry. The parent remains in place. The
+    existing MINT-to-Ground and inventory TRANSFER, shared uniqueness, fences, crash recovery
+    and reset epoch remain unchanged. A trusted source key number is persisted by the typed
+    key owner; it does not grant a general action-binding exception. No personal RewardClaim
+    or invented creature-death cause substitutes for this shared stock.
   - **Provenance.** The pickup is the player's command (`CommandRef`), under the channel's live
     scope-ownership fence.
   - **Cause.** `MapItemMaterialization {world_id, channel_id, base_bundle_digest, placement_key,

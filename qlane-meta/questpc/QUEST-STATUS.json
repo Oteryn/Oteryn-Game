@@ -3553,7 +3553,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Elathriel exact5000 cash/bank ->copper3012 now PG/strict GREEN with repurchase, replay, exact-match refusal and rollback. Dragonlord, level25, party gates/portals, stock3003-3007 and ten key doors already GREEN. Implement shared skeleton5972 containerstock key3001, then final complete source route composition."
+      "active_batch": "Shared skeleton5972 stock3001 is PG/strict GREEN: withdrawal, replay, forged epoch/ordinal, durable shared restoration. All earlier mechanics remain retained. Next second-player visibility, real reset replenishment and final complete route composition; no whole-title promotion yet."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -10364,8 +10364,8 @@
     "whole_title_promoted": false
   },
   "container_stock_progress": {
-    "state": "source capture verified; actual PG opening RED3 before implementation",
-    "evidence": "cloud-container-stock-red-validation.json",
-    "remaining": "finish generic source-stock runtime, full PG withdrawal/replay/shared restoration, strict checks; then compose Draconia route"
+    "state": "GREEN: reusable source-container stock owner and3 actual PG probes",
+    "evidence": "cloud-container-stock-validation.json",
+    "remaining": "prove second-player visibility, reset replenishment and final Draconia source-route composition"
   }
 }

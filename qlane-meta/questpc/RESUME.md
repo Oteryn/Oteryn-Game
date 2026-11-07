@@ -1,3 +1,20 @@
+## Shared native container stock GREEN — 2026-11-07
+Actual PostgreSQL18.6 GREEN3 wall71.60s: replay62.081279379s,shared62.729988979s,
+forged71.600899512s. Native empty5972 opens one2969; withdrawal mints immutable3001.
+Literal replay returnsMoved, newcommand refused, durable shared receipt rebuilds empty;
+forged ordinal/reset epoch mint nothing. Full evidence cloud-container-stock-validation.json.
+Generic boot-owned reserved absent ordinal63, no loose base entry or personal claim;
+parent stays in place. Filled/bound/house/wrong/colliding roots receive no stock.
+Final fmt/check/strictClippy/world3units/source capture/pin refresh PASS.
+Pins174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62 unchanged.
+Contract additions ADR0021/DUR03 document the owner-authorized source-stock shape.
+Counts unchanged60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+NEXT second-player pane/withdrawal, actual reset/replenishment and complete source
+route composition, then qualify Draconia. Explicitly probe cache epoch identity:
+loop_ground cache currently keys generation/scope/base but not reset_epoch; verify
+reused Channel cache cannot carry consumed stock into a new epoch. Own any fix.
+Before EVERYpush fetch exact target and merge FETCH_HEAD; neverforce/rebase/main/PR.
+
 ## Shared container stock source / actual PG RED checkpoint — 2026-11-07
 Verified native empty5972 root32794,31572,z7, ordinal1; source2969 number3001.
 Pinned Canary CONTAINER capacity10, Lua/B3/source hashes checked by

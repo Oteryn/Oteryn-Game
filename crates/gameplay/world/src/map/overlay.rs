@@ -560,7 +560,13 @@ impl ChannelOverlay {
         ordinal: u8,
         admission: Admission,
     ) -> Result<(), OverlayError> {
-        if ordinal >= HIDDEN_REACH || usize::from(ordinal) >= self.top_level_count(pos)? {
+        if ordinal >= HIDDEN_REACH
+            || (usize::from(ordinal) >= self.top_level_count(pos)?
+                && !self
+                    .base
+                    .container_stock(pos)
+                    .is_some_and(|stock| stock.stock_ordinal == ordinal))
+        {
             return Err(OverlayError::Ordinal);
         }
         if self.tile(pos).is_some_and(|tile| tile.is_hidden(ordinal)) {

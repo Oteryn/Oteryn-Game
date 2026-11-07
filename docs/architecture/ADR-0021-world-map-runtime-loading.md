@@ -270,6 +270,17 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
     teleport), no contents, and no `text`, `description`,
     `charges` or other attribute that the ItemInstance state cannot represent. Everything else
     stays in place.
+  - **Source container stock (owner quest execution, 2026-11-07).** A verified source
+    declaration may fill an existing empty native non-house container. Boot checks its exact
+    position, appearance, root ordinal, attributes and emptiness, and reserves an otherwise
+    absent ordinal in `0..=63` as the contained stock identity. It is visible only through the
+    existing container view, never as a loose base-map entry. A withdrawal uses the same
+    shared map-item cause, hidden-origin budget, replay and reset epoch below; it neither
+    materializes nor hides the parent container. Existing native contents are never overwritten.
+    A source key binding is admitted only as the immutable typed `key_number` of a trusted
+    key item; other uninterpreted bindings remain ineligible. Source-only stock views admit
+    withdrawal, not deposits. The reviewed source and native hashes are retained in
+    `tools/content-schema/world-authoring/samples/quest-container-stock.json`.
   - **Pickup.** A MINT into Ground at the item's current tile, of the whole origin entry, followed
     by the ordinary Ground-to-inventory TRANSFER.
   - **Cause.** `MapItemMaterialization {world, channel, base bundle digest, placement_key, reset

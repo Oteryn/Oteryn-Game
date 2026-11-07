@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod container_stock;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -909,6 +910,9 @@ pub(super) async fn observe_container(
     }
     if matches!(target, ItemKey::BrowseField { .. }) {
         return super::browse_field::observe(admission, actor, fence, target).await;
+    }
+    if matches!(target, ItemKey::MapBase { .. }) {
+        return container_stock::observe(admission, actor, fence, target).await;
     }
     let ItemKey::Instance(container) = target else {
         return None;

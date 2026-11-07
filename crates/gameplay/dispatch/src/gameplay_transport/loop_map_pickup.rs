@@ -100,25 +100,36 @@ pub(super) async fn move_map_item(
     let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
         return stale;
     };
-    let Some(id) = tile
-        .ids()
-        .iter()
-        .zip(tile.depths())
-        .filter(|(_, depth)| **depth == 0)
-        .nth(usize::from(ordinal))
-        .map(|(id, _)| *id)
-    else {
-        return stale;
-    };
-    let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
-        return stale;
-    };
-    let Some(EntryFacts {
-        definition: MapDefinition::Item(reference),
-        ..
-    }) = at.map.facts.base_entry(pos, ordinal, id)
-    else {
-        return stale;
+    let (reference, quantity, key_number) = if let Some(stock) = base
+        .container_stock(pos)
+        .filter(|stock| stock.stock_ordinal == ordinal)
+    {
+        let Some(reference) = container_stock::definition(index, stock.item) else {
+            return stale;
+        };
+        (reference, stock.count, stock.key_number)
+    } else {
+        let Some(id) = tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))
+            .map(|(id, _)| *id)
+        else {
+            return stale;
+        };
+        let Ok(entry) = at.map.facts.pickup_entry(pos, ordinal, id) else {
+            return stale;
+        };
+        let Some(EntryFacts {
+            definition: MapDefinition::Item(reference),
+            ..
+        }) = at.map.facts.base_entry(pos, ordinal, id)
+        else {
+            return stale;
+        };
+        (reference, entry.quantity, entry.key_number)
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {
@@ -127,7 +138,7 @@ pub(super) async fn move_map_item(
     let Ok(item) = generation_item_facts(native, &definition) else {
         return stale;
     };
-    if plan_map_item_mint(&item, entry.quantity, false).is_err() {
+    if plan_map_item_mint(&item, quantity, false).is_err() {
         return stale;
     }
     let Some(ground) = loop_ground(admission, base, Some(index)).await else {
@@ -139,8 +150,8 @@ pub(super) async fn move_map_item(
         placement_key,
         reset_epoch,
         item,
-        key_number: entry.key_number,
-        quantity: entry.quantity,
+        key_number,
+        quantity,
         content_revision: sha256_revision(native.source_digest()),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
