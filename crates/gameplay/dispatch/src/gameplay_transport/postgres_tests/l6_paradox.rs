@@ -168,7 +168,7 @@ async fn counts(h: &Harness) -> TestResult<serde_json::Value> {
 
 /// Arrange the level prerequisite through the existing typed XP/revision owner.
 /// The bounded fixture curve starts at its stored level/XP; no guard is disabled.
-async fn raise_level(
+pub(super) async fn raise_level(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,

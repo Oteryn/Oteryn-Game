@@ -31,6 +31,7 @@ fn scenario_case(
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_story = name.starts_with("qengine-rewards-questpc4-story-");
     let diprath_room = name.starts_with("l6-diprath-room-");
     let native_signs = name.starts_with("l6-native-signs-");
     let native_flames = name.starts_with("l6-native-flames-");
@@ -48,8 +49,11 @@ fn scenario_case(
         || native_room
         || native_flames
         || native_signs
-        || diprath_room;
-    let start = if diprath_room {
+        || diprath_room
+        || native_story;
+    let start = if native_story {
+        super::super::l6_paradox_story::start()
+    } else if diprath_room {
         super::super::l6_diprath_room::start()?
     } else if native_signs {
         super::super::l6_native_signs::start()?
@@ -301,7 +305,13 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if diprath_room {
+        let world = if native_story {
+            super::super::l6_paradox_story::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native story policies")?,
+            )?
+        } else if diprath_room {
             super::super::l6_diprath_room::world(
                 generation
                     .native_gameplay()

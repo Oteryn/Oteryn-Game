@@ -7351,7 +7351,7 @@
       }
     },
     "paradox_story_batch_26": {
-      "status": "SOURCE_PLAN_CHECKPOINT_TEST_COMPILE_REPAIR",
+      "status": "COMPILED_FIXTURE_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
       "decision_at": "2026-11-07 14:34 UTC",
       "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
@@ -7368,7 +7368,16 @@
         "fix": "Match existing quest_world_callbacks::wire: retain returned admitted session directly; removed nonexistent call.",
         "evidence": "First attempt was compile-only; no PostgreSQL case or behavior RED claimed. Repaired test build running."
       },
-      "publication": "Source decision/status metadata only, runtime and test source in this checkpoint remain last green bc9c9ce60; scaffold stays uncommitted until verified compile."
+      "publication": "Source decision/status metadata only, runtime and test source in this checkpoint remain last green bc9c9ce60; scaffold stays uncommitted until verified compile.",
+      "first_runtime_attempt": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_paradox_story",
+        "seconds": 92.796624399,
+        "compiled": "3m31s",
+        "error": "Carrier(CapacityExceeded) placing five NPCs with only four free carrier slots",
+        "classification": "Fixture setup failure, not missing-story behavioral RED",
+        "fixes": "Reserve six slots only for native story; use native story start as initial trigger/floor; use paradox-story family to reuse existing premium fixture setup."
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

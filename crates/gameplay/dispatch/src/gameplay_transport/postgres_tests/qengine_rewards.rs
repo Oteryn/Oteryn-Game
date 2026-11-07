@@ -651,6 +651,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-story-") {
+        return super::l6_paradox_story::exercise(owner, admitted, h, authority, name).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-native-tower-") {
         return super::l6_paradox_native::exercise(owner, admitted, h, name).await;
     }
