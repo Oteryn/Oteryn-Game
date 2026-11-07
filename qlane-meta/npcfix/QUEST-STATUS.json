@@ -8293,7 +8293,8 @@
           "world": "oteryn"
         }
       ]
-    }
+    },
+    "followup": "Found legacy1096_npc_atomic_quest_effects.sql is still tracked and semantically duplicates1230. Remove1096, retain1230 byte unchanged; add1239 optional-fluid shape fix. Rebuild and focused PG checks required; do not claim registry finished until pushed."
   },
   "prepared_physical_batches": [
     {
@@ -8688,7 +8689,7 @@
     "cumulative_native_actors": 240
   },
   "active_shop_work": {
-    "state": "COMPILED_FOCUSED_PG_REPRO_RUNNING; NO_PROMOTION",
+    "state": "PG_RED626.52S; GENERIC_OPTIONAL_FLUID_FIX_AND_FIVE_PROFILES_IN_PROGRESS; NO_PROMOTION",
     "entries": [
       "Dixi",
       "Lubo",
@@ -8715,8 +8716,8 @@
       "48544": 80910
     },
     "placement_cases": "four retained exact donor/retail anchors appended; Toffee prior placement proof retained",
-    "compile_note": "cargo test compiled successfully in10m02s; focused real PostgreSQL scenario running",
-    "publication_note": "Rust exact-contract assertions compiled; original service/postal/Ahmet checks retained. Actor PG GREEN111.80s, profile guards9 GREEN40.764s. Exact open point: five Toffee native profiles absent; focused shop RED not yet finished.",
+    "compile_note": "Focused test compiled10m02s; dispatch alltargets/allfeatures check PASS12m24s; strict Clippy active",
+    "publication_note": "No green or qualification claim from intermediate per-NPC markers: helper collects errors and continues. Actual full target RED626.52s; native producer generating five profiles.",
     "actor_pg": {
       "result": "GREEN",
       "duration_seconds": 111.8,
@@ -8725,6 +8726,30 @@
       "actors": 244,
       "log": "/tmp/npcfix-evidence/five-shop-retained-actors-pg.log"
     },
-    "profile_preflight": "PASS: strict capture of five portable physical profiles to /tmp only; no canonical or native mutation before shop PG RED"
+    "profile_preflight": "PASS: strict capture of five portable physical profiles to /tmp only; no canonical or native mutation before shop PG RED",
+    "pg_red": {
+      "duration_seconds": 626.52,
+      "marker": "POSTGRES_STARTED NPCFIX postage dixi/lubo/pompan/shiantis/toffee",
+      "failures": [
+        "dixi chain helmet: unknown storage outcome",
+        "pompan first buyback: unknown storage outcome",
+        "toffee first buyback: refused Rejected"
+      ],
+      "cause": "PostgreSQL game_npc_trades_check1 requires side=1 even when fluid_subtype NULL, rejecting ordinary SELL rows. Explicit new migration1239 drafted; prior tagged-fluid guard remains mandatory."
+    }
+  },
+  "prepared_full_anchor_ground": {
+    "state": "PG_RED117.63S; NO_PRODUCTION_GROUND_MUTATION",
+    "entries": [
+      "Anaztassja Moroia",
+      "Fabiana",
+      "Glimpse of Allusion",
+      "Ortelio",
+      "WOX",
+      "Yielothax"
+    ],
+    "anchors": 14,
+    "cause": "Anaztassja compiled2 placements versus all5 explicitly captured anchors; all5 retained, ground repairs required",
+    "fixture": "npcfix-reviewed-full-anchor-ground-45"
   }
 }

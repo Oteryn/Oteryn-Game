@@ -2854,6 +2854,117 @@
           }
         }
       ]
+    },
+    {
+      "id": "npcfix-reviewed-full-anchor-ground-45",
+      "before_commit": "73b09cf2526e547b9f09e75e9a00ef229ebcba9b",
+      "source": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json: frozen complete positions arrays; exact Wiki revisions retained in source packet. Anaztassja5 and Ortelio5 anchors, no discarded locations.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.anaztassja_moroia",
+          "name": "Anaztassja Moroia",
+          "expected": {
+            "x": 32948,
+            "y": 31462,
+            "floor": -15
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 32943,
+              "y": 31503,
+              "floor": -14
+            },
+            {
+              "x": 32897,
+              "y": 31422,
+              "floor": -12
+            },
+            {
+              "x": 32879,
+              "y": 31436,
+              "floor": -10
+            },
+            {
+              "x": 32915,
+              "y": 31445,
+              "floor": -6
+            }
+          ]
+        },
+        {
+          "npc": "oteryn:npc.fabiana",
+          "name": "Fabiana",
+          "expected": {
+            "x": 33539,
+            "y": 31698,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.glimpse_of_allusion",
+          "name": "Glimpse of Allusion",
+          "expected": {
+            "x": 33927,
+            "y": 32117,
+            "floor": -15
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "name": "Ortelio",
+          "expected": {
+            "x": 34033,
+            "y": 32365,
+            "floor": -14
+          },
+          "before": null,
+          "additional": [
+            {
+              "x": 34094,
+              "y": 32391,
+              "floor": -14
+            },
+            {
+              "x": 34062,
+              "y": 32427,
+              "floor": -14
+            },
+            {
+              "x": 34067,
+              "y": 32460,
+              "floor": -14
+            },
+            {
+              "x": 34066,
+              "y": 32498,
+              "floor": -14
+            }
+          ]
+        },
+        {
+          "npc": "oteryn:npc.wox",
+          "name": "WOX",
+          "expected": {
+            "x": 33944,
+            "y": 32117,
+            "floor": -15
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.yielothax",
+          "name": "Yielothax",
+          "expected": {
+            "x": 33928,
+            "y": 32137,
+            "floor": -15
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
