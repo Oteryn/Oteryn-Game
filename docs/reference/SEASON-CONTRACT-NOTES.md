@@ -750,3 +750,21 @@ This is still a WIP integration checkpoint, not W18 completion. Published
 House USE remains the earlier balloon-only owner until the pending decoration
 receipt, static overlay and presentation implementations are validated and
 committed. No new command, capability or mechanic ordinal is allocated here.
+
+### W05d native Undefined damage consumer
+
+The native creature parser and scheduled player-hit reader now preserve the
+explicit `undefined` family through the existing typed HP receipt owner.
+Crystal `src/game/game.cpp:8142` excludes Undefined from mana shield;
+`src/creatures/creature.cpp:842-845` retains mitigation. Avatar/final reductions,
+Gift and the existing lethal/death lifecycle remain with their current owner.
+Crystal `src/items/functions/item/item_parse.cpp:528-536` also explicitly excludes
+Undefined from `absorbpercentall`, so no new Item resistance kind or ID is needed.
+Presentation uses the existing Untyped damage element, without an Earth alias.
+
+The native parser and actual HP receipt/replay/lethal tests pass: two tests in
+0.14 s. The modified source files pass rustfmt. This component compiles; full-row
+calendar, producers and focused crate validation remain in progress.
+The exact restriction for bridge 48227 is retained at
+`tools/content-schema/native-gameplay/event_item_identity.py:3-4,18,34-46`;
+it does not stop this independent combat consumer. No ID or migration allocated.

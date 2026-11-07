@@ -5,6 +5,133 @@
 use super::tests::{runtime_with_player, wound};
 use super::*;
 use crate::player_lethal::PlayerLethalVitals;
+
+#[test]
+fn w05d_undefined_creature_hit_bypasses_mana_shield_keeps_avatar_and_replay() {
+    use crate::spell::combat_batch::{AvatarState, ManaShieldState, OwnerCombatChange};
+    let (mut runtime, mut states, actor, session) = ready(0x4d);
+    let Some((_, _, state)) = states
+        .actors
+        .iter_mut()
+        .find(|(present, current, _)| *present == actor && *current == session)
+    else {
+        panic!("initialized player");
+    };
+    state.install_equipped_mana_shield(true);
+    assert!(
+        crate::spell::actor_conditions::apply_combat_change(
+            state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 80,
+                expires_ms: 15_000
+            }),
+            0,
+        )
+        .is_ok()
+    );
+    assert!(
+        crate::spell::actor_conditions::apply_combat_change(
+            state,
+            &OwnerCombatChange::Avatar(AvatarState {
+                expires_ms: 15_000,
+                outfit_look_type: 1590,
+                incoming_reduction_percent: 50,
+                critical_chance_percent: 0,
+                critical_extra_percentage_points: 0,
+            }),
+            0,
+        )
+        .is_ok()
+    );
+    let before = state.vitals();
+    let kind = crate::player_lethal::PlayerHitKind::from_element(Some("undefined"));
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1);
+    let Some(hit) = states.apply_typed_attack_damage(
+        &mut runtime,
+        actor,
+        session,
+        40,
+        kind,
+        "cake:undefined:1",
+        now,
+    ) else {
+        panic!("source native damage receipt");
+    };
+    assert_eq!(hit.applied, 20, "Avatar still halves Undefined HP damage");
+    assert_eq!(hit.health_after, before.health - 20);
+    let Some(after) = states.get(&runtime, actor, session) else {
+        panic!("current player");
+    };
+    assert_eq!(after.vitals().mana, before.mana);
+    assert_eq!(after.owned_conditions().mana_shield_at(1), Some(80));
+    let after = after.clone();
+    assert_eq!(
+        states.apply_typed_attack_damage(
+            &mut runtime,
+            actor,
+            session,
+            40,
+            kind,
+            "cake:undefined:1",
+            now,
+        ),
+        Some(hit)
+    );
+    assert_eq!(states.get(&runtime, actor, session), Some(&after));
+    let Some(ordinary) = states.apply_typed_attack_damage(
+        &mut runtime,
+        actor,
+        session,
+        40,
+        crate::player_lethal::PlayerHitKind::Fire,
+        "cake:fire:2",
+        now,
+    ) else {
+        panic!("ordinary typed damage receipt");
+    };
+    assert_eq!(
+        ordinary.applied, 0,
+        "ordinary damage still uses the mana shield"
+    );
+    let Some(after_fire) = states.get(&runtime, actor, session) else {
+        panic!("current player after ordinary hit");
+    };
+    assert_eq!(after_fire.vitals().mana, before.mana - 20);
+    assert_eq!(after_fire.owned_conditions().mana_shield_at(1), Some(60));
+    let Some(lethal) = states.apply_typed_attack_damage(
+        &mut runtime,
+        actor,
+        session,
+        1000,
+        kind,
+        "cake:undefined:lethal",
+        now,
+    ) else {
+        panic!("native lethal receipt");
+    };
+    assert_eq!(lethal.health_after, 0);
+    assert!(lethal.death.is_some());
+    assert_eq!(states.deaths.len(), 1);
+    let Some(dead) = states.get(&runtime, actor, session) else {
+        panic!("current dead player");
+    };
+    assert_eq!(dead.vitals().mana, before.mana - 20);
+    assert!(dead.owned_conditions().instances().is_empty());
+    assert_eq!(
+        states.apply_typed_attack_damage(
+            &mut runtime,
+            actor,
+            session,
+            1000,
+            kind,
+            "cake:undefined:lethal",
+            now,
+        ),
+        Some(lethal),
+    );
+    assert_eq!(states.deaths.len(), 1);
+}
+
 fn ready(
     tag: u8,
 ) -> (

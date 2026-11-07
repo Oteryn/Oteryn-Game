@@ -167,6 +167,25 @@ fn setup() -> (
 ) {
     setup_named("1st_mate_ratticus", 1)
 }
+
+#[test]
+fn w05d_undefined_source_spell_retains_its_native_element() {
+    let (records, mut profiles) = native();
+    for profile in &mut profiles {
+        if let Data::Effect(effect) = &mut profile.data {
+            effect.damage_type = "undefined".into();
+        }
+    }
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.1st_mate_ratticus".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SpellSource::from_native(&creature, 1, &records, &profiles, [1; 32])
+        .expect("Undefined is an actual source damage family");
+    assert_eq!(source.element(), Some("undefined"));
+}
+
 fn setup_named(
     name: &str,
     index: usize,
