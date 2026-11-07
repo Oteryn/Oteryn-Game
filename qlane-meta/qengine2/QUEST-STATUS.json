@@ -2016,7 +2016,8 @@
         "/tmp/qengine2-batch8-green2.log",
         "/tmp/qengine2-batch8-mage-green3.log"
       ],
-      "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next."
+      "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next.",
+      "followon_verification": "Targeted game-server content123 passed2.00s; world project5 passed44.78s; repo pin-check passed24ab unchanged."
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2345,20 +2346,15 @@
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
-  "active_batch": "L1-08 QUALIFIED; push implementation then targeted content/world follow-ons and next source batch",
+  "active_batch": "L1-09: Afflicted, Soil Guardian, Crystal Warlord; native item-use grants and Gnomally token-voucher trades",
   "active_batch_progress": {
-    "batch": "L1-08",
-    "status": "QUALIFIED",
-    "entries": [
-      "Hunter Outfits Quest",
-      "Mage Outfits Quest",
-      "Dream Warden Outfits Quest"
-    ],
-    "postgres_red_log": "/tmp/qengine2-batch8-red.log",
-    "postgres_green_logs": [
-      "/tmp/qengine2-batch8-green2.log",
-      "/tmp/qengine2-batch8-mage-green3.log"
-    ],
-    "verification": "Five PG stories green; neutral Druid Rook regression green93.315156406s. Check2m54s; final clippy24.41s; fmt pass;7 Rust callback tests1.35s and sex-qualified mapping unit pass;23 quest Python8.948s and23 cosmetics Python1.965s; source+placement reproduction pass; repo pin-refresh and pin-check pass24ab unchanged. Targeted server content/world follow-ons next."
+    "batch": "L1-09",
+    "phase": "SOURCE_READ; PG RED profiles next",
+    "reuse_audit": {
+      "questpc3": "73a106fc5035885a844c81e8618900f80c028116: no selected canonical entries in current status",
+      "questpc5": "115393d62b6a28e449a78d43c12f808e5ad31a77: no selected canonical entries in current status",
+      "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5: Crystal Warlord UNFINISHED"
+    },
+    "mechanisms": "Existing native item_cosmetics source rules already cover vouchers16252-16257, Afflicted six12551-12556 cloth pieces and addons12786/12787; canonical grant mappings are missing. Gnomally source no-storage trades need generic cost-backed value-only item exchange, preserving same-R exact input/MINT receipts, not invented source flags. Donor gnomally9f5a72c sha256e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1. No production L9 edits yet."
   }
 }
