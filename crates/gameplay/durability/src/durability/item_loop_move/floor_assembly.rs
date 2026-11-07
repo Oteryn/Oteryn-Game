@@ -110,9 +110,11 @@ impl DurabilityRoot {
                         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&ground.spatial_position)
                         .fetch_all(&mut **tx).await?;
                 }
-                let moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None).await?;
+                let mut moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None).await?;
                 if let Some(recipe) = transform {
-                    super::floor_transform::apply(&mut tx, &fence, command, native, &moved, &target, ground, recipe).await?;
+                    if super::floor_transform::apply(&mut tx, &fence, command, native, &moved, &target, ground, recipe).await? {
+                        moved.floor_effect = recipe.effect;
+                    }
                     return Ok(moved);
                 }
                 if !eligible { return Ok(moved); }
@@ -183,6 +185,7 @@ impl DurabilityRoot {
                 sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,$5::uuid,$6,$6+$7,$8,sha256($8),1)")
                     .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(&output_id).bind(occurred)
                     .bind(crate::durability::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut **tx).await?;
+                moved.floor_effect = recipe.effect;
                 Ok(moved)
             }.await;
             match attempt {

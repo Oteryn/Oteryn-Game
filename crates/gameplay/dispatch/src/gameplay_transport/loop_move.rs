@@ -729,6 +729,22 @@ pub(super) async fn move_loop_item(
         }
         Err(error) => Err(error),
     };
+    // Consequence metadata is returned only after the physical transaction commits.
+    // Replay and ordinary drops carry none, so neither can repeat source presentation.
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && let Some(effect) = receipt.floor_effect
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(map) = admission.bundle_map()
+        && let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(to.x),
+            u16::try_from(to.y),
+            i8::try_from(to.floor),
+        )
+    {
+        map.facts
+            .emit_movement_effect(TilePos { x, y, floor }, effect);
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {

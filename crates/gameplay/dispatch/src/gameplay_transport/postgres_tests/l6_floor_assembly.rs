@@ -95,6 +95,32 @@ fn run_case(name: &'static str) -> TestResult {
     Ok(())
 }
 
+fn assert_fire_effect(owner: &ComposedFreshAdmission<'_, '_, '_>, expected: bool) -> TestResult {
+    let effects = owner
+        .bundle_map()
+        .ok_or("altar map")?
+        .facts
+        .movement_effects_since(0);
+    let expected = if expected {
+        vec![(
+            1,
+            crate::map::overlay::TilePos {
+                x: 7,
+                y: 1,
+                floor: -7,
+            },
+            7,
+        )]
+    } else {
+        Vec::new()
+    };
+    assert_eq!(
+        effects, expected,
+        "source fire-area effect only for a new committed consequence"
+    );
+    Ok(())
+}
+
 async fn verify_audit(harness: &Harness) -> TestResult {
     use crate::durability::item_mint_audit::{
         EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1,
@@ -405,6 +431,7 @@ pub(super) async fn exercise(
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(receipt_count, i64::from(name == "l6-floor-assembly"));
+    assert_fire_effect(owner, receipt_count == 1)?;
     let (next, replay, _) = super::map_seed_planting::drop_exchange_at(
         owner,
         *admitted,
@@ -422,6 +449,7 @@ pub(super) async fn exercise(
     .await?;
     *admitted = next;
     assert_eq!(replay, result);
+    assert_fire_effect(owner, receipt_count == 1)?;
     Ok(())
 }
 
@@ -546,6 +574,7 @@ async fn ruby_exercise(
         );
         assert_eq!(proof["output_key"], "oteryn:item.tibia.i3230");
     }
+    assert_fire_effect(owner, receipt_count == 1)?;
     let (next, replay, _) = super::map_seed_planting::drop_exchange_at(
         owner,
         *admitted,
@@ -564,6 +593,7 @@ async fn ruby_exercise(
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(replay_count, receipt_count);
+    assert_fire_effect(owner, receipt_count == 1)?;
     Ok(())
 }
 
