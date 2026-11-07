@@ -263,63 +263,30 @@
   },
   "incoming_cooldown_delivery": {},
   "active_physical_batch": {
-    "name": "reviewed-passive-cells-28",
-    "state": "QUALIFIED",
+    "name": "retail-population-qualification-37",
+    "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
     "entries": [
-      "A Starving Dog",
-      "Eirik",
-      "Emiliana",
-      "Fayla",
-      "Gnommander",
-      "Jessica"
+      "Demonguard",
+      "Dustrunner",
+      "Eustacio",
+      "Frank The Plank",
+      "Frans",
+      "George The Boyscout"
     ],
-    "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+    "source_commit": "fc2f7163d3e0e70ebe550cbcf26a45619da64848",
+    "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
     "red": {
-      "seconds": 48.81,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "log": "/tmp/npcfix-evidence/passive-six-red.log",
-      "sha256": "777c4707618d12ffe2b58a32921855f0665f3c279da49324860dc5226796d723"
+      "seconds": 160.83,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-red.log",
+      "sha256": "863e1f24162e060c1fd9b52b8ee4461b19721e46a760524a7daa0e8f08a9b71f"
     },
     "green": {
-      "seconds": 191.07,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "log": "/tmp/npcfix-evidence/passive-six-green.log",
-      "sha256": "53d12b89f4e68d65f44766da6c1e24d7ea55edbf4f659323d2fe44ee8e5d7fb0"
-    },
-    "cumulative_native_cases": 162,
-    "source_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-    "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "xml_line_witnesses": {
-      "1855": "imports/canary/items-xml/items.xml:3878",
-      "14117": "imports/canary/items-xml/items.xml:32460",
-      "1867": "imports/canary/items-xml/items.xml:3881",
-      "17396": "imports/canary/items-xml/items.xml:35308",
-      "14783": "imports/canary/items-xml/items.xml:32916",
-      "15854": "imports/canary/items-xml/items.xml:33692",
-      "5593": "imports/canary/items-xml/items.xml:15246"
-    },
-    "existing_profile_comparison": {
-      "source_commit": "ce893d6b19fe4305a1f9d94778365e62977b156e",
-      "existing_records": 3609,
-      "preserved_exactly": true,
-      "added_keys": [
-        "oteryn:item.tibia.i14117",
-        "oteryn:item.tibia.i14783",
-        "oteryn:item.tibia.i15854",
-        "oteryn:item.tibia.i17396",
-        "oteryn:item.tibia.i1855",
-        "oteryn:item.tibia.i1867",
-        "oteryn:item.tibia.i5593"
-      ],
-      "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from the retained release tool source."
-    },
-    "checks": "Repository native-provider42 generation and independent --check PASS; all9 profile/conflict/weight units PASS31.513s; fmt PASS; repository staged-input pin-refresh and independent pin-check PASS. No changed Rust crates; reuse source-equivalent entities/dispatch all-target/all-feature check5m42s and strict clippy14m16s from9bca5359f. Actual PG consumes the new provider.",
-    "world_pin": {
-      "bytes": 32008798,
-      "digest": "526ab4c033888e90986a38f40b3b443c47470b9700815bdd18deda9a752baa11",
-      "world": "oteryn"
-    },
-    "review": "Only7 new profiles; every old native profile exactly preserved. No canonical identity, NPC coordinate, creature balance, compiler/collision exception, workflow/repository-tool or binary change."
+      "seconds": 138.19,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-green.log",
+      "sha256": "a20ab4e4e18a51ff1aab953c16e5c2eee2d24fb733ea30f2625f84672251d4f0"
+    }
   },
   "active_refusal_batch": {
     "state": "QUALIFIED",
@@ -7634,5 +7601,33 @@
         }
       ]
     }
-  }
+  },
+  "prepared_physical_batches": [
+    {
+      "name": "retail-population-qualification-37",
+      "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
+      "entries": [
+        "Demonguard",
+        "Dustrunner",
+        "Eustacio",
+        "Frank The Plank",
+        "Frans",
+        "George The Boyscout"
+      ],
+      "source_commit": "fc2f7163d3e0e70ebe550cbcf26a45619da64848",
+      "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 160.83,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-37-red.log",
+        "sha256": "863e1f24162e060c1fd9b52b8ee4461b19721e46a760524a7daa0e8f08a9b71f"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 138.19,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-37-green.log",
+        "sha256": "a20ab4e4e18a51ff1aab953c16e5c2eee2d24fb733ea30f2625f84672251d4f0"
+      }
+    }
+  ]
 }

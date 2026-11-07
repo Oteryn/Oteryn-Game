@@ -2395,6 +2395,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-37",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "Historical ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb 33-placement tree proves all six absent. Retain exact current audited retail positions and pinned promotion-candidates-v1.json SHA2561f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; source-qualified names unchanged.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.demonguard",
+          "name": "Demonguard",
+          "expected": {
+            "x": 32854,
+            "y": 32318,
+            "floor": -10
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.dustrunner",
+          "name": "Dustrunner",
+          "expected": {
+            "x": 32914,
+            "y": 32076,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eustacio",
+          "name": "Eustacio",
+          "expected": {
+            "x": 32936,
+            "y": 32030,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.frank_the_plank",
+          "name": "Frank The Plank",
+          "expected": {
+            "x": 33046,
+            "y": 32137,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.frans",
+          "name": "Frans",
+          "expected": {
+            "x": 32971,
+            "y": 32080,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.george_the_boyscout",
+          "name": "George The Boyscout",
+          "expected": {
+            "x": 33031,
+            "y": 32009,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
