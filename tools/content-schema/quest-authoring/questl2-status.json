@@ -631,6 +631,32 @@
       "status": "QUALIFIED",
       "postgres_test": "questl2_delivery_batch_troll_sabotage_full_journey",
       "evidence": "Troll Sabotage full native journey proves held-only and expired-clock refusals, native hotkey equipment and freshly stamped admission. Canonical owner track declarations reused without widening."
+    },
+    {
+      "name": "Native quest creature death callbacks and qualified corpse custody",
+      "status": "QUALIFIED",
+      "postgres_test": "questl2_knowledge_batch_uneasy_alliance_full_journey",
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-alliance",
+      "duration_seconds": 78.178533641,
+      "proves": [
+        "Actual native attack and creature death",
+        "Captured positive-damage contributors with original session/lease fences",
+        "Qualified source corpse and existing loot settlement",
+        "Revision-sequenced typed quest transition under CreatureDeath cause"
+      ],
+      "source": "CONTRACT-NOTES.md: native creature callbacks and source corpse custody"
+    },
+    {
+      "name": "Revision-bound timed world transformations",
+      "status": "QUALIFIED",
+      "postgres_test": "questl2_knowledge_batch_uneasy_alliance_full_journey",
+      "duration_seconds": 78.178533641,
+      "proves": [
+        "Source crystal10186 transforms to10187",
+        "Exact object revision remains changed before deadline",
+        "Existing Channel decay owner restores original facts after deadline",
+        "Durable quest progress remains completed after restoration"
+      ]
     }
   ],
   "entries": [
@@ -760,7 +786,7 @@
     },
     {
       "title": "An Uneasy Alliance",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "postgres_test": "questl2_knowledge_batch_uneasy_alliance_full_journey",
@@ -2789,6 +2815,16 @@
       "duplicate_check": "/tmp/l2-regalia-duplicate.log",
       "pin_refresh": "/tmp/l2-regalia-pin-refresh.log",
       "pin_check": "/tmp/l2-regalia-pin-check.log"
+    },
+    "alliance": {
+      "postgres_log": "/tmp/l2-alliance-native-pg8.log",
+      "duration_seconds": 78.178533641,
+      "shared_authoring_tests": 27,
+      "lane_authoring_tests": 21,
+      "custody_unit_tests": 4,
+      "clippy": "/tmp/l2-alliance-final-clippy.log",
+      "pin_refresh": "/tmp/l2-corpse-pin-refresh.log",
+      "pin_check": "/tmp/l2-alliance-final-pin-check.log"
     }
   },
   "cross_lane_inspection": {
@@ -2880,7 +2916,7 @@
       "An Uneasy Alliance",
       "Tomes of Knowledge"
     ],
-    "phase": "Kilmaresh QUALIFIED; Alliance native PG GREEN final checks pending; Tomes remains RED.",
+    "phase": "Kilmaresh and An Uneasy Alliance QUALIFIED; continue Tomes of Knowledge from its real PostgreSQL RED journey.",
     "postgres_log": "/tmp/l2-knowledge-red.log",
     "postgres_version": "18.6",
     "red_durations_seconds": {
@@ -2943,7 +2979,7 @@
       }
     },
     "shared_kill_progress": {
-      "status": "PG_GREEN_FINAL_CHECKS_PENDING",
+      "status": "QUALIFIED",
       "domain_tests": {
         "passed": 1,
         "failed": 0,
@@ -2955,14 +2991,14 @@
         "duration": "2m34s",
         "log": "/tmp/l2-kill-compile.log"
       },
-      "remaining": "Native Alliance mission issuance -> Renegade Orc death -> source tower device -> two tomes.",
+      "remaining": "None for generic source-bound damaging-player death transitions.",
       "postgres_log": "/tmp/l2-alliance-native-pg8.log"
     },
     "alliance_progress": {
-      "status": "PG_GREEN_FINAL_CHECKS_PENDING",
+      "status": "QUALIFIED",
       "production_callback_sources": "Curos source mission sequence; explicit documented provision restoration; native Renegade Orc callback and source tower chest",
       "compile_log": "/tmp/l2-alliance-compile2.log",
-      "remaining": "Run the full native PG journey, then focused Clippy and official pin checks.",
+      "remaining": "None for An Uneasy Alliance.",
       "compile": {
         "status": "PASS",
         "duration": "2m34s",
@@ -2985,7 +3021,7 @@
         "log": "/tmp/l2-alliance-native-pg7.log"
       },
       "corpse_custody": {
-        "status": "PENDING_NATIVE_JOURNEY_PROOF",
+        "status": "QUALIFIED",
         "creature": "oteryn:creature.renegade_orc",
         "source_corpse": 6001,
         "decay_chain": [
@@ -3008,7 +3044,14 @@
         "pin_refresh": "/tmp/l2-corpse-pin-refresh.log"
       },
       "green_log": "/tmp/l2-alliance-native-pg8.log",
-      "green_duration_seconds": 78.178533641
+      "green_duration_seconds": 78.178533641,
+      "final_checks": {
+        "fmt": "/tmp/l2-alliance-final-fmt.log",
+        "duplicates": "/tmp/l2-alliance-final-duplicates.log",
+        "clippy": "/tmp/l2-alliance-final-clippy.log",
+        "clippy_duration": "4m21s",
+        "pin_check": "/tmp/l2-alliance-final-pin-check.log"
+      }
     }
   }
 }
