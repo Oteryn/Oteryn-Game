@@ -1,3 +1,13 @@
+## Object strict-check follow-up
+Published6baad72f8 now has PASS alltarget/allfeature check2m41s and clippy-Dwarnings
+2m30s, plus Rust schema unit1/1. Logs/hashes in cloud-objects-validation.json.
+Current uncommitted work: Mintwallin whole-source test+scenario/helper; RED active
+in /tmp/questpc-mintwallin-red.log. Source callback not yet authored. Also explicit
+435 refusal guard: existing floor catalogue has no435 row, so a mask-only check
+could permit a visual-only sewer; conservative guard stays until real floor support.
+Next: after actualPG missing-callback RED, add mintwallin_quest source packet to
+quest_batch4, regenerate, run GREEN including exact lever+reward path.
+
 ## Atomic source objects — 2026-11-07
 New reusable stateless objects field: consumed triggers and <=16 total immovable
 object mutations. Uses QENGINE2 cloned callback-state staging and the existing

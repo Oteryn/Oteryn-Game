@@ -44,3 +44,7 @@ exact-match charge grants.
 - Mintwallin's201189 source is byte-identical to retained9f5a72c6 (SHA25661944b37...).
   Bind its exact AID30008; no arbitrary source-coordinate alias.
   https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua
+
+- The current generated floor catalogue does not contain435. Explicitly refuse
+  that appearance until its source floor facts and composed routing are implemented;
+  absence from the catalogue must not silently make a sewer visual-only.

@@ -8381,7 +8381,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Publish PG-green object slice now under owner pressure; complete targeted strict-check pipeline, then compose exact Mintwallin source callback and reward path.",
+    "active": "Core object slice strict checks passed. Mintwallin whole-source PG RED is compiling; source callback not yet authored.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -8500,7 +8500,8 @@
       "checks": {
         "python": "16 passed",
         "generation": "21 packets regenerated and checked; no drift",
-        "cargo_check_clippy_schema": "active targeted pipeline; follow-up evidence to be pushed immediately"
+        "cargo_check_clippy_schema": "PASS: all targets/all features check2m41s, strict clippy2m30s; schema unit1/1,0.01s",
+        "scope": "Checks cover published6baad72f8. A conservative explicit435 refusal is in the next source-composition worktree; it will be included in its targeted validation."
       },
       "logs": {
         "red": {
@@ -8518,6 +8519,18 @@
         "python-green": {
           "log": "qlane-meta/questpc/cloud-objects-python-green.log",
           "sha256": "08a39e572a4862de11962ef854e89fcb8f692ccfb0c87618ca43e95a23696848"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-objects-check.log",
+          "sha256": "e330aff05e1197d26e9e5bf90820ed1674185d175c4037feb6ef075ba5b305c2"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-objects-clippy.log",
+          "sha256": "00faa95703b606fb96fa9a2cd0bd4d07ea894d1a7312dfc9167a42d11c460ae0"
+        },
+        "unit": {
+          "log": "qlane-meta/questpc/cloud-objects-unit.log",
+          "sha256": "784e864b1f950dc6e34ed0b26f125067509becb49d1ee53f9fbab741aaf07a9e"
         }
       }
     }
