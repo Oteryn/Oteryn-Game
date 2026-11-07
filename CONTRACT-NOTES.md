@@ -304,3 +304,10 @@ unqualified/qualified selectors are rejected. Root and child fluid outputs use
 QBASE1200's existing MINT initialization in the same transaction. L2 migration
 1217 binds exact subtype input counts and the complete output fluid plan without
 changing any canonical QENGINE2 migration or the native fluid state owner.
+
+Yonan stateless exchange restoration reuses QENGINE2's canonical paid-exchange
+claim identity (1003/1004) and its bounded Rust admission. No synthetic quest
+track is introduced: the four source parts are the payment, native MINT is
+the output, and generic transition callers cannot execute value-only receipts.
+The catalogue exception forbids XP-only empty transitions. Native player
+journey qualification remains pending until the existing RED test passes.

@@ -180,6 +180,17 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+impl RewardCallback {
+    /// Stateless source exchanges consume exact admitted items in the native MINT transaction.
+    pub fn is_paid_exchange(&self) -> bool {
+        self.storage.is_empty()
+            && self.state_ops.is_empty()
+            && self.participants.is_empty()
+            && !self.take.is_empty()
+            && self.give.is_some()
+    }
+}
+
 /// Source-bound track metadata; writable declarations name the exact existing owner.
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -401,7 +412,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.forbids_outfits
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
-            || c.storage.is_empty()
+            || (c.storage.is_empty() && !c.is_paid_exchange())
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
             || c.requires.len() > 8
@@ -419,6 +430,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     })
             })
             || (!c.repeatable
+                && !c.is_paid_exchange()
                 && c.storage
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
@@ -739,6 +751,36 @@ mod tests {
         assert!(valid_item_reward(&reward));
         reward.backpack_outputs[0].count = 2;
         assert!(!valid_item_reward(&reward));
+        Ok(())
+    }
+
+    #[test]
+    fn stateless_paid_exchange_requires_native_inputs_and_output() -> Result<(), String> {
+        let mut callback = load()?.into_iter().next().ok_or("callback")?;
+        callback.storage.clear();
+        callback.state_ops.clear();
+        callback.participants.clear();
+        callback.take = vec![ItemAmount {
+            item: "oteryn:item.tibia.i31572".into(),
+            count: 1,
+            fluid_subtype: None,
+        }];
+        callback.give = Some(
+            serde_json::from_value(
+                serde_json::json!({"item":"oteryn:item.tibia.i31576", "count":1}),
+            )
+            .map_err(|e| e.to_string())?,
+        );
+        callback.outfit = None;
+        callback.achievement = None;
+        let document =
+            |c: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&callback)).is_ok());
+        callback.take.clear();
+        assert!(
+            parse(&document(&callback)).is_err(),
+            "a stateless reward cannot manufacture free value"
+        );
         Ok(())
     }
 

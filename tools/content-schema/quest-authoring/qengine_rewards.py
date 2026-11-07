@@ -461,7 +461,10 @@ def validate_callbacks(document):
             raise ValueError('invalid selected carried quest input '+callback['key'])
         storage=callback['storage']
         requires=callback.get('requires',[])
+        paid_exchange=(not storage and not callback.get('state_ops') and not callback.get('participants')
+                       and bool(callback['take']) and callback['give'] is not None)
         if (callback['key'] in keys
+            or (not storage and not paid_exchange)
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
@@ -473,7 +476,7 @@ def validate_callbacks(document):
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
             or any(s.get('set_if') is not None and (not s['minimum']<=s['set_if']<=s['maximum'] or s.get('preserve',False)) for s in storage)
-            or (not callback.get('repeatable',False) and not callback.get('state_ops')
+            or (not callback.get('repeatable',False) and not callback.get('state_ops') and not paid_exchange
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)
                 and ((not callback['take'] and not callback.get('fee')) or not callback['give']

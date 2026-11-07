@@ -8,6 +8,18 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_stateless_paid_exchange_rejects_unpaid_value(self):
+        callback=copy.deepcopy(self.callbacks['callbacks'][0])
+        callback.update(storage=[], state_ops=[], participants=[], outfit=None, achievement=None,
+                        take=[{'item':'oteryn:item.tibia.i31572','count':1}],
+                        give={'item':'oteryn:item.tibia.i31576','count':1,'contents':[]})
+        q.validate_callbacks({'schema':1,'callbacks':[callback]})
+        for field,value in [('take',[]),('give',None)]:
+            bad=copy.deepcopy(callback)
+            bad[field]=value
+            with self.assertRaises((ValueError,ValidationError)):
+                q.validate_callbacks({'schema':1,'callbacks':[bad]})
+
     def test_inventory_predicates_reject_ambiguous_and_invalid_bounds(self):
         source = next(c for c in self.callbacks['callbacks'] if c.get('inventory'))
         for mutation in ('duplicate', 'inverted', 'negative', 'overflow', 'boolean'):

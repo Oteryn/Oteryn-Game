@@ -2848,6 +2848,20 @@
         "log": "/tmp/l2-fluid-schema-pg.log"
       },
       "remaining": "Compose source NPC/world journeys and prove actual typed-fluid issue and hand-in before qualification."
+    },
+    "stateless_exchange_progress": {
+      "status": "PENDING_NATIVE_JOURNEY_PROOF",
+      "reused_owner": "QENGINE2 canonical 1003/1004 stateless paid exchange",
+      "domain_tests": {
+        "passed": 9,
+        "failed": 0
+      },
+      "authoring_tests": {
+        "passed": 27,
+        "failed": 0,
+        "log": "/tmp/l2-stateless-authoring.log"
+      },
+      "remaining": "Native Yonan four-part exchange and replay/second purchase journey."
     }
   }
 }

@@ -201,6 +201,12 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        if reward_callback.is_none()
+            && catalogue.transition(&request.transition_key)
+                .is_some_and(|t| t.effects.is_empty() && !t.completes)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
