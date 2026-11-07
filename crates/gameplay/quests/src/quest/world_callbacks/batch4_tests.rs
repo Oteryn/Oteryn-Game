@@ -177,3 +177,54 @@ fn native_callback_rejects_incomplete_or_foreign_authoring() {
         assert!(callbacks(value).is_err(), "case {case}");
     }
 }
+
+#[test]
+fn source_world_binding_reuses_the_existing_hidden_threats_transition() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks: Vec<_> = load()?
+        .into_iter()
+        .filter(|callback| {
+            callback
+                .key
+                .ends_with("hidden_threats/quest_line/movement_1")
+        })
+        .collect();
+    assert_eq!(callbacks.len(), 1);
+    assert_eq!(callbacks[0].trigger, Trigger::StepOut);
+    assert_eq!(callbacks[0].selector.positions.len(), 5);
+    assert_eq!(callbacks[0].required_claims.len(), 2);
+    let before = loaded.catalogue();
+    let after = extend_callbacks(before.clone(), &callbacks)?;
+    assert_eq!(
+        before.definition_hash("oteryn:quest.tibia_tales"),
+        after.definition_hash("oteryn:quest.tibia_tales"),
+        "world binding preserves historical quest hashes"
+    );
+    let source = before
+        .transition(&callbacks[0].key)
+        .ok_or("source transition")?;
+    let stored = BTreeMap::from([(callbacks[0].storage[0].track.clone(), 2)]);
+    assert_eq!(
+        before.evaluate(source, &stored, 0),
+        Err(QuestRefusal::NotSupported)
+    );
+    let bound = callbacks[0]
+        .bind_inexact_source_transition(source)
+        .ok_or("source binding")?;
+    assert_eq!(
+        before
+            .evaluate(&bound, &stored, 0)
+            .map_err(|error| format!("{error:?}"))?[0]
+            .after,
+        3
+    );
+    let mut conditional = callbacks[0].clone();
+    conditional.storage[0].set_if = Some(2);
+    assert!(!conditional.is_guarded_source_departure());
+    assert!(conditional.bind_inexact_source_transition(source).is_none());
+    let mut divergent = callbacks;
+    divergent[0].storage[0].set = 4;
+    assert!(extend_callbacks(before.clone(), &divergent).is_err());
+    Ok(())
+}

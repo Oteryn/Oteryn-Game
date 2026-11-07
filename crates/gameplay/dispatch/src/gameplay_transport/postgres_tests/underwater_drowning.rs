@@ -420,6 +420,7 @@ fn scenario_in_world(
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
                 selector: Selector {
+                    positions: Vec::new(),
                     position: Some(position(trigger)),
                     unique: None,
                     action: None,
@@ -429,6 +430,8 @@ fn scenario_in_world(
                 reversible: false,
                 passages: vec![],
                 objects: None, object_conditions: Vec::new(),
+                eject_occupants: None,
+                required_claims: Vec::new(),
                 teleport: Some(position(destination)),
                 storage: if refused {
                     vec![Storage {

@@ -151,3 +151,32 @@ immutable Channel Base/Added objects qualify. House/value/portable ground object
 are outside this read-set; absent tiles, unreadable facts and missing appearances
 fail the condition. This conservative rule avoids treating unowned custody as a
 physical world predicate. Existing callbacks default to no conditions.
+
+Source-world native bindings (Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d):
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/movement-chests_check.lua
+The normalized source-world-objects custody packet records script hashes, native
+map roots and reward facts; its generator verifies the retained corpus without
+copying donor files. Life Ring's exact native lever toggles six4598 grounds to5770
+and restores them. Closing uses the existing sole-current-actor authority for
+source getTopCreature semantics; ambiguous stacked occupants refuse atomically.
+Every actor proof and the map projection commit together, with rollback on failure.
+The native bag contains3052 and3085. Source200 charges exactly matches the pinned
+necklace definition200; fresh full charges have no timed override row.
+
+Hidden Threats source departures require both exact personal once-claim receipts
+and line2, then set3. The retained source transition and definition hash remain
+unchanged; generic Computed evaluation remains unsupported. Only the verified
+source SET is bound temporarily under those predicates. Progress-only departure
+recovery has no map projection and cannot be pinned by another player's later
+shared origin revision; the real PostgreSQL regression exercises that interruption.
+This component does not certify the remaining NPC/forge/rescue/room storyline.
+
+The initial source-world batch restored the reviewed callback base while moving
+three concurrent additions to a generated shard. Incoming69ad45e6e subsequently
+refreshes its source-fix proof for the complete base, including those additions
+and Draconia. Integration preserves that exact approved base and removes the
+now-redundant intermediate shard; no callback is lost. The native source-world
+shard remains loaded with cross-shard uniqueness and the combined runtime cap.
+No source-fix approval or guard is weakened during this integration.

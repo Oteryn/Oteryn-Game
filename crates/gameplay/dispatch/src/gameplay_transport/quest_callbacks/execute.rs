@@ -51,7 +51,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut after) = map.facts.base_entry(pos, ordinal, id) else {
             return UseDisposition::Rejected;
         };
-        if map.facts.object_revision(key) != expected_revision {
+        if !callback.is_guarded_source_departure()
+            && map.facts.object_revision(key) != expected_revision
+        {
             return UseDisposition::StaleState;
         }
         // Model validation keeps this predicate stateless. The runtime owner remains
@@ -76,7 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]),
             Trigger::StepIn => false,
-            Trigger::StepOut => true,
+            Trigger::StepOut => !callback.is_guarded_source_departure(),
         };
         if close && !callback.reversible {
             return UseDisposition::NothingToUse;
@@ -100,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let passage = passage_definition;
             let p = tile(passage.position);
             if close
+                && callback.eject_occupants.is_none()
                 && super::super::map_door::doorway_occupied(
                     runtime,
                     actor,
@@ -176,9 +179,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             None => None,
         };
-        if !map
-            .facts
-            .quest_callback_capacity(key, expected_revision, callback.passages.len())
+        if !callback.is_guarded_source_departure()
+            && !map
+                .facts
+                .quest_callback_capacity(key, expected_revision, callback.passages.len())
         {
             return UseDisposition::Exhausted;
         }
@@ -294,16 +298,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        // A progress-only source departure has no Channel projection. Its
+        // receipt recovery must preserve newer revisions at the shared origin.
+        if callback.is_guarded_source_departure() {
+            if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                pending.remove(&session);
+            }
+            if let Some(message) = success_message {
+                self.states.chat.push_quest_feedback(session, &message);
+            }
+            return UseDisposition::Committed;
+        }
         // Dryad watersplash54 is source metadata only until a live Item
         // presentation consumer exists; the existing teleport owner still commits.
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-        ) {
+        let project = || {
+            map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+            )
+        };
+        if callback.eject_occupants.is_some() {
+            let result = self.eject_quest_occupants(
+                runtime,
+                states,
+                map,
+                callback,
+                key,
+                optional_pvp,
+                project,
+            );
+            if result != UseDisposition::Committed {
+                return result;
+            }
+        } else if !project() {
             return UseDisposition::Rejected;
         }
         if let Some(proof) = teleport {

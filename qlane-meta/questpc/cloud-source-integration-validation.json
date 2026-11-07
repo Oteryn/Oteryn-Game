@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "parents": [
+    "4b08ff5c4506759d3f9025ad24f8b95ec133e119",
+    "69ad45e6e9c3af9a30522bc8cc7acf48ebf08a3c"
+  ],
+  "postgres_version": 180006,
+  "integration_rule": "Preserve the incoming complete approved callback base and all Draconia/conditional effects. Native source-world callbacks remain in their own shard. The temporary shared shard is superseded without dropping any callbacks.",
+  "boundary_fix": "Conditional reset fields are refused by the retained-source unconditional SET binder; focused unit RED then GREEN. Original PostgreSQL source recovery RED remains committed separately.",
+  "logs": {
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-source-integration-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "markers": []
+    },
+    "unit-red": {
+      "path": "qlane-meta/questpc/cloud-source-integration-unit-red.log",
+      "sha256": "6941d45ab5c6b682a4a217a0cd8e569d5a7206b12cd261e4bb0e54a858fe50ea",
+      "markers": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.29s"
+      ]
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-source-integration-units.log",
+      "sha256": "2a2e20ffbec13babaa2358fe649dd79bff346785d30ca42b9b4ccbed3ecdc0f8",
+      "markers": [
+        "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 250 filtered out; finished in 2.73s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s"
+      ]
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-source-integration-check.log",
+      "sha256": "21d4ffec5ca1c1513824bc39250908ebe28d76d2c5a1f5aeea2e5adb87862201",
+      "markers": []
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-source-integration-clippy.log",
+      "sha256": "12479b2c07b90bea6bfda7980aba0bc25d84e8aaa46e17f42ea59ee2827a22df",
+      "markers": []
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-source-integration-generation.log",
+      "sha256": "6a6890c206861945c0e031238901a68d5ff978b22564cc8e2a056559474332c3",
+      "markers": []
+    },
+    "python": {
+      "path": "qlane-meta/questpc/cloud-source-integration-python.log",
+      "sha256": "45145946b13677c5f0f0d7397e3a2e9aa4d2544df41cba691158e4c0de865cce",
+      "markers": []
+    },
+    "tree": {
+      "path": "qlane-meta/questpc/cloud-source-integration-tree.log",
+      "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2",
+      "markers": []
+    },
+    "register": {
+      "path": "qlane-meta/questpc/cloud-source-integration-register.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+      "markers": []
+    },
+    "pg": {
+      "path": "qlane-meta/questpc/cloud-source-integration-pg.log",
+      "sha256": "b8c82f529b3da73609acc0e25019f352042ce19a768bf6551f50cd21a997e57b",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_hidden_threats_stepout_requires_both_once_claims ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_hidden_threats duration=50.976389426s",
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_life_ring_real_use_opens_and_restores_native_water ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=45.950581882s",
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_mintwallin_real_use_applies_all_twelve_edits ... POSTGRES_CASE_STARTED quest_source_objects mint=true version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_mintwallin duration=45.532813443s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 142.46s"
+      ]
+    },
+    "draconia-pg": {
+      "path": "qlane-meta/questpc/cloud-source-integration-draconia-pg.log",
+      "sha256": "09c3eff7ee3fa2f1cdfe7a6f2e3935cb8b43c95d0d055742a512717ebdc0aaae",
+      "markers": [
+        "POSTGRES_CASE_STARTED draconia_escape database_created=true",
+        "POSTGRES_CASE_STARTED draconia-escape-exact server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED draconia-escape-exact duration=47.194089163s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2557 filtered out; finished in 47.19s"
+      ]
+    },
+    "failure-pg": {
+      "path": "qlane-meta/questpc/cloud-source-integration-failure-pg.log",
+      "sha256": "e45269a7524f416b2155da572d7f3c94c2208b3eb4dd2a97ff0db1454c0ae5ae",
+      "markers": [
+        "POSTGRES_CASE_STARTED conditional_failure_landing database_created=true",
+        "POSTGRES_CASE_STARTED conditional_quest_failure server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED conditional-failure-landing duration=46.425866382s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2557 filtered out; finished in 46.43s"
+      ]
+    },
+    "pin-refresh": {
+      "path": "qlane-meta/questpc/cloud-source-integration-pin-refresh.log",
+      "sha256": "9a159a96e50891cef171d1a68d0c0893aa12d2a2c2343429ad24b90bedb49306",
+      "markers": []
+    },
+    "pin-check": {
+      "path": "qlane-meta/questpc/cloud-source-integration-pin-check.log",
+      "sha256": "6c5ac3643d2f734862e0d8de9b1cdd6f9be753eb2259d796241676c34b04b57b",
+      "markers": []
+    }
+  },
+  "approved_base_sha256": "d6f1bdb6625f140b5526b59086f8daddaafb321e6aacbbbe927f6aaf64f1de8c"
+}

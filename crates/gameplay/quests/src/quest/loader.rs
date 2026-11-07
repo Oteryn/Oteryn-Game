@@ -192,6 +192,31 @@ struct RequestedBy {
     topics: Vec<i64>,
 }
 
+/// The retained source target of an inexact SET, never executable on its own.
+pub(super) fn inexact_source_set(transition: &str, track: &str) -> Option<i64> {
+    static SETS: std::sync::OnceLock<BTreeMap<(String, String), i64>> = std::sync::OnceLock::new();
+    SETS.get_or_init(|| {
+        let Ok(document) = serde_json::from_str::<Document>(EMBEDDED) else {
+            return BTreeMap::new();
+        };
+        document
+            .quests
+            .into_iter()
+            .flat_map(|quest| quest.transitions)
+            .flat_map(|transition| {
+                transition.effects.into_iter().filter_map(move |effect| {
+                    (!effect.from_exact && effect.effect.op == "SET")
+                        .then_some(effect.effect.value)
+                        .flatten()
+                        .map(|value| ((transition.key.clone(), effect.track), value))
+                })
+            })
+            .collect()
+    })
+    .get(&(transition.to_owned(), track.to_owned()))
+    .copied()
+}
+
 /// Load the embedded lowered quest content for `content_revision`.
 pub fn load_embedded_quest_state(
     content_revision: &str,

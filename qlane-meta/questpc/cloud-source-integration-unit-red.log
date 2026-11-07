@@ -1,0 +1,19 @@
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.27s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-83ac356503a3a145)
+
+running 1 test
+
+thread 'quest::world_callbacks::batch4_tests::source_world_binding_reuses_the_existing_hidden_threats_transition' (63588) panicked at crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs:224:5:
+assertion failed: !conditional.is_guarded_source_departure()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test quest::world_callbacks::batch4_tests::source_world_binding_reuses_the_existing_hidden_threats_transition ... FAILED
+
+failures:
+
+failures:
+    quest::world_callbacks::batch4_tests::source_world_binding_reuses_the_existing_hidden_threats_transition
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.29s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-quests --lib`

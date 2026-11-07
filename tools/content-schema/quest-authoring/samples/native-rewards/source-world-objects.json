@@ -1,0 +1,816 @@
+{
+  "schema": "OTERYN_QUEST_SOURCE_OBJECTS/v1",
+  "qengine_reuse_ref": "5a6de28c1",
+  "worlds": {
+    "life_ring": {
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+        "sha256": "f24ab1e72f54048662b0cd436129ff69657f80fbbb359154f6502b194f4893f9",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "fresh_read_date": "2026-11-06"
+      },
+      "original_action": 30007,
+      "native_lever": {
+        "position": [
+          32413,
+          32230,
+          10
+        ],
+        "map": "content/world/placements/region-z10-x126-y125.b3",
+        "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+        "house": 0,
+        "roots": [
+          [
+            368,
+            null
+          ],
+          [
+            2772,
+            null
+          ]
+        ]
+      },
+      "bridge": [
+        {
+          "position": [
+            32410,
+            32231,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ],
+            [
+              4788,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32411,
+            32231,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32412,
+            32231,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32410,
+            32232,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ],
+            [
+              4788,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32411,
+            32232,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32412,
+            32232,
+            10
+          ],
+          "map": "content/world/placements/region-z10-x126-y125.b3",
+          "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+          "house": 0,
+          "roots": [
+            [
+              4598,
+              null
+            ]
+          ]
+        }
+      ],
+      "eject_to": [
+        32409,
+        32231,
+        10
+      ],
+      "source_water": 4610,
+      "native_water": 4598,
+      "source_bridge": 5770,
+      "native_rule": "The sole native lever within ten cells of the six source bridge cells binds without invented AID. The six existing native 4598 water grounds are the source 4610 projection. Closing restores each original 4598 ground. No source snapshot or placement binary is rewritten.",
+      "native_claims": [
+        {
+          "claim": "oteryn:reward-claim.kv.lifering",
+          "appearance": 2469,
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6131
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6131
+              }
+            ],
+            "project_position": {
+              "x": 32443,
+              "y": 32238,
+              "z": 11
+            }
+          },
+          "native": {
+            "position": [
+              32443,
+              32238,
+              11
+            ],
+            "map": "content/world/placements/region-z11-x126-y125.b3",
+            "map_sha256": "b1f2c33c3840e3cd21b0c925b014c34bcdc148ad50b8cbdfb56034422e08a8d1",
+            "house": 0,
+            "roots": [
+              [
+                353,
+                null
+              ],
+              [
+                2469,
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "native_eject_to": {
+        "position": [
+          32409,
+          32231,
+          10
+        ],
+        "map": "content/world/placements/region-z10-x126-y125.b3",
+        "map_sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda",
+        "house": 0,
+        "roots": [
+          [
+            351,
+            null
+          ]
+        ]
+      },
+      "busy_occupant_rule": "Refuse the whole toggle when an occupant has lost control, is dead, has a pending spell, quest or physical trade, or cannot pass the existing landing/PZ policy. No actor or map partial commit.",
+      "reward_source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/chest.lua",
+        "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "first_line": 1593,
+        "fresh_read_date": "2026-11-07",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+      },
+      "top_creature_rule": "Reuse the existing is_sole_current_actor_on_cell authority. Source getTopCreature is unambiguous only for a sole current actor; refuse the entire toggle for stacked cells instead of inventing stack order. All six occupied source cells are handled in one actor/map transaction.",
+      "native_terrain": [
+        {
+          "path": "content/world/terrain/terrain-01000-01499.json",
+          "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+          "key": "oteryn:terrain.tibia.i4598",
+          "source_item_id": 4598,
+          "kind": "ground",
+          "walkable": false,
+          "ground_speed": 0
+        },
+        {
+          "path": "content/world/terrain/terrain-01000-01499.json",
+          "sha256": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
+          "key": "oteryn:terrain.tibia.i4788",
+          "source_item_id": 4788,
+          "kind": "border",
+          "walkable": true,
+          "ground_speed": null
+        },
+        {
+          "path": "content/world/terrain/terrain-01500-01999.json",
+          "sha256": "54c8a17c14e01845f366f397c882ed432c9fa8cc2b8c3300e61d84a7f39999db",
+          "key": "oteryn:terrain.tibia.i5770",
+          "source_item_id": 5770,
+          "kind": "ground",
+          "walkable": true,
+          "ground_speed": 90
+        }
+      ]
+    },
+    "mintwallin": {
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua",
+        "sha256": "61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "fresh_read_date": "2026-11-06"
+      },
+      "original_action": 30008,
+      "native_lever": {
+        "position": [
+          32600,
+          32105,
+          14
+        ],
+        "map": "content/world/placements/region-z14-x127-y125.b3",
+        "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+        "house": 0,
+        "roots": [
+          [
+            351,
+            null
+          ],
+          [
+            2772,
+            null
+          ]
+        ]
+      },
+      "remove": [
+        {
+          "position": [
+            32593,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32594,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              354,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32595,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              6483,
+              null
+            ],
+            [
+              6480,
+              null
+            ],
+            [
+              1271,
+              null
+            ],
+            [
+              1867,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32596,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              6476,
+              null
+            ],
+            [
+              6477,
+              null
+            ],
+            [
+              1271,
+              null
+            ],
+            [
+              1855,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32597,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              6481,
+              null
+            ],
+            [
+              6482,
+              null
+            ],
+            [
+              6480,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32598,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              6476,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32599,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              6484,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32600,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32601,
+            32104,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ],
+            [
+              1271,
+              null
+            ]
+          ]
+        }
+      ],
+      "create": [
+        {
+          "position": [
+            32592,
+            32105,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              351,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            32592,
+            32106,
+            14
+          ],
+          "map": "content/world/placements/region-z14-x127-y125.b3",
+          "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+          "house": 0,
+          "roots": [
+            [
+              384,
+              null
+            ]
+          ]
+        }
+      ],
+      "create_appearance": 1270,
+      "remove_appearance": 1271,
+      "remove_source_lever": true,
+      "native_rule": "Retain the existing source AID30008 callback and its tested Objects owner. The pinned native import has no script attribute: a separate explicit native alias binds its sole unbound2772 lever at32600,32105,z14 within ten cells of the exact wall row. This is an import binding, not a replacement source registration. No new Mintwallin callback or item writer is introduced.",
+      "native_claims": [
+        {
+          "claim": "oteryn:reward-claim.kv.mintwallincyclops",
+          "appearance": 2472,
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6138
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6138
+              }
+            ],
+            "project_position": {
+              "x": 32591,
+              "y": 32097,
+              "z": 14
+            }
+          },
+          "native": {
+            "position": [
+              32591,
+              32097,
+              14
+            ],
+            "map": "content/world/placements/region-z14-x127-y125.b3",
+            "map_sha256": "ae9680397c6d0d0dab0c16e09c76935be91b8bcc7faf633e471865234a7143e6",
+            "house": 0,
+            "roots": [
+              [
+                351,
+                null
+              ],
+              [
+                2472,
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "reward_source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/chest.lua",
+        "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+        "first_line": 1651,
+        "fresh_read_date": "2026-11-07",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+      }
+    },
+    "hidden_threats": {
+      "source": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/movement-chests_check.lua",
+        "sha256": "0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "fresh_read_date": "2026-11-06"
+      },
+      "trigger": "step_out",
+      "positions": [
+        {
+          "position": [
+            33079,
+            32014,
+            13
+          ],
+          "map": "content/world/placements/region-z13-x129-y125.b3",
+          "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+          "house": 0,
+          "roots": [
+            [
+              10113,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            33079,
+            32015,
+            13
+          ],
+          "map": "content/world/placements/region-z13-x129-y125.b3",
+          "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+          "house": 0,
+          "roots": [
+            [
+              10113,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            33080,
+            32015,
+            13
+          ],
+          "map": "content/world/placements/region-z13-x129-y125.b3",
+          "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+          "house": 0,
+          "roots": [
+            [
+              10113,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            33032,
+            32050,
+            13
+          ],
+          "map": "content/world/placements/region-z13-x129-y125.b3",
+          "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+          "house": 0,
+          "roots": [
+            [
+              103,
+              null
+            ]
+          ]
+        },
+        {
+          "position": [
+            33032,
+            32051,
+            13
+          ],
+          "map": "content/world/placements/region-z13-x129-y125.b3",
+          "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+          "house": 0,
+          "roots": [
+            [
+              103,
+              null
+            ]
+          ]
+        }
+      ],
+      "source_track_owner": "oteryn:quest.tibia_tales",
+      "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+      "from": 2,
+      "to": 3,
+      "required_once_claims": [
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02"
+      ],
+      "native_claims": [
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+          "appearance": 2469,
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6095
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6095
+              }
+            ],
+            "project_position": {
+              "x": 33080,
+              "y": 32014,
+              "z": 13
+            }
+          },
+          "native": {
+            "position": [
+              33080,
+              32014,
+              13
+            ],
+            "map": "content/world/placements/region-z13-x129-y125.b3",
+            "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+            "house": 0,
+            "roots": [
+              [
+                10113,
+                null
+              ],
+              [
+                2469,
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02",
+          "appearance": 2469,
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6096
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6096
+              }
+            ],
+            "project_position": {
+              "x": 33031,
+              "y": 32050,
+              "z": 13
+            }
+          },
+          "native": {
+            "position": [
+              33031,
+              32050,
+              13
+            ],
+            "map": "content/world/placements/region-z13-x129-y125.b3",
+            "map_sha256": "cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1",
+            "house": 0,
+            "roots": [
+              [
+                103,
+                null
+              ],
+              [
+                2469,
+                null
+              ]
+            ]
+          }
+        },
+        {
+          "claim": "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.metal_file",
+          "appearance": 2469,
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6094
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6094
+              }
+            ],
+            "project_position": {
+              "x": 33078,
+              "y": 31980,
+              "z": 13
+            }
+          },
+          "native": {
+            "position": [
+              33078,
+              31980,
+              13
+            ],
+            "map": "content/world/placements/region-z13-x129-y124.b3",
+            "map_sha256": "c1b4d50352dd91a67d9e977cd128622847287a256b6c2b00e851a5c2a0618760",
+            "house": 0,
+            "roots": [
+              [
+                10534,
+                null
+              ],
+              [
+                2469,
+                null
+              ]
+            ]
+          }
+        }
+      ],
+      "claim_predicate_rule": "The two source once flags use the exact personal RewardClaim receipts, not possession of tradeable fragments. The guarded source SET resolves only inside the fenced world callback; generic evaluation remains unsupported and the catalogue hash is unchanged."
+    }
+  },
+  "reused_concurrent_ref": "4a88a91a097ba9b27b14789935d6b78eb01f03cb"
+}

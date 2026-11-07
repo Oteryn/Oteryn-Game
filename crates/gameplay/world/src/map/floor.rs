@@ -40,7 +40,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::prepare_quest_callback_teleport;
+pub use quest_callback::{prepare_quest_callback_ejection, prepare_quest_callback_teleport};
 pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {

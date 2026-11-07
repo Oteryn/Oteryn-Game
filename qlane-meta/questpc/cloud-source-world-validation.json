@@ -1,0 +1,175 @@
+{
+  "base_head": "2ea1809a15b2bea2dffde3347f8773fb1e95fa5e",
+  "scope": [
+    "Life Ring native bridge and filled bag",
+    "Hidden Threats guarded departure and three native chests; full storyline remains active",
+    "Mintwallin native import alias reusing the already qualified source callback"
+  ],
+  "postgres_version": 180006,
+  "logs": {
+    "red_initial": {
+      "path": "qlane-meta/questpc/cloud-source-world-red_initial.log",
+      "sha256": "674a591cc0ef7eaa0bdaa3c0441078f2bd2af5f455965e725a8540a8442e9a67",
+      "markers": [
+        "POSTGRES_CASE_STARTED quest_source_objects_life_ring version=180006",
+        "POSTGRES_CASE_FAILED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=45.397141451s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 46.95s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2541 filtered out; finished in 45.40s"
+      ]
+    },
+    "red_recovery": {
+      "path": "qlane-meta/questpc/cloud-source-world-red_recovery.log",
+      "sha256": "21709bc1f647f27ba9a3aea91739e91a6c817c3243bb31e53ffb48623bfe7a10",
+      "markers": [
+        "POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_FAILED quest_source_objects_hidden_threats duration=48.255387091s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 52s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2546 filtered out; finished in 48.26s"
+      ]
+    },
+    "green": {
+      "path": "qlane-meta/questpc/cloud-source-world-green.log",
+      "sha256": "f0b8f95d895ab80aff203ae09081aebf7961fac6086adb7b5e77d543cfc85162",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_hidden_threats_stepout_requires_both_once_claims ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_hidden_threats duration=51.844283716s",
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_life_ring_real_use_opens_and_restores_native_water ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=46.266795229s",
+        "test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_mintwallin_real_use_applies_all_twelve_edits ... POSTGRES_CASE_STARTED quest_source_objects mint=true version=180006",
+        "POSTGRES_CASE_COMPLETED quest_source_objects_mintwallin duration=46.058620043s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 56s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2546 filtered out; finished in 144.17s"
+      ]
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-source-world-check.log",
+      "sha256": "c3ced4978e443efb5528d24e1e84f36f47aa80e55f65805a6b4e49e4b9e82a03",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 45s"
+      ]
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-source-world-clippy.log",
+      "sha256": "4ddc318dfd73b42c71e182ae4465c01301b292f7a0537016f12344db23f7a0de",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 50s"
+      ]
+    },
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-source-world-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "markers": [],
+      "results": []
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-source-world-units.log",
+      "sha256": "7141fb21fbccd1c2b94a110aefaddf4d878423360ddc6d601e4d44c933b7def9",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.80s",
+        "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out; finished in 2.74s"
+      ]
+    },
+    "binder_units": {
+      "path": "qlane-meta/questpc/cloud-source-world-binder_units.log",
+      "sha256": "5141b2dd608b301cf046ac85cde065e8850ffd5aac42f7d2fab183263d6b202f",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 315 filtered out; finished in 0.13s"
+      ]
+    },
+    "pin_refresh": {
+      "path": "qlane-meta/questpc/cloud-source-world-pin_refresh.log",
+      "sha256": "a4716354b7fe0a960b743e8802e6d0432b5ac09b0c0b1a5c4756a2e6c982a984",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s"
+      ]
+    },
+    "pin_check": {
+      "path": "qlane-meta/questpc/cloud-source-world-pin_check.log",
+      "sha256": "685e13c82dd76e8138ad9c298d24d046463c974834d22fc19053cfd47b582de9",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+      ]
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-source-world-generation.log",
+      "sha256": "dd7e0de3e5608dcd0fad6a230f054663f3f8ef628c70aa43da6624113dcda02f",
+      "markers": [],
+      "results": []
+    },
+    "tree": {
+      "path": "qlane-meta/questpc/cloud-source-world-tree.log",
+      "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2",
+      "markers": [],
+      "results": []
+    },
+    "shard_units": {
+      "path": "qlane-meta/questpc/cloud-source-world-shard_units.log",
+      "sha256": "4335b8ca5b3c3dee3ef5548f1c67925f5f1eb1520d421134fa5a6ae65ed15000",
+      "markers": [],
+      "results": []
+    },
+    "shard_generation": {
+      "path": "qlane-meta/questpc/cloud-source-world-shard_generation.log",
+      "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557",
+      "markers": [],
+      "results": []
+    },
+    "native_source_units": {
+      "path": "qlane-meta/questpc/cloud-source-world-native_source_units.log",
+      "sha256": "8d8434297015c4313d29ce52358edfc10b75dbd110cb743a72b833d7a3574e6b",
+      "markers": [],
+      "results": []
+    },
+    "departure_regression": {
+      "path": "qlane-meta/questpc/cloud-source-world-departure_regression.log",
+      "sha256": "8656fb8c15c67143e33a504b9bf121642b93eaae6a7be6552074367ec166607d",
+      "markers": [
+        "POSTGRES_CASE_STARTED quest_departure database_created=true",
+        "POSTGRES_CASE_COMPLETED committed_departure_restores_static_passages_without_quest_writes duration=48.996677144s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 49.00s"
+      ]
+    },
+    "original_mintwallin_regression": {
+      "path": "qlane-meta/questpc/cloud-source-world-original_mintwallin_regression.log",
+      "sha256": "24df735dc332a98331ae6180c0c2fcf4bbd2cd6248e1bbd137c4fa5e12fe3210",
+      "markers": [
+        "POSTGRES_CASE_STARTED mintwallin_source database_created=true",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.mintwallincyclops (32591, 32097, -14) native_source=true duration=5.980904482s",
+        "POSTGRES_CASE_COMPLETED mintwallin_source_asymmetric_lever_and_reward_once_replay_and_refusal duration=93.226153642s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 93.23s"
+      ]
+    }
+  },
+  "reused_concurrent_head": "4a88a91a097ba9b27b14789935d6b78eb01f03cb",
+  "callback_shards": "Frozen265-row base restored to approved SHA; concurrent Mintwallin/Devil Helmet3-row shared shard and native2-row shard load under combined duplicate/cap validation. Original source-fix approval and guard unchanged.",
+  "recovery_rule": "Progress-only source departures recover the exact durable receipt independently of shared origin-object revisions. Existing stateless departure supersession and object mutations retain their prior owners.",
+  "top_creature_rule": "Use the existing sole-current-actor authority. Refuse ambiguous stacks atomically; never invent same-cell stack order.",
+  "charge_rule": "One dragon necklace; source200 equals pinned definition200. Fresh full-charge representation has no timed-state override.",
+  "boundaries": [
+    "Controlled native source scenes and real transport/PG, not deployed-world route certification",
+    "Hidden Threats NPC/forge/rescue/room composition remains active",
+    "No workflow/repository-tool edits, donor copies or binaries committed"
+  ],
+  "disk_recovery": "Incremental cache filled the overlay during Clippy. Removed generated incremental cache only, recovered24GB, reran interrupted validation with CARGO_INCREMENTAL=0.",
+  "source_packet": "tools/content-schema/quest-authoring/samples/native-rewards/source-world-objects.json",
+  "source_packet_sha256": "9e0c5d93666991049e8f56b7d153913bf36e4c9985a784fafc28796875231547"
+}

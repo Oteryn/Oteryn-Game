@@ -168,6 +168,19 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if !callback.required_claims.is_empty() {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid \
+             AND claim_family='RewardClaim' AND claim_production_key = ANY($2)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&callback.required_claims)
+        .fetch_one(&mut **tx)
+        .await?;
+        if usize::try_from(count).ok() != Some(callback.required_claims.len()) {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }

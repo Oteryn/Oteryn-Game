@@ -151,6 +151,40 @@ impl ChannelActorCarrier {
 }
 
 impl ChannelRuntimeV1 {
+    /// Publish forced source-world moves and their map projection together.
+    /// A rejected proof or projection restores every physical slot and revision.
+    /// The projection itself must be an atomic compare/commit operation.
+    pub fn commit_quest_world_projection<P: crate::SourceStepCommitProof>(
+        &mut self,
+        relocations: Vec<P>,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        if relocations.len() > self.carrier.slots.len() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for proof in &relocations {
+            proof.validate_current(self)?;
+        }
+        let mut snapshots = Vec::new();
+        snapshots
+            .try_reserve_exact(relocations.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let before = self.carrier.clone();
+        let result = (|| {
+            for proof in relocations {
+                snapshots.push(self.commit_source_step(proof)?);
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(snapshots)
+        })();
+        if result.is_err() {
+            self.carrier = before;
+        }
+        result
+    }
+
     pub fn encounter_owner_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
         (
             self.binding.runtime_scope,

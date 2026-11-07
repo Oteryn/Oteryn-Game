@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_content-1978a0b39edbd73f)
+
+running 2 tests
+test content::world_reward_claims::standalone_chests::tests::elvenbane_native_drawers_keep_both_filled_bags_and_all_children ... ok
+test content::world_reward_claims::standalone_chests::tests::standalone_native_chests_require_one_root_and_every_admitted_reward ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 315 filtered out; finished in 0.13s

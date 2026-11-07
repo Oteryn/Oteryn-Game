@@ -1,3 +1,24 @@
+## Concurrent source-world merge — combined validation pending
+Remote moved tof90b14f25 while this session prepareda01933b31. Merge preserves both:
+new source-world callbacks, claim guards, source reward binding and occupant ejection;
+plus generic object_conditions and exact Draconia current-lever exit. Constructor
+conflicts resolved by keeping all optional fields and selector.positions. Status
+union retains incoming qualification; counts60QUALIFIED/117UNFINISHED/1excluded.
+Run merged-crate checks and Draconia exit PG before publishing this merge. Inputs
+were independently green, but combined evidence is still pending. No forced push.
+
+## Documentation follow-up integrated — 2026-11-07
+
+Validated source merge3f889f617 retains both source-world and concurrent Draconia
+mechanics; its full checks are GREEN. Remotecc36e6070 adds six-scene Draconia exit
+proof and lane notes only. Its mentioned object_conditions implementation remains
+in the other writer's working tree and is not asserted present here. Preserve that
+implementation when it is pushed; continue Hidden Threats rather than duplicating it.
+Local counts remain60QUALIFIED/117UNFINISHED/1excluded, with seven qengine2 A..M
+entries explicitly skipped. No source changed in this documentation merge.
+
+---
+
 ## Draconia current-lever exit green — 2026-11-07
 Generic object_conditions now implemented for stateless world callbacks: up to8
 unique position/appearance predicates, one current pinned callback/door snapshot,
@@ -46,6 +67,82 @@ check/clippy/pin after PG success. Logs/tmp/questpc-draconia-exit-*.log; proof J
 cloud-draconia-exit-validation.json. Complete strict checks, archive final logs,
 update this state, commit all feature files and push immediately. Do not redo PG.
 Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
+## Concurrent source integration — GREEN, 2026-11-07
+
+Source-world commit4b08ff5c4 is merged with remote69ad45e6e. Both implementations
+are retained: native bridge/reward bindings and guarded departure recovery;
+Draconia offering/escape, safe failure landings and exact conditional resets.
+The incoming complete callback base matches its refreshed source-fix proof.
+The temporary shared shard is superseded; its three callbacks remain in that
+approved base. The native source-world shard remains. Conditional resets cannot
+be coerced by the retained-source SET binder (focused unit RED/GREEN).
+
+All changed-crate formatting/check/strict Clippy, source generation,18 callback
+units plus the conditional planner, and focused PostgreSQL regressions pass.
+The three source-world cases explicitly report PostgreSQL18.6. Draconia exact
+reset and authored failure landing also pass through their real PG scenarios.
+Pins were refreshed and checked. Commands and proof hashes:
+`cloud-source-integration-validation.json`.
+
+Use explicit destination refspecs when fetching: this checkout's configured
+mapping tracks only main. Preserve subsequent remote work and push fast-forward.
+Qengine2b51b5d358 now also qualifies Formorgar Mines; seven A..M entries are
+explicitly skipped. Current local counts remain60QUALIFIED/117UNFINISHED/
+1excluded DawnportBLOCKED. Continue Hidden Threats NPC/forge/rescue/door/room
+composition; donor facts are prepared under /tmp/questpc-hidden-source.
+Qengine2 has reusable carried-item consumption for rewards: reuse it before
+adding a generic NPC hand-in owner. Father's atomic eleven-track write remains.
+
+---
+
+## Source-world batch — GREEN, 2026-11-07
+
+Branch remains `claude/happy-davinci-ijz3wy-questpc-pc2`. Concurrent source work
+through `2ea1809a15b2bea2dffde3347f8773fb1e95fa5e` is retained by fast-forward. The earlier lane
+snapshot6c09e0365 and the Elvenbane commit4e12ac30e remain ancestors.
+
+Life Ring's source bridge/ejection and native filled-bag contract is QUALIFIED.
+Hidden Threats now has all five guarded departures and three native chests;
+its full NPC/forge/rescue/room composition remains active. Mintwallin retains
+its concurrent qualification and now binds the exact UID-free native import
+through the existing source callback and Objects owner. No duplicate object API.
+
+Real PostgreSQL18.6 markers:
+- POSTGRES_CASE_COMPLETED quest_source_objects_hidden_threats duration=51.844283716s
+- POSTGRES_CASE_COMPLETED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=46.266795229s
+- POSTGRES_CASE_COMPLETED quest_source_objects_mintwallin duration=46.058620043s
+
+Recovery RED48.255387091s reproduced a committed progress event pinned by a
+newer shared origin revision. GREEN recovers the exact receipt and preserves
+that revision. Progress-only departures have no map projection. Existing
+stateless supersession is retained and regression-tested. All callback units,
+changed-crate alltarget/allfeature check and clippy-Dwarnings, formatting,
+generation and unchanged world pin checks pass; exact commands/log hashes:
+`cloud-source-world-validation.json`. A full incremental cache interrupted
+Clippy once; generated cache only was cleared and interrupted checks rerun with
+CARGO_INCREMENTAL=0. Keep that setting for later batches.
+
+Counts: 60QUALIFIED/117UNFINISHED/
+1excluded DawnportBLOCKED. Six A..M entries qualified in qengine2
+are explicitly skipped per owner; their code is not asserted merged here.
+
+Continue Hidden Threats source composition. Exact pinned NPC/source paths were
+read: Ratter accepts help; Servant requires eight rescues and20rare earth,
+rewards two3040 and sets line5; forge and room scripts are retained in the donor
+corpus. Use the internally consistent pinned Canary04b83 source programme: eight
+distinct rescues, counter0->8, then rare-earth hand-in sets access9. Crystal
+rescuer flags/counters conflict; retain that source difference explicitly. The concurrent writer's
+latest next-work note is Draconia; preserve its work when fetching.
+
+Source-world authoring: run
+`python3 tools/content-schema/quest-authoring/source_world_objects.py --check`.
+It verifies donor custody, actual native map roots, sole-lever aliases, native
+Terrain facts and claim definitions. Runtime bindings use their own shard;
+generator-owned reviewed source callbacks stay intact. Preserve Father's atomic
+11-track write, exact charge matches and all current owner exclusions.
+
+---
 
 ## Draconia escape/offering green — 2026-11-07
 Reused questpc6@3bfd85606 callback35012, native Item3206 profile/producer and four
@@ -100,6 +197,7 @@ missing offering uses authored failure32818,31599,z9. Source source-gap script a
 qpc6 profile/source evidence are retained; no donor corpus copies. Then implement
 four-lever exit UID35011, shared resettable keys, party switches and all four rewards.
 Use10-minute fact cap and push each tested mechanic slice immediately.
+
 
 ## Devil Helmet qualified — 2026-11-07
 Original source contractQUALIFIED: UID25030 entry creates one435 if absent;

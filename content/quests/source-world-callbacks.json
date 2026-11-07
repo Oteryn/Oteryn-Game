@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/life-ring-bridge",
+      "quest": "oteryn:quest.life_ring_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32413,
+          "y": 32230,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "eject_occupants": {
+        "positions": [
+          {
+            "x": 32410,
+            "y": 32231,
+            "floor": -10
+          },
+          {
+            "x": 32411,
+            "y": 32231,
+            "floor": -10
+          },
+          {
+            "x": 32412,
+            "y": 32231,
+            "floor": -10
+          },
+          {
+            "x": 32410,
+            "y": 32232,
+            "floor": -10
+          },
+          {
+            "x": 32411,
+            "y": 32232,
+            "floor": -10
+          },
+          {
+            "x": 32412,
+            "y": 32232,
+            "floor": -10
+          }
+        ],
+        "destination": {
+          "x": 32409,
+          "y": 32231,
+          "floor": -10
+        }
+      },
+      "passages": [
+        {
+          "position": {
+            "x": 32410,
+            "y": 32231,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32411,
+            "y": 32231,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32412,
+            "y": 32231,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32410,
+            "y": 32232,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32411,
+            "y": 32232,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32412,
+            "y": 32232,
+            "floor": -10
+          },
+          "appearance": 4598,
+          "replacement": 5770
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/quest/u11_50/hidden_threats/quest_line/movement_1",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_out",
+      "selector": {
+        "position": null,
+        "positions": [
+          {
+            "x": 33079,
+            "y": 32014,
+            "floor": -13
+          },
+          {
+            "x": 33079,
+            "y": 32015,
+            "floor": -13
+          },
+          {
+            "x": 33080,
+            "y": 32015,
+            "floor": -13
+          },
+          {
+            "x": 33032,
+            "y": 32050,
+            "floor": -13
+          },
+          {
+            "x": 33032,
+            "y": 32051,
+            "floor": -13
+          }
+        ],
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_50/hidden_threats/quest_line",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "required_claims": [
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment01",
+        "oteryn:reward-claim.quest.u11_50.hidden_threats.rewards.key_fragment02"
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hidden_threats/movement-chests_check.lua"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 31s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b4f5a8b0ba0b5a59)
+
+running 3 tests
+test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_hidden_threats_stepout_requires_both_once_claims ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=5
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=5 server_sequence=6
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=6 server_sequence=8
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=7 server_sequence=10
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=8 server_sequence=12
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=9 server_sequence=14
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=10 server_sequence=16
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=11 server_sequence=18
+oteryn-game-server event=command_integrity mode=REPORT_ONLY flood=0 cadence=1 exhaust=0 reach=0 cadence_signal=0 exhaust_signal=0 reach_signal=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=12 server_sequence=19
+POSTGRES_CASE_COMPLETED quest_source_objects_hidden_threats duration=50.976389426s
+ok
+test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_life_ring_real_use_opens_and_restores_native_water ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=3
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=5 server_sequence=5
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=6 server_sequence=7
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=7 server_sequence=8
+POSTGRES_CASE_COMPLETED quest_source_objects_life_ring_real_use_opens_and_restores_native_water duration=45.950581882s
+ok
+test gameplay_transport::monk_save::postgres_tests::quest_source_objects::quest_source_objects_mintwallin_real_use_applies_all_twelve_edits ... POSTGRES_CASE_STARTED quest_source_objects mint=true version=180006
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=2
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=3
+POSTGRES_CASE_COMPLETED quest_source_objects_mintwallin duration=45.532813443s
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2555 filtered out; finished in 142.46s

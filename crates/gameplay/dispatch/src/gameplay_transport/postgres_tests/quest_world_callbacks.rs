@@ -250,7 +250,50 @@ fn world_ordinal(
     appearance: u16,
     ordinal: u8,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_ordinal_palette(callback, trigger, appearance, ordinal, &[])
+    world_ordinal_cells(callback, trigger, appearance, ordinal, &[], false, &[])
+}
+
+pub(super) fn world_with_chests(
+    callback: &Callback,
+    trigger: Position,
+    extra_cells: &[Position],
+    chests: &[(Position, u16)],
+    ground_passages: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(10113),
+        1,
+        extra_cells,
+        ground_passages,
+        chests,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "explicit native fixture roots and geometry"
+)]
+fn world_ordinal_cells(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    extra_cells: &[Position],
+    ground_passages: bool,
+    chests: &[(Position, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_ordinal_palette(
+        callback,
+        trigger,
+        appearance,
+        ordinal,
+        &[],
+        extra_cells,
+        ground_passages,
+        chests,
+    )
 }
 
 pub(super) fn world_with_palette(
@@ -264,15 +307,25 @@ pub(super) fn world_with_palette(
         callback.selector.appearance.unwrap_or(100),
         1,
         extra,
+        &[],
+        false,
+        &[],
     )
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one native scene builder owns explicit palette and root geometry"
+)]
 fn world_ordinal_palette(
     callback: &Callback,
     trigger: Position,
     appearance: u16,
     ordinal: u8,
     extra: &[(u16, oteryn_world_bundle::bundle::TerrainKind)],
+    extra_cells: &[Position],
+    ground_passages: bool,
+    chests: &[(Position, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -296,6 +349,7 @@ fn world_ordinal_palette(
                 .flat_map(|objects| objects.mutations.iter().map(|m| m.position)),
         )
         .chain(callback.teleport)
+        .chain(extra_cells.iter().copied())
     {
         cells
             .entry((position.floor, position.x, position.y))
@@ -409,9 +463,13 @@ fn world_ordinal_palette(
                 family: bundle::Family::Terrain,
                 id: index,
                 terrain: Some(bundle::Terrain {
-                    kind: bundle::TerrainKind::Wall,
-                    walkable: None,
-                    ground_speed: None,
+                    kind: if ground_passages {
+                        bundle::TerrainKind::Ground
+                    } else {
+                        bundle::TerrainKind::Wall
+                    },
+                    walkable: ground_passages.then_some(false),
+                    ground_speed: ground_passages.then_some(0),
                 }),
             });
             index
@@ -450,6 +508,63 @@ fn world_ordinal_palette(
                 attrs: Default::default(),
             });
     }
+    for change in callback
+        .objects
+        .as_ref()
+        .into_iter()
+        .flat_map(|objects| objects.mutations.iter())
+    {
+        cells
+            .entry((change.position.floor, change.position.x, change.position.y))
+            .or_default();
+        if let Some(appearance) = change.create
+            && !data
+                .manifest
+                .palette
+                .iter()
+                .any(|entry| crate::map::view::appearance_id(&entry.key, None) == appearance)
+        {
+            let item_id = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:item.tibia.i{appearance}"),
+                family: bundle::Family::Item,
+                id: item_id,
+                terrain: None,
+            });
+        }
+    }
+    for (position, appearance) in chests {
+        let appearance_key = format!("oteryn:terrain.tibia.i{appearance}");
+        let palette = if let Some(index) = data
+            .manifest
+            .palette
+            .iter()
+            .position(|entry| entry.key == appearance_key)
+        {
+            u32::try_from(index)?
+        } else {
+            let index = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: appearance_key,
+                family: bundle::Family::Terrain,
+                id: index,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            index
+        };
+        cells
+            .entry((position.floor, position.x, position.y))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+    }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {
         min_x: cells.keys().map(|(_, x, _)| *x).min().ok_or("min")?,
@@ -460,14 +575,21 @@ fn world_ordinal_palette(
     };
     let mut sectors: BTreeMap<(i8, u16, u16), Vec<sector::Tile>> = BTreeMap::new();
     for ((floor, x, y), mut items) in cells {
-        items.insert(
-            0,
-            sector::Item {
-                palette: 0,
-                depth: 0,
-                attrs: Default::default(),
-            },
-        );
+        if !ground_passages
+            || !callback
+                .passages
+                .iter()
+                .any(|p| (p.position.floor, p.position.x, p.position.y) == (floor, x, y))
+        {
+            items.insert(
+                0,
+                sector::Item {
+                    palette: 0,
+                    depth: 0,
+                    attrs: Default::default(),
+                },
+            );
+        }
         sectors
             .entry((floor, x / 32, y / 32))
             .or_default()
@@ -509,7 +631,21 @@ fn world_ordinal_palette(
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            data.manifest
+                .palette
+                .iter()
+                .find(|entry| entry.key == key && entry.family == bundle::Family::Item)
+                .and_then(|entry| {
+                    Some(crate::map::facts::ItemDefinition {
+                        reference: std::num::NonZeroU32::new(entry.id + 1)?,
+                        solid: Some(true),
+                        blocks_projectile: true,
+                        pickupable: false,
+                        door: false,
+                    })
+                })
+        },
     )
     .map_err(debug)
 }
