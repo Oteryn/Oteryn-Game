@@ -213,3 +213,45 @@ Seven stages:comb intro/exact5945,second intro,100ape5883,100fins5895,
 2wings5891,100bluecloth5912. Source first intro requires OrcPowder>=35.
 Immutable sex guard is missing generic feature;implement it here,using existing
 appearance owner item_action_sex reader. No duplicate Character sex owner.
+
+Oriental actual PG RED45.088365726s missing first binding. Generic participant
+model+helper+SQL1001 authored;one primaryrevision,original foreignquest pin/owner,
+exact immutable same-source proof. Existing SQL arms preserved;standalone side
+transition refused. Sex guard uses immutable appearance reader before anyvalue.
+Initial enginecheck1m27s passed. Final data/checks pending register73006.
+Comb5945 only missing physicalprofile;reuse four richer existing materials.
+New PGstory checks wrongsex directnative refusal and originaldoor same revision.
+Pirate worldcheck actual duration49.53s corrected from preliminary estimate.
+
+Oriental final checks PASS:check1m02s,3Rusttests1.17s,strictclippy2m55s,
+18authoring6.122s,reproducers,fmt. Pinrefresh then focusedPGGREEN64785.
+L1-05 nextslice revised to Norseman+Formorgar aliases,which directly reuse new
+atomic participants. Hjaern source /tmp/qengine2-hjaern.lua:107-155,189-197
+sha4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466.
+Base:IceQuestline39+4obelisk5,take7289;questline40,mission12=6,yakdoor1;
+General NorsemanOutfit1/DefaultStart1 sameatomicparticipant. Then5shards7290
+questline40->41,reward->42/Norseman2/addon1;10shards42->43,reward->44/
+Norseman3/addon2. Spiritcontainer7289 onlymissingphysicalprofile;7290exists.
+Only preoutfitparentQ39/obelisk5 arranged;neverseedNorsemanstages.
+
+Pinrefresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7.
+First backend attempt PG2.554788608s failed migration1001 syntax CASE expression;
+parenthesized CASE only. SamePGtest retry70137 green2.log compiled41.52s,
+now running. No qualification until actualcaseGREEN. New helper/capacity explicit
+rustfmt done (mounted module tree otherwise skipped),workspacefmtcheckpassed.
+NextNorseman scripts prepared /tmp/qengine2-next-norseman-{test,author}.py
+DO NOT APPLY until Oriental green committed+pushed. Then applytestonly,RED,
+productionauthor afteractualRED. Newunit invalidparticipant min=2 assumesdoor
+max1;whenNorseman sourceadded changeinvalidmin tomaximum+1 iftestfails.
+
+Oriental PG79.793748713s failed firstreceipt0vs1 althoughordinaryreplyOK.
+Rootcause sharedselector eligible() hardcoded absent=-1 despite admittedDoor
+initial0. Corrected to catalogueinitial,unknowntrackfailsclosed. Source/native
+receipt assertions unchanged.16451 dispatchcheck/clippythenGREEN3.log running.
+
+Checkpointonly:12qualified remain fullypushed;currentengine/Oriental code
+stillUNCOMMITTED awaitingPGGREEN,notcertified. Selectorcheck54.94s/clippy1m16
+passed. PG77.366610395s reachednativewrite thenconstraintfunction rejected
+ambiguous e (PLvariable/JSONalias);renamedaliasdeclared_storage,retainedproof.
+PGretry51680 /tmp/qengine2-batch5-oriental-green4.log running. Pushmetadata
+checkpoint for owner30mincadence;pushsourceimmediatelyafteractualGREEN.

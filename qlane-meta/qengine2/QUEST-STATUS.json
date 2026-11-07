@@ -1660,7 +1660,7 @@
             "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
             "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
           ],
-          "follow_on_verification": "COMPLETE:123content tests2.10s;5world tests46.14s;pin-check77bd6a93507af938959dc35150cc927abb487f43fbd842e9601c9c88dc5968dc",
+          "follow_on_verification": "COMPLETE:123content tests2.10s;5world tests49.53s;pin-check77bd6a93507af938959dc35150cc927abb487f43fbd842e9601c9c88dc5968dc",
           "commit": "7a25db767",
           "push": "fast-forward confirmed"
         }
@@ -2020,11 +2020,22 @@
     "id": "L1-05",
     "entries": [
       "unresolved:questpc2:oriental_outfits_quest",
-      "oteryn:quest.hunter_outfits_quest",
-      "oteryn:quest.assassin_outfit"
+      "unresolved:questpc2:norseman_outfits_quest",
+      "oteryn:quest.the_ice_islands_quest"
     ],
-    "phase": "Oriental full-source female story PG RED compiling before production changes. Generic creation-sex eligibility and later Hunter sex-specific addon support owned here. Source investigation bounded and facts captured.",
+    "phase": "Checkpoint:12qualified remain pushed;current generic participant/Oriental production code is still uncommitted until PG GREEN. Final selector check54.94s/clippy1m16s passed. SQL-only alias correction retry51680 now running.",
     "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
-    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture"
+    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
+    "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
+    "mechanism": "Bounded participant writes retain original quest owner/pin/hash;single Character revision and source receipt;SQL exact effects/same transaction and immutable proof. No standalone participant commit. Creation sex read through existing fenced appearance owner before any value.",
+    "assumptions": [
+      "Source dialogue offers remain advisory;native immutable sex guard authorizes all source writes. No gender is inferred from selected appearance."
+    ],
+    "next_slice": "Norseman+Formorgar L1 outfit reward paths share Hjaern source. New atomic participant support retains General ownership of NorsemanOutfit/DefaultStart and IceIslands questline/mission/door ownership. Source facts settled;no production edits before PG RED.",
+    "debug_evidence": [
+      "Actual PostgreSQL attempt2.554788608s failed executing SQL1001:syntax error at CASE expression. Parenthesized CASE expression;no assertion/proof weakened. Same focused test retry70137 /tmp/qengine2-batch5-oriental-green2.log;build41.52s completed.",
+      "PostgreSQL79.793748713s exercised source but first-stage receipt assertion failed0vs1. Dialogue eligibility used hardcoded absent=-1 for an existing Door track with declared initial0;selector now uses admitted catalogue initial and refuses unknown tracks. All source/receipt assertions retained.",
+      "PostgreSQL77.366610395s reached native foreign write but rejected ambiguous e reference in participant proof aggregate;renamed JSON alias declared_storage. Same proof/test retained;retry51680 green4.log."
+    ]
   }
 }
