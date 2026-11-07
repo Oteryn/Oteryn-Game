@@ -20,6 +20,22 @@ and `git diff --check` passed. Full node boot requires `sudo`, which is absent
 in this environment; the actual staging code is covered by the regression.
 No migrations or protocol numbers are allocated.
 
+## Embedded reward claims
+
+The three extra candidates come from ITEMHOLD-Q `ca5a91b59` (#3017):
+`kv.ornamentedshield` and `kv.triangletower` gained qualified native container
+recipes; `kv.powerring2` became a ready full-charge leaf. The embedded shards
+are current. Their integration expectation was stale: 308 candidates became
+311, and Power Ring leaving the waiting set changed 11 plain holds to 10.
+The test now also names each new claim and requires exactly one unbound
+placement and no left-out disposition for it. No source data or binding
+predicate was relaxed.
+
+Red: `cargo test --locked -p oteryn-game-server --test integration_rest
+world_reward_claims_the_embedded_shards_decode -- --nocapture` reproduced
+311 versus 308 (0.07 s); after the first assertion it also exposed 10 versus
+11. Green: the same command passed (0.05 s; 3.660 s including Cargo).
+
 The retained producer notes follow.
 
 # Integrated producer contract notes
