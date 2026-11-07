@@ -107,6 +107,9 @@ pub struct RewardCallback {
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
+    /// Complete this owning quest in the same receipt as its final dialogue.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<StateOperation>,
@@ -156,18 +159,38 @@ struct Document {
     callbacks: Vec<RewardCallback>,
 }
 
+const DOCUMENTS: &[&str] = &[
+    include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+];
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    parse(include_str!(
-        "../../../../../content/quests/shared-reward-callbacks.json"
-    ))
+    parse_documents(DOCUMENTS).map(|document| document.callbacks)
 }
 
+fn parse_documents(sources: &[&str]) -> Result<Document, String> {
+    let mut combined = Document {
+        schema: 1,
+        tracks: Vec::new(),
+        callbacks: Vec::new(),
+    };
+    for source in sources {
+        let document: Document = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        if document.schema != 1 {
+            return Err("reward callback schema".into());
+        }
+        combined.tracks.extend(document.tracks);
+        combined.callbacks.extend(document.callbacks);
+    }
+    validate_document(combined)
+}
+
+#[cfg(test)]
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
-    parse_document(text).map(|document| document.callbacks)
+    parse_documents(&[text]).map(|document| document.callbacks)
 }
 
-fn parse_document(text: &str) -> Result<Document, String> {
-    let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
+fn validate_document(document: Document) -> Result<Document, String> {
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
         value.len() <= maximum
@@ -378,9 +401,7 @@ pub fn participant_key(callback: &str, index: usize) -> String {
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let document = parse_document(include_str!(
-        "../../../../../content/quests/shared-reward-callbacks.json"
-    ))?;
+    let document = parse_documents(DOCUMENTS)?;
     for declaration in document.tracks {
         let declared = QuestTrack {
             key: declaration.key,
@@ -499,7 +520,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 })
                 .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: None,
         });
     }
@@ -516,6 +537,48 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
+    -> Result<(), String> {
+        let legacy = parse(DOCUMENTS[0])?;
+        for callback in &legacy {
+            assert!(!callback.completes);
+            assert!(
+                serde_json::to_value(callback)
+                    .map_err(|e| e.to_string())?
+                    .get("completes")
+                    .is_none()
+            );
+        }
+        let callbacks = load()?;
+        let completion = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/l6-spirit-confession")
+            .ok_or("authored completion")?;
+        assert!(completion.completes);
+        assert_eq!(
+            completion.quest,
+            "oteryn:quest.the_spirit_will_get_you_quest"
+        );
+        assert!(completion.take.is_empty());
+        assert_eq!(completion.present[0].count, 3);
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            catalogue
+                .catalogue()
+                .transition(&completion.key)
+                .ok_or("completion transition")?
+                .completes
+        );
+        assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
+        let mut malformed: serde_json::Value =
+            serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
+        malformed["callbacks"][0]["completes"] = "yes".into();
+        assert!(parse(&malformed.to_string()).is_err());
+        Ok(())
+    }
+
     #[test]
     fn participant_authoring_rejects_owner_confusion_duplicates_and_invalid_sex()
     -> Result<(), String> {

@@ -347,6 +347,10 @@
             "maxLength": 128,
             "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
           }
+        },
+        "completes": {
+          "type": "boolean",
+          "default": false
         }
       }
     },

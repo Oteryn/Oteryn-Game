@@ -1477,13 +1477,16 @@
     },
     {
       "title": "The Spirit Will Get You Quest",
-      "status": "ACTIONABLE",
+      "status": "QUALIFIED",
       "canonical": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
       "wiki_main": ".questpc4/evidence/wiki/The Spirit Will Get You Quest.wiki",
       "wiki_spoiler": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki",
-      "blocker": {
+      "blocker": null,
+      "owner": "questpc4",
+      "mechanism": "conditional_storyline_and_access",
+      "historical_blocker": {
         "missing_piece": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
         "source": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
@@ -1497,8 +1500,79 @@
         "native_callbacks_present": [],
         "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only."
       },
-      "owner": "questpc4",
-      "mechanism": "conditional_storyline_and_access"
+      "whole_qualification": {
+        "status": "QUALIFIED",
+        "scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim.",
+        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+        "source_rule": "content/quests/authoring/spirit-wills.md",
+        "assumption": "Exact historical will positions are not supplied by the pinned donor. Select two existing native box piles and one adjacent chest in the same world region as the Crone; one personal once flag per position. Preserve all native map bytes.",
+        "red": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 53.791300572,
+          "marker": "POSTGRES_DATABASE_READY l6_spirit",
+          "error": "missing selected Spirit acceptance callback",
+          "log": "/tmp/questpc4-spirit-red.log"
+        },
+        "additional_feature_red": {
+          "postgres": "18.6",
+          "duration_seconds": 93.353921244,
+          "log": "/tmp/questpc4-spirit-flow-pg.log",
+          "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+          "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+        },
+        "green": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 99.663924626,
+          "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+          "result": "1 passed / 0 failed / 0 ignored",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+          "assertions": [
+            "native40-tile crop and literal STEP/USE",
+            "before-acceptance refusal",
+            "recognized out-of-order quest keyword explicit refusal",
+            "premium authority required for fresh source and final conversation",
+            "full backpack rollback without flag/MINT/audit",
+            "one will per distinct position; duplicate object in same pile refuses",
+            "three discovered and retained nonstackable11544 papers",
+            "missing carried will after actual drop refuses; pickup restores eligibility",
+            "owning state completion and source receipt same PostgreSQL xmin",
+            "zero outfit grants and zero paper consumptions",
+            "exact durable receipt replay after completion writes nothing",
+            "repeated final request refuses",
+            "completed-stage confession reply is read-only"
+          ]
+        },
+        "checks": [
+          "native regeneration and freshness:42 files",
+          "22 shared authoring units in8.781s",
+          "own NPC shard closed JSON schema",
+          "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+          "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+          "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+          "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+          "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+          "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+          "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+        ],
+        "generic_contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+        "callbacks": [
+          "oteryn:quest-reward/l6-spirit-accept",
+          "oteryn:quest-reward/l6-spirit-confession",
+          "oteryn:quest-callback/l6/spirit-will-1",
+          "oteryn:quest-callback/l6/spirit-will-2",
+          "oteryn:quest-callback/l6/spirit-will-3"
+        ],
+        "native_profile_preservation": {
+          "old_count": 3623,
+          "new_count": 3624,
+          "changed_existing": 0,
+          "missing_existing": 0,
+          "added": [
+            "oteryn:item.tibia.i11544"
+          ],
+          "proof": "/tmp/questpc4-spirit-profile-audit.json"
+        }
+      }
     },
     {
       "title": "The Sweaty Cyclops Quest",
@@ -2995,8 +3069,82 @@
       },
       {
         "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
-        "status": "IN_PROGRESS",
-        "blocker": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only."
+        "status": "QUALIFIED",
+        "blocker": null,
+        "historical_blocker": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
+        "whole_qualification": {
+          "status": "QUALIFIED",
+          "scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim.",
+          "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+          "source_rule": "content/quests/authoring/spirit-wills.md",
+          "assumption": "Exact historical will positions are not supplied by the pinned donor. Select two existing native box piles and one adjacent chest in the same world region as the Crone; one personal once flag per position. Preserve all native map bytes.",
+          "red": {
+            "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 53.791300572,
+            "marker": "POSTGRES_DATABASE_READY l6_spirit",
+            "error": "missing selected Spirit acceptance callback",
+            "log": "/tmp/questpc4-spirit-red.log"
+          },
+          "additional_feature_red": {
+            "postgres": "18.6",
+            "duration_seconds": 93.353921244,
+            "log": "/tmp/questpc4-spirit-flow-pg.log",
+            "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+            "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+          },
+          "green": {
+            "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 99.663924626,
+            "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+            "result": "1 passed / 0 failed / 0 ignored",
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+            "assertions": [
+              "native40-tile crop and literal STEP/USE",
+              "before-acceptance refusal",
+              "recognized out-of-order quest keyword explicit refusal",
+              "premium authority required for fresh source and final conversation",
+              "full backpack rollback without flag/MINT/audit",
+              "one will per distinct position; duplicate object in same pile refuses",
+              "three discovered and retained nonstackable11544 papers",
+              "missing carried will after actual drop refuses; pickup restores eligibility",
+              "owning state completion and source receipt same PostgreSQL xmin",
+              "zero outfit grants and zero paper consumptions",
+              "exact durable receipt replay after completion writes nothing",
+              "repeated final request refuses",
+              "completed-stage confession reply is read-only"
+            ]
+          },
+          "checks": [
+            "native regeneration and freshness:42 files",
+            "22 shared authoring units in8.781s",
+            "own NPC shard closed JSON schema",
+            "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+            "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+            "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+            "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+            "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+            "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+            "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+          ],
+          "generic_contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+          "callbacks": [
+            "oteryn:quest-reward/l6-spirit-accept",
+            "oteryn:quest-reward/l6-spirit-confession",
+            "oteryn:quest-callback/l6/spirit-will-1",
+            "oteryn:quest-callback/l6/spirit-will-2",
+            "oteryn:quest-callback/l6/spirit-will-3"
+          ],
+          "native_profile_preservation": {
+            "old_count": 3623,
+            "new_count": 3624,
+            "changed_existing": 0,
+            "missing_existing": 0,
+            "added": [
+              "oteryn:item.tibia.i11544"
+            ],
+            "proof": "/tmp/questpc4-spirit-profile-audit.json"
+          }
+        }
       },
       {
         "canonical": "oteryn:quest.in_service_of_yalahar_quest",
@@ -3283,14 +3431,91 @@
       }
     ],
     "counts": {
-      "qualified": 3,
-      "unfinished": 18,
+      "qualified": 4,
+      "unfinished": 17,
       "blocked": 0,
       "skipped_external_owner": 2
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-mead-fresh-floor-effects-reconciliation-08",
+    "latest_batch": {
+      "status": "GREEN_PENDING_PUBLICATION",
+      "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
+      "scope": "Generic authored NPC story/completion/refusal mechanism with its first whole consumer",
+      "proof": {
+        "status": "QUALIFIED",
+        "scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim.",
+        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+        "source_rule": "content/quests/authoring/spirit-wills.md",
+        "assumption": "Exact historical will positions are not supplied by the pinned donor. Select two existing native box piles and one adjacent chest in the same world region as the Crone; one personal once flag per position. Preserve all native map bytes.",
+        "red": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 53.791300572,
+          "marker": "POSTGRES_DATABASE_READY l6_spirit",
+          "error": "missing selected Spirit acceptance callback",
+          "log": "/tmp/questpc4-spirit-red.log"
+        },
+        "additional_feature_red": {
+          "postgres": "18.6",
+          "duration_seconds": 93.353921244,
+          "log": "/tmp/questpc4-spirit-flow-pg.log",
+          "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+          "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+        },
+        "green": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 99.663924626,
+          "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+          "result": "1 passed / 0 failed / 0 ignored",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+          "assertions": [
+            "native40-tile crop and literal STEP/USE",
+            "before-acceptance refusal",
+            "recognized out-of-order quest keyword explicit refusal",
+            "premium authority required for fresh source and final conversation",
+            "full backpack rollback without flag/MINT/audit",
+            "one will per distinct position; duplicate object in same pile refuses",
+            "three discovered and retained nonstackable11544 papers",
+            "missing carried will after actual drop refuses; pickup restores eligibility",
+            "owning state completion and source receipt same PostgreSQL xmin",
+            "zero outfit grants and zero paper consumptions",
+            "exact durable receipt replay after completion writes nothing",
+            "repeated final request refuses",
+            "completed-stage confession reply is read-only"
+          ]
+        },
+        "checks": [
+          "native regeneration and freshness:42 files",
+          "22 shared authoring units in8.781s",
+          "own NPC shard closed JSON schema",
+          "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+          "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+          "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+          "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+          "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+          "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+          "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+        ],
+        "generic_contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+        "callbacks": [
+          "oteryn:quest-reward/l6-spirit-accept",
+          "oteryn:quest-reward/l6-spirit-confession",
+          "oteryn:quest-callback/l6/spirit-will-1",
+          "oteryn:quest-callback/l6/spirit-will-2",
+          "oteryn:quest-callback/l6/spirit-will-3"
+        ],
+        "native_profile_preservation": {
+          "old_count": 3623,
+          "new_count": 3624,
+          "changed_existing": 0,
+          "missing_existing": 0,
+          "added": [
+            "oteryn:item.tibia.i11544"
+          ],
+          "proof": "/tmp/questpc4-spirit-profile-audit.json"
+        }
+      }
+    },
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3618,94 +3843,62 @@
       "floor_source_presentation": {
         "status": "QUALIFIED",
         "scope": "Source FIREAREA7 after fresh complete physical assembly/transform; no effect for missing/unbound operands or replay; synthetic composed room, no native/full-quest qualification"
+      },
+      "authored_npc_story_completion": {
+        "status": "QUALIFIED",
+        "contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+        "whole_consumer": "oteryn:quest.the_spirit_will_get_you_quest",
+        "engine_reuse": "qengine2a585529d7851a6b5efad8117e2838970b916ba83 via e2b192354",
+        "preserved_legacy_plans": true,
+        "proof": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 99.663924626,
+          "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+          "result": "1 passed / 0 failed / 0 ignored",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+          "assertions": [
+            "native40-tile crop and literal STEP/USE",
+            "before-acceptance refusal",
+            "recognized out-of-order quest keyword explicit refusal",
+            "premium authority required for fresh source and final conversation",
+            "full backpack rollback without flag/MINT/audit",
+            "one will per distinct position; duplicate object in same pile refuses",
+            "three discovered and retained nonstackable11544 papers",
+            "missing carried will after actual drop refuses; pickup restores eligibility",
+            "owning state completion and source receipt same PostgreSQL xmin",
+            "zero outfit grants and zero paper consumptions",
+            "exact durable receipt replay after completion writes nothing",
+            "repeated final request refuses",
+            "completed-stage confession reply is read-only"
+          ]
+        }
       }
     },
     "active_counts": {
       "qualified_elsewhere": 1,
       "excluded_external_world_changes": 2,
-      "in_progress": 18,
+      "in_progress": 17,
       "new_whole_entries_qualified_in_this_batch": 1,
-      "qualified_here": 2
+      "qualified_here": 3
     },
-    "latest_batch_checks": {
-      "pg": {
-        "result": "3 passed / 0 failed",
-        "postgres_version": "18.6",
-        "duration_seconds": 112.2,
-        "assembly_seconds": 54.168439337,
-        "ruby_seconds": 54.186352972,
-        "mead_seconds": 58.019196009,
-        "log": "/tmp/questpc4-mead-floor-effects-pg.log"
-      },
-      "fmt": "PASS cargo fmt all check",
-      "check_log": "/tmp/questpc4-mead-floor-effects-check.log",
-      "clippy_log": "/tmp/questpc4-mead-floor-effects-clippy.log",
-      "check": "PASS affected items/durability/dispatch alltargets/allfeatures2m48",
-      "clippy": "PASS affected items/durability/dispatch alltargets/allfeatures-Dwarnings"
-    },
+    "latest_batch_checks": [
+      "native regeneration and freshness:42 files",
+      "22 shared authoring units in8.781s",
+      "own NPC shard closed JSON schema",
+      "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+      "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+      "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+      "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+      "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+      "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+      "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+    ],
     "current_attempt": {
-      "id": "cloud-world-item-rewards-06",
-      "stage": "QUALIFIED_GREEN_FINAL_DELTA_PENDING_PUSH",
-      "entries": [
-        "oteryn:quest.authored.waterskin_of_mead_quest"
-      ],
-      "proof": {
-        "status": "QUALIFIED",
-        "scope": "Whole selected Oteryn Waterskin of Mead recipe; native source barrel, accepted mission prerequisites, complete filled gift and once/replay behavior. This does not claim implementation of the parent Ice Islands quest or global rollout readiness.",
-        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
-        "callback": "oteryn:quest-callback/l6/waterskin-of-mead",
-        "source_rule": "content/quests/authoring/waterskin-of-mead.md",
-        "assumption": "Public route map identifies the room but not which adjacent barrel. Conservatively author only the eastern barrel; preserve native source tiles and leave the west barrel without a reward. See content/quests/authoring/waterskin-of-mead.md.",
-        "red": {
-          "log": "/tmp/questpc4-mead-red-gift.log",
-          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
-          "duration_seconds": 56.409715514,
-          "marker": "POSTGRES_CASE_COMPLETED l6/waterskin-of-mead success=false",
-          "error": "valid native barrel must atomically mint the complete reward: actual bags0, expected1; valid paced USE committed the quest flag without the reward"
-        },
-        "green": {
-          "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
-          "test_result": "4 passed / 0 failed / 0 ignored",
-          "total_duration_seconds": 155.64,
-          "mead_duration_seconds": 61.352504893,
-          "fluid_duration_seconds": 57.164713034,
-          "small_ruby_duration_seconds": 59.954061391,
-          "npc_exchange_duration_seconds": 94.286130978,
-          "assertions": [
-            "actual unchanged native B3 room, both source barrel tiles and production palette",
-            "missing mission and wrong western barrel refuse",
-            "full backpack rollback leaves durable value, quest state and revision unchanged",
-            "generic transition escape and stale fence refuse without writes",
-            "unavailable Premium participant refuses; actual delivery settled before production channel locks",
-            "one fur bag7343 with waterskin2901/mead16, berserk potion7439, gold3031 quantity82",
-            "ordinary native container observation projects capacity8, three entries and waterskin subtype16",
-            "four instances, fluid and quest/MINT receipts share one PostgreSQL xmin",
-            "real carried fluid writer empties nested vessel",
-            "same wire CommandRef and durable Quest receipt replay do not refill or change durable counts",
-            "old physical revision gives StaleState; new current-revision USE refuses once claim",
-            "all three external mission tracks preserved at later progress; only the authored once flag advances"
-          ]
-        },
-        "green_log": "/tmp/questpc4-mead-qualified-pg.log",
-        "checks": {
-          "check_before_lint_repairs": "PASS alltargets/allfeatures dispatch+durability+quests3m27",
-          "check_log": "/tmp/questpc4-mead-qualified-check.log",
-          "world_pin_check": {
-            "result": "PASS",
-            "log": "/tmp/questpc4-mead-pin-check.log",
-            "world_digest": "cb078e3d34c1440b2c7c9f35206ae3158d5341e507a87424f4959ccb66da7298",
-            "bytes": 31101956
-          },
-          "clippy_log": "/tmp/questpc4-mead-clippy-complete.log",
-          "clippy_status": "PASS alltargets/allfeatures-Dwarnings2m02",
-          "check": "PASS alltargets/allfeatures dispatch+durability+quests2m53",
-          "callback_units": "PASS20/0 in3.86s",
-          "callback_unit_log": "/tmp/questpc4-mead-callback-units.log",
-          "fmt": "PASS cargo fmt all check and explicit mounted test/crop leaves"
-        }
-      }
+      "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
+      "status": "QUALIFIED",
+      "next": "Commit and push green batch, then continue17 active whole entries."
     },
-    "authoring_state": "AUTHORING",
+    "authoring_state": "GREEN_PENDING_PUBLICATION",
     "attempt_history": [
       {
         "name": "cloud-floor-assembly-04",
@@ -4070,6 +4263,83 @@
           "clippy": "same all targets/features -D warnings2m47s",
           "fmt_diff": "PASS all and explicit owned leaves",
           "generated_content_pins": "Unchanged; no regeneration needed"
+        }
+      },
+      {
+        "kind": "whole_spirit",
+        "status": "QUALIFIED",
+        "proof": {
+          "status": "QUALIFIED",
+          "scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim.",
+          "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+          "source_rule": "content/quests/authoring/spirit-wills.md",
+          "assumption": "Exact historical will positions are not supplied by the pinned donor. Select two existing native box piles and one adjacent chest in the same world region as the Crone; one personal once flag per position. Preserve all native map bytes.",
+          "red": {
+            "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 53.791300572,
+            "marker": "POSTGRES_DATABASE_READY l6_spirit",
+            "error": "missing selected Spirit acceptance callback",
+            "log": "/tmp/questpc4-spirit-red.log"
+          },
+          "additional_feature_red": {
+            "postgres": "18.6",
+            "duration_seconds": 93.353921244,
+            "log": "/tmp/questpc4-spirit-flow-pg.log",
+            "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+            "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+          },
+          "green": {
+            "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+            "duration_seconds": 99.663924626,
+            "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+            "result": "1 passed / 0 failed / 0 ignored",
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+            "assertions": [
+              "native40-tile crop and literal STEP/USE",
+              "before-acceptance refusal",
+              "recognized out-of-order quest keyword explicit refusal",
+              "premium authority required for fresh source and final conversation",
+              "full backpack rollback without flag/MINT/audit",
+              "one will per distinct position; duplicate object in same pile refuses",
+              "three discovered and retained nonstackable11544 papers",
+              "missing carried will after actual drop refuses; pickup restores eligibility",
+              "owning state completion and source receipt same PostgreSQL xmin",
+              "zero outfit grants and zero paper consumptions",
+              "exact durable receipt replay after completion writes nothing",
+              "repeated final request refuses",
+              "completed-stage confession reply is read-only"
+            ]
+          },
+          "checks": [
+            "native regeneration and freshness:42 files",
+            "22 shared authoring units in8.781s",
+            "own NPC shard closed JSON schema",
+            "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+            "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+            "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+            "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+            "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+            "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+            "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+          ],
+          "generic_contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+          "callbacks": [
+            "oteryn:quest-reward/l6-spirit-accept",
+            "oteryn:quest-reward/l6-spirit-confession",
+            "oteryn:quest-callback/l6/spirit-will-1",
+            "oteryn:quest-callback/l6/spirit-will-2",
+            "oteryn:quest-callback/l6/spirit-will-3"
+          ],
+          "native_profile_preservation": {
+            "old_count": 3623,
+            "new_count": 3624,
+            "changed_existing": 0,
+            "missing_existing": 0,
+            "added": [
+              "oteryn:item.tibia.i11544"
+            ],
+            "proof": "/tmp/questpc4-spirit-profile-audit.json"
+          }
         }
       }
     ],
@@ -5655,10 +5925,38 @@
         ],
         "rule": "Existing nearby pair of native box piles and one adjacent chest; one once flag per position. Exact historical will positions unavailable, document selected Oteryn approximation before admission; no raw map edits or fabricated UIDs."
       }
+    },
+    "stag_current_canary_lookup": {
+      "url": "https://api.github.com/repos/opentibiabr/canary/git/trees/main?recursive=1",
+      "tree_sha": "666a60f6fef803b043cbaf1c7b5fab219da9bfa9",
+      "matching_paths": [],
+      "query_terms": [
+        "eldoran",
+        "hartford",
+        "demeron",
+        "order_of_the_stag",
+        "court_warlock"
+      ],
+      "rule": "This absence is not a blocker. Preserve selected recipe and author missing NPC/creature/item facts conservatively if no permitted donor supplies them."
+    },
+    "stag_corrected_crystal_lookup": {
+      "fact_file": "/tmp/questpc4-stag-crystal-npc-facts.json",
+      "result": "All3 named NPC definitions already exist. Correct Crystal201189 NPC paths return exact scripts; earlier Eldoran Etzel filename lookup was wrong. Do not add duplicate NPC identities.",
+      "tree_facts": "/tmp/questpc4-stag-crystal-tree-facts.json",
+      "tree_truncated": false,
+      "existing_source_paths": [
+        "data-global/lib/others/order_of_the_stag.lua",
+        "data-global/monster/winter_update_2025/bosses/court_warlock.lua",
+        "data-global/monster/winter_update_2025/night_harpy.lua",
+        "data-global/scripts/quests/the_order_of_the_stag/bounac_cathedral.lua",
+        "data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua",
+        "data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua",
+        "data-global/scripts/quests/the_order_of_the_stag/isle_of_ada_world.lua"
+      ]
     }
   },
   "npc_engine_reuse": {
-    "status": "GREEN_PENDING_PUBLICATION",
+    "status": "GREEN_PUSHED",
     "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
     "source_head": "a585529d7851a6b5efad8117e2838970b916ba83",
     "published_lane_head": "2599afbed4d39da0f8c7fa60ffcf1fb12ffaf136",
@@ -5694,9 +5992,7 @@
       "6 shared reward callback units PASS in1.36s",
       "NPC native preservation: all37 previous records identical;19 additions,56 total"
     ],
-    "pending": [
-      "commit and FF push"
-    ],
+    "pending": [],
     "qualification_counts_unchanged": {
       "qualified": 3,
       "active": 18,
@@ -5707,6 +6003,97 @@
       "questpc6": "390e024503a7c02b9e15d67e680cec0ac711fd5b",
       "questpc8": "7eeee8fb152806de66af062831f94c2183c915ee",
       "result": "No new whole qualification for the six active cross-lane imports. PC6 Dreamer is SKIPPED_OTHER_LANE to this lane; PC8 Yalahar/Lions Rock/Machinery remain unqualified; current PC3 status no longer includes Realm or Skeleton as qualified entries. Historical source holds are not final blockers here."
+    },
+    "published_head": "e2b192354371d0529dc37a4193d126b1cdff4867"
+  },
+  "npc_story_batch": {
+    "status": "GREEN_PENDING_PUBLICATION",
+    "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
+    "test": "l6_spirit_three_retained_wills_unlock_only_confession",
+    "red_log": "/tmp/questpc4-spirit-red.log",
+    "red_plan": "Actual PG harness and server_version query before testing the absent production acceptance callback. No qualification is claimed before the complete flow is implemented.",
+    "profile_preview": "Pinned repository importer confirms11544 materializable NonStackable paper,weight200,movable/pickupable true, no fluid/charge/timer assumptions. Preview only, not admitted yet.",
+    "generic_mechanisms_planned": [
+      "separate authored NPC callback shards with combined closed validation",
+      "optional completion marker preserving omitted historical wire bytes"
+    ],
+    "counts_unchanged": {
+      "qualified": 3,
+      "active": 18,
+      "excluded": 2
+    },
+    "red": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 53.791300572,
+      "marker": "POSTGRES_DATABASE_READY l6_spirit",
+      "error": "missing selected Spirit acceptance callback",
+      "log": "/tmp/questpc4-spirit-red.log"
+    },
+    "implementation": [
+      "closed merged NPC callback shards",
+      "optional owning quest completion plus exact same-transaction SQL proof",
+      "three source-bound personal leaf MINTs",
+      "retained quantity and discovery gates on confession",
+      "completed-stage read-only confession offer; no new Quest receipt or reward"
+    ],
+    "native_preservation": {
+      "old_count": 3623,
+      "new_count": 3624,
+      "changed_existing": 0,
+      "missing_existing": 0,
+      "added": [
+        "oteryn:item.tibia.i11544"
+      ],
+      "proof": "/tmp/questpc4-spirit-profile-audit.json"
+    },
+    "checks_passed": [
+      "native regeneration and freshness:42 files",
+      "22 shared authoring units in8.781s",
+      "own NPC shard closed JSON schema",
+      "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+      "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+      "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+      "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+      "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+      "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+      "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+    ],
+    "setup_repairs": [
+      "Correct private-module test reference to public QuestRewardAdmission re-export",
+      "Native placement ordinal is u8 and ground coordinates are bounded u16",
+      "World callback closed validation requires pinned source citation; added exact admitted item XML provenance while retaining explicit authored placement assumption. No guard weakened."
+    ],
+    "pending": [
+      "commit and fast-forward push"
+    ],
+    "flow_red": {
+      "postgres": "18.6",
+      "duration_seconds": 93.353921244,
+      "log": "/tmp/questpc4-spirit-flow-pg.log",
+      "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+      "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+    },
+    "green": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "duration_seconds": 99.663924626,
+      "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+      "result": "1 passed / 0 failed / 0 ignored",
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+      "assertions": [
+        "native40-tile crop and literal STEP/USE",
+        "before-acceptance refusal",
+        "recognized out-of-order quest keyword explicit refusal",
+        "premium authority required for fresh source and final conversation",
+        "full backpack rollback without flag/MINT/audit",
+        "one will per distinct position; duplicate object in same pile refuses",
+        "three discovered and retained nonstackable11544 papers",
+        "missing carried will after actual drop refuses; pickup restores eligibility",
+        "owning state completion and source receipt same PostgreSQL xmin",
+        "zero outfit grants and zero paper consumptions",
+        "exact durable receipt replay after completion writes nothing",
+        "repeated final request refuses",
+        "completed-stage confession reply is read-only"
+      ]
     }
   }
 }
