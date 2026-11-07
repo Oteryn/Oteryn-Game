@@ -758,7 +758,7 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
 
 ### Real PostgreSQL proof (2026-11-07)
 
-All seven cases ran against the configured PostgreSQL route with migrations
+All eight cases ran against the configured PostgreSQL route with migrations
 1140/1141 and existing admission/custody/deferred guards enabled:
 
 | Test suffix | Seconds |
@@ -770,6 +770,7 @@ All seven cases ran against the configured PostgreSQL route with migrations
 | `soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_mastery_postgres` | 52.329 |
 | `soulpit_survivor_completion_and_animus_commit_together_postgres` | 42.072 |
 | `soulpit_failure_after_animus_insert_rolls_back_completion_postgres` | 42.352 |
+| `soulpit_shared_entry_uses_current_trusted_gm_group_not_forged_hint_postgres` | 41.241 |
 
 The shared fixture refreshes and holds authenticated Account evidence immediately
 before successor admission, exactly like production; content loading must not
@@ -802,3 +803,21 @@ group/head lock succeeds, preserving the existing read-only roster privileges.
   `game_master` hint grants no authority; absent, revoked or mismatched staff proof is
   ordinary-player status. This is a read of existing Game staff authority, with no
   Platform identity or staff-configuration mutation.
+
+### Frozen implementation validation
+
+The implementation is frozen at `267bb10800f4f54fdcfa7f83e01a09f9ddb73543` for
+independent review. Final checks on that source pass: `cargo check` for all 15
+changed crates (103.344 seconds), all-target clippy with `-D warnings` for those
+crates (92.158 seconds), formatting (14.922 seconds), architecture (3.739 seconds),
+and refreshed-World pin-check (27.388 seconds; earlier pin-refresh 36.642 seconds).
+The native entry/mastery/return PostgreSQL case passes again in 40.424 seconds,
+and generic shared-owner enter/return/replay/fences passes in 5.067 seconds.
+
+Client proof includes `pc05_boss_activity_refusal_and_reconnect_scenario` and
+`soulpit_same_generation_entry_and_return_reset_revisions_and_map_handles`,
+within the 1,510 passing frontend tests (42.219 seconds). W08 completion and
+post-Animus rollback use real shared entry rather than fabricated admission.
+Primary fixtures use the existing test-admin root; the restarted negative GM
+owner uses `oteryn_game_runtime`, with positive lookup privileges checked
+separately under that same runtime role. Independent review is the remaining gate.
