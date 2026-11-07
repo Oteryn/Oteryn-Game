@@ -298,10 +298,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
+                    // The next NPC or combat command must see the sealed committed
+                    // predicates. Cadence reloads still own recovery and pending XP.
+                    if let Ok(mut sessions) = self.states.quest_sessions.lock()
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {

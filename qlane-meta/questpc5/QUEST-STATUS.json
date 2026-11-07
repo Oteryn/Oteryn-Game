@@ -66,12 +66,11 @@
     "canonical": "oteryn:quest.newhaven_quest",
     "title": "Newhaven Quest",
     "mechanism": "native_item_identity_charges_lifetime",
-    "status": "UNFINISHED",
-    "blocker": "Active next slice: actual school/supply STEP objectives, source Book USE and the complete chosen tutor/ten-Troll/book/reward route. Native goal, ordinary Troll corpse/loot admission, source Gustavo placement and shared item/XP/completion rewards now have positive PostgreSQL proof.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc2"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole chosen Oteryn Newhaven recipe: level2 tutor welcome, actual school/supply STEP visits, ten native Troll deaths, actual source Book chest USE, ring/scarf hand-ins and1600questXP, once-only completion. Unselected source tutorial/vocation branches are outside the selected recipe.",
     "input_canonical": "unresolved:questpc2:newhaven_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00200-00299.json",
@@ -103,7 +102,18 @@
       "postgres_green_seconds": 99.747282116,
       "component_marker_seconds": 45.512742567,
       "scope": "Actual native Troll death capture/replay/refusals/cap and earned ring; tour flags deliberately seeded only for this component case; whole route pending"
-    }
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-newhaven-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_newhaven_complete_tutor_exploration_native_kills_and_book_route",
+        "result": "PASS",
+        "duration_seconds": 101.064478497,
+        "postgres_marker_seconds": 47.446595503,
+        "proof": "cloud-newhaven-complete-proof.json"
+      }
+    ]
   },
   {
     "canonical": "oteryn:quest.authored.nimmersatt_s_lair",

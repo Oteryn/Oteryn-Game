@@ -20,7 +20,7 @@ fn questpc5_newhaven_reward_level_item_xp_and_completion_are_atomic() -> TestRes
     super::qengine_rewards::scenario("qengine-rewards-newhaven-xp")
 }
 
-async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64, i64)> {
+pub(super) async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid),(SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i52732'),(SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i3572'),(SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i51977'),(SELECT count(*) FROM game_character_quest_states WHERE quest_key='oteryn:quest.newhaven_quest' AND completed_character_revision IS NOT NULL)")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }

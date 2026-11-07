@@ -595,6 +595,110 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/newhaven-school",
+      "quest": "oteryn:quest.newhaven_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32570,
+          "y": 32507,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/school",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2184-2185:sha256:db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8",
+        "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3"
+      ],
+      "minimum_level": 2,
+      "success_message": "You visited the Newhaven training school."
+    },
+    {
+      "key": "oteryn:quest-callback/newhaven-supply",
+      "quest": "oteryn:quest.newhaven_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32567,
+          "y": 32489,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/newhaven/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/newhaven/supply",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2161-2163:sha256:db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8",
+        "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3"
+      ],
+      "minimum_level": 2,
+      "success_message": "You visited the Newhaven village supply point."
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

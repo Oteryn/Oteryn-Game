@@ -79,7 +79,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-newhaven-native-goal" {
+    let world = if name == "qengine-rewards-newhaven-route" {
+        super::super::questpc5_newhaven_route::source_world()?
+    } else if name == "qengine-rewards-newhaven-native-goal" {
         super::super::questpc5_newhaven_native_goal::source_world()?
     } else if paired_plate {
         super::world_ordinal(&callback, trigger, 431, 1)?

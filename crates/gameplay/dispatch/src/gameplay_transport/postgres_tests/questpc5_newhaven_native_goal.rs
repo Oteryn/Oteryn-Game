@@ -12,7 +12,7 @@ const COUNTER: &str = "oteryn:quest-progress/newhaven/troll_kills";
 fn questpc5_newhaven_native_troll_goal_is_bound_to_the_selected_activation() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-newhaven-native-goal")
 }
-async fn value(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<i64> {
+pub(super) async fn value(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<i64> {
     let copy = owner
         .root
         .read_character_quest_state(
@@ -24,7 +24,7 @@ async fn value(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<i64> {
     Ok(copy.tracks().get(COUNTER).copied().unwrap_or(0))
 }
 
-async fn capture(
+pub(super) async fn capture(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,
@@ -146,7 +146,7 @@ async fn capture_origin(
     Ok(target)
 }
 
-async fn drain(
+pub(super) async fn drain(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     target: ExactActorRef,

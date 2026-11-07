@@ -156,3 +156,18 @@ https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c29
 The same existing pinned importer admits these eight Item facts; loot quantities,
 probabilities, the charged-life-ring3054 exact200 charges and all previous
 37 encounter capture records stay unchanged.
+
+
+Newhaven actual exploration choices: training-school approach32570,32506→
+32570,32507 (south), adjacent to source Viola32571,32507; supply approach
+32568,32489→32567,32489 (west), adjacent to source Flavius32566,32489.
+Crystal201189f world-npc.xml:2161-2163,2184-2185 SHA
+db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029
+anchors the NPC locations. The callbacks themselves are explicitly selected
+Oteryn exploration objectives, not a claim that this XML contains Lua callbacks.
+The committed B3 map and exact official2dfa client verify clear walkable POI
+and approach cells. Their protection-zone flags are retained in the route
+fixture; no world tile is changed. Stage0 and minimumlevel2 gate both once-only
+visit flags. The complete route fixture starts level2 through the normal XP
+owner and seeds no quest flags, counters, reward items or completion. It must
+recover its actual Book through the existing source chest USE before hand-in.

@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.newhaven_quest",
+  "scope": "Whole selected recipe at canonical quests-00200-00299.json:/records/78/definition",
+  "postgres": {
+    "version": "18.6 (Debian18.6-1.pgdg13+2)",
+    "filter": "questpc5_newhaven_complete_tutor_exploration_native_kills_and_book_route",
+    "red": {
+      "duration_seconds": 3.57,
+      "failure": "missing actual exploration binding newhaven-school",
+      "log": "/tmp/questpc5-newhaven-route-red.log"
+    },
+    "cache_red": {
+      "duration_seconds": 94.754681963,
+      "failure": "actual SQL visit flags1 were invisible to the next NPC command because committed cache projection was Monk-only"
+    },
+    "green": {
+      "duration_seconds": 101.064478497,
+      "component_marker_seconds": 47.446595503,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-newhaven-route success=true",
+      "log": "/tmp/questpc5-newhaven-route-final-green.log",
+      "assertions": [
+        "Only normal100XP starting-level setup; no quest flags/counters/reward items/completion seeded",
+        "Actual school STEP before welcome earns no progress",
+        "Actual protocol NPC welcome starts the programme",
+        "Actual protected school and supply STEP destinations each earn one objective",
+        "Repeated school visit cannot earn another objective",
+        "Committed STEP is immediately visible in the quest cache used by the next NPC action",
+        "Actual tutor mission activates the native ten-Troll run",
+        "No defence reward before ten native deaths",
+        "Ten source-native Troll deaths increment exact counter1..10",
+        "Ordinary hunting XP follows the accepted level-dependent bonus policy, golden493 including starting100XP",
+        "Actual report grants one Guardian Ring52732 and exactly800questXP",
+        "Missing Book gives no scarf, XP or completion",
+        "Actual source chest32614/32419/7 ordinal2 USE mints the Book51977",
+        "Actual tutor book hand-in consumes that Book and grants one Scarf3572, exactly800questXP and terminal completion",
+        "Final XP2093 equals100setup+393hunting+1600quest; each item once; later requests cannot repeat rewards"
+      ]
+    }
+  },
+  "source_choices": {
+    "school": {
+      "position": [
+        32570,
+        32507,
+        7
+      ],
+      "approach": [
+        32570,
+        32506,
+        7
+      ],
+      "step": "south",
+      "anchor": "Viola32571/32507/7"
+    },
+    "supply": {
+      "position": [
+        32567,
+        32489,
+        7
+      ],
+      "approach": [
+        32568,
+        32489,
+        7
+      ],
+      "step": "west",
+      "anchor": "Flavius32566/32489/7"
+    },
+    "facts": "Pinned source NPC XML and existing B3/current official client; see newhaven_exploration.py and CONTRACT-NOTES.md",
+    "tutor_role": "Gustavo, The Guard, explicit chosen-recipe binding"
+  },
+  "generic_fix": "Project every sealed committed world-callback receipt into its bounded quest-session copy immediately; retain cadence reload/recovery/XP. qengine2 and questpc6 had the same Monk-only condition.",
+  "retained_component_proofs": [
+    "cloud-newhaven-items-proof.json",
+    "cloud-newhaven-rewards-proof.json",
+    "cloud-newhaven-native-goal-proof.json"
+  ],
+  "checks": {
+    "python_exploration_units": 3,
+    "old_access_registry": "exact prior record SHA preserved",
+    "world_callback_rust_units": 11,
+    "generator_check": "PASS",
+    "world_tree": "PASS34111Items337claims including Imbuement/craft",
+    "final_rust_and_pins": "PASS: cargo fmt; cargo check 3.83s; strict all-target/all-feature clippy 25.44s; repository pin-refresh and independent pin-check",
+    "world_digest": "07127a12e4dd254b9cb51d00db6543f2f4d93580213fe6b9f62fa57b54698354"
+  }
+}

@@ -84,6 +84,8 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    import newhaven_exploration
+    newhaven_exploration.extend(rows, callback)
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 
