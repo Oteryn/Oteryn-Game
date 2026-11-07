@@ -2378,6 +2378,124 @@
           "resource_retry": "one lib-test rebuild SIGKILL from overlapping pin compiler; queued test canceled before execution and retried after pin exit; no test/assertion/profile changes",
           "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
         }
+      },
+      {
+        "batch": "threatened_feathers_17",
+        "phase": "QUALIFIED:5 native movement AIDs produce5 physical feathers and fifth advances story atomically",
+        "entries": [
+          "feather step AID25024",
+          "feather step AID25025",
+          "feather step AID25026",
+          "feather step AID25027",
+          "feather step AID25028"
+        ],
+        "source": {
+          "file": "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua",
+          "blob": "4688b9d0a5fb77b7c1633b598622563f3326b208",
+          "sha256": "87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+        },
+        "requirements": "TroubledAnimals13, distinct five flags, counter<5, grant25244x1 each; fifth step advances Animals14 atomically; source AID selector only; players only",
+        "reuse": "existing native movement callback owner, complete MINT and relative storage; implement generic conditional track write and StepIn world reward composition if missing; check other lane reuse first",
+        "previous_qualified": "threatened_presents_16",
+        "fixture_attempt": {
+          "postgres": "18.6",
+          "duration_ms": 68824,
+          "result": "INVALID RED: transport fixture no command result; no source assertion reached",
+          "log": "/tmp/questpc3-feathers-red.log",
+          "sha256": "7723c462a4854bf39e5b93e1a45b3603dc8003bcdb195651b9d572b290a123e7"
+        },
+        "latest_checks": {
+          "check": "PASS3crates38.85s",
+          "clippy": "PASS3crates all-features lib -Dwarnings",
+          "domain": "PASS11tests3.29s",
+          "postgres": "PASS81737ms,5native movement grants; selected presents regression PASS",
+          "fmt": "PASS",
+          "native": "PASS41files",
+          "authoring": "PASS",
+          "duplicates": "PASS",
+          "pins": "PASS repo tool, unchanged world digest"
+        },
+        "pg_red_ms": 66791,
+        "red_proof": {
+          "postgres": "18.6",
+          "duration_ms": 66791,
+          "log": "/tmp/questpc3-feathers-red-native-sequence.log",
+          "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
+          "result": "all5 literal source tiles reached,0feathers/receipts/counter,stage13; wrong stage and actual native movement verified"
+        },
+        "result": "GREEN",
+        "pg_green_ms": 81737,
+        "proofs": {
+          "red": {
+            "log": "/tmp/questpc3-feathers-red-native-sequence.log",
+            "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
+            "result": "expected RED"
+          },
+          "green": {
+            "log": "/tmp/questpc3-feathers-green.log",
+            "sha256": "766606a4dd3d2f5ce7b608bc32cc1ba1856acc8cdef9311b43d1dbf8f4c08879",
+            "result": "PASS"
+          },
+          "regression": {
+            "log": "/tmp/questpc3-feathers-presents-regression.log",
+            "sha256": "d93e94aa995811eb36077cac7e9a40c479fb27cc51252a3bd206aa0612ef10f1",
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-feathers-final-check.log",
+            "sha256": "13359e37c6552b90cfcd16a271a5399db7306b34228b645e3ace7a8718d0a943",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-feathers-clippy.log",
+            "sha256": "6e8aa6f79a804e4a4414f3e546e4b2f579170bde370ca830a6489bdee5c6ae9e",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-feathers-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-feathers-authoring.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-feathers-domain.log",
+            "sha256": "38182799ea370d86fd8e9d455f4bbb19a29c9b75d4290c8ff7f59ed9870af087",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-feathers-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-feathers-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          },
+          "duplicates": {
+            "log": "/tmp/questpc3-feathers-dup-migrations.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 5,
+          "receipts": 5,
+          "feathers": 5,
+          "counter": 5,
+          "story_stage": 14,
+          "prior_fixture": "only Animals12/13 and empty backpack; no feathers/flags/counter results seeded",
+          "negative_paths": "wrong stage, fresh reentry per tile, counter cap and conditional self/outside indices/mixed preserve-increment; actual native movement and unchanged source object revisions",
+          "mechanisms": "declarative binding to existing SetWhenAtLeast262618b3cd using original locked counter; existing Root MINT participant supports fenced Step cause",
+          "migrations": "1229 extends exact cause/trigger relation; canonical shared migrations unchanged",
+          "regression": "three selected presents with lost acknowledgement recovery pass on new schema",
+          "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -4911,6 +5029,124 @@
           "resource_retry": "one lib-test rebuild SIGKILL from overlapping pin compiler; queued test canceled before execution and retried after pin exit; no test/assertion/profile changes",
           "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
         }
+      },
+      "threatened_feathers_17": {
+        "batch": "threatened_feathers_17",
+        "phase": "QUALIFIED:5 native movement AIDs produce5 physical feathers and fifth advances story atomically",
+        "entries": [
+          "feather step AID25024",
+          "feather step AID25025",
+          "feather step AID25026",
+          "feather step AID25027",
+          "feather step AID25028"
+        ],
+        "source": {
+          "file": "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua",
+          "blob": "4688b9d0a5fb77b7c1633b598622563f3326b208",
+          "sha256": "87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+        },
+        "requirements": "TroubledAnimals13, distinct five flags, counter<5, grant25244x1 each; fifth step advances Animals14 atomically; source AID selector only; players only",
+        "reuse": "existing native movement callback owner, complete MINT and relative storage; implement generic conditional track write and StepIn world reward composition if missing; check other lane reuse first",
+        "previous_qualified": "threatened_presents_16",
+        "fixture_attempt": {
+          "postgres": "18.6",
+          "duration_ms": 68824,
+          "result": "INVALID RED: transport fixture no command result; no source assertion reached",
+          "log": "/tmp/questpc3-feathers-red.log",
+          "sha256": "7723c462a4854bf39e5b93e1a45b3603dc8003bcdb195651b9d572b290a123e7"
+        },
+        "latest_checks": {
+          "check": "PASS3crates38.85s",
+          "clippy": "PASS3crates all-features lib -Dwarnings",
+          "domain": "PASS11tests3.29s",
+          "postgres": "PASS81737ms,5native movement grants; selected presents regression PASS",
+          "fmt": "PASS",
+          "native": "PASS41files",
+          "authoring": "PASS",
+          "duplicates": "PASS",
+          "pins": "PASS repo tool, unchanged world digest"
+        },
+        "pg_red_ms": 66791,
+        "red_proof": {
+          "postgres": "18.6",
+          "duration_ms": 66791,
+          "log": "/tmp/questpc3-feathers-red-native-sequence.log",
+          "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
+          "result": "all5 literal source tiles reached,0feathers/receipts/counter,stage13; wrong stage and actual native movement verified"
+        },
+        "result": "GREEN",
+        "pg_green_ms": 81737,
+        "proofs": {
+          "red": {
+            "log": "/tmp/questpc3-feathers-red-native-sequence.log",
+            "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
+            "result": "expected RED"
+          },
+          "green": {
+            "log": "/tmp/questpc3-feathers-green.log",
+            "sha256": "766606a4dd3d2f5ce7b608bc32cc1ba1856acc8cdef9311b43d1dbf8f4c08879",
+            "result": "PASS"
+          },
+          "regression": {
+            "log": "/tmp/questpc3-feathers-presents-regression.log",
+            "sha256": "d93e94aa995811eb36077cac7e9a40c479fb27cc51252a3bd206aa0612ef10f1",
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-feathers-final-check.log",
+            "sha256": "13359e37c6552b90cfcd16a271a5399db7306b34228b645e3ace7a8718d0a943",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-feathers-clippy.log",
+            "sha256": "6e8aa6f79a804e4a4414f3e546e4b2f579170bde370ca830a6489bdee5c6ae9e",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-feathers-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-feathers-authoring.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-feathers-domain.log",
+            "sha256": "38182799ea370d86fd8e9d455f4bbb19a29c9b75d4290c8ff7f59ed9870af087",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-feathers-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-feathers-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          },
+          "duplicates": {
+            "log": "/tmp/questpc3-feathers-dup-migrations.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 5,
+          "receipts": 5,
+          "feathers": 5,
+          "counter": 5,
+          "story_stage": 14,
+          "prior_fixture": "only Animals12/13 and empty backpack; no feathers/flags/counter results seeded",
+          "negative_paths": "wrong stage, fresh reentry per tile, counter cap and conditional self/outside indices/mixed preserve-increment; actual native movement and unchanged source object revisions",
+          "mechanisms": "declarative binding to existing SetWhenAtLeast262618b3cd using original locked counter; existing Root MINT participant supports fenced Step cause",
+          "migrations": "1229 extends exact cause/trigger relation; canonical shared migrations unchanged",
+          "regression": "three selected presents with lost acknowledgement recovery pass on new schema",
+          "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
+        }
       }
     },
     "counts": {
@@ -4919,53 +5155,18 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "threatened_feathers_17",
-      "phase": "Compiling WIP implementation: real5-entry PG RED66791ms captured, conditional world binding and StepIn MINT implemented; full PG binary codegen still running",
+      "batch": "beginning_world_18",
+      "phase": "Active: inspect exact owned donor bridge/log8 and five ground-wood/cart interactions; author focused3\u20136-entry native PG RED before production changes",
       "entries": [
-        "feather step AID25024",
-        "feather step AID25025",
-        "feather step AID25026",
-        "feather step AID25027",
-        "feather step AID25028"
+        "Beginning bridge/log8 interaction",
+        "Beginning ground-wood/cart source1",
+        "Beginning ground-wood/cart source2",
+        "Beginning ground-wood/cart source3",
+        "Beginning ground-wood/cart source4",
+        "Beginning ground-wood/cart source5"
       ],
-      "source": {
-        "file": "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua",
-        "blob": "4688b9d0a5fb77b7c1633b598622563f3326b208",
-        "sha256": "87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
-      },
-      "requirements": "TroubledAnimals13, distinct five flags, counter<5, grant25244x1 each; fifth step advances Animals14 atomically; source AID selector only; players only",
-      "reuse": "existing native movement callback owner, complete MINT and relative storage; implement generic conditional track write and StepIn world reward composition if missing; check other lane reuse first",
-      "previous_qualified": "threatened_presents_16",
-      "fixture_attempt": {
-        "postgres": "18.6",
-        "duration_ms": 68824,
-        "result": "INVALID RED: transport fixture no command result; no source assertion reached",
-        "log": "/tmp/questpc3-feathers-red.log",
-        "sha256": "7723c462a4854bf39e5b93e1a45b3603dc8003bcdb195651b9d572b290a123e7"
-      },
-      "latest_checks": {
-        "check": "PASS3crates38.85s",
-        "domain": "PASS11tests3.29s including conditional counter0\u20134/cap/once/invalid index/mixed operation",
-        "fmt": "PASS",
-        "authoring": "PASS",
-        "native": "PASS41files",
-        "duplicates": "PASS staged migration tree",
-        "postgres": "GREEN attempt codegen running, selected present regression queued",
-        "clippy": "queued behind test build",
-        "pins": "not started; serialize after heavy test codegen"
-      },
-      "draft": {
-        "state": "APPLIED; do not reapply temporary pending patch",
-        "source_reuse": "existing generic SetWhenAtLeast262618b3cd; QENGINE2f3a01112daeadb63188f35d85596708481a1baac inspected"
-      },
-      "pg_red_ms": 66791,
-      "red_proof": {
-        "postgres": "18.6",
-        "duration_ms": 66791,
-        "log": "/tmp/questpc3-feathers-red-native-sequence.log",
-        "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
-        "result": "all5 literal source tiles reached,0feathers/receipts/counter,stage13; wrong stage and actual native movement verified"
-      }
+      "requirements": "Retain all qualified Santiago/Zirella/Carlos/coat chest/equipment/health/food sale/report work. Implement actual world interactions and lost-coat replacement, then full native Beginning journey to whole-quest QUALIFIED. Missing reusable mechanisms remain our job.",
+      "previous_qualified": "threatened_feathers_17"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -10149,7 +10350,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain earlier qualified slices, treasure14, five fairies15 and three presents16. Next five feather movement grants; then remaining repeatable harvests, encounters/NPC appearances and full journey. No shared-feature deferral."
+      "next_actions": "Retain all earlier slices, treasure14, five fairies15, three presents16 and five physical feather movement grants17. Remaining recurrent harvests, encounters/NPC appearances and complete journey stay active; next batch closes owned Beginning world interactions first."
     },
     {
       "canonical": "oteryn:quest.pilgrimage_of_ashes",
@@ -10389,7 +10590,7 @@
       "1228_quest_carried_world_rewards.sql",
       "1229_quest_movement_world_rewards.sql"
     ],
-    "status": "1220\u20131228 QUALIFIED;1229 StepIn MINT proof authored/compiled, focused PG qualification pending",
+    "status": "QUALIFIED: lane1220\u20131229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
@@ -10407,11 +10608,11 @@
       "pins": "repository world-bundle-compiler pin-refresh . PASS; world digest unchanged 1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
     },
     "latest_pg": {
-      "duration_ms": 83412,
-      "marker": "THREATENED_PRESENTS POSTGRES_CASE_COMPLETED success=true",
+      "duration_ms": 81737,
+      "marker": "THREATENED_FEATHERS POSTGRES_CASE_COMPLETED success=true",
       "log": {
-        "log": "/tmp/questpc3-presents-initial-green-retry.log",
-        "sha256": "7c41a5f73c950fc6a2598231974d1b89855296e7806a074ef0411b31b48b7d0a",
+        "log": "/tmp/questpc3-feathers-green.log",
+        "sha256": "766606a4dd3d2f5ce7b608bc32cc1ba1856acc8cdef9311b43d1dbf8f4c08879",
         "result": "PASS"
       }
     }
