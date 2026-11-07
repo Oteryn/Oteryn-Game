@@ -896,3 +896,37 @@ bundle13 exercises source codec/export, including raw zero preservation.
 All4 additional world-bundle subarea tests passed; not called sector tests.
 No tests/assertions weakened or removed. Push this accurate proof correction,
 then continue Fire-Fighter;11 ACTIVE entries remain.
+
+## Fire-Fighter full selected route RED proved
+
+Latest pushed head770274c93; Hydra source9b9ecae58 and corrected actual
+coverage15 gates are pushed.11 ACTIVE remain. Actual PG18.6 Fire RED
+74.926979658s reaches ten native FireElemental kills and base/axe MINT, then
+proves prematurePortableFlamegrant beforeactualaxeUSE. Guard nowrequires
+actualaddon1; explicit1568/1569 source compatibility aliases are generated.
+Run full GREEN only after generator session2915 completes. No quest seeds,
+no parent, no duplicate item/cosmetic engine. Gnomadness quartermaster and
+source placement are documented; original hazard services unchanged.
+After full GREEN add focused negative premium/level and replay assertions,
+then required checks/pins/fmt, update ledger and push source immediately.
+
+## Fire-Fighter full and negative gates PG GREEN
+
+Full selected route PG18.6 GREEN75.131615904s after RED74.926979658s.
+Expanded freshPremium/noBaseGrant and duplicatecompletion routeGREEN
+75.787056326s; actual nativelevel249/Premium refusalGREEN41.538976105s.
+Real10fierykills, axe/flameMINT+USE, bothaddons, sourceFriendlyFire, final
+completion and ordinaryappearance all pass, no questseeds or fakeparent.
+Focused validation now runs before QUALIFIED/sourcepush.11 ACTIVE until
+all gates pass; finish Fire then continue remaining10 entries.
+
+## Fire-Fighter external qualification supersedes local prototype
+
+Fresh qengine2 fetch finds 6738c1da7 QUALIFIED Fire-Fighter, native trial
+qengine_l12_fire_fighter_native_trial_story, PostgreSQL GREEN95.848776751s.
+Apply owner's explicit cross-lane skip without another ownership question.
+Discard all uncommitted duplicate product code and generated files; retain
+independent prototype PG evidence with explicit non-shipping disposition.
+Peer programme uses Lava Lurkers and NPC outfit exchanges; do not attribute
+prototype Fire Elemental/actual-item-USE assertions to peer qualification.
+Ten ACTIVE entries remain. Continue next selected whole route immediately.

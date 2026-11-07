@@ -252,3 +252,39 @@ normalize it to absent/default1 during export; Terrain counts and positive Item
 counts stay exact. The shared sector codec preserves explicit zero unchanged,
 and runtime typed-zero pickup eligibility remains strict. Compiler equivalence
 uses the same explicit adapter. No charge, subtype, timer or use effect inferred.
+
+## Fire-Fighter selected Gnomprona training (2026-11-07)
+
+Reuse existing native39544/39545 physical policies and201189 item actions:
+Firefighting Axe grants addon1; Portable Flame grants addon2; both require the
+base and CurrentPremium, and the source grants FriendlyFire when both are owned.
+Existing fire_fighter outfit look pair is female1569/male1568. Add explicit
+semantic compatibility mappings, not duplicate item policies or a cosmetic engine.
+
+Gnomadness takes an explicit Oteryn quartermaster role alongside its existing
+source Gnomprona identity. Retained Crystal9f `data-global/npc/gnomadness.lua:69`
+uses hazard.gnomprona-gardens; :102-105 greet Gnomprona. SHA256
+ e3411f8704927cc665340418f3b65fa40fdafa6d607364fde90827516b9f7279.
+The placement candidate is(33527,32865,z14),north,look493 in
+`tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1`.
+Preserve original hazard words and services; their world-mechanic ownership is
+another lane's scope. Gnomad was reviewed and rejected because its retained
+script concerns Deathstrike's Warzone rather than Gnomprona.
+
+Choose existing clear, unflagged17465 ground at entry(33528,32864,-14) and
+training guardian(33530,32864,-14), roomx33527..33532/y32863..32866. Source
+`content/world/placements/region-z14-x130-y128.b3:1`,sha256
+ d20aef8024cef1a9ef0156fcfc98a99e2f660a1310f3f3ab2815f64a3c9cd66a.
+No map binary/geometry change. Fire Elemental is an explicitly chosen existing
+fiery training species, not an inferred donor encounter ID. One bounded native
+slot respawns60s until the personal quota10 is met; no invented party credit.
+
+All selected grants require level250 and CurrentPremium; there is no parent
+quest. Report after10 native kills grants the base; axe supply requires that
+base; flame supply requires the actually earned axe addon; final acknowledgement
+requires both addons. The real consumptive item owner grants FriendlyFire.
+
+Fire-Fighter disposition: the preceding local prototype choices are superseded
+by external qengine2 qualification6738c1da7. Duplicate product code discarded
+before commit under owner's skip rule. Its actual PG results remain an audit
+of the discarded prototype, not a claim that this branch ships those choices.

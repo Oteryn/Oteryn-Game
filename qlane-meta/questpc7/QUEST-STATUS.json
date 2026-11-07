@@ -346,41 +346,24 @@
     "title": "Fire-Fighter Outfits Quest",
     "canonical": "oteryn:quest.fire_fighter_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Reach the Gnomprona fire-fighting staging area.",
-      "targets": [
-        "Gnomprona"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Fire-Fighter Outfits, Fire-Fighter first addon, Fire-Fighter second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/44/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "external lane qualification; owner-directed cross-lane skip",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "commit": "6738c1da7",
+      "test": "qengine_l12_fire_fighter_native_trial_story",
+      "postgres_green_seconds": 95.848776751,
+      "proof": "qlane-meta/questpc7/FIRE-PG-PROOF.json",
+      "boundary": "Peer native Lava Lurker hunting/outfit programme is authoritative. Local independent Fire Elemental prototype discarded; its PG evidence does not claim shipped code."
     }
   },
   {
