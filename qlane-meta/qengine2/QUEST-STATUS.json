@@ -2349,12 +2349,20 @@
   "active_batch": "L1-09: Afflicted, Soil Guardian, Crystal Warlord; native item-use grants and Gnomally token-voucher trades",
   "active_batch_progress": {
     "batch": "L1-09",
-    "phase": "SOURCE_READ; PG RED profiles next",
+    "phase": "GENERIC MECHANISM IMPLEMENTED; source bindings generated; GREEN checks next",
     "reuse_audit": {
       "questpc3": "73a106fc5035885a844c81e8618900f80c028116: no selected canonical entries in current status",
       "questpc5": "115393d62b6a28e449a78d43c12f808e5ad31a77: no selected canonical entries in current status",
       "questpc6": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5: Crystal Warlord UNFINISHED"
     },
-    "mechanisms": "Existing native item_cosmetics source rules already cover vouchers16252-16257, Afflicted six12551-12556 cloth pieces and addons12786/12787; canonical grant mappings are missing. Gnomally source no-storage trades need generic cost-backed value-only item exchange, preserving same-R exact input/MINT receipts, not invented source flags. Donor gnomally9f5a72c sha256e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1. No production L9 edits yet."
+    "mechanisms": "Generic cost-backed value-only source exchanges use exact carried input and native backpack MINT with original same-R proofs; no invented quest flags. Bounded achievement_progress reuses existing catalogue and account achievement owner, once per paid occurrence. Five NPC trades and nine canonical item grant mappings authored. Four physical source profiles imported. Quest authoring24 tests9.887s; initial engine check1m17s passed. Full PG GREEN pending.",
+    "postgres_red_log": "/tmp/qengine2-batch9-red2.log",
+    "postgres_red_markers": [
+      "Crystal Warlord45.568645727s false",
+      "Afflicted45.872666643s false",
+      "Soil Guardian42.719011131s false"
+    ],
+    "verification": "Actual PG RED3 cases88.29s recorded. Generic exchange/progress Rust8 tests1.35s, authoring24 tests9.887s, check29.59s, clippy2m43s plus final current-fixture clippy28.47s, fmt and both reproducers pass. Repository pin-refresh24ab unchanged passed. Three PG stories compiling /tmp/qengine2-batch9-green1.log session29069, followed by one-shot Mage male regression. No new qualified entries.",
+    "latest_pg": "Legacy one-shot Mage male regression passed80.969743147s against migration1004. First L9 GREEN attempt exposed test setup: Afflicted USE preceded actor-lease binding; existing rust_lottery client parsed legacy snapshots without its required4/11/15/18 capabilities. Corrected fixtures use the existing item_cosmetics capability set plus appearance, and install Ottokar before USE. Corrected three-story run /tmp/qengine2-batch9-green2.log session81707 compiling. Source rules and receipt guards unchanged. Counts24/42; no new qualifications yet."
   }
 }
