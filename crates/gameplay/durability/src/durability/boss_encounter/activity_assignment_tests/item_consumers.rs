@@ -147,6 +147,25 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
             .bind(revisions[3])
             .execute(&h.pool)
             .await?;
+        if index == 3 {
+            // SRX-2 registers the replaced starter token for this World.
+            // Registered history stays valid; an unregistered token must fail
+            // the same root fence while leaving the session fence current.
+            assert_eq!(
+                check(
+                    fence,
+                    command,
+                    fence.character_id,
+                    *world_id.as_bytes(),
+                    *channel_id.as_bytes()
+                )
+                .await?,
+                (true, true)
+            );
+            let removed = sqlx::query("DELETE FROM game_world_registered_starter_revisions WHERE world_id=encode($1,'hex')::uuid AND starter_template_revision='starter-1'")
+                .bind(world_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            assert_eq!(removed.rows_affected(), 1);
+        }
         assert_eq!(
             check(
                 fence,

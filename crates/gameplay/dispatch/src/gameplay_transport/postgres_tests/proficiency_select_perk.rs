@@ -54,7 +54,11 @@ fn scenario() -> TestResult {
                 .definition_ref("Item", key, "definition-r1")
                 .ok_or("item ref")
         };
-        let (sword, other, gold) = (reference(SWORD)?, reference(OTHER_WEAPON)?, reference(GOLD)?);
+        let (sword, other, gold) = (
+            reference(SWORD)?,
+            reference(OTHER_WEAPON)?,
+            reference(GOLD)?,
+        );
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
         let deps = Dependencies::with_content(
@@ -254,8 +258,13 @@ fn scenario() -> TestResult {
             Some(reply(SelectPerkResult::Accepted, &chosen))
         );
         assert_eq!(
-            FreshAdmissionAuthority::weapon_proficiency_select(&owner, actor, command, request(None))
-                .await,
+            FreshAdmissionAuthority::weapon_proficiency_select(
+                &owner,
+                actor,
+                command,
+                request(None)
+            )
+            .await,
             Some(reply(SelectPerkResult::Conflict, &chosen))
         );
         assert_eq!(receipts().await?, before_receipts + 1);

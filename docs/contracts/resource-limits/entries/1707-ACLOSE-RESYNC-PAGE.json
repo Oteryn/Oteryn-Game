@@ -1,0 +1,20 @@
+{
+  "id": "ACLOSE-RESYNC-PAGE",
+  "owner_contract": "OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+  "resource": "Full resync enumeration page",
+  "unit": "accounts",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Unavailable or oversized evidence remains pending; no truncation of proof.",
+  "client_visible": false,
+  "boundary_tests": [
+    "account_deletion_postgres_producer_replays_resolves_and_fences"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/character_command/account_deletion/"
+  ]
+}

@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "bebbda21662d3b0e37b68a718b5b11b9903e2647e5b7f40173842a3916e06e27",
+  "digest": "6157033be3cbe48fb8eb1261ce13579cb1e02ec40f457025d1b89ac3d2d62671",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "npcfix-retail-20261106-r1",
+  "content_revision": "e06-market-crystal-parity-20261031-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

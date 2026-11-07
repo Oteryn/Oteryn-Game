@@ -4,6 +4,8 @@ use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_
 use crate::world_spatial_entities::EntityRef;
 type Result<T> = std::result::Result<T, PartyWireError>;
 pub const CAPABILITY_PARTY_V1: u32 = 42;
+/// Negotiates member effect durations on the existing party query.
+pub const CAPABILITY_PARTY_MEMBER_EFFECTS_V1: u32 = 383;
 pub const COMMAND_TYPE_PARTY_INTENT: u32 = 45;
 pub const COMMAND_TYPE_PARTY_QUERY: u32 = 46;
 pub const MAX_PARTY_INTENT_BYTES: usize = 48;
@@ -39,6 +41,9 @@ pub struct PartyEntry {
     pub leader: bool,
     /// Invitation expiry on the database clock, seconds since Unix epoch; zero for members.
     pub expires_at: u64,
+    /// Remaining milliseconds: Train, Protect, Enchant, Heal and Enlighten Party.
+    /// None means the extension was not selected or the member is outside this runtime.
+    pub party_spell_remaining_ms: Option<[u32; 5]>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartyResult {
@@ -140,7 +145,10 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
                 || entry.name.is_empty()
                 || entry.name.len() > MAX_PARTY_NAME_BYTES
                 || (field == 3 && entry.expires_at != 0)
-                || (field == 4 && (entry.expires_at == 0 || entry.leader))
+                || (field == 4
+                    && (entry.expires_at == 0
+                        || entry.leader
+                        || entry.party_spell_remaining_ms.is_some()))
             {
                 return bad();
             }
@@ -149,6 +157,14 @@ pub fn encode_party_result(result: &PartyResult) -> Result<Vec<u8>> {
             push_message_field(&mut inner, 2, entry.name.as_bytes());
             push_varint_field(&mut inner, 3, u64::from(entry.leader));
             push_varint_field(&mut inner, 4, entry.expires_at);
+            if let Some(remaining) = entry.party_spell_remaining_ms {
+                let mut durations = [0; 20];
+                for (chunk, duration) in durations.as_chunks_mut::<4>().0.iter_mut().zip(remaining)
+                {
+                    chunk.copy_from_slice(&duration.to_be_bytes());
+                }
+                push_message_field(&mut inner, 5, &durations);
+            }
             push_message_field(&mut out, field, &inner);
         }
     }
@@ -215,8 +231,9 @@ fn boolean(n: u64) -> Result<bool> {
     }
 }
 fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
-    bounded(input, 104)?;
+    bounded(input, 128)?;
     let (mut handle, mut name, mut leader, mut expires) = (None, None, None, None);
+    let mut remaining = None;
     let mut cursor = 0;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
@@ -229,6 +246,17 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
             )?,
             24 => set_once(&mut leader, boolean(read_varint(input, &mut cursor)?)?)?,
             32 => set_once(&mut expires, read_varint(input, &mut cursor)?)?,
+            42 => {
+                let bytes = read_bytes(input, &mut cursor)?;
+                if bytes.len() != 20 {
+                    return bad();
+                }
+                let mut durations = [0; 5];
+                for (duration, chunk) in durations.iter_mut().zip(bytes.as_chunks::<4>().0) {
+                    *duration = u32::from_be_bytes(*chunk);
+                }
+                set_once(&mut remaining, durations)?;
+            }
             _ => return bad(),
         }
     }
@@ -237,6 +265,7 @@ fn decode_entry(input: &[u8]) -> Result<PartyEntry> {
         name: name.ok_or(PartyWireError::Malformed)?,
         leader: leader.ok_or(PartyWireError::Malformed)?,
         expires_at: expires.ok_or(PartyWireError::Malformed)?,
+        party_spell_remaining_ms: remaining,
     })
 }
 #[cfg(test)]

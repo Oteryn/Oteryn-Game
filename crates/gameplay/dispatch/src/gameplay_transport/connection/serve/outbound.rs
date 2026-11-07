@@ -463,6 +463,9 @@ where
                 })
                 .collect();
             if !events.is_empty() {
+                if session.selected_capabilities.contains(290) {
+                    authority.cast_effects(session.admitted, &events).await;
+                }
                 let payload =
                     oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events)
                         .map_err(|_| ServeEnd::Disconnected)?;

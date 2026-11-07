@@ -41,24 +41,53 @@ pub(super) async fn execute(
     command_id: u64,
     listing: Option<LeaderListing>,
 ) -> Option<bool> {
-    if !admitted.continuity.selected_capabilities.contains(CAPABILITY_TEAM_FINDER_LEADER_V1) {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_TEAM_FINDER_LEADER_V1)
+    {
         return Some(false);
     }
     let fence = admitted.item_fence?;
     let content = owner.active_generation?.native_gameplay()?;
     let permit = owner.spell_lane_permit().await?;
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
-    let pass = owner.root.try_issue_semantic_pass().ok()?;
+    // A background read can own the single ready holder. Retry only checkout;
+    // once a transaction starts, its unknown outcome must never be re-executed.
+    let retry = super::AdmissionRetryBudget::for_command(owner.root);
+    let pass = retry
+        .retry_unavailable(async || {
+            owner
+                .root
+                .try_issue_semantic_pass()
+                .map_err(|_| super::connection::AdmissionRefusal::Unavailable)
+        })
+        .await
+        .ok()?;
     let mut context = owner;
-    pass.run_with_context(&mut context, move |holder, deadline, owner| Box::pin(async move {
-        let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
-        let authority = item_tx::assert_spell_item_authority_in_transaction(
-            &mut tx, &permit, owner.root, owner.character, owner.holder, &fence,
-            command, content.source_digest(),
-        ).await.map_err(|_| DurabilityError::Unavailable)?;
-        let accepted = team_finder::apply_leader_listing_in_transaction(&mut tx, &authority, listing)
-            .await.map_err(|_| DurabilityError::Unavailable)?;
-        crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
-        Ok(accepted)
-    })).await.ok()
+    pass.run_with_context(&mut context, move |holder, deadline, owner| {
+        Box::pin(async move {
+            let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+            let authority = item_tx::assert_spell_item_authority_in_transaction(
+                &mut tx,
+                &permit,
+                owner.root,
+                owner.character,
+                owner.holder,
+                &fence,
+                command,
+                content.source_digest(),
+            )
+            .await
+            .map_err(|_| DurabilityError::Unavailable)?;
+            let accepted =
+                team_finder::apply_leader_listing_in_transaction(&mut tx, &authority, listing)
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+            crate::durability::party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+            Ok(accepted)
+        })
+    })
+    .await
+    .ok()
 }

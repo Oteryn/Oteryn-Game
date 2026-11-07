@@ -18,6 +18,9 @@ mod bank_credit_headroom;
 pub mod bestiary_progress;
 pub mod blessing_purchase;
 pub mod bosstiary;
+pub mod cast_audit;
+pub mod cast_consent;
+pub mod cast_privacy;
 #[allow(
     dead_code,
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
@@ -159,6 +162,7 @@ pub mod tutorial_corruptor;
 mod tutorial_death;
 pub mod tutorial_islet_placement;
 pub mod world_event;
+pub mod world_event_outcomes;
 pub mod world_house_instance;
 pub mod world_party;
 pub mod world_reset;

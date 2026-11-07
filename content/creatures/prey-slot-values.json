@@ -27,12 +27,12 @@
     },
     "oteryn:creature.adult_goanna": {
       "kills_per_hour_micros": 45247446,
-      "loot_per_kill_micros": 1377431320,
+      "loot_per_kill_micros": 1354398310,
       "tier": 4
     },
     "oteryn:creature.afflicted_strider": {
       "kills_per_hour_micros": 39972241,
-      "loot_per_kill_micros": 3931410265,
+      "loot_per_kill_micros": 3519455885,
       "tier": 4
     },
     "oteryn:creature.amazon": {
@@ -57,7 +57,7 @@
     },
     "oteryn:creature.animated_snowman": {
       "kills_per_hour_micros": 275598086,
-      "loot_per_kill_micros": 390013000,
+      "loot_per_kill_micros": 352029250,
       "tier": 2
     },
     "oteryn:creature.arachnophobica": {
@@ -72,7 +72,7 @@
     },
     "oteryn:creature.armadile": {
       "kills_per_hour_micros": 91573926,
-      "loot_per_kill_micros": 1110966500,
+      "loot_per_kill_micros": 885324500,
       "tier": 3
     },
     "oteryn:creature.askarak_demon": {
@@ -82,12 +82,12 @@
     },
     "oteryn:creature.askarak_lord": {
       "kills_per_hour_micros": 192642140,
-      "loot_per_kill_micros": 210664500,
+      "loot_per_kill_micros": 209164500,
       "tier": 3
     },
     "oteryn:creature.askarak_prince": {
       "kills_per_hour_micros": 149610389,
-      "loot_per_kill_micros": 438332700,
+      "loot_per_kill_micros": 384252700,
       "tier": 3
     },
     "oteryn:creature.assassin": {
@@ -127,7 +127,7 @@
     },
     "oteryn:creature.banshee": {
       "kills_per_hour_micros": 130022573,
-      "loot_per_kill_micros": 172897975,
+      "loot_per_kill_micros": 97011595,
       "tier": 2
     },
     "oteryn:creature.barbarian_bloodwalker": {
@@ -162,7 +162,7 @@
     },
     "oteryn:creature.bashmu": {
       "kills_per_hour_micros": 47485572,
-      "loot_per_kill_micros": 2792016750,
+      "loot_per_kill_micros": 2706946750,
       "tier": 4
     },
     "oteryn:creature.bat": {
@@ -177,7 +177,7 @@
     },
     "oteryn:creature.behemoth": {
       "kills_per_hour_micros": 81126760,
-      "loot_per_kill_micros": 780898525,
+      "loot_per_kill_micros": 607764805,
       "tier": 3
     },
     "oteryn:creature.berserker_chicken": {
@@ -202,17 +202,17 @@
     },
     "oteryn:creature.blemished_spawn": {
       "kills_per_hour_micros": 49188727,
-      "loot_per_kill_micros": 3212627968,
+      "loot_per_kill_micros": 3106799218,
       "tier": 4
     },
     "oteryn:creature.blightwalker": {
       "kills_per_hour_micros": 61868958,
-      "loot_per_kill_micros": 2075765610,
+      "loot_per_kill_micros": 1955075610,
       "tier": 4
     },
     "oteryn:creature.bloated_man_maggot": {
       "kills_per_hour_micros": 8748481,
-      "loot_per_kill_micros": 8354340300,
+      "loot_per_kill_micros": 6920280300,
       "tier": 5
     },
     "oteryn:creature.blood_beast": {
@@ -227,17 +227,17 @@
     },
     "oteryn:creature.blood_hand": {
       "kills_per_hour_micros": 142928039,
-      "loot_per_kill_micros": 295422150,
+      "loot_per_kill_micros": 222922500,
       "tier": 2
     },
     "oteryn:creature.blood_priest": {
       "kills_per_hour_micros": 112280701,
-      "loot_per_kill_micros": 307258055,
+      "loot_per_kill_micros": 256512005,
       "tier": 2
     },
     "oteryn:creature.blue_djinn": {
       "kills_per_hour_micros": 408510638,
-      "loot_per_kill_micros": 62526147,
+      "loot_per_kill_micros": 62411997,
       "tier": 2
     },
     "oteryn:creature.bluebeak": {
@@ -252,7 +252,7 @@
     },
     "oteryn:creature.boar_man": {
       "kills_per_hour_micros": 42825278,
-      "loot_per_kill_micros": 1811648250,
+      "loot_per_kill_micros": 1741106870,
       "tier": 4
     },
     "oteryn:creature.bog_raider": {
@@ -267,7 +267,7 @@
     },
     "oteryn:creature.bonelord": {
       "kills_per_hour_micros": 626086956,
-      "loot_per_kill_micros": 65433717,
+      "loot_per_kill_micros": 64188286,
       "tier": 2
     },
     "oteryn:creature.bony_sea_devil": {
@@ -282,7 +282,7 @@
     },
     "oteryn:creature.brachiodemon": {
       "kills_per_hour_micros": 13527477,
-      "loot_per_kill_micros": 6060143600,
+      "loot_per_kill_micros": 5735811600,
       "tier": 4
     },
     "oteryn:creature.brain_squid": {
@@ -292,12 +292,12 @@
     },
     "oteryn:creature.braindeath": {
       "kills_per_hour_micros": 112941176,
-      "loot_per_kill_micros": 218229911,
+      "loot_per_kill_micros": 102460911,
       "tier": 2
     },
     "oteryn:creature.bramble_wyrmling": {
       "kills_per_hour_micros": 146938775,
-      "loot_per_kill_micros": 760999071,
+      "loot_per_kill_micros": 751618791,
       "tier": 3
     },
     "oteryn:creature.branchy_crawler": {
@@ -322,12 +322,12 @@
     },
     "oteryn:creature.brinebrute_inferniarch": {
       "kills_per_hour_micros": 16433666,
-      "loot_per_kill_micros": 7890419950,
+      "loot_per_kill_micros": 7496645950,
       "tier": 5
     },
     "oteryn:creature.broken_shaper": {
       "kills_per_hour_micros": 164571428,
-      "loot_per_kill_micros": 502606985,
+      "loot_per_kill_micros": 424949735,
       "tier": 3
     },
     "oteryn:creature.broodrider_inferniarch": {
@@ -347,7 +347,7 @@
     },
     "oteryn:creature.bulltaur_brute": {
       "kills_per_hour_micros": 27376425,
-      "loot_per_kill_micros": 1401064500,
+      "loot_per_kill_micros": 1378672500,
       "tier": 3
     },
     "oteryn:creature.bulltaur_forgepriest": {
@@ -357,7 +357,7 @@
     },
     "oteryn:creature.burning_book": {
       "kills_per_hour_micros": 24870466,
-      "loot_per_kill_micros": 4483896910,
+      "loot_per_kill_micros": 4266441690,
       "tier": 4
     },
     "oteryn:creature.burning_gladiator": {
@@ -377,7 +377,7 @@
     },
     "oteryn:creature.candy_horror": {
       "kills_per_hour_micros": 122814498,
-      "loot_per_kill_micros": 801340200,
+      "loot_per_kill_micros": 753700360,
       "tier": 3
     },
     "oteryn:creature.capricious_phantom": {
@@ -392,7 +392,7 @@
     },
     "oteryn:creature.carnivostrich": {
       "kills_per_hour_micros": 60125260,
-      "loot_per_kill_micros": 1891679175,
+      "loot_per_kill_micros": 1716149175,
       "tier": 4
     },
     "oteryn:creature.carrion_worm": {
@@ -447,12 +447,12 @@
     },
     "oteryn:creature.choking_fear": {
       "kills_per_hour_micros": 55384615,
-      "loot_per_kill_micros": 1136595100,
+      "loot_per_kill_micros": 1062505580,
       "tier": 3
     },
     "oteryn:creature.cinder_wyrmling": {
       "kills_per_hour_micros": 146938775,
-      "loot_per_kill_micros": 737737832,
+      "loot_per_kill_micros": 701337832,
       "tier": 3
     },
     "oteryn:creature.clay_guardian": {
@@ -462,7 +462,7 @@
     },
     "oteryn:creature.cliff_strider": {
       "kills_per_hour_micros": 38945233,
-      "loot_per_kill_micros": 2470715935,
+      "loot_per_kill_micros": 2165081985,
       "tier": 4
     },
     "oteryn:creature.cloak_of_terror": {
@@ -482,7 +482,7 @@
     },
     "oteryn:creature.cobra_assassin": {
       "kills_per_hour_micros": 37597911,
-      "loot_per_kill_micros": 1624388233,
+      "loot_per_kill_micros": 1600899733,
       "tier": 4
     },
     "oteryn:creature.cobra_scout": {
@@ -492,7 +492,7 @@
     },
     "oteryn:creature.cobra_vizier": {
       "kills_per_hour_micros": 40392706,
-      "loot_per_kill_micros": 1811756850,
+      "loot_per_kill_micros": 1791250515,
       "tier": 4
     },
     "oteryn:creature.converter": {
@@ -532,7 +532,7 @@
     },
     "oteryn:creature.courage_leech": {
       "kills_per_hour_micros": 11201866,
-      "loot_per_kill_micros": 7749910500,
+      "loot_per_kill_micros": 7519103500,
       "tier": 4
     },
     "oteryn:creature.crab": {
@@ -547,7 +547,7 @@
     },
     "oteryn:creature.crawler": {
       "kills_per_hour_micros": 265437788,
-      "loot_per_kill_micros": 230236260,
+      "loot_per_kill_micros": 216496200,
       "tier": 3
     },
     "oteryn:creature.crazed_beggar": {
@@ -562,17 +562,17 @@
     },
     "oteryn:creature.crazed_summer_vanguard": {
       "kills_per_hour_micros": 83478260,
-      "loot_per_kill_micros": 911529750,
+      "loot_per_kill_micros": 901968450,
       "tier": 4
     },
     "oteryn:creature.crazed_winter_rearguard": {
       "kills_per_hour_micros": 68982035,
-      "loot_per_kill_micros": 1011681725,
+      "loot_per_kill_micros": 883791725,
       "tier": 3
     },
     "oteryn:creature.crazed_winter_vanguard": {
       "kills_per_hour_micros": 79668049,
-      "loot_per_kill_micros": 1141307100,
+      "loot_per_kill_micros": 1095954600,
       "tier": 4
     },
     "oteryn:creature.cream_blob": {
@@ -597,7 +597,7 @@
     },
     "oteryn:creature.crusader": {
       "kills_per_hour_micros": 89164086,
-      "loot_per_kill_micros": 953028883,
+      "loot_per_kill_micros": 863063441,
       "tier": 3
     },
     "oteryn:creature.crustacea_gigantica": {
@@ -622,7 +622,7 @@
     },
     "oteryn:creature.crypt_mage": {
       "kills_per_hour_micros": 22857142,
-      "loot_per_kill_micros": 2322647250,
+      "loot_per_kill_micros": 2129099250,
       "tier": 4
     },
     "oteryn:creature.crypt_shambler": {
@@ -642,7 +642,7 @@
     },
     "oteryn:creature.crystal_spider": {
       "kills_per_hour_micros": 109923664,
-      "loot_per_kill_micros": 302958219,
+      "loot_per_kill_micros": 245484469,
       "tier": 2
     },
     "oteryn:creature.crystal_wolf": {
@@ -657,17 +657,17 @@
     },
     "oteryn:creature.cult_believer": {
       "kills_per_hour_micros": 92903225,
-      "loot_per_kill_micros": 95173200,
+      "loot_per_kill_micros": 68972700,
       "tier": 2
     },
     "oteryn:creature.cult_enforcer": {
       "kills_per_hour_micros": 283743842,
-      "loot_per_kill_micros": 117579050,
+      "loot_per_kill_micros": 82078949,
       "tier": 3
     },
     "oteryn:creature.cult_scholar": {
       "kills_per_hour_micros": 183439490,
-      "loot_per_kill_micros": 96642100,
+      "loot_per_kill_micros": 70441600,
       "tier": 3
     },
     "oteryn:creature.cunning_werepanther": {
@@ -692,17 +692,17 @@
     },
     "oteryn:creature.cyclops": {
       "kills_per_hour_micros": 492307692,
-      "loot_per_kill_micros": 31839166,
+      "loot_per_kill_micros": 30718276,
       "tier": 2
     },
     "oteryn:creature.cyclops_drone": {
       "kills_per_hour_micros": 391836734,
-      "loot_per_kill_micros": 24399856,
+      "loot_per_kill_micros": 23988886,
       "tier": 2
     },
     "oteryn:creature.cyclops_smith": {
       "kills_per_hour_micros": 269158878,
-      "loot_per_kill_micros": 64866797,
+      "loot_per_kill_micros": 64432517,
       "tier": 2
     },
     "oteryn:creature.cyclursus": {
@@ -742,7 +742,7 @@
     },
     "oteryn:creature.dark_torturer": {
       "kills_per_hour_micros": 51336898,
-      "loot_per_kill_micros": 2243010397,
+      "loot_per_kill_micros": 2090010397,
       "tier": 3
     },
     "oteryn:creature.darklight_construct": {
@@ -757,7 +757,7 @@
     },
     "oteryn:creature.darklight_matter": {
       "kills_per_hour_micros": 12376450,
-      "loot_per_kill_micros": 5743566400,
+      "loot_per_kill_micros": 5680906400,
       "tier": 4
     },
     "oteryn:creature.darklight_source": {
@@ -767,12 +767,12 @@
     },
     "oteryn:creature.darklight_striker": {
       "kills_per_hour_micros": 9305331,
-      "loot_per_kill_micros": 5708800800,
+      "loot_per_kill_micros": 5673223050,
       "tier": 4
     },
     "oteryn:creature.dawnfire_asura": {
       "kills_per_hour_micros": 132110091,
-      "loot_per_kill_micros": 936342477,
+      "loot_per_kill_micros": 932862777,
       "tier": 3
     },
     "oteryn:creature.day_night_harpy": {
@@ -862,12 +862,12 @@
     },
     "oteryn:creature.demon": {
       "kills_per_hour_micros": 43049327,
-      "loot_per_kill_micros": 2893103160,
+      "loot_per_kill_micros": 2195530400,
       "tier": 4
     },
     "oteryn:creature.demon_outcast": {
       "kills_per_hour_micros": 59627329,
-      "loot_per_kill_micros": 1600443500,
+      "loot_per_kill_micros": 1115627731,
       "tier": 4
     },
     "oteryn:creature.demon_parrot": {
@@ -877,12 +877,12 @@
     },
     "oteryn:creature.demon_skeleton": {
       "kills_per_hour_micros": 293877551,
-      "loot_per_kill_micros": 76970894,
+      "loot_per_kill_micros": 75150894,
       "tier": 2
     },
     "oteryn:creature.destroyer": {
       "kills_per_hour_micros": 86746987,
-      "loot_per_kill_micros": 830494332,
+      "loot_per_kill_micros": 640203002,
       "tier": 3
     },
     "oteryn:creature.devoted_radiant_acolyte": {
@@ -922,17 +922,17 @@
     },
     "oteryn:creature.diabolic_imp": {
       "kills_per_hour_micros": 208695652,
-      "loot_per_kill_micros": 382021340,
+      "loot_per_kill_micros": 223854940,
       "tier": 3
     },
     "oteryn:creature.diamond_servant": {
       "kills_per_hour_micros": 131207289,
-      "loot_per_kill_micros": 149438020,
+      "loot_per_kill_micros": 148438020,
       "tier": 2
     },
     "oteryn:creature.diamond_servant_replica": {
       "kills_per_hour_micros": 193939393,
-      "loot_per_kill_micros": 278222034,
+      "loot_per_kill_micros": 276922034,
       "tier": 3
     },
     "oteryn:creature.dire_penguin": {
@@ -962,12 +962,12 @@
     },
     "oteryn:creature.dragolisk": {
       "kills_per_hour_micros": 36386607,
-      "loot_per_kill_micros": 1961816575,
+      "loot_per_kill_micros": 1939514295,
       "tier": 3
     },
     "oteryn:creature.dragon": {
       "kills_per_hour_micros": 124675324,
-      "loot_per_kill_micros": 143315266,
+      "loot_per_kill_micros": 111089696,
       "tier": 2
     },
     "oteryn:creature.dragon_hatchling": {
@@ -977,7 +977,7 @@
     },
     "oteryn:creature.dragon_lord": {
       "kills_per_hour_micros": 202105263,
-      "loot_per_kill_micros": 349706397,
+      "loot_per_kill_micros": 244595902,
       "tier": 3
     },
     "oteryn:creature.dragon_lord_hatchling": {
@@ -1007,7 +1007,7 @@
     },
     "oteryn:creature.draken_warmaster": {
       "kills_per_hour_micros": 87537993,
-      "loot_per_kill_micros": 514082339,
+      "loot_per_kill_micros": 356910639,
       "tier": 3
     },
     "oteryn:creature.draptor": {
@@ -1067,22 +1067,22 @@
     },
     "oteryn:creature.dworc_fleshhunter": {
       "kills_per_hour_micros": 34636199,
-      "loot_per_kill_micros": 12050505,
+      "loot_per_kill_micros": 11124900,
       "tier": 1
     },
     "oteryn:creature.dworc_shadowstalker": {
       "kills_per_hour_micros": 43308270,
-      "loot_per_kill_micros": 1981083145,
+      "loot_per_kill_micros": 1980228145,
       "tier": 4
     },
     "oteryn:creature.dworc_venomsniper": {
       "kills_per_hour_micros": 36363636,
-      "loot_per_kill_micros": 9778439,
+      "loot_per_kill_micros": 9106544,
       "tier": 1
     },
     "oteryn:creature.dworc_voodoomaster": {
       "kills_per_hour_micros": 36363636,
-      "loot_per_kill_micros": 11161233,
+      "loot_per_kill_micros": 10709163,
       "tier": 1
     },
     "oteryn:creature.earth_elemental": {
@@ -1092,22 +1092,22 @@
     },
     "oteryn:creature.efreet": {
       "kills_per_hour_micros": 242016806,
-      "loot_per_kill_micros": 100931820,
+      "loot_per_kill_micros": 100659720,
       "tier": 2
     },
     "oteryn:creature.elder_bonelord": {
       "kills_per_hour_micros": 313043478,
-      "loot_per_kill_micros": 110953181,
+      "loot_per_kill_micros": 109956612,
       "tier": 2
     },
     "oteryn:creature.elder_mummy": {
       "kills_per_hour_micros": 131207289,
-      "loot_per_kill_micros": 151706971,
+      "loot_per_kill_micros": 151535971,
       "tier": 2
     },
     "oteryn:creature.elder_wyrm": {
       "kills_per_hour_micros": 134894613,
-      "loot_per_kill_micros": 510942515,
+      "loot_per_kill_micros": 493942515,
       "tier": 3
     },
     "oteryn:creature.elephant": {
@@ -1147,7 +1147,7 @@
     },
     "oteryn:creature.energetic_book": {
       "kills_per_hour_micros": 23752577,
-      "loot_per_kill_micros": 4524490280,
+      "loot_per_kill_micros": 4480490280,
       "tier": 4
     },
     "oteryn:creature.energuardian_of_tales": {
@@ -1157,32 +1157,32 @@
     },
     "oteryn:creature.energy_elemental": {
       "kills_per_hour_micros": 187622149,
-      "loot_per_kill_micros": 130571390,
+      "loot_per_kill_micros": 106927040,
       "tier": 2
     },
     "oteryn:creature.enfeebled_silencer": {
       "kills_per_hour_micros": 329142857,
-      "loot_per_kill_micros": 649321770,
+      "loot_per_kill_micros": 269135770,
       "tier": 3
     },
     "oteryn:creature.enlightened_of_the_cult": {
       "kills_per_hour_micros": 168421052,
-      "loot_per_kill_micros": 129507634,
+      "loot_per_kill_micros": 99327634,
       "tier": 2
     },
     "oteryn:creature.enraged_crystal_golem": {
       "kills_per_hour_micros": 140487804,
-      "loot_per_kill_micros": 148617000,
+      "loot_per_kill_micros": 137406000,
       "tier": 2
     },
     "oteryn:creature.enslaved_dwarf": {
       "kills_per_hour_micros": 98630136,
-      "loot_per_kill_micros": 941735000,
+      "loot_per_kill_micros": 694369287,
       "tier": 3
     },
     "oteryn:creature.eternal_guardian": {
       "kills_per_hour_micros": 113385826,
-      "loot_per_kill_micros": 491220307,
+      "loot_per_kill_micros": 429807067,
       "tier": 3
     },
     "oteryn:creature.evil_prospector": {
@@ -1202,7 +1202,7 @@
     },
     "oteryn:creature.execowtioner": {
       "kills_per_hour_micros": 97959183,
-      "loot_per_kill_micros": 637286300,
+      "loot_per_kill_micros": 436611280,
       "tier": 3
     },
     "oteryn:creature.exotic_bat": {
@@ -1217,12 +1217,12 @@
     },
     "oteryn:creature.eyeless_devourer": {
       "kills_per_hour_micros": 48040033,
-      "loot_per_kill_micros": 4359279100,
+      "loot_per_kill_micros": 4114463000,
       "tier": 4
     },
     "oteryn:creature.falcon_knight": {
       "kills_per_hour_micros": 28828828,
-      "loot_per_kill_micros": 1986317755,
+      "loot_per_kill_micros": 1756809630,
       "tier": 4
     },
     "oteryn:creature.falcon_paladin": {
@@ -1237,12 +1237,12 @@
     },
     "oteryn:creature.feral_sphinx": {
       "kills_per_hour_micros": 36363636,
-      "loot_per_kill_micros": 1475065625,
+      "loot_per_kill_micros": 1184407625,
       "tier": 4
     },
     "oteryn:creature.feral_werecrocodile": {
       "kills_per_hour_micros": 52268602,
-      "loot_per_kill_micros": 2237471136,
+      "loot_per_kill_micros": 2201985106,
       "tier": 4
     },
     "oteryn:creature.feverish_citizen": {
@@ -1252,7 +1252,7 @@
     },
     "oteryn:creature.feversleep": {
       "kills_per_hour_micros": 64501679,
-      "loot_per_kill_micros": 1465169400,
+      "loot_per_kill_micros": 1321219400,
       "tier": 4
     },
     "oteryn:creature.filth_toad": {
@@ -1262,7 +1262,7 @@
     },
     "oteryn:creature.fire_devil": {
       "kills_per_hour_micros": 677647058,
-      "loot_per_kill_micros": 26382480,
+      "loot_per_kill_micros": 18262480,
       "tier": 2
     },
     "oteryn:creature.fire_elemental": {
@@ -1292,7 +1292,7 @@
     },
     "oteryn:creature.foam_stalker": {
       "kills_per_hour_micros": 70588235,
-      "loot_per_kill_micros": 4020239051,
+      "loot_per_kill_micros": 3884221351,
       "tier": 3
     },
     "oteryn:creature.forest_fury": {
@@ -1307,7 +1307,7 @@
     },
     "oteryn:creature.frazzlemaw": {
       "kills_per_hour_micros": 80334728,
-      "loot_per_kill_micros": 1270365693,
+      "loot_per_kill_micros": 1141661693,
       "tier": 3
     },
     "oteryn:creature.freakish_lost_soul": {
@@ -1317,7 +1317,7 @@
     },
     "oteryn:creature.frost_dragon": {
       "kills_per_hour_micros": 193939393,
-      "loot_per_kill_micros": 329092022,
+      "loot_per_kill_micros": 241321687,
       "tier": 3
     },
     "oteryn:creature.frost_dragon_hatchling": {
@@ -1327,17 +1327,17 @@
     },
     "oteryn:creature.frost_flower_asura": {
       "kills_per_hour_micros": 111627906,
-      "loot_per_kill_micros": 1197956621,
+      "loot_per_kill_micros": 1120546621,
       "tier": 3
     },
     "oteryn:creature.frost_giant": {
       "kills_per_hour_micros": 468292682,
-      "loot_per_kill_micros": 40880106,
+      "loot_per_kill_micros": 40522686,
       "tier": 2
     },
     "oteryn:creature.frost_giantess": {
       "kills_per_hour_micros": 468292682,
-      "loot_per_kill_micros": 39791461,
+      "loot_per_kill_micros": 39456301,
       "tier": 2
     },
     "oteryn:creature.frost_troll": {
@@ -1352,7 +1352,7 @@
     },
     "oteryn:creature.furious_troll": {
       "kills_per_hour_micros": 570297029,
-      "loot_per_kill_micros": 85306330,
+      "loot_per_kill_micros": 79589700,
       "tier": 2
     },
     "oteryn:creature.fury": {
@@ -1367,7 +1367,7 @@
     },
     "oteryn:creature.gargoyle": {
       "kills_per_hour_micros": 381456953,
-      "loot_per_kill_micros": 36376468,
+      "loot_per_kill_micros": 35673388,
       "tier": 2
     },
     "oteryn:creature.gazer": {
@@ -1382,12 +1382,12 @@
     },
     "oteryn:creature.ghastly_dragon": {
       "kills_per_hour_micros": 57427716,
-      "loot_per_kill_micros": 1926198850,
+      "loot_per_kill_micros": 1785554905,
       "tier": 3
     },
     "oteryn:creature.ghost": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 26008308,
+      "loot_per_kill_micros": 18736513,
       "tier": 2
     },
     "oteryn:creature.ghost_wolf": {
@@ -1397,7 +1397,7 @@
     },
     "oteryn:creature.ghoul": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 21565801,
+      "loot_per_kill_micros": 20892361,
       "tier": 1
     },
     "oteryn:creature.ghoulish_hyaena": {
@@ -1407,7 +1407,7 @@
     },
     "oteryn:creature.giant_spider": {
       "kills_per_hour_micros": 118518518,
-      "loot_per_kill_micros": 267017359,
+      "loot_per_kill_micros": 208924109,
       "tier": 2
     },
     "oteryn:creature.gingerbread_man": {
@@ -1417,7 +1417,7 @@
     },
     "oteryn:creature.girtablilu_warrior": {
       "kills_per_hour_micros": 47020408,
-      "loot_per_kill_micros": 4014671040,
+      "loot_per_kill_micros": 3864321340,
       "tier": 4
     },
     "oteryn:creature.gladiator": {
@@ -1427,7 +1427,7 @@
     },
     "oteryn:creature.gloom_maw": {
       "kills_per_hour_micros": 46116893,
-      "loot_per_kill_micros": 1913287110,
+      "loot_per_kill_micros": 1888566585,
       "tier": 4
     },
     "oteryn:creature.gloom_wolf": {
@@ -1442,7 +1442,7 @@
     },
     "oteryn:creature.glooth_bandit": {
       "kills_per_hour_micros": 124675324,
-      "loot_per_kill_micros": 576257325,
+      "loot_per_kill_micros": 551351325,
       "tier": 3
     },
     "oteryn:creature.glooth_blob": {
@@ -1452,7 +1452,7 @@
     },
     "oteryn:creature.glooth_brigand": {
       "kills_per_hour_micros": 144000000,
-      "loot_per_kill_micros": 614094400,
+      "loot_per_kill_micros": 599398400,
       "tier": 3
     },
     "oteryn:creature.glooth_golem": {
@@ -1487,7 +1487,7 @@
     },
     "oteryn:creature.goggle_cake": {
       "kills_per_hour_micros": 135529411,
-      "loot_per_kill_micros": 1056081391,
+      "loot_per_kill_micros": 1054309141,
       "tier": 3
     },
     "oteryn:creature.golden_servant": {
@@ -1512,7 +1512,7 @@
     },
     "oteryn:creature.gore_horn": {
       "kills_per_hour_micros": 19168053,
-      "loot_per_kill_micros": 3784870200,
+      "loot_per_kill_micros": 3677107700,
       "tier": 4
     },
     "oteryn:creature.gorerilla": {
@@ -1527,7 +1527,7 @@
     },
     "oteryn:creature.gozzler": {
       "kills_per_hour_micros": 559223300,
-      "loot_per_kill_micros": 47288211,
+      "loot_per_kill_micros": 44604006,
       "tier": 2
     },
     "oteryn:creature.grave_guard": {
@@ -1542,12 +1542,12 @@
     },
     "oteryn:creature.gravedigger": {
       "kills_per_hour_micros": 61016949,
-      "loot_per_kill_micros": 209538425,
+      "loot_per_kill_micros": 201738425,
       "tier": 2
     },
     "oteryn:creature.green_djinn": {
       "kills_per_hour_micros": 340828402,
-      "loot_per_kill_micros": 53981755,
+      "loot_per_kill_micros": 53799955,
       "tier": 2
     },
     "oteryn:creature.grim_reaper": {
@@ -1572,17 +1572,17 @@
     },
     "oteryn:creature.guardian_of_tales": {
       "kills_per_hour_micros": 29675425,
-      "loot_per_kill_micros": 4401432395,
+      "loot_per_kill_micros": 4048363395,
       "tier": 4
     },
     "oteryn:creature.guzzlemaw": {
       "kills_per_hour_micros": 64000000,
-      "loot_per_kill_micros": 1142197725,
+      "loot_per_kill_micros": 1002501725,
       "tier": 4
     },
     "oteryn:creature.hand_of_cursed_fate": {
       "kills_per_hour_micros": 74418604,
-      "loot_per_kill_micros": 1770225260,
+      "loot_per_kill_micros": 1196957135,
       "tier": 4
     },
     "oteryn:creature.harpy": {
@@ -1592,7 +1592,7 @@
     },
     "oteryn:creature.haunted_dragon": {
       "kills_per_hour_micros": 71641791,
-      "loot_per_kill_micros": 1456084600,
+      "loot_per_kill_micros": 1444539130,
       "tier": 4
     },
     "oteryn:creature.haunted_hunter": {
@@ -1612,7 +1612,7 @@
     },
     "oteryn:creature.headpecker": {
       "kills_per_hour_micros": 25600000,
-      "loot_per_kill_micros": 4094544854,
+      "loot_per_kill_micros": 3976924464,
       "tier": 4
     },
     "oteryn:creature.headwalker": {
@@ -1622,27 +1622,27 @@
     },
     "oteryn:creature.hellfire_fighter": {
       "kills_per_hour_micros": 47721623,
-      "loot_per_kill_micros": 696964075,
+      "loot_per_kill_micros": 538895475,
       "tier": 3
     },
     "oteryn:creature.hellflayer": {
       "kills_per_hour_micros": 35932626,
-      "loot_per_kill_micros": 3151920552,
+      "loot_per_kill_micros": 3126696552,
       "tier": 4
     },
     "oteryn:creature.hellhound": {
       "kills_per_hour_micros": 61081654,
-      "loot_per_kill_micros": 2746263805,
+      "loot_per_kill_micros": 2113193155,
       "tier": 4
     },
     "oteryn:creature.hellhunter_inferniarch": {
       "kills_per_hour_micros": 38297872,
-      "loot_per_kill_micros": 2082084700,
+      "loot_per_kill_micros": 2078074960,
       "tier": 4
     },
     "oteryn:creature.hellspawn": {
       "kills_per_hour_micros": 96969696,
-      "loot_per_kill_micros": 563598793,
+      "loot_per_kill_micros": 371370754,
       "tier": 3
     },
     "oteryn:creature.herald_of_gloom": {
@@ -1652,7 +1652,7 @@
     },
     "oteryn:creature.hero": {
       "kills_per_hour_micros": 242016806,
-      "loot_per_kill_micros": 295008701,
+      "loot_per_kill_micros": 95812710,
       "tier": 3
     },
     "oteryn:creature.hibernal_moth": {
@@ -1662,12 +1662,12 @@
     },
     "oteryn:creature.hideous_fungus": {
       "kills_per_hour_micros": 88208269,
-      "loot_per_kill_micros": 954198560,
+      "loot_per_kill_micros": 929303370,
       "tier": 3
     },
     "oteryn:creature.high_voltage_elemental": {
       "kills_per_hour_micros": 181132075,
-      "loot_per_kill_micros": 293319950,
+      "loot_per_kill_micros": 271618250,
       "tier": 3
     },
     "oteryn:creature.hive_overseer": {
@@ -1677,12 +1677,12 @@
     },
     "oteryn:creature.honey_elemental": {
       "kills_per_hour_micros": 114285714,
-      "loot_per_kill_micros": 610174410,
+      "loot_per_kill_micros": 597274410,
       "tier": 3
     },
     "oteryn:creature.honour_guard": {
       "kills_per_hour_micros": 5241128,
-      "loot_per_kill_micros": 19091838,
+      "loot_per_kill_micros": 17096978,
       "tier": 1
     },
     "oteryn:creature.hot_dog": {
@@ -1692,17 +1692,17 @@
     },
     "oteryn:creature.hulking_carnisylvan": {
       "kills_per_hour_micros": 41468682,
-      "loot_per_kill_micros": 2769345900,
+      "loot_per_kill_micros": 2655965840,
       "tier": 3
     },
     "oteryn:creature.hulking_prehemoth": {
       "kills_per_hour_micros": 17465130,
-      "loot_per_kill_micros": 4645261000,
+      "loot_per_kill_micros": 4611243000,
       "tier": 4
     },
     "oteryn:creature.humongous_fungus": {
       "kills_per_hour_micros": 114970059,
-      "loot_per_kill_micros": 947158180,
+      "loot_per_kill_micros": 877093180,
       "tier": 3
     },
     "oteryn:creature.hunter": {
@@ -1717,7 +1717,7 @@
     },
     "oteryn:creature.hydra": {
       "kills_per_hour_micros": 179439252,
-      "loot_per_kill_micros": 502924138,
+      "loot_per_kill_micros": 320350867,
       "tier": 3
     },
     "oteryn:creature.ice_dragon": {
@@ -1727,22 +1727,22 @@
     },
     "oteryn:creature.ice_golem": {
       "kills_per_hour_micros": 210989010,
-      "loot_per_kill_micros": 137762200,
+      "loot_per_kill_micros": 133730130,
       "tier": 2
     },
     "oteryn:creature.ice_witch": {
       "kills_per_hour_micros": 121775898,
-      "loot_per_kill_micros": 75626970,
+      "loot_per_kill_micros": 74937870,
       "tier": 2
     },
     "oteryn:creature.icecold_book": {
       "kills_per_hour_micros": 20998906,
-      "loot_per_kill_micros": 6398062280,
+      "loot_per_kill_micros": 6231199510,
       "tier": 4
     },
     "oteryn:creature.iceplume_strider": {
       "kills_per_hour_micros": 49740932,
-      "loot_per_kill_micros": 1811612300,
+      "loot_per_kill_micros": 1704882300,
       "tier": 4
     },
     "oteryn:creature.iks_ahpututu": {
@@ -1752,7 +1752,7 @@
     },
     "oteryn:creature.iks_aucar": {
       "kills_per_hour_micros": 246153846,
-      "loot_per_kill_micros": 543628635,
+      "loot_per_kill_micros": 506897225,
       "tier": 3
     },
     "oteryn:creature.iks_chuka": {
@@ -1777,7 +1777,7 @@
     },
     "oteryn:creature.infernal_demon": {
       "kills_per_hour_micros": 6216274,
-      "loot_per_kill_micros": 7481634800,
+      "loot_per_kill_micros": 6998294800,
       "tier": 4
     },
     "oteryn:creature.infernal_frog": {
@@ -1787,12 +1787,12 @@
     },
     "oteryn:creature.infernal_phantom": {
       "kills_per_hour_micros": 14389208,
-      "loot_per_kill_micros": 6082182500,
+      "loot_per_kill_micros": 5500294180,
       "tier": 4
     },
     "oteryn:creature.infernalist": {
       "kills_per_hour_micros": 123076923,
-      "loot_per_kill_micros": 602958550,
+      "loot_per_kill_micros": 217140550,
       "tier": 3
     },
     "oteryn:creature.infernoid_blob": {
@@ -1827,7 +1827,7 @@
     },
     "oteryn:creature.insane_siren": {
       "kills_per_hour_micros": 78581173,
-      "loot_per_kill_micros": 1081010140,
+      "loot_per_kill_micros": 886226820,
       "tier": 4
     },
     "oteryn:creature.insect_swarm": {
@@ -1882,7 +1882,7 @@
     },
     "oteryn:creature.juggernaut": {
       "kills_per_hour_micros": 16911332,
-      "loot_per_kill_micros": 4426247925,
+      "loot_per_kill_micros": 3880184925,
       "tier": 4
     },
     "oteryn:creature.jungle_moa": {
@@ -1892,12 +1892,12 @@
     },
     "oteryn:creature.juvenile_bashmu": {
       "kills_per_hour_micros": 38892640,
-      "loot_per_kill_micros": 2416691075,
+      "loot_per_kill_micros": 2346410495,
       "tier": 3
     },
     "oteryn:creature.killer_caiman": {
       "kills_per_hour_micros": 62813522,
-      "loot_per_kill_micros": 192854717,
+      "loot_per_kill_micros": 170322767,
       "tier": 2
     },
     "oteryn:creature.killer_rabbit": {
@@ -1907,12 +1907,12 @@
     },
     "oteryn:creature.knight_s_apparition": {
       "kills_per_hour_micros": 10363440,
-      "loot_per_kill_micros": 7557024000,
+      "loot_per_kill_micros": 7228747246,
       "tier": 5
     },
     "oteryn:creature.knowledge_elemental": {
       "kills_per_hour_micros": 43308270,
-      "loot_per_kill_micros": 4060593165,
+      "loot_per_kill_micros": 3854771505,
       "tier": 4
     },
     "oteryn:creature.kollos": {
@@ -1952,7 +1952,7 @@
     },
     "oteryn:creature.lava_golem": {
       "kills_per_hour_micros": 31613611,
-      "loot_per_kill_micros": 1915579915,
+      "loot_per_kill_micros": 1637882396,
       "tier": 4
     },
     "oteryn:creature.lava_lurker": {
@@ -1967,7 +1967,7 @@
     },
     "oteryn:creature.lavaworm": {
       "kills_per_hour_micros": 58775510,
-      "loot_per_kill_micros": 4843304000,
+      "loot_per_kill_micros": 4669830536,
       "tier": 4
     },
     "oteryn:creature.leaf_golem": {
@@ -1977,7 +1977,7 @@
     },
     "oteryn:creature.lich": {
       "kills_per_hour_micros": 109505703,
-      "loot_per_kill_micros": 286559970,
+      "loot_per_kill_micros": 220450209,
       "tier": 2
     },
     "oteryn:creature.liodile": {
@@ -1992,7 +1992,7 @@
     },
     "oteryn:creature.lion_hydra": {
       "kills_per_hour_micros": 124137931,
-      "loot_per_kill_micros": 823068563,
+      "loot_per_kill_micros": 774320563,
       "tier": 3
     },
     "oteryn:creature.little_corym_charlatan": {
@@ -2002,7 +2002,7 @@
     },
     "oteryn:creature.lizard_chosen": {
       "kills_per_hour_micros": 127716186,
-      "loot_per_kill_micros": 260933220,
+      "loot_per_kill_micros": 179673790,
       "tier": 3
     },
     "oteryn:creature.lizard_commander": {
@@ -2027,7 +2027,7 @@
     },
     "oteryn:creature.lizard_high_guard": {
       "kills_per_hour_micros": 211764705,
-      "loot_per_kill_micros": 185480160,
+      "loot_per_kill_micros": 104094170,
       "tier": 3
     },
     "oteryn:creature.lizard_legionnaire": {
@@ -2052,7 +2052,7 @@
     },
     "oteryn:creature.lizard_sentinel": {
       "kills_per_hour_micros": 505263157,
-      "loot_per_kill_micros": 67601102,
+      "loot_per_kill_micros": 62285702,
       "tier": 2
     },
     "oteryn:creature.lizard_snakecharmer": {
@@ -2072,32 +2072,32 @@
     },
     "oteryn:creature.lizard_zaogun": {
       "kills_per_hour_micros": 122033898,
-      "loot_per_kill_micros": 350444430,
+      "loot_per_kill_micros": 269564680,
       "tier": 3
     },
     "oteryn:creature.lost_basher": {
       "kills_per_hour_micros": 142928039,
-      "loot_per_kill_micros": 724323426,
+      "loot_per_kill_micros": 628892426,
       "tier": 3
     },
     "oteryn:creature.lost_berserker": {
       "kills_per_hour_micros": 44036697,
-      "loot_per_kill_micros": 1207093600,
+      "loot_per_kill_micros": 959940155,
       "tier": 3
     },
     "oteryn:creature.lost_exile": {
       "kills_per_hour_micros": 224124513,
-      "loot_per_kill_micros": 600776350,
+      "loot_per_kill_micros": 457864780,
       "tier": 3
     },
     "oteryn:creature.lost_husher": {
       "kills_per_hour_micros": 221538461,
-      "loot_per_kill_micros": 1061314590,
+      "loot_per_kill_micros": 962906370,
       "tier": 3
     },
     "oteryn:creature.lost_soul": {
       "kills_per_hour_micros": 70761670,
-      "loot_per_kill_micros": 1252515155,
+      "loot_per_kill_micros": 1017639975,
       "tier": 3
     },
     "oteryn:creature.lost_thrower": {
@@ -2107,7 +2107,7 @@
     },
     "oteryn:creature.lumbering_carnivor": {
       "kills_per_hour_micros": 115662650,
-      "loot_per_kill_micros": 785548304,
+      "loot_per_kill_micros": 591777304,
       "tier": 3
     },
     "oteryn:creature.mad_scientist": {
@@ -2117,7 +2117,7 @@
     },
     "oteryn:creature.magma_crawler": {
       "kills_per_hour_micros": 62337662,
-      "loot_per_kill_micros": 1055253285,
+      "loot_per_kill_micros": 992366700,
       "tier": 3
     },
     "oteryn:creature.makara": {
@@ -2152,7 +2152,7 @@
     },
     "oteryn:creature.marid": {
       "kills_per_hour_micros": 242016806,
-      "loot_per_kill_micros": 92908190,
+      "loot_per_kill_micros": 92645690,
       "tier": 2
     },
     "oteryn:creature.marsh_stalker": {
@@ -2172,7 +2172,7 @@
     },
     "oteryn:creature.massive_fire_elemental": {
       "kills_per_hour_micros": 103971119,
-      "loot_per_kill_micros": 173600650,
+      "loot_per_kill_micros": 157700650,
       "tier": 3
     },
     "oteryn:creature.massive_water_elemental": {
@@ -2182,7 +2182,7 @@
     },
     "oteryn:creature.mean_lost_soul": {
       "kills_per_hour_micros": 39263803,
-      "loot_per_kill_micros": 1104583530,
+      "loot_per_kill_micros": 593070090,
       "tier": 4
     },
     "oteryn:creature.meandering_mushroom": {
@@ -2192,7 +2192,7 @@
     },
     "oteryn:creature.medusa": {
       "kills_per_hour_micros": 87009063,
-      "loot_per_kill_micros": 1101952450,
+      "loot_per_kill_micros": 971808950,
       "tier": 3
     },
     "oteryn:creature.mega_dragon": {
@@ -2202,7 +2202,7 @@
     },
     "oteryn:creature.menacing_carnivor": {
       "kills_per_hour_micros": 57142857,
-      "loot_per_kill_micros": 852929132,
+      "loot_per_kill_micros": 763032072,
       "tier": 3
     },
     "oteryn:creature.mercurial_menace": {
@@ -2227,7 +2227,7 @@
     },
     "oteryn:creature.midnight_asura": {
       "kills_per_hour_micros": 110769230,
-      "loot_per_kill_micros": 882361633,
+      "loot_per_kill_micros": 832061633,
       "tier": 3
     },
     "oteryn:creature.midnight_panther": {
@@ -2252,7 +2252,7 @@
     },
     "oteryn:creature.minotaur_amazon": {
       "kills_per_hour_micros": 150785340,
-      "loot_per_kill_micros": 642676450,
+      "loot_per_kill_micros": 613008978,
       "tier": 3
     },
     "oteryn:creature.minotaur_archer": {
@@ -2262,7 +2262,7 @@
     },
     "oteryn:creature.minotaur_cult_follower": {
       "kills_per_hour_micros": 74035989,
-      "loot_per_kill_micros": 904384137,
+      "loot_per_kill_micros": 876644857,
       "tier": 2
     },
     "oteryn:creature.minotaur_cult_prophet": {
@@ -2287,7 +2287,7 @@
     },
     "oteryn:creature.minotaur_invader": {
       "kills_per_hour_micros": 214925373,
-      "loot_per_kill_micros": 432738975,
+      "loot_per_kill_micros": 375193705,
       "tier": 3
     },
     "oteryn:creature.minotaur_mage": {
@@ -2327,12 +2327,12 @@
     },
     "oteryn:creature.monk_s_apparition": {
       "kills_per_hour_micros": 16509028,
-      "loot_per_kill_micros": 9314743500,
+      "loot_per_kill_micros": 8881619068,
       "tier": 5
     },
     "oteryn:creature.mooh_tah_warrior": {
       "kills_per_hour_micros": 77523553,
-      "loot_per_kill_micros": 367291525,
+      "loot_per_kill_micros": 303275510,
       "tier": 2
     },
     "oteryn:creature.moohtant": {
@@ -2362,7 +2362,7 @@
     },
     "oteryn:creature.moonstone_overseer": {
       "kills_per_hour_micros": 71552795,
-      "loot_per_kill_micros": 1187256500,
+      "loot_per_kill_micros": 1118856500,
       "tier": 3
     },
     "oteryn:creature.mould_phantom": {
@@ -2372,12 +2372,12 @@
     },
     "oteryn:creature.mummy": {
       "kills_per_hour_micros": 570297029,
-      "loot_per_kill_micros": 44171245,
+      "loot_per_kill_micros": 42645850,
       "tier": 2
     },
     "oteryn:creature.mutated_bat": {
       "kills_per_hour_micros": 162253521,
-      "loot_per_kill_micros": 160312500,
+      "loot_per_kill_micros": 130268850,
       "tier": 2
     },
     "oteryn:creature.mutated_human": {
@@ -2387,17 +2387,17 @@
     },
     "oteryn:creature.mutated_rat": {
       "kills_per_hour_micros": 232258064,
-      "loot_per_kill_micros": 90168343,
+      "loot_per_kill_micros": 86419003,
       "tier": 2
     },
     "oteryn:creature.mutated_tiger": {
       "kills_per_hour_micros": 119502074,
-      "loot_per_kill_micros": 144381093,
+      "loot_per_kill_micros": 83161233,
       "tier": 2
     },
     "oteryn:creature.mycobiontic_beetle": {
       "kills_per_hour_micros": 11815384,
-      "loot_per_kill_micros": 8306255000,
+      "loot_per_kill_micros": 8242757135,
       "tier": 5
     },
     "oteryn:creature.naga_archer": {
@@ -2407,12 +2407,12 @@
     },
     "oteryn:creature.naga_warrior": {
       "kills_per_hour_micros": 50838481,
-      "loot_per_kill_micros": 1433855172,
+      "loot_per_kill_micros": 1368500432,
       "tier": 4
     },
     "oteryn:creature.necromancer": {
       "kills_per_hour_micros": 181132075,
-      "loot_per_kill_micros": 115993133,
+      "loot_per_kill_micros": 45934283,
       "tier": 2
     },
     "oteryn:creature.nibblemaw": {
@@ -2427,7 +2427,7 @@
     },
     "oteryn:creature.nightfiend": {
       "kills_per_hour_micros": 136492890,
-      "loot_per_kill_micros": 192339297,
+      "loot_per_kill_micros": 184898797,
       "tier": 3
     },
     "oteryn:creature.nighthunter": {
@@ -2437,17 +2437,17 @@
     },
     "oteryn:creature.nightmare": {
       "kills_per_hour_micros": 155675675,
-      "loot_per_kill_micros": 436615943,
+      "loot_per_kill_micros": 307457065,
       "tier": 3
     },
     "oteryn:creature.nightmare_scion": {
       "kills_per_hour_micros": 296907216,
-      "loot_per_kill_micros": 170584825,
+      "loot_per_kill_micros": 129790065,
       "tier": 3
     },
     "oteryn:creature.nightstalker": {
       "kills_per_hour_micros": 186407766,
-      "loot_per_kill_micros": 104185630,
+      "loot_per_kill_micros": 48461630,
       "tier": 2
     },
     "oteryn:creature.noble_lion": {
@@ -2472,7 +2472,7 @@
     },
     "oteryn:creature.norcferatu_heartless": {
       "kills_per_hour_micros": 65084745,
-      "loot_per_kill_micros": 1662120435,
+      "loot_per_kill_micros": 1543072435,
       "tier": 4
     },
     "oteryn:creature.norcferatu_nightweaver": {
@@ -2487,17 +2487,17 @@
     },
     "oteryn:creature.noxious_ripptor": {
       "kills_per_hour_micros": 12347266,
-      "loot_per_kill_micros": 4106951100,
+      "loot_per_kill_micros": 4096715190,
       "tier": 4
     },
     "oteryn:creature.nymph": {
       "kills_per_hour_micros": 58895705,
-      "loot_per_kill_micros": 355693870,
+      "loot_per_kill_micros": 245713870,
       "tier": 2
     },
     "oteryn:creature.ogre_brute": {
       "kills_per_hour_micros": 93203883,
-      "loot_per_kill_micros": 237742128,
+      "loot_per_kill_micros": 225352128,
       "tier": 2
     },
     "oteryn:creature.ogre_rowdy": {
@@ -2507,7 +2507,7 @@
     },
     "oteryn:creature.ogre_ruffian": {
       "kills_per_hour_micros": 29752066,
-      "loot_per_kill_micros": 901004833,
+      "loot_per_kill_micros": 879487353,
       "tier": 4
     },
     "oteryn:creature.ogre_sage": {
@@ -2517,7 +2517,7 @@
     },
     "oteryn:creature.ogre_savage": {
       "kills_per_hour_micros": 89302325,
-      "loot_per_kill_micros": 286678774,
+      "loot_per_kill_micros": 275879784,
       "tier": 2
     },
     "oteryn:creature.ogre_shaman": {
@@ -2527,12 +2527,12 @@
     },
     "oteryn:creature.omnivora": {
       "kills_per_hour_micros": 81471004,
-      "loot_per_kill_micros": 173024800,
+      "loot_per_kill_micros": 169237885,
       "tier": 2
     },
     "oteryn:creature.oozing_carcass": {
       "kills_per_hour_micros": 18532818,
-      "loot_per_kill_micros": 9308002130,
+      "loot_per_kill_micros": 9110308130,
       "tier": 5
     },
     "oteryn:creature.oozing_corpus": {
@@ -2542,7 +2542,7 @@
     },
     "oteryn:creature.orc": {
       "kills_per_hour_micros": 24030037,
-      "loot_per_kill_micros": 12216614,
+      "loot_per_kill_micros": 11653184,
       "tier": 1
     },
     "oteryn:creature.orc_berserker": {
@@ -2552,7 +2552,7 @@
     },
     "oteryn:creature.orc_cult_fanatic": {
       "kills_per_hour_micros": 334883720,
-      "loot_per_kill_micros": 719062240,
+      "loot_per_kill_micros": 261951616,
       "tier": 3
     },
     "oteryn:creature.orc_cult_inquisitor": {
@@ -2567,7 +2567,7 @@
     },
     "oteryn:creature.orc_cult_priest": {
       "kills_per_hour_micros": 306382978,
-      "loot_per_kill_micros": 277161610,
+      "loot_per_kill_micros": 276642760,
       "tier": 3
     },
     "oteryn:creature.orc_cultist": {
@@ -2577,37 +2577,37 @@
     },
     "oteryn:creature.orc_leader": {
       "kills_per_hour_micros": 279611650,
-      "loot_per_kill_micros": 41165041,
+      "loot_per_kill_micros": 29795499,
       "tier": 2
     },
     "oteryn:creature.orc_marauder": {
       "kills_per_hour_micros": 518918918,
-      "loot_per_kill_micros": 63334608,
+      "loot_per_kill_micros": 58475508,
       "tier": 2
     },
     "oteryn:creature.orc_rider": {
       "kills_per_hour_micros": 768000000,
-      "loot_per_kill_micros": 82631567,
+      "loot_per_kill_micros": 78135617,
       "tier": 2
     },
     "oteryn:creature.orc_shaman": {
       "kills_per_hour_micros": 1152000000,
-      "loot_per_kill_micros": 21094545,
+      "loot_per_kill_micros": 20452215,
       "tier": 2
     },
     "oteryn:creature.orc_spearman": {
       "kills_per_hour_micros": 8853366,
-      "loot_per_kill_micros": 7463421,
+      "loot_per_kill_micros": 6853041,
       "tier": 1
     },
     "oteryn:creature.orc_warlord": {
       "kills_per_hour_micros": 117551020,
-      "loot_per_kill_micros": 133960584,
+      "loot_per_kill_micros": 105466764,
       "tier": 2
     },
     "oteryn:creature.orc_warrior": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 16699598,
+      "loot_per_kill_micros": 16133678,
       "tier": 1
     },
     "oteryn:creature.orchid_frog": {
@@ -2622,22 +2622,22 @@
     },
     "oteryn:creature.orclops_doomhauler": {
       "kills_per_hour_micros": 210218978,
-      "loot_per_kill_micros": 474591000,
+      "loot_per_kill_micros": 463431000,
       "tier": 3
     },
     "oteryn:creature.orclops_ravager": {
       "kills_per_hour_micros": 321787709,
-      "loot_per_kill_micros": 452566990,
+      "loot_per_kill_micros": 437566990,
       "tier": 3
     },
     "oteryn:creature.orewalker": {
       "kills_per_hour_micros": 45461720,
-      "loot_per_kill_micros": 1984581140,
+      "loot_per_kill_micros": 1636245560,
       "tier": 4
     },
     "oteryn:creature.paladin_s_apparition": {
       "kills_per_hour_micros": 16509028,
-      "loot_per_kill_micros": 8254561500,
+      "loot_per_kill_micros": 7983310508,
       "tier": 5
     },
     "oteryn:creature.panda": {
@@ -2662,7 +2662,7 @@
     },
     "oteryn:creature.phantasm": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 895072040,
+      "loot_per_kill_micros": 728806510,
       "tier": 3
     },
     "oteryn:creature.pirat_bombardier": {
@@ -2672,12 +2672,12 @@
     },
     "oteryn:creature.pirat_cutthroat": {
       "kills_per_hour_micros": 105109489,
-      "loot_per_kill_micros": 679640225,
+      "loot_per_kill_micros": 363436775,
       "tier": 3
     },
     "oteryn:creature.pirat_mate": {
       "kills_per_hour_micros": 112280701,
-      "loot_per_kill_micros": 836926790,
+      "loot_per_kill_micros": 621859790,
       "tier": 3
     },
     "oteryn:creature.pirat_scoundrel": {
@@ -2697,7 +2697,7 @@
     },
     "oteryn:creature.pirate_corsair": {
       "kills_per_hour_micros": 184025559,
-      "loot_per_kill_micros": 66394420,
+      "loot_per_kill_micros": 61101610,
       "tier": 2
     },
     "oteryn:creature.pirate_cutthroat": {
@@ -2707,7 +2707,7 @@
     },
     "oteryn:creature.pirate_ghost": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 38255027,
+      "loot_per_kill_micros": 37267027,
       "tier": 2
     },
     "oteryn:creature.pirate_gunner": {
@@ -2742,7 +2742,7 @@
     },
     "oteryn:creature.plaguesmith": {
       "kills_per_hour_micros": 48080133,
-      "loot_per_kill_micros": 1232007970,
+      "loot_per_kill_micros": 946191845,
       "tier": 3
     },
     "oteryn:creature.poacher": {
@@ -2757,7 +2757,7 @@
     },
     "oteryn:creature.poisonous_carnisylvan": {
       "kills_per_hour_micros": 49698015,
-      "loot_per_kill_micros": 2464362400,
+      "loot_per_kill_micros": 2372642200,
       "tier": 3
     },
     "oteryn:creature.polar_bear": {
@@ -2772,7 +2772,7 @@
     },
     "oteryn:creature.priestess": {
       "kills_per_hour_micros": 355555555,
-      "loot_per_kill_micros": 36815748,
+      "loot_per_kill_micros": 35018253,
       "tier": 2
     },
     "oteryn:creature.priestess_of_the_wild_sun": {
@@ -2782,7 +2782,7 @@
     },
     "oteryn:creature.putrid_mummy": {
       "kills_per_hour_micros": 60125260,
-      "loot_per_kill_micros": 357339790,
+      "loot_per_kill_micros": 357179320,
       "tier": 2
     },
     "oteryn:creature.quara_constrictor": {
@@ -2797,12 +2797,12 @@
     },
     "oteryn:creature.quara_hydromancer": {
       "kills_per_hour_micros": 123076923,
-      "loot_per_kill_micros": 129601355,
+      "loot_per_kill_micros": 119886980,
       "tier": 2
     },
     "oteryn:creature.quara_hydromancer_scout": {
       "kills_per_hour_micros": 123076923,
-      "loot_per_kill_micros": 139164130,
+      "loot_per_kill_micros": 111330580,
       "tier": 2
     },
     "oteryn:creature.quara_looter": {
@@ -2812,7 +2812,7 @@
     },
     "oteryn:creature.quara_mantassin": {
       "kills_per_hour_micros": 192642140,
-      "loot_per_kill_micros": 81582910,
+      "loot_per_kill_micros": 72363560,
       "tier": 2
     },
     "oteryn:creature.quara_mantassin_scout": {
@@ -2822,7 +2822,7 @@
     },
     "oteryn:creature.quara_pincher": {
       "kills_per_hour_micros": 173493975,
-      "loot_per_kill_micros": 316288200,
+      "loot_per_kill_micros": 219056544,
       "tier": 3
     },
     "oteryn:creature.quara_pincher_scout": {
@@ -2832,7 +2832,7 @@
     },
     "oteryn:creature.quara_plunderer": {
       "kills_per_hour_micros": 27559808,
-      "loot_per_kill_micros": 1696363500,
+      "loot_per_kill_micros": 1592435500,
       "tier": 4
     },
     "oteryn:creature.quara_predator": {
@@ -2847,7 +2847,7 @@
     },
     "oteryn:creature.quara_raider": {
       "kills_per_hour_micros": 26349496,
-      "loot_per_kill_micros": 1355495570,
+      "loot_per_kill_micros": 1264583570,
       "tier": 4
     },
     "oteryn:creature.radiant_acolyte": {
@@ -2882,7 +2882,7 @@
     },
     "oteryn:creature.rage_squid": {
       "kills_per_hour_micros": 23216444,
-      "loot_per_kill_micros": 4097769900,
+      "loot_per_kill_micros": 3261721260,
       "tier": 4
     },
     "oteryn:creature.raging_fire": {
@@ -2907,7 +2907,7 @@
     },
     "oteryn:creature.raubritter_skirmisher": {
       "kills_per_hour_micros": 31101511,
-      "loot_per_kill_micros": 1403254000,
+      "loot_per_kill_micros": 1242939537,
       "tier": 4
     },
     "oteryn:creature.ravenous_lava_lurker": {
@@ -2922,7 +2922,7 @@
     },
     "oteryn:creature.renegade_knight": {
       "kills_per_hour_micros": 211764705,
-      "loot_per_kill_micros": 371189302,
+      "loot_per_kill_micros": 173153650,
       "tier": 3
     },
     "oteryn:creature.renegade_quara_constrictor": {
@@ -2932,17 +2932,17 @@
     },
     "oteryn:creature.renegade_quara_hydromancer": {
       "kills_per_hour_micros": 209454545,
-      "loot_per_kill_micros": 534403725,
+      "loot_per_kill_micros": 502583475,
       "tier": 3
     },
     "oteryn:creature.renegade_quara_mantassin": {
       "kills_per_hour_micros": 353374233,
-      "loot_per_kill_micros": 208668070,
+      "loot_per_kill_micros": 111148930,
       "tier": 3
     },
     "oteryn:creature.renegade_quara_pincher": {
       "kills_per_hour_micros": 111627906,
-      "loot_per_kill_micros": 650398180,
+      "loot_per_kill_micros": 533302156,
       "tier": 3
     },
     "oteryn:creature.renegade_quara_predator": {
@@ -2952,17 +2952,17 @@
     },
     "oteryn:creature.retching_horror": {
       "kills_per_hour_micros": 62540716,
-      "loot_per_kill_micros": 1489946630,
+      "loot_per_kill_micros": 1040933623,
       "tier": 3
     },
     "oteryn:creature.rhindeer": {
       "kills_per_hour_micros": 51336898,
-      "loot_per_kill_micros": 2195152150,
+      "loot_per_kill_micros": 2039427150,
       "tier": 4
     },
     "oteryn:creature.ripper_spectre": {
       "kills_per_hour_micros": 24552429,
-      "loot_per_kill_micros": 763515850,
+      "loot_per_kill_micros": 752064220,
       "tier": 3
     },
     "oteryn:creature.roaming_dread": {
@@ -2972,7 +2972,7 @@
     },
     "oteryn:creature.roaring_lion": {
       "kills_per_hour_micros": 120754716,
-      "loot_per_kill_micros": 158344680,
+      "loot_per_kill_micros": 144367320,
       "tier": 2
     },
     "oteryn:creature.rootthing_amber_shaper": {
@@ -2992,7 +2992,7 @@
     },
     "oteryn:creature.rorc": {
       "kills_per_hour_micros": 488135593,
-      "loot_per_kill_micros": 49130323,
+      "loot_per_kill_micros": 44713573,
       "tier": 2
     },
     "oteryn:creature.rot_elemental": {
@@ -3002,7 +3002,7 @@
     },
     "oteryn:creature.rotten_golem": {
       "kills_per_hour_micros": 9040966,
-      "loot_per_kill_micros": 6610774500,
+      "loot_per_kill_micros": 6133442500,
       "tier": 4
     },
     "oteryn:creature.rotten_man_maggot": {
@@ -3017,12 +3017,12 @@
     },
     "oteryn:creature.rustheap_golem": {
       "kills_per_hour_micros": 137142857,
-      "loot_per_kill_micros": 479464115,
+      "loot_per_kill_micros": 464957555,
       "tier": 3
     },
     "oteryn:creature.sabretooth": {
       "kills_per_hour_micros": 23990004,
-      "loot_per_kill_micros": 4699350000,
+      "loot_per_kill_micros": 4619850000,
       "tier": 4
     },
     "oteryn:creature.sacred_spider": {
@@ -3032,7 +3032,7 @@
     },
     "oteryn:creature.salamander": {
       "kills_per_hour_micros": 102309058,
-      "loot_per_kill_micros": 15764165,
+      "loot_per_kill_micros": 15080685,
       "tier": 1
     },
     "oteryn:creature.sandcrawler": {
@@ -3042,7 +3042,7 @@
     },
     "oteryn:creature.sandstone_scorpion": {
       "kills_per_hour_micros": 156521739,
-      "loot_per_kill_micros": 148530073,
+      "loot_per_kill_micros": 134189068,
       "tier": 2
     },
     "oteryn:creature.scarab": {
@@ -3067,7 +3067,7 @@
     },
     "oteryn:creature.sea_serpent": {
       "kills_per_hour_micros": 219847328,
-      "loot_per_kill_micros": 331916720,
+      "loot_per_kill_micros": 296622035,
       "tier": 3
     },
     "oteryn:creature.seacrest_serpent": {
@@ -3077,7 +3077,7 @@
     },
     "oteryn:creature.serpent_spawn": {
       "kills_per_hour_micros": 131506849,
-      "loot_per_kill_micros": 796015727,
+      "loot_per_kill_micros": 603119230,
       "tier": 3
     },
     "oteryn:creature.shaburak_demon": {
@@ -3092,7 +3092,7 @@
     },
     "oteryn:creature.shaburak_prince": {
       "kills_per_hour_micros": 149610389,
-      "loot_per_kill_micros": 452306850,
+      "loot_per_kill_micros": 388046850,
       "tier": 3
     },
     "oteryn:creature.shadow_hound": {
@@ -3102,7 +3102,7 @@
     },
     "oteryn:creature.shadow_pupil": {
       "kills_per_hour_micros": 265437788,
-      "loot_per_kill_micros": 98255180,
+      "loot_per_kill_micros": 79432580,
       "tier": 2
     },
     "oteryn:creature.shaper_matriarch": {
@@ -3122,7 +3122,7 @@
     },
     "oteryn:creature.shock_head": {
       "kills_per_hour_micros": 73282442,
-      "loot_per_kill_micros": 156393437,
+      "loot_per_kill_micros": 105093437,
       "tier": 3
     },
     "oteryn:creature.shrieking_cry_stal": {
@@ -3137,17 +3137,17 @@
     },
     "oteryn:creature.sight_of_surrender": {
       "kills_per_hour_micros": 9759403,
-      "loot_per_kill_micros": 13034679500,
+      "loot_per_kill_micros": 12496876370,
       "tier": 4
     },
     "oteryn:creature.silencer": {
       "kills_per_hour_micros": 82403433,
-      "loot_per_kill_micros": 1343790149,
+      "loot_per_kill_micros": 785762149,
       "tier": 4
     },
     "oteryn:creature.silverfrost_sentinel": {
       "kills_per_hour_micros": 35843186,
-      "loot_per_kill_micros": 2095802700,
+      "loot_per_kill_micros": 2074828200,
       "tier": 4
     },
     "oteryn:creature.sineater_inferniarch": {
@@ -3157,12 +3157,12 @@
     },
     "oteryn:creature.skeleton": {
       "kills_per_hour_micros": 58064516,
-      "loot_per_kill_micros": 15119437,
+      "loot_per_kill_micros": 14549167,
       "tier": 1
     },
     "oteryn:creature.skeleton_elite_warrior": {
       "kills_per_hour_micros": 61407249,
-      "loot_per_kill_micros": 2702017280,
+      "loot_per_kill_micros": 2597001980,
       "tier": 4
     },
     "oteryn:creature.skeleton_warrior": {
@@ -3217,7 +3217,7 @@
     },
     "oteryn:creature.soul_broken_harbinger": {
       "kills_per_hour_micros": 70072992,
-      "loot_per_kill_micros": 2139450930,
+      "loot_per_kill_micros": 1752104890,
       "tier": 4
     },
     "oteryn:creature.souleater": {
@@ -3232,7 +3232,7 @@
     },
     "oteryn:creature.spectre": {
       "kills_per_hour_micros": 29447852,
-      "loot_per_kill_micros": 357627325,
+      "loot_per_kill_micros": 342967325,
       "tier": 3
     },
     "oteryn:creature.spellreaper_inferniarch": {
@@ -3252,17 +3252,17 @@
     },
     "oteryn:creature.spidris": {
       "kills_per_hour_micros": 101230228,
-      "loot_per_kill_micros": 903151750,
+      "loot_per_kill_micros": 868851750,
       "tier": 3
     },
     "oteryn:creature.spidris_elite": {
       "kills_per_hour_micros": 74708171,
-      "loot_per_kill_micros": 1571752850,
+      "loot_per_kill_micros": 1525056850,
       "tier": 3
     },
     "oteryn:creature.spiky_carnivor": {
       "kills_per_hour_micros": 78474114,
-      "loot_per_kill_micros": 913638678,
+      "loot_per_kill_micros": 528622686,
       "tier": 3
     },
     "oteryn:creature.spit_nettle": {
@@ -3272,12 +3272,12 @@
     },
     "oteryn:creature.spitter": {
       "kills_per_hour_micros": 256000000,
-      "loot_per_kill_micros": 329867900,
+      "loot_per_kill_micros": 316955900,
       "tier": 3
     },
     "oteryn:creature.squid_warden": {
       "kills_per_hour_micros": 26815642,
-      "loot_per_kill_micros": 4414994035,
+      "loot_per_kill_micros": 4375247785,
       "tier": 4
     },
     "oteryn:creature.squidgy_slime": {
@@ -3297,7 +3297,7 @@
     },
     "oteryn:creature.stalker": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 11004716,
+      "loot_per_kill_micros": 5766266,
       "tier": 1
     },
     "oteryn:creature.stalking_stalk": {
@@ -3307,7 +3307,7 @@
     },
     "oteryn:creature.stampor": {
       "kills_per_hour_micros": 95049504,
-      "loot_per_kill_micros": 216037218,
+      "loot_per_kill_micros": 174500948,
       "tier": 2
     },
     "oteryn:creature.starving_wolf": {
@@ -3317,7 +3317,7 @@
     },
     "oteryn:creature.stone_devourer": {
       "kills_per_hour_micros": 72911392,
-      "loot_per_kill_micros": 1498953360,
+      "loot_per_kill_micros": 1302423360,
       "tier": 3
     },
     "oteryn:creature.stone_golem": {
@@ -3337,7 +3337,7 @@
     },
     "oteryn:creature.streaked_devourer": {
       "kills_per_hour_micros": 62813522,
-      "loot_per_kill_micros": 5627529850,
+      "loot_per_kill_micros": 5301444350,
       "tier": 4
     },
     "oteryn:creature.sugar_cube": {
@@ -3352,12 +3352,12 @@
     },
     "oteryn:creature.sulphider": {
       "kills_per_hour_micros": 16719883,
-      "loot_per_kill_micros": 4020790320,
+      "loot_per_kill_micros": 3714788193,
       "tier": 4
     },
     "oteryn:creature.sulphur_spouter": {
       "kills_per_hour_micros": 18308963,
-      "loot_per_kill_micros": 4312547000,
+      "loot_per_kill_micros": 4175077875,
       "tier": 4
     },
     "oteryn:creature.swamp_troll": {
@@ -3372,7 +3372,7 @@
     },
     "oteryn:creature.swan_maiden": {
       "kills_per_hour_micros": 82285714,
-      "loot_per_kill_micros": 433300424,
+      "loot_per_kill_micros": 181540424,
       "tier": 2
     },
     "oteryn:creature.swarmer": {
@@ -3387,7 +3387,7 @@
     },
     "oteryn:creature.tarnished_spirit": {
       "kills_per_hour_micros": 0,
-      "loot_per_kill_micros": 48179038,
+      "loot_per_kill_micros": 40860438,
       "tier": 2
     },
     "oteryn:creature.terramite": {
@@ -3407,22 +3407,22 @@
     },
     "oteryn:creature.terrorsleep": {
       "kills_per_hour_micros": 51336898,
-      "loot_per_kill_micros": 2070463250,
+      "loot_per_kill_micros": 1540231251,
       "tier": 4
     },
     "oteryn:creature.thanatursus": {
       "kills_per_hour_micros": 45176470,
-      "loot_per_kill_micros": 2422447273,
+      "loot_per_kill_micros": 2212283653,
       "tier": 4
     },
     "oteryn:creature.thornback_tortoise": {
       "kills_per_hour_micros": 253744493,
-      "loot_per_kill_micros": 46052837,
+      "loot_per_kill_micros": 43710267,
       "tier": 2
     },
     "oteryn:creature.thornfire_wolf": {
       "kills_per_hour_micros": 245106382,
-      "loot_per_kill_micros": 68556333,
+      "loot_per_kill_micros": 61860333,
       "tier": 2
     },
     "oteryn:creature.tiger": {
@@ -3432,7 +3432,7 @@
     },
     "oteryn:creature.toad": {
       "kills_per_hour_micros": 20310296,
-      "loot_per_kill_micros": 13370907,
+      "loot_per_kill_micros": 12515347,
       "tier": 1
     },
     "oteryn:creature.tomb_servant": {
@@ -3447,12 +3447,12 @@
     },
     "oteryn:creature.tremendous_tyrant": {
       "kills_per_hour_micros": 36045056,
-      "loot_per_kill_micros": 4817506590,
+      "loot_per_kill_micros": 4714786440,
       "tier": 4
     },
     "oteryn:creature.troll": {
       "kills_per_hour_micros": 17899316,
-      "loot_per_kill_micros": 9424762,
+      "loot_per_kill_micros": 8770462,
       "tier": 1
     },
     "oteryn:creature.troll_champion": {
@@ -3472,7 +3472,7 @@
     },
     "oteryn:creature.true_dawnfire_asura": {
       "kills_per_hour_micros": 54857142,
-      "loot_per_kill_micros": 2851172525,
+      "loot_per_kill_micros": 2847085175,
       "tier": 4
     },
     "oteryn:creature.true_feverbloom_asura": {
@@ -3482,12 +3482,12 @@
     },
     "oteryn:creature.true_frost_flower_asura": {
       "kills_per_hour_micros": 104537205,
-      "loot_per_kill_micros": 2764894705,
+      "loot_per_kill_micros": 2534734705,
       "tier": 4
     },
     "oteryn:creature.true_midnight_asura": {
       "kills_per_hour_micros": 47721623,
-      "loot_per_kill_micros": 2638691990,
+      "loot_per_kill_micros": 2556251990,
       "tier": 4
     },
     "oteryn:creature.truffle": {
@@ -3522,7 +3522,7 @@
     },
     "oteryn:creature.two_headed_turtle": {
       "kills_per_hour_micros": 59751037,
-      "loot_per_kill_micros": 2048553660,
+      "loot_per_kill_micros": 1964216785,
       "tier": 3
     },
     "oteryn:creature.undead_cavebear": {
@@ -3532,17 +3532,17 @@
     },
     "oteryn:creature.undead_dragon": {
       "kills_per_hour_micros": 52698993,
-      "loot_per_kill_micros": 2263137880,
+      "loot_per_kill_micros": 1788854005,
       "tier": 4
     },
     "oteryn:creature.undead_elite_gladiator": {
       "kills_per_hour_micros": 53382761,
-      "loot_per_kill_micros": 2994621590,
+      "loot_per_kill_micros": 2827206970,
       "tier": 4
     },
     "oteryn:creature.undead_gladiator": {
       "kills_per_hour_micros": 91283676,
-      "loot_per_kill_micros": 161658018,
+      "loot_per_kill_micros": 125111648,
       "tier": 2
     },
     "oteryn:creature.undead_mine_worker": {
@@ -3562,17 +3562,17 @@
     },
     "oteryn:creature.usurper_archer": {
       "kills_per_hour_micros": 52126696,
-      "loot_per_kill_micros": 2003675343,
+      "loot_per_kill_micros": 1524605084,
       "tier": 4
     },
     "oteryn:creature.usurper_knight": {
       "kills_per_hour_micros": 38735709,
-      "loot_per_kill_micros": 1819128549,
+      "loot_per_kill_micros": 1571788174,
       "tier": 4
     },
     "oteryn:creature.usurper_warlock": {
       "kills_per_hour_micros": 51291184,
-      "loot_per_kill_micros": 1477580230,
+      "loot_per_kill_micros": 1361363230,
       "tier": 4
     },
     "oteryn:creature.valkyrie": {
@@ -3582,12 +3582,12 @@
     },
     "oteryn:creature.vampire": {
       "kills_per_hour_micros": 188235294,
-      "loot_per_kill_micros": 107379341,
+      "loot_per_kill_micros": 76847671,
       "tier": 2
     },
     "oteryn:creature.vampire_bride": {
       "kills_per_hour_micros": 308021390,
-      "loot_per_kill_micros": 271003975,
+      "loot_per_kill_micros": 185293975,
       "tier": 3
     },
     "oteryn:creature.vampire_pig": {
@@ -3597,7 +3597,7 @@
     },
     "oteryn:creature.vampire_viscount": {
       "kills_per_hour_micros": 70588235,
-      "loot_per_kill_micros": 120432436,
+      "loot_per_kill_micros": 85622936,
       "tier": 2
     },
     "oteryn:creature.varg": {
@@ -3607,7 +3607,7 @@
     },
     "oteryn:creature.varnished_diremaw": {
       "kills_per_hour_micros": 61472785,
-      "loot_per_kill_micros": 3411086250,
+      "loot_per_kill_micros": 3182445764,
       "tier": 4
     },
     "oteryn:creature.venerable_girtablilu": {
@@ -3617,7 +3617,7 @@
     },
     "oteryn:creature.vexclaw": {
       "kills_per_hour_micros": 51018600,
-      "loot_per_kill_micros": 2795275100,
+      "loot_per_kill_micros": 2340388260,
       "tier": 4
     },
     "oteryn:creature.vibrant_phantom": {
@@ -3627,22 +3627,22 @@
     },
     "oteryn:creature.vicious_manbat": {
       "kills_per_hour_micros": 211764705,
-      "loot_per_kill_micros": 310819165,
+      "loot_per_kill_micros": 277604773,
       "tier": 3
     },
     "oteryn:creature.vicious_squire": {
       "kills_per_hour_micros": 79558011,
-      "loot_per_kill_micros": 127364610,
+      "loot_per_kill_micros": 91474147,
       "tier": 2
     },
     "oteryn:creature.vile_grandmaster": {
       "kills_per_hour_micros": 170919881,
-      "loot_per_kill_micros": 611903080,
+      "loot_per_kill_micros": 305386927,
       "tier": 3
     },
     "oteryn:creature.vulcongra": {
       "kills_per_hour_micros": 227667984,
-      "loot_per_kill_micros": 275104990,
+      "loot_per_kill_micros": 266863990,
       "tier": 3
     },
     "oteryn:creature.wailing_widow": {
@@ -3657,22 +3657,22 @@
     },
     "oteryn:creature.walking_dread": {
       "kills_per_hour_micros": 12524461,
-      "loot_per_kill_micros": 4901229000,
+      "loot_per_kill_micros": 4859561000,
       "tier": 4
     },
     "oteryn:creature.walking_pillar": {
       "kills_per_hour_micros": 13521126,
-      "loot_per_kill_micros": 5920599250,
+      "loot_per_kill_micros": 5799080345,
       "tier": 5
     },
     "oteryn:creature.wandering_pillar": {
       "kills_per_hour_micros": 14505162,
-      "loot_per_kill_micros": 6658201270,
+      "loot_per_kill_micros": 6526914970,
       "tier": 5
     },
     "oteryn:creature.war_golem": {
       "kills_per_hour_micros": 81586402,
-      "loot_per_kill_micros": 955759565,
+      "loot_per_kill_micros": 888879565,
       "tier": 3
     },
     "oteryn:creature.war_wolf": {
@@ -3687,7 +3687,7 @@
     },
     "oteryn:creature.warlock": {
       "kills_per_hour_micros": 125490196,
-      "loot_per_kill_micros": 848639758,
+      "loot_per_kill_micros": 315792968,
       "tier": 3
     },
     "oteryn:creature.wasp": {
@@ -3717,7 +3717,7 @@
     },
     "oteryn:creature.weeper": {
       "kills_per_hour_micros": 65979381,
-      "loot_per_kill_micros": 1534627520,
+      "loot_per_kill_micros": 1277100280,
       "tier": 4
     },
     "oteryn:creature.werebadger": {
@@ -3727,17 +3727,17 @@
     },
     "oteryn:creature.werebear": {
       "kills_per_hour_micros": 156948228,
-      "loot_per_kill_micros": 781584853,
+      "loot_per_kill_micros": 770404853,
       "tier": 3
     },
     "oteryn:creature.wereboar": {
       "kills_per_hour_micros": 183439490,
-      "loot_per_kill_micros": 579715236,
+      "loot_per_kill_micros": 563715236,
       "tier": 3
     },
     "oteryn:creature.werecrocodile": {
       "kills_per_hour_micros": 57831325,
-      "loot_per_kill_micros": 1328881780,
+      "loot_per_kill_micros": 1104682710,
       "tier": 3
     },
     "oteryn:creature.werefox": {
@@ -3752,17 +3752,17 @@
     },
     "oteryn:creature.werehyaena_shaman": {
       "kills_per_hour_micros": 172972972,
-      "loot_per_kill_micros": 383837565,
+      "loot_per_kill_micros": 362734290,
       "tier": 3
     },
     "oteryn:creature.werelion": {
       "kills_per_hour_micros": 136817102,
-      "loot_per_kill_micros": 892626216,
+      "loot_per_kill_micros": 695435606,
       "tier": 3
     },
     "oteryn:creature.werelioness": {
       "kills_per_hour_micros": 127716186,
-      "loot_per_kill_micros": 846224480,
+      "loot_per_kill_micros": 776201390,
       "tier": 3
     },
     "oteryn:creature.werepanther": {
@@ -3772,17 +3772,17 @@
     },
     "oteryn:creature.weretiger": {
       "kills_per_hour_micros": 72090112,
-      "loot_per_kill_micros": 1319662670,
+      "loot_per_kill_micros": 1109898795,
       "tier": 3
     },
     "oteryn:creature.werewolf": {
       "kills_per_hour_micros": 194594594,
-      "loot_per_kill_micros": 451123586,
+      "loot_per_kill_micros": 413043586,
       "tier": 3
     },
     "oteryn:creature.white_lion": {
       "kills_per_hour_micros": 141871921,
-      "loot_per_kill_micros": 934706076,
+      "loot_per_kill_micros": 909762706,
       "tier": 3
     },
     "oteryn:creature.white_shade": {
@@ -3797,12 +3797,12 @@
     },
     "oteryn:creature.white_weretiger": {
       "kills_per_hour_micros": 76089828,
-      "loot_per_kill_micros": 2245466362,
+      "loot_per_kill_micros": 2129466362,
       "tier": 4
     },
     "oteryn:creature.wiggler": {
       "kills_per_hour_micros": 86486486,
-      "loot_per_kill_micros": 266871400,
+      "loot_per_kill_micros": 244341400,
       "tier": 2
     },
     "oteryn:creature.wild_warrior": {
@@ -3837,7 +3837,7 @@
     },
     "oteryn:creature.worker_golem": {
       "kills_per_hour_micros": 234146341,
-      "loot_per_kill_micros": 123666955,
+      "loot_per_kill_micros": 105511485,
       "tier": 3
     },
     "oteryn:creature.worm_priestess": {
@@ -3867,7 +3867,7 @@
     },
     "oteryn:creature.young_goanna": {
       "kills_per_hour_micros": 56526005,
-      "loot_per_kill_micros": 1071919510,
+      "loot_per_kill_micros": 1042152535,
       "tier": 4
     },
     "oteryn:creature.young_sea_serpent": {
@@ -3881,7 +3881,7 @@
       "tier": 2
     }
   },
-  "model_input_sha256": "20c1f13d65129e85f42c6cefb5b2d0ea796902f2aebcb20792c418145186dfc3",
+  "model_input_sha256": "697756c430a35414e19654b0f535fa45017e35b56a898f8fd38af6580e3e0744",
   "npc_price_policy": "maximum_catalogue_offer",
   "npc_sell_prices": {
     "oteryn:item.tibia.i10196": 150,
@@ -4261,7 +4261,6 @@
     "oteryn:item.tibia.i23542": 6000,
     "oteryn:item.tibia.i23543": 6000,
     "oteryn:item.tibia.i23544": 6000,
-    "oteryn:item.tibia.i23986": 30,
     "oteryn:item.tibia.i2418": 1,
     "oteryn:item.tibia.i24380": 150,
     "oteryn:item.tibia.i24381": 200,
@@ -4434,7 +4433,6 @@
     "oteryn:item.tibia.i3068": 10000,
     "oteryn:item.tibia.i3074": 100,
     "oteryn:item.tibia.i3076": 190,
-    "oteryn:item.tibia.i3079": 30000,
     "oteryn:item.tibia.i3080": 50000,
     "oteryn:item.tibia.i3081": 500,
     "oteryn:item.tibia.i3084": 100,
@@ -4506,7 +4504,7 @@
     "oteryn:item.tibia.i3270": 1,
     "oteryn:item.tibia.i32704": 500,
     "oteryn:item.tibia.i32705": 500,
-    "oteryn:item.tibia.i3271": 1000,
+    "oteryn:item.tibia.i3271": 240,
     "oteryn:item.tibia.i32711": 50,
     "oteryn:item.tibia.i3272": 5,
     "oteryn:item.tibia.i32724": 500,
@@ -4523,12 +4521,12 @@
     "oteryn:item.tibia.i32773": 8000,
     "oteryn:item.tibia.i32774": 6000,
     "oteryn:item.tibia.i3278": 460,
-    "oteryn:item.tibia.i3279": 1200,
-    "oteryn:item.tibia.i3280": 4000,
-    "oteryn:item.tibia.i3281": 17000,
+    "oteryn:item.tibia.i3279": 470,
+    "oteryn:item.tibia.i3280": 1000,
+    "oteryn:item.tibia.i3281": 100,
     "oteryn:item.tibia.i3282": 100,
     "oteryn:item.tibia.i3283": 118,
-    "oteryn:item.tibia.i3284": 1000,
+    "oteryn:item.tibia.i3284": 250,
     "oteryn:item.tibia.i3285": 51,
     "oteryn:item.tibia.i3286": 30,
     "oteryn:item.tibia.i3287": 2,
@@ -4541,33 +4539,31 @@
     "oteryn:item.tibia.i3294": 10,
     "oteryn:item.tibia.i3295": 6000,
     "oteryn:item.tibia.i3296": 360,
-    "oteryn:item.tibia.i3297": 900,
+    "oteryn:item.tibia.i3297": 15,
     "oteryn:item.tibia.i3298": 2,
-    "oteryn:item.tibia.i3299": 50,
+    "oteryn:item.tibia.i3299": 5,
     "oteryn:item.tibia.i3300": 35,
-    "oteryn:item.tibia.i3301": 500,
-    "oteryn:item.tibia.i3302": 9000,
+    "oteryn:item.tibia.i3301": 10,
+    "oteryn:item.tibia.i3302": 90,
     "oteryn:item.tibia.i3303": 300,
     "oteryn:item.tibia.i3304": 50,
     "oteryn:item.tibia.i3305": 120,
     "oteryn:item.tibia.i3306": 1000,
-    "oteryn:item.tibia.i3307": 150,
+    "oteryn:item.tibia.i3307": 10,
     "oteryn:item.tibia.i3308": 6,
     "oteryn:item.tibia.i3309": 450,
     "oteryn:item.tibia.i3310": 9,
     "oteryn:item.tibia.i3311": 170,
     "oteryn:item.tibia.i3312": 270,
-    "oteryn:item.tibia.i3313": 500,
+    "oteryn:item.tibia.i3313": 50,
     "oteryn:item.tibia.i3314": 2000,
     "oteryn:item.tibia.i3315": 11000,
     "oteryn:item.tibia.i3316": 350,
     "oteryn:item.tibia.i3317": 185,
-    "oteryn:item.tibia.i3318": 2000,
+    "oteryn:item.tibia.i3318": 50,
     "oteryn:item.tibia.i3319": 320,
-    "oteryn:item.tibia.i3320": 8000,
-    "oteryn:item.tibia.i3322": 2000,
+    "oteryn:item.tibia.i3320": 280,
     "oteryn:item.tibia.i3323": 1500,
-    "oteryn:item.tibia.i3324": 6000,
     "oteryn:item.tibia.i3326": 8000,
     "oteryn:item.tibia.i3327": 110,
     "oteryn:item.tibia.i3328": 1000,
@@ -4607,11 +4603,11 @@
     "oteryn:item.tibia.i3366": 90000,
     "oteryn:item.tibia.i3367": 66,
     "oteryn:item.tibia.i3368": 320,
-    "oteryn:item.tibia.i3369": 5000,
-    "oteryn:item.tibia.i3370": 5000,
-    "oteryn:item.tibia.i3371": 5000,
+    "oteryn:item.tibia.i3369": 696,
+    "oteryn:item.tibia.i3370": 875,
+    "oteryn:item.tibia.i3371": 375,
     "oteryn:item.tibia.i3372": 49,
-    "oteryn:item.tibia.i3373": 500,
+    "oteryn:item.tibia.i3373": 55,
     "oteryn:item.tibia.i3374": 22,
     "oteryn:item.tibia.i3375": 16,
     "oteryn:item.tibia.i3376": 20,
@@ -4621,19 +4617,17 @@
     "oteryn:item.tibia.i33780": 230000,
     "oteryn:item.tibia.i33781": 10000,
     "oteryn:item.tibia.i3379": 3,
-    "oteryn:item.tibia.i3380": 900,
-    "oteryn:item.tibia.i3381": 12000,
-    "oteryn:item.tibia.i3382": 12000,
-    "oteryn:item.tibia.i3383": 400,
-    "oteryn:item.tibia.i3384": 250,
-    "oteryn:item.tibia.i3385": 2500,
+    "oteryn:item.tibia.i3380": 140,
+    "oteryn:item.tibia.i3381": 210,
+    "oteryn:item.tibia.i3382": 60,
+    "oteryn:item.tibia.i3383": 130,
+    "oteryn:item.tibia.i3384": 40,
+    "oteryn:item.tibia.i3385": 70,
     "oteryn:item.tibia.i3386": 40000,
     "oteryn:item.tibia.i3387": 40000,
     "oteryn:item.tibia.i3388": 195,
     "oteryn:item.tibia.i3389": 84,
     "oteryn:item.tibia.i3390": 155,
-    "oteryn:item.tibia.i3391": 6000,
-    "oteryn:item.tibia.i3392": 30000,
     "oteryn:item.tibia.i33920": 620000,
     "oteryn:item.tibia.i33921": 850000,
     "oteryn:item.tibia.i33922": 640000,
@@ -4697,8 +4691,8 @@
     "oteryn:item.tibia.i34147": 3000,
     "oteryn:item.tibia.i34148": 1200,
     "oteryn:item.tibia.i34149": 1200,
-    "oteryn:item.tibia.i3415": 2000,
-    "oteryn:item.tibia.i3416": 4000,
+    "oteryn:item.tibia.i3415": 180,
+    "oteryn:item.tibia.i3416": 360,
     "oteryn:item.tibia.i34160": 270,
     "oteryn:item.tibia.i34161": 130,
     "oteryn:item.tibia.i34162": 190,
@@ -4706,8 +4700,8 @@
     "oteryn:item.tibia.i34164": 200,
     "oteryn:item.tibia.i3417": 520,
     "oteryn:item.tibia.i34170": 30000,
-    "oteryn:item.tibia.i3418": 1200,
-    "oteryn:item.tibia.i3419": 8000,
+    "oteryn:item.tibia.i3418": 79,
+    "oteryn:item.tibia.i3419": 109,
     "oteryn:item.tibia.i3420": 30000,
     "oteryn:item.tibia.i3421": 400,
     "oteryn:item.tibia.i3422": 480,
@@ -4716,16 +4710,15 @@
     "oteryn:item.tibia.i3425": 100,
     "oteryn:item.tibia.i3426": 16,
     "oteryn:item.tibia.i3427": 49,
-    "oteryn:item.tibia.i3428": 8000,
-    "oteryn:item.tibia.i3429": 800,
+    "oteryn:item.tibia.i3428": 90,
+    "oteryn:item.tibia.i3429": 5,
     "oteryn:item.tibia.i3430": 50,
     "oteryn:item.tibia.i3431": 85,
-    "oteryn:item.tibia.i3432": 900,
+    "oteryn:item.tibia.i3432": 49,
     "oteryn:item.tibia.i3433": 3000,
-    "oteryn:item.tibia.i3434": 15000,
+    "oteryn:item.tibia.i3434": 119,
     "oteryn:item.tibia.i3435": 5000,
     "oteryn:item.tibia.i3436": 9000,
-    "oteryn:item.tibia.i3439": 16000,
     "oteryn:item.tibia.i3440": 2000,
     "oteryn:item.tibia.i3441": 80,
     "oteryn:item.tibia.i3442": 35000,
@@ -4767,10 +4760,8 @@
     "oteryn:item.tibia.i35613": 150000,
     "oteryn:item.tibia.i35614": 120000,
     "oteryn:item.tibia.i3562": 1,
-    "oteryn:item.tibia.i3567": 10000,
     "oteryn:item.tibia.i3568": 50,
     "oteryn:item.tibia.i3571": 150,
-    "oteryn:item.tibia.i3574": 150,
     "oteryn:item.tibia.i3575": 5000,
     "oteryn:item.tibia.i3577": 2,
     "oteryn:item.tibia.i3579": 2,
@@ -5144,37 +5135,28 @@
     "oteryn:item.tibia.i7388": 30000,
     "oteryn:item.tibia.i7389": 30000,
     "oteryn:item.tibia.i7390": 40000,
-    "oteryn:item.tibia.i7391": 16000,
     "oteryn:item.tibia.i7392": 6000,
     "oteryn:item.tibia.i7402": 15000,
     "oteryn:item.tibia.i7403": 40000,
     "oteryn:item.tibia.i7404": 20000,
     "oteryn:item.tibia.i7406": 6000,
-    "oteryn:item.tibia.i7407": 8000,
     "oteryn:item.tibia.i7408": 1500,
-    "oteryn:item.tibia.i7410": 20000,
-    "oteryn:item.tibia.i7411": 20000,
-    "oteryn:item.tibia.i7412": 18000,
-    "oteryn:item.tibia.i7413": 4000,
     "oteryn:item.tibia.i7414": 20000,
     "oteryn:item.tibia.i7415": 30000,
     "oteryn:item.tibia.i7416": 30000,
     "oteryn:item.tibia.i7417": 45000,
     "oteryn:item.tibia.i7418": 35000,
-    "oteryn:item.tibia.i7419": 15000,
-    "oteryn:item.tibia.i7421": 22000,
+    "oteryn:item.tibia.i7419": 10000,
     "oteryn:item.tibia.i7422": 25000,
     "oteryn:item.tibia.i7423": 90,
     "oteryn:item.tibia.i7424": 5000,
     "oteryn:item.tibia.i7425": 500,
     "oteryn:item.tibia.i7426": 8000,
     "oteryn:item.tibia.i7427": 9000,
-    "oteryn:item.tibia.i7428": 10000,
     "oteryn:item.tibia.i7429": 40000,
     "oteryn:item.tibia.i7430": 3000,
     "oteryn:item.tibia.i7432": 1000,
     "oteryn:item.tibia.i7434": 40000,
-    "oteryn:item.tibia.i7436": 5000,
     "oteryn:item.tibia.i7437": 7000,
     "oteryn:item.tibia.i7438": 2000,
     "oteryn:item.tibia.i7439": 500,
@@ -5182,10 +5164,8 @@
     "oteryn:item.tibia.i7441": 250,
     "oteryn:item.tibia.i7443": 500,
     "oteryn:item.tibia.i7449": 600,
-    "oteryn:item.tibia.i7451": 10000,
     "oteryn:item.tibia.i7452": 5000,
     "oteryn:item.tibia.i7453": 55000,
-    "oteryn:item.tibia.i7454": 3000,
     "oteryn:item.tibia.i7456": 10000,
     "oteryn:item.tibia.i7457": 2000,
     "oteryn:item.tibia.i7459": 1500,

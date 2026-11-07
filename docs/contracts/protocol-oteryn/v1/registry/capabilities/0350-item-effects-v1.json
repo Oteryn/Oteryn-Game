@@ -1,0 +1,15 @@
+{
+  "id": 350,
+  "name": "ITEM_EFFECTS_V1",
+  "owner_decision": "NX-5 task contract; docs/architecture/reviews/NX-5-ITEM-PRESENTATION-AND-COSMETICS.md",
+  "owner": "current Channel item-effect presentation journal",
+  "requires": [
+    6
+  ],
+  "command_types": [],
+  "state_domains": [
+    104
+  ],
+  "offered": true,
+  "offer_gate": "The main novelty and cosmetic item receipt owners publish only item effects. No casting, spell words, values, sound or cooldown domain is activated."
+}

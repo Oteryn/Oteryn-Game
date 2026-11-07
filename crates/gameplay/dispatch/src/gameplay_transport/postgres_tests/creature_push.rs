@@ -30,7 +30,7 @@ const OUT_OF_REACH: u8 = 6;
 const EXHAUSTED: u8 = 7;
 
 /// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
-fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+pub(super) fn bundle(trap: Option<u16>) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self as writer, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -615,8 +615,29 @@ async fn relocation_tiles_scenario(
         .await
         .live_creature_health(troll)
         .ok_or("health after entry")?;
+    let policy = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(troll)
+        .map_err(debug)?
+        .state
+        .policy;
+    assert_eq!(policy.definition_key, "oteryn:creature.troll");
+    let mitigation = policy.mitigation.ok_or("Troll mitigation")?;
+    assert_eq!((mitigation.numerator, mitigation.denominator), (8, 25));
+    let earth = policy
+        .resistances
+        .iter()
+        .find(|resistance| resistance.damage_type == "earth")
+        .ok_or("Troll Earth resistance")?;
+    assert_eq!((earth.percent.numerator, earth.percent.denominator), (-10, 1));
+    // Crystal trap 3944 deals 15..30 Earth damage. The pinned Troll's 0.32%
+    // mitigation truncates each positive raw hit to raw - 1; its 10% Earth
+    // weakness then rounds that result. Check the exact possible one-hit set.
+    let expected_hits: Vec<u64> = (15..=30).map(|raw| ((raw - 1) * 11 + 5) / 10).collect();
     assert!(
-        (15..=30).contains(&(health - after)),
+        expected_hits.contains(&(health - after)),
         "one trap hit: {health} -> {after}"
     );
     place(owner, admitted, at(3, 3)).await?;

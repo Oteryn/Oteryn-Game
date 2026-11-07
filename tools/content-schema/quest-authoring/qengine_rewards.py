@@ -138,6 +138,10 @@ def build():
             'state': 'PROMOTED', 'decision': DECISION,
             'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
+    supplement = load_module("qengine_cosmetic_supplement", "tools/content-schema/quest-authoring/cosmetic_catalogue_supplement.py")
+    admitted = json.loads((ROOT / "content/cosmetics/outfits/authoring.json").read_bytes())
+    author = supplement.merge(admitted, author, cosmetics)
+    doc = author["document"]
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
         return {'track': track, 'minimum': before, 'maximum': before if maximum is None else maximum,

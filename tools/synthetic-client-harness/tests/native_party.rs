@@ -46,6 +46,7 @@ impl Stepper for Peer {
                     self.view.invitations.clear();
                     self.view.members.push(party::PartyEntry {
                         expires_at: 0,
+                        party_spell_remaining_ms: None,
                         ..invitation
                     });
                     self.view.members.push(party::PartyEntry {
@@ -53,12 +54,14 @@ impl Stepper for Peer {
                         name: "Own".into(),
                         leader: true,
                         expires_at: 0,
+                        party_spell_remaining_ms: None,
                     });
                     self.view.members.push(party::PartyEntry {
                         handle: 10,
                         name: "Other".into(),
                         leader: false,
                         expires_at: 0,
+                        party_spell_remaining_ms: None,
                     });
                 }
                 party::PartyIntent::Invite(_) => {
@@ -168,6 +171,7 @@ fn party_controls_use_real_codec_requests_and_apply_server_views() -> Result<(),
                             name: "Aster".into(),
                             leader: false,
                             expires_at: 99,
+                            party_spell_remaining_ms: None,
                         }],
                     },
                     commands: Arc::clone(&commands),

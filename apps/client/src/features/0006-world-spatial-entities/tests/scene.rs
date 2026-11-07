@@ -32,9 +32,9 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
     };
     for (mark, expected) in [
         (None, "Rat"),
-        (Some(1), "Rat - Influenced 1"),
-        (Some(5), "Rat - Influenced 5"),
-        (Some(15), "Rat - Fiendish"),
+        (Some(1), "[Influenced 1] Rat"),
+        (Some(5), "[Influenced 5] Rat"),
+        (Some(15), "[Fiendish] Rat"),
         (None, "Rat"),
     ] {
         entry.forge_stacks = mark;
@@ -49,7 +49,7 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
     entry.forge_stacks = Some(15);
     entry.entity.display_name = None;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("Fiendish"));
+    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Creature"));
     entry.entity.kind = oteryn_session::EntityKind::Player;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
     assert!(
@@ -300,5 +300,69 @@ fn play_view_rebuild_retains_the_same_cached_image() -> Result<(), BatchError> {
             .as_ref()
             .is_some_and(|cached| Arc::ptr_eq(&image, cached))
     );
+    Ok(())
+}
+
+#[test]
+fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<(), BatchError> {
+    let tile = TileCoord::new(100, 200);
+    let mut scene =
+        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+    let mut entry = VisibleAppearance {
+        light: None,
+        forge_stacks: Some(3),
+        entity: oteryn_session::WorldSpatialEntity {
+            display_name: Some(
+                oteryn_session::EntityDisplayName::new("Rat")
+                    .map_err(|_| BatchError::InvalidView)?,
+            ),
+            kind: oteryn_session::EntityKind::Creature,
+            entity: oteryn_session::EntityRef {
+                identity: [9; 16],
+                generation: 1,
+            },
+            position: oteryn_session::ActorPosition {
+                x: 100,
+                y: 200,
+                floor: 0,
+            },
+            detail: EntityDetail::Actor {
+                direction: oteryn_session::StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: None,
+    };
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(scene.names[0].1, scene.cache.name("[Influenced 3] Rat"));
+    entry.forge_stacks = Some(15);
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Rat"));
+    // Capability 104 is independently negotiable from capability 286 display names.
+    let name = entry.entity.display_name.take();
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Creature"));
+    entry.forge_stacks = None;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(
+        scene.name_count(),
+        0,
+        "ordinary nameless creatures gain no label"
+    );
+    entry.entity.display_name = name;
+    entry.forge_stacks = None;
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(scene.names[0].1, scene.cache.name("Rat"));
+    entry.forge_stacks = Some(15);
+    entry.entity.kind = oteryn_session::EntityKind::Player;
+    scene.set_presentations_from(&[entry], 0, None)?;
+    assert_eq!(
+        scene.names[0].1,
+        scene.cache.name("Rat"),
+        "forge labels apply only to creatures"
+    );
+    scene.set_presentations_from(&[], 0, None)?;
+    assert_eq!(scene.name_count(), 0);
     Ok(())
 }

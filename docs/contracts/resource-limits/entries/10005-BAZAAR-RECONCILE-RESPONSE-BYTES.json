@@ -1,0 +1,22 @@
+{
+  "id": "BAZAAR-RECONCILE-RESPONSE-BYTES",
+  "owner_contract": "OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+  "resource": "Bazaar terminal comparison page response",
+  "unit": "bytes",
+  "hard_maximum": 12288,
+  "configurable_range": {
+    "minimum": 12288,
+    "maximum": 12288
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "The closed mTLS operation enforces this cap before JSON decoding; failed transport never fabricates a terminal decision.",
+  "client_visible": false,
+  "boundary_tests": [
+    "bazaar_transport_closed_routes_and_bounds_preserve_character_v1",
+    "bazaar_transport_pages_are_exact_and_nullable_states_are_closed"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/bazaar/transport.rs"
+  ],
+  "notes": "Bazaar producer defaults enabled by the current owner instruction; no inbound Game listener. Existing Character v1 receipt retains its 1024-byte bound."
+}
