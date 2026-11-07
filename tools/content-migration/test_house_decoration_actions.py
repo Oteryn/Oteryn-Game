@@ -89,6 +89,22 @@ class HouseDecorationActions(unittest.TestCase):
             self.assertIsInstance(profile['attributes']['always_on_top'], bool)
             self.assertIn(profile['attributes']['always_on_top_order'], (0, 1, 2, 3))
 
+    def test_initialized_wrap_eligibility_preserves_runtime_output_and_source_intent(self):
+        catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
+        profiles = json.loads((ROOT / PROFILES).read_bytes())
+        rows = catalogue['wrap_eligibility']
+        self.assertEqual(catalogue['wrap_eligible'], sorted({row['item_id'] for row in rows}))
+        self.assertEqual(len(rows), 1860)
+        self.assertTrue({10210,10211,35949,35950,35951,35952,35969,35970,35971,35972} <= set(catalogue['wrap_eligible']))
+        by_id = {row['item_id']: row for row in rows}
+        self.assertEqual(by_id[6109]['source_wrapable_to'], 6115)
+        self.assertEqual(by_id[6109]['target'], 23398, 'Game::wrapItem:4898 emits the modern kit independently of XML target')
+        self.assertEqual(by_id[10210]['source_wrapable_to'], 23398)
+        self.assertEqual(by_id[10210]['donor'], 'src/items/items.cpp:238-241')
+        known = {row['production_definition']['production_key'] for row in profiles['records']}
+        self.assertTrue(all(f"oteryn:item.tibia.i{item}" in known for item in catalogue['wrap_eligible']))
+        self.assertIn(b'FUNCTION game_house_native_wrap_eligible(p_source TEXT)', sql_pairs(catalogue, profiles))
+
     def test_native_xml_wrap_pairs_are_exact_forward_evidence(self):
         catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
         profiles = json.loads((ROOT / PROFILES).read_bytes())

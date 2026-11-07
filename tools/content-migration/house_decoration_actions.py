@@ -106,6 +106,9 @@ def capture(crystal, canary):
     xml = source.xml_index(xml_raw)
     read('src/items/items.cpp')
     read('src/items/item.hpp')
+    wrap_parser = read('src/items/functions/item/item_parse.cpp')
+    if 'itemType.wrapableTo = pugi::cast<int32_t>(valueAttribute.value());\n\t\titemType.wrapable = true;' not in wrap_parser:
+        raise ValueError('HOUSE_WRAP_XML_SOURCE_DRIFT')
     engine = read('src/game/game.cpp')
     if 'const ItemType &newType = Item::items[newId];\n\tif (newType.id == 0) {\n\t\treturn item;' not in engine:
         raise ValueError('HOUSE_TRANSFORM_INVALID_TARGET_SOURCE_DRIFT')
@@ -154,6 +157,22 @@ def capture(crystal, canary):
     native_transforms.extend({**row, 'requested_target': row['target'], 'target': row['item_id'], 'noop': True}
                              for row in unavailable)
     bed_item_ids = sorted(item for item in qualified if source.attrs(xml[item]).get('type') == 'bed')
+    crystal_objects = source.engine_items.load_appearance_objects(crystal_appearance_raw)
+    wrap_eligible = []
+    for item in sorted(qualified):
+        attributes = source.attrs(xml[item])
+        default = 23398 if any(crystal_objects[item]['flags'].get('flags.' + flag, False)
+                              for flag in ('wrap', 'unwrap')) else 0
+        wrapable_to = int(attributes.get('wrapableto', str(default)))
+        if wrapable_to > 0:
+            # Crystal item_parse.cpp:203-206 overrides the appearance default
+            # from items.cpp:238-241. Game::wrapItem:4897-4899 emits23398.
+            wrap_eligible.append({'item_id': item, 'source_wrapable_to': wrapable_to,
+                                  'target': 23398,
+                                  'donor': (f'data/items/items.xml:{line_ids[item]}' if 'wrapableto' in attributes
+                                            else 'src/items/items.cpp:238-241'),
+                                  'runtime_donor': 'src/game/game.cpp:4897-4899'})
+
     # Crystal Items::parseItemNode: wrapableTo is a native forward transform;
     # reverse unwrap still requires the owning prior-wrap/purchased-origin proof.
     wrap_pairs = []
@@ -167,12 +186,13 @@ def capture(crystal, canary):
                  'sources': [{'path': path, 'sha256': digest} for path, digest in sorted(sources.items())],
                  'carpets': carpets, 'windows': windows, 'mirror': mirror, 'bathtub': bathtub,
                  'music': music, 'birdcage': birdcage, 'fish_tank': fish_tank, 'magic_trees': trees,
-                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids, 'wrap_pairs': wrap_pairs,
+                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids, 'wrap_pairs': wrap_pairs, 'wrap_eligible': [row['item_id'] for row in wrap_eligible],
+                 'wrap_eligibility': wrap_eligible,
                  'native_transforms': sorted(native_transforms, key=lambda row: (row['item_id'], row['kind'])),
                  'unavailable_native_transforms': unavailable}
     ids = set(mirror['item_ids']) | {bathtub['item_id'], bathtub['target'], birdcage['item_id'], birdcage['target'], fish_tank['item_id'], 26100}
     ids.update(row['item_id'] for row in music)
-    for row in carpets + windows + trees + native_transforms + wrap_pairs:
+    for row in carpets + windows + trees + native_transforms + wrap_pairs + wrap_eligible:
         ids.update((row['item_id'], row['target']))
     for row in bed_kits:
         ids.update((row['item_id'], *row['south'], *row['east']))
@@ -309,6 +329,13 @@ def sql_pairs(catalogue, profiles=None):
                  '\n ) AS pairs(source,target) WHERE source=p_source AND target=p_target)\n$$;\n'
                  f'REVOKE ALL ON FUNCTION {function}(TEXT,TEXT) FROM PUBLIC,oteryn_game_control;\n'
                  f'GRANT EXECUTE ON FUNCTION {function}(TEXT,TEXT) TO oteryn_game_runtime;\n')
+    eligible = ',\n'.join(f"  ('oteryn:item.tibia.i{row['item_id']}')" for row in catalogue['wrap_eligibility'])
+    text += ('CREATE OR REPLACE FUNCTION game_house_native_wrap_eligible(p_source TEXT)\n'
+             'RETURNS BOOLEAN LANGUAGE sql IMMUTABLE AS $$\n'
+             ' SELECT EXISTS(SELECT 1 FROM (VALUES\n' + eligible +
+             '\n ) AS eligible(source) WHERE source=p_source)\n$$;\n'
+             'REVOKE ALL ON FUNCTION game_house_native_wrap_eligible(TEXT) FROM PUBLIC,oteryn_game_control;\n'
+             'GRANT EXECUTE ON FUNCTION game_house_native_wrap_eligible(TEXT) TO oteryn_game_runtime;\n')
     bed_pairs = set()
     for kit in catalogue['bed_kits']:
         for orientation, originals in [('south', (2491, 5501, 15506)), ('east', (2489, 5499, 15508))]:

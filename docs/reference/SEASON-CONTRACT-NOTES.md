@@ -925,3 +925,19 @@ and line citations are recorded by seasonal_item_profiles.py). Existing
 canonical identities are reused. Four capture tests pass0.379s; no new number
 or migration is allocated. Actual NPC exchange callers remain in progress.
 Native provider registration awaits its required normal Prey model refresh.
+
+### Initialized appearance wrap eligibility
+
+The source pipeline now captures2,126 qualified House profiles and1,860
+initialized wrap-eligible forms; explicit XMLpairs remain1,617. Crystal
+item_parse.cpp203-206 and items.cpp238-241 establish XML and appearance-default
+eligibility. Player wrapping uses decoration kit23398 per game.cpp4897-4913;
+XML target values do not replace that production rule. Existing legacy207
+6355/6371 compatibility remains separately fenced.
+
+Ten House source tests pass2.213s. Actual PostgreSQL initialization plus
+positive rack/transient eligibility and negative unknown/reverse assertions
+passes4.987s. The normal SRX1 dispenser owner coalesces only its exact captured
+profile plus verified source-top metadata; three regressions pass2.265s,
+including changed-weight and unverified-top refusals. Required normal Prey
+refresh/provider regeneration is still running, so this is source capture only.
