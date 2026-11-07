@@ -817,3 +817,16 @@ Two main test fixtures now provide WVAR's new optional bundle/variant fields;
 their existing layer and fungus assertions are retained. Prey completed15 cases
 for776 creatures against the merged source loot. Clippy, pins and PostgreSQL
 remain pending at this compiling checkpoint.
+
+### WVAR regenerated compiling checkpoint
+
+All15 changed crates pass Clippy all targets/features with `-D warnings`
+(285.315s). Native registration freshness passes84.339s. Quest-authoring ran
+all93 modules in509.049s:92 passed; the sole stale Grizzly hash was then
+regenerated and its test passed3.909s. Native/Prey, dependent shop/potion and
+static imbuement evidence were regenerated with repository tooling. The new
+bounded evidence refresh proves all34,111 canonical Items equal pinned main
+plus verified WVAR admissions before invoking existing evidence producers;
+257 imbuement tests pass84.997s in the prepared Python environment. Pin refresh
+passes249.826s. Pin check and native PostgreSQL execution are still pending;
+this checkpoint does not claim WVAR qualified in the package yet.

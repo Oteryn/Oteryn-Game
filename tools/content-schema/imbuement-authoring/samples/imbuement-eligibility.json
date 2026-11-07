@@ -97004,7 +97004,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-32000-32499.json",
-        "canonical_definition_sha256": "f7ac741992bd5dd0b2d9ddb6eb49f9ec01fd4526e7af1ed99e840291fa90c7f5",
+        "canonical_definition_sha256": "51968c5977f38cced79e36cda132b61b2a80c1ce07b91ccddf6565926dc0cc6a",
         "canonical_name": "magma boots",
         "wiki_observations": [
           {
@@ -98371,7 +98371,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-18000-18499.json",
-        "canonical_definition_sha256": "34dd1b13f778d4ee55cc1817d057154136202af06b20f0aa6b4d71d1d3ec4906",
+        "canonical_definition_sha256": "d8f55f888f1efbe299e32c7b82583e394ce9ae35766924bf06153b6d1e8c9b4e",
         "canonical_name": "boots of haste",
         "wiki_observations": [
           {
@@ -98989,7 +98989,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-19500-19999.json",
-        "canonical_definition_sha256": "15709f34f2d6ae90a826eaa7974f58dbc243453abeaf0deac6db61cf046e558b",
+        "canonical_definition_sha256": "93eecf8994e8df74c030e74fa4137264548f631eae6015ddde4de0e714566697",
         "canonical_name": "war hammer",
         "wiki_observations": [
           {
@@ -99110,7 +99110,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "8ef26a651053447472c5f025e3b97335a2e7af1e95080054880d4d2577d46aaf",
+        "canonical_definition_sha256": "81da858625e10e3827ab6076b68f2b904c743cacaf87c09146e191448ecb61f9",
         "canonical_name": "giant sword",
         "wiki_observations": [
           {
@@ -99473,7 +99473,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "8f4217a08f3bef4ffc4fb19d0ce2006131e6a1418b03012f0c6d93935f336ddb",
+        "canonical_definition_sha256": "cabf81cf2fcdf98048cb58f06619524203bbf8c35995863f99bfdd83316dc9cc",
         "canonical_name": "broadsword",
         "wiki_observations": [
           {
@@ -100910,7 +100910,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "931f4e3f32ab2dc625e084a9a0b33b1b38a4624242d2ee04e517d59980562a47",
+        "canonical_definition_sha256": "ce4f7c92b7fc5cfb19371cc603dc124ea1520ca01c00e7bd911cb8725ab32e55",
         "canonical_name": "epee",
         "wiki_observations": [
           {
@@ -101878,7 +101878,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "8aaaf62866b5ed2e06c06d7b62abcf5a50114bd03e3e24b30216eaef3326048b",
+        "canonical_definition_sha256": "d11457f5cc98f9c1c40611b59cb9ff961a0c19b062ce6a0ad299b8472fadfdff",
         "canonical_name": "war axe",
         "wiki_observations": [
           {
@@ -102244,7 +102244,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "c1e875b0e34e12e30dba50ef5869de0d9c802ada5dffa645c5564dbc04806905",
+        "canonical_definition_sha256": "8e0682c5ac92099f5735a759adce7db6a71a84557b76e3e23ab1f6ffcd11b352",
         "canonical_name": "chain armor",
         "wiki_observations": [
           {
@@ -102715,7 +102715,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "412f6f48b52c1593b0150b98a31a97e8f429b045a200fdd8a5ffa7045163f2cb",
+        "canonical_definition_sha256": "771d06685299923ca8575ac91550e5d68c122c0ef3a9e173e18a6b738879f126",
         "canonical_name": "warrior helmet",
         "wiki_observations": [
           {
@@ -103043,7 +103043,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "affaf4b856a16bdcbc0963c2cfbd9d29418665d9b9a9554a5f8c3021be7c591c",
+        "canonical_definition_sha256": "81b65d6f25550236ceed780879b7c9c556ae5f27d052940b0f55a35f28552ecd",
         "canonical_name": "crown armor",
         "wiki_observations": [
           {
@@ -103154,7 +103154,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "82929450dd39c1258f0896a5f171893ab688f307d5acc5dc283f29275a2288f3",
+        "canonical_definition_sha256": "8f4546dd6720b57171262e393ea47e5d007e0ffd9155062077410b0e240787c4",
         "canonical_name": "crown helmet",
         "wiki_observations": [
           {
@@ -103640,7 +103640,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "c3686916e278a6c30c479a756ecde14fdddd3a8a015584e6087a15c30b40fa18",
+        "canonical_definition_sha256": "f09726dc9ea2d85d7772e537745feeb5e863fefbc75886951f81ef315233d224",
         "canonical_name": "crusader helmet",
         "wiki_observations": [
           {
@@ -104733,7 +104733,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20500-20999.json",
-        "canonical_definition_sha256": "68b1131f7da27d76240add76e9e5eb65ef54eb565f47be192392f744d82c5e1e",
+        "canonical_definition_sha256": "5ee2ea4941bfea825ba7329f2078732533192e3826c9b67c8cdd94d4bf76090f",
         "canonical_name": "steel shield",
         "wiki_observations": [
           {
@@ -106804,7 +106804,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "39c3d7d0351a59d9a2c589f39691c28f4d8e64fb19c98ee292847b9626772b67",
+        "canonical_definition_sha256": "286e92817d4fdf60e2a354745c7fcdb0bec5c4bfeac7414efc5f577f3c489709",
         "canonical_name": "sandals",
         "wiki_observations": [
           {
@@ -106890,7 +106890,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "679567280577daecf25eaaaf3d553238e4f808315ef5d20487830f64d9f7678a",
+        "canonical_definition_sha256": "d56651400e9b84b5627c364bc7feac6a5e42cec9d8954661a60e4235a2084caf",
         "canonical_name": "leather boots",
         "wiki_observations": [
           {
@@ -107054,7 +107054,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-21000-21499.json",
-        "canonical_definition_sha256": "187cb89a990449d889c094ad2a3d19e2846bce8bce88f9e615a694c5a3ccd1e0",
+        "canonical_definition_sha256": "4d99073ef6732c909b3f0d138e1c655e18475224821ed54148f590c438b9e639",
         "canonical_name": "steel boots",
         "wiki_observations": [
           {
@@ -108855,7 +108855,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "d93cd84c3a61a4d584024a95719599ef582a51a6be5f3f1677499560d2cabffd",
+        "canonical_definition_sha256": "85ad78ede52845da0adaf4150ac3672254c427cb9253b896785cf46c2a9d33ab",
         "canonical_name": "relic sword",
         "wiki_observations": [
           {
@@ -110541,7 +110541,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "87a3a266aabcd7dd0c57cac356d6da71a4e3d810483ae2185bee781249bc062e",
+        "canonical_definition_sha256": "efd723e19eec7b83952a1bb2e2e26a01028d7207cfcc4ef1d2cd612126af6023",
         "canonical_name": "butcher's axe",
         "wiki_observations": [
           {
@@ -110662,7 +110662,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "b9f0e549d839546751b68b9a8e93dad20052c666630d07fb92f84f6bef409c95",
+        "canonical_definition_sha256": "594009c9883b0ae228af2ced2f5819a29274d20bdef7277ba3b1269fc18b8e0c",
         "canonical_name": "abyss hammer",
         "wiki_observations": [
           {
@@ -112598,7 +112598,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "fbc62e35bb9afa461f0b4e245730dc8bb9ed21487940a207a948c0c6f50c0ad1",
+        "canonical_definition_sha256": "61f04c7933b9d23a3e04aaad0da91e43ff8a9766108d7589379b2449fa00be37",
         "canonical_name": "elvish bow",
         "wiki_observations": [
           {
@@ -112719,7 +112719,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "4701d665f0fad0e2630cad540af9d8c35214903b8c0ed75c89d91c0f924813d8",
+        "canonical_definition_sha256": "94a19baf3413b8c73ec8d0a47528a48a26a1a08121334d92741554a64c00b4fe",
         "canonical_name": "shadow sceptre",
         "wiki_observations": [
           {
@@ -121798,7 +121798,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "67ca68abc84436b88c36d89199cb17b49846ecc1a5b4f67a03e77083bdb0d5ec",
+        "canonical_definition_sha256": "d7f9c7f38cb37dd30c50c25df2390738c3e1e3201ff736a077bcfef0f127fe2b",
         "canonical_name": "carapace shield",
         "wiki_observations": [
           {
@@ -121909,7 +121909,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "5ca0dc872f29cf5680929f15f3d21e984ca5144083e3f2985cf8ec36bde9f4dd",
+        "canonical_definition_sha256": "4c7d38c664075851c4aa8a81e932313b4044edd4ec56c89cd8466f6a3561b0d1",
         "canonical_name": "hive scythe",
         "wiki_observations": [
           {
@@ -122030,7 +122030,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "0da558c60481093a531b45e56a1d9e4d7b0419b3d3c59a902f28c1ebc83c23fb",
+        "canonical_definition_sha256": "7a8afb3ff490d40ae63ea07c38a6f5eb608f7906b48c8de89f10249da480de23",
         "canonical_name": "hive bow",
         "wiki_observations": [
           {
@@ -122232,7 +122232,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-04000-04499.json",
-        "canonical_definition_sha256": "60b7f26caab86a4b36f2323ea2d6672973c5aed8e22493ab95b31a04322f6f9a",
+        "canonical_definition_sha256": "a716eeb079b1ebb4a040d7a87e987f2919e3c306df87908541d2970992851987",
         "canonical_name": "buggy backpack",
         "wiki_observations": [
           {

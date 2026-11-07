@@ -249,7 +249,7 @@
     "Crawler Head Plating": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "54127511e6afca312d58867d3e56a9ccc3bec6df95d92233167e8c900099563b",
+          "definition_sha256": "7ab6da019ef8f6b1aa044c85c39f3518e3d12d3b90bf1f867411876c21880344",
           "name": "crawler head plating",
           "path": "content/items/definitions/items-04000-04499.json"
         },
@@ -601,7 +601,7 @@
     "Elven Scouting Glass": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c1bbcdfc17e197277bbdfce27f0cb1ed6a50272074ee3ed4e049cc7cb3285d38",
+          "definition_sha256": "0e920ac7b365cd70e1ac9f8a7e287079439c6cfdc0e9d637ff95ccd3d6e47ce9",
           "name": "elven scouting glass",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -633,7 +633,7 @@
     "Elvish Talisman": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6322ab477d82e3343593883b8d4d2295ecc03f0c2768aca7481040f6867fdcf0",
+          "definition_sha256": "ddc43d2e53e3d92350c20e0a26a221b0d50e7d50b0002bc1de9d3043cdcd0aef",
           "name": "elvish talisman",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -729,7 +729,7 @@
     "Fiery Heart": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "ebf3b8c1044d744a7ff90941607e68da6d488b3e24cc6eff3eb13624f4f09329",
+          "definition_sha256": "cb27da474b29a781ea2dc905a7c16c266e3c992d679acc496079996e55dfe1d2",
           "name": "fiery heart",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -857,7 +857,7 @@
     "Gloom Wolf Fur": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "3e15a1e2a4e6c240451badc91abef33a34aa1f7100b093f6a297ffff2fc8b21e",
+          "definition_sha256": "a756251e5c2cca6a175a9c823c10b3b07ab4b323ddf4a5b35211ec0b215f59b0",
           "name": "gloom wolf fur",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -1305,7 +1305,7 @@
     "Orc Tooth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "9849ea44bf7c76dc74a6c07d22cae9b3227441ac92a464cfbc88468048f5c5bc",
+          "definition_sha256": "9cdf63431ebc6d51d9010b07d4248308d93095bd389a9a6dbbbada304425f1c2",
           "name": "orc tooth",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1657,7 +1657,7 @@
     "Rope Belt": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6243a9adfcec2915be34cd06bfc2fb2eb8f59c1ad6da17d3e65eae433801e36a",
+          "definition_sha256": "475bfdac801234e9e1d2f9fbcdf47246970ffe17cf42b2f6be62a88b8452d9e7",
           "name": "rope belt",
           "path": "content/items/definitions/items-01000-01499.json"
         },

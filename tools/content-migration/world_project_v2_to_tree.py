@@ -717,6 +717,8 @@ def main() -> int:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
+    from refresh_wvar_evidence import refresh as refresh_wvar_evidence
+    refresh_wvar_evidence(ROOT)
     # Static rulesets are outside the legacy DefinitionFamily registry. Restore
     # their separately qualified registration after rebuilding the legacy tree.
     subprocess.run([sys.executable,
