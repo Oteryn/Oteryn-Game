@@ -33,7 +33,6 @@ pub mod loader;
 pub mod log;
 pub mod monk_shrines;
 pub mod native_rules;
-#[cfg(test)]
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;

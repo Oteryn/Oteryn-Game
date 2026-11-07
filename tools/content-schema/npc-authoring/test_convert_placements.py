@@ -1,5 +1,6 @@
 """Tests for convert_placements.py: the Npc.Placement family is the scoped promotion candidates."""
 
+import hashlib
 import json
 import re
 import sys
@@ -27,6 +28,33 @@ class ConvertPlacementsTest(unittest.TestCase):
         for name, text in self.files.items():
             self.assertEqual((cp.OUT / name).read_text(), text, name)
         self.assertEqual({p.name for p in cp.OUT.glob("*.json")}, set(self.files))
+
+    def test_reviewed_spawn_anchors_preserve_roaming_observations_and_source_hashes(self):
+        names = {'a_restless_soul', 'chemar', 'eclesius', 'eshaya', 'hagor', 'malor'}
+        capture_bytes = cp.CANDIDATES.read_bytes()
+        captures = {r['identity']['key']: r for r in json.loads(capture_bytes)['candidates']}
+        rows = json.loads((cp.HERE / 'samples/npcfix-retail-placements.json').read_text())
+        actual = {r['declaration']['npc']: r['declaration']['cell'] for r in self.records}
+        checked = set()
+        for row in rows:
+            key = row['npc']
+            if key.removeprefix('oteryn:npc.') not in names:
+                continue
+            with self.subTest(npc=key):
+                capture = captures[key]
+                anchor = capture['placements'][0]['position']
+                selected = row['position']
+                self.assertEqual(actual[key], {'x': selected['x'], 'y': selected['y'], 'floor': selected['z']})
+                self.assertEqual(row['captured_spawn_anchor'], anchor)
+                self.assertEqual(selected['z'], anchor['z'])
+                self.assertLessEqual(max(abs(selected['x']-anchor['x']), abs(selected['y']-anchor['y'])), capture['movement']['walk_radius'])
+                observed = row['audited_roaming_position']
+                self.assertEqual(observed['z'], anchor['z'])
+                self.assertLessEqual(max(abs(observed['x']-anchor['x']), abs(observed['y']-anchor['y'])), capture['movement']['walk_radius'])
+                self.assertEqual(row['native_source']['sha256'], hashlib.sha256(capture_bytes).hexdigest())
+                self.assertEqual(row['origin'], 'native')
+                checked.add(key.removeprefix('oteryn:npc.'))
+        self.assertEqual(checked, names)
 
     def test_npcfix_retail_population_has_each_audited_cell(self):
         expected = json.loads((cp.HERE / "samples/npcfix-retail-placements.json").read_text())

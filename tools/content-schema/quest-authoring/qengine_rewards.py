@@ -333,7 +333,7 @@ def build():
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,encoded)
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,native.spell_import.canonical_bytes)
     return generated
 
 
