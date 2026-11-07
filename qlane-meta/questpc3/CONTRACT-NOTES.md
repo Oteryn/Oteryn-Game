@@ -9,3 +9,13 @@ Use retained Crystal source at9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d, data-glo
 The first successful greeting checks SantiagoNpcGreetStorage below1, then sets it and SantiagoQuestLog to1 in the same quest transaction. Reopening the conversation cannot restart that write. Use the existing NPC greeting vocabulary and fenced common quest dialogue executor. This state-only greeting has no inventory, currency or XP authority.
 
 Santiago's later greeting at source santiago.lua:88-99 consumes three physical item7882 legs and grants100 experience. A death counter is insufficient proof for that hand-in. The item requirement, source progress and XP obligation must compose atomically when that slice is authored.
+
+## Pilgrimage of Ashes: chosen recipe and free grants
+
+The canonical chosen recipe is content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/oteryn_recipe/payload/recipe at5e72a3f0b. Preserve its fixed Guide → Norf → Humphrey → Edala → Kawill → Pydar → Eremo → Guide route, Premium requirement, once-only completion and20 Platinum Coins. Current owner instructions require actual blessings despite the historical recipe's dialogue-only adaptation.
+
+The generic Guide NPC target means the existing named town guides (guide_alexena through the other canonical guide identities in content/npcs/definitions/npcs-00500-00999.json). No Dawnport NPC is included. These are an interchangeable guide archetype: start/completion may use any member. This resolves the unspecified guide identity within the10-minute investigation budget.
+
+Grant Spiritual Shielding at Norf, Embrace at Humphrey, Fire at Edala, Spark after Pydar (Kawill is the preceding visit), and Wisdom at Eremo. Match the existing rulesets/character/blessings/catalogue.json Service/NPC identities exactly. Each new blessing and quest stage share a fenced Quest receipt, with a separate audited quest-grant provenance accepted alongside existing paid purchase provenance. Paid purchase pricing remains unchanged. An already-owned blessing is retained with its original provenance; the required visit may advance without a duplicate grant or fee. Require current Premium through the existing transaction-aware Premium owner. Missing/expired Premium or a mismatched stage/keyword writes nothing.
+
+Selected migration number1096 was checked against origin/main91afbe0ba1 and open PR claims with the repository number tool. Recheck before publication; never modify an existing migration to add this mechanism.

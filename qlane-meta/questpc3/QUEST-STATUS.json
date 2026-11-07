@@ -849,8 +849,12 @@
       "clippy": "GREEN on pre-merge slice, 1m38s",
       "integration": {
         "incoming": "9d3330e59a1ce0f3de439d27f26ad760fb5dbe72",
-        "status": "Combined cargo check GREEN (2m42s); focused composition PG validation pending after immediate owner-authorized push",
+        "status": "Three local focused PG cases GREEN; Clippy RUNNING",
         "rule": "Shared reward callback precedes state-only tutorial fallback; preserve both NPC template flags, walkaway behavior and all catalogue revision material. Own greeting receipt test now asserts the integrated shared callback key."
+      },
+      "publication": {
+        "commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "remote_verified": true
       }
     },
     "effective_entries": [
@@ -1348,6 +1352,43 @@
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_sum.rs": "6e18451e6a76582748cb24ea40a3767d16f4d1bcd71e21763256b35a35c6acb8",
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_npc_programs.rs": "5316fa4183a42dc51f850fc60f0dcc424de350e367f6b3efd1a5515c58cda883"
         }
+      },
+      "greeting_merge_02": {
+        "own_greeting": {
+          "log": "/tmp/questpc3-merged-own-greet-pg.log",
+          "sha256": "432b578a75c90b43ae74865f1a46cf3a6b4170b26b2b1272f10c3cc6532928e6",
+          "proof": [
+            "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=114538 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 114.54s"
+          ]
+        },
+        "six_programs": {
+          "log": "/tmp/questpc3-merged-npc-programs-pg.log",
+          "sha256": "f8178e70a1d99bf11df16a6d982ddd67ebd5d4b9fa6cc9ffc221597638a18da4",
+          "proof": [
+            "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED phase=before_source_greet duration_ms=128339",
+            "QUESTPC3_NPC POSTGRES_ASSERTION_REACHED beginning_greet duration_ms=128832",
+            "QUESTPC3_NPC POSTGRES_CASE_COMPLETED beginning_greet duration_ms=130503",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2552 filtered out; finished in 130.51s"
+          ]
+        },
+        "sum": {
+          "log": "/tmp/questpc3-merged-sum-pg.log",
+          "sha256": "17c1130fcec1cb2c5dc74914ca7384d652a344129ebcd3fbc8e3a00cbdbf66a6",
+          "proof": [
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=0 duration_ms=80746",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=1 duration_ms=80802",
+            "QUEST_L4_SUM POSTGRES_ASSERTION_REACHED case=2 duration_ms=80944",
+            "QUEST_L4_SUM POSTGRES_CASE_COMPLETED duration_ms=81697 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2553 filtered out; finished in 81.71s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-merged-greet-clippy.log",
+          "sha256": null
+        }
       }
     },
     "source_corrections": [
@@ -1370,7 +1411,7 @@
       "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T00:22:25.458867+00:00",
+    "updated_at": "2026-11-07T00:51:38.843468+00:00",
     "previous_publication": {
       "batch": "native-counters-01",
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
@@ -1566,6 +1607,13 @@
       },
       "status": "GREEN combined validation; strict Clippy confirmed here, superseding remote pending-Clippy note.",
       "combined_proof": "checks.npc_sum_integration"
+    },
+    "next_batch": {
+      "id": "pilgrimage-blessings-01",
+      "phase": "RED",
+      "failure": "Real Norf NPC_TALK returns NoConversation; PostgreSQL case151.21s",
+      "log": "/tmp/questpc3-pilgrimage-red.log",
+      "implementation": "Reuse game_quest_reward_sources and existing blessing owner; add canonical regular Services and current-Premium-gated free grant participant. Choices recorded in CONTRACT-NOTES.md."
     }
   }
 }
