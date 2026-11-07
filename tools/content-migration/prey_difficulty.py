@@ -475,7 +475,7 @@ def main():
     root = args.root.resolve()
     if args.check and (args.simulate or args.model_input):
         parser.error("--check cannot write model inputs or simulation results")
-    profiles = fresh_profiles(root)
+    profiles = fresh_profiles(root, refresh_loot=args.simulate)
     if args.model_input:
         args.model_input.write_bytes(encoded(model_input(root, profiles)))
         return
