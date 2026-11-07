@@ -252,3 +252,14 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   at7484-7489. This resolves an authored approximation; historical ambiguous
   import provenance remains unchanged. All seven chosen reward identities
   already have native item profiles; no new guessed identity is needed.
+
+- 2026-11-07 source-map native objective kernel PG RED79.95s, PostgreSQL180006,
+  /tmp/questpc2-native-objective-atomic-link-retry-pg.log. Source map collision
+  and prior-route fixture setup passed; actual source Dragon death was refused
+  corpse_item_inadmissible before queue capture. Existing native profile points
+  to corpse5973. Pinned items.xml:12095-12108,16191-16195, SHA256
+  1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+  gives5973(12slots,10s)->4025(10slots,300s)->4026(10slots,300s)->4027(60s,end).
+  Reuse generic encounter_corpse_items.py and exact independent WorldObject
+  Item pointers (objects-00500-00999 and01500-01999). Generator's3tests pass.
+  This is source custody admission work, not whole Elvenbane qualification.

@@ -1874,5 +1874,21 @@
       "current_retry": "/tmp/questpc2-complete-link-recovered-pg.log; prior attempt compiled but link ran out of disk. Inactive failed linker .tmp and257 temporary CGU copies removed; completed latest READY retained.",
       "runtime_published": false
     }
+  },
+  "native_objective_atomic_authoring_checkpoint": {
+    "state": "AUTHORING",
+    "published_scope": "Verified source/proof/resume checkpoint only; runtime/data changes remain local until green.",
+    "postgres_red_log": "/tmp/questpc2-native-objective-atomic-link-retry-pg.log",
+    "postgres_version": 180006,
+    "duration_seconds": 79.95,
+    "observed_failure": "Actual source dragon corpse5973 inadmissible before native queue; no atomic objective grant claimed.",
+    "source_chain": [
+      5973,
+      4025,
+      4026,
+      4027
+    ],
+    "source_tests": "3 tests PASS1.599s; /tmp/questpc2-dragon-corpse-python.log",
+    "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward."
   }
 }
