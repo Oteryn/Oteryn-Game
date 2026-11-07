@@ -414,22 +414,22 @@ mod tests {
                 .iter()
                 .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
         );
-        let source: serde_json::Value =
-            serde_json::from_str(crate::quest::world_callbacks::EMBEDDED)
-                .map_err(|error| error.to_string())?;
-        let mut expected: std::collections::BTreeSet<_> = source["callbacks"]
-            .as_array()
-            .ok_or("source callbacks")?
-            .iter()
-            .filter(|callback| callback["quest"] != "oteryn:quest.dawnport_quest")
-            .map(|callback| {
-                callback["key"]
-                    .as_str()
-                    .map(str::to_owned)
-                    .ok_or("callback key")
-            })
-            .collect::<Result<_, _>>()?;
+        let mut expected = std::collections::BTreeSet::new();
+        for document in [
+            crate::quest::world_callbacks::EMBEDDED,
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+        ] {
+            let source: serde_json::Value =
+                serde_json::from_str(document).map_err(|error| error.to_string())?;
+            for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                }
+            }
+        }
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
+        expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(
             callbacks
                 .into_iter()

@@ -105,7 +105,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 !slug(&s.track, "oteryn:", b"._/:-", 128)
                     || s.minimum > s.maximum
                     || s.read_only
-                    || s.set_if.is_some()
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value) || s.preserve
+                    })
             })
             || (!c.repeatable
                 && c.storage
@@ -191,7 +193,12 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
                     } else {
-                        QuestEffectKind::Set(s.set)
+                        s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
+                            QuestEffectKind::SetIf {
+                                equals,
+                                value: s.set,
+                            }
+                        })
                     },
                 })
                 .collect(),
