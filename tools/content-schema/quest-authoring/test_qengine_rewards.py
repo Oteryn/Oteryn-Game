@@ -2,8 +2,7 @@
 import copy
 import json
 import unittest
-from jsonschema import Draft202012Validator
-from jsonschema.exceptions import ValidationError
+from jsonschema import Draft202012Validator, ValidationError
 import qengine_rewards as q
 
 
@@ -59,6 +58,29 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(len(matches), 0 if value == 1 else 1)
         self.assertEqual(q.questl2_rewards.source_path(rows[0]['npc']), 'data-global/npc/an_old_dragon_lord.lua')
 
+    def test_source_stake_price_composes_paid_repeat_without_a_token_cost(self):
+        row = next(c for c in self.callbacks['callbacks'] if c['key'].endswith('exchange-gamon-stake'))
+        self.assertEqual(row['fee'], {'gold': 5000, 'include_bank': True})
+        self.assertTrue(row['repeatable'])
+        self.assertEqual(row['take'], [])
+        self.assertEqual(row['give'], {'item': 'oteryn:item.tibia.i5941', 'count': 1, 'contents': []})
+        self.assertTrue(all(s['preserve'] for s in row['storage']))
+        q.validate_callbacks({'schema': 1, 'callbacks': [row]})
+        for edit in range(5):
+            bad = copy.deepcopy(row)
+            if edit == 0:
+                bad['fee']['gold'] = 0
+            elif edit == 1:
+                bad['fee']['gold'] = 1000000000001
+            elif edit == 2:
+                bad['fee']['include_bank'] = 'true'
+            elif edit == 3:
+                bad['take'] = [{'item': 'oteryn:item.tibia.i3031', 'count': 1}]
+            else:
+                bad.pop('fee')
+            with self.subTest(edit=edit), self.assertRaises((ValueError, ValidationError)):
+                q.validate_callbacks({'schema': 1, 'callbacks': [bad]})
+
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],
@@ -85,12 +107,12 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-', 'draconia-'))
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-'))
                     and c['key'].split('/')[-1] != 'sam-kroox'}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),56)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),58)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

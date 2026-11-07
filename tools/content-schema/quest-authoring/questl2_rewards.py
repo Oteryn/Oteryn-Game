@@ -3,14 +3,14 @@ import hashlib
 import re
 
 
-NPCS = ('an_old_dragon_lord', 'dorian', 'hairycles', 'jorge', 'kroox')
+NPCS = ('an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'quentin')
 NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
 
 ITEMS = {
-    227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
@@ -26,7 +26,7 @@ def append(callbacks, offers, inputs, pin):
                 'set': after, **({'preserve': True} if preserve else {})}
 
     def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None,
-            give=None, repeatable=False, source_text=None, npc_key=None):
+            give=None, repeatable=False, source_text=None, npc_key=None, fee=None):
         path = f'data-global/npc/{npc}.lua'
         callback = {
             'key': 'oteryn:quest-reward/' + name,
@@ -46,6 +46,8 @@ def append(callbacks, offers, inputs, pin):
         proof = source_text or reply
         if proof not in inputs[path].decode():
             raise ValueError('L2 reward reply is absent from donor: ' + name)
+        if fee is not None:
+            callback['fee'] = fee
         if repeatable:
             callback['repeatable'] = True
         if source_text:
@@ -60,6 +62,18 @@ def append(callbacks, offers, inputs, pin):
                 raise ValueError('L2 offer is absent from donor: ' + name)
             offers.append({'npc': callback['npc'], 'keywords': words, 'topic': 0,
                            'next_topic': topic, 'storage': storage, 'reply': [text]})
+
+    friends = 'u7_8/friends_and_traders/'
+    add('exchange-quentin-start', 'friends_and_traders', 'quentin', ['yes'],
+        [state(friends + 'default_start', -1, 1, 1),
+         state(friends + 'the_blessed_stake', -1, 1, 0)],
+        "Alright, I guess you need a stake first. Maybe Gamon can help you, the leg of a chair or something could just do. Try asking him for a stake, and if you have one, bring it back to me.",
+        topic=1, offer=(['stake'], 'Is this stake really important enough to you so that you are willing to take this burden?'))
+    add('exchange-gamon-stake', 'friends_and_traders', 'gamon', ['yes'],
+        [state(friends + 'the_blessed_stake', 1, 1, 9223372036854775807, preserve=True)],
+        "Argh... my heart aches! Alright... a promise is a promise. Here - take this wooden stake, and now get lost.",
+        give=(5941, 1), topic=1, repeatable=True, fee={'gold':5000, 'include_bank':True},
+        offer=(['stake'], "Making a stake from a chair? Are you insane??! I won't waste my chairs on you for free! You will have to pay for it, but since I consider your plan a blasphemy, it will cost 5000 gold pieces. Okay?"))
 
     dragon_npc = 'oteryn:npc.an_old_dragonlord'
     dragon_track = 'oteryn:quest-progress/dragonfetish'

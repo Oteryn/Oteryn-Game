@@ -32,6 +32,14 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Exact source price; only the durable fee owner may consume the funds.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -43,6 +51,8 @@ pub struct RewardCallback {
     pub next_topic: u16,
     pub storage: Vec<Storage>,
     pub take: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -114,7 +124,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     .iter()
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || (c.repeatable
-                && (c.take.is_empty()
+                && ((c.take.is_empty() && c.fee.is_none())
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || c.achievement.is_some()))
@@ -123,6 +133,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take

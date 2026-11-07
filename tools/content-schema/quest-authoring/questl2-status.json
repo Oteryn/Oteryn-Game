@@ -263,6 +263,43 @@
         "Omitted recovery preserves legacy behavior"
       ],
       "qualification_scope": "Shared engine mechanism only; no full quest qualification is inferred."
+    },
+    {
+      "name": "atomic native monetary fees for repeatable quest item issuance",
+      "status": "QUALIFIED",
+      "migration": 1142,
+      "reused_from": "33b640335067df5d5582460bf06ce818d39b9d4d",
+      "postgres_test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
+      "postgres_version": "18.6",
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake",
+        "duration_seconds": 79.909239487,
+        "failure": "Quest fee transaction rejected without SQL fee/source admission"
+      },
+      "integration_red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-paid-stake",
+        "duration_seconds": 76.259353117,
+        "failure": "Migration 1141 rejected a positive monetary fee as a repeatable cost"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake",
+        "duration_seconds": 76.849252968,
+        "passed": 1,
+        "failed": 0
+      },
+      "proves": [
+        "Quentin issues the stake mission without seeded quest progress",
+        "Unfunded purchase preserves mission progress and inventory",
+        "Two 5000-gold purchases produce exactly two wooden stakes and exact native change",
+        "Replayed confirmation does not charge or issue twice",
+        "Fee burns and immutable quest source receipts are committed together"
+      ],
+      "source": {
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "file": "data-global/npc/gamon.lua",
+        "lines": "59-71",
+        "sha256": "466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+      }
     }
   ],
   "entries": [
@@ -714,8 +751,10 @@
       "open_pr_check": "next-free-numbers.py: no 1140-1149 claims",
       "numbers": [
         1140,
-        1141
-      ]
+        1141,
+        1142
+      ],
+      "payment_checked_main": "ca5a91b59"
     },
     "world_pins": {
       "regenerated": true,
@@ -1001,6 +1040,22 @@
         "exit_code": 0
       },
       "post_merge_formatting": "cargo fmt --all --check and git diff --check passed"
+    },
+    "payment_slice": {
+      "authoring_tests": 14,
+      "lane_authoring_tests": 11,
+      "world_pin": "6cce2303faba6b371f3b718d65e193f90b60968779069e80ed803575cdc60015",
+      "world_bytes": 31102035,
+      "pin_check": true,
+      "formatting": true,
+      "clippy_packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-dispatch"
+      ],
+      "clippy_deny_warnings": true,
+      "all_targets": true,
+      "all_features": true
     }
   },
   "cross_lane_inspection": {

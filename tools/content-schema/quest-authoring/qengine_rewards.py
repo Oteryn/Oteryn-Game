@@ -300,8 +300,9 @@ def validate_callbacks(document):
             or (not callback.get('repeatable',False)
                 and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
             or (callback.get('repeatable',False)
-                and (not callback['take'] or not callback['give']
+                and ((not callback['take'] and not callback.get('fee')) or not callback['give']
                      or callback['outfit'] or callback['achievement']))
+            or (callback.get('fee') is not None and any(i['item'] in {'oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043'} for i in callback['take']))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

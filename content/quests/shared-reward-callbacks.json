@@ -329,6 +329,78 @@
       "repeatable": true
     },
     {
+      "key": "oteryn:quest-reward/exchange-gamon-stake",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.gamon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": 1,
+          "maximum": 9223372036854775807,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5941",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Argh... my heart aches! Alright... a promise is a promise. Here - take this wooden stake, and now get lost."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gamon.lua:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      },
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-quentin-start",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Alright, I guess you need a stake first. Maybe Gamon can help you, the leg of a chair or something could just do. Try asking him for a stake, and if you have one, bring it back to me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/hallowed-holy-water",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.costello",
