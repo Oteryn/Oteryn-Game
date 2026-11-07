@@ -7349,6 +7349,26 @@
         "checked_at": "2026-11-07 14:21 UTC",
         "result": "No QENGINE2/QBASE migrations integrated; conditional merge not applicable."
       }
+    },
+    "paradox_story_batch_26": {
+      "status": "SOURCE_PLAN_CHECKPOINT_TEST_COMPILE_REPAIR",
+      "previous_pushed_head": "bc9c9ce60d6460ecb1d4faa833afa7ca6ef13335",
+      "decision_at": "2026-11-07 14:34 UTC",
+      "scope": "Four selected ordered NPC progression contacts: Zoltan,Padreia,Lubo,prisoner lesson; three native cases ordered/premature/replay. Oldrak level/premium gate reused.",
+      "source_document": "content/quests/authoring/paradox-tower.md; retained Crystal9f5a72c source SHA matches cited primary files for new contacts.",
+      "native_facts": "/tmp/questpc4-paradox-npc-native-facts.json independently decoded source centers/west approaches; no House/attrs/geometry changes.",
+      "authority": "Same catalogue-admitted-key NPC placement check as production boot; real protocol NPC conversations preserve topics within one connection. Typed XP owner arranges level30, no SQL quest progress seeds.",
+      "red_session": 20347,
+      "red_log": "/tmp/questpc4-paradox-story-red2.log",
+      "production": "New NPC callbacks remain absent until actual PostgreSQL RED. Reuse existing NPC callbacks, read-only topic offers and account achievement grant.",
+      "next_sql": 1259,
+      "whole_entries_remaining": 17,
+      "compile_repair": {
+        "error": "E0599 update_admitted_snapshot does not exist at l6_paradox_story.rs:322",
+        "fix": "Match existing quest_world_callbacks::wire: retain returned admitted session directly; removed nonexistent call.",
+        "evidence": "First attempt was compile-only; no PostgreSQL case or behavior RED claimed. Repaired test build running."
+      },
+      "publication": "Source decision/status metadata only, runtime and test source in this checkpoint remain last green bc9c9ce60; scaffold stays uncommitted until verified compile."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
