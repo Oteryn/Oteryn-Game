@@ -785,6 +785,72 @@
         }
       },
       "actor_kind": "monster"
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-climb-complete",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31905,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/story",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/floor-four-arrived",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-four-openings",
+          "minimum": 0,
+          "maximum": 65535,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-five-openings",
+          "minimum": 0,
+          "maximum": 65535,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l6/paradox/climb-complete",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": 30,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have climbed the Paradox Tower.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_fifth_floor_lever.lua:1-41"
+      ]
     }
   ]
 }

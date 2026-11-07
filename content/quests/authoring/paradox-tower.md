@@ -110,3 +110,11 @@ scripts; each is identical:
 - [second-floor lever](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/action_second_floor_lever.lua):1-42, SHA256 `7bbde6f5e8f8d3028aae11f81f2509b053a51c0cf31660f193896ebdcad8a16c`.
 - [timed ghoul lever](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/action_third_floor_lever.lua):1-28, SHA256 `ace0db48b50044dcff1abce8ff159f1e24bde452d0e60eff817bfbb009d66324`.
 - [monster plate](https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/movement_third_floor_ghoul.lua):1-37, SHA256 `e9cc04623815e716b9158617a7bdb5c600d85fe264b873318a9047f3d80a04c5`.
+
+The selected upper-climb checkpoint is the original fifth-floor ladder landing at
+32479,31905,z2 (bare409, ordinal0). It uses the existing physical admission binding
+and requires level30, the learned story5, fourth-floor arrival1, and at least one
+opening of each exact-food lever. The existing opening counters start at-1, so
+one successful opening records0. The new selected `climb-complete` flag is authored
+progress; donor scripts are not claimed to store it. Whole-quest qualification
+still requires the complete lower-to-upper physical route and Riddler finale.

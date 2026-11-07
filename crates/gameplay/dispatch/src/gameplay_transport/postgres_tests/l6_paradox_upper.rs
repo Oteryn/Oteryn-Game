@@ -1,8 +1,5 @@
 //! Source-native upper food floors and selected protected climb arrival.
-use super::{
-    AdmittedSession, ComposedFreshAdmission, TestResult,
-    fixture::{Harness, debug},
-};
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::Harness};
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;

@@ -7447,7 +7447,7 @@
       }
     },
     "paradox_upper_batch_27": {
-      "status": "COMPILED_SCAFFOLD_PG_PENDING",
+      "status": "CLOSED_PROVENANCE_DECLARATION_REPAIR_VALIDATING",
       "previous_pushed_head": "ef8e62af9",
       "decision_at": "2026-11-07 15:30 UTC",
       "scope": "Source-native food floors4/5 and protected upper-climb arrival; three focused native cases. Full lower-to-upper whole climb and Riddler remain required.",
@@ -7461,7 +7461,26 @@
       "next_sql": 1259,
       "whole_entries_remaining": 17,
       "compiled": "5m00s",
-      "publication": "Compiled test scaffold checkpoint; combined PostgreSQL route running. No behavioral RED or production climb callback yet."
+      "publication": "Compiled test scaffold checkpoint; combined PostgreSQL route running. No behavioral RED or production climb callback yet.",
+      "behavioral_red": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_paradox_upper",
+        "seconds": 103.017036696,
+        "actual": "Full native NPC story, fourth-floor arrival and both exact food/ladders succeed; top2 climbflag absent -1",
+        "expected": "Bound selected climbflag1 at original final landing",
+        "log": "/tmp/questpc4-paradox-upper-red.log"
+      },
+      "implementation": "One authored world callback at original top2 landing; protected canonical binding, level30, story5/floor4arrival1/twoopeningguards, set only climb1. Existing generic food/ladder owners unchanged.",
+      "first_green_attempt": {
+        "kind": "CLOSED_CALLBACK_PARSE_REFUSAL_NOT_PG",
+        "seconds": 0.01,
+        "error": "invalid callback l6/paradox-climb-complete",
+        "cause": "World callback validator requires pinned primary crystal:201189 provenance; declaration used retained crystalserver:9f namespace.",
+        "fix": "Use existing primary script anchor already byte-correlated in stable authoring doc; no whitelist/validator changes. Remove unused test-only debug import."
+      },
+      "green_session": 23927,
+      "green_log": "/tmp/questpc4-paradox-upper-green2.log",
+      "gate_script": "/tmp/questpc4-paradox-upper-final-gates.sh"
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
@@ -10266,5 +10285,45 @@
     "green_component_commit": "12f4b03095e3057c7b5aa9a0381b106c34a23ff3",
     "incoming_head": "dbf0eca7081bd724687b24a5591d82c891bedc58",
     "merge_validation": "Resolved two scenario fixture overlaps by retaining both native tower and native Tomb switch branches; formatting and diff checks only. Combined PG/check/clippy not rerun because owner requires immediate push and stop; r2 owns subsequent validation."
+  },
+  "full_dependent_validation": {
+    "status": "AUTHORING_MAIN_MERGE_THEN_FULL_NEXTEST",
+    "owner_rule_at": "2026-11-07 15:47 UTC",
+    "direct_packages": [
+      "oteryn-game-server",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-items",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-world"
+    ],
+    "required_packages": [
+      "oteryn-game-server",
+      "oteryn-gameplay-characters",
+      "oteryn-gameplay-combat",
+      "oteryn-gameplay-combat-rules",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-content-promotion",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-encounter-rules",
+      "oteryn-gameplay-encounters",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-items",
+      "oteryn-gameplay-monster-ai",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-progression",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-social",
+      "oteryn-gameplay-spell",
+      "oteryn-gameplay-spell-rules",
+      "oteryn-gameplay-world"
+    ],
+    "rule": "Before every push: nextest all touched crates plus reverse normal workspace dependencies with PG. Collect all failures, group/fix all, rerun full set, then one push. Merge main every few hours.",
+    "source": "Owner standing instruction supersedes earlier focused-only/no-full-suite/push-before-full-green exceptions.",
+    "pending_slice": "paradox_upper_batch_27 provenance fix compiled run stopped in favor of full merged-head validation; no new PG result claimed."
   }
 }
