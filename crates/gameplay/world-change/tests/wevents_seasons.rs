@@ -120,3 +120,18 @@ fn wevents_hatch_ack_is_versioned_and_rearms_without_erasing_reward_history()
     state.lifecycle.validate()?;
     Ok(())
 }
+
+#[test]
+fn wevents_kingsday_royal_greeting_is_participation_without_arena_combat()
+-> Result<(), &'static str> {
+    let hour = 60 * MINUTE;
+    let mut celebration = EventState::for_kind(EventKind::Kingsday, 0, 24 * hour)?;
+    assert!(!celebration.reward_admitted(0, false));
+    assert!(celebration.advance(EventKind::Kingsday, 1, Input::Attend, 0)?);
+    assert!(celebration.reward_admitted(1, false));
+    assert!(!celebration.reward_admitted(1, true));
+    assert!(celebration.advance(EventKind::Kingsday, hour, Input::Tick, 0)?);
+    assert_eq!(celebration.wave, 1);
+    assert_eq!(celebration.phase, Phase::Victory);
+    Ok(())
+}

@@ -192,9 +192,14 @@ impl DailyWorldChanges {
 
     /// The NPCs this day adds to the live map: `(key, (x, y, z))`.
     pub fn npcs(&self) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
-        (self.flower_month || self.timed.spring)
-            .then_some(ROSEMARIE)
-            .into_iter()
+        [
+            (self.flower_month || self.timed.spring).then_some(ROSEMARIE),
+            self.timed
+                .kingsday
+                .then_some(("oteryn:npc.king_tibianus", (32_311, 32_172, 6))),
+        ]
+        .into_iter()
+        .flatten()
     }
 
     /// The Items this day adds to the live map: `(appearance, (x, y, z))`.

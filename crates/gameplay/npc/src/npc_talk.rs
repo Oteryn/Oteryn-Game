@@ -30,6 +30,8 @@ const REWARD_GREETINGS: &str =
 #[derive(serde::Deserialize)]
 struct RewardMessages {
     npc: String,
+    #[serde(default)]
+    greetings: Vec<String>,
     greet: String,
     farewell: String,
     walkaway: String,
@@ -45,7 +47,17 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     let rows = DATA.get_or_init(|| {
         serde_json::from_str::<Document>(REWARD_GREETINGS)
             .ok()
-            .filter(|d| d.schema == 1 && d.npcs.len() <= 256)
+            .filter(|d| {
+                d.schema == 1
+                    && d.npcs.len() <= 256
+                    && d.npcs.iter().all(|npc| {
+                        npc.greetings.len() <= 8
+                            && npc
+                                .greetings
+                                .iter()
+                                .all(|g| !words(g).is_empty() && g.len() <= 128)
+                    })
+            })
             .map(|d| d.npcs)
     });
     reward_callback_npc(key).then_some(())?;
@@ -392,7 +404,12 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: reward_messages
+                        .filter(|m| !m.greetings.is_empty())
+                        .map_or_else(
+                            || GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                            |m| m.greetings.clone(),
+                        ),
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
@@ -605,6 +622,10 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
+        let king = book
+            .get("oteryn:npc.king_tibianus")
+            .ok_or("royal conversation")?;
+        assert_eq!(king.greetings, ["hail king", "salutations king"]);
         for name in [
             "morgan",
             "navigator",
@@ -612,6 +633,7 @@ mod tests {
             "budrik",
             "sam",
             "rosemarie",
+            "king_tibianus",
         ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book

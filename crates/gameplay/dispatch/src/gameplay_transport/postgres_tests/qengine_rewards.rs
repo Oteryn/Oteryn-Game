@@ -60,6 +60,11 @@ fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }
 #[test]
+fn wevents_postgres_kingsday_royal_achievement() -> TestResult {
+    scenario("qengine-rewards-kingsday")
+}
+
+#[test]
 fn wevents_postgres_spring_merchant_reward() -> TestResult {
     scenario("qengine-rewards-spring-claim")
 }
@@ -207,7 +212,12 @@ async fn wire_grant(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let words: Vec<_> = std::iter::once("hi")
+    let greeting = if callback.key.ends_with("/kingsday-loyal-subject") {
+        "hail king"
+    } else {
+        "hi"
+    };
+    let words: Vec<_> = std::iter::once(greeting)
         .chain(offer_words(&callback.key).iter().copied())
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
@@ -619,6 +629,7 @@ pub(super) async fn exercise(
         "qengine-rewards-backpack" => "sam-backpack",
         "qengine-rewards-spring-claim" => "spring-nest-claim",
         "qengine-rewards-spring-buy" => "spring-nest-buy",
+        "qengine-rewards-kingsday" => "kingsday-loyal-subject",
         _ => return Err("unknown reward scenario".into()),
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
@@ -651,6 +662,9 @@ pub(super) async fn exercise(
     if key.starts_with("spring-nest-") {
         spring_fixture(owner, admitted, h, true).await?;
     }
+    if key == "kingsday-loyal-subject" {
+        kingsday_fixture(owner, h).await?;
+    }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
     let mut selected = admitted
@@ -673,7 +687,18 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(25));
     let first = admitted.continuity.next_command_id;
     assert_eq!(
-        talk(owner, admitted, npc, first, "hi").await?,
+        talk(
+            owner,
+            admitted,
+            npc,
+            first,
+            if key == "kingsday-loyal-subject" {
+                "hail king"
+            } else {
+                "hi"
+            }
+        )
+        .await?,
         NpcIntentDisposition::Ok
     );
     let mut command = admitted.continuity.next_command_id;
@@ -1197,6 +1222,66 @@ pub(super) async fn spring_fixture(
     owner
         .root
         .set_world_event_clock_for_test(Some(at + if hatched { 3_600_000 } else { 0 }))
+        .map_err(debug)?;
+    Ok(())
+}
+
+pub(super) fn event_fixture_epoch(
+    name: &str,
+    world: crate::foundation::WorldId,
+) -> TestResult<u64> {
+    if name != "qengine-rewards-kingsday" {
+        return Ok(1);
+    }
+    for epoch in 1..=4096 {
+        if crate::durability::world_event::changes::roll(world, epoch, 1_934_078_400_000)?
+            .timed
+            .kingsday
+        {
+            return Ok(epoch);
+        }
+    }
+    Err("no selected Kingsday fixture epoch".into())
+}
+
+async fn kingsday_fixture(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+) -> TestResult {
+    let world = owner.world_id;
+    let epoch = owner.reset_epoch;
+    let at = 1_934_078_400_000_i64;
+    let digest = owner
+        .active_generation
+        .ok_or("generation")?
+        .identity()
+        .server_artifact_digest();
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'kingsday-native-fixture',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+        .bind(world.as_bytes().as_slice()).bind(i64::try_from(epoch)?).bind(digest.as_slice()).bind(at).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    let mut tx = h.pool.begin().await?;
+    let state = crate::durability::world_event::changes::timed::poll(
+        &mut tx,
+        world,
+        epoch,
+        crate::durability::world_event::changes::timed::EventKind::Kingsday,
+        at,
+    )
+    .await?
+    .ok_or("selected celebration")?;
+    assert_eq!(
+        state.wave, 0,
+        "attendance does not require the first arena wave"
+    );
+    assert_eq!(serde_json::to_value(state)?["phase"], "Active");
+    tx.commit().await?;
+    owner
+        .root
+        .set_world_event_clock_for_test(Some(at))
         .map_err(debug)?;
     Ok(())
 }

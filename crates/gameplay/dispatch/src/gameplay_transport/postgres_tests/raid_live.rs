@@ -34,6 +34,16 @@ fn wevents_postgres_flower_native_wave() -> TestResult {
 }
 
 #[test]
+fn wevents_postgres_kingsday_native_arena() -> TestResult {
+    run_case(
+        "wevents_kingsday_arena",
+        "raid:world-events.kingsday-arena",
+        2,
+        false,
+    )
+}
+
+#[test]
 fn wevents_postgres_spring_native_hatchling() -> TestResult {
     run_case(
         "wevents_spring_map",

@@ -109,6 +109,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                             b.action,
                             oteryn_gameplay_world_change::timed::Input::Reward
                                 | oteryn_gameplay_world_change::timed::Input::ClaimObject(_)
+                                | oteryn_gameplay_world_change::timed::Input::Attend
                         )
                     }))))
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)

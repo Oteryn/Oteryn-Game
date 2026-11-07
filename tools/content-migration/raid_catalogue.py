@@ -472,6 +472,37 @@ def spring_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
     return result
 
 
+def authored_event_raids(root: Path, creatures: dict, placements: dict) -> list[dict]:
+    path = "content/quests/world-event-raid-policy.json"
+    raw = (root / path).read_bytes()
+    policy = json.loads(raw)
+    if policy.get("schema") != 1 or len(policy.get("raids", [])) > 32:
+        raise ValueError("WEVENTS_RAID_POLICY")
+    source = {"policy": path, "line": 1, "sha256": hashlib.sha256(raw).hexdigest(), "evidence": "OTERYN_AUTHORED_POLICY"}
+    records = []
+    owners = load(root, "content/encounters/world-changes/owner-catalogue.json")["entries"]
+    for rule in policy["raids"]:
+        declarations = [entry for entry in owners if entry["key"] == rule["event"]]
+        binding = {key: rule[key] for key in ("key", "member", "condition")}
+        if len(declarations) != 1 or binding not in declarations[0].get("binding", {}).get("raids", []):
+            raise ValueError("WEVENTS_RAID_OWNER_BINDING")
+        area = copy.deepcopy(rule["area"])
+        record = {"key": rule["key"], "name": rule["name"], "wiki_area": "Thais", "boss_names": [],
+            "wiki_records": [], "wiki_sources": [], "sources": [source], "variant_group": None,
+            "inactive_reasons": [], "source_conflicts": [rule["policy"]],
+            "schedule": {"kind": "calendar", "interval_ms": rule["interval_ms"], "start_immediately": True,
+                "repeat_persistent": True, "window": {"start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31}},
+            "end": {"kind": "until_reset", "despawn_after_ms": None},
+            "variants": [{"key": rule["key"].replace("raid:", ""), "announcements": [], "unresolved": [],
+                "sources": [source], "waves": [{"delay_ms": 0, "entries": [{"creature": rule["creature"],
+                    "source_name": rule["source_name"], "amount": {"min": rule["count"], "max": rule["count"]},
+                    "area": area, "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": False,
+                    "source": source}]}]}]}
+        qualify(record, creatures, placements)
+        records.append(record)
+    return records
+
+
 def calendar_schedule(observation: dict) -> dict:
     # Inclusive World reset dates: the source end server-save belongs to the next
     # inactive reset date. Null times/frequency remain unknown, not midnight.
@@ -658,6 +689,7 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
                             creature_catalogue(root), load(root, PLACEMENTS))
     records.append(mummy_raid(retained_mummy_source(root), creature_catalogue(root), load(root, PLACEMENTS)))
     records.extend(spring_raids(root, creature_catalogue(root), load(root, PLACEMENTS)))
+    records.extend(authored_event_raids(root, creature_catalogue(root), load(root, PLACEMENTS)))
     records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}

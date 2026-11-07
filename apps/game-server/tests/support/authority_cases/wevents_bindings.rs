@@ -27,6 +27,7 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                     let spring_published = catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry| entry["key"] == "spring_into_life" && entry["status"] == "QUALIFIED");
                     let mut cases = vec!["chyllfroest", "flower", "mummy"];
                     if spring_published { cases.push("spring"); }
+                    if catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry|entry["key"]=="kingsday" && entry["status"]=="QUALIFIED") { cases.push("kingsday"); }
                     for case in cases {
                         let started = std::time::Instant::now();
                         let h = fixture::Harness::create(
@@ -39,7 +40,8 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                             "chyllfroest" => chyllfroest(&h).await,
                             "flower" => flower(&h).await,
                             "mummy" => mummy(&h).await,
-                            _ => spring(&h).await,
+                            "spring" => spring(&h).await,
+                            _ => kingsday(&h).await,
                         };
                         h.cleanup().await?;
                         result?;
@@ -1176,5 +1178,195 @@ async fn settle_spring_wave(
         .acknowledge_raid_effect(&h.node, end.identity, vec![], req.now_ms)
         .await
         .map_err(|error| format!("Spring PostgreSQL line {}: {error:?}", line!()))?;
+    Ok(())
+}
+
+async fn kingsday(h: &fixture::Harness) -> fixture::TestResult {
+    let at = 1_934_078_400_000_i64;
+    let world = fixture::scope()?.world_id();
+    let epoch = (1..=4095)
+        .find(|e| {
+            crate::durability::world_event::changes::roll(world, *e, at)
+                .is_ok_and(|d| d.timed.kingsday)
+                && crate::durability::world_event::changes::roll(world, e + 1, at)
+                    .is_ok_and(|d| !d.timed.kingsday)
+        })
+        .ok_or("selected celebration followed by inactive reset")?;
+    for e in [epoch, epoch + 1] {
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'kingsday-map',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+            .bind(world.as_bytes().as_slice()).bind(i64::try_from(e)?).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    }
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let selected = candidate("raid:world-events.kingsday-arena", 97)?;
+    let mut req = request(selected.clone(), at)?;
+    req.reset_epoch = epoch;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    sqlx::query("INSERT INTO game_durability_fresh_admission_receipts SELECT decode('01'||repeat('00',32),'hex'),game_session_id,account_id,character_id,world_id,runtime_scope_channel_id,character_lease_generation,scope_ownership_generation,1,current_transport_ref,1,'{}',1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid ON CONFLICT DO NOTHING")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2,control_loss_epoch=NULL,original_grace_deadline=NULL,predecessor_generation=NULL,fresh_replay_key=decode('01'||repeat('00',32),'hex') WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(fixture::id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
+    let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
+    for (id, input, expected) in [
+        (111, Input::Reward, None),
+        (112, Input::Attend, Some(true)),
+        (113, Input::Attend, None),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(
+            timed::interact(
+                &mut tx,
+                TimedActor {
+                    recovery: &recovery,
+                    node: &h.node,
+                    fence: fixture::fence(1)?
+                },
+                TimedRequest {
+                    world,
+                    epoch,
+                    kind: EventKind::Kingsday,
+                    now_ms: at,
+                    operation: fixture::id(id),
+                    input
+                }
+            )
+            .await?,
+            expected
+        );
+        tx.commit().await?;
+    }
+    for (hour, firing) in [(1, 97), (2, 98)] {
+        req.now_ms = at + hour * 3_600_000;
+        req.candidates = vec![candidate("raid:world-events.kingsday-arena", firing)?];
+        assert_eq!(
+            h.root
+                .check_raid_schedules(&authority, &h.node, req.clone())
+                .await?
+                .firings
+                .len(),
+            1
+        );
+        assert!(
+            h.root
+                .check_raid_schedules(&authority, &h.node, req.clone())
+                .await?
+                .firings
+                .is_empty()
+        );
+        let wave = h
+            .root
+            .advance_raid_run(
+                &h.node,
+                fixture::id(firing),
+                req.channel,
+                req.generation,
+                selected.definition.clone(),
+                req.now_ms,
+            )
+            .await?
+            .ok_or("hourly arena wave")?;
+        let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+            return Err("arena wave kind".into());
+        };
+        assert_eq!(creatures.len(), 2);
+        assert!(
+            creatures
+                .iter()
+                .all(|c| c.timed_event && c.creature.as_str() == "oteryn:creature.orc_warlord")
+        );
+        h.root
+            .acknowledge_raid_effect(
+                &h.node,
+                wave.identity,
+                creatures
+                    .iter()
+                    .map(|c| RaidPlacementOutcome {
+                        identity: c.identity,
+                        placed: true,
+                    })
+                    .collect(),
+                req.now_ms,
+            )
+            .await?;
+        let end = h
+            .root
+            .advance_raid_run(
+                &h.node,
+                fixture::id(firing),
+                req.channel,
+                req.generation,
+                selected.definition.clone(),
+                req.now_ms,
+            )
+            .await?
+            .ok_or("arena completion")?;
+        h.root
+            .acknowledge_raid_effect(&h.node, end.identity, vec![], req.now_ms)
+            .await?;
+    }
+    let old = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(97),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await?
+        .ok_or("previous arena cleanup")?;
+    assert!(matches!(old.action, CommittedRaidAction::Lost));
+    h.root
+        .acknowledge_raid_effect(&h.node, old.identity, vec![], req.now_ms)
+        .await?;
+    let mut tx = h.pool.begin().await?;
+    let state = timed::poll(&mut tx, world, epoch, EventKind::Kingsday, req.now_ms)
+        .await?
+        .ok_or("celebration state")?;
+    assert_eq!(state.phase, Phase::Victory);
+    assert_eq!(state.wave, 2);
+    tx.commit().await?;
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=$2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(i64::try_from(epoch + 1)?)
+    .execute(&h.pool)
+    .await?;
+    req.reset_epoch = epoch + 1;
+    req.candidates = vec![candidate("raid:world-events.kingsday-arena", 99)?];
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    let mut tx = h.pool.begin().await?;
+    assert!(
+        timed::poll(&mut tx, world, epoch + 1, EventKind::Kingsday, req.now_ms)
+            .await?
+            .is_none()
+    );
+    tx.commit().await?;
     Ok(())
 }

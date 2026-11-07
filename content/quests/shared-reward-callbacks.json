@@ -623,6 +623,41 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/scripts/actions/items/surprise_bags.lua:17-31:sha256:66ba74a2b736e0631776ac7674c21a6838ebd5ecd25d9804b7f9613fefe11e1e",
         "oteryn-policy:CONTRACT-NOTES.md#spring-into-life-implementation-policy"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/kingsday-loyal-subject",
+      "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "celebration",
+        "kingsday"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "repeatable": true,
+      "world_event": {
+        "event": "kingsday",
+        "action": "Attend"
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/kingsday/attendance",
+          "minimum": -1,
+          "maximum": 1000000,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/loyal_subject",
+      "reply": [
+        "You have paid your respects to the king. Enjoy the Kingsday festivities!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76245&oldid=994341:body-sha256:0b67e7e6c7047759d08c7efec385a5d1ab30586518258f185cec9466cfa0cef3",
+        "oteryn-policy:CONTRACT-NOTES.md#kingsday-implementation-policy"
+      ]
     }
   ]
 }

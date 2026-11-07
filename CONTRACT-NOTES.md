@@ -123,3 +123,36 @@ retired firing. Running firings may transition to LOST, while completed firings
 retain their terminal state and append normal LOST cleanup effects. This also
 prevents a prior successful hatch's retained actors from accumulating when its
 next object revision fires.
+
+## Kingsday implementation policy
+
+Royal greeting words and reply follow Crystal
+`9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data-global/npc/king_tibianus.lua:482-491`, SHA256
+`e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd`:
+"hail king" / "salutations king", the loyal-subject greeting and "How rude!"
+walk-away. The default farewell follows the retained npc_handler.lua:82,
+SHA256 `8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a`.
+The retained normalized placement is (32311,32172,6):
+`tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1`,
+SHA256 `1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a`.
+
+The pinned recipe explicitly ties Loyal Subject to respectful attendance,
+not arena combat:
+https://tibia.fandom.com/index.php?curid=76245&oldid=994341
+(body SHA256 `0b67e7e6c7047759d08c7efec385a5d1ab30586518258f185cec9466cfa0cef3`).
+A respectful greeting opens the native conversation; asking about the
+celebration records attendance and atomically reserves its achievement claim.
+The existing achievement definition is `oteryn:achievement/loyal_subject`.
+
+No complete donor celebration scheduler or exhibition population was found
+within the investigation budget. The conservative authored policy retains the
+model's 24-per-mille daily activation, hourly exhibitions after the first hour,
+and two Orc Warlords per exhibition. The Oteryn exhibition ring is the verified
+public courtyard (32304..32308,32184..32188,7), all house 0, flags 0 and simple
+ground 103, in `content/world/placements/region-z07-x126-y125.b3`, SHA256
+`b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037`.
+These location/population/chance choices are explicitly Oteryn policy, not
+claims that the retained royal dialogue supplies a raid. Previous exhibition
+actors retire on the next firing or day reset. Arena waves continue after
+attendance victory; a daily claim cannot repeat the account achievement.

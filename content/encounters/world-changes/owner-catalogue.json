@@ -817,7 +817,7 @@
       "key": "kingsday",
       "title": "Kingsday Mini World Change",
       "quest": "oteryn:quest.authored.kingsday_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -854,14 +854,24 @@
           "url": "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
         }
       ],
-      "reason": "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent.",
-      "missing_facts": [
-        "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent."
-      ],
+      "reason": "Celebration snapshot, hourly native exhibition and source royal greeting with participation-bound Loyal Subject.",
+      "missing_facts": [],
       "trigger": {
-        "kind": "at_reset",
-        "chance_permille": 24,
-        "duration": "until_next_reset"
+        "kind": "timed",
+        "event": "kingsday",
+        "owner": "world_event::changes::timed",
+        "activation": {
+          "chance_permille": 24
+        }
+      },
+      "binding": {
+        "raids": [
+          {
+            "key": "raid:world-events.kingsday-arena",
+            "member": 0,
+            "condition": "hourly"
+          }
+        ]
       }
     },
     {

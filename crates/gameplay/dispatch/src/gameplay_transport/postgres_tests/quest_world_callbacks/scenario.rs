@@ -98,9 +98,11 @@ fn scenario_case(
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        let event_epoch =
+            super::super::qengine_rewards::event_fixture_epoch(name, deps.admitted.world_id)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
-            1,
+            event_epoch,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
             activated.frame_binding().digest(),
@@ -145,6 +147,9 @@ fn scenario_case(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        if name == "qengine-rewards-kingsday" {
+            owner.reset_epoch = event_epoch;
+        }
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")

@@ -41898,6 +41898,105 @@
         "kind": "until_reset"
       },
       "inactive_reasons": [],
+      "key": "raid:world-events.kingsday-arena",
+      "kind": "calendar",
+      "name": "Kingsday exhibition arena",
+      "schedule": {
+        "interval_ms": 3600000,
+        "kind": "calendar",
+        "repeat_persistent": true,
+        "start_immediately": true,
+        "window": {
+          "end_day": 31,
+          "end_month": 12,
+          "start_day": 1,
+          "start_month": 1
+        }
+      },
+      "source_conflicts": [
+        "CONTRACT-NOTES.md#kingsday-implementation-policy"
+      ],
+      "sources": [
+        {
+          "evidence": "OTERYN_AUTHORED_POLICY",
+          "line": 1,
+          "policy": "content/quests/world-event-raid-policy.json",
+          "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+        }
+      ],
+      "variant_group": null,
+      "variants": [
+        {
+          "announcements": [],
+          "key": "world-events.kingsday-arena",
+          "sources": [
+            {
+              "evidence": "OTERYN_AUTHORED_POLICY",
+              "line": 1,
+              "policy": "content/quests/world-event-raid-policy.json",
+              "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+            }
+          ],
+          "unresolved": [],
+          "waves": [
+            {
+              "delay_ms": 0,
+              "entries": [
+                {
+                  "amount": {
+                    "max": 2,
+                    "min": 2
+                  },
+                  "area": {
+                    "binding_source": "content/world/placements/index.json",
+                    "coordinate_frame": "global-target-2026-09-27",
+                    "from": {
+                      "floor": 7,
+                      "x": 32304,
+                      "y": 32184
+                    },
+                    "regions": [
+                      {
+                        "path": "content/world/placements/region-z07-x126-y125.b3",
+                        "sha256": "b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037"
+                      }
+                    ],
+                    "to": {
+                      "floor": 7,
+                      "x": 32308,
+                      "y": 32188
+                    },
+                    "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
+                  },
+                  "area_anchor": "raid-anchor:32304_32184_7-32308_32188_7",
+                  "boss": false,
+                  "creature": "oteryn:creature.orc_warlord",
+                  "source": {
+                    "evidence": "OTERYN_AUTHORED_POLICY",
+                    "line": 1,
+                    "policy": "content/quests/world-event-raid-policy.json",
+                    "sha256": "a067c343750fbff3e37334a053f480891d595ecba031c5d742e7dea7a5019760"
+                  },
+                  "source_name": "Orc Warlord",
+                  "spawn_mode": "area"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "wiki_area": "Thais",
+      "wiki_records": [],
+      "wiki_sources": []
+    },
+    {
+      "active": true,
+      "boss_names": [],
+      "end": {
+        "despawn_after_ms": null,
+        "kind": "until_reset"
+      },
+      "inactive_reasons": [],
       "key": "raid:world-events.spring-nest-1",
       "kind": "calendar",
       "name": "Spring nest 1",
@@ -42481,8 +42580,8 @@
       "total": 86
     },
     "calendar": {
-      "active": 4,
-      "total": 8
+      "active": 5,
+      "total": 9
     },
     "city": {
       "active": 2,

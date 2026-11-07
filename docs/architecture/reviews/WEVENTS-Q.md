@@ -358,3 +358,41 @@ Only the Spring row changes in WORLDCHG-Q.md. The owner catalogue publishes its
 closed timed binding, and the focused PostgreSQL owner run includes this title
 whenever that publication is enabled. The two declared event raids remain
 reserved if publication is later disabled.
+
+## Kingsday qualification
+
+Kingsday is **QUALIFIED** through synchronized celebration state, hourly native
+exhibition raids and a participation-bound royal achievement. Respectful donor
+greetings open King Tibianus's conversation; asking about the celebration
+records attendance and reserves the Loyal Subject claim in the same transaction.
+Attendance does not require killing an exhibition creature. Waves continue after
+attendance victory and retire their previous population. The next inactive
+reset closes admission. The explicit fallback chance, population and verified
+public arena are recorded in `CONTRACT-NOTES.md`; they are Oteryn policy rather
+than invented donor facts.
+
+Red proof: `wevents_kingsday_royal_greeting_is_participation_without_arena_combat`
+failed to compile before `Attend` existed. The native NPC test then found a real
+wire-helper regression (`hi` instead of the donor's respectful phrase); that
+failure is preserved in `/tmp/wevents-kingsday-native-pg.log`.
+Green native PostgreSQL markers in `/tmp/wevents-kingsday-native-pg-final.log`:
+`wevents_kingsday_arena` **148.26777236 s** and
+`qengine-rewards-kingsday` **204.488350726 s**, **2 passed**. These execute actual
+native creature placement and NPC wire/achievement writes, replay and repeat
+refusal. The model has a separate zero-credit reward refusal case.
+
+The generator's 15 focused tests and reproducibility check passed. Six-crate
+cargo check passed in 4m22s. Tooling pin refresh and pin-check passed with
+unchanged World pin `d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`
+(31,101,950 bytes). Source dialogue file:line+SHA and wiki disagreement boundaries
+are recorded in the contract notes.
+
+The production scheduler/owner PostgreSQL case also passed: **1 passed / 34.13 s**,
+with executed markers for Chyllfroest **6.669275162 s**, Flower **6.808789985 s**,
+Mummy **7.333247266 s**, Spring **6.785818476 s** and Kingsday **6.529069867 s**
+(`/tmp/wevents-kingsday-owner-pg.log`). Kingsday covers no first-hour firing,
+hourly wave/replay, continued exhibitions after attendance, real placement ACK,
+previous-wave LOST cleanup, claimed-participant refusal and inactive reset.
+Strict six-crate clippy passed with `-D warnings` in **6m07s**; the focused model
+run passed **13 tests**. Workspace fmt, mounted-source rustfmt and diff checks
+passed. Logs: `/tmp/wevents-kingsday-{clippy-final,model,fmt,mounted-fmt}.log`.

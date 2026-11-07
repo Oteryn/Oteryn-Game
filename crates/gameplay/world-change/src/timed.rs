@@ -129,6 +129,7 @@ pub enum Input {
     Defeat(u8),
     Enter(u8),
     Reward,
+    Attend,
     Recover,
     Observe,
     ClaimObject(u16),
@@ -323,7 +324,7 @@ impl EventState {
                 .get_mut(&0)
                 .ok_or("missing recovery bag")?
                 .claim(now),
-            (EventKind::Kingsday, Input::Defeat(_))
+            (EventKind::Kingsday, Input::Defeat(_) | Input::Attend)
                 if matches!(self.phase, Phase::Active | Phase::Victory) =>
             {
                 self.phase = Phase::Victory;

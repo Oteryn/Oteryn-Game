@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "raids": [
+    {
+      "key": "raid:world-events.kingsday-arena",
+      "event": "kingsday",
+      "member": 0,
+      "condition": "hourly",
+      "name": "Kingsday exhibition arena",
+      "creature": "oteryn:creature.orc_warlord",
+      "source_name": "Orc Warlord",
+      "count": 2,
+      "interval_ms": 3600000,
+      "area": {
+        "from": {
+          "x": 32304,
+          "y": 32184,
+          "floor": 7
+        },
+        "to": {
+          "x": 32308,
+          "y": 32188,
+          "floor": 7
+        }
+      },
+      "policy": "CONTRACT-NOTES.md#kingsday-implementation-policy"
+    }
+  ]
+}

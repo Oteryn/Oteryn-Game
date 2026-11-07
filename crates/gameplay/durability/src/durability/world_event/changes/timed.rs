@@ -362,9 +362,26 @@ pub async fn interact(
         0,
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if request.input == Input::Reward {
-        let (credited,claimed,reward_ready):(i64,bool,bool)=sqlx::query_as("SELECT credited,claimed,reward_ready FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+    if matches!(request.input, Input::Reward | Input::Attend) {
+        let (mut credited,claimed,reward_ready):(i64,bool,bool)=sqlx::query_as("SELECT credited,claimed,reward_ready FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
             .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if request.input == Input::Attend {
+            if request.kind != EventKind::Kingsday || claimed {
+                return Ok(None);
+            }
+            if !state
+                .advance(request.kind, request.now_ms, Input::Attend, draw)
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+            {
+                return Ok(None);
+            }
+            credited = credited
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            sqlx::query("UPDATE game_world_timed_participants SET credited=$5 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+                .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(credited).execute(&mut **tx).await?;
+            save(tx, request.world, request.kind, &state, cycle).await?;
+        }
         if !state.reward_admitted(
             u64::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?,
             claimed,

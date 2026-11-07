@@ -32,6 +32,7 @@ impl Binding {
                     EventKind::RiseOfDevovorga | EventKind::Kingsday,
                     Input::Reward
                 )
+                | (EventKind::Kingsday, Input::Attend)
                 | (EventKind::DevovorgasEssence, Input::Enter(0..=4))
                 | (
                     EventKind::BankRobbery,

@@ -46,6 +46,21 @@
       ]
     },
     {
+      "npc": "oteryn:npc.king_tibianus",
+      "greetings": [
+        "hail king",
+        "salutations king"
+      ],
+      "greet": "I greet thee, my loyal subject |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "How rude!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:482-491:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd",
+        "oteryn-policy:CONTRACT-NOTES.md#kingsday-implementation-policy",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "greet": "Hello there.",
       "farewell": "Good bye.",
