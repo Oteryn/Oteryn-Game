@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Source four-player lever admission, placement, six native demon spawns and replay/refusal are PG verified through the reused engine. Escape/encounter completion and earned reward integration remain active work.",
+      "blocker": "Published shared encounter entry and reward-choice cohorts exist; source door behavior and the complete earned route remain to compose. The pinned source defines no escape timer.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -601,7 +601,12 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "entry_slice": {
+        "status": "REUSED_PUBLISHED_ENGINE",
+        "owner": "quest_callbacks/encounter.rs and commit_quest_encounter_entry",
+        "source_verifier": "BATCH-group-owner-reuse-2026-11-07.json"
+      }
     },
     {
       "canonical": "oteryn:quest.demon_oak",
@@ -1619,9 +1624,10 @@
     }
   },
   "current_batch": {
-    "state": "GREEN",
-    "record": "BATCH-group-authoring-integration-2026-11-07.json",
-    "whole_quest_qualifications": 0
+    "id": "group-owner-reuse-2026-11-07",
+    "record": "BATCH-group-owner-reuse-2026-11-07.json",
+    "whole_quest_qualifications": 0,
+    "next": "Continue source Annihilator door and shared earned-reward composition using existing encounter/reward owners; do not repeat entry or reward cohorts as whole qualification."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",

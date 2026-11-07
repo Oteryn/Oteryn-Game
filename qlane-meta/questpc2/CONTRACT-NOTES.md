@@ -75,3 +75,15 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   This conservative atomic rule replaces the donor's sequential unchecked
   createMonster failure case; it never grants a cheaper partial encounter.
   A failed attempt must leave the lever, participant positions and actors intact.
+
+- Lane8d57515a1 already publishes effects.encounter and
+  commit_quest_encounter_entry. Reuse these; the local parallel group prototype
+  is retained only in a Git stash, not product code. The pinned group tool is
+  read-only and verifies the actual shared callback.
+- Annihilator door source: corpus blobs/1170e128e15ee05582db092987beea7a6935726a:4-18,
+  SHA25603c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1,
+  Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+  data-otservbr-global/scripts/quests/the_annihilator/door.lua. Read the real
+  shared Reward10102 claim: value1 seals against the player; closed5113
+  teleports onto the target and opens5114, closing checks occupancy.
+  The source defines no escape timer or all-six-kill reward predicate.

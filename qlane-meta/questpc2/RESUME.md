@@ -1,3 +1,35 @@
+# Current continuation — group owner reuse
+
+Latest slice: BATCH-group-owner-reuse-2026-11-07.json. Fast-forwarded the lane
+to8d57515a1, preserving the already published qengine/source corpse integration.
+The parallel group prototype is unpublished and retained in a local Git stash
+for regression extraction. Do not apply it: effects.encounter and
+commit_quest_encounter_entry already own atomic4-player/6-demon admission.
+Its PG18.6/38.39s pass is historical prototype evidence, not published proof.
+Superseded final check processes were interrupted, never counted as GREEN.
+
+The standalone group source tool now only verifies the existing shared callback
+against pinned donor bytes.3source tests and4shared-effect authoring tests pass;
+qengine_access.py --check passes. No runtime/data or default regeneration hook
+changed in this slice; no new PG proof claimed.
+
+Continue the actual source Annihilator door and earned reward route now.
+Door donor corpus blob1170e128e15ee05582db092987beea7a6935726a:1-25, SHA256
+03c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1,
+Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+data-otservbr-global/scripts/quests/the_annihilator/door.lua. Reward10102==1
+refuses; closed5113 teleports onto the target then opens5114; close checks
+occupancy first. No source escape timer or invented all-six-kill gate.
+Reuse the actual shared reward claim owner, never a shadow progress track.
+Whole L3 remains0/35; entry/reward slices are not whole qualification.
+
+Fetch the exact lane before every push and compare FETCH_HEAD: the origin
+tracking ref can be stale. Merge advances; no force/rebase/main/PR. Preserve
+blakinio identity and supplied trailers. Push every green slice immediately.
+Source env.sh in each Cargo/PG command. No credentials/full suites/clean/flags.
+
+Historical continuation below (all conflicting next-step prose superseded):
+
 Latest inert authoring integration: BATCH-group-authoring-integration-2026-11-07.json; product proof remains464bdc05f. No duplicate group engine.
 
 # questpc2 — continue now

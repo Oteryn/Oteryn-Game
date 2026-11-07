@@ -99,4 +99,6 @@ that file wins over this summary.
 - Source group-callback authoring uses
   `python3 tools/content-migration/group_encounter_callbacks.py` (or `--check`).
   The standalone tool verifies the retained corpus, manifest and exact Git blob
-  before producing the selected native layout; keep unrelated callbacks intact.
+  before checking the active shared effects.encounter layout. It is read-only;
+  reuse the published encounter owner and reject drift instead of appending
+  a parallel group callback. qengine_access.py owns regeneration.
