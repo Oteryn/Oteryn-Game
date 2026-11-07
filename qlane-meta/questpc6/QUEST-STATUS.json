@@ -15,9 +15,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/4"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -61,9 +62,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/5"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -130,10 +132,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/10"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -179,8 +182,9 @@
       "lane": "L6",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "qlane-meta/questpc4/LANE-L6.json",
-      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+      "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/d9a95616349345c5fc565fedf07ab926652b6b4f/qlane-meta/questpc4/LANE-L6.json",
+      "source_pointer": "/entries/16"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -226,10 +230,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/42"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -275,10 +280,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/12"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -323,10 +329,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/11"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -371,10 +378,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/13"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -432,9 +440,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/6"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -479,9 +488,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/7"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -550,10 +560,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/14"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -648,10 +659,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/15"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -773,9 +785,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/8"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -843,9 +856,10 @@
       "owner": "questpc5",
       "lane": "L5",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f78cf159d8a2eef2703091197ea661d26537137a/qlane-meta/questpc5/LANE-L5.json",
-      "source_commit": "f78cf159d8a2eef2703091197ea661d26537137a",
-      "source_path": "qlane-meta/questpc5/LANE-L5.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/b72bf9205739974903bdd07d49a53215664f2846/qlane-meta/questpc5/LANE-L5.json",
+      "source_commit": "b72bf9205739974903bdd07d49a53215664f2846",
+      "source_path": "qlane-meta/questpc5/LANE-L5.json",
+      "source_pointer": "/entries/17"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -890,10 +904,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/16"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -938,9 +953,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/9"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -985,8 +1001,9 @@
       "lane": "L2",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+      "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/bfb4a5c6c2ece41600c3deebb9832703f22f093b/tools/content-schema/quest-authoring/questl2-status.json",
+      "source_pointer": "/entries/11"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1125,9 +1142,10 @@
       "owner": "questpc5",
       "lane": "L5",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f78cf159d8a2eef2703091197ea661d26537137a/qlane-meta/questpc5/LANE-L5.json",
-      "source_commit": "f78cf159d8a2eef2703091197ea661d26537137a",
-      "source_path": "qlane-meta/questpc5/LANE-L5.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/b72bf9205739974903bdd07d49a53215664f2846/qlane-meta/questpc5/LANE-L5.json",
+      "source_commit": "b72bf9205739974903bdd07d49a53215664f2846",
+      "source_path": "qlane-meta/questpc5/LANE-L5.json",
+      "source_pointer": "/entries/18"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1176,9 +1194,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/10"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1222,9 +1241,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/11"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1268,10 +1288,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/17"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1353,8 +1374,9 @@
       "lane": "L2",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
-      "source_commit": "7e16b64ee099c8e81cabf3b4e420531269bb4c1a",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/7e16b64ee099c8e81cabf3b4e420531269bb4c1a/tools/content-schema/quest-authoring/questl2-status.json"
+      "source_commit": "bfb4a5c6c2ece41600c3deebb9832703f22f093b",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/bfb4a5c6c2ece41600c3deebb9832703f22f093b/tools/content-schema/quest-authoring/questl2-status.json",
+      "source_pointer": "/entries/12"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1400,10 +1422,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/18"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1448,10 +1471,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/19"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1497,10 +1521,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/20"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1574,8 +1599,9 @@
       "lane": "L6",
       "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
       "source_path": "qlane-meta/questpc4/LANE-L6.json",
-      "source_commit": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/db95b72d3d8659a9f0a884f8169ea9da3a39c9fe/qlane-meta/questpc4/LANE-L6.json"
+      "source_commit": "d9a95616349345c5fc565fedf07ab926652b6b4f",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/d9a95616349345c5fc565fedf07ab926652b6b4f/qlane-meta/questpc4/LANE-L6.json",
+      "source_pointer": "/entries/17"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1629,10 +1655,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/21"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1669,10 +1696,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/22"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1717,9 +1745,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/12"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1767,10 +1796,11 @@
       "owner": "qengine2",
       "lane": "L1",
       "disposition": "Skip; live L1 packet assigns this entry to another lane. Historical ledger status is evidence only.",
-      "source_sha": "5a6de28c1",
+      "source_sha": "aae647c63",
       "source_path": "qlane-meta/qengine2/LANE-L1.json",
-      "source_commit": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/5a6de28c142de185594217ce1e5cbc7f4b6e6e4e/qlane-meta/qengine2/LANE-L1.json"
+      "source_commit": "aae647c63b9022860699a5e2d31764881f38c472",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/aae647c63b9022860699a5e2d31764881f38c472/qlane-meta/qengine2/LANE-L1.json",
+      "source_pointer": "/entries/23"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
@@ -1816,9 +1846,10 @@
       "owner": "questpc2",
       "lane": "L3",
       "disposition": "Skip; live owner packet assigns this entry to another lane. Historical status retained as evidence only.",
-      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/f304dda7cae995b1ef564e6997ea20fbeeb4d53e/qlane-meta/questpc2/LANE-L3.json",
-      "source_commit": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
-      "source_path": "qlane-meta/questpc2/LANE-L3.json"
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9/qlane-meta/questpc2/LANE-L3.json",
+      "source_commit": "1ee1efc2a9cd1fa089d2689c6c028ca2db5b8eb9",
+      "source_path": "qlane-meta/questpc2/LANE-L3.json",
+      "source_pointer": "/entries/13"
     },
     "historical_status": "UNFINISHED",
     "historical_blocker": {
