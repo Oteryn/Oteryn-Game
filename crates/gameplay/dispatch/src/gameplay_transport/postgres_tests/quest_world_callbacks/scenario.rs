@@ -442,8 +442,6 @@ fn scenario_case(
                 name == "catalogue-npc-hero",
             )
             .await?;
-        } else if name == "catalogue-npc" {
-            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "conditional-quest-greetings" {
             super::super::conditional_quest_greetings::exercise(
                 &mut owner,

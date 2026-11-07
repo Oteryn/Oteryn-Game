@@ -38,6 +38,12 @@ fn questpc5_registered_migration_numbers_checksums_and_canonical_guards() -> Tes
             (1274, include_str!("../../../../../../apps/game-server/migrations/1274_questpc_npc_revision.sql")),
             (1275, include_str!("../../../../../../apps/game-server/migrations/1275_questpc_viola.sql")),
             (1276, include_str!("../../../../../../apps/game-server/migrations/1276_questpc_viola_book.sql")),
+            (1310, include_str!("../../../../../../apps/game-server/migrations/1310_quest_npc_program_receipts.sql")),
+            (1311, include_str!("../../../../../../apps/game-server/migrations/1311_marlin_trophy_exchange.sql")),
+            (1312, include_str!("../../../../../../apps/game-server/migrations/1312_quest_npc_item_sources.sql")),
+            (1313, include_str!("../../../../../../apps/game-server/migrations/1313_npc_conversation_delay.sql")),
+            (1314, include_str!("../../../../../../apps/game-server/migrations/1314_npc_receipt_track_shape.sql")),
+            (1315, include_str!("../../../../../../apps/game-server/migrations/1315_npc_fathers_burden_items.sql")),
         ];
         for (version, sql) in expected {
             let (success, checksum): (bool, Vec<u8>) =
@@ -57,6 +63,11 @@ fn questpc5_registered_migration_numbers_checksums_and_canonical_guards() -> Tes
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(old, 0, "retired shared migration numbers are absent");
+        assert!(
+            !include_str!("../../../../../../apps/game-server/migrations/1272_quest_finish.sql")
+                .contains("CREATE TABLE game_quest_npc_program_receipts"),
+            "canonical NPC response storage belongs only to main migration1310"
+        );
         let guard: String = sqlx::query_scalar(
             "SELECT pg_get_functiondef('game_quest_reward_complete()'::regprocedure)",
         )

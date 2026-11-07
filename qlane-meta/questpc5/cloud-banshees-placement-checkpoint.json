@@ -1,0 +1,67 @@
+{
+  "state": "COMPILING_WIP_RERUNS_PENDING",
+  "main": "f641d8d6c",
+  "workspace_check": {
+    "exit": 0,
+    "duration": "7m41s",
+    "log": "/tmp/questpc5-banshees-cadence-check.log"
+  },
+  "fmt_all_check": {
+    "exit": 0,
+    "log": "/tmp/questpc5-banshees-cadence-fmt-check.log"
+  },
+  "authoring_tests": {
+    "passed": 2,
+    "duration_seconds": 1.234,
+    "log": "/tmp/questpc5-banshees-cadence-authoring.log"
+  },
+  "equipment_pin": {
+    "exact_additions": 136,
+    "baseline_profiles": 3626,
+    "current_profiles": 3762,
+    "old_speeds_changed": 0,
+    "log": "/tmp/questpc5-banshees-equipment-pin-check.log"
+  },
+  "world_pins": {
+    "refresh": "/tmp/questpc5-banshees-cadence-pins.log",
+    "check": "/tmp/questpc5-banshees-cadence-pincheck.log",
+    "duplicate_migrations": "/tmp/questpc5-banshees-cadence-dup.log"
+  },
+  "source_regeneration": {
+    "central_lists": "/tmp/questpc5-banshees-final-regen.log",
+    "world_metadata": "unchanged0/4",
+    "item_mount_equivalence": "/tmp/questpc5-banshees-final-equivalence.log"
+  },
+  "passing_pg_before_fixes": {
+    "server": "PostgreSQL18.6",
+    "npc_item_xp_handin_seconds": 125.040264857,
+    "father_atomic_eleven_seconds": 135.774279013,
+    "migration_registry_seconds": 9.741900823,
+    "real_level59_refusal_seconds": 166.300268213
+  },
+  "collected_failures": {
+    "pg": [
+      "Queen placement absent after six successful seals; captured placement now generated",
+      "Serpentine existing chest rejected without pending QUESTPC8 schema; local uncommitted1300 restored for test-only prerequisite"
+    ],
+    "units": [
+      "missing Corruptor seam inventory entry; added exact literal-None assertion",
+      "missing136 profile cohort count; regenerated exact zero-speed key inventory"
+    ],
+    "clippy": [
+      "duplicate catalogue-npc branch; removed redundant branch"
+    ]
+  },
+  "pending": [
+    "five focused PG retry with owner-approved local uncommitted1300",
+    "registry separately with1300 absent",
+    "full2537-case crate unit run finishing; then full changed-crate rerun",
+    "strict Clippy after duplicate-branch fix",
+    "game-server library units"
+  ],
+  "completed_units": {
+    "game_server_binary": 7
+  },
+  "qualification": "No new QUALIFIED quest yet; Banshees remains active.",
+  "foreign_migration": "1300 is local test-only and excluded from Git tree; canonical1310\u20131315 from main; duplicate NPC DDL removed from unmerged1272."
+}

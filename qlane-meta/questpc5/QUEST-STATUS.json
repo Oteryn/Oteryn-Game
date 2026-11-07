@@ -529,7 +529,7 @@
       "path": "content/quests/definitions/quests-00200-00299.json",
       "pointer": "/records/37/definition"
     },
-    "active_step": "Correct level60 PG RED115.988758922s proven; merged canonical QNPCFX f641d8d6c and regenerated native items/binding evidence/pins; stable merged-tree compile then GREEN pending.",
+    "active_step": "All six seals passed in green3; missing captured Queen placement admitted via existing NPC scope generator. Complete route retry includes local uncommitted1300 test prerequisite, not shipped.",
     "pg_red": {
       "server": "PostgreSQL 18.6",
       "duration_seconds": 115.988758922,
@@ -833,7 +833,8 @@
       ],
       "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
     },
-    "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json"
+    "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json",
+    "integration_note": "Post-QNPCFX regression reached original chest but Rejected when pending QUESTPC8 migration1300 was absent. Restore only owner-approved local uncommitted prerequisite for focused tests; no tracked copy; native route/premium/observation passed before chest."
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",

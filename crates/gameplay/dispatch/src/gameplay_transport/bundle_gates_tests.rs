@@ -808,6 +808,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    // Newhaven's Corruptor fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
         1,
@@ -851,6 +853,15 @@ fn a_bundle_world_seam_has_no_qualified_room() {
         expected,
         "`SeamRooms` is named in another place: a new construction could hand a bundle World its \
          qualified room"
+    );
+    let corruptor = parse_source("src/gameplay_transport/postgres_tests/newhaven_corruptor.rs");
+    let mut overrides = Constructions::default();
+    overrides.visit_file(&corruptor);
+    assert!(
+        matches!(overrides.0.as_slice(), [call]
+            if matches!(call.args.first(), Some(syn::Expr::Path(path))
+                if path.path.is_ident("None"))),
+        "the Corruptor fixture must explicitly withhold its qualified room"
     );
     let serve = parse_source("src/node/serve.rs");
     let mut constructions = Constructions::default();
