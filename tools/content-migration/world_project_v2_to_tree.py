@@ -77,6 +77,27 @@ def write_registry(relative: str, value: Any) -> None:
     text = json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     (ROOT / relative).write_text(text, encoding="utf-8", newline="\n")
 
+def refresh_bestiary_inventory(root: Path) -> None:
+    """Regenerate the native canonical Creature shard inventory after admission."""
+    index = load(root / "content/creatures/definitions/index.json")
+    shards = index["shards"]
+    if (not shards or len(shards) != len(set(shards))
+            or any(not re.fullmatch(r"content/creatures/definitions/creatures-[0-9]{5}-[0-9]{5}\.json", path) for path in shards)):
+        raise RuntimeError("BESTIARY_SHARD_INVENTORY")
+    count = sum(len(load(root / path)["records"]) for path in shards)
+    if count != index["record_count"]:
+        raise RuntimeError("BESTIARY_SHARD_COUNT")
+    body = f"const SHARDS: [(&str, &[u8]); {len(shards)}] = [\n"
+    for path in shards:
+        body += f'    (\n        "{path}",\n        include_bytes!(\n            "../../../../../../{path}"\n        ),\n    ),\n'
+    body += f"];\nconst CREATURE_COUNT: usize = {count:_};"
+    target = root / "crates/gameplay/content/src/content/project/bestiary.rs"
+    text, replaced = re.subn(r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;", lambda _: body, target.read_text())
+    if replaced != 1:
+        raise RuntimeError("BESTIARY_INVENTORY_SEAM")
+    target.write_text(text)
+
+
 def retained_quest_registration(root: Path) -> tuple[dict[str, Any], list[str]]:
     """Retain the separately authored Quest family; never synthesize its records."""
     manifest = load(root / "content/manifest.json")
@@ -689,6 +710,7 @@ def main() -> int:
         ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+    refresh_bestiary_inventory(ROOT)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

@@ -31,13 +31,13 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01862.json",
+        "content/creatures/definitions/creatures-01500-01863.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01862.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01863.json"
         ),
     ),
 ];
-const CREATURE_COUNT: usize = 1_863;
+const CREATURE_COUNT: usize = 1_864;
 const BESTIARY_COUNT: usize = 823;
 
 #[derive(Deserialize)]
