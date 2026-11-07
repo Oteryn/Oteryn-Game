@@ -803,3 +803,10 @@ needed no content changes. These wall times include compilation/queue time.
 Native draw/use tests run on the Linux host; Windows HWND execution was not run.
 The Watch entry retains the existing CLIENT-INSTALLER-0 lifetime guard before
 loading assets, independently of character bootstrap.
+
+Independent read-only review of `20f8161d6275f6e6736d2e23552e5344f188e4d5`
+found no P0/P1 issue and one P2 viewport origin defect. Watch now derives its
+origin and dimensions from the protocol window constants, preserving the full
+eastern column and southern row. The corner regression failed on the previous
+origin and passes with all four corners, an edge creature and an edge effect;
+all nine final native cast tests pass (5.442 s wall). No wire or server rule changed.

@@ -7,6 +7,7 @@ use oteryn_renderer::world::{
     BLACK_CELL, BUILTIN_CELLS, MARKER_CELL, WorldAtlas, atlas_from_cells, builtin_rgba,
 };
 use oteryn_renderer::{AtlasImage, SpriteBatch, TileBatch, TileCoord, TileView};
+use oteryn_session::world_map::{VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH};
 use std::{path::Path, time::Instant};
 pub(super) struct Assets {
     source: Option<(AppearanceIndex, SpriteSheets)>,
@@ -36,7 +37,13 @@ impl Assets {
         Ok((index, SpriteSheets::new(store, catalog)))
     }
     pub fn draw(&mut self, picture: &Picture, now: Instant) -> Result<Drawn, String> {
-        let view = TileView::new(TileCoord::new(7, 9), 32, 18, 14).map_err(|e| e.to_string())?;
+        let view = TileView::new(
+            TileCoord::new(16 - VIEW_LEFT, 16 - VIEW_TOP),
+            32,
+            VIEW_WIDTH as u32,
+            VIEW_HEIGHT as u32,
+        )
+        .map_err(|e| e.to_string())?;
         let mut draws: Vec<(TileCoord, Vec<DrawCell>)> = Vec::new();
         let mut markers = Vec::new();
         let mut cell_count = 0usize;
@@ -151,12 +158,64 @@ impl Assets {
                     .map_err(|e| e.to_string())?;
             }
         }
-        let tiles = TileBatch::from_cells(&view, &atlas, &vec![BLACK_CELL; 18 * 14])
-            .map_err(|e| e.to_string())?;
+        let tiles = TileBatch::from_cells(
+            &view,
+            &atlas,
+            &[BLACK_CELL; (VIEW_WIDTH * VIEW_HEIGHT) as usize],
+        )
+        .map_err(|e| e.to_string())?;
         Ok(Drawn {
             atlas,
             tiles,
             sprites,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn s17b_public_window_corners_are_visible() -> Result<(), Box<dyn std::error::Error>> {
+        // Crystal protocolgame.cpp:8043: retain the complete public map window.
+        let now = Instant::now();
+        let mut picture = Picture::default();
+        picture.floor = Some(-7);
+        for (x, y) in [(8, 10), (25, 10), (8, 23), (25, 23)] {
+            picture.tiles.insert((-7, y, x), vec![100]);
+        }
+        picture.actors.push((1, 25, 23 + 8 * 32, 1, 100));
+        picture.effects.push((
+            now,
+            oteryn_session::PresentationEvent {
+                decision_ordinal: 1,
+                emission_ordinal: 1,
+                kind: oteryn_session::PresentationEventKind::MagicEffect {
+                    position: oteryn_session::ActorPosition {
+                        x: 25,
+                        y: 23,
+                        floor: 7,
+                    },
+                    effect_id: 1,
+                    source: oteryn_session::PresentationSource::Global,
+                },
+            },
+        ));
+        let drawn = Assets { source: None }.draw(&picture, now)?;
+        assert_eq!(
+            drawn.sprites.len(),
+            6,
+            "four map corners, creature and effect remain visible"
+        );
+        let positions: Vec<_> = drawn
+            .sprites
+            .instances()
+            .iter()
+            .map(|quad| quad.position)
+            .collect();
+        for corner in [[0.0, 0.0], [544.0, 0.0], [0.0, 416.0], [544.0, 416.0]] {
+            assert!(positions.contains(&corner), "public corner {corner:?}");
+        }
+        Ok(())
     }
 }
