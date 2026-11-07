@@ -99,6 +99,44 @@ impl From<FactsRefusal> for BootRefusal {
     }
 }
 
+/// The production bundle Item lookup. A known pinned reference may have no
+/// native profile: its unknown facts stay blocking/non-pickupable. Terrain-backed
+/// floor classification remains the map owner's existing qualified fallback.
+pub fn native_item_definition(
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    key: &str,
+) -> Option<ItemDefinition> {
+    use crate::content::{ReferenceItemField, ReferenceItemType};
+    let index = gameplay.and_then(|state| state.item_index())?;
+    let revision = index.revision(key)?;
+    let reference = index.definition_ref("Item", key, revision)?;
+    let profile = gameplay
+        .and_then(|state| state.item_policy(key, revision))
+        .map(|policy| policy.record());
+    let pickupable = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.physical, ReferenceItemField::Known(physical)
+                if physical.pickupable == ReferenceItemField::Known(true)
+        )
+    });
+    let door = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.classification, ReferenceItemField::Known(classification)
+                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+        )
+    });
+    let attributes = profile.map(|profile| &profile.attributes);
+    Some(ItemDefinition {
+        reference,
+        solid: attributes.and_then(|attributes| attributes.blocks_movement),
+        blocks_projectile: attributes
+            .and_then(|attributes| attributes.blocks_projectile)
+            .unwrap_or(true),
+        pickupable,
+        door,
+    })
+}
+
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]

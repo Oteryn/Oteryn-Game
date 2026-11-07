@@ -1,3 +1,94 @@
+# Green batch: Desert Dungeon reusable party rite
+
+BATCH-desert-party-rite-mechanism-2026-11-07.json records3actual PG cases:
+rite61.900s on PostgreSQL18.6, existing encounter54.85s and altar55.34s.
+Bounded schema/group rollback units,14Python tests,6cratecheck101.081s,
+all-targets/all-features clippy-Dwarnings220.077s,fmt14.112s, both server boot
+tests,123content10.781s command/2.70s runtime,5World55.676s command/53.11s
+runtime, pin27.841s all pass. Pin a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c.
+Final native registration check passed42files after source-order-only insertion
+cleanup; no generated data changed. Published source Annihilator entry853614652 reused.
+Whole scope remains0/35; this proves the rite mechanism, not the whole quest.
+
+CONTINUE NOW: source Desert level20 door32673,32100,z8 (5102/5103 pair already
+in World registry), both reward chests6157/6158, actual earned native route/replay.
+Exact pinned chest source downloaded+SHA-verified outside checkout at
+/tmp/questpc2-chest-source/data-global/startup/tables/chest.lua, source lines1806,
+1813, zimbadev/crystalserver201189f. desert1=100platinum; desert2=bag2857 with
+3084 exact250charges and3098/3046/3077 each1. Port only reusable charge projection
+from questpc4@ab8ccdf0b; scope new claim admission onlydesert2, retain poison
+ daggers corrections. Source capture must reject partial249/raw1 as full250.
+Capture tool level source normalization must support both dictionary1020 and
+existing array-shaped groups. Add missing door native profiles via pinned importer,
+not new level-gate engine. Actual source map level door has no action yet.
+
+Resource recovery: one content-link os28/Bus error exhausted disk so sandbox
+could not start. Automatic review approved one-shot inactive unlocked Cargo
+query-cache/dep-graph reclamation8172610425bytes; no source, objects, binaries,
+PG data or active builds removed.7.6GiB free restored. Native Dispatch newest
+cache0clhrjm82foyu retained. Prior rite executable SHA-verified gzip archive is
+/tmp/questpc2-desert-verified-rite-executable.gz (ledger JSON alongside).
+All earlier resource/fixture failures are corrected and are not PG green proof.
+Never unlink an executable during a build. Do not repeat passing checks absent
+a relevant new change; normal next-batch checks still required.
+
+# Current: Desert rite PostgreSQL GREEN; integrated checks next
+
+Source rite passed actual PostgreSQL18.6:1case,61.900s runtime,137.783s including
+compile. Four real bootstrap/Fresh Characters, native level20/vocations, exact
+B3 source geometry and production resolver. Missing member/offering, wrong role,
+stale connection/scope/duplicate Character all refuse without burns. Lost ack
+closes without reply, all four stay pending, participant reconciliation moves
+all four once; exact original replay leaves one receipt and four burns totaling10.
+
+Integrated published Annihilator entry/checkpoint853614652; preserve that other
+PC's ongoing combat work. No duplicate entry work. Current final runner is
+/tmp/questpc2-desert-final-checks.py; inspect every result. Whole scope stays0/35.
+After green checks commit/push immediately, then earned Desert chest composition.
+
+Earlier fixture failures are corrected: live TLS evidence replaces unavailable
+Dependencies source; actual Character bootstrap replaces minimal paging roots;
+active durable session state is2; unknown outcomes require no acknowledgement.
+The old active notes below are history, not latest failure/current runner.
+
+# Active: source Desert Dungeon party rite mechanism
+
+AUTHORING after pushed7f13b53a7. Implemented bounded source party_transfer,
+all-member durable fences/base vocations, whole-stack altar consumption,
+whole-carrier group projection/replay, participant and lever pending gates.
+Source-facing two-pull2772/2773 behavior is retained. New PG fixture uses4
+independent Fresh admissions, native XP20 and vocation owners, actual B3 crop,
+missing-member/missing-sacrifice/wrong-role/fence refusals, interruption/replay.
+It is still in RED/GREEN iteration; do not call the whole quest qualified.
+
+Source-map helper initially overrequired native profiles for terrain-backed
+Items. Shared World native_item_definition now extracts the production server
+lookup unchanged and is used by both server and fixture. No identity/collision
+checks were relaxed. Four normalized source scenery profiles (1841,2114,2153,
+3656) retain exact pinned importer physics. Source lookup/hash and4access tests,
+7effect authoring tests,3profile tests and2focused Rust units passed. Latest
+PG failed pending evidence unavailable; fixture now maintains a requested
+replacement holder and retries the SAME immutable Fresh request. Prove again.
+
+Native registration42 and raid registration tooling ran; access tool adds only
+UID30030 at32673,32086,z8. Semantic diff proves no other decoded map change.
+World pin refreshed to a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c.
+Latest runner /tmp/questpc2-desert-production-lookup.py (PG only); check logs
+before any green claim. Source files downloaded to /tmp/questpc2-party-native-source
+were SHA256-verified against the existing native importer pin; never commit
+raw XML/dat. Normalized generator/proof is permanent authored schema data.
+
+NEXT AFTER GREEN MECHANISM/PUSH: Desert earned reward composition. Both claim
+paths are already qualified in questpc4, but local desert2 canonical data is
+historically held. Reuse its exact native_charge_item/claim_items projection
+from origin/claude/happy-davinci-ijz3wy-questpc4@ab8ccdf0b, retaining our poison
+ dagger hardening and limiting new DATA to our owned desert2. Full250 charges
+must match both canonical and native profile exactly. Existing container_native
+and source chest overlay tools own normalization/bindings. Do not redo the other
+four charged quests owned/qualified by that lane. Compose actual source chest
+6157/6158 at32668/32675,32069,z8 through native STEP/USE and claim/MINT after
+rite; then assess complete source Desert lifecycle. Continue all owned scope.
+
 # Current continuation — shield fixed locally, demon corpse admission next
 
 Offline shield authoring/registration now completes28unknown weapon-kind

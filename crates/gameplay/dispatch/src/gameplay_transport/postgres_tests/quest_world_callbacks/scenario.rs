@@ -573,6 +573,7 @@ fn scenario_case(
                             .read_actor_position(deps.actor)
                             .map_err(debug)?
                             .revision(),
+                        party: Vec::new(),
                     }
                 };
                 owner

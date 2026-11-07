@@ -868,6 +868,7 @@ async fn wardrobe(
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .revision(),
+            party: Vec::new(),
         }
     };
     let session = admitted.game_session_id;
