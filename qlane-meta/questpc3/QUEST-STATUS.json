@@ -2105,6 +2105,145 @@
           "checks": "fmt, cargo check34.63s, strict three-crate all-features lib Clippy4m18s,16 domain/boundary tests, native41/pin-refresh and profile closure tests",
           "capacity_correction": "8-slot bag2853 correctly refused ninth item; source-correct20-slot backpack2854 asserted; no guard or expected output weakened"
         }
+      },
+      {
+        "batch": "threatened_fairies_15",
+        "phase": "QUALIFIED:5 native AIDs, once flags/shared counter and actual idle-channel restore cycle proven on PostgreSQL",
+        "entries": [
+          "AID40016 Fairy01",
+          "AID40017 Fairy02",
+          "AID40018 Fairy03",
+          "AID40019 Fairy04",
+          "AID40020 Fairy05"
+        ],
+        "source": "/tmp/questpc3-donor/action_fairies_release.lua; retained archive index and exact blob/SHA to cite in next authoring batch",
+        "requirements": "NightmareIntruders3; distinct once flags; counter capped5 with absent/-1->1; transform25796->25797, restore after30s",
+        "reuse": "qualified questl2 0c74b25cc temporary world objects; implement missing reusable pieces here",
+        "previous_qualified": "threatened_treasure_14",
+        "red_test": {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/threatened_dreams/fairies.rs",
+          "log": "/tmp/questpc3-fairies-red-retry.log",
+          "state": "building, no PostgreSQL RED marker accepted yet",
+          "fixture_compile_fixes": "BundleWorld.facts() method; poll_fn rather than unavailable Tokio join macro; normal native capability offer"
+        },
+        "postgres_red": {
+          "duration_ms": 72151,
+          "server": "PostgreSQL18.6",
+          "evidence": "entries0 flags0 counter0 scheduled0 restored0",
+          "log": "/tmp/questpc3-fairies-red-retry.log",
+          "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611"
+        },
+        "source_facts": {
+          "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
+          "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
+          "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
+          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
+          "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
+        },
+        "implementation": {
+          "storage": "optional bounded increment; checked locked addition; preserve old absolute semantics; NPC mode rejects unsupported increment",
+          "time": "frozen optional projection_time_us preserves old serialized contexts and recovery deadline",
+          "decay": "existing channel owner; stale revision refusal, earlier same-appearance deadline retained; legacy revision guard preserved",
+          "appearance_admission": "25796/25797 declared served states, no portable inventory admission",
+          "authoring": "questpc3_threatened_fairies.py; AID selectors, 5 once flags, shared counter<5,30sec transform/restore",
+          "checks": "4-crate check2m29s,8 domain tests1.89s; dedicated decay unit running"
+        },
+        "latest_checks": {
+          "clippy": "PASS4 changed crates all-features --lib -Dwarnings3m02s",
+          "counter_unit": "PASS locked cap5/distinct flag/overflow/zero delta and lifetime guards",
+          "decay_unit": "PASS earlier same-appearance deadline/stale revision/legacy exact revision semantics",
+          "native": "PASS41 --check no inventory profile changes",
+          "pins": "PASS unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+          "postgres": "PASS69570ms; actual idle owner restores5"
+        },
+        "first_pg_driver_failure": {
+          "duration_ms": 65825,
+          "exact_error": "async fn resumed after completion in test cancellation poll_fn",
+          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
+          "log": "/tmp/questpc3-fairies-green.log",
+          "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
+          "retry": "/tmp/questpc3-fairies-green-retry.log"
+        },
+        "legacy_reward_regression": "8 reward callback unit tests PASS1.71s, including frozen legacy bindings",
+        "result": "GREEN",
+        "pg_green_ms": 69570,
+        "proofs": {
+          "red": {
+            "log": "/tmp/questpc3-fairies-red-retry.log",
+            "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611",
+            "result": "expected RED"
+          },
+          "green": {
+            "log": "/tmp/questpc3-fairies-green-retry.log",
+            "sha256": "1195834d0ee19738d931ff2dcaed60ed92c8700f43117087e4a6d2f211a6912c",
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-fairies-core-check.log",
+            "sha256": "aae332849959d2f7b457ddc28341827c8ad921ac4061aaa9c1e2cefb5c4f958c",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-fairies-clippy.log",
+            "sha256": "a56987a403fda942404159666c4a0d02221492e38a55d6edd25cbf6d0bde53f2",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-fairies-final-fmt-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-fairies-final-authoring-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-fairies-domain.log",
+            "sha256": "ffbdbdcb0087a2b30fe9bcb538547906e2021548cc1407baed2ebeddb573ce90",
+            "result": "PASS"
+          },
+          "counter-unit": {
+            "log": "/tmp/questpc3-fairies-counter-unit.log",
+            "sha256": "fc0b32e4eda3865371764a1209b896a41fa13928304e1520579203f23ce2ff0f",
+            "result": "PASS"
+          },
+          "decay-unit": {
+            "log": "/tmp/questpc3-fairies-decay-final-unit.log",
+            "sha256": "577aa69f84d5d1f8cb0ec2ccf3d1556b980e05342d769d708f8fd48dbf157370",
+            "result": "PASS"
+          },
+          "legacy-rewards": {
+            "log": "/tmp/questpc3-fairies-reward-regression.log",
+            "sha256": "e897b03f79a088776f432b5b960a431bbd7b9932a8c73494c691c1a6ab256cab",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-fairies-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-fairies-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 5,
+          "flags": 5,
+          "counter": 5,
+          "scheduled": 5,
+          "restored": 5,
+          "prior_fixture": "only Nightmare2/3; no once flags/counter results/timers/restores seeded",
+          "negative_paths": "wrong mission stage; literal replay after target transform; fresh same-fairy repeat; early timer deadline; relative cap/overflow and stale revision units",
+          "mechanisms": "generic relative world storage; frozen projection clock/recovery deadline; existing Channel decay owner with source appearance predicate; legacy revision timer guard retained",
+          "native_profiles": "unchanged;41 drift-check files",
+          "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -4365,6 +4504,145 @@
           "checks": "fmt, cargo check34.63s, strict three-crate all-features lib Clippy4m18s,16 domain/boundary tests, native41/pin-refresh and profile closure tests",
           "capacity_correction": "8-slot bag2853 correctly refused ninth item; source-correct20-slot backpack2854 asserted; no guard or expected output weakened"
         }
+      },
+      "threatened_fairies_15": {
+        "batch": "threatened_fairies_15",
+        "phase": "QUALIFIED:5 native AIDs, once flags/shared counter and actual idle-channel restore cycle proven on PostgreSQL",
+        "entries": [
+          "AID40016 Fairy01",
+          "AID40017 Fairy02",
+          "AID40018 Fairy03",
+          "AID40019 Fairy04",
+          "AID40020 Fairy05"
+        ],
+        "source": "/tmp/questpc3-donor/action_fairies_release.lua; retained archive index and exact blob/SHA to cite in next authoring batch",
+        "requirements": "NightmareIntruders3; distinct once flags; counter capped5 with absent/-1->1; transform25796->25797, restore after30s",
+        "reuse": "qualified questl2 0c74b25cc temporary world objects; implement missing reusable pieces here",
+        "previous_qualified": "threatened_treasure_14",
+        "red_test": {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/threatened_dreams/fairies.rs",
+          "log": "/tmp/questpc3-fairies-red-retry.log",
+          "state": "building, no PostgreSQL RED marker accepted yet",
+          "fixture_compile_fixes": "BundleWorld.facts() method; poll_fn rather than unavailable Tokio join macro; normal native capability offer"
+        },
+        "postgres_red": {
+          "duration_ms": 72151,
+          "server": "PostgreSQL18.6",
+          "evidence": "entries0 flags0 counter0 scheduled0 restored0",
+          "log": "/tmp/questpc3-fairies-red-retry.log",
+          "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611"
+        },
+        "source_facts": {
+          "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
+          "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
+          "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
+          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
+          "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
+          "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
+        },
+        "implementation": {
+          "storage": "optional bounded increment; checked locked addition; preserve old absolute semantics; NPC mode rejects unsupported increment",
+          "time": "frozen optional projection_time_us preserves old serialized contexts and recovery deadline",
+          "decay": "existing channel owner; stale revision refusal, earlier same-appearance deadline retained; legacy revision guard preserved",
+          "appearance_admission": "25796/25797 declared served states, no portable inventory admission",
+          "authoring": "questpc3_threatened_fairies.py; AID selectors, 5 once flags, shared counter<5,30sec transform/restore",
+          "checks": "4-crate check2m29s,8 domain tests1.89s; dedicated decay unit running"
+        },
+        "latest_checks": {
+          "clippy": "PASS4 changed crates all-features --lib -Dwarnings3m02s",
+          "counter_unit": "PASS locked cap5/distinct flag/overflow/zero delta and lifetime guards",
+          "decay_unit": "PASS earlier same-appearance deadline/stale revision/legacy exact revision semantics",
+          "native": "PASS41 --check no inventory profile changes",
+          "pins": "PASS unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+          "postgres": "PASS69570ms; actual idle owner restores5"
+        },
+        "first_pg_driver_failure": {
+          "duration_ms": 65825,
+          "exact_error": "async fn resumed after completion in test cancellation poll_fn",
+          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
+          "log": "/tmp/questpc3-fairies-green.log",
+          "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
+          "retry": "/tmp/questpc3-fairies-green-retry.log"
+        },
+        "legacy_reward_regression": "8 reward callback unit tests PASS1.71s, including frozen legacy bindings",
+        "result": "GREEN",
+        "pg_green_ms": 69570,
+        "proofs": {
+          "red": {
+            "log": "/tmp/questpc3-fairies-red-retry.log",
+            "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611",
+            "result": "expected RED"
+          },
+          "green": {
+            "log": "/tmp/questpc3-fairies-green-retry.log",
+            "sha256": "1195834d0ee19738d931ff2dcaed60ed92c8700f43117087e4a6d2f211a6912c",
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-fairies-core-check.log",
+            "sha256": "aae332849959d2f7b457ddc28341827c8ad921ac4061aaa9c1e2cefb5c4f958c",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-fairies-clippy.log",
+            "sha256": "a56987a403fda942404159666c4a0d02221492e38a55d6edd25cbf6d0bde53f2",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-fairies-final-fmt-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-fairies-final-authoring-check.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "domain": {
+            "log": "/tmp/questpc3-fairies-domain.log",
+            "sha256": "ffbdbdcb0087a2b30fe9bcb538547906e2021548cc1407baed2ebeddb573ce90",
+            "result": "PASS"
+          },
+          "counter-unit": {
+            "log": "/tmp/questpc3-fairies-counter-unit.log",
+            "sha256": "fc0b32e4eda3865371764a1209b896a41fa13928304e1520579203f23ce2ff0f",
+            "result": "PASS"
+          },
+          "decay-unit": {
+            "log": "/tmp/questpc3-fairies-decay-final-unit.log",
+            "sha256": "577aa69f84d5d1f8cb0ec2ccf3d1556b980e05342d769d708f8fd48dbf157370",
+            "result": "PASS"
+          },
+          "legacy-rewards": {
+            "log": "/tmp/questpc3-fairies-reward-regression.log",
+            "sha256": "e897b03f79a088776f432b5b960a431bbd7b9932a8c73494c691c1a6ab256cab",
+            "result": "PASS"
+          },
+          "native": {
+            "log": "/tmp/questpc3-fairies-native.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-fairies-pins.log",
+            "sha256": "e3503b4fdd9fbac2805d6491aa3e25d6c146a1272e215403662302c9245798b5",
+            "result": "PASS"
+          }
+        },
+        "qualification": {
+          "postgres": "18.6",
+          "entries": 5,
+          "flags": 5,
+          "counter": 5,
+          "scheduled": 5,
+          "restored": 5,
+          "prior_fixture": "only Nightmare2/3; no once flags/counter results/timers/restores seeded",
+          "negative_paths": "wrong mission stage; literal replay after target transform; fresh same-fairy repeat; early timer deadline; relative cap/overflow and stale revision units",
+          "mechanisms": "generic relative world storage; frozen projection clock/recovery deadline; existing Channel decay owner with source appearance predicate; legacy revision timer guard retained",
+          "native_profiles": "unchanged;41 drift-check files",
+          "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
+        }
       }
     },
     "counts": {
@@ -4373,66 +4651,22 @@
       "skipped_world_owner": 17
     },
     "current_batch": {
-      "batch": "threatened_fairies_15",
-      "phase": "First PG attempt reached5 source receipts/flags1/counter5 then fixture cancellation future was polled after completion (65825ms). Driver now latches completion before polling again; all assertions unchanged. Same focused PG retry building, no full GREEN yet.",
+      "batch": "threatened_presents_16",
+      "phase": "Active: author native three-bed delivery PG RED before mechanism/data changes",
       "entries": [
-        "AID40016 Fairy01",
-        "AID40017 Fairy02",
-        "AID40018 Fairy03",
-        "AID40019 Fairy04",
-        "AID40020 Fairy05"
+        "present delivery Thais32391/32220/z6",
+        "present delivery Venore33001/32060/z5",
+        "present delivery Carlin32328/31794/z6"
       ],
-      "source": "/tmp/questpc3-donor/action_fairies_release.lua; retained archive index and exact blob/SHA to cite in next authoring batch",
-      "requirements": "NightmareIntruders3; distinct once flags; counter capped5 with absent/-1->1; transform25796->25797, restore after30s",
-      "reuse": "qualified questl2 0c74b25cc temporary world objects; implement missing reusable pieces here",
-      "previous_qualified": "threatened_treasure_14",
-      "red_test": {
-        "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/threatened_dreams/fairies.rs",
-        "log": "/tmp/questpc3-fairies-red-retry.log",
-        "state": "building, no PostgreSQL RED marker accepted yet",
-        "fixture_compile_fixes": "BundleWorld.facts() method; poll_fn rather than unavailable Tokio join macro; normal native capability offer"
+      "source": {
+        "file": "data-global/scripts/quests/threatened_dreams_quest/action_present.lua",
+        "blob": "c4f45316f050502d1ffe4b8a97b817fdcccf62fd",
+        "sha256": "f2360e2a53c2697cf4b90a83f2d3e5971b456af1e57945335625c71276050186"
       },
-      "postgres_red": {
-        "duration_ms": 72151,
-        "server": "PostgreSQL18.6",
-        "evidence": "entries0 flags0 counter0 scheduled0 restored0",
-        "log": "/tmp/questpc3-fairies-red-retry.log",
-        "sha256": "a38ca1f342e1aea664cd10a47e483fcbe281438c066707ca712e3a5c3099b611"
-      },
-      "source_facts": {
-        "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
-        "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
-        "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-        "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
-        "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
-        "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
-      },
-      "implementation": {
-        "storage": "optional bounded increment; checked locked addition; preserve old absolute semantics; NPC mode rejects unsupported increment",
-        "time": "frozen optional projection_time_us preserves old serialized contexts and recovery deadline",
-        "decay": "existing channel owner; stale revision refusal, earlier same-appearance deadline retained; legacy revision guard preserved",
-        "appearance_admission": "25796/25797 declared served states, no portable inventory admission",
-        "authoring": "questpc3_threatened_fairies.py; AID selectors, 5 once flags, shared counter<5,30sec transform/restore",
-        "checks": "4-crate check2m29s,8 domain tests1.89s; dedicated decay unit running"
-      },
-      "latest_checks": {
-        "clippy": "PASS4 changed crates all-features --lib -Dwarnings3m02s",
-        "counter_unit": "PASS locked cap5/distinct flag/overflow/zero delta and lifetime guards",
-        "decay_unit": "PASS earlier same-appearance deadline/stale revision/legacy exact revision semantics",
-        "native": "PASS41 --check no inventory profile changes",
-        "pins": "PASS unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
-        "postgres": "building /tmp/questpc3-fairies-green.log"
-      },
-      "first_pg_driver_failure": {
-        "duration_ms": 65825,
-        "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-        "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
-        "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
-        "log": "/tmp/questpc3-fairies-green.log",
-        "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
-        "retry": "/tmp/questpc3-fairies-green-retry.log"
-      },
-      "legacy_reward_regression": "8 reward callback unit tests PASS1.71s, including frozen legacy bindings"
+      "requirements": "ToothFairy1 and PresentsPlaced<3; exact three target positions/distinct once flags; consume selected25302x1/give25303x1; increment shared counter atomically",
+      "reuse": "existing carried-on-target BURN, complete world MINT and bounded relative world storage; implement any missing composition generically",
+      "facts": "canonical25302/25303 both materializable StackCapable max100; weights1000/300; no guesses or reference copies",
+      "previous_qualified": "threatened_fairies_15"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -9616,7 +9850,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain all prior qualified mechanisms and native six-entry treasure72.115s (four selected variants plus second earned cycle). Next five FairyRelease entries, timed objects/harvest/encounters and whole journey; no shared-feature deferral."
+      "next_actions": "Retain all previous qualified slices plus treasure14 and five FairyRelease15 (PG69.570s, idle restores). Next3 present deliveries, remaining harvest/encounters/NPC appearances and full journey. No shared-feature deferral."
     },
     {
       "canonical": "oteryn:quest.pilgrimage_of_ashes",
