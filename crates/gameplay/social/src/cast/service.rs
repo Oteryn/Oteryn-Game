@@ -244,6 +244,7 @@ async fn run(
                 | Operation::Refresh(f)
                 | Operation::Publish(_, f, _, _, _)
                 | Operation::PublishView(_, f, _, _, _, _)
+                | Operation::Capture(f)
                 | Operation::Slate(f) => {
                     freshness.insert(f.authority.current_game_session_id(), now);
                 }
