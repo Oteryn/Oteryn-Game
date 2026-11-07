@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "WIP compiled fixture-helper slice published now under owner15min rule; revised treasure test remains local/rebuilding, production14 still untouched.",
+      "phase": "Compiled WIP test and genuine full six-entry PostgreSQL RED published; production14 implementation starts now.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4056,7 +4056,15 @@
         "qualification": "fixture failure, not accepted as full six-entry mechanism RED"
       },
       "helper_compile_proof": "Completed dispatch test build3m26s and actual PG61.702s reached all4 map attempts before blocked movement. Only backpack helper parameter and world-use helper visibility are published; revised test/mount remains local.",
-      "push_interval_minutes": 15
+      "push_interval_minutes": 15,
+      "postgres_red": {
+        "duration_ms": 57010,
+        "evidence": "entries0/agaricfalse/maps0/repeated_mapfalse/ring0/quartz0/coins0/stage4",
+        "sha256": "5cd2b26b09286df482709e77bd91e146255a4ec1b9d1501d6541480401a4baf7",
+        "server": "PostgreSQL18.6",
+        "negative_paths": "wrong stage, wrong mosaic position, exact native replay all reached; fixture movement fixed"
+      },
+      "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",

@@ -3,6 +3,8 @@
 //! requirements and demand actual physical hand-ins, rewards and receipts through dispatch.
 #[path = "threatened_dreams/acquisition.rs"]
 mod acquisition;
+#[path = "threatened_dreams/treasure.rs"]
+mod treasure;
 #[path = "threatened_dreams/irmana.rs"]
 mod irmana;
 #[path = "threatened_dreams/delivery.rs"]
