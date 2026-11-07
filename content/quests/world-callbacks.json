@@ -2968,6 +2968,263 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/draconia-route-29002",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32810,
+          "y": 31595,
+          "floor": -5
+        },
+        "unique": 29002,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/remove-create_item.lua:1-60",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2274-2279"
+      ],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32796,
+              "y": 31594,
+              "floor": -5
+            },
+            "remove": 1270,
+            "create": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-29002-departure",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32810,
+          "y": 31595,
+          "floor": -5
+        },
+        "unique": 29002,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/remove-create_item.lua:1-60",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2274-2279"
+      ],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32796,
+              "y": 31594,
+              "floor": -5
+            },
+            "remove": null,
+            "create": 1270
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-29003",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32794,
+          "y": 31595,
+          "floor": -5
+        },
+        "unique": 29003,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/remove-create_item.lua:1-60",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2280-2285"
+      ],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32796,
+              "y": 31576,
+              "floor": -5
+            },
+            "remove": 1270,
+            "create": null
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-29003-departure",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_out",
+      "selector": {
+        "position": {
+          "x": 32794,
+          "y": 31595,
+          "floor": -5
+        },
+        "unique": 29003,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/remove-create_item.lua:1-60",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/tile.lua:2280-2285"
+      ],
+      "objects": {
+        "consume_trigger": false,
+        "mutations": [
+          {
+            "position": {
+              "x": 32796,
+              "y": 31576,
+              "floor": -5
+            },
+            "remove": null,
+            "create": 1270
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-38004",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32669,
+          "y": 31653,
+          "floor": -10
+        },
+        "unique": 38004,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32679,
+        "y": 31673,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:1-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:634-639"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-38005",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32794,
+          "y": 31576,
+          "floor": -5
+        },
+        "unique": 38005,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32812,
+        "y": 31577,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:1-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:640-645"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-route-38006",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32812,
+          "y": 31576,
+          "floor": -5
+        },
+        "unique": 38006,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32794,
+        "y": 31577,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:1-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:646-651"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/dreamers_challenge_quest/hugo_exit",
       "quest": "oteryn:quest.dreamer_s_challenge_quest",
       "trigger": "step_in",

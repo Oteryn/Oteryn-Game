@@ -122,9 +122,8 @@
       "retained_line": 666
     }
   ],
-  "boundary": "No raw source copied into repository. Existing pinned corpus supports offline binding regeneration; four newer primary teleport rows are exactly equivalent. Route implementation and six-case verification remain in progress; no mechanic or title qualification claimed.",
+  "boundary": "Verified source provenance; source-only checkpoint precedes implementation. Current behavior proof is separate. No raw donor/map copies.",
   "result": "SOURCE_FACTS_VERIFIED",
-  "implementation_published": false,
   "native_existing_portals": [
     {
       "uid": 38003,
@@ -211,5 +210,7 @@
       "map_path": "content/world/placements/region-z05-x128-y123.b3",
       "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903"
     }
-  ]
+  ],
+  "checkpoint_implementation_published": false,
+  "behavior_validation": "qlane-meta/questpc/cloud-draconia-route-validation.json"
 }

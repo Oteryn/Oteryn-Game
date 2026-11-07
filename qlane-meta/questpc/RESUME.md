@@ -1,3 +1,58 @@
+## Draconia pressure/portal slice fully GREEN — 2026-11-07
+Five new native anchors and seven source movement callbacks now compose two
+pressure gates and three missing portals. Native38003 retains its real teleport
+attribute through the existing floor owner; no duplicate callback. Nine callback
+bindings total, original four unchanged; stock5/door10 captures preserved.
+Actual PostgreSQL18.6 intended RED5=234.36s. New mechanics GREEN5, plus native
+regression1 in a separate run; actual PG6passes/0failures, harness281.98s. Raw
+combined command5pass/1pre-PG fixture failure and corrected native1pass are both
+retained honestly. Two real admitted characters prove blocked/open/cross/replay/
+departure-restored for each plate. Quest units19/19,world5/5,fmt, final check1m49s,
+strict Clippy1m53s and generation/pins PASS. Quests/world/dispatch alltargets/features.
+Only28 source-provenance hash leaves changed; approval/core/admission unchanged.
+Full evidence:cloud-draconia-route-validation.json; review no findings. Counts
+remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT three-entry source work: level25 gate at32804,31583,z2 (AID1025,5102->5103),
+Elathriel5000 money/bank ->copper2970 number3012, Dragonlord3723->3206+flag1 when
+flag!=1. Reuse existing generic owners and qpc6 paid-key implementatione30938891;
+check freshqengine2 first. Items3723/3206 alreadyNative;5102 profile missing.
+Then shared skeleton5972 stockkey3001 at32794,31572,z7 and final route composition.
+Sources/plans:/tmp/questpc-dragonlord-next-plan.md,/tmp/questpc-elathriel.lua,
+/tmp/questpc-draconia-pressure-next-plan.md. Own every missing generic feature.
+
+Resource rule:16GiB cgroup; never overlap pin compiler(~8GiB) and dispatch test
+rustc(~11GiB). Pin complete before test compile; checks can overlap actual PG.
+CARGO_INCREMENTAL=0. Fetch/merge before every push, never force/rebase published.
+Push each green slice and at least30min; do not end while actionable entries remain.
+
+## Draconia route: all six intended actual PG cases verified; final checks running
+Five new mechanics PASS: plate29002=48.764709994s,29003=47.353137678s,
+portal38004=46.350093563s,38005=46.665295174s,38006=46.315036803s. Actual RED5
+234.36s retained. Native38003 regression PASS46.519933797s in a separate final run.
+Initial six-case invocation reports5pass/1pre-PG fixture failure; final38003 rerun
+corrects signed bundle floor-byte encoding and passes. Do not claim one six-pass
+command. Combined actual PG:6passes/0failures after fixes; total harness281.98s.
+Quest units19/19,3.25s; world binder units5/5,0.05s; final fmt PASS. Pin command65877
+exited0, unchanged world9865615f... . Review no code findings; scope/core/admission
+rechecked unchanged. Annotation-only fix restores existing allow to original builder.
+
+Current final Clippy then check session96354: /tmp/questpc-draconia-route-{clippy,
+check-final}.log. Prior30425/34416 exited on displaced lint annotation; superseded.
+No code changes/retest needed after annotation restoration. Once96354passes, archive
+logs, finalize cloud-draconia-route-validation.json and status, commit/push immediately
+(fetch+merge if remote moved). Latest pushed583c321a3 (~07:53UTC); product code still
+uncommitted. Do not end. Avoid pin compiler/test rustc overlap in16GiB; incremental0.
+
+NEXT: level25 door plus NPC acquisition/fetish and shared container stock. Native
+5102->5103 level-door owner exists;5102 profile missing. NPC items3723/3206 already
+Native. Elathriel confirmed5000 money/bank ->copper key2970 with exact number3012;
+source/tmp/questpc-elathriel.lua. Reuse qpc6@e30938891 paid-key owner and checkqengine2.
+Dragonlord greet consumes3723x1, grants3206x1/flag1 only whenflag!=1; source plan
+/tmp/questpc-dragonlord-next-plan.md. Shared first key3001 is skeleton5972 container
+stock at32794,31572,z7, never a personal claim or invented loose pickup. Complete
+all remaining actionable entries; externally qualified titles stay excluded.
+
 ## Verified RED proof checkpoint — route implementation still uncommitted
 Five intended PostgreSQL18.6 RED cases234.36s are retained in
 cloud-draconia-route-validation.json and cloud-draconia-route-red-{UID}.log.

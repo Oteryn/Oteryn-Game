@@ -3546,7 +3546,7 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "All ten native key doors, stock3003-3007 and four native lever/exit callback anchors PG/strict green. Next six-entry pressure-gate and route-portal batch, followed by level/NPC/container stock and final route composition."
+      "active_batch": "Pressure gates29002/29003 and portals38004-38006 now native PG/strict green; native38003 regression retained. Earlier stock3003-3007, all ten key doors and four lever/exit anchors green. Finish level25/NPC/container stock, then compose complete source route."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -8561,20 +8561,27 @@
     }
   ],
   "latest_pg": {
-    "log": "qlane-meta/questpc/cloud-draconia-anchors-green.log",
-    "log_sha256": "bbb296f556dc4f5b023fb6cc8ee18eae6991f8f59073316345f98e7cce87f461",
-    "filters": [
-      "draconia_native_source_"
+    "log": "qlane-meta/questpc/cloud-draconia-route-green-mechanics.log",
+    "log_sha256": "a6ca68764e67082c47dbc4596a649de0a1b20515ca2028a2b9e542c537b05c43",
+    "additional_logs": [
+      {
+        "log": "qlane-meta/questpc/cloud-draconia-route-green-native38003.log",
+        "sha256": "30faadac974233b4adf756066bf8a25e62094b261ab0a69caa5c610b025d5725"
+      }
     ],
-    "result": "4 passed; 0 failed",
-    "duration_seconds": 187.26,
+    "filters": [
+      "draconia_route_native_"
+    ],
+    "actual_pg_result": "6 passed; 0 failed after fixes",
+    "command_boundary": "Five new PG passes plus separately corrected native38003 regression; original combined command had a pre-PG fixture failure, not counted.",
+    "duration_seconds": 281.98,
     "server_version": "18.6"
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "slice": "four_native_draconia_callback_anchors",
+    "slice": "draconia_source_pressure_gates_and_route_portals",
     "result": "PASS",
-    "validation": "qlane-meta/questpc/cloud-draconia-anchors-validation.json",
+    "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
     "qualified_titles_added": 0
   },
   "continuation": {
@@ -9209,11 +9216,9 @@
       "next": "Source pressure gates and four route portals, then level/NPC/container stock composition."
     },
     "draconia_source_route": {
-      "state": "five_intended_pg_red_verified_green_compile_retry_after_oom",
+      "state": "five_new_native_mechanics_and_one_native_regression_pg_strict_green",
       "validation": "qlane-meta/questpc/cloud-draconia-route-validation.json",
-      "native_regression": "38003 preserves existing native teleport; no duplicate callback",
-      "next": "Finish six-case GREEN and focused strict checks; commit/fetch/merge/push, then continue level/NPC/container stock.",
-      "scheduling": "16GiB cgroup: finish pin compiler before dispatch test compilation; CARGO_INCREMENTAL=0 retained"
+      "next": "Level25 gate, Elathriel exact paid copper key3012, Dragonlord mushroom/fetish exchange and shared skeleton stock key3001, then final route composition."
     }
   },
   "cross_lane_qualified_elsewhere": {

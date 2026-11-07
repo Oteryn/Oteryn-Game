@@ -32,6 +32,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let route = name.starts_with("draconia-route-");
     let departure = name == "departure-map-regression";
     let dropdown = name.starts_with("source-dropdown");
     let devil = name.starts_with("devil-helmet-source");
@@ -60,6 +61,7 @@ fn scenario_case(
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
         if classic_npc
+            || route
             || departure
             || object_mutation
             || mintwallin
@@ -83,6 +85,9 @@ fn scenario_case(
     )?;
     if failure_landing {
         callback.selector.position = Some(trigger);
+    }
+    if route {
+        callback = super::super::draconia_route::fixture(callback, name)?;
     }
     if target_swap {
         callback
@@ -296,7 +301,24 @@ fn scenario_case(
             floor: -6,
         });
     }
-    let world = if draconia_exit {
+    let world = if route {
+        let cells =
+            super::super::draconia_route::gate(super::super::draconia_route::source(name)?.0)
+                .map(|gate| {
+                    vec![
+                        Position {
+                            x: gate.x - 1,
+                            ..gate
+                        },
+                        Position {
+                            x: gate.x + 1,
+                            ..gate
+                        },
+                    ]
+                })
+                .unwrap_or_default();
+        super::source_route_world(&callback, trigger, &cells)?
+    } else if draconia_exit {
         super::world_with_palette(
             &callback,
             trigger,
@@ -391,6 +413,13 @@ fn scenario_case(
             None
         };
         prepare_current_session(&h).await?;
+        if route
+            && super::super::draconia_route::gate(super::super::draconia_route::source(name)?.0)
+                .is_some()
+        {
+            h.seed_pvp_target().await?;
+            super::super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+        }
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -571,7 +600,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if draconia_exit {
+        if route {
+            super::super::draconia_route::exercise(&deps, &owner, &mut admitted, &h, name).await?;
+        } else if draconia_exit {
             super::super::draconia_exit::exercise(&owner, &mut admitted, &h, deps.actor, name)
                 .await?;
         } else if draconia_escape {

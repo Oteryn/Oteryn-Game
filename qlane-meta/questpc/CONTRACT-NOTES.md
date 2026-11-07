@@ -363,3 +363,11 @@ StepOut map effects require the existing reversible flag; authored departures no
 use it without relaxing validation. Pin compiler and dispatch test rustc must run
 serially in the16GiB environment after an observed OOM kill. Pre-PG registry/setup/
 compile failures are explicitly excluded from PostgreSQL proof counts.
+
+Draconia route slice GREEN: two source pressure plates use existing player-only
+StepIn/StepOut object effects; the existing reversible-map tag admits departures
+without storage/reward guard changes. Guest has real admission/lease and initialized
+pinned position. Native38003 keeps its teleport; bundle floor byte is signed native
+i8 reinterpreted asu8, distinct from B3 legacy z. Five new source PG cases and the
+native regression pass separately; initial fixture/registry/OOM failures are not PG
+proof. Final strict checks pass; no full-suite run or whole-title promotion.

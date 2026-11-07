@@ -15,7 +15,8 @@ import world_region_codec as codec
 REVISION = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
 OUTPUT = ROOT / 'tools/content-schema/world-authoring/samples/quest-route-callback-bindings.json'
 REQUESTED = {'lever.lua': ('LeverUnique', {30006, 30035}),
-             'teleport.lua': ('TeleportUnique', {35011, 35012})}
+             'teleport.lua': ('TeleportUnique', {35011, 35012, 38004, 38005, 38006}),
+             'tile.lua': ('TileUnique', {29002, 29003})}
 
 def document():
     index = json.loads((ROOT / 'content/world/placements/index.json').read_bytes())
@@ -49,7 +50,7 @@ def document():
                     raise ValueError('callback native root missing, ambiguous, bound or housed')
                 bindings.append(dict(position=[x,y,z], item=item, attribute='unique', value=field['key'], source=path,
                                      source_line=field['line'], map_path=region['path'], map_sha256=region['sha256']))
-    if len(bindings) != 4 or {b['value'] for b in bindings} != {30006,30035,35011,35012}:
+    if len(bindings) != 9 or {b['value'] for b in bindings} != {30006,30035,35011,35012,29002,29003,38004,38005,38006}:
         raise ValueError('callback capture incomplete')
     return dict(schema=1, classification='OTS_HYPOTHESIS_ONLY',sources=sources,bindings=sorted(bindings,key=lambda b:b['position']))
 
@@ -61,4 +62,4 @@ if __name__ == '__main__':
     if args.check:
         if OUTPUT.read_text()!=expected:raise SystemExit('callback capture requires regeneration')
     else:OUTPUT.write_text(expected)
-    print('4 exact native callback anchors verified')
+    print('9 exact native callback anchors verified')

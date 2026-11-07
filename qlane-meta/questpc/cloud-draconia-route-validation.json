@@ -1,5 +1,5 @@
 {
-  "result": "FIVE_ACTUAL_PG_RED_GREEN_BUILD_RETRY",
+  "result": "PASS",
   "parent": "fe6f732a7",
   "new_entries": [
     29002,
@@ -23,7 +23,7 @@
     "total_seconds": 234.36,
     "reason": "Two real admitted players: closed wall refuses guest but plate fails to open it. Three portals: real STEP remains at source instead of destination."
   },
-  "excluded_probes": "Initial ground palette pre-PG failure, initial party MovementNonCardinal setup failures, and portal38003 synthetic missing-attribute probe are not counted. Corrected party initialization uses pinned test spawn plus real admission/lease; native38003 retains its actual teleport attribute. A first GREEN attempt rejected missing reversible-map flags before PG (0.04s); corrected data uses the existing guard. A subsequent dispatch compile was OOM-killed while the pin compiler ran; cgroup16GiB,oom_kill1. Heavy jobs are now serialized. Neither is counted as PG execution.",
+  "excluded_probes": "Initial ground palette pre-PG failure, initial party MovementNonCardinal setup failures, and portal38003 synthetic missing-attribute probe are not counted. Corrected party initialization uses pinned test spawn plus real admission/lease; native38003 retains its actual teleport attribute. A first GREEN attempt rejected missing reversible-map flags before PG (0.04s); corrected data uses the existing guard. A subsequent dispatch compile was OOM-killed while the pin compiler ran; cgroup16GiB,oom_kill1. Heavy jobs are now serialized. Neither is counted as PG execution. Native38003 bundle fixture initially used B3 legacy z rather than signed native floor byte; pre-PG format failure excluded and exact regression rerun queued.",
   "generation": "PASS seven callbacks/five bindings; original four bindings preserved; exactly28 quest provenance hash leaves changed; approval scope/core/admission unchanged",
   "logs": {
     "29002": {
@@ -45,7 +45,78 @@
     "38006": {
       "log": "qlane-meta/questpc/cloud-draconia-route-red-38006.log",
       "sha256": "7d20aea858dc2f2a55f3d217a9dee9aac9c5aa32df14ef04ef9cf9a3576f852b"
+    },
+    "green-native38003": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-green-native38003.log",
+      "sha256": "30faadac974233b4adf756066bf8a25e62094b261ab0a69caa5c610b025d5725"
+    },
+    "quest-units": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-quest-units.log",
+      "sha256": "137294539611b4ff94deca38ddd02f5d3afc18614a35d48e5ba9ce8e528b5090"
+    },
+    "world-units": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-world-units.log",
+      "sha256": "2eeaa567b05a5185718b94666134f006538cd90888493e61497c0442fe5894db"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-pins.log",
+      "sha256": "6bb5ba726fa361bf0785c52f36d8f9f1c70e69b7e69ec4b8a6f7939d6c23ea89"
+    },
+    "generated": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-generated.log",
+      "sha256": "de842150f027e4bc7850c65b631df6f5de30b13c8c328b0999b94647e6c7c2c1"
+    },
+    "fmt-final": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-fmt-final.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-clippy.log",
+      "sha256": "894e84a999cb45ea2a776cc26bb029946d1ddb0727f64f078860a063cfd25407"
+    },
+    "check-final": {
+      "log": "qlane-meta/questpc/cloud-draconia-route-check-final.log",
+      "sha256": "5a13f144051b05555f08b677e3b02dab8220b105f9c647c2c4dea8a82097d4cd"
     }
   },
-  "source_validation": "qlane-meta/questpc/cloud-draconia-route-source-validation.json"
+  "source_validation": "qlane-meta/questpc/cloud-draconia-route-source-validation.json",
+  "pg_green_new": {
+    "passed": 5,
+    "failed_on_pg": 0,
+    "case_seconds": {
+      "29002": 48.764709994,
+      "29003": 47.353137678,
+      "38004": 46.350093563,
+      "38005": 46.665295174,
+      "38006": 46.315036803
+    },
+    "harness_seconds": 235.46,
+    "log": "qlane-meta/questpc/cloud-draconia-route-green-mechanics.log",
+    "sha256": "a6ca68764e67082c47dbc4596a649de0a1b20515ca2028a2b9e542c537b05c43",
+    "boundary": "Original six-case invocation reports5passed/1failed; native38003 failed before PG due fixture signed-floor encoding and is rerun separately. All five new mechanics have actual server markers and completion durations."
+  },
+  "pure_units": {
+    "quests": "19 passed3.25s",
+    "world": "5 passed0.05s"
+  },
+  "native_regression_green": {
+    "uid": 38003,
+    "passed": 1,
+    "failed": 0,
+    "case_seconds": 46.519933797,
+    "harness_seconds": 46.52
+  },
+  "pg_combined_boundary": "Five new mechanics passed in the first invocation; native38003 failed pre-PG fixture encoding, was corrected without changing position assertions, then passed in a separate actual PG run. Six actual PG passes, zero actual PG failures after fixes; raw command summaries retained.",
+  "pg_combined_harness_seconds": 281.98,
+  "pin_world_digest": "9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7",
+  "review": "qlane-meta/questpc/cloud-draconia-route-review.md",
+  "qualified_titles_added": 0,
+  "checks": {
+    "fmt": "PASS packages and explicitly mounted test files",
+    "check": "PASS quests/world/dispatch all targets/all features1m49s on final source",
+    "clippy": "PASS quests/world/dispatch all targets/all features -D warnings1m53s",
+    "generation": "PASS nine callback anchors, ten doors, five stock keys, callback composition and quest tree; only28 provenance-hash leaves changed",
+    "pins": "PASS fresh command after generation, unchanged world9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7"
+  },
+  "boundary": "Five new native mechanics and one native teleport regression verified. No whole Draconia promotion. Initial pre-PG failures remain explicitly excluded; no tests/guards weakened."
 }

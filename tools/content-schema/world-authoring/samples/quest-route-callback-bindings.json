@@ -2,6 +2,20 @@
   "bindings": [
     {
       "attribute": "unique",
+      "item": 1949,
+      "map_path": "content/world/placements/region-z10-x127-y123.b3",
+      "map_sha256": "7331baedcd476d3bfefe37fc3e9b90529b69a549c096cc779314e4b9f7a15b30",
+      "position": [
+        32669,
+        31653,
+        10
+      ],
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 654,
+      "value": 38004
+    },
+    {
+      "attribute": "unique",
       "item": 2772,
       "map_path": "content/world/placements/region-z07-x128-y123.b3",
       "map_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
@@ -31,6 +45,34 @@
     {
       "attribute": "unique",
       "item": 1949,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903",
+      "position": [
+        32794,
+        31576,
+        5
+      ],
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 660,
+      "value": 38005
+    },
+    {
+      "attribute": "unique",
+      "item": 431,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903",
+      "position": [
+        32794,
+        31595,
+        5
+      ],
+      "source": "data-global/startup/tables/tile.lua",
+      "source_line": 2280,
+      "value": 29003
+    },
+    {
+      "attribute": "unique",
+      "item": 1949,
       "map_path": "content/world/placements/region-z01-x128-y123.b3",
       "map_sha256": "7033df7782c8457f660a75405b016615a51c6f0613eb1b16b6f2eef6b488f505",
       "position": [
@@ -41,6 +83,34 @@
       "source": "data-global/startup/tables/teleport.lua",
       "source_line": 570,
       "value": 35011
+    },
+    {
+      "attribute": "unique",
+      "item": 431,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903",
+      "position": [
+        32810,
+        31595,
+        5
+      ],
+      "source": "data-global/startup/tables/tile.lua",
+      "source_line": 2274,
+      "value": 29002
+    },
+    {
+      "attribute": "unique",
+      "item": 1949,
+      "map_path": "content/world/placements/region-z05-x128-y123.b3",
+      "map_sha256": "bffd22fa63bda99acec4e01f745cc889f5921beb89b1697a4e6c9dec1dcef903",
+      "position": [
+        32812,
+        31576,
+        5
+      ],
+      "source": "data-global/startup/tables/teleport.lua",
+      "source_line": 666,
+      "value": 38006
     },
     {
       "attribute": "unique",
@@ -73,6 +143,13 @@
       "repository": "zimbadev/crystalserver",
       "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "sha256": "462248b3eeed3531d4f6bc14d47b6d7184741845106dc9ee9d9a0bee5856b042"
+    },
+    {
+      "git_blob_sha1": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b",
+      "path": "data-global/startup/tables/tile.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
     }
   ]
 }
