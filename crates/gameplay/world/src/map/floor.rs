@@ -144,8 +144,14 @@ impl FloorTable {
         for tile in self.positions() {
             let cell = (i32::from(tile.x), i32::from(tile.y), -i32::from(tile.floor));
             if ground(cell) == Ground::Walkable
-                && follow(self, &ground, &|_| true, cell, &|cell| self.mask(cell))
-                    == Err(Refusal::Chain)
+                && follow(
+                    self,
+                    &ground,
+                    &|_| true,
+                    cell,
+                    &|cell| self.mask(cell),
+                    &|_| false,
+                ) == Err(Refusal::Chain)
             {
                 return Err(tile);
             }
@@ -162,6 +168,11 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// An exact, unambiguous conditional callback owns this native portal's landing.
+    /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
+    fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
+        false
+    }
 }
 
 impl CellBlocker for BTreeSet<LogicalCell> {
@@ -231,9 +242,15 @@ pub fn resolve_landing(
     origin: Cell,
     direction: CardinalStep,
 ) -> Result<Cell, Refusal> {
-    resolve_landing_with_exhaust(table, ground, landable, origin, direction, &|cell| {
-        table.mask(cell)
-    })
+    resolve_landing_with_exhaust(
+        table,
+        ground,
+        landable,
+        origin,
+        direction,
+        &|cell| table.mask(cell),
+        &|_| false,
+    )
     .map(|(cell, _)| cell)
 }
 
@@ -244,6 +261,7 @@ fn resolve_landing_with_exhaust(
     origin: Cell,
     direction: CardinalStep,
     mask: &impl Fn(Cell) -> u8,
+    suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = match direction {
         CardinalStep::North => (0, -1),
@@ -255,7 +273,7 @@ fn resolve_landing_with_exhaust(
     match ground(next) {
         Ground::Absent => Err(Refusal::Absent),
         Ground::Blocked => Err(Refusal::Blocked),
-        Ground::Walkable => follow(table, &ground, &landable, next, mask),
+        Ground::Walkable => follow(table, &ground, &landable, next, mask, suppress_teleport),
     }
 }
 
@@ -266,11 +284,16 @@ fn follow(
     landable: &impl Fn(Cell) -> bool,
     mut next: Cell,
     floor_mask: &impl Fn(Cell) -> u8,
+    suppress_teleport: &impl Fn(Cell) -> bool,
 ) -> Result<(Cell, bool), Refusal> {
     let mut changed_floor = false;
     let land = |cell: Cell, changed_floor: bool| match ground(cell) {
         Ground::Walkable => {
-            let target = teleported(table, ground, landable, cell);
+            let target = if suppress_teleport(cell) {
+                cell
+            } else {
+                teleported(table, ground, landable, cell)
+            };
             Ok((target, changed_floor || target != cell))
         }
         _ => Err(Refusal::Blocked),
@@ -535,6 +558,7 @@ fn destination(
             }
             table.mask(cell)
         },
+        &|(x, y, z)| closed.suppresses_native_teleport(LogicalCell { x, y, z }),
     )
     .map_err(movement_error)?;
     Ok((

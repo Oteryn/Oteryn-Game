@@ -85,3 +85,61 @@ pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
         sources: vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:{}", recipe.source_line)],
     })
 }
+
+/// An exact native counterpart of a source UID omitted by the B3 import.
+/// Matching includes the original native teleport; destination alone is never identity.
+#[derive(Clone, Copy, Debug)]
+pub struct NativeBinding {
+    pub position: Position,
+    pub ordinal: u8,
+    pub appearance: u16,
+    pub raw_destination: Position,
+}
+
+pub fn native_binding(key: &str) -> Option<NativeBinding> {
+    let (position, raw_destination) = match recipe(key)?.unique {
+        3950 => (
+            Position {
+                x: 33183,
+                y: 32717,
+                floor: -14,
+            },
+            Position {
+                x: 33231,
+                y: 32705,
+                floor: -8,
+            },
+        ),
+        3951 => (
+            Position {
+                x: 33175,
+                y: 32937,
+                floor: -15,
+            },
+            Position {
+                x: 33250,
+                y: 32832,
+                floor: -8,
+            },
+        ),
+        3952 => (
+            Position {
+                x: 33127,
+                y: 32594,
+                floor: -15,
+            },
+            Position {
+                x: 33131,
+                y: 32566,
+                floor: -8,
+            },
+        ),
+        _ => return None,
+    };
+    Some(NativeBinding {
+        position,
+        ordinal: 1,
+        appearance: 1949,
+        raw_destination,
+    })
+}

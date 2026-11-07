@@ -510,6 +510,33 @@ impl BundleFacts {
             })
     }
 
+    /// Match a source-selected native portal against its original bound attributes.
+    /// A legacy unique/action binding or a hidden placement cannot become this alias.
+    pub fn quest_callback_native_teleport(
+        &self,
+        key: u64,
+        appearance: u16,
+        destination: TilePos,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) || self.base_hidden(key) {
+            return false;
+        }
+        self.placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .is_some_and(|i| {
+                let p = &self.placements[i].1;
+                p.attrs.unique.is_none()
+                    && p.attrs.action.is_none()
+                    && self.palette[p.palette as usize].facts.appearance_id == appearance
+                    && p.attrs.teleport
+                        == Some((destination.x, destination.y, destination.floor as u8))
+            })
+    }
+
     /// Reserve no durable inputs unless the bounded local projection can be installed.
     pub fn quest_callback_capacity(&self, key: u64, expected: u64, passages: usize) -> bool {
         self.callbacks.lock().is_ok_and(|s| {

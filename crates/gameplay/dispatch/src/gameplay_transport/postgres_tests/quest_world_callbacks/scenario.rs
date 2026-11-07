@@ -23,11 +23,18 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let small_ruby = name.starts_with("l6-small-ruby");
-    let carried_step = name.starts_with("l6-tomb-carried-");
+    let tomb_native = name.starts_with("l6-tomb-native-");
+    let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
-    let native_crop = small_ruby || mead || spirit;
-    let start = if spirit {
+    let native_crop = small_ruby || mead || spirit || tomb_native;
+    let start = if tomb_native {
+        Position {
+            x: trigger.x,
+            y: trigger.y - 1,
+            ..trigger
+        }
+    } else if spirit {
         Position {
             x: 33081,
             y: 31159,
@@ -94,6 +101,9 @@ fn scenario_case(
         callback.lever = None;
         callback.effects = Default::default();
         callback.teleport = stateless_destination;
+        if tomb_native {
+            callback.key = "oteryn:quest-callback/l6-native-step-fixture".into();
+        }
     }
     if name.ends_with("-expiry") {
         callback
@@ -186,7 +196,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if small_ruby {
+        let world = if tomb_native {
+            super::super::l6_tomb_native::world(
+                generation.native_gameplay().ok_or("native Tomb policies")?,
+                callback.selector.unique.ok_or("source UID")?,
+            )?
+        } else if small_ruby {
             super::super::l6_world_pickups::small_ruby(
                 generation
                     .native_gameplay()
@@ -534,6 +549,7 @@ fn scenario_case(
                 deps.actor,
                 fence,
                 name.contains("-present-"),
+                tomb_native,
             )
             .await?;
         } else if ancient_instruments {

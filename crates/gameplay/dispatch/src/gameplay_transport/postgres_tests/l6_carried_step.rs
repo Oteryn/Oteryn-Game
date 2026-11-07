@@ -77,6 +77,7 @@ pub(super) async fn verify(
     actor: crate::foundation::ExactActorRef,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
     consumed: bool,
+    native_portal: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -93,7 +94,11 @@ pub(super) async fn verify(
         admitted,
         1,
         COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        encode_step_intent(StepDirection::East),
+        encode_step_intent(if native_portal {
+            StepDirection::South
+        } else {
+            StepDirection::East
+        }),
     )
     .await?;
     assert_eq!(

@@ -41,12 +41,35 @@ pub(crate) fn small_ruby(
     )
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct ExpectedTeleport {
+    pub position: (u16, u16, u8),
+    pub ordinal: usize,
+    pub destination: (u16, u16, u8),
+}
+
 pub(crate) fn native_crop(
     native: &NativeGameplayState,
     spec: NativeCrop,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    let (min_x, min_y, max_x, max_y) = spec.bounds;
-    let floor = -i8::try_from(spec.region.0)?;
+    native_scene(native, vec![spec], &[])
+}
+
+pub(crate) fn native_scene(
+    native: &NativeGameplayState,
+    specs: Vec<NativeCrop>,
+    teleports: &[ExpectedTeleport],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let first = specs.first().ok_or("native crop set")?;
+    let start = (first.start.0, first.start.1, -i8::try_from(first.region.0)?);
+    let min_x = specs.iter().map(|s| s.bounds.0).min().ok_or("minimumx")?;
+    let min_y = specs.iter().map(|s| s.bounds.1).min().ok_or("minimumy")?;
+    let max_x = specs.iter().map(|s| s.bounds.2).max().ok_or("maximumx")?;
+    let max_y = specs.iter().map(|s| s.bounds.3).max().ok_or("maximumy")?;
+    let floors = specs
+        .iter()
+        .map(|s| i8::try_from(s.region.0).map(|z| -z))
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
         root.join("content/world/placements/index.json"),
@@ -58,15 +81,6 @@ pub(crate) fn native_crop(
     };
     let (registry, source_palette) =
         oteryn_world_bundle_compiler::source::registry(&root, &project)?;
-    let region = oteryn_world_bundle_compiler::b3::decode_region(
-        spec.bytes,
-        bundle::TILE_LIMITS,
-        &mut sector::Budget {
-            tiles: 65536,
-            entries: 1_000_000,
-        },
-    )?;
-    assert_eq!((region.z, region.rx, region.ry), spec.region);
     let (fixture, mut pins) = crate::map::boot::tests::bundle();
     let mut manifest = bundle::read(&fixture)?.manifest;
     manifest.palette.clear();
@@ -75,94 +89,130 @@ pub(crate) fn native_crop(
         min_y,
         max_x,
         max_y,
-        floors: vec![floor],
+        floors: floors.into_iter().collect(),
     };
     let mut remap = BTreeMap::new();
-    let mut sectors: BTreeMap<(u16, u16), Vec<sector::Tile>> = BTreeMap::new();
+    let mut sectors: BTreeMap<(i8, u16, u16), Vec<sector::Tile>> = BTreeMap::new();
     let item_index = native.item_index().ok_or("active Item index")?;
-    let mut checked = std::collections::BTreeSet::new();
-    for (_, _, tiles) in region.sectors {
-        for mut tile in tiles {
-            if !(min_x..max_x).contains(&tile.x) || !(min_y..max_y).contains(&tile.y) {
-                continue;
-            }
-            assert_eq!(tile.house, 0, "this source crop is outside Houses");
-            for expected in &spec.expected {
-                if (tile.x, tile.y) != expected.position {
+    let mut seen = std::collections::BTreeSet::new();
+    let mut checked_teleports = std::collections::BTreeSet::new();
+    for spec in specs {
+        let (min_x, min_y, max_x, max_y) = spec.bounds;
+        let floor = -i8::try_from(spec.region.0)?;
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            spec.bytes,
+            bundle::TILE_LIMITS,
+            &mut sector::Budget {
+                tiles: 65536,
+                entries: 1_000_000,
+            },
+        )?;
+        assert_eq!((region.z, region.rx, region.ry), spec.region);
+        let mut checked = std::collections::BTreeSet::new();
+        for (_, _, tiles) in region.sectors {
+            for mut tile in tiles {
+                if !(min_x..max_x).contains(&tile.x) || !(min_y..max_y).contains(&tile.y) {
                     continue;
                 }
-                let ids = tile
-                    .items
-                    .iter()
-                    .map(|item| {
-                        project.index["palette"][item.palette as usize]["source_item_id"].as_u64()
-                    })
-                    .collect::<Vec<_>>();
-                assert_eq!(
-                    ids,
-                    expected
-                        .ids
-                        .iter()
-                        .map(|id| Some(u64::from(*id)))
-                        .collect::<Vec<_>>()
-                );
-                assert!(tile.items.iter().all(|item| item.depth == 0));
-                if let Some((ordinal, count)) = expected.counted_entry {
-                    assert_eq!(tile.items[ordinal].attrs.count.map(u32::from), Some(count));
-                }
-                checked.insert(expected.position);
-            }
-            for item in &mut tile.items {
-                assert!(
-                    item.attrs.teleport.is_none(),
-                    "crop has no teleports to rewrite"
-                );
-                let original = item.palette;
-                let palette = match remap.get(&original) {
-                    Some(palette) => *palette,
-                    None => {
-                        let key = source_palette
-                            .get(original as usize)
-                            .ok_or("source palette")?;
-                        let Resolution::Resolved(family, id) = registry.resolve(key) else {
-                            return Err(format!("unresolved native crop key:{key}").into());
-                        };
-                        if family == bundle::Family::Item {
-                            assert_eq!(
-                                item_index
-                                    .definition_ref("Item", key, "definition-r1")
-                                    .ok_or("active native crop Item")?
-                                    .get(),
-                                id + 1
-                            );
-                        }
-                        let palette = u32::try_from(manifest.palette.len())?;
-                        manifest.palette.push(bundle::PaletteEntry {
-                            key: key.clone(),
-                            family,
-                            id,
-                            terrain: registry.terrain(key)?,
-                        });
-                        remap.insert(original, palette);
-                        palette
+                assert_eq!(tile.house, 0, "this source crop is outside Houses");
+                for expected in &spec.expected {
+                    if (tile.x, tile.y) != expected.position {
+                        continue;
                     }
-                };
-                item.palette = palette;
+                    let ids = tile
+                        .items
+                        .iter()
+                        .map(|item| {
+                            project.index["palette"][item.palette as usize]["source_item_id"]
+                                .as_u64()
+                        })
+                        .collect::<Vec<_>>();
+                    assert_eq!(
+                        ids,
+                        expected
+                            .ids
+                            .iter()
+                            .map(|id| Some(u64::from(*id)))
+                            .collect::<Vec<_>>()
+                    );
+                    assert!(tile.items.iter().all(|item| item.depth == 0));
+                    if let Some((ordinal, count)) = expected.counted_entry {
+                        assert_eq!(tile.items[ordinal].attrs.count.map(u32::from), Some(count));
+                    }
+                    checked.insert(expected.position);
+                }
+                assert!(
+                    seen.insert((floor, tile.x, tile.y)),
+                    "native crops do not overlap"
+                );
+                for (ordinal, item) in tile.items.iter_mut().enumerate() {
+                    if let Some(destination) = item.attrs.teleport {
+                        assert!(
+                            teleports.iter().any(|expected| expected.position
+                                == (tile.x, tile.y, spec.region.0)
+                                && expected.ordinal == ordinal
+                                && expected.destination == destination),
+                            "every source teleport is explicitly witnessed before coordinate lowering"
+                        );
+                        checked_teleports.insert((tile.x, tile.y, spec.region.0, ordinal));
+                        item.attrs.teleport = Some((
+                            destination.0,
+                            destination.1,
+                            (-i8::try_from(destination.2)?) as u8,
+                        ));
+                    }
+                    let original = item.palette;
+                    let palette = match remap.get(&original) {
+                        Some(palette) => *palette,
+                        None => {
+                            let key = source_palette
+                                .get(original as usize)
+                                .ok_or("source palette")?;
+                            let Resolution::Resolved(family, id) = registry.resolve(key) else {
+                                return Err(format!("unresolved native crop key:{key}").into());
+                            };
+                            if family == bundle::Family::Item {
+                                assert_eq!(
+                                    item_index
+                                        .definition_ref("Item", key, "definition-r1")
+                                        .ok_or("active native crop Item")?
+                                        .get(),
+                                    id + 1
+                                );
+                            }
+                            let palette = u32::try_from(manifest.palette.len())?;
+                            manifest.palette.push(bundle::PaletteEntry {
+                                key: key.clone(),
+                                family,
+                                id,
+                                terrain: registry.terrain(key)?,
+                            });
+                            remap.insert(original, palette);
+                            palette
+                        }
+                    };
+                    item.palette = palette;
+                }
+                sectors
+                    .entry((floor, tile.x / 32, tile.y / 32))
+                    .or_default()
+                    .push(tile);
             }
-            sectors
-                .entry((tile.x / 32, tile.y / 32))
-                .or_default()
-                .push(tile);
         }
+        assert_eq!(
+            checked.len(),
+            spec.expected.len(),
+            "every expected source tile is present"
+        );
     }
     assert_eq!(
-        checked.len(),
-        spec.expected.len(),
-        "every expected source tile is present"
+        checked_teleports.len(),
+        teleports.len(),
+        "every declared source teleport was retained"
     );
     let mut sectors = sectors
         .into_iter()
-        .map(|((sx, sy), mut tiles)| {
+        .map(|((floor, sx, sy), mut tiles)| {
             tiles.sort_by_key(|tile| (tile.y, tile.x));
             bundle::Sector {
                 floor,
@@ -200,9 +250,9 @@ pub(crate) fn native_crop(
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: spec.start.0,
-                y: spec.start.1,
-                floor,
+                x: start.0,
+                y: start.1,
+                floor: start.2,
             },
         },
         crate::foundation::WorldId::decode(&super::super::fixture::id(42)).map_err(debug)?,
