@@ -13,6 +13,8 @@
 //! moves the mark to `committing` just before it sends the transaction. An append for a marked
 //! principal is parked under the mark with the mark's phase at that moment.
 
+#[path = "kill_reward/timed_events.rs"]
+mod timed_events;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
@@ -90,6 +92,8 @@ type BossSlotBonuses = Vec<([u8; 16], u16)>;
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
+    pub(super) timed:
+        Option<Box<crate::durability::world_event::changes::timed::NativeKillRequest>>,
     pub(super) world_change: Option<(
         u64,
         crate::durability::world_event::changes::counters::CreditEvent,
@@ -203,6 +207,7 @@ impl PendingKillSettlement {
             activity_at_death: None,
             damage_shares: Vec::new(),
             world_change: None,
+            timed: None,
             prey_checkpoint: None,
             forge: None,
             echo: None,
@@ -1364,6 +1369,7 @@ pub fn record_creature_kill(
             receipts.kill = true;
         }
     }
+    let timed = timed_events::capture(runtime, &facts, target, &damage_shares);
     let world_change = if wild {
         runtime.world_change_cycles().and_then(|(epoch, cycles)| {
             let credits = world_change_credits(&creature, facts.corpse);
@@ -1444,7 +1450,11 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
+                if echo.is_some()
+                    || prey_checkpoint.is_some()
+                    || world_change.is_some()
+                    || timed.is_some()
+                {
                     accept_kill(
                         runtime,
                         sink.queue,
@@ -1460,6 +1470,7 @@ pub fn record_creature_kill(
                             activity_at_death: None,
                             damage_shares,
                             world_change,
+                            timed,
                             prey_checkpoint,
                             forge: None,
                             echo,
@@ -1497,6 +1508,7 @@ pub fn record_creature_kill(
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
             entry.world_change = world_change;
+            entry.timed = timed;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
             accept_kill(runtime, sink.queue, entry);
@@ -1784,6 +1796,7 @@ pub fn record_creature_kill(
     };
     let entry = PendingKillSettlement {
         world_change,
+        timed,
         boss_reward,
         activity_death,
         forge,
@@ -2471,6 +2484,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        if !timed_events::settle(admission, entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if let Some((epoch, event)) = &entry.world_change {
             let current = {
                 let runtime = admission.runtime.lock().await;

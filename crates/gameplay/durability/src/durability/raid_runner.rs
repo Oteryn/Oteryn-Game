@@ -34,6 +34,7 @@ pub struct RaidCreatureIdentity {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RaidCreaturePlan {
+    pub timed_event: bool,
     pub identity: RaidCreatureIdentity,
     pub creature: ProductionKey,
     pub area_anchor: ProductionKey,
@@ -293,11 +294,13 @@ impl DurabilityRoot {
                     advance: matches!(kind, oteryn_gameplay_encounter_rules::raid::AnnouncementKind::Advance),
                 },
                 RaidRunAction::SpawnWave { wave, entries, boss_step } => {
+                    let timed_event=crate::durability::world_event::changes::timed::raid_origin(&mut tx,firing_id).await?.is_some();
                     let mut creatures = Vec::new();
                     for (entry, value) in entries.iter().enumerate() {
                         let entry = u16::try_from(entry).map_err(|_| DurabilityError::InvalidStoredState)?;
                         for index in 0..value.count {
                             creatures.push(RaidCreaturePlan {
+                                timed_event,
                                 identity: RaidCreatureIdentity { wave: *wave, entry, index },
                                 creature: value.creature.clone(), area_anchor: value.area_anchor.clone(),
                             });

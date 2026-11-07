@@ -39,7 +39,7 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                         h.cleanup().await?;
                         result?;
                         eprintln!(
-                            "WEVENTS PG EXECUTED: {case} native owner binding; duration={:?}",
+                            "WEVENTS PG EXECUTED: {case} native owner binding and timed provenance; duration={:?}",
                             started.elapsed()
                         );
                     }
@@ -462,6 +462,16 @@ async fn mummy(h: &fixture::Harness) -> fixture::TestResult {
             .firings
             .is_empty()
     );
+    let sealed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_world_timed_raid_origins WHERE firing_id=encode($1,'hex')::uuid",
+    )
+    .bind(fixture::id(90).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        sealed, 1,
+        "the admitted firing needs immutable event provenance"
+    );
     let step = h
         .root
         .advance_raid_run(
@@ -479,6 +489,114 @@ async fn mummy(h: &fixture::Harness) -> fixture::TestResult {
     };
     assert_eq!(creatures.len(), 1);
     assert_eq!(creatures[0].creature.as_str(), "oteryn:creature.horestis");
+    assert!(creatures[0].timed_event);
+    use crate::durability::world_event::changes::timed::{NativeKillOutcome, NativeKillRequest};
+    let source = oteryn_gameplay_entities::carrier::RaidSpawnIdentity {
+        firing_id: fixture::id(90),
+        wave: creatures[0].identity.wave,
+        entry: creatures[0].identity.entry,
+        index: creatures[0].identity.index,
+    };
+    let mut occurrence = Vec::new();
+    occurrence.extend_from_slice(world.as_bytes());
+    occurrence.extend_from_slice(before.channel.as_bytes());
+    occurrence.extend_from_slice(&before.generation.get().to_be_bytes());
+    occurrence.extend_from_slice(&7_u64.to_be_bytes());
+    occurrence.extend_from_slice(&1_u32.to_be_bytes());
+    let event = NativeKillRequest {
+        source,
+        occurrence,
+        occurred_at_ms: now,
+        participants: vec![fixture::fence(1)?.character_id],
+    };
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                event.clone()
+            )
+            .await?,
+        NativeKillOutcome::Pending,
+        "a native death waits for the independently fenced placement ACK"
+    );
+    h.root
+        .acknowledge_raid_effect(
+            &h.node,
+            step.identity,
+            vec![RaidPlacementOutcome {
+                identity: creatures[0].identity,
+                placed: true,
+            }],
+            now,
+        )
+        .await?;
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                event.clone()
+            )
+            .await?,
+        NativeKillOutcome::Applied
+    );
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                event.clone()
+            )
+            .await?,
+        NativeKillOutcome::AlreadyApplied
+    );
+    let mut forged = event.clone();
+    forged.occurrence[51] = 2;
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                forged
+            )
+            .await?,
+        NativeKillOutcome::Refused,
+        "one actor cannot contribute a second death"
+    );
+    let mut empty = event.clone();
+    empty.participants.clear();
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                empty
+            )
+            .await?,
+        NativeKillOutcome::Refused
+    );
+    let credited:i64=sqlx::query_scalar("SELECT credited FROM game_world_timed_participants WHERE world_id=encode($1,'hex')::uuid AND event_key='mummys_curse' AND cycle_id=1 AND character_id=encode($2,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).bind(fixture::fence(1)?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        credited, 6,
+        "five real jar admissions plus one native-source credit"
+    );
     // Fresh reset, real failed draw, out-of-order attempts and cooldown refusal.
     sqlx::query(
         "UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid",
@@ -486,6 +604,20 @@ async fn mummy(h: &fixture::Harness) -> fixture::TestResult {
     .bind(world.as_bytes().as_slice())
     .execute(&h.pool)
     .await?;
+    assert_eq!(
+        h.root
+            .credit_timed_world_kill(
+                &authority,
+                &h.node,
+                fixture::scope()?,
+                before.generation,
+                1,
+                event
+            )
+            .await?,
+        NativeKillOutcome::Refused,
+        "reset invalidates old native provenance"
+    );
     let failed = command_for(world, 2, &mut cursor, false)?;
     let mut hash = sha2::Sha256::new();
     hash.update(b"oteryn:wevents:use:v1\0");

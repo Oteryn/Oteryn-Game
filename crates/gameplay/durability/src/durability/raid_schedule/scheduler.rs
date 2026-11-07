@@ -241,6 +241,12 @@ impl DurabilityRoot {
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
                     if source_kind == 1 { legacy_running = true; }
+                    if let Some(kind) = requirements.get(candidate.key.as_str()).and_then(|key| oteryn_gameplay_world_change::timed::EventKind::from_key(key))
+                        && let Some(state) = timed_events.get(kind.key())
+                    {
+                        use crate::durability::world_event::changes::timed::{RaidOrigin, seal_raid_origin};
+                        seal_raid_origin(&mut tx,candidate.firing_id,&RaidOrigin::from_state(kind,request.reset_epoch,0,state)?).await?;
+                    }
                     fired.push((candidate.firing_id, candidate.key));
                 }
             }

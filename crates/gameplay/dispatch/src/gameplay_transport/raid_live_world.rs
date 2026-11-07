@@ -113,6 +113,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         runtime.content_pin().server_artifact_digest(),
                         selected.boss_entries.contains(&(identity.wave, identity.entry)),
                     ).map_err(|_| DurabilityError::Unavailable)?;
+                    let spec = if creature.timed_event { spec.with_timed_world_event() } else { spec };
                     // A retry returns the original success/failure before map
                     // lookup. A dead actor never becomes a second spawn.
                     let at = if retained.contains(&identity) { None }

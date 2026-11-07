@@ -101,6 +101,10 @@ pub(super) async fn decode(
             if rows.is_empty() || rows.len() > usize::from(MAX_CREATURES) {
                 return Err(DurabilityError::InvalidStoredState);
             }
+            let timed_event =
+                crate::durability::world_event::changes::timed::raid_origin(tx, id.firing_id)
+                    .await?
+                    .is_some();
             let mut creatures = Vec::with_capacity(rows.len());
             for creature in rows {
                 let identity = RaidCreatureIdentity {
@@ -113,6 +117,7 @@ pub(super) async fn decode(
                 let key: String = creature.try_get("creature_key")?;
                 let anchor: String = creature.try_get("anchor_key")?;
                 creatures.push(RaidCreaturePlan {
+                    timed_event,
                     identity,
                     creature: ProductionKey::new(&key)
                         .map_err(|_| DurabilityError::InvalidStoredState)?,

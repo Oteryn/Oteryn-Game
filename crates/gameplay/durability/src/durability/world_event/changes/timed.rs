@@ -551,3 +551,8 @@ pub(crate) async fn apply_binding(
     .await?
         == Some(true))
 }
+
+#[path = "timed/raids.rs"]
+mod raids;
+pub use raids::{NativeKillOutcome, NativeKillRequest, RaidOrigin};
+pub(crate) use raids::{raid_origin, seal_raid_origin};

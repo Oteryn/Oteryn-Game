@@ -210,3 +210,55 @@ unrelated child modules), and `git diff --check` passed. `pin-refresh` and
 `d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
 The diff review traced fresh and historical callers, admission failure rollback,
 static source resolution, Character sequencing, and bounded input validation.
+
+## Native firing provenance and participation slice
+
+Migration 1123 adds immutable native-death receipts. A unique constraint on the
+firing, Channel, wave, entry and actor index prevents another death ID from
+crediting the same actor twice. Main and the fresh wvar, wcontrib, worldchg and
+qengine2 refs contain no migration in 1120–1129; the numbering tool also checked
+open PR reservations (`/tmp/wevents-native-credit-number-check.log`).
+
+The existing admitted Flower/Mummy firings now seal their event origin in the
+scheduler transaction. Durable wave plans carry the marker through the existing
+physical-effect equality guard into the native actor specification. Ordinary
+raid actors remain unmarked. The lethal producer freezes the marked actor's
+exact firing identity, sealed death occurrence and positive damage contributors;
+this includes the proven lethal principal when the sixteen-entry damage ledger
+could not retain another contributor. The list is bounded to seventeen.
+
+The World writer independently rechecks recovery, current node/scope, reset,
+target generation, placement acknowledgement, origin and cycle. It locks the
+participant Character FK roots before the World cycle, preserving the Quest
+writer's lock order. A native death preceding its placement ACK stays queued;
+an acknowledged failed placement earns no credit. The death receipt and all
+participant updates commit together. Exact replay returns the recorded result,
+while a second death ID for the same actor and stale-reset sources are refused.
+
+The focused native test failed with the missing marker/source APIs before their
+implementation (`/tmp/wevents-native-source-red.log`). The actual carrier raid
+module then passed **8 tests in 0.01 s**, including live actors, marked/unmarked
+identity, death retention, replay, failed placement and cleanup
+(`/tmp/wevents-native-source-final.log`). An initial additional filter matched
+zero tests; it was corrected to `raid_spawn::tests` and the eight named tests
+were read before reporting this result.
+
+Real PostgreSQL `wevents_postgres_first_title_bindings` passed **1 test in
+24.06 s**, with executed markers: Chyllfroest **8.979521477 s**, Flower
+**6.105882617 s**, Mummy **8.972222328 s**. The Mummy case drives the production
+scheduler, sealed origin, wave plan, placement ACK and native-credit writer;
+it verifies pending ACK, successful credit, replay, alternate death-ID denial,
+empty-participant denial and reset refusal. Five jar contributions plus one
+accepted native-source contribution produce exactly six credits. Actual actor
+realization is separately exercised by the carrier tests; the PostgreSQL owner
+case supplies placement outcomes through the existing physical-owner API.
+
+`cargo check --locked` and strict clippy `--lib -- -D warnings` passed for
+entities, durability, dispatch and game-server. Workspace `fmt --check`, explicit
+mounted-source rustfmt and `git diff --check` passed. Tool-generated
+`pin-refresh` and `pin-check` passed with unchanged World digest
+`d5e52c7a0ef24bf6aa7b78926fd0806e43eb731ac69b10783f20c9f10dcd88e5`.
+The diff review traced source tagging, every corpse-admission branch, transient
+ACK ordering, actor identity/replay, participant bounds and transaction lock
+order. Title qualification remains tied to each title's native integration
+proof; this shared slice changes no additional WORLDCHG-Q status rows.

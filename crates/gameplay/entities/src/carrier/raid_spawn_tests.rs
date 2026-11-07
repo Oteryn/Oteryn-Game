@@ -358,3 +358,39 @@ fn raid_durable_end_compacts_terminal_receipts_but_keeps_persistent_actors() -> 
     assert_eq!(runtime.raid_spawns.size(), 3);
     Ok(())
 }
+
+#[test]
+fn raid_world_event_capture_is_bound_to_marked_actor_identity() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let ordinary = spec(&runtime, false)?;
+    let marked = spec(&runtime, true)?.with_timed_world_event();
+    let stamp = checked(runtime.issue_owner_work())?;
+    let a = checked(runtime.realize_raid_spawn(
+        stamp,
+        identity(0),
+        &ordinary,
+        Some(position(100)),
+        |_, _| Some(true),
+    ))?;
+    let b = checked(runtime.realize_raid_spawn(
+        stamp,
+        identity(1),
+        &marked,
+        Some(position(101)),
+        |_, _| Some(true),
+    ))?;
+    let (RaidSpawnOutcome::Placed(a), RaidSpawnOutcome::Placed(b)) = (a.outcome, b.outcome) else {
+        return Err("actors".into());
+    };
+    assert_eq!(checked(runtime.timed_world_raid_source(a))?, None);
+    assert_eq!(
+        checked(runtime.timed_world_raid_source(b))?,
+        Some(identity(1))
+    );
+    checked(runtime.commit_monster_lab_damage(b, b"timed-event-death", 20))?;
+    assert_eq!(
+        checked(runtime.timed_world_raid_source(b))?,
+        Some(identity(1))
+    );
+    Ok(())
+}
