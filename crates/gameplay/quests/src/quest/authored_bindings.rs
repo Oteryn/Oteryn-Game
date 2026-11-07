@@ -228,17 +228,29 @@ impl Bindings {
         if base.authored_bindings.is_some() {
             return Err("compose all authored bindings in one immutable set".into());
         }
+        catalogue.npc_legacy = base.npc_legacy.clone();
+        catalogue.predecessors = base.predecessors.clone();
+        for (key, hash) in &base.hashes {
+            if !self.quests.iter().any(|quest| &quest.quest == key) {
+                catalogue.hashes.insert(key.clone(), *hash);
+            }
+        }
         for quest in &self.quests {
             let before = catalogue
                 .hashes
                 .get_mut(&quest.quest)
                 .ok_or("authored quest hash")?;
-            *before = Sha256::new()
+            let mut hash = Sha256::new()
                 .chain_update(*before)
-                .chain_update(b"authored-native-bindings-v1")
-                .chain_update(serde_json::to_vec(quest).map_err(|e| e.to_string())?)
-                .finalize()
-                .into();
+                .chain_update(b"authored-native-bindings-v1");
+            if let Some(previous) = base.hashes.get(&quest.quest) {
+                hash.update(previous);
+            }
+            hash.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
+            *before = hash.finalize().into();
+            // New authored semantics must not silently inherit an NPC-only revision migration.
+            catalogue.npc_legacy.remove(&quest.quest);
+            catalogue.predecessors.remove(&quest.quest);
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());

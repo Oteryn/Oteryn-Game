@@ -99,3 +99,96 @@ fn base_callback_collisions_are_refused_before_catalogue_admission() -> Result<(
     assert!(binding.attach(&base).is_err());
     Ok(())
 }
+
+#[test]
+fn native_program_hashes_and_predecessors_survive_authored_attachment() -> Result<(), String> {
+    let other = "oteryn:quest.authored.rascoohan_outfits_quest";
+    let track = "oteryn:quest-progress/another-engine-fixture/phase";
+    let mut base = QuestStateCatalogue::new(
+        "engine-fixture-r1",
+        vec![QuestTrack {
+            key: track.into(),
+            quest: other.into(),
+            initial: 0,
+            min: 0,
+            max: 1,
+        }],
+        vec![],
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let defaults = std::collections::BTreeMap::from([(track.into(), 0)]);
+    base.hashes.insert(other.into(), [7; 32]);
+    base.npc_legacy
+        .insert(other.into(), ([1; 32], defaults.clone()));
+    base.predecessors.insert(
+        other.into(),
+        vec![super::super::NpcDefinitionPredecessor {
+            hash: [2; 32],
+            defaults,
+        }],
+    );
+    let attached = fixture()?.attach(&base)?;
+    assert_eq!(
+        attached.definition_hash(other),
+        Some([7; 32]),
+        "existing native-program binding remains part of its definition"
+    );
+    assert_eq!(attached.npc_legacy, base.npc_legacy);
+    assert_eq!(attached.predecessors, base.predecessors);
+    let extended = base
+        .with_quest(
+            vec![QuestTrack {
+                key: "oteryn:quest-progress/third-engine-fixture/phase".into(),
+                quest: QUEST.into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            }],
+            vec![],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(extended.npc_legacy, base.npc_legacy);
+    assert_eq!(extended.predecessors, base.predecessors);
+    Ok(())
+}
+
+#[test]
+fn changed_authored_quest_does_not_inherit_an_npc_only_revision_allowance() -> Result<(), String> {
+    let mut base = QuestStateCatalogue::new(
+        "engine-fixture-r1",
+        vec![QuestTrack {
+            key: "oteryn:quest-progress/existing-engine-fixture/phase".into(),
+            quest: QUEST.into(),
+            initial: 0,
+            min: 0,
+            max: 1,
+        }],
+        vec![],
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    base.hashes.insert(QUEST.into(), [7; 32]);
+    base.npc_legacy
+        .insert(QUEST.into(), ([1; 32], std::collections::BTreeMap::new()));
+    base.predecessors.insert(
+        QUEST.into(),
+        vec![super::super::NpcDefinitionPredecessor {
+            hash: [2; 32],
+            defaults: std::collections::BTreeMap::new(),
+        }],
+    );
+    let attached = fixture()?.attach(&base)?;
+    assert!(!attached.npc_legacy.contains_key(QUEST));
+    assert!(!attached.predecessors.contains_key(QUEST));
+    let mut different_native_program = base;
+    different_native_program
+        .hashes
+        .insert(QUEST.into(), [8; 32]);
+    assert_ne!(
+        attached.definition_hash(QUEST),
+        fixture()?
+            .attach(&different_native_program)?
+            .definition_hash(QUEST),
+        "the prior native program's binding remains part of the new authored definition"
+    );
+    Ok(())
+}
