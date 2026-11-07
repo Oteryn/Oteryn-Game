@@ -863,7 +863,7 @@ pub(super) async fn npc_bank_talk(
     if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
-        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+        return reward_callbacks::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) =
         conditional_greeting::prepare(admission, actor, command, &intent, &runtime, &ordinary)
@@ -872,11 +872,7 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return conditional_greeting::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return reward_callbacks::apply(admission, actor, command, intent, step).await;
-    }
+
     if let Some(step) =
         state_dialogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
     {

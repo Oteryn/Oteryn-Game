@@ -34,7 +34,9 @@ class ExtendedGroundTests(unittest.TestCase):
             if old["source_item_id"] not in ground.IDS:
                 self.assertEqual(old, new)
             else:
-                self.assertEqual(new, {"key": f"oteryn:terrain.tibia.i{old['source_item_id']}",
+                expected_key = ("oteryn:item.tibia.i32691" if old["source_item_id"] == 32691
+                                else f"oteryn:terrain.tibia.i{old['source_item_id']}")
+                self.assertEqual(new, {"key": expected_key,
                                        "source_item_id": old["source_item_id"], "provisional": False})
         self.assertEqual(ground.retarget_palette(after), after)
 

@@ -29,7 +29,10 @@ def retarget_palette(index):
         before = {"key": ("oteryn:item.tibia.i32691" if identifier == 32691
                           else "donor:crystalserver@00ce02a5:item/50820"),
                   "provisional": identifier != 32691, "source_item_id": identifier}
-        after = {"key": f"oteryn:terrain.tibia.i{identifier}",
+        # The existing resolver projects bound ground through its Item alias.
+        # Only unbound appearance-only ground uses a direct Terrain palette key.
+        after = {"key": ("oteryn:item.tibia.i32691" if identifier == 32691
+                         else f"oteryn:terrain.tibia.i{identifier}"),
                  "provisional": False, "source_item_id": identifier}
         if len(matches) != 1 or matches[0] not in (before, after):
             raise ValueError(f"full-anchor ground palette before drift: {identifier}")

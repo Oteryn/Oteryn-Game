@@ -128,14 +128,14 @@ fn scenario(npc: &str, key: &str, input: Option<u16>, output: u16) -> TestResult
                 let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
                 owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
                 {
-                    let permit = owner.spell_lane_permit().await.ok_or("physical lane")?;
+                    let _permit = owner.spell_lane_permit().await.ok_or("physical lane")?;
                     assert!(owner.states.player_trades.physical_service(admitted.game_session_id));
                     let native = owner.active_generation.and_then(|generation| generation.native_gameplay()).ok_or("native generation")?;
                     let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native).with_wheel(owner.premium_coordinator);
                     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
                     let result = slot.commit_quest_reward(owner.root, owner.character, owner.holder, fence,
                         QuestTransitionRequest { transition_key: key.into(), cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(39).map_err(debug)?)) },
-                        Arc::clone(&catalogue), crate::durability::reward_claim_mint::QuestRewardAdmission { permit: &permit, native, weights: &weights, fee_payment: None }).await.map_err(debug)?;
+                        Arc::clone(&catalogue), crate::durability::reward_claim_mint::QuestRewardAdmission { native, weights: &weights, fee_payment: None, actor_conditions: None, carried_use: None }, &owner.premium_coordinator).await.map_err(debug)?;
                     assert!(matches!(result, crate::durability::quest_state::QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch)), "the durable owner independently refuses an early grant");
                 }
                 let refusal_clock = actual.effects.iter().find(|effect| effect.effect == QuestEffectKind::SetNow).ok_or("clock effect")?.track.as_str();

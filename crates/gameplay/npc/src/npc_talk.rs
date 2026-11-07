@@ -9,6 +9,8 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod literal_headers;
+mod state_stories;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -27,12 +29,22 @@ const REWARD_CALLBACKS: &str =
 const REWARD_GREETINGS: &str =
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+struct ConditionalGreeting {
+    track: String,
+    minimum: i64,
+    item: String,
+    text: String,
+}
+
 #[derive(serde::Deserialize)]
 struct RewardMessages {
     npc: String,
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    conditional: Vec<ConditionalGreeting>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -45,7 +57,22 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     let rows = DATA.get_or_init(|| {
         serde_json::from_str::<Document>(REWARD_GREETINGS)
             .ok()
-            .filter(|d| d.schema == 1 && d.npcs.len() <= 256)
+            .filter(|d| {
+                d.schema == 1
+                    && d.npcs.len() <= 256
+                    && d.npcs.iter().all(|npc| {
+                        npc.conditional.len() <= 8
+                            && npc.conditional.iter().all(|variant| {
+                                variant.track.starts_with("oteryn:quest-progress/")
+                                    && variant.track.len() <= 128
+                                    && variant.item.starts_with("oteryn:item.")
+                                    && variant.item.len() <= 256
+                                    && !variant.text.is_empty()
+                                    && variant.text.len() <= 1024
+                                    && !variant.text.chars().any(char::is_control)
+                            })
+                    })
+            })
             .map(|d| d.npcs)
     });
     reward_callback_npc(key).then_some(())?;
@@ -94,8 +121,10 @@ pub struct NpcTalkEntry {
     bank: bool,
     admitted_dialogue: bool,
     dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
+    source_literals: Vec<(Vec<String>, String)>,
     greetings: Vec<String>,
     greeting_reply: String,
+    conditional_greetings: Vec<ConditionalGreeting>,
     farewell_reply: String,
     source_name_templates: bool,
     source_walkaway: Option<String>,
@@ -108,6 +137,35 @@ pub struct NpcTalkEntry {
 }
 
 impl NpcTalkEntry {
+    pub fn greeting(&self) -> &str {
+        &self.greeting_reply
+    }
+    pub fn conditional_greeting(
+        &self,
+        tracks: Option<&std::collections::BTreeMap<String, i64>>,
+        carried: Option<&std::collections::BTreeMap<String, i64>>,
+    ) -> Option<&str> {
+        if self.conditional_greetings.is_empty() {
+            return Some(&self.greeting_reply);
+        }
+        let (tracks, carried) = (tracks?, carried?);
+        Some(
+            self.conditional_greetings
+                .iter()
+                .find(|variant| {
+                    tracks.get(&variant.track).copied().unwrap_or(0) >= variant.minimum
+                        && carried.get(&variant.item).is_some_and(|count| *count > 0)
+                })
+                .map_or(self.greeting_reply.as_str(), |variant| {
+                    variant.text.as_str()
+                }),
+        )
+    }
+    pub fn greeting_items(&self) -> impl Iterator<Item = &str> {
+        self.conditional_greetings
+            .iter()
+            .map(|variant| variant.item.as_str())
+    }
     pub fn bank(&self) -> bool {
         self.bank
     }
@@ -146,8 +204,10 @@ impl NpcTalkEntry {
             bank: false,
             admitted_dialogue: false,
             dialogue_keywords: Vec::new(),
+            source_literals: Vec::new(),
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_reply: format!("Greetings, I am {name}."),
+            conditional_greetings: Vec::new(),
             farewell_reply: "Farewell.".to_owned(),
             source_name_templates: false,
             source_walkaway: None,
@@ -209,7 +269,7 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{}\0{}",
+                "{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -217,6 +277,7 @@ impl NpcTalkBook {
                 isle_of_evil::revision_material(),
                 REWARD_CALLBACKS,
                 REWARD_GREETINGS,
+                state_stories::TEXT,
             )),
             ..Self::default()
         };
@@ -226,6 +287,7 @@ impl NpcTalkBook {
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let reward_messages = reward_messages(&reference.key);
+            let state_messages = state_stories::messages(&reference.key);
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -265,6 +327,28 @@ impl NpcTalkBook {
                     "May your path lead to enlightenment.".into(),
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
+                )
+            } else if let Some(messages) = &state_messages {
+                (
+                    messages.greet.clone(),
+                    messages.farewell.clone(),
+                    None,
+                    npc.bank_dialogue
+                        .as_ref()
+                        .map(|dialogue| {
+                            dialogue
+                                .keywords
+                                .iter()
+                                .filter(|keyword| {
+                                    literal_keyword(keyword)
+                                        && keyword.triggers.iter().any(|trigger| {
+                                            matches!(trigger.as_str(), "name" | "job")
+                                        })
+                                })
+                                .cloned()
+                                .collect()
+                        })
+                        .unwrap_or_default(),
                 )
             } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
                 .filter(|_| reference.key != "oteryn:npc.spectulus")
@@ -342,6 +426,83 @@ impl NpcTalkBook {
                 )
             } else if matches!(
                 reference.key.as_str(),
+                "oteryn:npc.a_ghostly_guardian"
+                    | "oteryn:npc.ahmet"
+                    | "oteryn:npc.albinius"
+                    | "oteryn:npc.alesar"
+                    | "oteryn:npc.benjamin"
+                    | "oteryn:npc.chrystal"
+                    | "oteryn:npc.dixi"
+                    | "oteryn:npc.fyodor"
+                    | "oteryn:npc.kasmir"
+                    | "oteryn:npc.liane"
+                    | "oteryn:npc.lokur"
+                    | "oteryn:npc.lubo"
+                    | "oteryn:npc.nah_bob"
+                    | "oteryn:npc.nelly"
+                    | "oteryn:npc.olrik"
+                    | "oteryn:npc.pompan"
+                    | "oteryn:npc.pugwah"
+                    | "oteryn:npc.rashid"
+                    | "oteryn:npc.robson"
+                    | "oteryn:npc.romella"
+                    | "oteryn:npc.shiantis"
+                    | "oteryn:npc.wally"
+                    | "oteryn:npc.zirkon"
+            ) {
+                // NPCFIX/SUMMER: admit only these audited NPCs' literal replies.
+                // Conditional callbacks remain with their quest/service owners.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                let greeting = match dialogue.greet.as_slice() {
+                    [greeting] => greeting.clone(),
+                    [] if matches!(
+                        reference.key.as_str(),
+                        "oteryn:npc.alesar" | "oteryn:npc.dixi" | "oteryn:npc.nah_bob"
+                    ) =>
+                    {
+                        // These imported callback greetings have no literal source line.
+                        // Use the existing native service greeting; trade eligibility remains
+                        // with the quest owner and is rechecked by the durable writer.
+                        format!("Greetings, I am {}.", npc.name)
+                    }
+                    _ => continue,
+                };
+                let farewell = if dialogue.farewell.len() == 1 {
+                    dialogue.farewell[0].clone()
+                } else if reference.key == "oteryn:npc.albinius"
+                    && dialogue.farewell.is_empty()
+                    && dialogue.walkaway.len() == 1
+                {
+                    // Albinius supplies one authored leave line and no separate farewell.
+                    dialogue.walkaway[0].clone()
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.dixi" | "oteryn:npc.ahmet"
+                ) && dialogue.farewell.is_empty()
+                {
+                    "Farewell.".into()
+                } else {
+                    continue;
+                };
+                (
+                    greeting,
+                    farewell,
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| {
+                            literal_keyword(keyword)
+                                || (reference.key == "oteryn:npc.a_ghostly_guardian"
+                                    && literal_headers::topic(keyword))
+                        })
+                        .cloned()
+                        .collect(),
+                )
+            } else if matches!(
+                reference.key.as_str(),
                 "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
             ) && npc.services.is_empty()
             {
@@ -381,6 +542,9 @@ impl NpcTalkBook {
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
+                    conditional_greetings: reward_messages
+                        .map(|m| m.conditional.clone())
+                        .unwrap_or_default(),
                     name: npc.name.clone(),
                     admitted_dialogue: npc.dialogue.is_some()
                         && premium_services.is_empty()
@@ -397,9 +561,12 @@ impl NpcTalkBook {
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
                         || isle_messages.is_some()
-                        || reward_callback_npc(&reference.key),
+                        || reward_callback_npc(&reference.key)
+                        || state_messages.is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
+                    } else if let Some(messages) = state_messages {
+                        Some(messages.walkaway)
                     } else {
                         isle_messages
                             .map(|messages| messages.walkaway)
@@ -407,6 +574,17 @@ impl NpcTalkBook {
                     },
                     topic_reply,
                     dialogue_keywords,
+                    source_literals: reward_messages
+                        .and(npc.bank_dialogue.as_ref())
+                        .map(|dialogue| {
+                            dialogue
+                                .keywords
+                                .iter()
+                                .filter(|keyword| literal_keyword(keyword))
+                                .map(|keyword| (keyword.triggers.clone(), keyword.reply[0].clone()))
+                                .collect()
+                        })
+                        .unwrap_or_default(),
                     offers: npc
                         .services
                         .iter()
@@ -488,6 +666,7 @@ pub struct TalkNpc<'a, K> {
 
 /// The NPC's reply to a `say`: the NPC that answers and its text.
 pub struct NpcReply<K> {
+    pub continuations: Vec<String>,
     pub id: K,
     pub text: String,
 }
@@ -531,8 +710,20 @@ pub fn talk<K: Copy + PartialEq>(
         if says_any(&said, &FAREWELLS) {
             *engaged = None;
             return Some(NpcReply {
+                continuations: Vec::new(),
                 id: npc.id,
                 text: npc.entry.farewell_reply.clone(),
+            });
+        }
+        if let Some((_, reply)) = npc.entry.source_literals.iter().find(|(triggers, _)| {
+            triggers
+                .iter()
+                .all(|trigger| contains_words(&said, &words(trigger)))
+        }) {
+            return Some(NpcReply {
+                id: npc.id,
+                text: reply.clone(),
+                continuations: Vec::new(),
             });
         }
         if let Some(keyword) = npc
@@ -542,6 +733,7 @@ pub fn talk<K: Copy + PartialEq>(
             .find(|keyword| contains_words(&said, &keyword.triggers))
         {
             return Some(NpcReply {
+                continuations: keyword.reply[1..].to_vec(),
                 id: npc.id,
                 text: keyword.reply[0].clone(),
             });
@@ -552,6 +744,7 @@ pub fn talk<K: Copy + PartialEq>(
                     format!("{} has nothing to offer right now.", npc.entry.name)
                 });
             return Some(NpcReply {
+                continuations: Vec::new(),
                 id: npc.id,
                 text: line,
             });
@@ -583,6 +776,7 @@ fn start<K: Copy + PartialEq>(
     let npc = npcs.get(index)?;
     *engaged = Some(npc.id);
     Some(NpcReply {
+        continuations: Vec::new(),
         id: npc.id,
         text: npc.entry.greeting_reply.clone(),
     })

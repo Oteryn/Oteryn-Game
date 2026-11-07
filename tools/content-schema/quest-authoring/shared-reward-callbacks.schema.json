@@ -71,6 +71,59 @@
           "items": {
             "$ref": "#/$defs/item"
           }
+        },
+        "decay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "duration_millis",
+            "target"
+          ],
+          "properties": {
+            "duration_millis": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4294967295
+            },
+            "target": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "family",
+                    "key",
+                    "revision"
+                  ],
+                  "properties": {
+                    "family": {
+                      "const": "Item"
+                    },
+                    "key": {
+                      "type": "string",
+                      "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+                      "maxLength": 256
+                    },
+                    "revision": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "backpack_outputs": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "$ref": "#/$defs/item"
+          }
         }
       }
     },
@@ -193,7 +246,7 @@
         "storage": {
           "type": "array",
           "minItems": 0,
-          "maxItems": 8,
+          "maxItems": 16,
           "items": {
             "$ref": "#/$defs/storage"
           }
@@ -481,6 +534,82 @@
               }
             }
           }
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": false
+        },
+        "achievement_once": {
+          "type": "boolean",
+          "default": false
+        },
+        "cooldown": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "track",
+            "seconds"
+          ],
+          "properties": {
+            "track": {
+              "type": "string",
+              "pattern": "^oteryn:",
+              "maxLength": 128
+            },
+            "seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31536000
+            }
+          }
+        },
+        "clocks": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "track",
+              "elapsed_seconds",
+              "set_now"
+            ],
+            "properties": {
+              "track": {
+                "type": "string",
+                "pattern": "^oteryn:",
+                "maxLength": 128
+              },
+              "elapsed_seconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 31536000
+              },
+              "set_now": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "cooldown_reply": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "bulk": {
+          "$ref": "#/$defs/bulk"
+        },
+        "refusal_topic": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
         }
       }
     },
@@ -697,6 +826,44 @@
               }
             }
           ]
+        }
+      }
+    },
+    "bulk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "output",
+        "base",
+        "bonus",
+        "chance_percent"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "output": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "bonus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "chance_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
         }
       }
     }

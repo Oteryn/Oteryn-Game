@@ -6,6 +6,9 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod npcfix_extensions;
+pub use npcfix_extensions::{BulkExchange, DecayTarget, RewardClock, RewardCooldown, RewardDecay};
+
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
@@ -25,6 +28,11 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decay: Option<RewardDecay>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -158,6 +166,24 @@ pub struct RewardCallback {
     pub achievement_progress: Vec<AchievementProgress>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub clocks: Vec<RewardClock>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown: Option<RewardCooldown>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bulk: Option<BulkExchange>,
+    /// A costed item exchange may repeat under a fresh command occurrence.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub repeatable: bool,
+    /// Costed repeats may retain one idempotent account achievement occurrence.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub achievement_once: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cooldown_reply: Vec<String>,
+    /// Known refusal cancels or redirects only the same conversation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refusal_topic: Option<u16>,
 }
 
 impl OutfitReward {
@@ -176,6 +202,17 @@ impl OutfitReward {
     }
 }
 impl RewardCallback {
+    pub fn clock_effects(&self) -> impl Iterator<Item = RewardClock> + '_ {
+        self.clocks
+            .iter()
+            .cloned()
+            .chain(self.cooldown.iter().map(|c| RewardClock {
+                track: c.track.clone(),
+                elapsed_seconds: Some(i64::from(c.seconds)),
+                set_now: true,
+            }))
+    }
+
     pub fn cosmetic_targets(&self) -> impl Iterator<Item = &OutfitReward> {
         self.outfit.iter().chain(&self.outfits)
     }
@@ -191,6 +228,9 @@ impl RewardCallback {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
         (!self.take.is_empty() && self.give.is_some())
+            || (self.repeatable
+                && self.give.is_some()
+                && (self.fee.is_some() || self.cooldown.is_some()))
             || self.cosmetic_targets().any(|target| {
                 (target.addons == 0
                     && target.sex.is_none()
@@ -288,18 +328,18 @@ fn parse_document(text: &str) -> Result<Document, String> {
                         .iter()
                         .any(|owner| owner.as_str() != track.quest.as_str())
             } else {
-                !document
-                    .callbacks
-                    .iter()
-                    .any(|c| c.requires.iter().any(|r| r.track == track.key))
-                    || document.callbacks.iter().any(|c| {
-                        c.storage
-                            .iter()
-                            .map(|s| s.track.as_str())
-                            .chain(c.state_ops.iter().map(|s| s.track.as_str()))
-                            .chain(c.participants.iter().flat_map(QuestParticipant::tracks))
-                            .any(|key| key == track.key)
-                    })
+                !document.callbacks.iter().any(|c| {
+                    c.requires.iter().any(|r| r.track == track.key)
+                        || c.clock_effects()
+                            .any(|clock| clock.track == track.key && c.quest == track.quest)
+                }) || document.callbacks.iter().any(|c| {
+                    c.storage
+                        .iter()
+                        .map(|s| s.track.as_str())
+                        .chain(c.state_ops.iter().map(|s| s.track.as_str()))
+                        .chain(c.participants.iter().flat_map(QuestParticipant::tracks))
+                        .any(|key| key == track.key)
+                })
             }
         {
             return Err(format!(
@@ -343,7 +383,8 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.requires
                 .iter()
                 .any(|r| participant_keys.contains(&r.track) || op_keys.contains(&r.track))
-            || c.storage.len() + c.state_ops.len() + participant_count > 8
+            || c.storage.len() + c.state_ops.len() + participant_count + c.clock_effects().count()
+                > super::QUESTSTATE0_RL_02
             || c.participants.iter().any(|p| {
                 p.quest == c.quest
                     || !slug(&p.quest, "oteryn:", b"._/:-", 128)
@@ -355,6 +396,79 @@ fn parse_document(text: &str) -> Result<Document, String> {
             })
         {
             return Err(format!("invalid reward participants {}", c.key));
+        }
+        let clocks: Vec<_> = c.clock_effects().collect();
+        let clock_keys: BTreeSet<_> = clocks.iter().map(|clock| &clock.track).collect();
+        if clocks.len() > 8
+            || clock_keys.len() != clocks.len()
+            || !clock_keys.is_disjoint(&tracks)
+            || !clock_keys.is_disjoint(&op_keys)
+            || !clock_keys.is_disjoint(&participant_keys)
+            || c.requires.iter().any(|r| clock_keys.contains(&r.track))
+            || clocks.iter().any(|clock| {
+                !slug(&clock.track, "oteryn:", b"._/:-", 128)
+                    || clock
+                        .elapsed_seconds
+                        .is_some_and(|seconds| seconds <= 0 || seconds > 31_536_000)
+                    || (!clock.set_now && clock.elapsed_seconds.is_none())
+            })
+            || (c.repeatable
+                && ((c.take.is_empty() && c.fee.is_none() && c.cooldown.is_none())
+                    || c.give.is_none()
+                    || c.cosmetic_targets().next().is_some()
+                    || (c.achievement.is_some() && !c.achievement_once)))
+            || (c.achievement_once && (!c.repeatable || c.achievement.is_none()))
+            || (c.cooldown.is_some() && !c.repeatable)
+            || (!c.cooldown_reply.is_empty()
+                && !clocks.iter().any(|clock| clock.elapsed_seconds.is_some()))
+            || c.cooldown_reply.len() > 8
+            || c.cooldown_reply
+                .iter()
+                .any(|s| s.is_empty() || s.len() > 512 || s.chars().any(char::is_control))
+            || c.bulk.as_ref().is_some_and(|bulk| {
+                !item(&bulk.item, 1)
+                    || !item(&bulk.output, bulk.base)
+                    || bulk.item == bulk.output
+                    || bulk.bonus == 0
+                    || !(1..=100).contains(&bulk.chance_percent)
+                    || !c.repeatable
+                    || c.take.len() != 1
+                    || c.take
+                        .first()
+                        .is_none_or(|take| take.item != bulk.item || take.count != 1)
+                    || c.give.as_ref().is_none_or(|give| {
+                        give.item != bulk.output
+                            || give.count != bulk.base
+                            || !give.contents.is_empty()
+                            || !give.backpack_outputs.is_empty()
+                            || give.decay.is_some()
+                    })
+                    || c.fee.is_some()
+                    || !c.present.is_empty()
+                    || c.outfit.is_some()
+                    || c.achievement.is_some()
+            })
+            || c.give.as_ref().is_some_and(|r| {
+                !item(&r.item, r.count)
+                    || r.decay.as_ref().is_some_and(|decay| {
+                        r.count != 1
+                            || decay.duration_millis == 0
+                            || !r.backpack_outputs.is_empty()
+                            || decay.target.as_ref().is_some_and(|target| {
+                                target.family != "Item"
+                                    || !slug(&target.key, "oteryn:item.", b"._/:-", 256)
+                                    || target.revision.is_empty()
+                                    || target.revision.len() > 128
+                            })
+                    })
+                    || (!r.contents.is_empty() && !r.backpack_outputs.is_empty())
+                    || r.backpack_outputs.len() > 19
+                    || r.backpack_outputs.iter().any(|s| !item(&s.item, s.count))
+                    || r.contents.len() > 20
+                    || r.contents.iter().any(|s| !item(&s.item, s.count))
+            })
+        {
+            return Err(format!("invalid reward extensions {}", c.key));
         }
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
@@ -379,7 +493,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 .iter()
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
-            || c.storage.len() > 8
+            || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
             || c.requires_actor_conditions
@@ -607,6 +721,25 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
+        for clock in callback.clock_effects() {
+            if let Some(track) = tracks.iter().find(|track| track.key == clock.track) {
+                if track.quest != callback.quest
+                    || track.initial != -1
+                    || track.min != -1
+                    || track.max != i64::MAX
+                {
+                    return Err(format!("foreign reward clock {}", clock.track));
+                }
+            } else {
+                tracks.push(QuestTrack {
+                    key: clock.track,
+                    quest: callback.quest.clone(),
+                    initial: -1,
+                    min: -1,
+                    max: i64::MAX,
+                });
+            }
+        }
         transitions.push(QuestTransition {
             key: callback.key.clone(),
             quest: callback.quest.clone(),
@@ -623,6 +756,19 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     },
                 })
                 .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+                .chain(callback.clock_effects().map(|clock| {
+                    QuestEffect {
+                        track: clock.track,
+                        from: clock
+                            .elapsed_seconds
+                            .map_or(QuestComparison::Any, QuestComparison::ElapsedAtLeast),
+                        effect: if clock.set_now {
+                            QuestEffectKind::SetNow
+                        } else {
+                            QuestEffectKind::Add(0)
+                        },
+                    }
+                }))
                 .collect(),
             completes: false,
             experience: None,
@@ -1010,6 +1156,188 @@ mod tests {
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod npcfix_preserved_tests {
+    use super::*;
+
+    #[test]
+    fn workshop_clocks_are_bounded_disjoint_and_required_for_free_repeats() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/npcfix-ghost-tear")
+            .ok_or("tear")?;
+        let original = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        let document = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        assert!(parse(&document(&original)).is_ok());
+        for mutation in 0..6 {
+            let mut value = original.clone();
+            match mutation {
+                0 => {
+                    value.as_object_mut().ok_or("object")?.remove("cooldown");
+                }
+                1 => value["cooldown"]["seconds"] = 0.into(),
+                2 => value["cooldown"]["seconds"] = 31_536_001_i64.into(),
+                3 => value["cooldown"]["track"] = value["storage"][0]["track"].clone(),
+                4 => {
+                    value["clocks"] = serde_json::json!([{"track":value["cooldown"]["track"],"elapsed_seconds":72000,"set_now":true}])
+                }
+                _ => {
+                    value["requires"] = serde_json::json!([{"track":value["cooldown"]["track"],"minimum":0,"maximum":1}])
+                }
+            }
+            assert!(parse(&document(&value)).is_err(), "mutation {mutation}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn repeatable_item_exchange_requires_an_explicit_cost() -> Result<(), String> {
+        let callback = load()?.into_iter().next().ok_or("callback")?;
+        let mut value = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+        value["repeatable"] = true.into();
+        value["take"] = serde_json::json!([{"item": "oteryn:item.tibia.i3031", "count": 20}]);
+        value["give"] = serde_json::json!({"item": "oteryn:item.tibia.i875", "count": 1});
+        value["outfit"] = serde_json::Value::Null;
+        value["achievement"] = serde_json::Value::Null;
+        for state in value["storage"].as_array_mut().ok_or("storage")? {
+            state["preserve"] = true.into();
+        }
+        let document = |callback: &serde_json::Value| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(parse(&document(&value)).is_ok());
+        value["take"] = serde_json::json!([]);
+        assert!(
+            parse(&document(&value)).is_err(),
+            "a repeat must consume value"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn costed_achievement_and_deadline_require_explicit_single_item_authority() -> Result<(), String>
+    {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/npcfix/wandering-crystal")
+            .ok_or("crystal callback")?;
+        let original = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        let document = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        assert!(parse(&document(&original)).is_ok());
+        for mutation in 0..7 {
+            let mut value = original.clone();
+            match mutation {
+                0 => value["take"] = serde_json::json!([]),
+                1 => value["achievement_once"] = false.into(),
+                2 => value["repeatable"] = false.into(),
+                3 => {
+                    value["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.pirate","addons":0})
+                }
+                4 => value["give"]["decay"]["duration_millis"] = 0.into(),
+                5 => value["give"]["count"] = 2.into(),
+                _ => value["give"]["decay"]["target"]["key"] = "not-an-item".into(),
+            }
+            assert!(parse(&document(&value)).is_err(), "mutation {mutation}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
+        let mut callback = load()?.into_iter().next().ok_or("callback")?;
+        callback.storage = (0..16)
+            .map(|i| Storage {
+                track: format!("oteryn:quest-progress/atomic/{i}"),
+                minimum: 0,
+                maximum: 0,
+                set: 1,
+                preserve: false,
+            })
+            .collect();
+        let document = |callback: &RewardCallback| {
+            serde_json::json!({"schema": 1, "callbacks": [callback]}).to_string()
+        };
+        assert!(parse(&document(&callback)).is_ok());
+        callback.storage.push(Storage {
+            track: "oteryn:quest-progress/atomic/16".into(),
+            minimum: 0,
+            maximum: 0,
+            set: 1,
+            preserve: false,
+        });
+        assert!(parse(&document(&callback)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn repeatable_callbacks_require_a_cost_or_a_locked_database_cooldown() -> Result<(), String> {
+        let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
+        for invalid in 0..4 {
+            let mut document: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            let callback = document["callbacks"]
+                .as_array_mut()
+                .ok_or("callbacks")?
+                .iter_mut()
+                .find(|row| row["key"] == "oteryn:quest-reward/npcfix-ghost-tear")
+                .ok_or("cooldown callback")?;
+            match invalid {
+                0 => {
+                    callback["cooldown"] = serde_json::Value::Null;
+                }
+                1 => {
+                    callback["cooldown"] = serde_json::json!({"track":"oteryn:clock","seconds":0});
+                }
+                2 => {
+                    callback["outfit"] =
+                        serde_json::json!({"outfit":"oteryn:outfit.pirate","addons":0});
+                }
+                _ => {
+                    callback["give"] = serde_json::Value::Null;
+                }
+            }
+            assert!(parse(&serde_json::to_string(&document).map_err(|e| e.to_string())?).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn source_cooldown_uses_the_locked_timestamp_and_exact_twenty_hour_boundary()
+    -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        let catalogue = loaded.catalogue();
+        let transition = catalogue
+            .transition("oteryn:quest-reward/npcfix-ghost-tear")
+            .ok_or("tear transition")?;
+        let clock = transition
+            .effects
+            .iter()
+            .find(|effect| effect.effect == QuestEffectKind::SetNow)
+            .ok_or("clock effect")?;
+        let mut stored = BTreeMap::from([(clock.track.clone(), 28_001)]);
+        assert_eq!(
+            catalogue.evaluate(transition, &stored, 100_000),
+            Err(super::super::QuestRefusal::StageMismatch)
+        );
+        stored.insert(clock.track.clone(), 28_000);
+        let changes = catalogue
+            .evaluate(transition, &stored, 100_000)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            changes
+                .iter()
+                .any(|change| change.track == clock.track && change.after == 100_000)
+        );
         Ok(())
     }
 }

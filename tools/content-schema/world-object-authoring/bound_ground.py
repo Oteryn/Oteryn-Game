@@ -29,9 +29,9 @@ def record(root=ROOT, *, identifier, expected_speed):
     return result
 
 
-def validate_record(observed):
+def validate_record(observed, root=ROOT):
     try:
-        expected = record(identifier=observed["provenance"]["source_item_id"],
+        expected = record(root, identifier=observed["provenance"]["source_item_id"],
                           expected_speed=observed["ground_speed"]["value"])
     except (KeyError, ValueError, StopIteration) as error:
         return [f"bound ground source admission: {error}"]

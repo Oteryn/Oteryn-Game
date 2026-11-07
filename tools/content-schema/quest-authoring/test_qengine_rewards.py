@@ -307,12 +307,22 @@ class QuestRewards(unittest.TestCase):
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
+        owned = {'al-dee-pick', 'forest-fury-cage', 'wandering-crystal'}
+        owned_contract = {}
+        for source in ('npcfix_rewards.json', 'npcfix_workshop.json'):
+            rows = json.loads((q.ROOT / 'tools/content-schema/quest-authoring' / source).read_bytes())['callbacks']
+            owned.update(row['key'].split('/')[-1] for row in rows)
+            owned_contract.update((row['key'], row) for row in rows)
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
-                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
+                         {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'} | owned)
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),114)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),114 + len(owned))
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
-        self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
+        for callback in callbacks:
+            if callback['key'] in owned_contract:
+                self.assertEqual(callback['sources'], owned_contract[callback['key']]['sources'])
+            else:
+                self.assertIn(q.PIN, callback['sources'][0])
 
     def test_l1_handins_preserve_source_crest_identity_and_exclusive_sides(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}

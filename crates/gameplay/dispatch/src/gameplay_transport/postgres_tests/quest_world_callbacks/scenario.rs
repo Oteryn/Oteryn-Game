@@ -25,7 +25,8 @@ fn scenario_case(
     let monk = name.starts_with("monk-guidance");
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let classic_npc = qengine_reward
+    let classic_npc = name.starts_with("npcfix-reward-")
+        || qengine_reward
         || matches!(
             name,
             "nx6-wayfarer"
@@ -259,6 +260,17 @@ fn scenario_case(
             .await?;
         } else if qengine_reward {
             super::super::qengine_rewards::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
+        } else if name.starts_with("npcfix-reward-workshop-") {
+            super::super::npcfix_workshop::exercise(&mut owner, &mut admitted, &h, name).await?;
+        } else if name.starts_with("npcfix-reward-") {
+            super::super::npcfix_reward_dialogue::exercise(
                 &mut owner,
                 &mut admitted,
                 &h,

@@ -295,6 +295,16 @@
       "sources": [
         "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L5-L117:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ]
     }
   ],
   "callbacks": [
@@ -8253,6 +8263,666 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/al-dee-pick",
+      "quest": "oteryn:quest.pick_quest",
+      "npc": "oteryn:npc.al_dee",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/pick_quest/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3462",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3456",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Splendid! Here, take your pick."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:156:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/forest-fury-cage",
+      "quest": "oteryn:quest.forgotten_knowledge_quest",
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/bird_cage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i23812",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Indeed, you will. Take one of these cages, which have been crafted generations ago to rob a creature of its freedom for that it may earn it again truthfully. Return the birds back to their home in the glade. ...",
+        "You will find {phials} for water near this sacred well which will take you safely to the glade. No seeds are left, they are in the hands of the intruders now. Have faith in yourself, guardian."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_weakened_forest_fury.lua:74:sha256:0d4e15a43d66332de7ca283d776f6a692d6247c80dacb66517c02f782db266e6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/wandering-crystal",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.a_wandering_soul",
+      "keywords": [
+        "blood crystal"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "minimum": 2,
+          "maximum": 4,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8453",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8225",
+        "count": 1,
+        "contents": [],
+        "decay": {
+          "duration_millis": 604800000,
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i8453",
+            "revision": "definition-r1"
+          }
+        }
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/ghostwhisperer",
+      "reply": [
+        "What the...? I don't know anything about that... still... the pain felt a little less intense for a second... relieving... but will never be gone."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_wandering_soul.lua:88:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427"
+      ],
+      "repeatable": true,
+      "achievement_once": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/altar-bag",
+      "quest": "oteryn:quest.blood_sacrifice",
+      "npc": "oteryn:npc.altar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/altar/exchange",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i43855",
+          "count": 5
+        },
+        {
+          "item": "oteryn:item.tibia.i43854",
+          "count": 5
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i43895",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your sacrifice has been accepted, mortal. Embrace your reward!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/altar.lua#L73:sha256:aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c"
+      ],
+      "fee": {
+        "gold": 50000000,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "refusal_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/koshei-submit",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 12,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7528",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7529",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7530",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i7531",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L329:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "fee": {
+        "gold": 5000,
+        "include_bank": true
+      },
+      "clocks": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/started_at",
+          "elapsed_seconds": null,
+          "set_now": true
+        }
+      ],
+      "refusal_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix/koshei-claim",
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "amulet"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7532",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L293:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "clocks": [
+        {
+          "track": "oteryn:quest-progress/npcfix/koshei_amulet/started_at",
+          "elapsed_seconds": 86400,
+          "set_now": false
+        }
+      ],
+      "cooldown_reply": [
+        "Big Ben still hammering! Come back in |REMAINING|!"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-crude-iron",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3281",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5892",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:179:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-draconian-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3416",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5889",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:143:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-gear-wheel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8775",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:242:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true,
+      "refusal_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-gold-melt",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9058",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12804",
+        "count": 1,
+        "contents": [],
+        "decay": {
+          "duration_millis": 36000000,
+          "target": null
+        }
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Whoooosh There!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:225:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true,
+      "refusal_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-hell-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3356",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5888",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:161:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-royal-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3381",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5887",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:133:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-skirts",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3560",
+          "count": 3
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good good! Woman happy will be. Now me happy too and help you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "refusal_topic": 3
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-start",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Me need gift for woman. We dance, so me want to give her bast skirt. But she big is. So I need many to make big one. Bring three okay? Me wait."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-soul-orbs",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5944",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i6528",
+        "count": 100,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:197:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true,
+      "bulk": {
+        "item": "oteryn:item.tibia.i5944",
+        "output": "oteryn:item.tibia.i6528",
+        "base": 100,
+        "bonus": 100,
+        "chance_percent": 1
+      },
+      "refusal_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix-ghost-tear",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "awaken"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i8746",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "... to awake him... I don't know but... he once truly loved me... maybe there is still something left... somewhere... here... take this from me....and thank you for listening..."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L48-L125:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ],
+      "repeatable": true,
+      "cooldown": {
+        "track": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+        "seconds": 72000
+      },
+      "cooldown_reply": [
+        "... I'm sorry... my tears are not ready yet... my soul needs time to grieve..."
       ]
     }
   ]

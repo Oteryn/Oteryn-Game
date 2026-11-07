@@ -13,17 +13,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "greet": "Hum Humm! Welcume lil' |PLAYERNAME|.",
-      "farewell": "Good bye lil' one.",
-      "walkaway": "Good bye.",
-      "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:370:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:371:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
-      ]
-    },
-    {
       "npc": "oteryn:npc.amber",
       "greet": "Oh hello, nice to see you |PLAYERNAME|. Are you here to hear some stories of my {adventures} or do you need {help}?",
       "farewell": "See you later, |PLAYERNAME|.",
@@ -604,6 +593,82 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:160:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:161:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.al_dee",
+      "greet": "Hello, hello, |PLAYERNAME|! Please come in, look, and buy! I'm a specialist for all sorts of {tools}. Just ask me for a {trade} to see my offers! You can also ask me for general {hints} about the game. ... You can also ask me about each {citizen} of the isle.",
+      "farewell": "Bye, bye |PLAYERNAME|.",
+      "walkaway": "Bye, bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:169:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:167:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/al_dee.lua:166:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_weakened_forest_fury",
+      "greet": "I greet you, human. This is a time of distress, more than ever are we in need of guardians to protect us and our world.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_weakened_forest_fury.lua:122:sha256:0d4e15a43d66332de7ca283d776f6a692d6247c80dacb66517c02f782db266e6",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_wandering_soul",
+      "greet": "Is that you...? No... it's not... she never woke up again... the pain... cursed... to wander... Leave me alone in my mourning...",
+      "farewell": "Leave me alone in my mourning...",
+      "walkaway": "Ooooh... the sadness...",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_wandering_soul.lua:65:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_wandering_soul.lua:110:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_wandering_soul.lua:111:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427"
+      ],
+      "conditional": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "minimum": 2,
+          "item": "oteryn:item.tibia.i8453",
+          "text": "I saw you... who are you... what do you want from me...?"
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "minimum": 2,
+          "item": "oteryn:item.tibia.i8225",
+          "text": "The pain is slightly less... but the crystal is already charged."
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.altar",
+      "greet": "Kneel before the all-devouring power of blooded decay.",
+      "farewell": "Bye, |PLAYERNAME|.",
+      "walkaway": "Bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/altar.lua#L73:sha256:aba428a9619d2d0af8afa0b01b82b784e95f210d430576fe68e3a07f1a300c8c"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "greet": "Hum Humm! Welcume lil' |PLAYERNAME|.",
+      "farewell": "Good bye lil' one.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sweaty_cyclops.lua#L329:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "greet": "Ohh...",
+      "greet_more": [],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L1-L128:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
       ]
     }
   ]

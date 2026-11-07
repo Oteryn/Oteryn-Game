@@ -16,13 +16,16 @@ def merge(base, supplement, tooling):
     pairs = {}
     for row in outfits.values():
         pair = (row["female"]["id"], row["male"]["id"])
-        if pair in pairs:
-            raise ValueError("cosmetics supplement has ambiguous admitted identities")
-        pairs[pair] = row
+        pairs.setdefault(pair, []).append(row)
     aliases = {}
     for row in incoming["outfits"]:
         pair = (row["female"]["id"], row["male"]["id"])
-        admitted = pairs.get(pair)
+        admitted = outfits.get(row["key"])
+        if admitted is None:
+            candidates = pairs.get(pair, [])
+            if len(candidates) > 1:
+                raise ValueError("cosmetics supplement has ambiguous admitted identities")
+            admitted = next(iter(candidates), None)
         if admitted is not None:
             if (any(admitted[sex] != row[sex] for sex in ("female", "male"))
                     or admitted["addon_count"] < row["addon_count"]):
@@ -33,13 +36,20 @@ def merge(base, supplement, tooling):
                 raise ValueError("cosmetics supplement retargets an admitted identity")
             admitted = copy.deepcopy(row)
             outfits[row["key"]] = admitted
-            pairs[pair] = admitted
+            pairs.setdefault(pair, []).append(admitted)
             aliases[row["key"]] = row["key"]
     target["outfits"] = sorted(outfits.values(), key=lambda row: row["key"])
     grants = {row["grant_key"]: row for row in target.get("grant_mappings", [])}
     for original in incoming.get("grant_mappings", []):
         row = copy.deepcopy(original)
-        row["target"]["outfit_key"] = aliases[row["target"]["outfit_key"]]
+        if "outfit_key" in row["target"]:
+            row["target"]["outfit_key"] = aliases[row["target"]["outfit_key"]]
+        elif row["target"].get("kind") == "Mount":
+            mount = row["target"].get("mount_key")
+            if not any(admitted["key"] == mount for admitted in target["mounts"]):
+                raise ValueError("cosmetics supplement references an unadmitted mount")
+        else:
+            raise ValueError("cosmetics supplement has an unknown grant target")
         existing = grants.get(row["grant_key"])
         if existing is not None:
             if existing["target"] != row["target"]:

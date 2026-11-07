@@ -80,6 +80,14 @@ pub(super) struct Step {
     next_topic: Option<Topic>,
     transition: Option<String>,
     reply: Vec<String>,
+    refusal_topic: Option<Topic>,
+}
+
+impl Step {
+    pub(super) fn on_refusal_topic(mut self, topic: Option<Topic>) -> Self {
+        self.refusal_topic = topic;
+        self
+    }
 }
 
 #[derive(Clone)]
@@ -91,6 +99,8 @@ struct Pending {
     context: Context,
     next_topic: Option<Topic>,
     reply: Vec<String>,
+    original_topic: Topic,
+    refusal_topic: Option<Topic>,
 }
 
 /// Bind a pure, source-backed selector to the actual current conversation.
@@ -130,6 +140,7 @@ pub(super) fn prepare(
         next_topic: choice.next_topic,
         transition: choice.transition,
         reply: choice.reply,
+        refusal_topic: None,
     })
 }
 
@@ -206,7 +217,69 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     }
 }
 
+/// Cancel a failed source confirmation only while its exact context is unchanged.
+async fn set_refusal_topic(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    context: &Context,
+    original: &Topic,
+    target: Topic,
+) {
+    let runtime = admission.runtime.lock().await;
+    if admission
+        .states
+        .npc_conversations
+        .current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            command.game_session_id,
+            intent,
+        )
+        .as_ref()
+        != Some(context)
+    {
+        return;
+    }
+    let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return;
+    };
+    let Some(session) = sessions.get_mut(&command.game_session_id) else {
+        return;
+    };
+    let state = &mut session.quest_dialogue;
+    if state.pending.is_none() && state.topic(context) == *original {
+        state.apply_topic(context.clone(), Some(target));
+    }
+}
+
 pub(super) async fn apply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTalkIntent,
+    step: Step,
+) -> NpcTalkOutcome {
+    let refusal = step
+        .refusal_topic
+        .as_ref()
+        .map(|target| (step.context.clone(), step.topic.clone(), target.clone()));
+    let result = apply_step(admission, actor, command, intent.clone(), step).await;
+    if result.disposition == NpcIntentDisposition::Rejected
+        && !result.unknown
+        && let Some((context, original, target)) = refusal
+    {
+        set_refusal_topic(
+            admission, actor, command, &intent, &context, &original, target,
+        )
+        .await;
+    }
+    result
+}
+
+async fn apply_step(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,
@@ -271,6 +344,25 @@ pub(super) async fn apply(
         admission.quest_catalogue.as_ref(),
     ) else {
         return rejected();
+    };
+    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .ok()
+        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == transition));
+    // Physical lane precedes the Character revision slot, as with other item services.
+    let physical = if value_callback {
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return rejected();
+        };
+        if !admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id)
+        {
+            return rejected();
+        }
+        Some(permit)
+    } else {
+        None
     };
     let mut slot = admission
         .revision_sequencer
@@ -351,11 +443,10 @@ pub(super) async fn apply(
             context: step.context.clone(),
             next_topic: step.next_topic,
             reply: step.reply.clone(),
+            original_topic: step.topic.clone(),
+            refusal_topic: step.refusal_topic.clone(),
         });
     }
-    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
-        .ok()
-        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
     let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load()
         .ok()
         .and_then(|callbacks| {
@@ -414,6 +505,7 @@ pub(super) async fn apply(
         .await
     };
     drop(slot);
+    drop(physical);
     #[cfg(test)]
     if value_callback && let Err(error) = &outcome {
         eprintln!("quest reward commit: {error:?}");
@@ -523,6 +615,18 @@ pub(in crate::gameplay_transport) async fn resume(
                     rendered,
                 ))
             } else {
+                if let Some(target) = pending.refusal_topic {
+                    set_refusal_topic(
+                        admission,
+                        pending.actor,
+                        command,
+                        &pending.intent,
+                        &pending.context,
+                        &pending.original_topic,
+                        target,
+                    )
+                    .await;
+                }
                 Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
             }
         }

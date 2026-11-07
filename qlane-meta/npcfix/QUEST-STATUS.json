@@ -5172,7 +5172,7 @@
     },
     "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
     "shared_engine_lookup": {
-      "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
+      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
       "qengine2": {
         "head": "9d3c3869f",
         "found": [
@@ -7507,7 +7507,7 @@
     }
   ],
   "shared_engine_lookup": {
-    "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
+    "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
       "head": "9d3c3869f",
       "found": [
@@ -7777,7 +7777,7 @@
     },
     "next_batch": "Finish the separate six-NPC canonical placement/name batch and push immediately; keep all remaining owned scope active.",
     "shared_engine_lookup": {
-      "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
+      "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
       "qengine2": {
         "head": "9d3c3869f",
         "found": [
@@ -8266,12 +8266,52 @@
       {
         "file": "0999_quest_reward_callbacks.sql",
         "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
-        "canonical_qengine2": true
+        "owner": "main"
       },
       {
         "file": "1000_quest_reward_payments.sql",
         "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
-        "canonical_qengine2": true
+        "owner": "main"
+      },
+      {
+        "file": "1001_quest_reward_participants.sql",
+        "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+        "owner": "main"
+      },
+      {
+        "file": "1002_quest_reward_state_operations.sql",
+        "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+        "owner": "main"
+      },
+      {
+        "file": "1003_quest_reward_target_sets.sql",
+        "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+        "owner": "main"
+      },
+      {
+        "file": "1004_quest_paid_item_exchanges.sql",
+        "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+        "owner": "main"
+      },
+      {
+        "file": "1005_quest_carried_use_proofs.sql",
+        "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+        "owner": "main"
+      },
+      {
+        "file": "1006_quest_owned_base_predicates.sql",
+        "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+        "owner": "main"
+      },
+      {
+        "file": "1007_quest_carried_payment_reapplication.sql",
+        "sha256": "7e2498f421c470305eadf8b89e3eab0928b8a386fea385cff9768a51a743a2ae",
+        "owner": "main"
+      },
+      {
+        "file": "1008_quest_carried_membership_projection.sql",
+        "sha256": "3c8d74e1b4ef3c4a19d6b9bd0cee4651bd2e57e3c3e10891b39126452b7751ca",
+        "owner": "main"
       }
     ],
     "qbase_files_carried": [],
@@ -8295,7 +8335,7 @@
       ]
     },
     "followup": "Found legacy1096_npc_atomic_quest_effects.sql is still tracked and semantically duplicates1230. Remove1096, retain1230 byte unchanged; add1239 optional-fluid shape fix. Rebuild and focused PG checks required; do not claim registry finished until pushed.",
-    "state": "MAIN0999\u20131008_BYTE_IDENTICAL; NO1200\u20131205; REMOVED_OLD_COMPLETE_FUNCTION_VARIANTS1231_1232; REVALIDATION_PENDING",
+    "state": "MAIN0999–1008_BYTE_IDENTICAL; NO1200–1205; REMOVED_OLD_COMPLETE_FUNCTION_VARIANTS1231_1232; REVALIDATION_PENDING",
     "main_qengine_versions": [
       999,
       1000,
@@ -8307,7 +8347,47 @@
       1006,
       1007,
       1008
-    ]
+    ],
+    "current_main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "removed_superseded": [
+      "1231_quest_costed_repeat_occurrences.sql",
+      "1232_quest_repeat_achievement_once.sql"
+    ],
+    "current_lane_files": [
+      {
+        "file": "1230_quest_atomic_track_capacity.sql",
+        "sha256": "2980e59396009db00a24a350ec9bbf1c71d971c4f3e1bb0f4312e5eabd0ebd8f"
+      },
+      {
+        "file": "1233_quest_reward_absolute_deadlines.sql",
+        "sha256": "373fccd785b07116932e046735786fab4f3978785640bba0e1e3691e823c1cb6"
+      },
+      {
+        "file": "1234_quest_cooldown_repeat_occurrences.sql",
+        "sha256": "a56b5cf5f915be36629a739fe2328a3b5ed091936fef05031f160de2898bd0e7"
+      },
+      {
+        "file": "1235_quest_reward_workshop_clocks.sql",
+        "sha256": "4f3914b14d8ef0127efc552aa6f9bd1de197b272cda4746fe91ba833949eb9e5"
+      },
+      {
+        "file": "1236_quest_reward_backpack_outputs.sql",
+        "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f"
+      },
+      {
+        "file": "1237_quest_reward_bulk_draws.sql",
+        "sha256": "2bb33341159c64bb71c09784950019821e55cb19e160ce7aabcab7567b33eeaa"
+      },
+      {
+        "file": "1238_npc_trade_fluid_mints.sql",
+        "sha256": "5f07fae2248a5b2cc28961c8c3300aea01bbaaf4022ab0189950f6da7113d250"
+      },
+      {
+        "file": "1239_npc_trade_optional_fluid_shape.sql",
+        "sha256": "4c1037b3d896a557e6830a464e3f928b382e998c9b29bb66c82466fa8d02c393"
+      }
+    ],
+    "note": "Renames are historical. Current files consume main0999–1008; no1200–1205 copies.1231/1232 removed because they replaced the shared completion owner;1234/1235 now extend main in bounded lane-owned arms."
   },
   "prepared_physical_batches": [
     {
@@ -8785,8 +8865,12 @@
     }
   },
   "owner_validation_rule": {
-    "effective": "2026-11-07 owner full reverse-dependent tests before every push",
-    "roots": [
+    "effective": "Latest owner compile-only publication gate; CI runs full suites",
+    "before_each_push": [
+      "cargo check --workspace --all-targets",
+      "cargo fmt --all -- --check"
+    ],
+    "lane_crates": [
       "oteryn-game-server",
       "oteryn-gameplay-content",
       "oteryn-gameplay-dispatch",
@@ -8795,50 +8879,34 @@
       "oteryn-gameplay-npc",
       "oteryn-gameplay-quests",
       "oteryn-gameplay-social",
-      "oteryn-gameplay-world",
       "oteryn-world-bundle-compiler"
     ],
-    "crates": [
-      "oteryn-game-server",
-      "oteryn-gameplay-characters",
-      "oteryn-gameplay-combat",
-      "oteryn-gameplay-combat-rules",
-      "oteryn-gameplay-content",
-      "oteryn-gameplay-content-promotion",
-      "oteryn-gameplay-dispatch",
-      "oteryn-gameplay-durability",
-      "oteryn-gameplay-encounter-rules",
-      "oteryn-gameplay-encounters",
-      "oteryn-gameplay-entities",
-      "oteryn-gameplay-items",
-      "oteryn-gameplay-monster-ai",
-      "oteryn-gameplay-npc",
-      "oteryn-gameplay-progression",
-      "oteryn-gameplay-quests",
-      "oteryn-gameplay-social",
-      "oteryn-gameplay-spell",
-      "oteryn-gameplay-spell-rules",
-      "oteryn-gameplay-world",
-      "oteryn-world-bundle-compiler"
-    ],
-    "next_command": "cargo nextest run: all21 packages, PostgreSQL enabled, no fail-fast,2 test threads; after coherent repository regeneration",
-    "state": "MAIN1AE_QENGINE_CORE_ADOPTED; NPCFIX_EXTENSIONS_REINTEGRATING; VALIDATION_PENDING",
+    "state": "COMPILING_CHECKPOINT_READY; TEST_RETEST_PENDING; OWNER_HARD_RULE_AUTHORIZES_PUSH",
     "main_commit": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-    "local_merge": "838c481cb",
+    "local_merge": "e63a7fb77",
     "last_push": "b12367d4e",
-    "compilation_resource_note": "Earlier focused rebuild failed signal9 SIGKILL while a heavy world pin compiler was active in16GiB. No GREEN claimed. Serialize regeneration and Rust builds; CARGO_BUILD_JOBS=1.",
-    "regeneration_log": "/tmp/npcfix-evidence/owner-main-regeneration.log",
-    "known_failures_to_group": [
-      "Cosmetic catalogue whole-catalogue mount grant composition: KeyError outfit_key (4-test Python suite completed,1error).",
-      "Six-NPC full-anchor ground fixture: Anaztassja2admitted/5captured;9other captured NPC anchors have no source tile."
-    ],
+    "resource_note": "Serialize heavy pin compiler and Rust test/link work. CARGO_BUILD_JOBS=2; no broad nextest suites.",
     "superseded_run": {
       "tests_selected": 7964,
       "ignored_reported": 44,
       "archive": "/tmp/npcfix-evidence/owner-pre-3020-partial",
       "known_failure": "bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn",
-      "reason": "Owner requires main1ae39c7fb9bef09c3cd50d16410374f4134b1676 now. Gracefully interrupted before source reconciliation; collect full tests again after merge."
-    }
+      "reason": "Owner superseded full reverse-dependent nextest with own mechanics plus workspace all-target compilation; do not restart the full run."
+    },
+    "current_logs": {
+      "regeneration": "/tmp/npcfix-evidence/post3020-repository-regeneration.log",
+      "reward_catalogue": "/tmp/npcfix-evidence/post3020-reward-catalogue-tests-3.log"
+    },
+    "known_focused_results": {
+      "reward_catalogue": "16/16 PASS3.015s",
+      "placement_sources": "14/14 PASS0.828s",
+      "ground_sources": "22/22 PASS62.782s",
+      "registry_overlay": "12/12 PASS194.754s",
+      "cosmetic_supplement": "4/4 PASS0.096s",
+      "profile_authoring": "9/9 PASS148.920s",
+      "postgres_migration_preflight": "18.6 PASS6.241s"
+    },
+    "publication": "Collect all focused failures, fix together, rerun full focused set, commit and fetch/merge/push once green. CI broad results will be provided by owner."
   },
   "main_cosmetic_integration": {
     "main_outfits_preserved": 14,
@@ -8849,5 +8917,139 @@
     "merged_outfits": 63,
     "merged_grants": 229,
     "main_palette_fallbacks_and_profile_preserved": true
+  },
+  "main_3020_integration": {
+    "state": "IN_PROGRESS; no additional entry qualified yet",
+    "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+    "merge": "e63a7fb77",
+    "shared_migrations": "0999–1008 byte-identical to main; no1200–1205 copies; superseded1231/1232 removed",
+    "lane_migrations": [
+      "1230_quest_atomic_track_capacity.sql",
+      "1233_quest_reward_absolute_deadlines.sql",
+      "1234_quest_cooldown_repeat_occurrences.sql",
+      "1235_quest_reward_workshop_clocks.sql",
+      "1236_quest_reward_backpack_outputs.sql",
+      "1237_quest_reward_bulk_draws.sql",
+      "1238_npc_trade_fluid_mints.sql",
+      "1239_npc_trade_optional_fluid_shape.sql"
+    ],
+    "postgres_preflight": {
+      "version": "18.6",
+      "seconds": 6.241,
+      "exit": 0,
+      "log": "/tmp/npcfix-evidence/post3020-migration-preflight.log"
+    },
+    "profile_authoring": {
+      "tests": 9,
+      "seconds": 148.92,
+      "result": "PASS",
+      "log": "/tmp/npcfix-evidence/post3020-npcfix-profiles-2.log"
+    },
+    "next": "Finish current workspace check, fmt, commit and fetch/merge/push now. Then resume10 failed cases; no new entries qualified by this checkpoint.",
+    "native_preservation": {
+      "1ae39c7fb": {
+        "before_sha256": "8dddf732916bffc7a8151ac772e73e4a9f47ca4d51768d76245295232557c5fd",
+        "before_count": 3625,
+        "after_count": 3680,
+        "missing": [],
+        "changed": [
+          "oteryn:item.tibia.i3456",
+          "oteryn:item.tibia.i6528"
+        ]
+      },
+      "3ec8ec103": {
+        "before_sha256": "eef103b7609e6f4e23ed27ff6b901df36504c77c628ae2d0ac515364138d8ef3",
+        "before_count": 3639,
+        "after_count": 3680,
+        "missing": [],
+        "changed": []
+      }
+    },
+    "pure_results": {
+      "reward_catalogue": {
+        "passed": 16,
+        "seconds": 3.015
+      },
+      "main_source_authoring": {
+        "passed": 28,
+        "seconds": 96.959
+      },
+      "npcfix_composed_authoring": {
+        "passed": 9,
+        "seconds": 60.115
+      },
+      "main_effect_authoring": {
+        "passed": 4,
+        "seconds": 0.004
+      },
+      "placements": {
+        "passed": 14,
+        "seconds": 0.828
+      },
+      "grounds": {
+        "passed": 22,
+        "seconds": 62.782
+      },
+      "registry": {
+        "passed": 12,
+        "seconds": 194.754
+      },
+      "cosmetic_supplement": {
+        "passed": 4,
+        "seconds": 0.096
+      }
+    },
+    "producer_note": "Main producer is retained and calls the NPCFIX composition once at its boundary. Shared schema has only the additional bounded lifetime/repeat/clock/bulk/backpack fields. Main exact-set test includes separately sourced owned callbacks and retains all original six/L1–L12 counts and source checks. Canonical manifest serialization comes from the registrar.",
+    "generation": {
+      "state": "PASS",
+      "materializer": "1122 NPC presence; converter34111 Items,1290 NPCs,12252 taxonomy rows",
+      "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808",
+      "pin_log": "/tmp/npcfix-evidence/post3020-checkpoint-pin-refresh.log",
+      "owned_checks": "7/7 PASS; /tmp/npcfix-evidence/post3020-owned-generation/summary.json",
+      "taxonomy": "14 tests PASS116.856s; exact custody-preserving bound ground is not a world Item owner; ordinary owner precedence remains enforced",
+      "book_ground": "Prior50362 palette projection restored with existing pinned producer",
+      "bound_ground": "32691 retains its Item palette alias through existing resolver; only50820 palette key becomes direct Terrain",
+      "checkpoint_note": "Final official pin refresh after restoring previously qualified retail cells; source assertions and strict compiler admission retained."
+    },
+    "focused_red": {
+      "result": "18 passed,10 failed;28 focused cases executed;2659 unrelated tests filtered",
+      "seconds": 1865.991,
+      "log": "/tmp/npcfix-evidence/post3020-integration-red/focused-pg.log",
+      "root_causes": [
+        "NPCFIX literal dialogue/source headers dropped by main merge",
+        "NPC state-story greetings dropped by main merge",
+        "Physical-lane serialization omitted by main reward adapter",
+        "Palimuth main captured cell BlockSolid; restore prior qualified retail cell"
+      ]
+    },
+    "fixes": "Restored prior NPCFIX literal/state/header projections and physical-lane serialization while retaining main APIs; restored previously qualified Palimuth/Yalahari retail cells with bounded Global spawn witnesses. Source placement15 tests PASS0.660s. Focused10-case retest build interrupted by latest owner HARD RULE to prioritize compiling-state publication.",
+    "checkpoint_validation": {
+      "workspace_all_targets": "PASS;10m31s; /tmp/npcfix-evidence/post3020-final-workspace-check.log",
+      "fmt": "PASS; /tmp/npcfix-evidence/post3020-publication-fmt.log",
+      "prior_clippy": "All9 lane crates, all targets/features -D warnings PASS; before final restoration",
+      "tests": "18/28 passed;10 known failures repaired, retest build interrupted by owner hard publication rule; not qualified",
+      "pin": "f3a42a443d484c41d7b3108f853feba6e8b78a1873f281dcfe38f191a37f3808"
+    }
+  },
+  "owner_rules_current": {
+    "batch_size": "5–8 finished owned entries; green pushes to NPCFIX branch for wpkg collector; no PR opened here",
+    "shared_engine": "qengine2 owns new generic features. Request missing capability and continue other owned entries. Reuse existing implementations; only small local helpers (~50 lines) in new files. Current merge-regression repairs reuse previously implemented NPCFIX code.",
+    "generated": "Regenerate matrix/pins/generated data once immediately before a batch push",
+    "main": "Merge origin/main after coordinator reports collector PR merged",
+    "ownership": "Only own packet; new lanes have disjoint packets; awaiting coordinator reassignments for not-started overlaps",
+    "engine_requests": [
+      {
+        "feature": "Conditional NPC presence and service eligibility for calendar/events/world tasks",
+        "needed_by": [
+          "Hoaxette",
+          "Minzy",
+          "Rascalio",
+          "Ghost Captain"
+        ],
+        "where": "gameplay entities/content/dispatch",
+        "state": "REQUESTED; continue other owned entries"
+      }
+    ],
+    "publication_override": "Latest HARD RULE: within15 minutes publish current compiling state after workspace all-target check and fmt; tests/CI may remain pending. Thereafter publish compiling checkpoints at least every30 minutes."
   }
 }

@@ -197,14 +197,59 @@ def overlay_generated(generated, root=ROOT):
     return result
 
 
+def compose(generated):
+    """Layer only NPCFIX-owned facts onto the authoritative shared generation."""
+    import sys
+    import qengine_rewards
+    sys.path.insert(0, str(ROOT / 'tools/content-migration'))
+    import npcfix_item_profiles
+    import register_spell_families
+    inputs = qengine_rewards.donor_inputs()
+    import tarfile
+    with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
+        manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+        for npc in NPCS:
+            path = f'data-global/npc/{npc}.lua'
+            record = next(row for row in manifest['files'] if row['source'] == 'crystalserver'
+                          and row['revision'] == qengine_rewards.PIN and row['path'] == path)
+            raw = corpus.extractfile(record.get('blob_path', record.get('cache_path'))).read()
+            if hashlib.sha256(raw).hexdigest() != record['sha256']:
+                raise ValueError('NPCFIX_SOURCE_PIN:' + path)
+            inputs[path] = raw
+    callbacks, offers = [], []
+    greetings = append(callbacks, offers, inputs, qengine_rewards.PIN)
+    for relative, field, rows in (
+            ('content/quests/shared-reward-callbacks.json', 'callbacks', callbacks),
+            ('content/quests/shared-reward-offers.json', 'offers', offers),
+            ('content/dialogues/quests/shared-reward-greetings.json', 'npcs', list(greetings.values()))):
+        document = json.loads(generated[relative])
+        if field == 'callbacks':
+            keys = {row['key'] for row in rows}
+            document[field] = [row for row in document[field] if row['key'] not in keys] + rows
+        elif field == 'npcs':
+            keys = {row['npc'] for row in rows}
+            document[field] = [row for row in document[field] if row['npc'] not in keys] + rows
+        else:
+            document[field].extend(rows)
+        generated[relative] = qengine_rewards.encoded(document)
+    generated = overlay_generated(generated)
+    qengine_rewards.validate_callbacks(json.loads(generated['content/quests/shared-reward-callbacks.json']))
+    npcfix_item_profiles.admit(
+        ROOT, generated, npcfix_item_profiles.PROFILE, 'content/spells.manifest.json',
+        register_spell_families.provider_order, register_spell_families.spell_import.canonical_bytes)
+    return generated
+
+
+def build():
+    import qengine_rewards
+    return qengine_rewards.build()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    # The shared catalogue has one canonical materializer. The overlay helper above
-    # remains useful for isolated source-input checks without moving other owners.
-    import qengine_rewards
-    for relative, raw in qengine_rewards.build().items():
+    for relative, raw in build().items():
         path = ROOT / relative
         if path.is_file() and path.read_bytes() == raw:
             continue

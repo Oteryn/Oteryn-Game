@@ -17,6 +17,31 @@ class CatalogueSupplementTests(unittest.TestCase):
     def setUpClass(cls):
         cls.author = json.loads((Path(__file__).resolve().parents[3]
             / "content/cosmetics/outfits/authoring.json").read_bytes())
+        # Main now contains both canonical and quest identity layers. Exercise the
+        # canonical pre-supplement input this helper extends, retaining all mounts.
+        document = cls.author["document"]
+        original_outfits = {row["key"]: row for row in document["outfits"]}
+        document["outfits"] = [row for row in document["outfits"]
+                               if row["key"].startswith("oteryn:content.outfit.")]
+        keys = {row["key"] for row in document["outfits"]}
+        for fallback in document["fallbacks"].values():
+            original = original_outfits[fallback["outfit_key"]]
+            fallback["outfit_key"] = next(row["key"] for row in document["outfits"]
+                if all(row[sex] == original[sex] for sex in ("female", "male")))
+        document["grant_mappings"] = [row for row in document["grant_mappings"]
+            if "outfit_key" not in row["target"] or row["target"]["outfit_key"] in keys]
+        cls.author["promotions"] = [row for row in cls.author["promotions"]
+            if not row["path"].startswith("/outfits/")]
+        source = cls.author["promotions"][0]["source"]
+        for path in tooling.promotion_paths(document):
+            if path.startswith("/outfits/"):
+                cls.author["promotions"].append({"path": path,
+                    "value": tooling.pointer(document, path), "state": "PROMOTED",
+                    "decision": "owner:canonical-supplement-fixture", "source_kind": "STRUCTURED_REFERENCE_DATA",
+                    "source": copy.deepcopy(source)})
+        for row in cls.author["promotions"]:
+            row["value"] = tooling.pointer(document, row["path"])
+
 
     def test_main_identities_mounts_palette_and_grants_survive_idempotent_extension(self):
         result = supplement.merge(self.author, self.author, tooling)

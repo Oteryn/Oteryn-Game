@@ -321,6 +321,19 @@ def load_taxonomy_fallback(
     return fallback
 
 
+def preserves_item_custody(root, record):
+    """An exact official ground projection witnesses an Item; it does not own it."""
+    profile = record.get('provenance', {}).get('source', {}).get('profile')
+    if profile != 'OTERYN_OFFICIAL_CLIENT_BOUND_ITEM_GROUND/v1':
+        return False
+    sys.path.insert(0, str(root / 'tools/content-schema/world-object-authoring'))
+    import bound_ground
+    errors = bound_ground.validate_record(record, root)
+    if errors:
+        raise ValueError('TAXONOMY_BOUND_GROUND_SOURCE_REQUIRED: ' + '; '.join(errors))
+    return True
+
+
 def taxonomy_inputs(root=ROOT):
     snapshot = json.loads((root / SNAPSHOT).read_text(encoding="utf-8"))
     digest = hashlib.sha256(
@@ -342,7 +355,7 @@ def taxonomy_inputs(root=ROOT):
         for path in (root / "content/world" / family).glob("*.json"):
             for row in json.loads(path.read_text(encoding="utf-8")).get("records", []):
                 pointer = row.get("provenance", {}).get("item_pointer", {})
-                if pointer:
+                if pointer and not preserves_item_custody(root, row):
                     routed_keys.add(pointer["key"])
     identity = build_identity_index()
     fallback = load_taxonomy_fallback(

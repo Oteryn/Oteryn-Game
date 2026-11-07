@@ -27,6 +27,182 @@
         11
       ],
       "appearance": 50362
+    },
+    "npcfix_full_anchor_support": {
+      "assumption": "Minimal three-by-three first-party floor support at the frozen NPC anchors, using nearby captured walkable ground on the same floor. This does not claim the retail room geometry. Captured cells and all existing support remain unchanged.",
+      "anchors": [
+        {
+          "npc": "oteryn:npc.fabiana",
+          "center": {
+            "x": 33539,
+            "y": 31698,
+            "floor": -9
+          },
+          "source_ground_cell": {
+            "x": 33603,
+            "y": 31739,
+            "z": 9
+          },
+          "ground_palette_key": "oteryn:item.tibia.i10549",
+          "source_item_id": 10549,
+          "terrain_key": "oteryn:terrain.tibia.i10549",
+          "source_region": "content/world/placements/region-z09-x131-y123.b3",
+          "source_region_sha256": "6faa693ecb738b825f028529270cedc2cda670ba8139250fb570936340041d7c",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.glimpse_of_allusion",
+          "center": {
+            "x": 33927,
+            "y": 32117,
+            "floor": -15
+          },
+          "source_ground_cell": {
+            "x": 33863,
+            "y": 32172,
+            "z": 15
+          },
+          "ground_palette_key": "oteryn:item.tibia.i10113",
+          "source_item_id": 10113,
+          "terrain_key": "oteryn:terrain.tibia.i10113",
+          "source_region": "content/world/placements/region-z15-x132-y125.b3",
+          "source_region_sha256": "2756e56c810ec8481e0018cbd4e682b75d935568e3030d89d12954c405d4eb63",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "center": {
+            "x": 34033,
+            "y": 32365,
+            "floor": -14
+          },
+          "source_ground_cell": {
+            "x": 34025,
+            "y": 32345,
+            "z": 14
+          },
+          "ground_palette_key": "oteryn:item.tibia.i7065",
+          "source_item_id": 7065,
+          "terrain_key": "oteryn:terrain.tibia.i7065",
+          "source_region": "content/world/placements/region-z14-x132-y126.b3",
+          "source_region_sha256": "a6a48fc057eefdbb8ea4642e2f5d27e86eeb83f6854f3e8d6b661d84fde052dd",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "center": {
+            "x": 34094,
+            "y": 32391,
+            "floor": -14
+          },
+          "source_ground_cell": {
+            "x": 34071,
+            "y": 32405,
+            "z": 14
+          },
+          "ground_palette_key": "oteryn:item.tibia.i7063",
+          "source_item_id": 7063,
+          "terrain_key": "oteryn:terrain.tibia.i7063",
+          "source_region": "content/world/placements/region-z14-x133-y126.b3",
+          "source_region_sha256": "d8ad7b9c004ed2535ba1c89ac61bdc7515c32f1bc9c44528445fa89855d8b496",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "center": {
+            "x": 34062,
+            "y": 32427,
+            "floor": -14
+          },
+          "source_ground_cell": {
+            "x": 34052,
+            "y": 32412,
+            "z": 14
+          },
+          "ground_palette_key": "oteryn:item.tibia.i7062",
+          "source_item_id": 7062,
+          "terrain_key": "oteryn:terrain.tibia.i7062",
+          "source_region": "content/world/placements/region-z14-x133-y126.b3",
+          "source_region_sha256": "d8ad7b9c004ed2535ba1c89ac61bdc7515c32f1bc9c44528445fa89855d8b496",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "center": {
+            "x": 34067,
+            "y": 32460,
+            "floor": -14
+          },
+          "source_ground_cell": {
+            "x": 34052,
+            "y": 32412,
+            "z": 14
+          },
+          "ground_palette_key": "oteryn:item.tibia.i7062",
+          "source_item_id": 7062,
+          "terrain_key": "oteryn:terrain.tibia.i7062",
+          "source_region": "content/world/placements/region-z14-x133-y126.b3",
+          "source_region_sha256": "d8ad7b9c004ed2535ba1c89ac61bdc7515c32f1bc9c44528445fa89855d8b496",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.ortelio",
+          "center": {
+            "x": 34066,
+            "y": 32498,
+            "floor": -14
+          },
+          "source_ground_cell": {
+            "x": 34052,
+            "y": 32412,
+            "z": 14
+          },
+          "ground_palette_key": "oteryn:item.tibia.i7062",
+          "source_item_id": 7062,
+          "terrain_key": "oteryn:terrain.tibia.i7062",
+          "source_region": "content/world/placements/region-z14-x133-y126.b3",
+          "source_region_sha256": "d8ad7b9c004ed2535ba1c89ac61bdc7515c32f1bc9c44528445fa89855d8b496",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.wox",
+          "center": {
+            "x": 33944,
+            "y": 32117,
+            "floor": -15
+          },
+          "source_ground_cell": {
+            "x": 33863,
+            "y": 32172,
+            "z": 15
+          },
+          "ground_palette_key": "oteryn:item.tibia.i10113",
+          "source_item_id": 10113,
+          "terrain_key": "oteryn:terrain.tibia.i10113",
+          "source_region": "content/world/placements/region-z15-x132-y125.b3",
+          "source_region_sha256": "2756e56c810ec8481e0018cbd4e682b75d935568e3030d89d12954c405d4eb63",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        },
+        {
+          "npc": "oteryn:npc.yielothax",
+          "center": {
+            "x": 33928,
+            "y": 32137,
+            "floor": -15
+          },
+          "source_ground_cell": {
+            "x": 33863,
+            "y": 32172,
+            "z": 15
+          },
+          "ground_palette_key": "oteryn:item.tibia.i10113",
+          "source_item_id": 10113,
+          "terrain_key": "oteryn:terrain.tibia.i10113",
+          "source_region": "content/world/placements/region-z15-x132-y125.b3",
+          "source_region_sha256": "2756e56c810ec8481e0018cbd4e682b75d935568e3030d89d12954c405d4eb63",
+          "support": "three-by-three first-party floor; include only cells absent from the captured source; never overwrite captured cells"
+        }
+      ]
     }
   },
   "cells": [
@@ -137,6 +313,492 @@
       "y": 32623,
       "z": 11,
       "ground": "oteryn:terrain.tibia.i50362"
+    },
+    {
+      "x": 33538,
+      "y": 31697,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33539,
+      "y": 31697,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33540,
+      "y": 31697,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33538,
+      "y": 31698,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33539,
+      "y": 31698,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33540,
+      "y": 31698,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33538,
+      "y": 31699,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33539,
+      "y": 31699,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33540,
+      "y": 31699,
+      "z": 9,
+      "ground": "oteryn:item.tibia.i10549"
+    },
+    {
+      "x": 33926,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33926,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33926,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 34032,
+      "y": 32364,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34033,
+      "y": 32364,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34034,
+      "y": 32364,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34032,
+      "y": 32365,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34033,
+      "y": 32365,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34034,
+      "y": 32365,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34032,
+      "y": 32366,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34033,
+      "y": 32366,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34034,
+      "y": 32366,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7065"
+    },
+    {
+      "x": 34093,
+      "y": 32390,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34094,
+      "y": 32390,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34095,
+      "y": 32390,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34093,
+      "y": 32391,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34094,
+      "y": 32391,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34095,
+      "y": 32391,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34093,
+      "y": 32392,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34094,
+      "y": 32392,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34095,
+      "y": 32392,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7063"
+    },
+    {
+      "x": 34061,
+      "y": 32426,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34062,
+      "y": 32426,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34063,
+      "y": 32426,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34061,
+      "y": 32427,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34062,
+      "y": 32427,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34063,
+      "y": 32427,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34061,
+      "y": 32428,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34062,
+      "y": 32428,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34063,
+      "y": 32428,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32459,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32459,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34068,
+      "y": 32459,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32460,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32460,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34068,
+      "y": 32460,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32461,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32461,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34068,
+      "y": 32461,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34065,
+      "y": 32497,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32497,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32497,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34065,
+      "y": 32498,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32498,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32498,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34065,
+      "y": 32499,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34066,
+      "y": 32499,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 34067,
+      "y": 32499,
+      "z": 14,
+      "ground": "oteryn:item.tibia.i7062"
+    },
+    {
+      "x": 33943,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33944,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33945,
+      "y": 32116,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33943,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33944,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33945,
+      "y": 32117,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33943,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33944,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33945,
+      "y": 32118,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32136,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32136,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33929,
+      "y": 32136,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32137,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32137,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33929,
+      "y": 32137,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33927,
+      "y": 32138,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33928,
+      "y": 32138,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
+    },
+    {
+      "x": 33929,
+      "y": 32138,
+      "z": 15,
+      "ground": "oteryn:item.tibia.i10113"
     }
   ]
 }

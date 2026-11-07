@@ -27,15 +27,12 @@ REVOKE ALL ON FUNCTION game_quest_reward_clocks_proven(UUID,UUID,NUMERIC,TEXT,JS
 GRANT EXECUTE ON FUNCTION game_quest_reward_clocks_proven(UUID,UUID,NUMERIC,TEXT,JSONB) TO oteryn_game_runtime;
 
 DO $migration$
-DECLARE body TEXT; original TEXT;
+DECLARE body TEXT;
 BEGIN
  body:=pg_get_functiondef('game_quest_reward_complete()'::regprocedure);
- original:='jsonb_array_length(NEW.plan->''take'')=0';
- IF position(original IN body)=0 OR regexp_count(body,'RETURN NULL;')<>1 THEN
+ IF regexp_count(body,'RETURN NULL;')<>1 THEN
   RAISE EXCEPTION 'missing bounded repeat/completion predecessor';
  END IF;
- body:=replace(body,original,
-  '(jsonb_array_length(NEW.plan->''take'')=0 AND NEW.plan->''fee'' IS NULL)');
  EXECUTE replace(body,'RETURN NULL;',$proof$
  IF NEW.plan ? 'fee' AND NOT EXISTS(SELECT 1 FROM game_quest_reward_fees q
   WHERE q.character_id=NEW.character_id AND q.cause_id=NEW.cause_id

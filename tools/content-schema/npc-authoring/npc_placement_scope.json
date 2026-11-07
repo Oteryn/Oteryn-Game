@@ -347,7 +347,7 @@
   "placement_cells": {
     "oteryn:npc.palimuth": [
       {
-        "x": 32801,
+        "x": 32802,
         "y": 31223,
         "z": 7
       }
@@ -355,7 +355,7 @@
     "oteryn:npc.yalahari": [
       {
         "x": 32801,
-        "y": 31188,
+        "y": 31189,
         "z": 7
       }
     ]
@@ -3492,6 +3492,20 @@
       "wiki": {
         "title": "Palimuth",
         "revid": 1114687
+      },
+      "audited_roaming_position": {
+        "x": 32802,
+        "y": 31223,
+        "z": 7
+      },
+      "captured_spawn_anchor": {
+        "x": 32801,
+        "y": 31223,
+        "z": 7
+      },
+      "native_source": {
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
       }
     },
     {
@@ -4090,6 +4104,20 @@
       "wiki": {
         "title": "Yalahari (NPC)",
         "revid": 1116698
+      },
+      "audited_roaming_position": {
+        "x": 32801,
+        "y": 31189,
+        "z": 7
+      },
+      "captured_spawn_anchor": {
+        "x": 32801,
+        "y": 31188,
+        "z": 7
+      },
+      "native_source": {
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
       }
     },
     {

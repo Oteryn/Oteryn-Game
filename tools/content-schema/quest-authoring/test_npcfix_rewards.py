@@ -5,16 +5,17 @@ import sys
 import unittest
 
 import qengine_rewards as q
+import npcfix_rewards
 
 sys.path.insert(0, str(q.ROOT / 'tools/content-migration'))
-import qengine_reward_item_profiles as items
+import npcfix_item_profiles as items
 import register_spell_families as native
 
 
 class NpcfixRewardProfiles(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.outputs = q.build()
+        cls.outputs = npcfix_rewards.build()
 
     def profiles(self):
         outputs = copy.deepcopy(self.outputs)
@@ -63,7 +64,7 @@ class NpcfixRewardProfiles(unittest.TestCase):
         outputs, profiles, pick = self.profiles()
         pick['semantics']['physical']['value']['weight']['value'] += 1
         outputs[items.PROFILE] = q.encoded(profiles)
-        with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT'):
+        with self.assertRaisesRegex(ValueError, 'NPCFIX_ITEM_NATIVE_CONFLICT'):
             items.admit(q.ROOT, outputs, items.PROFILE, 'content/spells.manifest.json',
                         native.provider_order, q.encoded)
 
@@ -75,7 +76,7 @@ class NpcfixRewardProfiles(unittest.TestCase):
         self.assertEqual(bolt['semantics']['temporal'], {'state': 'NOT_APPLICABLE'})
         bolt['semantics']['equipment']['value']['patterns']['value'][0]['primary_slot']['value'] = 'HEAD'
         outputs[items.PROFILE] = q.encoded(profiles)
-        with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_NATIVE_CONFLICT'):
+        with self.assertRaisesRegex(ValueError, 'NPCFIX_ITEM_NATIVE_CONFLICT'):
             items.admit(q.ROOT, outputs, items.PROFILE, 'content/spells.manifest.json',
                         native.provider_order, q.encoded)
 
@@ -98,7 +99,7 @@ class NpcfixRewardProfiles(unittest.TestCase):
                 record['semantics']['physical']['value']['pickupable']['value'] = False
             return record
         with patch.object(items.source, 'profile', side_effect=changed):
-            with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:1780:physical'):
+            with self.assertRaisesRegex(ValueError, 'NPCFIX_ITEM_CANONICAL_CONFLICT:1780:physical'):
                 items.capture()
 
 import importlib.util

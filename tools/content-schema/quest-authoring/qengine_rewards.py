@@ -966,7 +966,16 @@ def build():
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
-    return generated
+    import npcfix_rewards
+    return npcfix_rewards.compose(generated)
+
+
+def reward_clocks(callback):
+    clocks = list(callback.get('clocks', []))
+    cooldown = callback.get('cooldown')
+    if cooldown:
+        clocks.append({'track': cooldown['track'], 'elapsed_seconds': cooldown['seconds'], 'set_now': True})
+    return clocks
 
 
 def validate_callbacks(document):
@@ -975,6 +984,7 @@ def validate_callbacks(document):
     declarations=document.get('tracks',[])
     declared=set()
     readonly={r['track'] for c in document['callbacks'] for r in c.get('requires',[])}
+    readonly.update(clock['track'] for c in document['callbacks'] for clock in reward_clocks(c))
     owners={}
     for c in document['callbacks']:
         for owner,states in [(c['quest'],c['storage']+c.get('state_ops',[]))]+[(p['quest'],p['storage']+p.get('state_ops',[])) for p in c.get('participants',[])]:
@@ -1001,14 +1011,22 @@ def validate_callbacks(document):
             for t in targets for g in callback.get('forbids_addons',[]))
         value_guard = value_guard or any(t['addons']==0 and t.get('sex') is None and t['outfit'] in callback.get('forbids_outfits',[]) for t in targets)
         value_guard = value_guard or (bool(callback['take']) and callback.get('give') is not None)
+        value_guard = value_guard or (callback.get('repeatable') and callback.get('give') is not None
+            and bool(callback.get('fee') or callback.get('cooldown')))
+        if (callback.get('repeatable') and (not callback.get('give') or targets
+                or not (callback['take'] or callback.get('fee') or callback.get('cooldown'))
+                or (callback.get('achievement') and not callback.get('achievement_once')))
+            or (callback.get('achievement_once') and (not callback.get('repeatable') or not callback.get('achievement')))
+            or (callback.get('cooldown') and not callback.get('repeatable'))):
+            raise ValueError('invalid bounded repeat '+callback['key'])
         if callback.get('outfits') and callback.get('outfit') is not None:
             raise ValueError('mixed legacy and target-set grants '+callback['key'])
         participants=callback.get('participants',[])
         participant_storage=[s for p in participants for s in p['storage']]
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
         operations=callback.get('state_ops',[])
-        all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
-        if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
+        all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops+reward_clocks(callback)]
+        if (len(all_keys)>16 or len(all_keys)!=len(set(all_keys))
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
             or any(s['minimum']>s['maximum'] for s in participant_storage)

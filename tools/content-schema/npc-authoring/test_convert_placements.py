@@ -97,6 +97,9 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_npcfix_retail_population_has_each_audited_cell(self):
         expected = json.loads((cp.HERE / "samples/npcfix-retail-placements.json").read_text())
+        scope = json.loads(cp.SCOPE.read_text())
+        overrides = {row['npc']: row for row in scope.get('retail_placements', [])}
+        captures = {row['identity']['key']: row for row in json.loads(cp.CANDIDATES.read_text())['candidates']}
         actual = {}
         for record in self.records:
             d = record["declaration"]
@@ -111,6 +114,17 @@ class ConvertPlacementsTest(unittest.TestCase):
                 self.assertTrue(row["npc"] in actual, row["npc"])
                 expected_cells = {(cell["x"], cell["y"], cell["z"])
                                   for cell in row.get("positions", [row["position"]])}
+                override = overrides.get(row['npc'], {})
+                if override.get('position') != row.get('position') and 'captured_spawn_anchor' in override:
+                    self.assertEqual(override['audited_roaming_position'], row['position'])
+                    capture = captures[row['npc']]
+                    anchor = override['captured_spawn_anchor']
+                    self.assertIn(anchor, [placement['position'] for placement in capture['placements']])
+                    self.assertEqual(anchor['z'], row['position']['z'])
+                    self.assertLessEqual(max(abs(anchor['x']-row['position']['x']),
+                                             abs(anchor['y']-row['position']['y'])), capture['movement']['walk_radius'])
+                    self.assertEqual(override['native_source']['sha256'], hashlib.sha256(cp.CANDIDATES.read_bytes()).hexdigest())
+                    expected_cells = {(anchor['x'], anchor['y'], anchor['z'])}
                 self.assertEqual(actual[row["npc"]], expected_cells)
 
     def test_rashid_population_matches_the_existing_weekday_selector(self):
@@ -124,13 +138,28 @@ class ConvertPlacementsTest(unittest.TestCase):
         expected = {
             'oteryn:npc.cael': {'x':33028,'y':31513,'floor':10},
             'oteryn:npc.cranky_lizard_crone': {'x':33192,'y':31044,'floor':6},
-            'oteryn:npc.palimuth': {'x':32801,'y':31223,'floor':7},
-            'oteryn:npc.yalahari': {'x':32801,'y':31188,'floor':7},
+            'oteryn:npc.palimuth': {'x':32802,'y':31223,'floor':7},
+            'oteryn:npc.yalahari': {'x':32801,'y':31189,'floor':7},
         }
         actual=[r['declaration'] for r in self.records if r['declaration']['npc'] in expected]
         self.assertEqual(len(actual),4)
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
+
+    def test_retained_retail_cells_are_bounded_to_the_selected_global_spawn(self):
+        scope = json.loads(cp.SCOPE.read_text())
+        rows = {row['npc']: row for row in scope['retail_placements']}
+        source = {row['identity']['key']: row for row in json.loads(cp.CANDIDATES.read_text())['candidates']}
+        packet = {row['npc']: row for row in json.loads((cp.HERE / 'samples/npcfix-retail-placements.json').read_text())}
+        for key in ('oteryn:npc.palimuth', 'oteryn:npc.yalahari'):
+            row = rows[key]
+            anchor = row['captured_spawn_anchor']
+            self.assertIn(anchor, [placement['position'] for placement in source[key]['placements']])
+            self.assertEqual(row['position'], packet[key]['position'])
+            self.assertEqual(row['position']['z'], anchor['z'])
+            self.assertLessEqual(max(abs(row['position']['x']-anchor['x']), abs(row['position']['y']-anchor['y'])), source[key]['movement']['walk_radius'])
+            self.assertEqual(scope['placement_cells'][key], [row['position']])
+            self.assertEqual(row['native_source']['sha256'], hashlib.sha256(cp.CANDIDATES.read_bytes()).hexdigest())
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])

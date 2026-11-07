@@ -128,6 +128,13 @@ pub(crate) async fn apply(
         !proof.permits(fence,request,admission.native.source_digest(),&callback.requires_actor_conditions)) {
         return Ok(false);
     }
+    let resolved = if callback.bulk.is_some() {
+        let Some(resolved) = super::quest_bulk::resolve(tx, fence, callback, admission.native).await? else {
+            return Ok(false);
+        };
+        Some(resolved)
+    } else { None };
+    let callback = resolved.as_ref().map(|(callback, _)| callback).unwrap_or(callback);
     if let Some(minimum)=callback.minimum_level {
         let level:Option<i64>=sqlx::query_scalar("SELECT level::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
@@ -271,8 +278,12 @@ pub(crate) async fn apply(
             .await?
             .map_err(|_| DurabilityError::InvalidStoredState)?;
     }
+    let mut source_plan = serde_json::to_value(callback).map_err(|_| DurabilityError::InvalidStoredState)?;
+    if let Some((_, draw)) = &resolved {
+        source_plan["bulk_result"] = serde_json::to_value(draw).map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(serde_json::to_value(callback).map_err(|_|DurabilityError::InvalidStoredState)?).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(source_plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
     Ok(true)
 }
 
@@ -327,7 +338,7 @@ async fn mint(
     // The MINT owner still permits each claim exactly once. A repeatable paid
     // exchange supplies its own stable per-command occurrence, not a bypass of
     // the claim ledger or its pending/reservation checks.
-    let claim_key=if callback.is_paid_exchange() {
+    let claim_key=if callback.is_paid_exchange() || callback.repeatable {
         let digest=Sha256::new().chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())
             .chain_update(command.game_session_id().as_bytes())
@@ -335,6 +346,49 @@ async fn mint(
             .chain_update(b":").chain_update(callback.key.as_bytes()).finalize();
         format!("oteryn:quest-exchange/{}",digest.iter().map(|b|format!("{b:02x}")).collect::<String>())
     } else {callback.key.clone()};
+    let temporal = |key: &str| -> std::result::Result<_, DurabilityError> {
+        let facts = resolve(key)?;
+        let policy = admission
+            .native
+            .item_policy(
+                &facts.definition.production_key,
+                &facts.definition.revision_ref,
+            )
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let maximum = if policy.record().admission.stack_class
+            == crate::content::native_gameplay::NativeItemStackClass::NonStackable
+        {
+            1
+        } else {
+            u32::MAX
+        };
+        let decay = super::super::native_world_items::qualify_item_decay(
+            &policy.record().semantics.temporal,
+            maximum,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+        Ok(decay.map(
+            |decay| oteryn_gameplay_quests::quest::reward_callbacks::RewardDecay {
+                duration_millis: decay.duration_millis,
+                target: decay.target.map(|target| {
+                    oteryn_gameplay_quests::quest::reward_callbacks::DecayTarget {
+                        family: target.family,
+                        key: target.production_key,
+                        revision: target.revision_ref,
+                    }
+                }),
+            },
+        ))
+    };
+    if temporal(&reward.item)? != reward.decay
+        || reward
+            .contents
+            .iter()
+            .chain(&reward.backpack_outputs)
+            .any(|item| !matches!(temporal(&item.item), Ok(None)))
+    {
+        return Ok(None);
+    }
     let request = RewardClaimMintRequest {
         command,
         claim: TypedDefinitionRef {
@@ -345,8 +399,7 @@ async fn mint(
         source_placement: callback.key.clone(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: reward
-            .contents
+        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
             .iter()
             .map(|i| {
                 Ok(RewardClaimMintContent {
@@ -357,6 +410,7 @@ async fn mint(
                 })
             })
             .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
+        backpack_outputs: !reward.backpack_outputs.is_empty(),
         root_text: None,
         backpack: resolve(&backpack)?,
         content_revision,
@@ -425,5 +479,18 @@ async fn mint(
     )
     .map_err(|_| DurabilityError::InvalidStoredState)?;
     apply_claim(tx, &frozen, &reservation, destination, &envelope, tuple).await?;
+    if let Some(decay) = &reward.decay {
+        let expires = reservation
+            .occurred_at_unix_ms
+            .checked_add(i64::from(decay.duration_millis))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
+            .bind(reservation.item_instance_id.as_slice()).bind(reservation.transaction_id.as_slice())
+            .bind(i64::from(decay.duration_millis)).bind(expires).bind(&frozen.request.item.definition.family)
+            .bind(&frozen.request.item.definition.production_key).bind(&frozen.request.item.definition.revision_ref)
+            .bind(decay.target.as_ref().map(|t|t.family.as_str())).bind(decay.target.as_ref().map(|t|t.key.as_str()))
+            .bind(decay.target.as_ref().map(|t|t.revision.as_str())).bind(admission.native.source_digest().as_slice())
+            .execute(&mut **tx).await?;
+    }
     Ok(Some(reservation.transaction_id))
 }

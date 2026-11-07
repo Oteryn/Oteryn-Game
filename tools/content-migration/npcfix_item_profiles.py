@@ -1,0 +1,152 @@
+"""Qualify NPCFIX-only physical custody, owned lifetimes and reviewed passive cells.
+
+Uses the existing native source importer and exact canonical identity bindings.
+Known canonical facts win. No use effect, subtype, timer or custom script is
+inferred, and the canonical Item admission records remain unchanged.
+"""
+import copy
+import hashlib
+import json
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
+import build_source_item_profiles as source
+import grizzly_shop_profiles as accepted
+sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
+import npcfix_rewards
+
+PASSIVE_CELL_IDS = {12346, 12609, 1063, 1780, 1855, 1857, 1858, 1867, 1899, 2362, 2576, 2585,
+                    2586, 2587, 2588, 2595, 3891, 4768, 4772, 4795, 5593, 6218,
+                    6383, 8695, 9823, 14117, 14783, 15049, 15051, 15854, 17396,
+                    19958, 19965, 20250, 21935, 27976}
+NPCFIX_SHOP_IDS = {48251, 48254, 48256, 48273, 48544}
+import qengine_reward_item_profiles as shared_profiles
+
+# Main owns its exact set. This supplement owns only NPCFIX custody, lifetime
+# and reviewed passive-cell facts that the portable shared policy does not admit.
+IDS = (npcfix_rewards.ITEMS | PASSIVE_CELL_IDS | NPCFIX_SHOP_IDS | {8746}) - shared_profiles.IDS
+PROOF = 'tools/content-schema/native-gameplay/npcfix-item-profiles.json'
+PROFILE = 'content/items/definitions/spell-native-profiles.json'
+XML = 'imports/canary/items-xml/items.xml'
+XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
+CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
+CLIENT = f'content/assets/files/appearances-{CLIENT_SHA}.dat'
+
+
+def capture(root=ROOT):
+    xml_raw=(root/XML).read_bytes()
+    client_raw=(root/CLIENT).read_bytes()
+    if hashlib.sha256(xml_raw).hexdigest()!=XML_SHA or hashlib.sha256(client_raw).hexdigest()!=CLIENT_SHA:
+        raise ValueError('NPCFIX_ITEM_SOURCE_PIN')
+    supplement = json.loads((root / 'tools/content-schema/native-gameplay/npcfix-workshop-item-facts.json').read_bytes())
+    tree = ET.fromstring(xml_raw)
+    existing = source.xml_index(xml_raw)
+    for fact in supplement['items']:
+        if fact['id'] in existing:
+            raise ValueError('NPCFIX_ITEM_SUPPLEMENT_COLLISION')
+        node = ET.SubElement(tree, 'item', {k:str(v) for k,v in fact.items() if k != 'attributes'})
+        for key,value in fact['attributes'].items():
+            ET.SubElement(node, 'attribute', {'key':key,'value':value})
+    xml_raw = ET.tostring(tree)
+    xml=source.xml_index(xml_raw)
+    objects=source.engine_items.load_appearance_objects(client_raw)
+    physical={r['server_item_id']:r for r in source.policies(client_raw,xml_raw,IDS)}
+    bindings=source.binding_index((root/'imports/crystalserver/bindings/items.json').read_bytes())
+    keys={f'oteryn:item.tibia.i{i}' for i in IDS}
+    definitions={r['definition']['identity']['key']:r['definition']
+        for path in sorted((root/'content/items/definitions').glob('items-*.json'))
+        for r in json.loads(path.read_bytes())['records']
+        if r['definition']['identity']['key'] in keys}
+    if definitions.keys()!=keys:
+        raise ValueError('NPCFIX_ITEM_CANONICAL_SET')
+    records=[]
+    for item_id in sorted(IDS):
+        node=xml[item_id]
+        attributes = source.attrs(node)
+        if 'charges' in attributes or attributes.get('stopduration', '0') in ('1', 'true'):
+            raise ValueError('NPCFIX_ITEM_INSTANCE_OWNER_REQUIRED')
+        if 'decayto' in attributes and 'duration' not in attributes:
+            raise ValueError('NPCFIX_ITEM_DECAY_WITHOUT_DURATION')
+        flags=objects[item_id]['flags']
+        if flags.get('flags.liquidcontainer') or flags.get('flags.liquidpool'):
+            raise ValueError('NPCFIX_ITEM_FLUID_OWNER_REQUIRED')
+        record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
+        definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        semantics = (definition.get('semantics', {}) if item_id in PASSIVE_CELL_IDS
+                     else definition['semantics'])
+        for group in ('physical','stack','container'):
+            canonical = copy.deepcopy(semantics.get(group, {'state': 'UNKNOWN'}))
+            if item_id in PASSIVE_CELL_IDS and group == 'physical' and canonical.get('state') == 'KNOWN':
+                # Reviewed decoration may differ in donor weight only; all other
+                # accepted physical, stack and container constraints still hold.
+                canonical['value'].pop('weight', None)
+            if accepted.known_conflict(canonical, record['semantics'][group]):
+                raise ValueError(f'NPCFIX_ITEM_CANONICAL_CONFLICT:{item_id}:{group}')
+        if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
+            raise ValueError('NPCFIX_ITEM_STACK_CONFLICT')
+        if item_id not in PASSIVE_CELL_IDS and record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
+            raise ValueError('NPCFIX_ITEM_NOT_PORTABLE')
+        # Passive cells retain canonical custody facts; only source entry attributes
+        # (including blocking flags) are added, without rewriting known weights.
+        record['semantics']=accepted.accepted_first(semantics,record['semantics'])
+        records.append(record)
+    records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
+    return {'schema':'OTERYN_NPCFIX_ITEM_PROFILES/v1',
+        'producer':'tools/content-migration/npcfix_item_profiles.py',
+        'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
+                   {'path':CLIENT,'sha256':CLIENT_SHA}],
+        'supplement':supplement['source'],
+        'scope':'Physical custody and reviewed NPC-cell entry facts; no custom use or script activation.',
+        'records':records}
+
+
+def lifetime_comparison(current, observed):
+    """Retain equipment patterns when the source only refines unknown members.
+
+    The pattern vector's identity, order, and every concrete member still match;
+    this producer promotes only lifetime facts for an existing native record.
+    """
+    projected = copy.deepcopy(observed)
+    try:
+        prior = current['equipment']['value']['patterns']['value']
+        fresh = projected['equipment']['value']['patterns']['value']
+    except KeyError:
+        return projected
+    if (len(prior) == len(fresh)
+            and all(a.get('pattern_id') == b.get('pattern_id')
+                    and not accepted.known_conflict(a, b)
+                    for a, b in zip(prior, fresh))):
+        projected['equipment']['value']['patterns']['value'] = copy.deepcopy(prior)
+    return projected
+
+
+def admit(root,generated,profile_path,manifest_path,order,canonical):
+    packet=capture(root)
+    generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
+    document=json.loads(generated[profile_path])
+    present={r['production_definition']['production_key']:r for r in document['records']}
+    for record in packet['records']:
+        key=record['production_definition']['production_key']
+        if key in present:
+            current=present[key]
+            if current != record:
+                # A previously admitted tool may have deliberately unknown lifetime
+                # facts. Fill only those facts; retain every other owner field.
+                if (current['production_definition'] != record['production_definition']
+                        or current['admission'] != record['admission']
+                        or accepted.known_conflict(current['semantics'],
+                            lifetime_comparison(current['semantics'], record['semantics']))):
+                    raise ValueError('NPCFIX_ITEM_NATIVE_CONFLICT:'+key)
+                current['semantics']['temporal']=accepted.accepted_first(
+                    current['semantics']['temporal'],record['semantics']['temporal'])
+        else:
+            document['records'].append(record)
+    document['records'].sort(key=order)
+    raw=(json.dumps(document,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n').encode()
+    generated[profile_path]=raw
+    manifest=json.loads(generated[manifest_path])
+    manifest['item_profiles']['sha256']=hashlib.sha256(raw).hexdigest()
+    generated[manifest_path]=canonical(manifest)

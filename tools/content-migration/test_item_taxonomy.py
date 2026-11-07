@@ -13,8 +13,39 @@ from item_taxonomy import (
     build_taxonomy,
     legacy_profile,
     load_taxonomy_fallback,
+    preserves_item_custody,
 )
 from world_project_v2_to_tree import capability_relations
+
+
+class BoundGroundCustodyTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import sys
+        cls.root = Path(__file__).resolve().parents[2]
+        sys.path.insert(0, str(cls.root / 'tools/content-schema/world-object-authoring'))
+        import bound_ground
+        cls.record = bound_ground.record(cls.root, identifier=32691, expected_speed=150)
+
+    def test_exact_bound_projection_retains_item_custody(self):
+        self.assertTrue(preserves_item_custody(self.root, self.record))
+
+    def test_changed_binding_or_source_fact_cannot_claim_custody_preservation(self):
+        import copy
+        for field in ('pointer', 'speed'):
+            row = copy.deepcopy(self.record)
+            if field == 'pointer':
+                row['provenance']['item_pointer']['key'] = 'oteryn:item.tibia.i1'
+            else:
+                row['ground_speed']['value'] += 1
+            with self.assertRaisesRegex(ValueError, 'BOUND_GROUND_SOURCE_REQUIRED'):
+                preserves_item_custody(self.root, row)
+
+    def test_ordinary_world_owner_is_not_a_custody_preserving_reference(self):
+        import copy
+        row = copy.deepcopy(self.record)
+        row['provenance']['source']['profile'] = 'ordinary-world-owner'
+        self.assertFalse(preserves_item_custody(self.root, row))
 
 
 class TaxonomyTests(unittest.TestCase):
