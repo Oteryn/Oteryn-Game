@@ -23,6 +23,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_proficiency(", "durability/character_revision_sequencer.rs"),
     (".commit_character_proficiency_modification(", "durability/character_revision_sequencer.rs"),
     (".commit_character_quest_experience(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_quest_reward(", "durability/character_revision_sequencer.rs"),
     (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
     (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
     (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
