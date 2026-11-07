@@ -1,3 +1,28 @@
+# WIP upper traversal compiles; actual PG137.73s floor3 combat RED
+
+Source ladder USE and native stairs both succeed. Real combats advance through
+floor4 and first floor3 target, then a floor3 defender stays720HP through512
+passes with bound target. Exact failure actual wire attacks must kill full-health
+source defender. Log /tmp/questpc2-upper-six-corrected-green-pg.log. All assertions
+retained; no direct damage/progress. Check13.91s, clippy37.47s, compile79s PASS.
+Push compiling WIP now, then bounded diagnostics: actual current positions,
+immutable source origin, chase result and weapon/physical immunity if needed.
+Original all-six RED88.70s expected1vs6 remains. Wholequest notqualified.
+
+# Active upper six-defender wire continuation after pushed9aec13e43
+
+New focused all-six case actual PG180006 RED88.70s: nativecredit1 expected6.
+Added source ladder at32593,31643,z5 ordinaryUSE from93,44; floor4 two
+source-origin actors; normal stairs at32588,31643,z4 tofloor3 three source
+actors. Same chase/attack/nativeXP helper, require allsixnativecredits plus
+own four recipe counters1/1/1/2. No direct damage/progress writes.
+First green compile E0599 MapFacts missing import fixed (not PG proof).
+Corrected focused run /tmp/questpc2-upper-six-corrected-green-pg.log pending.
+Next finish scoped check/clippy/fmt, update proof/push before15min deadline
+(lastpush~14:17UTC). Then four existing source chest claims/exit/journal.
+Fresh QENGINE2 fetch still5a6de28c1, only0999 in reserved0999–1006. Reuseas-is.
+Whole quest and owned27 stillUNFINISHED, do not end turn.
+
 # GREEN callback/native capture slice: push now, then five upper defenders
 
 Final guarded Dragon + real Monk shrine PG180006 PASS2cases189.21s, log

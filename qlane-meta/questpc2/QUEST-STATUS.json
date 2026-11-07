@@ -2085,5 +2085,21 @@
     "fmt": "PASS",
     "duplicate_migrations": "HEAD PASS",
     "batch": "BATCH-callback-native-capture-2026-11-07.json"
+  },
+  "upper_defenders_authoring": {
+    "state": "WIP_TRAVERSAL_COMPILES_FINAL_SOURCE_DEFENDER_COMBAT_RED",
+    "red_postgres_version": 180006,
+    "red_postgres_seconds": 88.7,
+    "red_log": "/tmp/questpc2-upper-six-red-pg.log",
+    "red_point": "One earned exact-origin Dragon credit; all six source native credits required.",
+    "attempt_log": "/tmp/questpc2-upper-six-corrected-green-pg.log",
+    "implementation": "Normal source ladder USE, floor4 two retained source actors, native stairs then floor3 three actors; same real wire chase/attack/XP driver. Require native6 and four own recipe counters at caps.",
+    "compile_only_error": "First green attempt E0599 missing MapFacts import, corrected; not PG proof.",
+    "latest_postgres_seconds": 137.73,
+    "latest_log": "/tmp/questpc2-upper-six-corrected-green-pg.log",
+    "latest_point": "Normal ladder and both floor transitions succeed; upper combats advance until one floor3 defender remains720HP through full budget. Target stays bound. Diagnose actual player/target positions and chase outcomes; preserve all native/own counter and damage/lethal assertions.",
+    "check_seconds": 13.91,
+    "clippy_seconds": 37.47,
+    "compile_seconds": 79
   }
 }
