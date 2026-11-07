@@ -223,6 +223,7 @@ class CodecTest(unittest.TestCase):
 class ConvertAndValidateTest(unittest.TestCase):
     def setUp(self):
         self.blobs = {
+            **fixtures.QUEST_ACCESS_INPUT,
             convert.OTBM: fixtures.fixture_map(),
             convert.ITEMS_XML: ITEMS_XML,
         }
@@ -265,6 +266,62 @@ class ConvertAndValidateTest(unittest.TestCase):
         return json.loads(
             (out or self.out)[str(convert.SUMMARY.relative_to(convert.ROOT))]
         )
+
+    def test_startup_capture_is_an_explicit_map_input(self):
+        import quest_access_bindings as access
+
+        capture = json.dumps(
+            {
+                "bindings": [
+                    {
+                        "position": [1003, 1004, 7],
+                        "item": 1234,
+                        "attribute": "unique",
+                        "value": 30034,
+                    }
+                ]
+            }
+        ).encode()
+        area = fixtures.node(
+            4,
+            struct.pack("<HHB", 1000, 1000, 7),
+            fixtures.node(5, bytes([3, 4]), self.item(1234, 14, 3)),
+        )
+        out = convert.build(
+            {
+                **self.blobs,
+                convert.OTBM: fixtures.fixture_map(extra_areas=(area,)),
+                access.CAPTURE: capture,
+            },
+            ITEMS_BY_SERVER_ID,
+        )
+        index = json.loads(out[validate.INDEX])
+        region = out[f"{validate.DIRECTORY}/region-z07-x003-y003.b3"]
+        tile = next(
+            tile
+            for _, tiles in codec.decode_region(region)[3]
+            for tile in tiles
+            if tile[:2] == (1003, 1004)
+        )
+        self.assertEqual(tile[5][0][2], {"door": 3, "unique": 30034})
+        self.assertEqual(
+            index["source"]["quest_access"]["attributes"], {"unique": 1, "action": 0}
+        )
+        self.assertEqual(
+            index["source"]["quest_access"]["sha256"],
+            convert.hashlib.sha256(capture).hexdigest(),
+        )
+
+    def test_default_startup_capture_still_requires_all_committed_rows(self):
+        import quest_access_bindings as access
+
+        blobs = {
+            key: value for key, value in self.blobs.items() if key != access.CAPTURE
+        }
+        with self.assertRaisesRegex(
+            ValueError, "quest access capture did not bind completely"
+        ):
+            convert.build(blobs, ITEMS_BY_SERVER_ID)
 
     def test_fixture_converts_to_a_valid_family(self):
         self.assertEqual(self.errors(), [])
@@ -469,6 +526,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         )
         fragment = self.fill_map((7, [(9, 1, [self.teleport(1949, 0, 0, 0)])]))
         blobs = {
+            **fixtures.QUEST_ACCESS_INPUT,
             convert.OTBM: base,
             convert.ITEMS_XML: ITEMS_XML,
             self.FILL_KEY: fragment,
@@ -765,6 +823,7 @@ class ConvertAndValidateTest(unittest.TestCase):
         shown = {(1001, 1001, 7), (1003, 1001, 7), (1005, 1001, 7), (1006, 1001, 7)}
         out = convert.build(
             {
+                **fixtures.QUEST_ACCESS_INPUT,
                 convert.OTBM: base,
                 convert.ITEMS_XML: ITEMS_XML,
                 self.FILL_KEY: fragment,
@@ -842,7 +901,11 @@ class ConvertAndValidateTest(unittest.TestCase):
             fixtures.node(2, bytes([1]) + fixtures.string("b"), area),
         )
         fragment = self.fill_map((7, [(1, 1, [self.item(100)])]))
-        blobs = {convert.OTBM: base, convert.ITEMS_XML: ITEMS_XML}
+        blobs = {
+            **fixtures.QUEST_ACCESS_INPUT,
+            convert.OTBM: base,
+            convert.ITEMS_XML: ITEMS_XML,
+        }
         with self.assertRaises(convert.ConvertError):
             convert.build(
                 {**blobs, self.FILL_KEY: fragment},

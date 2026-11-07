@@ -103,24 +103,21 @@ fn project<'a, C: AppearanceContent<String>>(
         // PR #2782 Q3=B: count each earned canonical identity once. Crystal's
         // player_functions.cpp:3306-3311 / player.cpp:6840-6850 insert an outfitsMap entry
         // for an earned addon too. Native starter content alone is not an earned grant.
-        let base_granted = unlocks.outfit(&key) == UnlockFact::Compatible;
-        let addon_count = content.outfit_addon_count(&key).unwrap_or(0);
-        let starter = [Sex::Female, Sex::Male]
-            .into_iter()
-            .any(|sex| content.outfit_is_starter(&key, sex));
-        let earned_starter_addon = starter
-            && (1..=addon_count).any(|addon| unlocks.addon(&key, addon) == UnlockFact::Compatible);
-        if base_granted || earned_starter_addon {
-            owned_outfits.insert(key.clone());
-        }
+        let addon_count=content.outfit_addon_count(&key).unwrap_or(0);
+        let any_earned=[Sex::Female,Sex::Male].into_iter().any(|sex| {
+            unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Outfit(&key),Some(sex))==UnlockFact::Compatible
+                || (content.outfit_is_starter(&key,sex) && (1..=addon_count).any(|addon|
+                    unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Addon(&key,addon),Some(sex))==UnlockFact::Compatible))
+        });
+        if any_earned {owned_outfits.insert(key.clone());}
         if addon_count < 2 {
             continue;
         }
         for (sex, look) in [Sex::Female, Sex::Male].into_iter().zip(looks) {
-            let base = content.outfit_is_starter(&key, sex) || base_granted;
+            let base = content.outfit_is_starter(&key, sex) || unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Outfit(&key),Some(sex))==UnlockFact::Compatible;
             let addons = (1..=2).all(|addon| {
                 content.addon_is_starter(&key, sex, addon)
-                    || unlocks.addon(&key, addon) == UnlockFact::Compatible
+                    || unlocks.fact_for(crate::domain::appearance::EarnedCosmetic::Addon(&key,addon),Some(sex)) == UnlockFact::Compatible
             });
             if base && addons {
                 full_looks.insert(look);
