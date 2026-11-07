@@ -16,14 +16,18 @@
     "focused_postgres": {
       "nimmersatt_whole": 104.657881932,
       "father_atomic_eleven_acceptance": 103.899473728,
-      "father_values": "active",
-      "static_field": "queued"
+      "father_eight_handins_cape_xp": 95.887413256,
+      "static_field_rune": 57.148004662,
+      "installed_numbers_sqlx_checksums_canonical_guards": 5.134153648
     },
     "fmt": "PASS",
     "cargo_check_clippy": "pending",
     "pins": "prior whole-Nimmersatt pin PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b; repeat after migration tests",
     "cargo_check": "PASS16.78s dispatch+server",
-    "strict_clippy": "PASS87s all targets/features -D warnings dispatch+server"
+    "strict_clippy": "PASS87s all targets/features -D warnings dispatch+server",
+    "installed_registry_log": "/tmp/questpc5-migration-registry-installed2.log",
+    "checksum_scope": "Actual PostgreSQL _sqlx_migrations success/checksum rows equal SHA384 of all17 exact installed SQL files.",
+    "final_new_test_lint": "active /tmp/questpc5-migration-registry-final-{check,clippy}.log with CARGO_INCREMENTAL=0"
   },
   "migrations": [
     {
