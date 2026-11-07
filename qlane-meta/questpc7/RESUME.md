@@ -1,3 +1,27 @@
+# Canonical authored track witness checkpoint — 2026-11-07
+
+Existing source-witness assertion exposed absent source_track metadata for
+new item-on-target tracks. Assertion remains unchanged. Generic loader now
+registers canonical recipe citations for authored world tracks, after legacy
+NPC alias compilation; entry.or_insert preserves every original donor binding.
+All10 loader and22 callback tests pass, including a new donor-preservation
+check. Whole Grimvale PG18.6 rerun GREEN92.470203109s;27 author and3 item-author
+tests pass. Publish this compiling checkpoint now; remaining strict/generation/
+pin gates run in41258, /tmp/questpc7-grimvale-story-validation-resume-run.log.
+Qualification finalizer /tmp/questpc7-finalize-grimvale.py expects16 PASS
+records in validation.json; it records final marker duration/unit counts and
+qualifies Grimvale, leaving6 ACTIVE. Do not stop.
+
+Next Heart source facts are saved in /tmp/questpc7-heart-source-rows.json and
+heart-source-extract.json (temporary donor bytes never committed). Six arenas
+and5 gold tokens have retained exact sources; Yana is in the corpus, SHA256
+3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324,
+with source NPC candidate at32200,32304,-6. Her lines185–187 explicitly
+mention Powerful Strike/Void/Vampirism and a TODO for the defeat gate. Inspect
+the native imbuing Global-profile declared difference before choosing any
+knowledge binding; preserve accepted service behaviour and prove actual use.
+No Heart source mutation until Grimvale pins finish and qualification is pushed.
+
 # Whole Grimvale PG GREEN — 2026-11-07
 
 Actual PG18.6 GREEN93.008242622s proves all13 selected stages,35 real

@@ -65,5 +65,13 @@
     "point": "ambiguous USE on shared altar cell",
     "fix": "earned exit moved to adjacent actual ground33001,32933,-8 appearance38069; ritual remains sole altar USE"
   },
-  "pending": "focused strict/generation/pin qualification gates"
+  "pending": "focused strict/generation/pin qualification gates",
+  "canonical_track_witness": {
+    "red": "Existing callback unit demanded source_track metadata for new item-on-target tracks; original assertion unchanged",
+    "fix": "Register canonical recipe citations after legacy NPC alias compilation; retain all donor bindings with entry.or_insert",
+    "loader_tests": 10,
+    "world_callback_tests": 22,
+    "postgres_after_fix_seconds": 92.470203109,
+    "postgres_after_fix_log": "/tmp/questpc7-grimvale-story-grimvale-pg.log"
+  }
 }
