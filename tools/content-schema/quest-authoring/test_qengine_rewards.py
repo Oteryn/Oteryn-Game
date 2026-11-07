@@ -31,7 +31,7 @@ class QuestRewards(unittest.TestCase):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
-        worlds=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        worlds=[c for c in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if c['key'].startswith('oteryn:quest-callback/questpc7-formal-')]
         self.assertEqual(len(worlds),2)
         for callback in worlds:
             self.assertEqual(callback['requirements'], {'min_level':20, 'premium':True, 'completed_quests':[]})
@@ -43,6 +43,20 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(display['outfit_reward'],{'outfit':'oteryn:outfit.formal_dress','addons':0})
         plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
         self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
+
+    def test_hidden_native_objectives_share_quota_and_use_admitted_empty_ground(self):
+        rows=json.loads(self.outputs['content/quests/questpc7-death-objectives.json'])['objectives']
+        self.assertEqual({r['creature'] for r in rows},{'oteryn:creature.corym_'+s for s in ['charlatan','skirmisher','vanguard']})
+        self.assertEqual({r['counter'] for r in rows},{'oteryn:quest-progress/questpc7/hidden/kills'})
+        self.assertTrue(all(r['required']==5 for r in rows))
+        self.assertEqual(sum(r['guardian'] is not None for r in rows),1)
+        codec=q.load_module('questpc7_test_world_codec','tools/content-schema/world-authoring/world_region_codec.py')
+        palette=json.loads((q.ROOT/'content/world/placements/index.json').read_bytes())['palette']
+        region=codec.decode_region((q.ROOT/'content/world/placements/region-z13-x129-y125.b3').read_bytes())
+        tiles={(x,y):[palette[p]['source_item_id'] for p,depth,_ in entries if not depth]
+               for _,cells in region[3] for x,y,_,_,_,entries in cells}
+        for position in [(33078,32015),(33079,32015),(33080,32015)]:
+            self.assertEqual(tiles[position],[10113],position)
 
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])

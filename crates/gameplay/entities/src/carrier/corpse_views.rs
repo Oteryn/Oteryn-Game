@@ -165,7 +165,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// Whether `actor`'s corpse projection is pinned against eviction.
-    #[cfg(any(test, feature = "test-support"))]
+    /// Native guardian cleanup uses this read-only query before retiring a dead actor.
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
     }

@@ -90,6 +90,50 @@
         "outfit": "oteryn:outfit.formal_dress",
         "addons": 0
       }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-hidden-entry",
+      "quest": "oteryn:quest.hidden_threats_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33079,
+          "y": 32015,
+          "floor": -13
+        },
+        "appearance": 10113,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hidden/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/hidden/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have surveyed the concealed Corym chamber. Defeat five Coryms before searching its valuables.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/43/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e"
+      ]
     }
   ]
 }

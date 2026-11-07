@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let shared_rewards = name == "questpc7-hidden-deaths" || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-hidden-deaths" { "questpc7-hidden-entry" } else if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -275,7 +275,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "questpc7-outfits-formal" {
+        if name == "questpc7-hidden-deaths" {
+            super::super::questpc7_native_deaths::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "questpc7-outfits-formal" {
             super::super::questpc7_formal::exercise(&mut owner, &mut admitted, &h, &callback).await?;
         } else if name.starts_with("questpc7-outfits-") {
             super::super::questpc7_outfit_items::exercise(&mut owner, &mut admitted, &h, name).await?;

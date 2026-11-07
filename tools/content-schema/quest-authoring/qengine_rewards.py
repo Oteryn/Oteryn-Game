@@ -291,6 +291,8 @@ def build():
     selected.append_eligibility_starts(ROOT, callbacks, inputs, PIN)
     programmes.append(ROOT, callbacks, inputs, PIN)
     formal_worlds = programmes.append_formal(ROOT, callbacks, inputs, PIN)
+    encounters = load_module('questpc7_encounters','tools/content-schema/quest-authoring/questpc7_encounters.py')
+    formal_worlds.extend(encounters.worlds(ROOT))
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -303,6 +305,7 @@ def build():
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
+    generated['content/quests/questpc7-death-objectives.json'] = encoded({'schema':1,'objectives':encounters.objectives(ROOT)})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'

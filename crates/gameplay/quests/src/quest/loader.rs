@@ -221,6 +221,8 @@ pub fn load_embedded_quest_state(
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -429,6 +431,20 @@ mod tests {
                     .ok_or("callback key")
             })
             .collect::<Result<_, _>>()?;
+        // These independently authored callback inputs extend the original donor file.
+        // Keep exact inventory equality and apply the same owner exclusion to each input.
+        for source in [
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+            include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
+        ] {
+            let document: serde_json::Value =
+                serde_json::from_str(source).map_err(|e| e.to_string())?;
+            for callback in document["callbacks"].as_array().ok_or("callbacks")? {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                }
+            }
+        }
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         assert_eq!(
             callbacks

@@ -1,0 +1,219 @@
+{
+  "status": "QUALIFIED reusable native death objectives and bounded guardian support; complete Hidden Threats valuables route remains ACTIVE",
+  "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
+  "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee",
+  "reused": [
+    "quest/death_objectives.rs",
+    "grizzly_kills.rs frozen principal/corpse capture and settlement",
+    "grizzly_kills/guardians.rs bounded native guardian slots",
+    "quest_admission refresh integration"
+  ],
+  "adaptation": [
+    "Own objective data file retains the common bounded schema.",
+    "Preserve this checkout loader ordering and Hot Cuisine module.",
+    "Remove the unused peer test-only guardian getter; PG observes the native runtime census.",
+    "Add only the owned Hidden Threats entry and three species sharing one counter."
+  ],
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 43.393288842,
+    "log": "/tmp/questpc7-native-deaths-red.log",
+    "assertion": "Fresh real StepIn initialized programme/counter, but no native guardian appeared."
+  },
+  "authoring": {
+    "tests": 18,
+    "seconds": 9.763,
+    "log": "/tmp/questpc7-native-deaths-authoring.log",
+    "result": "PASS"
+  },
+  "fixture_boundary": "No subject quest progress seeds. Fresh native StepIn admission, published creature policies, bound player lease, accepted native owner damage/kill queue, real SQL counter reads. Virtual61s advancement tests the declared60s guardian respawn without blocking wall time.",
+  "remaining_checks": [],
+  "qualification_boundary": "This slice qualifies reusable native kill/guardian support, not the unfinished valuables/completion stages of Hidden Threats.",
+  "green": {
+    "seconds": 42.583370058,
+    "log": "/tmp/questpc7-native-deaths-green.log",
+    "scope": [
+      "fresh real StepIn initializes subject programme and quota",
+      "normal native creature policies and bound principal lease",
+      "one physical guardian; repeated refresh cannot duplicate it",
+      "right species outside selected room cannot credit",
+      "five native lethal occurrences; duplicate notification and drain replay yield one credit each",
+      "declared60s respawn tested with virtual61s advancement",
+      "completed quota prevents respawn and extra native kill credit"
+    ]
+  },
+  "integration_repairs": [
+    "Retained loader exact-inventory test now explicitly includes both separately authored callback inputs; exact set equality and Dawnport exclusion remain.",
+    "Default production cargo check exposed a peer use of a test-only corpse-pin query. Make the same read-only membership query available to production guardian cleanup; do not bypass or release pins."
+  ],
+  "checks": [
+    {
+      "check": "formal-regression-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_formal_exhibition_display_and_consumptive_accessories",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 77.236,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-formal-regression-pg.log"
+    },
+    {
+      "check": "grizzly-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "grizzly_kills::"
+      ],
+      "seconds": 0.248,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-grizzly-units.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 6.201,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-loader-units.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 2.928,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-world-units.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 36.078,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 158.883,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 108.44,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.213,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 116.577,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-native-deaths-pin-check"
+      ],
+      "seconds": 130.405,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 13.591,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-native-deaths-fmt.log"
+    }
+  ]
+}

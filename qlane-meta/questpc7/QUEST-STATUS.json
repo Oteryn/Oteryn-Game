@@ -1242,22 +1242,22 @@
       }
     ],
     "queued_stage_binding": {
-      "stage": "s1",
+      "stage": "s3",
       "native_dispatch_binding": null,
       "runtime_enabled": false
     },
     "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter the Corym Mines and survey the concealed chamber route.",
+      "key": "s3",
+      "kind": "use",
+      "objective": "Recover the mine's concealed valuables.",
       "targets": [
-        "Corym Mines"
+        "mine concealed valuables"
       ]
     },
     "owner": "questpc7",
     "remaining_work": {
       "kind": "lane_implementation_work",
-      "missing_piece": "Implement Hidden Threats\u2019 exact fragment/tool assembly through one fenced inventory/quest receipt, then compose the selected mine/key route. Do not split input consumption from output/progress commit.",
+      "missing_piece": "Compose the selected valuables and final completion on the qualified native five-Corym quota. World output/completion support is lane implementation work; no external dependency or ownership question.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/43/definition",
         "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
@@ -1268,6 +1268,30 @@
         "Compared the key-fragment/metal-file source rewards and full selected mine route with both current transaction interfaces; selected all three source rewards for independent USE/replay/refusal qualification."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "current_batch": {
+      "mechanism": "reuse peer native death objectives and guardian slots over frozen lethal capture and fenced Quest writer",
+      "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
+      "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee",
+      "postgres_red_seconds": 43.393288842,
+      "assumptions": [
+        "Selected personal quota credits the frozen native most-damage principal; it does not invent party sharing.",
+        "Any Charlatan, Skirmisher or Vanguard in x33077..33081,y32014..32017,floor-13 counts toward one shared quota5.",
+        "One additional bounded native Charlatan guardian uses an existing empty ground tile and60s respawn."
+      ],
+      "boundary": "This slice proves the shared mechanism; complete selected valuables/completion route remains ACTIVE until fully tested.",
+      "postgres_green_seconds": 42.583370058,
+      "proof": "qlane-meta/questpc7/NATIVE-DEATH-PG-PROOF.json",
+      "checks": "Native mechanism and all required checks GREEN; source committed in this batch."
+    },
+    "shared_native_death_mechanism": {
+      "status": "QUALIFIED",
+      "proof": "qlane-meta/questpc7/NATIVE-DEATH-PG-PROOF.json",
+      "red_seconds": 43.393288842,
+      "green_seconds": 42.583370058,
+      "postgres": "18.6",
+      "source_branch": "claude/happy-davinci-ijz3wy-questpc8",
+      "source_sha": "7eeee8fb152806de66af062831f94c2183c915ee"
     }
   },
   {

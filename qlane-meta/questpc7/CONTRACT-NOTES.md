@@ -135,3 +135,25 @@ consumes Brass Button37604 for addon bit2, then Decorative Plume37605 for bit1;
 completion requires semantic ownership of the complete pair. The world fixture
 models the known entry464 as walkable ground with speed150, rather than using
 the common harness's default wall semantics for passage objects.
+
+### Native bounded encounter credit (next shared mechanism)
+
+Reuse questpc8 7eeee8fb152806de66af062831f94c2183c915ee death_objectives,
+grizzly_kills capture/settlement and guardian admission. Preserve the original
+frozen principal/party/corpse queue; duplicate lethal notifications and replay
+retain one credit. No quest kill progress is written by the PG test fixture.
+Hidden Threats selected explore/kill5/use/complete recipe is authoritative.
+The chosen chamber entry(33079,32015,-13), ground10113, and empty guardian
+tile(33080,32015,-13) are existing placements in
+content/world/placements/region-z13-x129-y125.b3 SHA256
+cd6d870e934961d3e6dd89e5b4b9ec6922c4d63b79203678bb876370859c83a1.
+The retained Canary04b83b512 movement-chests_check.lua:18-22 identifies the
+nearby Corym chamber positions; SHA256
+0e00845e4ce1d3cf40dba3139210f86bc96dcb0f8f3242345a4a01aa3badc9b4.
+This is an explicit Oteryn selected-entry adaptation of that chamber, not the
+donor's StepOut storage callback. Count any of Charlatan/Skirmisher/Vanguard
+inside x33077..33081,y32014..32017,floor-13 toward the shared five-kill quota.
+The additional native guardian uses one existing empty ground tile,60s respawn,
+normal occupancy/pinned-corpse checks and no source map binary edits.
+Keep Hidden Threats ACTIVE until its valuables and complete route are qualified;
+this first slice qualifies the reusable native death/guardian mechanism only.

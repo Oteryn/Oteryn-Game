@@ -616,3 +616,55 @@ ready for a small source composition: canonical20tokens19083 -> Abacus19151;
 pinned Jorge61,115,125-128 SHA127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0.
 Reuse physical qualifier and source placement tooling; never commit raw donor.
 Raw source and concise next-slice notes are under /tmp/questpc7-next-*.
+
+## Native death/guardian mechanism slice in progress
+
+Formal Dress source e7a5aac32 pushed at05:32UTC;16 ACTIVE entries remain.
+Owned Hidden Threats entry now has a fresh real StepIn and shared zeroed quota.
+Generic mechanism PG18.6 RED43.393288842s: missing native guardian, after entry
+and zero counter checks passed. Reused questpc8 7eeee8fb152806de66af062831f94c2183c915ee
+death_objectives, grizzly native capture/settlement, guardians and admission hook.
+Do not overwrite this lane's world read-only/remote transport or Hot Cuisine.
+Three Corym species share a bounded5 counter in the documented existing chamber;
+one extra native Charlatan guardian,60s respawn, principal-only personal credit.
+Own authoring18 tests pass, including actual B3 clear-ground validation.
+PG GREEN is rebuilding in `/tmp/questpc7-native-deaths-green.log`; no active
+cache cleanup was performed. Inactive dispatch caches were removed only after
+all Cargo/compiler processes completed, retaining the PG cache.
+After GREEN run `/tmp/questpc7-native-deaths-validation.py`, then update proof
+and status, commit/push this reusable mechanism slice. Hidden remains ACTIVE
+until valuables and completion are composed. Next reuse peer world item_reward,
+completion and atomic backpack outputs (preserve our exact exchange/charges and
+Father eleven-track transaction). These support Hidden/Hydra and later caches.
+
+Native death/guardian PG18.6 GREEN42.583370058s, including physical spawn,
+refresh deduplication,outside-room refusal,five accepted native deaths,duplicate
+notification/drain replay,60s respawn and quota saturation. Required focused
+validation now running via `/tmp/questpc7-native-deaths-validation.py`; result
+JSON/progress logs share that prefix. Do not rerun the whole PG/workspace suite.
+Hidden Threats remains ACTIVE until actual valuables and final completion.
+
+Retained Formal PG GREEN77.236s command duration; Grizzly units pass. Loader
+exclusion test caught its stale expected inventory (five extra admitted source
+callbacks from shared-outfit/questpc7 files); preserve exact set equality and
+Dawnport exclusion while including both explicit inputs. All9 loader tests pass.
+Default cargo check exposed peer guardian use of test-only corpse_projection_pinned;
+expose the existing read-only query in production, preserving pinned work.
+Current runner `/tmp/questpc7-native-deaths-check-tail.py` checks all three changed
+crates (entities/quests/dispatch), strict clippy and remaining content/pin checks.
+
+## Native death/guardian mechanism fully GREEN
+
+PG18.6 RED43.393288842s -> GREEN42.583370058s, retained Formal PG77.236s
+command duration, Grizzly tests,loader9/world17 units,authoring18,default check,
+strict clippy across entities/quests/dispatch,content123/world5,pin refresh/check
+and fmt all pass. See NATIVE-DEATH-PG-PROOF.json. Push source immediately.
+16 ACTIVE whole quests remain; Hidden now has native explore and kill stages,
+while valuables/completion remain implementation work here. Never claim the
+mechanism proof alone as whole-quest qualification. Continue next owned slice
+without waiting or asking ownership questions. The exact20token Jorge route
+is prepared in /tmp/questpc7-next-token-author.py and next-token-notes.txt.
+World reward/completion/backpack outputs are available on peer questpc8 and
+should be reused for the remaining cache routes, preserving our NPC exchange,
+exact charge, fee/counter and Father atomicity. Hydra Egg stays ordinary nest
+pickup/reset; do not turn it into a made-up UID reward chest.
