@@ -1,3 +1,28 @@
+# GREEN callback/native capture slice: push now, then five upper defenders
+
+Final guarded Dragon + real Monk shrine PG180006 PASS2cases189.21s, log
+/tmp/questpc2-callback-copy-final-two-pg.log. Earlier actual RED89.39s ->
+GREEN88.91s; check19.24s, clippy(alltargets/allfeatures -Dwarnings)58.11s,
+fmt and duplicate-migration HEAD PASS. No content/pin input changes.
+Batch BATCH-callback-native-capture-2026-11-07.json. Whole quest UNFINISHED.
+Next add focused six-defender wire route RED, climb native ladder/stairs and
+fight five actual source upper actors with same driver; then four source
+chest claims (including two filled containers), exit and journal. Do not
+invent seven sibling roots. Keep exact native-goal and own phase assertions.
+
+# Current: actual source Dragon wire combat PG GREEN88.91s; final checks
+
+Fix generic callback publication: all callbacks apply committed delta immediately,
+refresh Grizzly/native-goal and own objective snapshots under held runtime;
+retain60second recovery cadence and revision-gap fail-closed. Skip applying an
+older/equal receipt over newer coherent copy. No fixture HP/damage/progress writes.
+Actual RED89.39s ownphase2/noDragon -> GREEN88.91s ownphase3/Dragon1; explicit
+native lethal queue assertion. Check19.24s, alltargets/allfeatures clippy58.11s.
+Final guarded-source Dragon + existing Monk regression running in
+/tmp/questpc2-callback-copy-final-two-pg.log. Complete/record/push immediately,
+then five upper native defenders and four real source chest claims/exit/journal.
+Whole Elvenbane remains UNFINISHED; owned27 remain. Migration1240–44 unchanged.
+
 # Current: normal chase driver compiles; actual PG89.39s progress RED
 
 Wire fixture now calls chase_step_now before swings, matching production scheduler.

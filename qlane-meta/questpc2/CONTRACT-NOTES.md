@@ -453,3 +453,36 @@ original source floor rules world/src/map/floor.rs:295-317. Source geometry and
 per-origin credit remain unchanged. Generator qengine_access.py write/check
 and scoped native43write+43check passed. Alias6cases and closed goal2tests pass.
 Current PG activation proof, clippy and fresh pins remain pending WIP.
+
+
+2026-11-07: source wire combat continuation
+
+Production schedules callback quest-copy recovery with a60second backoff
+(composed_admission/quest.rs:55; mod.rs:854). Before this fix only Monk
+callbacks published their committed delta immediately. Native Dragon lethal
+capture before that reload therefore observed pre-basement/pre-Dragon quest
+eligibility. Actual PG180006 RED89.39s: normal source activation, full earned
+exploration and chase-driven damage, but native Dragon counter absent/ownphase2.
+Publish every committed callback delta and refresh both retained kill-capture
+caches under the already-held runtime owner; preserve revision-gap fail-closed
+and the existing durable reload. No test progress/HP/damage injection.
+
+Reward source correction: CURRENT committed donor corpus, not merely the
+cached manifest, contains crystalserver9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+at data-global/startup/tables/chest.lua:2551-2580,
+SHA2560ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca.
+The four claims6253/6254/6255/6256 include two explicit source containers2853:
+6255 carries237,3147,3059;6256 carries3028x2,3031x100. Seven payload kinds
+are not seven physical roots. Reuse existing bound native-container MINT,
+once receipts and exact source claims. Earlier seven-root atomic wording was
+an authoring assumption and is superseded by these four source claims. The
+Father eleven-track atomic rule is unchanged. Existing generated container
+projections cite a separate historical201189 revision; do not fabricate that
+revision in the current corpus or rewrite unrelated lanes' source facts.
+
+Final callback publication proof: PG1800062cases189.21s includes earned source
+Dragon wire lethal/nativecounter1/ownphase3 plus existing real Monk shrine
+regression. Earlier RED89.39s ->GREEN88.91s. Check19.24s, clippy58.11s,
+fmt/duplicate migrations PASS. Quest whole qualification is still pending.
+Inspected existing callback execute.rs on QENGINE2@5a6de28c1, PC3@5e72a3f0b,
+PC4@db95b72d3; all retain Monk-only immediate publication, no generic reuse.

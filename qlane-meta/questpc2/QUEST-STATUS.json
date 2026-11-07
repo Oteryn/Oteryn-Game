@@ -384,7 +384,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Earned source basement/cohort activation same xmin/revision, ladder/poison/Dragon route PG GREEN85.60s; exact-origin2cases99.30s and atomic/stale2cases166.36s GREEN. Native closed activation/counter guards intact. Final pins running; next real wire six-defender combat and seven-item atomic treasure/exit/journal.",
+      "blocker": "Earned source route and actual native wire Dragon1/ownphase3 GREEN; final Dragon+Monk2PGcases189.21s. Shared callback/capture publication closes60second stale eligibility gap. Next five upper defenders, four source treasure claims (two filled containers), exit and journal.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -2064,16 +2064,26 @@
     "pins": "isolated refresh/check PASS"
   },
   "source_wire_combat_authoring": {
-    "state": "WIP_CHASE_DRIVEN_WIRE_PROGRESS_RED",
+    "state": "GREEN_SOURCE_DRAGON_AND_CALLBACK_CAPTURE",
     "base": "5346b5b3f",
     "compile_seconds": 79,
     "pg_log": "/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log",
     "point": "New fixture requires six real projected source actors; normal runtime source activation is intentionally not installed yet. Observe actual PG RED then install production activation and drive real wire Dragon attack/XP/cohort progress.",
-    "next": "Instrument current positions/target state and identify actual health/AI owner; fix caller/mechanism then PG green. No fixture direct damage/flags.",
-    "red_postgres_seconds": 75.32,
+    "next": "Finish final Dragon/Monk regression, push; then actual five upper defenders and four source treasure claims, exit and journal.",
+    "red_postgres_seconds": 89.39,
     "latest_postgres_seconds": 89.39,
-    "check_seconds": 42.05,
-    "latest_point": "Drive normal chase_step_now separately from auto attacks; combat no longer stalls. Current exact RED: earned Dragon tracks absent and ownphase2 instead of3 after drain; inspect real lethal receipt/settlement. Assertions retained.",
-    "latest_pg_log": "/tmp/questpc2-elvenbane-chase-pg.log"
+    "check_seconds": 19.24,
+    "latest_point": "Final guarded actual Dragon + real Monk shrine regression PASS2cases189.21s; check19.24s/clippy58.11s/fmt/duplicates PASS. Ready to push slice, then upper native defenders.",
+    "latest_pg_log": "/tmp/questpc2-elvenbane-chase-pg.log",
+    "red_pg_log": "/tmp/questpc2-elvenbane-chase-pg.log",
+    "green_postgres_seconds": 88.91,
+    "green_pg_log": "/tmp/questpc2-elvenbane-immediate-callback-pg.log",
+    "clippy_seconds": 58.11,
+    "final_postgres_seconds": 189.21,
+    "final_postgres_cases": 2,
+    "final_pg_log": "/tmp/questpc2-callback-copy-final-two-pg.log",
+    "fmt": "PASS",
+    "duplicate_migrations": "HEAD PASS",
+    "batch": "BATCH-callback-native-capture-2026-11-07.json"
   }
 }

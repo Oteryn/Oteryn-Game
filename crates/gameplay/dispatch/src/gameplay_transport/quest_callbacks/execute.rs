@@ -338,19 +338,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
+                    // Every committed callback must be visible to the next lethal turn,
+                    // including native objective activation. The cadence still reloads
+                    // the durable copy for recovery and pending XP obligations.
+                    if let Ok(mut sessions) = self.states.quest_sessions.lock()
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {
+                            // A reconciled old receipt must not roll a newer copy back.
+                            if copy.character_revision().is_some_and(|revision|
+                                revision.get() >= committed.committed_character_revision.get()) {
+                                return Some(copy);
+                            }
                             let next = entry.version.checked_add(1)?;
                             if !copy.apply(committed) { return None; }
                             entry.version = next;
                             Some(copy)
                         });
                     }
+                    self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
+                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {

@@ -260,6 +260,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
+            .await;
+    }
+
+    /// Publish capture eligibility while the callback already holds the runtime owner.
+    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) {
         let snapshot = {
             let sessions = self.states.quest_sessions.lock().ok();
             sessions

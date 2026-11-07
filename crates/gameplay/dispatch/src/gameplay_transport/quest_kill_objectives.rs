@@ -108,6 +108,16 @@ pub(super) fn capture(
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn refresh_native_objective_snapshot(&self, session: GameSessionId) {
         let runtime = self.runtime.lock().await;
+        self.refresh_native_objective_snapshot_in_runtime(&runtime, session)
+            .await;
+    }
+
+    /// Publish capture eligibility while the callback already holds the runtime owner.
+    pub(super) async fn refresh_native_objective_snapshot_in_runtime(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) {
         let snapshot = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
             let revision = copy.character_revision()?.get();

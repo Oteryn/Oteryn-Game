@@ -151,6 +151,10 @@ async fn fight(
             .unwrap_or(0);
         drop(runtime);
         if remaining == 0 {
+            assert!(
+                owner.states.attack.lock().await.kills().has_session(member.game_session_id),
+                "native lethal damage must emit the real reward occurrence"
+            );
             killed = true;
             break;
         }
