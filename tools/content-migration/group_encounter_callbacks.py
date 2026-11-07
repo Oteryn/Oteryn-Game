@@ -16,7 +16,7 @@ SOURCE = 'data-otservbr-global/scripts/quests/the_annihilator/lever.lua'
 BLOB = '62e92e8acd676bad545a501c8431c983dcd4edfa'
 SOURCE_SHA = '02913ff4a52944f154e0d4148b6d0baf16c9999373fd699bf76a7dd577ed7fa2'
 CALLBACKS = 'content/quests/world-callbacks.json'
-KEY = 'annihilator/group-entry'
+KEY = 'oteryn:quest-callback/annihilator/group-entry'
 
 
 def verify_source(root=ROOT):
@@ -76,6 +76,14 @@ def outputs(root=ROOT):
     callbacks = {row['key']: row for row in document['callbacks']}
     if len(callbacks) != len(document['callbacks']):
         raise ValueError('GROUP_ENCOUNTER_DUPLICATE_CALLBACK')
+    # The initial standalone authoring prototype omitted the required namespace.
+    # Migrate only its exact pinned output, never an unrelated or edited callback.
+    legacy = callbacks.pop('annihilator/group-entry', None)
+    if legacy is not None:
+        expected = annihilator()
+        expected['key'] = 'annihilator/group-entry'
+        if legacy != expected:
+            raise ValueError('GROUP_ENCOUNTER_LEGACY_CALLBACK_DRIFT')
     callbacks[KEY] = annihilator()
     document['callbacks'] = sorted(callbacks.values(), key=lambda row: row['key'])
     return {CALLBACKS: (json.dumps(document, ensure_ascii=False, indent=2) + '\n').encode()}

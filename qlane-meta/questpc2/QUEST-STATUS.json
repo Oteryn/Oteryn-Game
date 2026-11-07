@@ -1646,10 +1646,10 @@
     }
   },
   "current_batch": {
-    "id": "group-source-authoring-2026-11-07",
-    "record": "BATCH-group-source-authoring-2026-11-07.json",
+    "id": "group-source-key-2026-11-07",
+    "record": "BATCH-group-source-key-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "next": "Finish current native group entry and real four-character PostgreSQL proof, then continue whole source encounters; no external engine deferral."
+    "next": "Rerun complete group PG after disk recovery, finish checks and publish runtime slice, then continue whole encounters."
   },
   "verification": {
     "source_corpse_admission_2026_11_07": {

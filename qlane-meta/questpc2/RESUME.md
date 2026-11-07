@@ -6,6 +6,33 @@ requires local commits as blakinio with the supplied Claude trailers and a
 fast-forward push after every green batch. Older no-commit/no-push instructions
 and `/home/mole` paths are superseded. Never read credentials or force-push.
 
+Latest authoring correction: BATCH-group-source-key-2026-11-07.json.
+The required key is oteryn:quest-callback/annihilator/group-entry. The prototype
+short key was rejected by the native callback decoder (actual PG18.6,2.72s).
+The tool now emits the canonical key and refuses edited legacy data.3 Python
+authoring cases and the new Rust closed-callback load contract unit pass.
+No active callback/default hook/runtime changes are in this authoring commit.
+
+ACTIVE runtime/code/data remain local. The full group PG reached every core
+case: missing member, level99, occupied room, insufficient actor capacity with
+rollback, exact4 destinations/6 source demons, and accepted command replay.
+37.81s onPG18.6; final used-lever check returned Rejected for the relocated
+participant. No GREEN claimed. The matcher uses original bound placement;
+no matcher relaxation was made. The test now uses the still-outside bystander
+for shared used-lever rejection across Characters, and logs participant state.
+That rerun was stopped before execution by disk exhaustion. Rerun it now;
+current stable file is postgres_tests/group_encounters.rs. All source membership,
+rollback, exact spawn and replay assertions remain. Latest attempted log:
+/tmp/questpc2-group-entry-bystander-link.log (compile disk error, not PG proof).
+
+Disk recovery just reclaimed249 inactive incremental caches (current dispatch
+cache retained), preserving compiled libraries/test outputs, source and PG.
+Overlay now12GB free. No Cargo clean, flags/profiles changes or disabled
+incremental. Reclamation ledger /tmp/questpc2-inactive-incremental-recovery.json.
+Do final check/clippy on quests/entities/dispatch, fmt, source tool and native
+registration checks, content integration and world repository tests before runtime
+commit. No additional World/pin change is expected from the callback inventory.
+
 Latest authoring tool: BATCH-group-source-authoring-2026-11-07.json.
 Standalone group_encounter_callbacks.py verifies the exact retained source corpus,
 manifest and Git blob, then emits the four-player/six-Angry-Demon layout.3 authoring

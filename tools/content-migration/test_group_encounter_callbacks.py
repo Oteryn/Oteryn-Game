@@ -13,6 +13,7 @@ class GroupEncounterCallbackTests(unittest.TestCase):
     def test_retained_source_and_exact_four_player_six_demon_layout(self):
         group.verify_source()
         callback = group.annihilator()
+        self.assertTrue(callback['key'].startswith('oteryn:quest-callback/'))
         encounter = callback['group_encounter']
         self.assertEqual(callback['selector']['unique'], 30025)
         self.assertEqual(callback['lever'], [2772, 2773])
