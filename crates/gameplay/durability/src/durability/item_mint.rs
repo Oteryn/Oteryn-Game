@@ -1508,6 +1508,7 @@ fn mint_message(
                 scope_ownership_generation: generation,
                 actor_local_id: death.actor_local_id,
                 actor_local_generation: death.actor_local_generation,
+                instance_id: None,
             }),
             loot_table: Some(definition_message(&request.cause.loot_table)),
             loot_purpose_key: request.cause.purpose_key.clone(),

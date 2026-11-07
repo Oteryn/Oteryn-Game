@@ -902,3 +902,29 @@ with no partial XP receipt. It does not prove physical Primal combat or qualify
 a Primal room. Dispatch check passed in 16.14s; test-target clippy passed with
 warnings denied in 3m42s; fmt and architecture passed. No further identifiers or
 migrations were allocated.
+
+### W10 Instance death audit prerequisite
+
+Crystal `201189f`,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:79,94`
+declares corpse 39530 and `rewardBoss = true`. The physical death in its native
+activity must retain its Instance identity through corpse and loot audit records.
+The existing Ground and EventEnvelope messages already admit an exact Instance;
+the death reference now has additive optional protobuf field 6, `instance_id`.
+Exactly one of Channel and Instance is accepted, with the same typed scope
+required by the Ground destination and envelope. Corpse-container loot retains
+the death's scope even though its destination names only its parent corpse.
+Absent field 6 preserves the captured Channel wire bytes and existing bounds.
+No command, capability, mechanic or registry number was allocated.
+
+`instance_death_mint_audit_keeps_channel_and_instance_identities_disjoint` first
+ran red with `InvalidInput` (0.007s; build/run 80.561s), then passed (0.016s).
+The 30 audit tests passed in 0.390s (build/run 80.243s), including the existing
+Channel compatibility and resource-bound cases. The audit tag/golden generator
+produced no changes. Architecture checking passed. The complete durability
+crate checks and the 25-package dependent PostgreSQL run are still running.
+
+This checkpoint covers wire validation. The production death-mint owner still
+requires Channel identity; Instance corpse custody and native Primal hook
+composition remain to be implemented. The Primal production room remains
+unqualified with `SourceHookUnavailable`; W10 is unfinished.

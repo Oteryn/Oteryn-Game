@@ -591,6 +591,7 @@ mod tests {
                     scope_ownership_generation: 1,
                     actor_local_id: 7,
                     actor_local_generation: 1,
+                    instance_id: None,
                 }),
                 loot_table: Some(OneItemTypedDefinitionRevisionV1 {
                     family: "LootTable".into(),
