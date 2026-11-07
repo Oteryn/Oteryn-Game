@@ -1,4 +1,4 @@
--- QUESTPC / NPC-LEGACY-1: read-compatible definition activation, no durable repinning.
+-- QNPCFX / NPC-LEGACY-1: read-compatible definition activation, no durable repinning.
 -- Existing states/receipts/track rows are immutable. The catalogue retains each
 -- exact pre-activation hash and absent-track default; only those hashes are read
 -- compatibly by the fenced quest owner. Unknown hashes still require migration.
@@ -17,7 +17,9 @@ ALTER TABLE game_character_quest_receipts
                  AND transition_key = 'oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept'
                  AND track_keys = ARRAY['oteryn:quest-progress/quest/u8_6/afathers_burden/cloth','oteryn:quest-progress/quest/u8_6/afathers_burden/crystal','oteryn:quest-progress/quest/u8_6/afathers_burden/iron','oteryn:quest-progress/quest/u8_6/afathers_burden/progress','oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log','oteryn:quest-progress/quest/u8_6/afathers_burden/root','oteryn:quest-progress/quest/u8_6/afathers_burden/scale','oteryn:quest-progress/quest/u8_6/afathers_burden/silk','oteryn:quest-progress/quest/u8_6/afathers_burden/sinew','oteryn:quest-progress/quest/u8_6/afathers_burden/status','oteryn:quest-progress/quest/u8_6/afathers_burden/wood']::text[]
                  AND values_after = ARRAY[1,1,1,0,1,1,1,1,1,1,1]::bigint[]))
-        AND (cardinality(track_keys) > 0 OR completes)
+        -- Preserve main 1003's reward-only arm and its deferred source proof.
+        AND (cardinality(track_keys) > 0 OR completes
+             OR transition_key LIKE 'oteryn:quest-reward/%')
         AND (cardinality(track_keys) = 0
              OR (array_ndims(track_keys) = 1 AND array_lower(track_keys, 1) = 1
                  AND array_ndims(values_before) = 1 AND array_lower(values_before, 1) = 1

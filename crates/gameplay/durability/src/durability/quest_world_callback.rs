@@ -17,6 +17,9 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+#[path = "quest_world_callback/reward_inputs.rs"]
+mod reward_inputs;
+
 struct Input {
     item: String,
     before: serde_json::Value,
@@ -25,6 +28,112 @@ struct Input {
     quantity: i64,
     count: u16,
     replacement: Option<String>,
+}
+
+/// Resolve all carried stacks before touching any of them. Closed nested containers
+/// are traversed by the existing custody owner; filled containers are never destroyed.
+pub(super) async fn consume_reward_inputs(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+    carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
+) -> Result<bool, DurabilityError> {
+    let super::quest_state::QuestCause::Command(_) = request.cause else {
+        return Ok(false);
+    };
+    let keys: Vec<_> = callback
+        .take
+        .iter()
+        .chain(&callback.present)
+        .map(|i| i.item.as_str())
+        .collect();
+    let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
+    if let Some(use_) = carried_use {
+        let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
+        if !rows.iter().any(|row| {
+            row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
+                && row.try_get::<&str, _>("definition_production_key").ok()
+                    == callback.carried_item.as_deref()
+        }) {
+            return Ok(false);
+        }
+    }
+    if rows.len() > 500 {
+        return Ok(false);
+    }
+    if callback.exact_take {
+        for input in &callback.take {
+            let mut total = 0_i64;
+            for row in &rows {
+                if row.try_get::<&str, _>("definition_production_key")? == input.item {
+                    total = total
+                        .checked_add(row.try_get::<i64, _>("quantity")?)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                }
+            }
+            if total != i64::from(input.count) {
+                return Ok(false);
+            }
+        }
+    }
+    // Read-only hand-ins (Palimuth's crest) prove custody without replacing
+    // the original instance or manufacturing a second MINT receipt.
+    for evidence in &callback.present {
+        let mut needed = i64::from(evidence.count);
+        for row in &rows {
+            if row.try_get::<&str, _>("definition_production_key")? == evidence.item {
+                let quantity: i64 = row.try_get("quantity")?;
+                needed -= needed.min(quantity);
+            }
+        }
+        if needed != 0 {
+            return Ok(false);
+        }
+    }
+    let mut remaining: std::collections::BTreeMap<_, _> = callback
+        .take
+        .iter()
+        .map(|i| (i.item.as_str(), i64::from(i.count)))
+        .collect();
+    let mut inputs = Vec::new();
+    for row in rows {
+        if carried_use.is_some_and(|use_| {
+            row.try_get::<&str, _>("item").ok()
+                != Some(
+                    sqlx::types::Uuid::from_bytes(use_.source)
+                        .to_string()
+                        .as_str(),
+                )
+        }) {
+            continue;
+        }
+        let key: String = row.try_get("definition_production_key")?;
+        let Some(required) = remaining.get_mut(key.as_str()) else {
+            continue;
+        };
+        let quantity: i64 = row.try_get("quantity")?;
+        let count = (*required).min(quantity);
+        if count == 0 {
+            continue;
+        }
+        let input = Input {
+            item: row.try_get("item")?,
+            before: row.try_get("before_item")?,
+            location: row.try_get("location")?,
+            kind: row.try_get("kind")?,
+            quantity,
+            count: u16::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?,
+            replacement: None,
+        };
+        *required -= count;
+        inputs.push(input);
+    }
+    if remaining.values().any(|n| *n != 0) {
+        return Ok(false);
+    }
+    reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
 pub(super) async fn consume(
@@ -66,7 +175,7 @@ pub(super) async fn consume(
         return Ok(true);
     }
     consume_inputs(
-        tx, permit, fence, request, callback, context, command, world_id, channel_id,
+        tx, fence, request, callback, context, command, world_id, channel_id,
     )
     .await
 }
@@ -114,7 +223,6 @@ pub(super) async fn context_is_current(
 #[allow(clippy::too_many_arguments)]
 async fn consume_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
@@ -154,7 +262,7 @@ async fn consume_inputs(
         if input.replacement.is_some() && (input.count != 1 || input.quantity != 1) {
             return Ok(false);
         }
-        lock_location(tx, InputPermit::Spell(permit), &input).await?;
+        lock_location(tx, &input).await?;
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same
@@ -270,28 +378,12 @@ async fn consume_inputs(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
-        apply_input(tx, InputPermit::Spell(permit), &input, &transaction).await?;
+        apply_input(tx, &input, &transaction).await?;
     }
     Ok(true)
 }
 
-#[derive(Clone, Copy)]
-enum InputPermit<'a> {
-    Spell(&'a SpellLanePermit),
-    Npc(&'a super::quest_state::npc_program::NpcItemPermit),
-}
-
-fn location_queries(
-    permit: InputPermit<'_>,
-    kind: &str,
-) -> Result<(&'static str, &'static str), DurabilityError> {
-    match permit {
-        InputPermit::Spell(_permit) => {}
-        InputPermit::Npc(_permit) if kind == "ground" => {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        InputPermit::Npc(_permit) => {}
-    }
+fn location_queries(kind: &str) -> Result<(&'static str, &'static str), DurabilityError> {
     match kind {
         "ground" => Ok((
             "SELECT to_jsonb(l) FROM game_item_ground_locations l \
@@ -324,10 +416,9 @@ fn location_queries(
 
 async fn lock_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: InputPermit<'_>,
     input: &Input,
 ) -> Result<(), DurabilityError> {
-    let (query, _) = location_queries(permit, &input.kind)?;
+    let (query, _) = location_queries(&input.kind)?;
     let actual: Option<serde_json::Value> = sqlx::query_scalar(query)
         .bind(&input.item)
         .fetch_optional(&mut **tx)
@@ -340,7 +431,6 @@ async fn lock_location(
 
 async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: InputPermit<'_>,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
@@ -358,7 +448,7 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     }
     if input.replacement.is_none() && input.quantity == i64::from(input.count) {
-        let (_, query) = location_queries(permit, &input.kind)?;
+        let (_, query) = location_queries(&input.kind)?;
         let removed = sqlx::query(query)
             .bind(&input.item)
             .execute(&mut **tx)
@@ -372,7 +462,7 @@ async fn apply_input(
 
 pub(super) async fn consume_npc_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &super::quest_state::npc_program::NpcItemPermit,
+    _permit: &super::quest_state::npc_program::NpcItemPermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
@@ -431,7 +521,7 @@ pub(super) async fn consume_npc_inputs(
             count: u16::try_from(count).map_err(|_| DurabilityError::InvalidStoredState)?,
             replacement: None,
         };
-        lock_location(tx, InputPermit::Npc(permit), &input).await?;
+        lock_location(tx, &input).await?;
         let plain:bool=sqlx::query_scalar("SELECT NOT (EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=$1::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=$1::uuid))")
             .bind(&input.item).fetch_one(&mut **tx).await?;
         if !plain {
@@ -453,7 +543,7 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        apply_input(tx, InputPermit::Npc(permit), &input, &transaction).await?;
+        apply_input(tx, &input, &transaction).await?;
     }
     Ok(true)
 }

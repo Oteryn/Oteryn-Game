@@ -273,3 +273,46 @@ pub(super) async fn exercise_calendar(owner: &mut ComposedFreshAdmission<'_, '_,
     }
     Ok(())
 }
+
+#[test]
+fn catalogue_npc_general_xp_handin_runs_in_real_dispatch() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("catalogue-npc-xp", || {
+        super::quest_world_callbacks::scenario("catalogue-npc-xp", Position { x: 33294, y: 31677, floor: -15 }, false)
+    })?;
+    eprintln!("POSTGRES_CASE_COMPLETED catalogue_npc_general_xp_handin_runs_in_real_dispatch {:?}", started.elapsed());
+    Ok(())
+}
+
+pub(super) async fn exercise_xp(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {
+    use oteryn_gameplay_quests::quest::world_callbacks::Offering;
+    const TRACK: &str = "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan";
+    const NPC: &str = "oteryn:npc.lieutenant_harlan";
+    const RULE: &str = "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/supplies-deliver";
+    let initial: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
+    let [harlan] = super::classic_quests::install(owner, admitted, [NPC]).await?;
+    for (command, text) in [(3000,"hi"),(3001,"help"),(3002,"yes"),(3003,"no"),(3004,"help"),(3005,"yes")] {
+        super::classic_quests::talk(owner, admitted, harlan, command, text).await?;
+    }
+    assert_eq!(super::classic_quests::progress(owner, admitted, authority, TRACK).await?, 1);
+    let premature: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1").bind(RULE).fetch_one(&h.pool).await?;
+    assert_eq!(premature, 0);
+    let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
+    for index in 0..20_u64 {
+        super::quest_world_callbacks::input_item(owner, fence.item_fence(), &Offering { position: Position { x: 33293, y: 31677, floor: -15 }, item: "oteryn:item.tibia.i52636".into(), count: 1 }, 600 + index, true).await?;
+    }
+    super::classic_quests::talk(owner, admitted, harlan, 3006, "help").await?;
+    super::classic_quests::talk(owner, admitted, harlan, 3007, "yes").await?;
+    assert_eq!(super::classic_quests::progress(owner, admitted, authority, TRACK).await?, 3);
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    let total: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(total, initial + 10_000);
+    let consumed: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_quest_callback_consumptions WHERE transition_key=$1 AND before_item->>'definition_production_key'='oteryn:item.tibia.i52636'").bind(RULE).fetch_one(&h.pool).await?;
+    assert_eq!(consumed, 20);
+    let replay = owner.root.reconcile_npc_program(authority, fence.character_id, NpcProgramRequest { command: CommandRef::new(admitted.game_session_id, CommandId::new(3007).map_err(debug)?), npc: NPC.into(), trigger: NpcRuleTrigger::Say, message: "yes".into(), topic: 3, transition_key: RULE.into() }).await.map_err(debug)?.ok_or("XP receipt")?;
+    assert!(matches!(replay.transition, QuestTransitionOutcome::AlreadyCommitted(_)));
+    let after_replay: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(after_replay, total);
+    Ok(())
+}

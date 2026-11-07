@@ -1,6 +1,6 @@
 -- Reuse qengine2 e45e8f8a9's reward participant proof and carried-cause extension.
 -- This participant owns bounded plain NPC hand-ins and one fresh reward type.
--- Existing Father and Marlin arms remain unchanged. Rollback withdraws the producer;
+-- Father and Marlin arms compose independently. Rollback withdraws the producer;
 -- committed quest, consumption and MINT evidence remains immutable.
 ALTER TABLE game_quest_npc_program_receipts
  ADD COLUMN inventory_changed BOOLEAN NOT NULL DEFAULT false,
