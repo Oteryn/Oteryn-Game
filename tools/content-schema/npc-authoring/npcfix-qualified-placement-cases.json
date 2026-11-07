@@ -1092,6 +1092,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-17",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.maro",
+          "name": "Maro",
+          "expected": {
+            "x": 33622,
+            "y": 31883,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.marvin",
+          "name": "Marvin",
+          "expected": {
+            "x": 33662,
+            "y": 31878,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.nicholas",
+          "name": "Nicholas",
+          "expected": {
+            "x": 33640,
+            "y": 31898,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.normod",
+          "name": "Normod",
+          "expected": {
+            "x": 33550,
+            "y": 31939,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.peremin",
+          "name": "Peremin",
+          "expected": {
+            "x": 33550,
+            "y": 31963,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.baltim",
+          "name": "Baltim",
+          "expected": {
+            "x": 32346,
+            "y": 31323,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
