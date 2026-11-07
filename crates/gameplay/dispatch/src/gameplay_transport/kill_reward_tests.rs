@@ -1377,3 +1377,38 @@ fn talisman_spoils_scales_each_chance_rounds_up_and_caps() {
     apply_talisman_loot_bonus(&mut table, i64::MAX);
     assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
 }
+
+#[test]
+fn native_death_final_receipt_keeps_partial_retry_and_slot_successor_separate() {
+    let queue = KillSettlementQueue::default();
+    let entry = pending(2, 50, 3, 0);
+    let target = entry.target;
+    let successor = ExactActorRef(crate::foundation::ActorRef::from_scoped_owner_parts(
+        target.runtime_scope(),
+        target.scope_generation(),
+        crate::foundation::ActorLocalId(target.actor_local_id()),
+        crate::foundation::ActorLocalGeneration(target.actor_local_generation() + 1),
+    ));
+    let receipt = Arc::new(Mutex::new(super::super::analyser::DeathReceipts::default()));
+    let next_receipt = Arc::new(Mutex::new(super::super::analyser::DeathReceipts::default()));
+    queue.state().analyser.extend([
+        (target, Arc::clone(&receipt)),
+        (successor, Arc::clone(&next_receipt)),
+    ]);
+    assert_eq!(queue.append(entry), AppendOutcome::Queued);
+    taken(queue.take(session(50), 3)).requeue();
+    assert!(
+        !receipt.lock().expect("receipt").settled,
+        "partial attempt must retry all unfinished work"
+    );
+    taken(queue.take(session(50), 3)).finish();
+    assert!(
+        receipt.lock().expect("receipt").settled,
+        "Final seals the exact retained death"
+    );
+    assert!(
+        !next_receipt.lock().expect("successor receipt").settled,
+        "same slot's next generation is another death"
+    );
+    assert_eq!(queue.counts(), (0, 0, 0));
+}

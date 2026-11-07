@@ -199,6 +199,8 @@ impl AnalyserStreams {
 /// and a replay that re-captures a settled corpse share these advisory receipts.
 #[derive(Debug, Default)]
 pub(super) struct DeathReceipts {
+    /// All settlement components reached Final for this exact retained corpse.
+    pub(super) settled: bool,
     pub(super) kill: bool,
     pub(super) world_change_notice: bool,
     pub(super) loot: HashSet<[u8; 16]>,

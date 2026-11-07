@@ -1150,6 +1150,20 @@ impl TakenKillSettlement {
 
     /// The settle reached a final result: the entry leaves the queue.
     pub fn finish(mut self) {
+        if let Some(entry) = &self.entry {
+            let receipts = self
+                .queue
+                .state()
+                .analyser
+                .iter()
+                .find(|(actor, _)| *actor == entry.target)
+                .map(|(_, receipts)| Arc::clone(receipts));
+            if let Some(receipts) = receipts
+                && let Ok(mut receipts) = receipts.lock()
+            {
+                receipts.settled = true;
+            }
+        }
         self.entry = None;
     }
 
@@ -1275,6 +1289,13 @@ pub fn record_creature_kill(
     if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
         .is_err()
     {
+        return;
+    }
+    // This advisory receipt lives only as long as this exact sealed native
+    // corpse. A finally settled death must not reconstruct new XP/loot plans
+    // when its original callback replays; partial queue retries stay live.
+    let receipts = sink.queue.analyser_receipts(runtime, target);
+    if receipts.lock().is_ok_and(|receipts| receipts.settled) {
         return;
     }
     let Ok(creature) = creature else {
