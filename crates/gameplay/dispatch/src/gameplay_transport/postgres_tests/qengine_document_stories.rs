@@ -179,6 +179,8 @@ pub(super) async fn exercise(
             } else {
                 vec![
                     oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                        fluid_subtype: None,
+
                         item: "oteryn:item.tibia.i6499".into(),
                         count: price,
                     },
@@ -198,6 +200,8 @@ pub(super) async fn exercise(
                 admitted,
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i6499".into(),
                     count: price,
                 },

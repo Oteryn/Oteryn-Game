@@ -1,4 +1,7 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
+pub mod carried_step;
+pub mod shared_count;
+pub mod shared_switch;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
@@ -234,18 +237,21 @@ async fn consume_inputs(
     // Resolve and lock every input before any write, including replacement preconditions.
     let mut inputs = Vec::new();
     if let Some(required) = &callback.item_on_target {
+        let accepted: Vec<&str> = std::iter::once(required.item.as_str())
+            .chain(required.alternatives.iter().map(String::as_str))
+            .collect();
         let row = sqlx::query(
             "SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item, \
              c.location,c.kind,i.quantity FROM \
              game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
              JOIN game_item_instances i ON i.item_instance_id=c.item \
              WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 \
-             AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) \
              AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         )
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(world_id.as_bytes().as_slice())
-        .bind(&required.item)
+        .bind(&accepted)
         .bind(i64::from(required.count))
         .fetch_optional(&mut **tx)
         .await?;
@@ -296,7 +302,12 @@ async fn consume_inputs(
                 return Err(DurabilityError::InvalidStoredState);
             }
         }
-        inputs.push(input);
+        // Retained tools still require a positive quantity, live custody and the
+        // same location lock. The enclosing Quest receipt binds this read to the
+        // action without inventing an item consumption or changing its identity.
+        if !required.reusable {
+            inputs.push(input);
+        }
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();

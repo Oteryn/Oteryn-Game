@@ -828,6 +828,8 @@ pub(super) async fn exercise(
             .ok_or_else(|| format!("missing story reward {key}"))?;
         let amount =
             |item: &(u16, u16)| oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                fluid_subtype: None,
+
                 item: format!("oteryn:item.tibia.i{}", item.0),
                 count: item.1,
             };
@@ -1746,6 +1748,8 @@ pub(super) async fn exercise(
                 admitted,
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i3043".into(),
                     count: u16::try_from(fee.gold / 10000).map_err(debug)?,
                 },
