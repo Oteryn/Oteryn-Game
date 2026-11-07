@@ -761,3 +761,33 @@ rather than inferring membership from spoofable user text. It refreshes on
 change and at the existing two-second renewal cadence for resync, keeping
 silent viewers selectable after chat history rolls over. Roster frames cannot
 enter an observer envelope. Moderator targets come only from that roster.
+
+## CLCAST composed native qualification
+
+Canary `src/creatures/players/livestream/livestream.cpp:249,486,541` grounds
+current-caster settings, recurring public picture capture and observer-only
+inputs. A successfully fenced Capture refreshes the existing five-second
+caster heartbeat, just as Refresh already does. The one-second capture permit,
+privacy lease, revocation barrier and observer reservation deadlines are
+unchanged. Shared-holder gating reads use the existing bounded NODEBOOT-1
+command retry; a cast mutation is never retried by that adapter.
+
+Observed real-dispatch PostgreSQL cases (each creates and uses a real database):
+
+- `s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision`:
+  7.080 s in the serial run; committed start/stop audits and stale stop refusal.
+- `s17b_native_observer_map_creatures_effects_and_public_speech_dispatch`:
+  86.019 s; native picture receives the actual door appearance and creatures,
+  public speech from accepted gameplay Say and emitted effects. The viewer
+  creates no character root and cannot move the caster.
+- `s17c_native_live_chat_mute_kick_and_persistent_ban_dispatch`: 82.734 s
+  in the serial run; D=300 caster text remains live while viewer content stays
+  delayed, and reply/mute/unmute/kick/ban use the real command dispatcher.
+  A fresh one-use account ticket cannot bypass the committed account ban.
+
+The non-PostgreSQL six-package test run passed 1,736 cases. A subsequent focused
+cast run passed 55 cases, including the native settings, consent, room, viewer
+rendering and strict wire consumers. PostgreSQL admission/content qualification
+is CPU-intensive, so final database cases run serially after content tools.
+Platform preference/password storage, account directory and ticket issuance
+remain the existing handoff; no Platform or migration files changed.
