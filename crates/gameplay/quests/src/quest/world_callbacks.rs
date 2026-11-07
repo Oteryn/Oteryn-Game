@@ -139,6 +139,8 @@ pub struct Callback {
     pub success_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub native_rule: Option<NativeRule>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outfit_reward: Option<super::reward_callbacks::OutfitReward>,
     pub sources: Vec<String>,
 }
 
@@ -160,8 +162,12 @@ struct Document {
 /// Read the same closed content shape at boot and at the durable mutation boundary.
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
-    if callbacks.len() >= MAX_CALLBACKS {
+    let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
+    if callbacks.len() >= MAX_CALLBACKS || keys.len() != callbacks.len() {
         return Err("callback bounds including Rotten Blood altar".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
@@ -209,7 +215,27 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
+                    || callback.outfit_reward.is_some()
                     || callback.storage.iter().any(|storage| storage.preserve)))
+            || callback.outfit_reward.as_ref().is_some_and(|reward| {
+                callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || callback
+                        .storage
+                        .iter()
+                        .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set))
+                    || reward.addons > 3
+                    || !reward
+                        .outfit
+                        .strip_prefix("oteryn:outfit.")
+                        .is_some_and(|tail| {
+                            !tail.is_empty()
+                                && tail.len() <= 146
+                                && tail.bytes().all(|b| {
+                                    b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_'
+                                })
+                        })
+            })
             || callback.passages.len() > MAX_EFFECTS
             || callback.storage.len() > MAX_EFFECTS
             || callback
@@ -240,6 +266,8 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    || (callback.outfit_reward.is_some()
+                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
@@ -362,6 +390,8 @@ fn extend_callbacks(
 
 #[cfg(test)]
 mod batch4_tests;
+#[cfg(test)]
+mod outfit_tests;
 
 #[cfg(test)]
 mod tests {

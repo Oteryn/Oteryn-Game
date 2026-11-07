@@ -1,3 +1,33 @@
+# World wardrobe mechanism fully GREEN — 2026-11-07
+
+World outfit grants now join the existing fenced quest receipt and Character
+revision transaction, reusing the admitted native cosmetic compatibility and
+immutable account grant owners. Legacy callers cannot earn a fresh outfit
+without admitted native content; generic quest writes cannot bypass the world
+participant. Historical receipt replay precedes fresh grant admission.
+Default None is omitted from old callback serialization.
+
+WORLD-OUTFIT-PG-PROOF.json records actual PG18.6 RED41.719s, initial
+GREEN43.659s and expanded GREEN42.659s. All3 read-only hoist floors remain
+GREEN46.061/45.908/45.273s.16 Rust callback,15 reward authoring and16 batch4
+tests pass. Strict all-target/all-feature Clippy, explicit Cargo check,123
+content checks,5 world checks, repo generation/check, pins and fmt all pass.
+World and deployment digest remain842187e5493a9d04849d13d8062398f6120f250c116b0fc094c87387e611e0a3.
+The actor-grant fixture uses the retained other-lane Warmaster wardrobe and
+a fenced prior mission; it does not qualify that quest or a local whole entry.
+
+19 ACTIVE entries remain after the two documented new peer deliveries below.
+Continue Formal Dress, Fiend Slayer and Hand of the Inquisition together using
+fresh semantic cosmetic ownership prerequisites plus existing personal NPC
+MINT, consumptive item actions and completion/achievement owners.
+Formal Dress needs explicit selected quest promotion of retained XML1460/1461:
+the source labels it store, but Lord Retro explicitly grants the same pair.
+The admitted official appearance records exist; source/source-map decisions
+and exact native palace display coordinates are in CONTRACT-NOTES.md.
+Use existing The Forgemaster for the explicitly named Fiend contact; Henricus
+is the authored choice for the selected anonymous inquisitor contact. Both
+NPC sources are retained; do not invent donor IDs or source dialogue.
+
 # Peer delivery decisions — 2026-11-07
 
 Refreshed qengine2 to0cf799d197e3d09cab984c5d68ad6633f7f96e66,

@@ -585,7 +585,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "world_reward_progress": {
-      "state": "Shared world outfit participant PG GREEN; final validation in progress; full route remains ACTIVE",
+      "state": "Shared world outfit participant QUALIFIED and fully GREEN; full selected route remains ACTIVE",
       "proof": "qlane-meta/questpc7/WORLD-OUTFIT-PG-PROOF.json",
       "remaining": "Compose selected exhibition entry/display, accessory acquisition/use and final achievement/completion here."
     }

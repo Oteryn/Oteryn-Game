@@ -246,7 +246,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let outcome = slot
-                .commit_world_callback(
+                .commit_world_callback_with_native(
                     self.root,
                     self.character,
                     self.holder,
@@ -258,6 +258,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue),
                     permit,
                     context,
+                    self.active_generation
+                        .and_then(|generation| generation.native_gameplay()),
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));

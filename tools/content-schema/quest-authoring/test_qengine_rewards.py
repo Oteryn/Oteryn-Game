@@ -155,7 +155,7 @@ class QuestRewards(unittest.TestCase):
         for world,expected in zip(worlds,[(33053,31020,-7,5862,'warmaster'),(33073,31173,-8,11431,'wayfarer')]):
             x,y,z,item,outfit=expected
             self.assertEqual(world['selector'],{'position':{'x':x,'y':y,'floor':z},'unique':None,'action':None,'appearance':item})
-            self.assertEqual(world['effects']['outfit_reward'],{'outfit':'oteryn:outfit.'+outfit,'addons':0})
+            self.assertEqual(world['outfit_reward'],{'outfit':'oteryn:outfit.'+outfit,'addons':0})
             import sys
             sys.path.insert(0,str(q.ROOT/'tools/content-schema/world-authoring'))
             import world_region_codec as codec

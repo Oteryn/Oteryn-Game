@@ -68,6 +68,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
             .sources
             .iter()
             .any(|reference| reference.starts_with(source))
+        && callback.outfit_reward.is_none()
         && callback.lever.is_none()
         && !callback.reversible
         && callback.passages.is_empty()

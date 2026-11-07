@@ -230,7 +230,11 @@ def validate_effects(callback, context):
     effects = callback.get('effects', {})
     allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
     fields(effects, set(), allowed, context + ': effects')
-    outfit = effects.get('outfit_reward')
+    require(not (callback.get('outfit_reward') is not None and effects.get('outfit_reward') is not None),
+            context + ': duplicate outfit participant')
+    outfit = callback.get('outfit_reward', effects.get('outfit_reward'))
+    require(callback.get('native_rule') is None or outfit is None,
+            context + ': native rule has unrelated outfit reward')
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
         require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160

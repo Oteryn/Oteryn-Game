@@ -324,6 +324,7 @@ def build():
           storage('oteryn:quest-progress/1150',-1,1,1)],'wayfarer')]:
         world=access.callback(name,quest,'use',path,at=access.position(*at),appearance=appearance,
             outfit_reward={'outfit':'oteryn:outfit.'+outfit,'addons':0})
+        world['outfit_reward']=world.pop('effects')['outfit_reward']
         world['storage']=states
         world['sources']=[f'crystal:{PIN}:{path}:sha256:{sha(inputs[path])}']
         if outfit=='wayfarer':
