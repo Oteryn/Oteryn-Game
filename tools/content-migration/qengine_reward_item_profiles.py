@@ -18,9 +18,8 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
 import questl2_rewards
 
 EQUIPMENT_IDS = {3079}
-
-IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793} | questl2_rewards.ITEMS | EQUIPMENT_IDS
+IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
+       4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793} | questl2_rewards.ITEMS | EQUIPMENT_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -88,8 +87,10 @@ def capture(root=ROOT):
             # The native shell carries accepted readability facts absent from
             # this XML importer. Physical and equipment facts still come from
             # their canonical definitions and source qualification above.
-            record['semantics']['readable_writeable']=accepted.accepted_first(
-                prior['semantics']['readable_writeable'],record['semantics']['readable_writeable'])
+            refined=accepted.accepted_first(prior['semantics'],record['semantics'])
+            record['semantics']=accepted.accepted_first(definition['semantics'],refined)
+            record['attributes']=accepted.accepted_first(prior['attributes'],record['attributes'])
+            record['authoring']=copy.deepcopy(prior['authoring'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
@@ -136,7 +137,11 @@ def admit(root,generated,profile_path,manifest_path,order,canonical):
                 and prior['attributes'] == {'speed_bonus': 0}
                 and prior['authoring'] == {'item': {'family': 'Item', 'key': key,
                     'revision': record['production_definition']['revision_ref']}})
-            if (not (inert_shell or portable_shell)
+            compatible_provider = (prior['admission']==record['admission']
+                and accepted.accepted_first(prior['semantics'],record['semantics'])==record['semantics']
+                and accepted.accepted_first(prior['attributes'],record['attributes'])==record['attributes']
+                and prior['authoring']==record['authoring'])
+            if (not (inert_shell or portable_shell or compatible_provider)
                     or prior['production_definition'] != record['production_definition']
                     or accepted.accepted_first(prior['semantics'], record['semantics'])
                        != record['semantics']):

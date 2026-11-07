@@ -333,7 +333,7 @@ pub(super) async fn apply(
     if fence.item_fence() != item_fence {
         return rejected();
     }
-    {
+    let actor_conditions = {
         let runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         if states.is_dead(actor)
@@ -359,7 +359,23 @@ pub(super) async fn apply(
         {
             return rejected();
         }
-    }
+        admission
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .and_then(|native| {
+                let state = states.get(&runtime, actor, command.game_session_id)?;
+                crate::durability::reward_claim_mint::QuestActorConditionProof::read_current(
+                    &runtime,
+                    actor,
+                    fence,
+                    CommandRef::new(command.game_session_id, id),
+                    &transition,
+                    native,
+                    state.owned_conditions(),
+                    admission.owner_now().get(),
+                )
+            })
+    };
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -433,8 +449,10 @@ pub(super) async fn apply(
                 native,
                 weights: &weights,
                 fee_payment: fee_payment.as_ref(),
+                actor_conditions: actor_conditions.as_ref(),
                 carried_use: None,
             },
+            &admission.premium_coordinator,
         )
         .await
     } else {

@@ -4,7 +4,7 @@
 use super::*;
 use crate::durability::item_fee_burn_audit::{
     FeeBurnCauseV1, OneItemAreaDonationV1, OneItemCharmUnassignV1, OneItemFeeBurnCauseV1,
-    OneItemImbuementV1, OneItemMarketFeeV1, OneItemNpcPurchaseV1, OneItemTimedRepairV1,
+    OneItemImbuementV1, OneItemMarketFeeV1, OneItemNpcPurchaseV1, OneItemQuestRewardPaymentV1, OneItemTimedRepairV1,
 };
 
 fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
@@ -318,6 +318,20 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
+        // QENGINE2 adds the source-bound payment envelope at tag 18.
+        (
+            18,
+            "QuestRewardPayment",
+            FeeBurnCauseV1::QuestRewardPayment(OneItemQuestRewardPaymentV1 {
+                purchase: Some(OneItemNpcPurchaseV1 {
+                    atelier_proof: vec![0x81, 0x07],
+                    service_key: "oteryn:quest-reward/test".into(),
+                    occurrence: vec![0x81, 0x07],
+                }),
+                fee_gold_units: 5000,
+                include_bank: true,
+            }),
+        ),
         (
             472,
             "HirelingService",
@@ -351,6 +365,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("WriteOnce", include_str!("write_once_wire.hex").trim()),
         ("ForgeFee", "72040a028107"),
         ("QuestAccessPurchase", "7a2e0a286f746572796e3a736572766963652e71756573742e726f7474656e2d626c6f6f642e61636365737312028107"),
+        ("QuestRewardPayment", "9201290a220a186f746572796e3a71756573742d7265776172642f74657374120281071a0281071088271801"),
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
@@ -527,7 +542,7 @@ fn operation_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
 
 #[test]
 fn fee_cause_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
-    // P05 bounty talisman purchase adds only cause tag 13 (exactly 5000 gold).
+    // P05 adds cause 13; QENGINE2 adds the source-bound Quest payment at 18.
     // Keep the golden inventory exact; every admitted tag still needs its wire fixture.
     assert_tag_block(
         include_str!("../../item_fee_burn_audit.rs"),

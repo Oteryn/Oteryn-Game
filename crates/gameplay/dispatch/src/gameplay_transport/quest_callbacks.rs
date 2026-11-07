@@ -630,6 +630,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds source movement trigger and live authority"
+    )]
     async fn movement_quest_callback(
         &self,
         permit: &SpellLanePermit,
@@ -693,7 +697,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() {
+            if selected.is_empty() && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;

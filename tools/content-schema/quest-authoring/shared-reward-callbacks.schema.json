@@ -13,7 +13,7 @@
     },
     "callbacks": {
       "type": "array",
-      "maxItems": 256,
+      "maxItems": 1024,
       "items": {
         "$ref": "#/$defs/callback"
       }
@@ -111,6 +111,12 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 3
+        },
+        "sex": {
+          "enum": [
+            "female",
+            "male"
+          ]
         }
       }
     },
@@ -219,7 +225,7 @@
         },
         "take": {
           "type": "array",
-          "maxItems": 8,
+          "maxItems": 16,
           "items": {
             "$ref": "#/$defs/input"
           }
@@ -276,16 +282,16 @@
             }
           ]
         },
-        "repeatable": {
-          "type": "boolean",
-          "default": false
-        },
         "present": {
           "type": "array",
           "maxItems": 8,
           "items": {
             "$ref": "#/$defs/input"
           }
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": false
         },
         "requires": {
           "type": "array",
@@ -407,6 +413,127 @@
           "items": {
             "type": "string",
             "pattern": "^oteryn:outfit[.][a-z0-9_]+$"
+          }
+        },
+        "requires_premium": {
+          "type": "boolean"
+        },
+        "requires_outfits": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+          }
+        },
+        "requires_actor_conditions": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "fire",
+              "drunk"
+            ]
+          }
+        },
+        "forbids_addons": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "outfit",
+              "addons"
+            ],
+            "properties": {
+              "outfit": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+              },
+              "addons": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "sex": {
+                "enum": [
+                  "female",
+                  "male"
+                ]
+              }
+            }
+          }
+        },
+        "outfits": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/outfit"
+          }
+        },
+        "exact_take": {
+          "type": "boolean"
+        },
+        "achievement_progress": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "target"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^oteryn:achievement/[a-z0-9_]+$",
+                "maxLength": 160
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4294967295
+              }
+            }
+          }
+        },
+        "requires_addons": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "outfit",
+              "addons"
+            ],
+            "properties": {
+              "outfit": {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^oteryn:outfit\\.[a-z0-9_]+$"
+              },
+              "addons": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              },
+              "sex": {
+                "enum": [
+                  "female",
+                  "male"
+                ]
+              }
+            }
           }
         }
       }

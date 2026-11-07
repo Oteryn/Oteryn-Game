@@ -779,6 +779,12 @@ async fn troll(
     use super::questl2_journeys::quantity;
     use oteryn_protocol_oteryn::world_spatial::StepDirection::{East, North, South, West};
     const TRACK: &str = "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline";
+    // The source jump requires real movement speed as well as worn boots.
+    // Earn an ordinary character level; never seed quest progress or its timer.
+    let authority=owner.character;
+    super::super::qengine_outfit_stories::earn_level(owner,admitted,authority,100).await?;
+    owner.refresh_quest_session(admitted.game_session_id,false).await;
+
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let start = all
         .iter()
@@ -882,16 +888,23 @@ async fn troll(
     refused_step(owner, admitted, North).await?;
     step(owner, admitted, South).await?;
     step(owner, admitted, South).await?;
-    for _ in 0..3 {
-        step(owner, admitted, North).await?;
+    owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_millis(600)).ok_or("paced clock")?;
+    let first=admitted.continuity.next_command_id;
+    let commands=(0..3).map(|n|(first+n,1,
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(North))).collect();
+    let results=super::super::quest_world_callbacks::wire_sequence(owner,admitted,commands).await?;
+    assert_eq!(results.len(),3);
+    for result in results {
+        assert_eq!(oteryn_protocol_oteryn::world_spatial::decode_step_result(&result).map_err(debug)?,
+            oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
     }
+    let jump_clock: Option<(i64,i64)> = sqlx::query_as(
+        "SELECT value,floor(extract(epoch FROM now()))::bigint FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer'"
+    ).fetch_optional(&h.pool).await?;
     assert_eq!(
         at(owner, admitted).await?,
-        Position {
-            x: 33231,
-            y: 31759,
-            floor: -2
-        }
+        Position { x: 33231, y: 31759, floor: -2 },
+        "native fresh jump; timer/current PostgreSQL seconds={jump_clock:?}"
     );
     for _ in 0..4 {
         step(owner, admitted, North).await?;

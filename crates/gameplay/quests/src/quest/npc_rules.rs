@@ -380,10 +380,11 @@ impl NpcRuleCatalog {
                     || (definition.initial != track.initial
                         && !(definition.initial == 0
                             && track.initial == -1
-                            && native
-                                .npc_legacy
-                                .get(&track.quest)
-                                .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
+                            && native.npc_legacy.get(&track.quest).is_some_and(|versions| {
+                                versions
+                                    .iter()
+                                    .any(|(_, defaults)| defaults.get(&track.key) == Some(&0))
+                            })))
                     || definition.min > track.min
                     || definition.max < track.max
                 {
@@ -531,6 +532,48 @@ impl NpcRuleCatalog {
     }
 }
 
+/// Capture only exact source-qualified legacy definitions, never wildcard hashes.
+pub(super) fn capture_legacy_definitions(
+    catalogue: &super::QuestStateCatalogue,
+) -> Result<super::NpcLegacyDefinitions, String> {
+    let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
+    let mut definitions = BTreeMap::new();
+    for program in source.programs() {
+        let quest = &program.document.quest;
+        if quest != "oteryn:quest.the_order_of_the_stag_quest"
+            && let Some(hash) = catalogue.definition_hash(quest)
+        {
+            let defaults = catalogue
+                .tracks
+                .values()
+                .filter(|track| &track.quest == quest)
+                .map(|track| (track.key.clone(), track.initial))
+                .collect();
+            definitions.insert(quest.clone(), vec![(hash, defaults)]);
+        }
+    }
+    Ok(definitions)
+}
+
+pub(super) fn merge_legacy_definitions(
+    into: &mut super::NpcLegacyDefinitions,
+    additions: super::NpcLegacyDefinitions,
+) -> Result<(), String> {
+    for (quest, versions) in additions {
+        let known = into.entry(quest).or_default();
+        for (hash, defaults) in versions {
+            if let Some((_, existing)) = known.iter().find(|(key, _)| key == &hash) {
+                if existing != &defaults {
+                    return Err("conflicting legacy absent-track defaults".into());
+                }
+            } else {
+                known.push((hash, defaults));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Refine only original source-qualified tracks; preserve every wider native bound.
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
@@ -538,25 +581,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let source = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
     let mut legacy = catalogue.npc_legacy.clone();
-    for program in source.programs() {
-        let quest = &program.document.quest;
-        if quest != "oteryn:quest.the_order_of_the_stag_quest"
-            && let Some(hash) = catalogue.definition_hash(quest)
-        {
-            legacy.insert(
-                quest.clone(),
-                (
-                    hash,
-                    catalogue
-                        .tracks
-                        .values()
-                        .filter(|track| &track.quest == quest)
-                        .map(|track| (track.key.clone(), track.initial))
-                        .collect(),
-                ),
-            );
-        }
-    }
+    merge_legacy_definitions(&mut legacy, capture_legacy_definitions(&catalogue)?)?;
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
     for program in source.programs() {
@@ -643,7 +668,7 @@ pub fn legacy_defaults<'a>(
     catalogue
         .npc_legacy
         .get(quest)
-        .filter(|(hash, _)| hash == stored_hash)
+        .and_then(|versions| versions.iter().find(|(hash, _)| hash == stored_hash))
         .map(|(_, defaults)| defaults)
 }
 

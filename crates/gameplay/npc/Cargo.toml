@@ -13,6 +13,7 @@ release-role = "production"
 
 [dependencies]
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
+oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-economy = { version = "=0.1.0", path = "../economy" }
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }

@@ -197,6 +197,7 @@ class QuestCallbackProfiles(unittest.TestCase):
         # Complete charged/fluid/key/text recipes add thirty identities to the
         # original 130-Item closure, including the fixed Holy Icon entitlement.
         self.assertEqual(len(expected), 160)
+        self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

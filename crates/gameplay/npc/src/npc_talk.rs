@@ -69,7 +69,11 @@ fn reward_callback_npc(key: &str) -> bool {
     NPCS.get_or_init(|| {
         serde_json::from_str::<Document>(REWARD_CALLBACKS)
             .ok()
-            .filter(|d| d.schema == 1 && d.callbacks.len() <= 256)
+            .filter(|d| {
+                d.schema == 1
+                    && d.callbacks.len()
+                        <= oteryn_gameplay_quests::quest::reward_callbacks::MAX_CALLBACKS
+            })
             .map(|d| d.callbacks.into_iter().map(|c| c.npc).collect())
             .unwrap_or_default()
     })
@@ -720,7 +724,15 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+        for name in [
+            "morgan",
+            "navigator",
+            "costello",
+            "budrik",
+            "sam",
+            "rabaz",
+            "the_bone_master",
+        ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
                 .get(&key)

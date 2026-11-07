@@ -626,7 +626,9 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .programs()
     {
         let quest = &program.document.quest;
-        if let Some((hash, defaults)) = active.npc_legacy.get(quest) {
+        if let Some(versions) = active.npc_legacy.get(quest) {
+            assert_eq!(versions.len(), 1);
+            let (hash, defaults) = &versions[0];
             assert_eq!(Some(*hash), old.catalogue().definition_hash(quest));
             assert_ne!(Some(*hash), active.definition_hash(quest));
             assert_eq!(legacy_defaults(&active, quest, hash), Some(defaults));
@@ -677,6 +679,24 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+    for quest in active.npc_legacy.keys() {
+        let hash = old
+            .catalogue()
+            .definition_hash(quest)
+            .ok_or("original hash")?;
+        let defaults =
+            legacy_defaults(loaded.catalogue(), quest, &hash).ok_or("source legacy defaults")?;
+        for track in old
+            .catalogue()
+            .tracks
+            .values()
+            .filter(|track| &track.quest == quest)
+        {
+            assert_eq!(defaults.get(&track.key), Some(&track.initial));
+        }
+        assert!(legacy_defaults(loaded.catalogue(), quest, &[0; 32]).is_none());
+    }
+
     Ok(())
 }
 

@@ -1,3 +1,6 @@
+-- L2 forward additions absent from canonical main 0999-1008.
+-- Preserve existing earned-value proofs; no canonical QENGINE tables are copied.
+
 -- QUEST-FINISH: source-resolved fluid rewards use the existing fluid state
 -- owner and once-claim transaction, never a synthetic item or a later fill.
 -- Crystal201189f data-global/startup/tables/chest.lua:1499-1506 (milk vial),
@@ -436,3 +439,301 @@ $$;
 REVOKE ALL ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA) TO oteryn_game_control;
+
+
+-- QUESTPC: Crystal201189f8 items.xml:87366-84. The approved native30
+-- projection preserves the donor's source48 fact in the authoring overlay.
+-- Reuse the original MINT, temporal-chain and corpse-retirement owners.
+-- Preserve their current guards; extend only this closed source policy.
+DO $$
+DECLARE body TEXT; old TEXT; replacement TEXT;
+BEGIN
+ -- The DO block is atomic; an installed chain marks the complete policy.
+ IF game_summer_corpse_chain('oteryn:item.tibia.i52113')=ARRAY[52113,52114,52115,52116] THEN
+  RETURN;
+ END IF;
+ SELECT pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure) INTO STRICT body;
+ old := 'WHEN ''oteryn:item.tibia.i54678'' THEN ARRAY[54678,54679,54680,54681]';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse chain changed; review migration'; END IF;
+ EXECUTE replace(body,old,'WHEN ''oteryn:item.tibia.i52113'' THEN ARRAY[52113,52114,52115,52116] '||old);
+
+ SELECT pg_get_functiondef('game_summer_corpse_schedule()'::regprocedure) INTO STRICT body;
+ old := 'CASE WHEN stage=1 THEN 10000 ELSE 300000 END';
+ replacement := 'CASE WHEN chain[1]=52113 THEN CASE WHEN stage=3 THEN 10000 ELSE 600000 END ELSE '||old||' END';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse schedule duration changed; review migration'; END IF;
+ body := replace(body,old,replacement);
+ old := 'CASE stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END';
+ replacement := 'CASE WHEN chain[1]=52113 THEN CASE stage WHEN 1 THEN 600000 WHEN 2 THEN 1200000 ELSE 1210000 END ELSE '||old||' END';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse schedule deadline changed; review migration'; END IF;
+ EXECUTE replace(body,old,replacement);
+
+ SELECT pg_get_functiondef('game_spell_field_temporal_schedule_proven()'::regprocedure) INTO STRICT body;
+ old := 'CASE WHEN NEW.source_stage=1 THEN 10000 ELSE 300000 END';
+ replacement := 'CASE WHEN chain[1]=52113 THEN CASE WHEN NEW.source_stage=3 THEN 10000 ELSE 600000 END ELSE '||old||' END';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse proof duration changed; review migration'; END IF;
+ body := replace(body,old,replacement);
+ old := 'CASE NEW.source_stage WHEN 1 THEN 10000 WHEN 2 THEN 310000 ELSE 610000 END';
+ replacement := 'CASE WHEN chain[1]=52113 THEN CASE NEW.source_stage WHEN 1 THEN 600000 WHEN 2 THEN 1200000 ELSE 1210000 END ELSE '||old||' END';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse proof deadline changed; review migration'; END IF;
+ EXECUTE replace(body,old,replacement);
+
+ SELECT pg_get_functiondef('game_corpse_retirement_deadline(uuid)'::regprocedure) INTO STRICT body;
+ old := 'ELSE 670000 END';
+ replacement := 'WHEN EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules p WHERE p.item_instance_id=p_item AND p.source_ordinal=0 AND p.source_stage=1 AND p.definition_production_key=''oteryn:item.tibia.i52113'') THEN 1810000 ELSE 670000 END';
+ IF position(old IN body)=0 THEN RAISE EXCEPTION 'corpse retirement policy changed; review migration'; END IF;
+ EXECUTE replace(body,old,replacement);
+END $$;
+
+
+-- Current TibiaWiki Lost Wisdom reward, retaining Crystal's mission/yes flow.
+-- Forward rollback: disable Viola's adapter; retain earned state and receipts.
+CREATE TABLE game_character_viola (
+ character_id UUID PRIMARY KEY REFERENCES game_character_roots(character_id),
+ stage SMALLINT NOT NULL CHECK(stage IN (1,2))
+);
+CREATE TABLE game_viola_receipts (
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ game_session_id UUID NOT NULL,
+ command_id NUMERIC(20,0) NOT NULL CHECK(command_id>0),
+ action SMALLINT NOT NULL CHECK(action IN (1,2)),
+ reply SMALLINT NOT NULL CHECK(reply BETWEEN 0 AND 6),
+ craft_transaction_id UUID UNIQUE REFERENCES game_item_craft_records(transaction_id),
+ xp_occurrence_id UUID UNIQUE REFERENCES game_character_xp_receipts(reward_occurrence_id),
+ created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+ PRIMARY KEY(character_id,game_session_id,command_id),
+ CHECK((reply=3)=(craft_transaction_id IS NOT NULL AND xp_occurrence_id IS NOT NULL)),
+ CHECK(reply=3 OR (craft_transaction_id IS NULL AND xp_occurrence_id IS NULL))
+);
+CREATE UNIQUE INDEX game_viola_once ON game_viola_receipts(character_id) WHERE reply=3;
+CREATE INDEX game_viola_receipts_session ON game_viola_receipts(game_session_id);
+REVOKE ALL ON game_character_viola,game_viola_receipts FROM PUBLIC;
+GRANT SELECT,INSERT,UPDATE ON game_character_viola TO oteryn_game_runtime;
+GRANT SELECT,INSERT ON game_viola_receipts TO oteryn_game_runtime;
+GRANT SELECT ON game_character_viola,game_viola_receipts TO oteryn_game_control;
+CREATE FUNCTION game_viola_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE r game_item_craft_records%ROWTYPE; x game_character_xp_receipts%ROWTYPE;
+BEGIN
+ IF NEW.reply=3 THEN
+  SELECT * INTO r FROM game_item_craft_records WHERE transaction_id=NEW.craft_transaction_id;
+  SELECT * INTO x FROM game_character_xp_receipts WHERE reward_occurrence_id=NEW.xp_occurrence_id;
+  IF r.created_xact_id IS DISTINCT FROM pg_current_xact_id() OR NEW.created_xact_id IS DISTINCT FROM pg_current_xact_id()
+    OR r.character_id IS DISTINCT FROM NEW.character_id
+    OR r.game_session_id IS DISTINCT FROM NEW.game_session_id OR r.command_id IS DISTINCT FROM NEW.command_id
+    OR r.recipe IS DISTINCT FROM 'oteryn:npc-handoff.viola'
+    OR r.before_item->>'definition_production_key' IS DISTINCT FROM 'oteryn:item.tibia.i51977'
+    OR jsonb_array_length(r.outputs) IS DISTINCT FROM 1
+    OR r.outputs->0->>'key' IS DISTINCT FROM 'oteryn:item.tibia.i3572'
+    OR (r.outputs->0->>'count')::int IS DISTINCT FROM 1
+    OR NOT EXISTS(SELECT 1 FROM game_character_xp_receipts WHERE reward_occurrence_id=NEW.xp_occurrence_id AND xmin=pg_current_xact_id()::xid)
+    OR x.character_id IS DISTINCT FROM NEW.character_id OR x.experience_awarded IS DISTINCT FROM 800
+    OR NOT EXISTS(SELECT 1 FROM game_character_viola WHERE character_id=NEW.character_id AND stage=2)
+  THEN RAISE EXCEPTION 'Viola requires atomic book hand-in, scarf and 800 XP' USING ERRCODE='23514'; END IF;
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_viola_complete AFTER INSERT ON game_viola_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_viola_complete();
+CREATE TRIGGER game_viola_receipt_immutable BEFORE UPDATE OR DELETE ON game_viola_receipts FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_viola_receipt_no_truncate BEFORE TRUNCATE ON game_viola_receipts FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+
+-- Do not let the general item exchange owner acquire Viola completion authority alone.
+CREATE FUNCTION game_viola_handoff_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.recipe='oteryn:npc-handoff.viola' AND NOT EXISTS(
+   SELECT 1 FROM game_viola_receipts WHERE craft_transaction_id=NEW.transaction_id
+    AND reply=3 AND created_xact_id=pg_current_xact_id())
+ THEN RAISE EXCEPTION 'Viola handoff lacks its atomic completion receipt' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_viola_handoff_proven AFTER INSERT ON game_item_craft_records DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_viola_handoff_proven();
+CREATE FUNCTION game_viola_state_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF (TG_OP='INSERT' AND NEW.stage<>1) OR
+    (TG_OP='UPDATE' AND (NEW.character_id IS DISTINCT FROM OLD.character_id OR OLD.stage<>1 OR NEW.stage<>2))
+ THEN RAISE EXCEPTION 'invalid Viola quest successor' USING ERRCODE='23514'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_viola_state_guard BEFORE INSERT OR UPDATE ON game_character_viola FOR EACH ROW EXECUTE FUNCTION game_viola_state_guard();
+CREATE FUNCTION game_viola_state_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_viola_receipts WHERE character_id=NEW.character_id
+   AND created_xact_id=pg_current_xact_id() AND reply=CASE NEW.stage WHEN 1 THEN 1 ELSE 3 END)
+ THEN RAISE EXCEPTION 'Viola quest state requires its same-transaction receipt' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_viola_state_proven AFTER INSERT OR UPDATE ON game_character_viola DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_viola_state_proven();
+CREATE TRIGGER game_viola_state_no_truncate BEFORE TRUNCATE ON game_character_viola FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+
+-- Reuse the carried-tree proof of the consume/mint owner for a nested book.
+-- Preserve its existing W19 constraint and add only this exact NPC handoff.
+DO $migration$
+DECLARE previous TEXT;
+BEGIN
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
+  WHERE conrelid='game_item_craft_records'::regclass AND conname='game_item_craft_event_source_location_check';
+ ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_event_source_location_check;
+ EXECUTE format('ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_event_source_location_check CHECK ((%s) OR (recipe=''oteryn:npc-handoff.viola'' AND consume_source AND before_item->>''definition_production_key''=''oteryn:item.tibia.i51977'' AND jsonb_typeof(event_source_location)=''object'' AND octet_length(event_source_location::text) BETWEEN 2 AND 4096 AND event_source_location ?& ARRAY[''item_instance_id'',''parent_item_instance_id'',''world_id'',''placement_ordinal'',''placed_transaction_id'']))',previous);
+END $migration$;
+
+DO $$
+DECLARE signature TEXT;
+BEGIN
+ FOREACH signature IN ARRAY ARRAY['game_viola_complete()','game_viola_handoff_proven()','game_viola_state_guard()','game_viola_state_proven()'] LOOP
+  EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp',signature,current_schema());
+ END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION game_viola_complete(),game_viola_handoff_proven(),game_viola_state_guard(),game_viola_state_proven() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_viola_complete(),game_viola_handoff_proven(),game_viola_state_guard(),game_viola_state_proven() TO oteryn_game_runtime;
+
+
+-- Current TibiaWiki Book of Wisdom (51977): one per character per 300 seconds.
+-- Forward rollback disables the literal USE adapter; earned items/receipts remain.
+CREATE TABLE game_character_viola_book_cycles (
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ cycle BIGINT NOT NULL CHECK(cycle>0),
+ claimed_at BIGINT NOT NULL,
+ transaction_id UUID NOT NULL UNIQUE REFERENCES game_reward_claim_mint_receipts(transaction_id),
+ PRIMARY KEY(character_id,cycle)
+);
+REVOKE ALL ON game_character_viola_book_cycles FROM PUBLIC;
+GRANT SELECT,INSERT ON game_character_viola_book_cycles TO oteryn_game_runtime;
+GRANT SELECT ON game_character_viola_book_cycles TO oteryn_game_control;
+CREATE FUNCTION game_viola_book_now_ms() RETURNS BIGINT LANGUAGE SQL VOLATILE AS $$
+ SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint
+$$;
+CREATE FUNCTION game_viola_book_cycle_guard() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE previous_cycle BIGINT; previous_time BIGINT;
+BEGIN
+ PERFORM 1 FROM game_character_roots WHERE character_id=NEW.character_id FOR UPDATE;
+ SELECT cycle,claimed_at INTO previous_cycle,previous_time
+ FROM game_character_viola_book_cycles WHERE character_id=NEW.character_id ORDER BY cycle DESC LIMIT 1;
+ IF NEW.cycle<>COALESCE(previous_cycle,0)+1
+    OR NEW.claimed_at NOT BETWEEN game_viola_book_now_ms()-10000 AND game_viola_book_now_ms()
+    OR (previous_time IS NOT NULL AND NEW.claimed_at::numeric<previous_time::numeric+300000)
+    OR NOT EXISTS(SELECT 1 FROM game_reward_claim_mint_receipts r
+      JOIN game_item_instances i ON i.item_instance_id=r.item_instance_id
+      WHERE r.transaction_id=NEW.transaction_id AND r.character_id=NEW.character_id
+       AND r.claim_family='RewardClaim'
+       AND r.claim_production_key='oteryn:reward-claim.tutorial.viola-book:cycle:'||NEW.cycle::text
+       AND r.claim_revision_ref='reward-claim-r1' AND r.quantity=1
+       AND i.definition_family='Item' AND i.definition_production_key='oteryn:item.tibia.i51977'
+       AND i.definition_revision_ref='definition-r1'
+       AND r.occurred_at=NEW.claimed_at AND r.created_xact_id=pg_current_xact_id())
+ THEN RAISE EXCEPTION 'Book of Wisdom requires its atomic repeat-eligible mint' USING ERRCODE='23514'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_viola_book_cycle_guard BEFORE INSERT ON game_character_viola_book_cycles
+ FOR EACH ROW EXECUTE FUNCTION game_viola_book_cycle_guard();
+CREATE TRIGGER game_viola_book_cycle_immutable BEFORE UPDATE OR DELETE ON game_character_viola_book_cycles
+ FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_viola_book_cycle_no_truncate BEFORE TRUNCATE ON game_character_viola_book_cycles
+ FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+CREATE FUNCTION game_viola_book_receipt_guard() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+ IF starts_with(NEW.claim_production_key,'oteryn:reward-claim.tutorial.viola-book') AND NOT EXISTS(
+   SELECT 1 FROM game_character_viola_book_cycles c WHERE c.transaction_id=NEW.transaction_id
+    AND c.character_id=NEW.character_id AND c.claimed_at=NEW.occurred_at
+    AND NEW.claim_family='RewardClaim'
+    AND NEW.claim_production_key='oteryn:reward-claim.tutorial.viola-book:cycle:'||c.cycle::text)
+ THEN RAISE EXCEPTION 'Book of Wisdom mint lacks its repeat receipt' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_viola_book_receipt_guard AFTER INSERT ON game_reward_claim_mint_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_viola_book_receipt_guard();
+DO $$
+DECLARE signature TEXT;
+BEGIN
+ FOREACH signature IN ARRAY ARRAY['game_viola_book_now_ms()','game_viola_book_cycle_guard()','game_viola_book_receipt_guard()'] LOOP
+  EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp',signature,current_schema());
+ END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION game_viola_book_now_ms(),game_viola_book_cycle_guard(),game_viola_book_receipt_guard() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_viola_book_now_ms(),game_viola_book_cycle_guard(),game_viola_book_receipt_guard() TO oteryn_game_runtime;
+GRANT EXECUTE ON FUNCTION game_viola_book_now_ms() TO oteryn_game_control;
+
+
+-- Tereban's eight material debits and final cape are bound to the existing
+-- source NPC quest receipt and recoverable quest-XP obligation in one transaction.
+-- Rollback disables these NPC branches; immutable earned receipts remain.
+DO $migration$
+DECLARE previous TEXT;
+BEGIN
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
+ WHERE conrelid='game_item_craft_records'::regclass AND conname='game_item_craft_records_outputs_check';
+ ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_records_outputs_check;
+ EXECUTE format('ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_records_outputs_check CHECK ((%s) OR (consume_source AND recipe=''oteryn:npc-handoff.father-material'' AND jsonb_typeof(outputs)=''array'' AND jsonb_array_length(outputs)=0 AND before_item->>''definition_production_key'' IN (''oteryn:item.tibia.i11545'',''oteryn:item.tibia.i11546'',''oteryn:item.tibia.i11547'',''oteryn:item.tibia.i11548'',''oteryn:item.tibia.i11549'',''oteryn:item.tibia.i11550'',''oteryn:item.tibia.i11551'',''oteryn:item.tibia.i11552'')))',previous);
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT previous FROM pg_constraint
+ WHERE conrelid='game_item_craft_records'::regclass AND conname='game_item_craft_event_source_location_check';
+ ALTER TABLE game_item_craft_records DROP CONSTRAINT game_item_craft_event_source_location_check;
+ EXECUTE format('ALTER TABLE game_item_craft_records ADD CONSTRAINT game_item_craft_event_source_location_check CHECK ((%s) OR (consume_source AND recipe=''oteryn:npc-handoff.father-material'' AND before_item->>''definition_production_key'' IN (''oteryn:item.tibia.i11545'',''oteryn:item.tibia.i11546'',''oteryn:item.tibia.i11547'',''oteryn:item.tibia.i11548'',''oteryn:item.tibia.i11549'',''oteryn:item.tibia.i11550'',''oteryn:item.tibia.i11551'',''oteryn:item.tibia.i11552'') AND jsonb_typeof(event_source_location)=''object'' AND octet_length(event_source_location::text) BETWEEN 2 AND 4096 AND event_source_location ?& ARRAY[''item_instance_id'',''parent_item_instance_id'',''world_id'',''placement_ordinal'',''placed_transaction_id'']))',previous);
+END $migration$;
+
+CREATE FUNCTION game_father_values_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE q game_character_quest_receipts%ROWTYPE; craft game_item_craft_records%ROWTYPE;
+        cape game_reward_claim_mint_receipts%ROWTYPE; material TEXT; expected_track TEXT; expected_rule TEXT; expected_xp BIGINT;
+BEGIN
+ IF TG_TABLE_NAME='game_character_quest_receipts' THEN q:=NEW;
+ ELSIF TG_TABLE_NAME='game_item_craft_records' THEN
+  IF NEW.recipe<>'oteryn:npc-handoff.father-material' THEN RETURN NULL; END IF;
+  SELECT * INTO q FROM game_character_quest_receipts WHERE character_id=NEW.character_id
+   AND cause_id=NEW.game_session_id AND cause_ordinal=NEW.command_id AND quest_key='oteryn:quest.a_father_s_burden_quest';
+ ELSE
+  SELECT * INTO q FROM game_character_quest_receipts WHERE character_id=NEW.character_id
+   AND cause_id=NEW.game_session_id AND cause_ordinal=NEW.command_id AND transition_key='oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete';
+ END IF;
+ IF q.quest_key IS DISTINCT FROM 'oteryn:quest.a_father_s_burden_quest'
+  OR q.cause_kind IS DISTINCT FROM 'command' OR q.created_xact_id IS DISTINCT FROM pg_current_xact_id()
+ THEN RAISE EXCEPTION 'Father values require their atomic NPC receipt' USING ERRCODE='23514'; END IF;
+ IF q.transition_key='oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete' THEN
+  SELECT * INTO cape FROM game_reward_claim_mint_receipts WHERE character_id=q.character_id
+   AND claim_family='RewardClaim' AND claim_production_key='oteryn:reward-claim.npc.tereban.old_cape'
+   AND game_session_id=q.cause_id AND command_id=q.cause_ordinal;
+  IF cape.created_xact_id IS DISTINCT FROM pg_current_xact_id()
+   OR q.track_keys IS DISTINCT FROM ARRAY['oteryn:quest-progress/quest/u8_6/afathers_burden/status']::text[]
+   OR q.values_before IS DISTINCT FROM ARRAY[1]::bigint[] OR q.values_after IS DISTINCT FROM ARRAY[2]::bigint[]
+   OR NOT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=q.character_id
+    AND track_key='oteryn:quest-progress/quest/u8_6/afathers_burden/progress' AND value=8)
+  THEN RAISE EXCEPTION 'Father completion requires eight hand-ins and one cape' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=cape.item_instance_id AND definition_family='Item' AND definition_production_key='oteryn:item.tibia.i11701' AND quantity=1 AND lifecycle=1 AND minted_transaction_id=cape.transaction_id) THEN RAISE EXCEPTION 'Father requires the exact fresh cape' USING ERRCODE='23514'; END IF;
+  expected_xp:=8000;
+ ELSE
+  SELECT * INTO craft FROM game_item_craft_records WHERE character_id=q.character_id AND game_session_id=q.cause_id
+   AND command_id=q.cause_ordinal AND recipe='oteryn:npc-handoff.father-material';
+  material:=craft.before_item->>'definition_production_key';
+  SELECT track,rule INTO expected_track,expected_rule FROM (VALUES
+   ('oteryn:item.tibia.i11548','sinew','strong-sinew-deliver'),('oteryn:item.tibia.i11547','wood','exquisite-wood-deliver'),
+   ('oteryn:item.tibia.i11546','cloth','spectral-cloth-deliver'),('oteryn:item.tibia.i11545','silk','exquisite-silk-deliver'),
+   ('oteryn:item.tibia.i11552','crystal','magic-crystal-deliver'),('oteryn:item.tibia.i11551','root','mystic-root-deliver'),
+   ('oteryn:item.tibia.i11549','iron','old-iron-deliver'),('oteryn:item.tibia.i11550','scale','flexible-dragon-scale-deliver')) v(item,track,rule)
+   WHERE item=material;
+  IF craft.created_xact_id IS DISTINCT FROM pg_current_xact_id() OR expected_track IS NULL
+   OR q.transition_key IS DISTINCT FROM 'oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/'||expected_rule
+   OR cardinality(q.track_keys)<>2 OR NOT craft.consume_source OR craft.outputs IS DISTINCT FROM '[]'::jsonb
+   OR array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/'||expected_track) IS NULL
+   OR array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress') IS NULL
+   OR q.values_before[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/'||expected_track)] IS DISTINCT FROM 1
+   OR q.values_after[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/'||expected_track)] IS DISTINCT FROM 2
+   OR q.values_before[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress')] NOT BETWEEN 0 AND 7
+   OR q.values_after[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress')]
+    IS DISTINCT FROM q.values_before[array_position(q.track_keys,'oteryn:quest-progress/quest/u8_6/afathers_burden/progress')]+1
+  THEN RAISE EXCEPTION 'Father hand-in requires its exact material and progress' USING ERRCODE='23514'; END IF;
+  PERFORM game_item_craft_complete(craft.transaction_id);
+  expected_xp:=2500;
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM game_character_quest_xp_obligations x WHERE x.character_id=q.character_id
+  AND x.cause_id=q.cause_id AND x.cause_ordinal=q.cause_ordinal AND x.transition_key=q.transition_key
+  AND x.amount=expected_xp AND x.xmin=pg_current_xact_id()::xid)
+ THEN RAISE EXCEPTION 'Father values require their atomic quest XP obligation' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_father_npc_values AFTER INSERT ON game_character_quest_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.quest_key='oteryn:quest.a_father_s_burden_quest'
+ AND (NEW.transition_key LIKE '%-deliver' OR NEW.transition_key='oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete'))
+ EXECUTE FUNCTION game_father_values_proven();
+CREATE CONSTRAINT TRIGGER game_father_material_values AFTER INSERT ON game_item_craft_records
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_father_values_proven();
+CREATE CONSTRAINT TRIGGER game_father_cape_values AFTER INSERT ON game_reward_claim_mint_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.claim_family='RewardClaim' AND NEW.claim_production_key='oteryn:reward-claim.npc.tereban.old_cape')
+ EXECUTE FUNCTION game_father_values_proven();
+DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_father_values_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema()); END $$;
+REVOKE ALL ON FUNCTION game_father_values_proven() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_father_values_proven() TO oteryn_game_runtime;

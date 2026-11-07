@@ -628,61 +628,71 @@ pub(super) async fn wire(
     kind: u32,
     payload: Vec<u8>,
 ) -> TestResult<Vec<u8>> {
+    wire_sequence(owner,admitted,vec![(id,kind,payload)]).await?
+        .pop().ok_or_else(||"no command result".into())
+}
+
+/// Real commands on one admitted connection, with native pacing and a result
+/// before the next command. Timed journeys must not reconnect for each footstep.
+pub(super) async fn wire_sequence(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: Vec<(u64,u32,Vec<u8>)>,
+) -> TestResult<Vec<Vec<u8>>> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let frame = oteryn_protocol_oteryn::encode_client_command(
-        1,
-        &oteryn_protocol_oteryn::ClientCommandValue {
-            command_id: id,
-            command_type: kind,
-            payload: &payload,
-        },
-    )
-    .map_err(debug)?;
-    let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client
-        .write_all(&u32::try_from(frame.len())?.to_be_bytes())
-        .await?;
-    client.write_all(&frame).await?;
-    // Keep the transport alive while a paced command is buffered. Closing its write half
-    // before the result correctly disconnects a real client before the queued step runs.
-    let receiving = async move {
-        let mut result = None;
-        loop {
-            let mut prefix = [0; 4];
-            match client.read_exact(&mut prefix).await {
-                Ok(_) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => break,
-                Err(error) => return Err(error.into()),
+    use tokio::io::{AsyncReadExt,AsyncWriteExt};
+    assert!(!commands.is_empty() && commands.len()<=16);
+    let generation=admitted.continuity.connection_generation;
+    let mut frames=Vec::new();
+    for (id,kind,payload) in commands {
+        frames.push((id,oteryn_protocol_oteryn::encode_client_command(generation,
+            &oteryn_protocol_oteryn::ClientCommandValue {command_id:id,command_type:kind,payload:&payload})
+            .map_err(debug)?));
+    }
+    let (mut server,mut client)=tokio::io::duplex(1<<20);
+    let reader=tokio::spawn(async move {
+        let receiving=async {
+            let mut results=Vec::new();
+            for (id,frame) in frames {
+                client.write_all(&u32::try_from(frame.len())?.to_be_bytes()).await?;
+                client.write_all(&frame).await?;
+                loop {
+                    let mut prefix=[0;4];client.read_exact(&mut prefix).await?;
+                    let mut bytes=vec![0;u32::from_be_bytes(prefix) as usize];
+                    client.read_exact(&mut bytes).await?;
+                    let envelope=decode_wire_envelope(&bytes).map_err(debug)?;
+                    if envelope.message_type()==MessageType::CommandResult {
+                        let command=oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+                        assert_eq!(command.command_id,id);
+                        results.push(command.payload.to_vec());break;
+                    }
+                }
             }
-            let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
-            client.read_exact(&mut frame).await?;
-            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let command = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
-                    .map_err(debug)?;
-                assert_eq!(command.command_id, id);
-                result = Some(command.payload.to_vec());
-                client.shutdown().await?;
+            client.shutdown().await?;
+            loop {
+                let mut prefix=[0;4];
+                match client.read_exact(&mut prefix).await {
+                    Ok(_)=>{},
+                    Err(error) if error.kind()==std::io::ErrorKind::UnexpectedEof=>break,
+                    Err(error)=>return Err(error.into()),
+                }
+                let mut bytes=vec![0;u32::from_be_bytes(prefix) as usize];
+                client.read_exact(&mut bytes).await?;
+                let envelope=decode_wire_envelope(&bytes).map_err(debug)?;
+                assert_ne!(envelope.message_type(),MessageType::CommandResult,"unexpected extra result");
             }
-        }
-        result.ok_or_else(|| "no command result".into())
-    };
-    let reader = tokio::spawn(async move {
-        let result: TestResult<_> = receiving.await;
-        result.map_err(|error| error.to_string())
+            Ok(results)
+        };
+        let result:TestResult<Vec<Vec<u8>>>=receiving.await;
+        result.map_err(|error|error.to_string())
     });
-    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
-    if let ConnectionEnd::AdmittedThenClosed(_, error) = &end {
-        eprintln!("quest wire command={id} type={kind} closed={error:?}");
+    let end=serve_admitted(&mut server,*admitted,owner,IDLE_LIVENESS).await;
+    if let ConnectionEnd::AdmittedThenClosed(_,error)=&end {
+        eprintln!("quest wire sequence closed={error:?}");
     }
     drop(server);
-    let result = reader.await?.map_err(Into::into);
-    if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
-        end
-    {
-        *admitted = a;
-    }
+    let result=reader.await?.map_err(Into::into);
+    if let ConnectionEnd::AdmittedThenDisconnected(a)|ConnectionEnd::AdmittedThenClosed(a,_)=end {*admitted=a;}
     result
 }
 

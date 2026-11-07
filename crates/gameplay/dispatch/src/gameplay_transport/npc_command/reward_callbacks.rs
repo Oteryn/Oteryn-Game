@@ -100,10 +100,11 @@ pub(super) fn prepare(
             };
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
-                    catalogue.track(&s.track).is_some_and(|definition| {
-                        (s.minimum..=s.maximum)
-                            .contains(&tracks.get(&s.track).copied().unwrap_or(definition.initial))
-                    })
+                    tracks
+                        .get(&s.track)
+                        .copied()
+                        .or_else(|| catalogue.track(&s.track).map(|track| track.initial))
+                        .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
             let mut selected = callbacks.iter().filter(|c| {
@@ -145,26 +146,45 @@ pub(super) fn prepare(
                     reply: callback.reply.clone(),
                 });
             }
-            let offer = offers.offers.iter().find(|c| {
+            if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
                     && (c.any_topic || c.topic == topic.number)
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-            })?;
-            if !meets_level(offer.minimum_level) {
+            }) {
                 conclusion = (offer.close_after, Vec::new());
-                return (!offer.failure_reply.is_empty()).then(|| Choice {
+                if !meets_level(offer.minimum_level) {
+                    return (!offer.failure_reply.is_empty()).then(|| Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(0)),
+                        reply: offer.failure_reply.clone(),
+                    });
+                }
+                return Some(Choice {
                     transition: None,
-                    next_topic: Some(Topic::from(0)),
-                    reply: offer.failure_reply.clone(),
+                    next_topic: Some(Topic::from(offer.next_topic)),
+                    reply: offer.reply.clone(),
                 });
             }
-            conclusion = (offer.close_after, Vec::new());
+            // A unique exchange owns its exact keyword even before eligibility.
+            // Let the locked writer return the stage refusal, rather than falling
+            // through to an unrelated legacy dialogue with the same text.
+            let mut matching = callbacks.iter().filter(|c| {
+                c.carried_item.is_none()
+                    && c.npc == context.2
+                    && c.topic == topic.number
+                    && c.keywords.contains(&text)
+            });
+            let callback = matching.next()?;
+            conclusion = (callback.close_after, callback.failure_reply.clone());
+            if matching.next().is_some() {
+                return None;
+            }
             Some(Choice {
-                transition: None,
-                next_topic: Some(Topic::from(offer.next_topic)),
-                reply: offer.reply.clone(),
+                transition: Some(callback.key.clone()),
+                next_topic: Some(Topic::from(callback.next_topic)),
+                reply: callback.reply.clone(),
             })
         },
     );

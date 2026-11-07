@@ -34,6 +34,7 @@ pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kills;
 pub mod native_rules;
 pub mod npc_rules;
 pub mod planegazer_finale;
@@ -285,6 +286,9 @@ pub enum QuestCatalogueError {
     InvalidContentRevision,
 }
 
+type NpcLegacyDefinition = ([u8; 32], BTreeMap<String, i64>);
+type NpcLegacyDefinitions = BTreeMap<String, Vec<NpcLegacyDefinition>>;
+
 /// The tracks and transitions of one content revision, with each quest's definition hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuestStateCatalogue {
@@ -293,7 +297,7 @@ pub struct QuestStateCatalogue {
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
     // Read-compatible NPC activation retains historical pins and absent-track meanings.
-    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    npc_legacy: NpcLegacyDefinitions,
 }
 
 impl QuestStateCatalogue {

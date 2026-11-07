@@ -6,14 +6,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEST = 'tools/content-schema/native-gameplay/reward-bag-catalogue.json'
-SOURCES = ('reward-bag-profiles.json', 'event-item-actions.json')
+SOURCES = ('reward-bag-profiles.json', 'event-item-actions.json', 'qengine-reward-bag-profiles.json')
 
 
 def catalogue(root):
     inputs = [root / 'tools/content-schema/native-gameplay' / name for name in SOURCES]
-    original, events = [json.loads(path.read_bytes()) for path in inputs]
+    original, events, quests = [json.loads(path.read_bytes()) for path in inputs]
     if (original['schema'] != 'OTERYN_NATIVE_REWARD_BAG_PROFILES/v1'
-            or events['schema'] != 'OTERYN_EVENT_ITEM_REWARDS/v1'):
+            or events['schema'] != 'OTERYN_EVENT_ITEM_REWARDS/v1'
+            or quests['schema'] != 'OTERYN_QENGINE_REWARD_BAG_PROFILES/v1'):
         raise ValueError('REWARD_BAG_CATALOGUE_SCHEMA')
     bags = original['bags']
     for row in events['rules']:
@@ -27,6 +28,7 @@ def catalogue(root):
                                   'name': '', 'weight': reward['weight'],
                                   'minimum': reward['minimum'], 'maximum': reward['maximum']}
                                  for reward in row['rewards']]})
+    bags.extend(quests['bags'])
     if len({bag['bag'] for bag in bags}) != len(bags):
         raise ValueError('REWARD_BAG_DUPLICATE')
     return {'schema': 'OTERYN_REWARD_BAG_CATALOGUE/v1',

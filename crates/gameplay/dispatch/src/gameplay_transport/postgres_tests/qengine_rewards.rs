@@ -107,7 +107,7 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     }
     outcome?;
     eprintln!(
-        "POSTGRES_CASE_COMPLETED {name} duration={:?}",
+        "POSTGRES_CASE_COMPLETED {name} duration={:?} success=true",
         started.elapsed()
     );
     Ok(())
@@ -331,6 +331,12 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-cael-tome-") {
+        return &["tome"];
+    }
+    if key.ends_with("/l2-zalamon-tome") {
+        return &["mission"];
+    }
     if key.ends_with("/l2-steal-start")
         || key.ends_with("/l2-steal-return")
         || key.ends_with("/l2-troll-start")
@@ -382,9 +388,97 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
-        "l6-citizen-rook-backpack-start" => &["addon", "backpack"],
+        "l6-citizen-rook-backpack-start" => &["addon","backpack"],
         "l6-citizen-rook-backpack-materials" => &["backpack"],
         "l6-citizen-rook-hat-start" | "l6-citizen-rook-hat" => &["hat"],
+        "l7-knight-helmet-start" => &["task","yes"],
+        "l7-knight-fangs" => &["behemoth fang"],
+        "l7-knight-helmet" => &["ramsay the reckless helmet"],
+        "l7-knight-sweat" => &["sweat"],
+        "l7-knight-steel" => &["royal steel"],
+        "l7-druid-body" => &["paws"],
+        "l7-druid-hat-start" => &["addon","faolan","yes"],
+        "l7-druid-griffinclaw" => &["griffinclaw"],
+        "l7-druid-water-start" | "l7-druid-dust-start" | "l7-druid-chain-start" => &["task"],
+        "l7-druid-water" => &["waterskin"],
+        "l7-druid-dust" => &["dust"],
+        "l7-druid-chain" => &["chain"],
+        "l7-druid-hat" => &["addon"],
+        "l7-assassin-base-start" => &["sober","potion","yes"],
+        "l7-assassin-eyes" => &["30 bonelord eyes"],
+        "l7-assassin-scales" => &["10 red dragon scales"],
+        "l7-assassin-lizard" => &["30 lizard scales"],
+        "l7-assassin-fins" => &["20 fish fins"],
+        "l7-assassin-vampire" => &["20 vampire dust"],
+        "l7-assassin-demon" => &["10 demon dust"],
+        "l7-assassin-sweat" => &["warrior's sweat"],
+        "l7-assassin-first-start" => &["addon","yes"],
+        "l7-assassin-blue" => &["50 blue cloth"],
+        "l7-assassin-green" => &["50 green cloth"],
+        "l7-assassin-red" => &["50 red cloth"],
+        "l7-assassin-brown" => &["50 brown cloth"],
+        "l7-assassin-yellow" => &["50 yellow cloth"],
+        "l7-assassin-white" => &["50 white cloth"],
+        "l7-assassin-yarn" => &["10 spools of yarn"],
+        "l11-makeshift-base" => &["salvage"],
+        "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
+        "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
+        "l10-brotherhood-officer" | "l10-nightmare-officer" | "l10-brotherhood-leader" | "l10-nightmare-leader" => &["advancement"],
+        "l10-golden-base" => &["outfit", "yes", "armor"],
+        "l10-golden-boots" => &["outfit", "yes", "boots"],
+        "l10-golden-helmet" => &["outfit", "yes", "helmet"],
+        "l9-soil-guardian-base" => &["basic soil guardian outfit"],
+        "l9-soil-guardian-first" => &["addition to the soil guardian outfit"],
+        "l9-crystal-warlord-base" => &["basic crystal warlord outfit"],
+        "l9-crystal-warlord-first" => &["addition to the crystal warlord armor outfit"],
+        "l9-gnomish-supply" => &["supply"],
+        "l9-afflicted-pouch" => &["medicine"],
+        "l8-hunter-start" => &["addon","task","yes"],
+        "l8-hunter-crossbow" => &["crossbow"],
+        "l8-hunter-leather" => &["leather"],
+        "l8-hunter-wings" => &["chicken wing"],
+        "l8-hunter-hat" => &["steel"],
+        "l8-hunter-gloves" => &["sniper gloves"],
+        "l8-mage-male-wand-start" => &["angelina","yes"],
+        "l8-mage-male-wands" => &["wand"],
+        "l8-mage-male-sulphur" => &["sulphur"],
+        "l8-mage-male-soul" => &["soul stone"],
+        "l8-mage-male-ankhs" => &["ankh"],
+        "l8-mage-male-hat" => &["proof"],
+        "l8-mage-female-belt-start" => &["vial","yes"],
+        "l8-mage-female-belt" => &["prize"],
+        "l8-mage-female-hat-start" => &["outfit","tiara","yes"],
+        "l8-dream-warden-mask" => &["dream warden mask"],
+        "l8-dream-warden-claw" => &["dream warden claw"],
+        "l8-mage-female-wings" => &["bat wings"],
+        "l8-mage-female-cloth" => &["red cloth"],
+        "l8-mage-female-fur" => &["ape fur"],
+        "l8-mage-female-orchids" => &["holy orchids"],
+        "l8-mage-female-yarn" => &["yarn"],
+        "l8-mage-female-lizard" => &["lizard scales"],
+        "l8-mage-female-scales" => &["red dragon scales"],
+        "l8-mage-female-sulphur" => &["sulphur"],
+        "l8-mage-female-vampire" => &["vampire dust"],
+        "l7-assassin-second-start" => &["addon","yes"],
+        "l6-beggar-start" => &["outfit","yes"],
+        "l6-beggar-cloth" => &["20 brown pieces of cloth"],
+        "l6-beggar-leather" => &["50 minotaur leathers"],
+        "l6-beggar-wings" => &["10 bat wings"],
+        "l6-beggar-blossoms" => &["30 heaven blossoms"],
+        "l6-beggar-base" => &["outfit"],
+        "l6-beggar-first-start" => &["outfit","yes"],
+        "l6-beggar-first-materials" => &["100 ape fur"],
+        "l6-beggar-staff-start" => &["addon","staff","yes"],
+        "l6-beggar-staff" => &["staff"],
+        "l6-druid-rook-body" => &["paws"],
+        "l5-norseman-first-shards" | "l5-norseman-second-shards" => &["shard"],
+        "l5-oriental-female-first-start" => &["outfit", "yes"],
+        "l5-oriental-female-comb" => &["comb"],
+        "l5-oriental-female-second-start" => &["task", "yes"],
+        "l5-oriental-female-ape-fur" => &["ape fur"],
+        "l5-oriental-female-fish-fins" => &["fish fins"],
+        "l5-oriental-female-wings" => &["enchanted chicken wings"],
+        "l5-oriental-female-blue-cloth" => &["blue cloth"],
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
@@ -430,11 +524,7 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -484,11 +574,13 @@ pub(super) async fn wire_reward(
         })
         .collect::<TestResult<Vec<_>>>()?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let expected_outfit = if expect_outfit {
-        callback.outfit.clone()
-    } else {
-        None
-    };
+    let expected_outfits = if expect_outfit && !callback.outfits.is_empty() {
+        let fence=owner.current_quest_fence(admitted.game_session_id).await.map_err(|_|"fence")?.ok_or("fence")?;
+        let state=owner.root.read_current_character_appearance_state(owner.character,owner.holder,fence,vec![]).await.map_err(debug)?;
+        callback.outfits.iter().filter(|target|target.sex.is_none_or(|sex|matches!((sex,state.sex),
+            (oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female,crate::domain::appearance::Sex::Female)
+            |(oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male,crate::domain::appearance::Sex::Male)))).cloned().collect::<Vec<_>>()
+    } else if expect_outfit {callback.outfit.iter().cloned().collect()} else {vec![]};
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -563,7 +655,7 @@ pub(super) async fn wire_reward(
             }
         }
         let has_outfit = |catalogues: &[oteryn_protocol_oteryn::appearance::Catalogue]| {
-            expected_outfit.as_ref().is_none_or(|expected| {
+            expected_outfits.iter().all(|expected| {
                 catalogues.iter().any(|c| {
                     c.outfits.iter().any(|o| {
                         o.key == expected.outfit
@@ -928,6 +1020,21 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-atomic-eleven" {
         return atomic_tracks::exercise(owner, admitted, h).await;
     }
+    if name.starts_with("qengine-rewards-l12-") {
+        return super::qengine_kill_stories::exercise(owner,admitted,h,authority,name).await;
+    }
+    if name.starts_with("qengine-rewards-l11-") {
+        return super::qengine_level_stories::exercise(owner,admitted,h,authority,name).await;
+    }
+    if name.starts_with("qengine-rewards-l10-documents-") {
+        return super::qengine_document_stories::exercise(owner,admitted,h,authority,name).await;
+    }
+    if name.starts_with("qengine-rewards-l9-") {
+        return super::qengine_voucher_stories::exercise(owner,admitted,h,name).await;
+    }
+    if name.starts_with("qengine-rewards-l10-") || name.starts_with("qengine-rewards-l8-") || name.starts_with("qengine-rewards-l7-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
+        return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
+    }
     let key = match name {
         name if name.starts_with("qengine-rewards-l2-token-menu-") => "token-abacus",
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
@@ -957,26 +1064,21 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         // Palimuth's source completion at questline 52 does not test the side.
         // Keep the actual callback unchanged while arranging the opposite side.
-        setup
-            .storage
-            .retain(|state| !state.track.ends_with("/side_decision"));
+        setup.storage.retain(|state| !state.track.ends_with("/side_decision"));
         for state in &mut setup.storage {
             if state.track.ends_with("/door_to_reward") || state.track.ends_with("/mission10") {
                 state.minimum = -1;
             }
         }
-        setup
-            .storage
-            .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
-                track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"
-                    .into(),
-                minimum: 2,
-                maximum: 2,
-                set: 2,
-                set_if: None,
-                preserve: true,
-                read_only: false,
-            });
+        setup.storage.push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
+            track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision".into(),
+            minimum: 2,
+            maximum: 2,
+            set: 2,
+            preserve: true,
+            read_only: false,
+            set_if: None,
+        });
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
@@ -1482,3 +1584,6 @@ async fn legacy_decaying(
     );
     Ok(())
 }
+
+// Arrange an entitlement written by the accepted pre-callback owner, then use
+// the real client appearance command. No new reward grant is used in this case.

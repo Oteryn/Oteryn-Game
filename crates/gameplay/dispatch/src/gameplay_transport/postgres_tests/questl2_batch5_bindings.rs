@@ -65,7 +65,7 @@ pub(super) async fn exercise(
         let key = if name.ends_with("outfox") {
             "oteryn:quest-reward/outfox-start"
         } else {
-            "oteryn:quest-reward/bone-pit-issue"
+            "oteryn:quest-reward/l2-bone-start"
         };
         let callback = callbacks
             .iter()

@@ -197,6 +197,8 @@ pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    let original_legacy = super::npc_rules::capture_legacy_definitions(&lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -221,6 +223,8 @@ pub fn load_embedded_quest_state(
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::kill_callbacks::validate(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
@@ -231,6 +235,8 @@ pub fn load_embedded_quest_state(
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
     );
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
+    super::npc_rules::merge_legacy_definitions(&mut lowered.catalogue.npc_legacy, original_legacy)
         .map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.

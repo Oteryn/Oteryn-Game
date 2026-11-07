@@ -45,11 +45,11 @@ pub(super) async fn exercise(
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let join = all
         .iter()
-        .find(|c| c.key.ends_with("/l2-carried-join"))
+        .find(|c| c.key.ends_with("/l10-brotherhood-join"))
         .ok_or("source admission")?;
     let document = all
         .iter()
-        .find(|c| c.key.ends_with("/l2-carried-use"))
+        .find(|c| c.key.ends_with("/l10-brotherhood-use-follower"))
         .ok_or("source document")?;
     let canonical = owner.quest_catalogue.clone().ok_or("catalogue")?;
     let mut tracks = BTreeMap::new();
@@ -78,6 +78,22 @@ pub(super) async fn exercise(
             transitions.push(transition);
         }
     }
+    // The independent Dreamer qualification is a fixture-owned prerequisite;
+    // document issuance and consumption remain the production callbacks.
+    let parent = "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4";
+    let parent_key = "oteryn:quest-transition/questl2-fixture/dreamer-parent";
+    let parent_track = tracks.get(parent).ok_or("Dreamer parent")?;
+    transitions.push(QuestTransition {
+        key: parent_key.into(),
+        quest: parent_track.quest.clone(),
+        effects: vec![oteryn_gameplay_quests::quest::QuestEffect {
+            track: parent.into(),
+            from: oteryn_gameplay_quests::quest::QuestComparison::Eq(0),
+            effect: oteryn_gameplay_quests::quest::QuestEffectKind::Set(1),
+        }],
+        completes: false,
+        experience: None,
+    });
     owner.quest_catalogue = Some(Arc::new(
         QuestStateCatalogue::new(
             canonical.content_revision(),
@@ -121,6 +137,14 @@ pub(super) async fn exercise(
         ["oteryn:npc.the_bone_master"],
     )
     .await?;
+    super::super::qengine_outfit_stories::commit_fixture(owner, admitted, parent_key, 9700).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    let premium = owner.premium_coordinator.take();
+    let without_premium = wire_reward(owner, admitted, npc, join, false).await?.0;
+    owner.premium_coordinator = premium;
+    assert_eq!(without_premium,NpcIntentDisposition::Rejected);
+    assert_eq!(super::questl2_journeys::quantity(h,768).await?,0,
+        "canonical order admission requires a current premium proof");
     assert_eq!(
         wire_grant(owner, admitted, npc, join).await?.0,
         NpcIntentDisposition::Ok
@@ -212,8 +236,10 @@ pub(super) async fn exercise(
                 native,
                 weights: &weights,
                 fee_payment: None,
+                actor_conditions: None,
                 carried_use: Some(&invalid),
             },
+            &owner.premium_coordinator,
         )
         .await
         .map_err(debug)?;

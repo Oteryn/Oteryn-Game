@@ -703,7 +703,7 @@ async fn tomes(
         .selected_capabilities
         .as_slice()
         .to_vec();
-    selected.extend([3, 6, 11, 25]);
+    selected.extend([3, 4, 6, 11, 15, 18, 25]);
     selected.sort_unstable();
     selected.dedup();
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
@@ -713,10 +713,15 @@ async fn tomes(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("tome capabilities")?;
-    let [cael, curos, zalamon] = super::super::classic_quests::install_nearby(
+    let [cael, curos, zalamon] = super::super::classic_quests::install_at(
         owner,
         admitted,
         ["oteryn:npc.cael", "oteryn:npc.curos", "oteryn:npc.zalamon"],
+        [
+            Position { x: 33156, y: 31228, floor: -15 },
+            Position { x: 33157, y: 31228, floor: -15 },
+            Position { x: 33158, y: 31228, floor: -15 },
+        ],
     )
     .await?;
     tome_access(owner, admitted, false).await?;
@@ -809,7 +814,11 @@ async fn tomes(
         assert_eq!(count, n);
         assert_eq!(quantity(h, 10217).await?, 12 - n);
         if n == 5 {
-            tome_shop(owner, admitted, cael, n, 2965, NpcIntentDisposition::Stale).await?;
+            // No offers are unlocked yet: native trade has no open window.
+            let before = (quantity(h, 3043).await?, counts(h).await?);
+            tome_shop(owner, admitted, cael, n, 2965, NpcIntentDisposition::Rejected).await?;
+            assert_eq!(quantity(h, 2965).await?, 0);
+            assert_eq!((quantity(h, 3043).await?, counts(h).await?), before);
         }
         if n == 6 {
             for item in [2965, 2966] {
@@ -992,14 +1001,14 @@ async fn tome_shop(
         .map(|(n, (o, _))| (n, o.unit_price))
         .unwrap_or((visible.len(), 2500));
     drop(runtime);
-    for text in ["hi", "trade"] {
-        let id = admitted.continuity.next_command_id;
+    let first = admitted.continuity.next_command_id;
+    let mut commands = Vec::new();
+    for (offset, text) in ["hi", "trade"].into_iter().enumerate() {
         let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
             npc_actor: npc,
             text: text.into(),
-        })
-        .map_err(debug)?;
-        super::super::quest_world_callbacks::wire(owner, admitted, id, 7, payload).await?;
+        }).map_err(debug)?;
+        commands.push((first + u64::try_from(offset)?, 7, payload));
     }
     let request = NpcTradeIntent {
         npc_actor: npc,
@@ -1010,18 +1019,16 @@ async fn tome_shop(
         expected_unit_price: price,
     };
     let payload = encode_npc_trade_intent(&request).map_err(debug)?;
-    let id = admitted.continuity.next_command_id;
-    let result =
-        super::super::quest_world_callbacks::wire(owner, admitted, id, 8, payload.clone()).await?;
+    let id = first + 2;
+    commands.push((id, 8, payload.clone()));
+    commands.push((id, 8, payload));
+    let results = super::super::quest_world_callbacks::wire_sequence(owner, admitted, commands).await?;
+    assert_eq!(results.len(), 4);
     assert_eq!(
-        oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&result).map_err(debug)?,
+        oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&results[2]).map_err(debug)?,
         expected
     );
-    assert_eq!(
-        super::super::quest_world_callbacks::wire(owner, admitted, id, 8, payload).await?,
-        result,
-        "literal shop replay"
-    );
+    assert_eq!(results[3], results[2], "literal shop replay");
     Ok(())
 }
 
