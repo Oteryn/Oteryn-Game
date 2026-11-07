@@ -1,3 +1,5 @@
+CURRENT WIP: carried follow-up synchronizes advisory quest copy and invalidates loop cache after value changes; test-only traces added. Dispatch check PASS1m00s. Instrumented focused PG rebuild /tmp/questpc3-treasure-refresh-pg.log is running. Last actual qualification remains RED5/6 at62710ms; no repeat fix claimed. Retained diagnostic DB showed all new fragments untouched/no second receipt and has been removed.
+
 LATEST REAL PG RESULT: PostgreSQL18.6 RED62710ms, entries5/agarictrue/maps4/repeated_mapfalse/ring1/quartz5/coins5/stage5. All selected variants and first full treasure work; the second selected24943 composition/earned treasure cycle fails. Fix the repeat path now; no batch GREEN. Dispatch test binary compiled8m01s after both fixture default fixes. Log /tmp/questpc3-treasure-green-retry.log.
 
 # questpc3 current handoff

@@ -167,6 +167,7 @@ fn scenario()->TestResult{
         let (repeat,actual,command)=use_piece(&mut owner,&mut admitted,PARTS[0]).await?;
         let mut consumed=true;for (item,before) in PARTS.iter().zip(before){consumed &= quantity(&h,item).await?==before-1;}
         let repeated_map=repeat==UseDisposition::Committed && consumed && quantity(&h,MAP).await?==maps_before+1 && progress(&owner,&admitted,&authority,STONE).await?==4;
+        eprintln!("THREATENED_TREASURE REPEAT command={command} result={repeat:?} consumed={consumed} maps_before={maps_before} maps_after={} stage={}", quantity(&h,MAP).await?, progress(&owner,&admitted,&authority,STONE).await?);
         let (end,replay,_)=super::super::rust_lottery::exchange(&owner,admitted,command,&actual,None,None).await?;
         admitted=end;assert_eq!(replay,repeat);
         let command=admitted.continuity.next_command_id;

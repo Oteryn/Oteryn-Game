@@ -21,6 +21,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         use crate::durability::reward_claim_mint::{QuestCarriedUse, QuestRewardAdmission};
         use oteryn_gameplay_quests::quest::reward_callbacks;
+        #[cfg(test)]
+        eprintln!(
+            "CARRIED_QUEST_USE entry command={} source={source:?}",
+            command.command_id
+        );
         let Some(item_fence) = command.item_fence else {
             return Ok(None);
         };
@@ -60,11 +65,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);
         };
-        let Ok(inventory) = self
+        let inventory_result = self
             .root
             .read_item_use_inventory(self.character, self.holder, item_fence)
-            .await
-        else {
+            .await;
+        #[cfg(test)]
+        if let Err(error) = &inventory_result {
+            eprintln!(
+                "CARRIED_QUEST_USE inventory command={} error={error:?}",
+                command.command_id
+            );
+        }
+        let Ok(inventory) = inventory_result else {
             return Ok(None);
         };
         let Some(item) = inventory
@@ -105,6 +117,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
+        // World callbacks refresh their advisory copy asynchronously. Select a
+        // carried follow-up against the current durable stage as well.
+        self.refresh_quest_session(command.game_session_id, false)
+            .await;
         let callback = {
             let sessions = self.states.quest_sessions.lock().map_err(|_| ())?;
             let tracks = sessions
@@ -152,6 +168,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encoded,
         };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        #[cfg(test)]
+        let trace_key = callback.key.clone();
         let request = QuestTransitionRequest {
             transition_key: callback.key,
             cause: QuestCause::Command(command_ref),
@@ -187,12 +205,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         }
-        .map_err(|_| ())?;
+        .map_err(|error| {
+            #[cfg(test)]
+            eprintln!(
+                "CARRIED_QUEST_USE command={} callback={} error={error:?}",
+                command.command_id, trace_key
+            );
+            let _ = error;
+        })?;
+        #[cfg(test)]
+        eprintln!(
+            "CARRIED_QUEST_USE command={} callback={} result={result:?}",
+            command.command_id, trace_key
+        );
         drop(permit);
         let disposition = if matches!(
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
         ) {
+            self.states.loop_ground.invalidate();
             self.refresh_quest_session(command.game_session_id, false)
                 .await;
             UseDisposition::Committed

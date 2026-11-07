@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "PostgreSQL18.6 native journey RED62710ms: agaric and four selected variants succeed; first treasure all three assets succeeds; second selected24943 composition/earned treasure cycle fails. Evidence entries5/maps4/repeated_mapfalse/ring1/quartz5/coins5/stage5. Investigate repeat path now; never qualify whole batch yet.",
+      "phase": "Compiling WIP: force fresh advisory quest copy before carried selection and invalidate loop cache after successful value mutation. Dispatch check PASS1m00s; instrumented focused PG rebuild running. Last real qualification remains RED5/6 at62710ms; do not claim repeat fixed.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4110,6 +4110,13 @@
         "sha256": "60461c59434082b1f51f0aadfa80dbaff08cce7a243333ffab76d4fa9f077ea1",
         "evidence": "entries5 agarictrue maps4 repeated_mapfalse ring1 quartz5 coins5 stage5",
         "compile": "dispatch test binary PASS8m01s after two explicit false fixture defaults"
+      },
+      "repeat_diagnosis": {
+        "retained_run": "Existing binary reproduced all inputs live and no second quest/MINT receipt; diagnostic DB cleanup intentionally refused to retain evidence, not a qualification run",
+        "cleanup": "Diagnostic DB template flag restored and exact created DB dropped",
+        "assumption": "World execute.rs schedules quest refresh asynchronously; synchronize the carried follow-up and value cache before retest",
+        "check": "PASS1m00s",
+        "pg_log": "/tmp/questpc3-treasure-refresh-pg.log"
       }
     },
     "diagnosis": {
