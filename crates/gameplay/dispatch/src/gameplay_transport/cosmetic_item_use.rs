@@ -502,8 +502,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 &super::spell_premium_coordinator::QuestPremium(self.premium_coordinator),
             )
-            .await
-            .map_err(|_| ())?;
+            .await;
+        let result = result.map_err(|_| ())?;
         drop(permit);
         let disposition = if matches!(
             result,

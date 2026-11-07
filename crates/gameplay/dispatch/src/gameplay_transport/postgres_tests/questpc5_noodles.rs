@@ -54,32 +54,152 @@ async fn collar(
     admitted: &mut AdmittedSession,
     target: EntityRef,
 ) -> TestResult<UseDisposition> {
-    let _reference = owner
-        .active_generation
-        .and_then(|g| g.native_gameplay())
-        .and_then(|n| n.item_index())
-        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i14156", "definition-r1"))
-        .ok_or("Dog Collar reference")?;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let intent = UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("collar handle")?),
-        use_with: Some(target),
-        use_with_map_item: None,
-        use_with_position: None,
+    Ok(collar_packet(owner, admitted, target, true).await?.0)
+}
+async fn collar_packet(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    target: EntityRef,
+    present: bool,
+) -> TestResult<(UseDisposition, crate::foundation::CommandRef, Vec<u8>)> {
+    use crate::foundation::{CommandId, CommandRef, MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use tokio::io::AsyncWriteExt;
+    let definition = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.item_index())
+        .and_then(|i| i.definition_ref("Item", "oteryn:item.tibia.i14156", "definition-r1"))
+        .ok_or("collar definition")?;
+    let initial = *admitted;
+    let command_id = initial.continuity.next_command_id;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let receiving = async {
+        let mut chunks = std::collections::BTreeMap::new();
+        loop {
+            let frame = super::item_look::read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                let (index, data) =
+                    oteryn_protocol_oteryn::decode_snapshot_chunk_framing(envelope.payload())
+                        .map_err(debug)?;
+                assert!(chunks.insert(index, data.to_vec()).is_none());
+            }
+            if envelope.message_type() == MessageType::SnapshotCommit {
+                break;
+            }
+        }
+        let assembled = chunks
+            .values()
+            .flat_map(|part| part.iter().copied())
+            .collect::<Vec<_>>();
+        let domains = oteryn_protocol_oteryn::decode_snapshot_body(&assembled).map_err(debug)?;
+        let domain = domains
+            .iter()
+            .find(|d| {
+                d.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+            })
+            .ok_or("inventory snapshot")?;
+        let inventory =
+            oteryn_protocol_oteryn::item_view::decode_character_inventory(domain.payload)
+                .map_err(debug)?;
+        let found = inventory
+            .entries
+            .iter()
+            .find(|e| e.item_definition_ref == definition);
+        let handle = if present {
+            found
+                .ok_or("live snapshot must publish exact Dog Collar")?
+                .handle
+        } else {
+            assert!(found.is_none(), "consumed collar cannot remain published");
+            inventory.main_backpack.ok_or("main backpack")?.handle
+        };
+        let intent = UseIntent {
+            target: UseTarget::Item(handle),
+            use_with: Some(target),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        let body =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: 2,
+                payload: &body,
+            },
+        )
+        .map_err(debug)?;
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        loop {
+            let frame = super::item_look::read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                    .map_err(debug)?;
+                assert_eq!(result.command_id, command_id);
+                let disposition =
+                    oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
+                        .map_err(debug)?;
+                client.shutdown().await?;
+                return Ok::<_, Box<dyn std::error::Error>>((disposition, body));
+            }
+        }
     };
-    let command = admitted.continuity.next_command_id;
-    let reply = super::quest_world_callbacks::wire(
-        owner,
-        admitted,
-        command,
-        2,
-        oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).map_err(debug)?,
+    let serving = async {
+        let end = serve_admitted(&mut server, initial, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    use std::future::Future;
+    use std::task::Poll;
+    let mut serving = std::pin::pin!(serving);
+    let mut receiving = std::pin::pin!(receiving);
+    let (mut ended, mut received) = (None, None);
+    tokio::time::timeout(
+        std::time::Duration::from_secs(60),
+        std::future::poll_fn(|context| {
+            if ended.is_none()
+                && let Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                ended = Some(value);
+            }
+            if received.is_none()
+                && let Poll::Ready(value) = receiving.as_mut().poll(context)
+            {
+                received = Some(value);
+            }
+            if ended.is_some() && received.is_some() {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        }),
     )
     .await?;
-    oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
+    let end = ended.ok_or("collar server did not finish")?;
+    let result = received.ok_or("collar client did not finish")?;
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(after)
+        | ConnectionEnd::AdmittedThenClosed(after, _) => *admitted = after,
+        _ => return Err("collar wire ended before admission".into()),
+    }
+    let (disposition, body) = result?;
+    Ok((
+        disposition,
+        CommandRef::new(
+            initial.game_session_id,
+            CommandId::new(command_id).map_err(debug)?,
+        ),
+        body,
+    ))
 }
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -198,23 +318,12 @@ pub(super) async fn exercise(
     assert_eq!(stage(h).await?, 1);
     assert_eq!(count(h, "oteryn:item.tibia.i14156").await?, 1);
     at(owner, admitted, p(32314, 32178)).await?;
-    let use_command = admitted.continuity.next_command_id;
-    assert_eq!(
-        collar(owner, admitted, dog).await?,
-        UseDisposition::Committed
-    );
-    let replay = UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("collar handle")?),
-        use_with: Some(dog),
-        use_with_map_item: None,
-        use_with_position: None,
-    };
-    let body =
-        oteryn_protocol_oteryn::world_object::encode_item_use_intent(&replay).map_err(debug)?;
-    let command = crate::foundation::CommandRef::new(
-        admitted.game_session_id,
-        crate::foundation::CommandId::new(use_command).map_err(debug)?,
-    );
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let (disposition, command, body) = collar_packet(owner, admitted, dog, true).await?;
+    assert_eq!(disposition, UseDisposition::Committed);
     assert_eq!(
         owner
             .root
@@ -233,14 +342,13 @@ pub(super) async fn exercise(
         Some(false),
         "changed actor USE cannot rebind historical consumption"
     );
-
     assert_eq!(stage(h).await?, 2);
     assert_eq!(
         count(h, "oteryn:item.tibia.i14156").await?,
         0,
         "exact selected collar consumed"
     );
-    let _ = collar(owner, admitted, dog).await?;
+    let _ = collar_packet(owner, admitted, dog, false).await?;
     assert_eq!(stage(h).await?, 2);
     assert_eq!(xp(h).await?, before);
     at(owner, admitted, p(32310, 32172)).await?;

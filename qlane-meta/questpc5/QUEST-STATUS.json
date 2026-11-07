@@ -288,7 +288,7 @@
       "evidence": "content/encounters/world-changes/owner-catalogue.json",
       "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
-    "active_checkpoint": "Actual PG18.6 reaches correct live dog USE after successful collar grant/exploration/negativeNPC/reach checks, but Rejected!=Committed at questpc5_noodles.rs:202,92.878803969s (/tmp/questpc5-noodles-whole-green2.log). Corrected fixture XP column to actual total_experience; +1000 assertion unchanged. Next diagnose actor bridge exact acceptance/refusal point; no qualification or relaxed assertion.",
+    "active_checkpoint": "Whole Noodles actual PostgreSQL18.6 GREEN94.317145358s in /tmp/questpc5-noodles-whole-live-handle2.log. Correct target refusal was stale test handle3; fixture now waits for current inventory snapshot and uses exact published collar handle/captures actual ingress for replay. All actor/reach/input/XP/coin/achievement/completion assertions intact. Temporary diagnostics removed. Final strict Clippy/fmt/generator checks next before qualification.",
     "assumptions": [
       "Use retained permanent King/Noodles courtyard NPC placements for guaranteed personal route in Thais Peninsula; do not implement global escape/Dog Lady/Puppies/calendar changes."
     ],
