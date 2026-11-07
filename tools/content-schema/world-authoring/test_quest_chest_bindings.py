@@ -3,6 +3,7 @@ import copy
 import hashlib
 import json
 import tarfile
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -11,6 +12,43 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
+        from pathlib import Path
+        revision = '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d'
+        paths = ('data-global/startup/tables/chest.lua',
+                 'data-global/startup/tables/door_level.lua',
+                 'data-global/startup/others/functions.lua')
+        keys = {f'oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.{suffix}'
+                for suffix in ('bp1', 'bp2', 'dwarven_shield', 'morning_star')}
+        archive = chests.ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz'
+        with tempfile.TemporaryDirectory() as temporary, tarfile.open(archive) as corpus:
+            root = Path(temporary)
+            manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+            for path in paths:
+                row = next(r for r in manifest['files'] if r['source'] == 'crystalserver'
+                           and r['revision'] == revision and r['path'] == path)
+                raw = corpus.extractfile(row.get('blob_path', row.get('cache_path'))).read()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), row['sha256'])
+                output = root / path
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(raw)
+            document = chests.capture(root, keys)
+            self.assertEqual(document['revision'], revision)
+            self.assertEqual(document['table_sha256'], '0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca')
+            self.assertEqual({r['unique'] for r in document['bindings']}, {6253,6254,6255,6256})
+            self.assertEqual({r['claim'] for r in document['bindings']}, keys)
+            self.assertEqual(document['level_access'], [])
+            startup = root / paths[2]
+            original_startup = startup.read_bytes()
+            startup.write_bytes(original_startup + b'changed')
+            with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_STARTUP_SOURCE_PIN'):
+                chests.capture(root, keys)
+            startup.write_bytes(original_startup)
+            chest = root / paths[0]
+            chest.write_bytes(chest.read_bytes() + b'changed')
+            with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_SOURCE_PIN'):
+                chests.capture(root, keys)
+
     def test_annihilator_level_gate_requalified_from_retained_source_bytes(self):
         archive = chests.ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz'
         with tarfile.open(archive) as corpus:

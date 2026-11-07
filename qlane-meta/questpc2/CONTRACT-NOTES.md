@@ -520,3 +520,23 @@ across source carpets; no geometry or damage injection. Native43write/check,
 check18.84s, final clippy40.71s, fmt/duplicates and isolated world pin-refresh/
 check PASS. World digest 56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306. Whole quest
 remains pending four source chest claims, exit/journal and replay/capacity.
+
+
+2026-11-07: source startup chest UID declarations restored, not binder relaxed.
+Full source PG180006 RED95.95s firstbp1 NothingToUse vsCommitted. Existing
+quest_chest_bindings tool adds lane-specific cohorts; extended exact pair
+validation for committed crystalserver9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+chest.lua:2551-2580 SHA0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca,
+startup/others/functions.lua:97-120 SHA897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c
+(loadLuaMapUnique stamps UID). Door-level source pin unchangedd8868f... .
+Keep original201189 captures and native container projection as-is; validate
+current four source rewards/containers against canonical definitions. Only
+four UID metadata fields6253..6256 restored by repo tool; exact geometry/
+allotherattributes comparison /tmp/questpc2-elvenbane-uid-preservation.json.
+Source14tests RED1.480s ->GREEN1.582s includes source-byte corruption refusals;
+apply/check35startupattributes PASS. Repo pinrefresh/check PASS.
+Next actual PG100.40s proves four physical source claims, replay/once, four
+roots and five exact nested children/custody sharing root receipt xmin; native
+four-floor descent passes. Still RED on proposed south-east exit path, so
+whole quest not qualified. Existing canonical return marker32597,31642,z7
+is the documented next exit endpoint to exercise, preserving source geometry.

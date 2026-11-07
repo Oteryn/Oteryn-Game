@@ -17,6 +17,10 @@ INDEX = "content/world/placements/index.json"
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 TABLE_SHA256 = "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+CURRENT_REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+TABLE_PINS = {REVISION: TABLE_SHA256,
+              CURRENT_REVISION: "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"}
+STARTUP_PINS = {CURRENT_REVISION: "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"}
 LEVEL_SHA256 = "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc"
 ITEM_SHA256 = "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
 ITEM_ACCESS = {
@@ -34,6 +38,15 @@ LEVEL_ACCESS = {
     "oteryn:reward-claim.kv.noblearmor1": ((32448, 32042, 8), 6264, 1035),
     "oteryn:reward-claim.kv.noblearmor2": ((32448, 32042, 8), 6264, 1035),
 }
+
+
+def valid_capture_pin(document):
+    revision = document.get("revision")
+    return (document.get("schema") == 1 and revision in TABLE_PINS
+            and document.get("table_sha256") == TABLE_PINS[revision]
+            and document.get("level_source_sha256") == LEVEL_SHA256
+            and (revision not in STARTUP_PINS
+                 or document.get("startup_sha256") == STARTUP_PINS[revision]))
 
 
 def canonical(value):
@@ -126,8 +139,16 @@ def capture(source_root, selected, root=ROOT):
     import reward_claim_authoring
 
     raw = (source_root / "data-global/startup/tables/chest.lua").read_bytes()
-    if hashlib.sha256(raw).hexdigest() != TABLE_SHA256:
+    table_sha256 = hashlib.sha256(raw).hexdigest()
+    revision = next((revision for revision, pin in TABLE_PINS.items() if pin == table_sha256), None)
+    if revision is None:
         raise ValueError("QUEST_CHEST_SOURCE_PIN")
+    startup_sha256 = None
+    if revision in STARTUP_PINS:
+        startup = (source_root / "data-global/startup/others/functions.lua").read_bytes()
+        startup_sha256 = hashlib.sha256(startup).hexdigest()
+        if startup_sha256 != STARTUP_PINS[revision]:
+            raise ValueError("QUEST_CHEST_STARTUP_SOURCE_PIN")
     entries = {f["key"]: (f["line"], lua_tables.as_python(f["value"]))
                for f in lua_tables.assignments(raw.decode(), {"ChestUnique"})["ChestUnique"]["fields"]}
     claims, rows = claim_definitions(root), []
@@ -166,11 +187,14 @@ def capture(source_root, selected, root=ROOT):
     level_raw = (source_root / "data-global/startup/tables/door_level.lua").read_bytes()
     level_access = captured_level_access(level_raw, selected, root)
     document = {"schema": 1, "classification": "OTS_HYPOTHESIS_ONLY",
-            "repository": "zimbadev/crystalserver", "revision": REVISION,
-            "table": "data-global/startup/tables/chest.lua", "table_sha256": TABLE_SHA256,
+            "repository": "zimbadev/crystalserver", "revision": revision,
+            "table": "data-global/startup/tables/chest.lua", "table_sha256": table_sha256,
             "startup": "data-global/startup/others/functions.lua:97-115", "bindings": rows,
             "level_source_sha256": hashlib.sha256(level_raw).hexdigest(),
             "level_access": level_access}
+    if startup_sha256 is not None:
+        document["startup_sha256"] = startup_sha256
+        document["startup"] = "data-global/startup/others/functions.lua:97-120"
     if set(selected) & ITEM_ACCESS.keys():
         item_raw = (source_root / "data-global/startup/tables/item.lua").read_bytes()
         if hashlib.sha256(item_raw).hexdigest() != ITEM_SHA256:
@@ -200,9 +224,7 @@ def selections(root=ROOT):
     for path in sorted((root / CAPTURES).glob("*.json")):
         raw = path.read_bytes()
         document = json.loads(raw)
-        if (document["schema"] != 1 or document["revision"] != REVISION
-                or document["table_sha256"] != TABLE_SHA256
-                or document.get("level_source_sha256") != LEVEL_SHA256):
+        if not valid_capture_pin(document):
             raise ValueError("QUEST_CHEST_SOURCE_PIN")
         sources.append({"path": path.relative_to(root).as_posix(),
                         "sha256": hashlib.sha256(raw).hexdigest()})
@@ -376,9 +398,7 @@ if __name__ == "__main__":
         if not args.level_source:
             parser.error("--capture-level-access requires --level-source")
         document = json.loads(args.capture_level_access.read_bytes())
-        if (document['schema'] != 1 or document['revision'] != REVISION
-                or document['table_sha256'] != TABLE_SHA256
-                or document['level_source_sha256'] != LEVEL_SHA256):
+        if not valid_capture_pin(document):
             raise ValueError('QUEST_CHEST_SOURCE_PIN')
         document['level_access'] = captured_level_access(
             args.level_source.read_bytes(), {r['claim'] for r in document['bindings']})
