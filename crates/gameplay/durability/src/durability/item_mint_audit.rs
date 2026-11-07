@@ -2091,6 +2091,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
                 // W03 collection keeps the caller's Type2Transaction through delivery
                 // and binds its selected tuple in both the envelope and outbox.
+                // Carried STEP consumes the fenced transaction tuple unchanged.
+                "crates/gameplay/durability/src/durability/quest_world_callback/carried_step.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
                 // W15b container children bind the root transaction's selected Type2 tuple.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",

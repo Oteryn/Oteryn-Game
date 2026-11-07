@@ -322,9 +322,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
-            // The merged owner cohorts already count 38 QENGINE2 keys.
             + 26 + 23
-            - 38
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");
