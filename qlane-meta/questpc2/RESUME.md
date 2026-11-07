@@ -629,3 +629,28 @@ Next: actual full PG, fix real refusal if any; scoped check/clippy/fmt,
 registration43-file check and source-map tool checks, update qualification
 only after earned reward/replay/exit/reentry pass, publish runtime slice and
 continue all remaining quests. Counts remain0/35.
+
+2026-11-07 07:57 UTC: combined-tree Annihilator whole route is now PG GREEN
+108.32s, PostgreSQL180006, elapsed108003ms. Actual four-member source gate,
+lever and native combat continue through physical armor3388, one durable shared
+claim/receipt/achievement, literal command replay and second-choice refusal,
+actual source portal exit and claimed-door re-entry refusal. Desert remains
+QUALIFIED. Counts2/33. No invented timed escape, kill-storage gate or source
+geometry changes. New generic expertise-gate profiles5111/5112 and pinned
+startup action1100 admission use repo tools. Final compiler/lint and combined
+pin checks pending publication; record BATCH-annihilator-complete-source-route-2026-11-07.json.
+Next: publish green slice immediately, then source-complete Elvenbane route;
+retain ownership of missing generic mechanisms and continue all33 entries.
+
+2026-11-07 final checks: scoped cargo check82s and clippy all-targets/all-features
+-D warnings173s pass; source tests13/0.635s and2/4.518s, fmt/rustfmt and
+whitespace pass. Registration43-file write/check passed. Combined world pin
+b3780093e958b72b7d7bdc12cc4aee81bba427000f064e29801e96b6df9d4c51;
+pin-check completing. Native/clippy/check caches retain newest completed
+snapshots; superseded completed snapshots pruned for space. Latest native
+metadata disk relocation ledger /tmp/questpc2-complete-final-native-metadata-retention.json
+contains retired older originals too: never restore missing superseded READY.
+No compiler setting changes, broad clean or full test suite.
+
+2026-11-07 08:02 UTC: combined pin-check PASS. Entire Annihilator slice green,
+ready for authorized authoring commit/push; continue next item immediately.

@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -10,6 +11,30 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_annihilator_level_gate_requalified_from_retained_source_bytes(self):
+        archive = chests.ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz'
+        with tarfile.open(archive) as corpus:
+            manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+            row = next(r for r in manifest['files']
+                       if r['path'] == 'data-global/startup/tables/door_level.lua'
+                       and r['sha256'] == chests.LEVEL_SHA256)
+            raw = corpus.extractfile(row['cache_path']).read()
+        key = 'oteryn:reward-claim.quest.u7_24.the_annihilator.reward'
+        result = chests.captured_level_access(raw, {key})
+        self.assertEqual(result, [{'position': [33214, 31671, 13], 'appearance': 5111,
+                                   'action': 1100, 'source_line': 173, 'claims': [key]}])
+        desert = chests.captured_level_access(raw, {'oteryn:reward-claim.kv.desert1'})
+        self.assertEqual((desert[0]['position'], desert[0]['appearance'], desert[0]['action']),
+                         ([32673, 32100, 8], 5102, 1020))
+        with self.assertRaisesRegex(ValueError, 'LEVEL_SOURCE_PIN'):
+            chests.captured_level_access(raw + b'changed', {key})
+
+    def test_annihilator_retains_exact_level100_startup_gate_with_reward(self):
+        selected, _ = chests.selections()
+        gate = selected['action'][(33214, 31671, 13)]
+        self.assertEqual((gate['appearance'], gate['action']), (5111, 1100))
+        self.assertEqual(gate['claims'], ['oteryn:reward-claim.quest.u7_24.the_annihilator.reward'])
+
     def test_panpipe_key_uses_the_existing_complete_key_lowering(self):
         definition = chests.claim_definitions(chests.ROOT)['oteryn:reward-claim.quest.key.id4055']
         self.assertTrue(chests.supported_claim(definition))

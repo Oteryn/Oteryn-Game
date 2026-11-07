@@ -4,8 +4,8 @@
   "scope": "Only qlane-meta/questpc2/LANE-L3.json; whole-quest qualification, with inherited Primal shared-mechanism regression.",
   "lifecycle": "AUTHORING",
   "counts": {
-    "qualified": 1,
-    "unfinished": 34,
+    "qualified": 2,
+    "unfinished": 33,
     "blocked": 0
   },
   "quests": [
@@ -589,8 +589,8 @@
       "canonical": "oteryn:quest.the_annihilator_quest",
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Actual source entry and two-source-actor native combat/corpse/loot clearance are PG verified. Whole earned chest selection, actual escape and claimed-door/sealed re-entry continuation is next.",
+      "status": "QUALIFIED",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -600,7 +600,7 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
+      "qualification_scope": "Continuous actual source-map route: four genuine participants, level gate and lever, native combat, earned physical chest choice, replay/shared claim, source exit and claimed re-entry refusal.",
       "external_owner_blocker": false,
       "entry_slice": {
         "status": "REUSED_PUBLISHED_ENGINE",
@@ -628,6 +628,14 @@
         "genuine_fresh_participants": 4,
         "source_level": 100,
         "native_demons": 6
+      },
+      "complete_source_route": {
+        "record": "BATCH-annihilator-complete-source-route-2026-11-07.json",
+        "postgres_version": 180006,
+        "duration_seconds": 108.32,
+        "physical_reward": 3388,
+        "shared_claims": 1,
+        "achievements": 1
       }
     },
     {
@@ -1676,7 +1684,8 @@
     "BATCH-annihilator-native-source-entry-2026-11-07.json",
     "BATCH-desert-party-rite-mechanism-2026-11-07.json",
     "BATCH-annihilator-native-combat-2026-11-07.json",
-    "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json"
+    "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
+    "BATCH-annihilator-complete-source-route-2026-11-07.json"
   ],
   "next_batch": {
     "state": "AUTHORING",

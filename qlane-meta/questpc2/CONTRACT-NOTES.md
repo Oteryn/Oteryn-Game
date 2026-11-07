@@ -216,3 +216,10 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
 - Actual PG100.04s passes gates, entry, native kills/drains and reward doorway.
   Source statues2113 block26,58 and34,58; display2012 occupies30,57. Route
   around these captured obstacles with real WALK; never remove collision.
+
+- 2026-11-07 full Annihilator PG108.32s confirms actual source route through
+  physical armor3388, replay/shared-choice protection, exit33213,31671,13 and
+  claimed-door refusal. Imported canonical assessment holds and historical
+  timed-escape language are provenance, not instructions to invent mechanics.
+  Reuse existing generic level predicates and source startup action1100.
+  Desert merge retains single-dictionary and list-shaped source table groups.

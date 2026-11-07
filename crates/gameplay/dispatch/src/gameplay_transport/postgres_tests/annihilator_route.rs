@@ -9,15 +9,33 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
 fn annihilator_source_route_genuine_party_entry() -> TestResult {
-    run(false)
+    run(Route::Entry)
 }
 
 #[test]
 fn annihilator_source_route_native_combat_clearance() -> TestResult {
-    run(true)
+    run(Route::Combat)
 }
 
-fn run(combat: bool) -> TestResult {
+#[test]
+fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
+    run(Route::Complete)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Route {
+    Entry,
+    Combat,
+    Complete,
+}
+
+fn run(route: Route) -> TestResult {
+    let combat = route != Route::Entry;
+    let start_x = if route == Route::Complete {
+        33213
+    } else {
+        33215
+    };
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -36,7 +54,10 @@ fn run(combat: bool) -> TestResult {
             "content-1",
         )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = source_world(generation.native_gameplay().ok_or("native gameplay")?)?;
+        let world = source_world(
+            generation.native_gameplay().ok_or("native gameplay")?,
+            start_x,
+        )?;
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
                 .fetch_one(&h.pool)
@@ -94,7 +115,7 @@ fn run(combat: bool) -> TestResult {
             generation.identity().client_artifact_digest(),
             room.frame_binding().digest(),
             world.map_revision_digest(),
-            (33215, 31671, 13),
+            (i32::from(start_x), 31671, 13),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -122,7 +143,7 @@ fn run(combat: bool) -> TestResult {
                 .bind_attacker_lease(actor, session, current.current_character_lease())
                 .map_err(debug)?;
             let at = Position {
-                x: 33215,
+                x: start_x,
                 y: 31671,
                 floor: -13,
             };
@@ -305,6 +326,9 @@ fn run(combat: bool) -> TestResult {
         // admissions share a configured start. Each walks through the real door
         // to a distinct staging tile; no runtime relocation supplies entry.
         for (index, member) in admitted.iter_mut().enumerate() {
+            if route == Route::Complete {
+                super::annihilator_finish::outer_gate(&mut owner, member, map).await?;
+            }
             let target = target(map, 33216, 31671)?;
             assert_eq!(
                 use_target(&mut owner, member, &target).await?,
@@ -337,6 +361,9 @@ fn run(combat: bool) -> TestResult {
         if combat {
             super::annihilator_combat::clear_corridor(&mut owner, &mut admitted[0]).await?;
         }
+        if route == Route::Complete {
+            super::annihilator_finish::complete(&mut owner, &mut admitted[0], map, &h.pool).await?;
+        }
         eprintln!(
             "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms={}",
             started.elapsed().as_millis()
@@ -348,7 +375,11 @@ fn run(combat: bool) -> TestResult {
     })
 }
 
-fn target(map: &crate::map::boot::BundleMap, x: u16, y: u16) -> TestResult<WorldObjectTarget> {
+pub(super) fn target(
+    map: &crate::map::boot::BundleMap,
+    x: u16,
+    y: u16,
+) -> TestResult<WorldObjectTarget> {
     let key = crate::map::view::placement_key(crate::map::overlay::TilePos { x, y, floor: -13 }, 1)
         .ok_or("placement")?;
     let mut placement = map.overlay.base().digest().to_vec();
@@ -369,6 +400,13 @@ pub(super) async fn step(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
+    let origin = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(member.runtime_actor.ok_or("actor")?)
+        .map_err(debug)?
+        .position();
     let command = member.continuity.next_command_id;
     let reply = super::quest_world_callbacks::wire(
         owner,
@@ -380,11 +418,12 @@ pub(super) async fn step(
     .await?;
     assert_eq!(
         decode_step_result(&reply).map_err(debug)?,
-        StepDisposition::Moved
+        StepDisposition::Moved,
+        "source step {direction:?} from {origin:?}"
     );
     Ok(())
 }
-async fn use_target(
+pub(super) async fn use_target(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     member: &mut AdmittedSession,
     target: &WorldObjectTarget,
@@ -476,6 +515,7 @@ async fn level(
 
 fn source_world(
     native: &crate::content::native_gameplay::NativeGameplayState,
+    start_x: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::bundle;
     use oteryn_world_bundle_compiler::{compile, project, source};
@@ -506,7 +546,7 @@ fn source_world(
     )?;
     assert!(
         !compiled.diagnostics.iter().any(|d| d.floor == -13
-            && (33212..=33235).contains(&d.x)
+            && (33212..=33236).contains(&d.x)
             && (31650..=31673).contains(&d.y)),
         "unresolved source quest geometry"
     );
@@ -515,7 +555,7 @@ fn source_world(
         ..pins
     };
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
-    crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:33215,y:31671,floor:-13}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
+    crate::map::boot::boot(&compiled.bytes,&crate::map::boot::BootPins{map_revision:crate::map::overlay::map_revision(&base),bundle:pins,start:crate::map::overlay::TilePos{x:start_x,y:31671,floor:-13}},crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,|key| {
         use crate::content::{ReferenceItemField,ReferenceItemType};
         // Match the production node's boot_bundle_items (serve.rs): an indexed
         // static Item without a native profile retains the owner's sealed defaults.

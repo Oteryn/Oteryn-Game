@@ -53,5 +53,19 @@
     }
   ],
   "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
-  "level_access": []
+  "level_access": [
+    {
+      "position": [
+        33214,
+        31671,
+        13
+      ],
+      "appearance": 5111,
+      "action": 1100,
+      "source_line": 173,
+      "claims": [
+        "oteryn:reward-claim.quest.u7_24.the_annihilator.reward"
+      ]
+    }
+  ]
 }

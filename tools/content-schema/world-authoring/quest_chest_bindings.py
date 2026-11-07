@@ -26,6 +26,8 @@ ITEM_ACCESS = {
 LEVEL_ACCESS = {
     **{f"oteryn:reward-claim.kv.desert{i}": ((32673, 32100, 8), 5102, 1020)
        for i in (1, 2)},
+    # Pinned door_level.lua:173-178; the raw B3 omits startup attributes.
+    "oteryn:reward-claim.quest.u7_24.the_annihilator.reward": ((33214, 31671, 13), 5111, 1100),
     **{f"oteryn:reward-claim.kv.orcfortress{i}": ((32981, 31760, 9), 6264, 1040)
        for i in range(1, 4)},
     "oteryn:reward-claim.kv.naginata": ((32353, 32073, 11), 1646, 1040),
@@ -36,6 +38,31 @@ LEVEL_ACCESS = {
 
 def canonical(value):
     return (json.dumps(value, separators=(",", ":"), sort_keys=True) + "\n").encode()
+
+
+def captured_level_access(raw, selected, root=ROOT):
+    """Requalify level access independently of an unchanged chest capture."""
+    import sys
+    sys.path.insert(0, str(root / "tools/content-schema/quest-authoring"))
+    import lua_tables
+    if hashlib.sha256(raw).hexdigest() != LEVEL_SHA256:
+        raise ValueError("QUEST_CHEST_LEVEL_SOURCE_PIN")
+    fields = lua_tables.assignments(raw.decode(), {"LevelDoorAction"})["LevelDoorAction"]["fields"]
+    doors = {}
+    for key in sorted(set(selected) & LEVEL_ACCESS.keys()):
+        position, appearance, action = LEVEL_ACCESS[key]
+        field = next(f for f in fields if f["key"] == action)
+        value = lua_tables.as_python(field["value"])
+        groups = value if isinstance(value, list) else [value]
+        if not any(p == dict(zip("xyz", position)) and group["itemId"] in (False, appearance)
+                   for group in groups if isinstance(group, dict)
+                   for p in (group["itemPos"] if isinstance(group["itemPos"], list)
+                             else [group["itemPos"]])):
+            raise ValueError("QUEST_CHEST_LEVEL_ACCESS_SOURCE_DRIFT")
+        row = doors.setdefault(position, {"position": list(position), "appearance": appearance,
+                                         "action": action, "source_line": field["line"], "claims": []})
+        row["claims"].append(key)
+    return [doors[p] for p in sorted(doors)]
 
 
 def claim_definitions(root):
@@ -137,29 +164,13 @@ def capture(source_root, selected, root=ROOT):
             rows.append({"claim": key, "position": [position[k] for k in ("x", "y", "z")],
                          "appearance": setting["itemId"], "unique": unique, "source_line": line})
     level_raw = (source_root / "data-global/startup/tables/door_level.lua").read_bytes()
-    if hashlib.sha256(level_raw).hexdigest() != LEVEL_SHA256:
-        raise ValueError("QUEST_CHEST_LEVEL_SOURCE_PIN")
-    level_fields = lua_tables.assignments(level_raw.decode(), {"LevelDoorAction"})["LevelDoorAction"]["fields"]
-    doors = {}
-    for key in sorted(set(selected) & LEVEL_ACCESS.keys()):
-        position, appearance, action = LEVEL_ACCESS[key]
-        field = next(f for f in level_fields if f["key"] == action)
-        value = lua_tables.as_python(field["value"])
-        groups = value if isinstance(value, list) else [value]
-        if not any(p == dict(zip("xyz", position)) and group["itemId"] in (False, appearance)
-                   for group in groups if isinstance(group, dict)
-                   for p in (group["itemPos"] if isinstance(group["itemPos"], list)
-                             else [group["itemPos"]])):
-            raise ValueError("QUEST_CHEST_LEVEL_ACCESS_SOURCE_DRIFT")
-        row = doors.setdefault(position, {"position": list(position), "appearance": appearance,
-                                         "action": action, "source_line": field["line"], "claims": []})
-        row["claims"].append(key)
+    level_access = captured_level_access(level_raw, selected, root)
     document = {"schema": 1, "classification": "OTS_HYPOTHESIS_ONLY",
             "repository": "zimbadev/crystalserver", "revision": REVISION,
             "table": "data-global/startup/tables/chest.lua", "table_sha256": TABLE_SHA256,
             "startup": "data-global/startup/others/functions.lua:97-115", "bindings": rows,
             "level_source_sha256": hashlib.sha256(level_raw).hexdigest(),
-            "level_access": [doors[p] for p in sorted(doors)]}
+            "level_access": level_access}
     if set(selected) & ITEM_ACCESS.keys():
         item_raw = (source_root / "data-global/startup/tables/item.lua").read_bytes()
         if hashlib.sha256(item_raw).hexdigest() != ITEM_SHA256:
@@ -355,11 +366,29 @@ if __name__ == "__main__":
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--apply", action="store_true")
     mode.add_argument("--capture", type=Path, help="pinned Crystal checkout or reference root")
+    mode.add_argument("--capture-level-access", type=Path, help="retain chest capture and requalify its level access")
+    parser.add_argument("--level-source", type=Path)
     parser.add_argument("--claims", nargs="+")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    if args.capture:
+    if args.capture_level_access:
+        if not args.level_source:
+            parser.error("--capture-level-access requires --level-source")
+        document = json.loads(args.capture_level_access.read_bytes())
+        if (document['schema'] != 1 or document['revision'] != REVISION
+                or document['table_sha256'] != TABLE_SHA256
+                or document['level_source_sha256'] != LEVEL_SHA256):
+            raise ValueError('QUEST_CHEST_SOURCE_PIN')
+        document['level_access'] = captured_level_access(
+            args.level_source.read_bytes(), {r['claim'] for r in document['bindings']})
+        raw = (json.dumps(document, indent=2) + '\n').encode()
+        if args.check:
+            if args.capture_level_access.read_bytes() != raw:
+                raise ValueError('QUEST_CHEST_LEVEL_CAPTURE_DRIFT')
+        else:
+            args.capture_level_access.write_bytes(raw)
+    elif args.capture:
         if not args.claims or not args.output:
             parser.error("--capture requires --claims and --output")
         raw = (json.dumps(capture(args.capture, args.claims), indent=2) + "\n").encode()

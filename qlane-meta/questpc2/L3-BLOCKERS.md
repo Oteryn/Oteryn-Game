@@ -1,6 +1,6 @@
 # L3 unfinished quest paths
 
-Whole-quest counts: **0 qualified / 35 unfinished / 0 externally blocked**.
+Whole-quest counts: **2 qualified / 33 unfinished / 0 externally blocked**.
 These are remaining implementation gaps owned by L3, not external-owner deferrals.
 
 | Quest | Exact remaining gap |
@@ -28,7 +28,6 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Rise of Devovorga | Seasonal stages/reset, coordinated incarnation encounters and participant rewards are not composed. |
 | Rotten Blood Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
 | Soul War Quest | Source-native room/map/template, source-specific corpse/item closure and source boss mechanics remain active implementation work. Generic scoped physical corpse, runtime binding and independent private rewards are PG verified; native death/Quest progression was already verified. |
-| The Annihilator Quest | Source entry/reward owners reused; reward-door movement/sealing and all4captured startup chest UIDs are PG verified. Continuous native source-room entry/combat/earned-reward route remains active work; no invented escape timer or kill-storage gate. |
 | The Demon Oak Quest | Hallowed Axe use on all four Oak parts, defender waves and final reward entitlement are not composed. |
 | The Dream Courts Quest | Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack the composed source-native storyline. |
 | The Inquisition Quest | Interrogation, holy-water use and Shadow Nexus boss completion lack native event-to-quest composition. |
