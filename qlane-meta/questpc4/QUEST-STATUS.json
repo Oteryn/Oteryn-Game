@@ -7254,7 +7254,7 @@
       "reuse": "No shared-count/personal OR implementation found. PC3 conditional effects concern already-locked Quest operands rather than shared World leases, and published enum tags conflict; retain local published tags unchanged.",
       "tests": "Three composed native cases: 6 switches+7 ordered signs refuse; 7 switches alone open; 8 ordered signs alone open. All USE/STEP real; sealed pocket setup only, no SQL-seeded flags/counts; source landing11/Rootprogress/replay. Existing native threshold gate regression and source-expiry regression.",
       "scope": "Exact interaction pockets only, not complete maze or whole quest qualification. Do not implement until batch24 green pushed.",
-      "status": "PG_GREEN_COMPILER_GATES_PENDING",
+      "status": "QUALIFIED_COMPONENT",
       "previous_pushed_head": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
       "red_session": 56106,
       "red_log": "/tmp/questpc4-diprath-room-red3.log",
@@ -7309,16 +7309,30 @@
       "regressions": {
         "legacy_50137_closed": {
           "passed": 1,
-          "seconds": 97.904646906,
-          "postgres_version": "18.6"
+          "seconds": 80.642627111,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-diprath-room-final-legacy-gate.log"
         },
         "diprath_expiry": {
           "passed": 1,
-          "seconds": 74.482663594,
-          "postgres_version": "18.6"
+          "seconds": 65.358757821,
+          "postgres_version": "18.6",
+          "log": "/tmp/questpc4-diprath-room-final-treasure-regression.log"
         }
       },
-      "gates": "Final repaired-source check/clippy and source/binding/frozen/ownership units still running; final regressions use separate final-* logs.",
+      "gates": {
+        "fmt": "PASS",
+        "check": "PASS alltargets/allfeatures quests/durability/dispatch 6m44s including lock wait",
+        "clippy": "PASS -D warnings 3m09s",
+        "metadata_units": "2 PASS 0.01s",
+        "frozen_hashes": "1 PASS 1.31s",
+        "admission_units": "4 PASS 0.02s including physical-room/timer dual-owner regression",
+        "source_units": "Ancient5 PASS; RoomSource1 PASS1.37s",
+        "timer_binding": "1 PASS0.02s",
+        "native_ownership": "1 PASS pureunit, not PG",
+        "duplicates": "PASS",
+        "diff": "PASS"
+      },
       "repair": "Progress-bearing gates require_world_admission, so primary monotone effect carries canonical physical binding; retain timer-owned track protection. New security test rejects unphysical/renamed/stripped room writes and preserves timer owner.",
       "green": {
         "postgres_version": "18.6",
@@ -7329,6 +7343,11 @@
         "closed_seconds": 83.886298408,
         "shared_seconds": 85.491521551,
         "log": "/tmp/questpc4-diprath-room-green2.log"
+      },
+      "main_registry_recheck": {
+        "sha": "bbb3e06d04875fc1e63f024b853194f7580cc875",
+        "checked_at": "2026-11-07 14:21 UTC",
+        "result": "No QENGINE2/QBASE migrations integrated; conditional merge not applicable."
       }
     }
   },
