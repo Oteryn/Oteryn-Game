@@ -2544,3 +2544,75 @@ Current WPKG-only SQL files:
 - `1347_npc_trade_full_charges.sql`
 - `1348_npc_marriage.sql`
 - `1349_world_change_qengine_composition.sql`
+
+
+### Owner speed-first rule — final WPKG local qualification
+
+The owner explicitly replaced the full reverse-dependency nextest push gate: run own mechanic/PG cases, workspace-wide all-target compilation, changed-crate Clippy, fmt, duplicate migration checks and tooling regeneration; CI owns the full suites and returns one combined findings list. The full 34-crate run was stopped during compilation as directed (no tests executed). No full-suite success is claimed. No test was weakened, newly ignored, skipped in code or deleted to obtain these results. Focused command filters select only the required mechanic/content checks.
+
+Final dispositions: WORLDCHG-Q and SRV9 retained; WVAR, WCONTRIB and WEVENTS remain explicitly reverted with the reasons recorded above. The owner cancelled the SRV9 cutoff, and its full source behavior is retained. Main QENGINE2/QBASE 0999–1008 are byte-identical to origin/main 1ae39c7fb; no 1200–1205 copies, root contract file or tracked lane bookkeeping remain.
+
+The focused PostgreSQL regression reproduced RED before1349: the pre-fix WORLDCHG shape rejected a canonical zero-track QENGINE reward receipt. After1349 both canonical reward and closed Benevola shapes passed, while unrelated empty receipts remained rejected. All335 migrations replayed; actual PostgreSQL red→green proof took4.793s. Separate trigger probes rejected proofless canonical rewards and proofless Benevola handovers. Native Benevola then passed the real atomic wolf debit/shared-credit/replay/refusal route in83.039s.
+
+Local validation on the composed source tree:
+
+| Check | Result / duration |
+| --- | --- |
+| cargo check --workspace --all-targets --locked --keep-going | PASS,377.114s command wall |
+| changed crates: all-target/all-feature check | PASS,393.275s |
+| changed crates: all-target/all-feature Clippy -D warnings | PASS,303.853s |
+| cargo fmt --all --check | PASS,15.251s |
+| final tooling pin-refresh / pin-check | PASS,25.679s /27.926s |
+| quest-authoring unit suite | PASS,95modules,478.344s |
+| native-provider freshness | PASS,108.063s |
+| marriage / cosmetics / WORLDCHG authoring | PASS,0.393s /4.388s /17.247s |
+| owner-native-pg | PASS,29tests,504.782s actual test execution |
+| owner-server-pg | PASS,12tests,38.481s actual test execution |
+| owner-content-integration | PASS,132tests,292.769s actual test execution |
+| owner-world-change-units | PASS,44tests,1.559s actual test execution |
+
+Native/server commands preserve successful stdout and report real PostgreSQL completion markers (`POSTGRES_CASE_COMPLETED` and `WORLDCHG-Q PG EXECUTED`), including SRV9 fluids/charges/marriage, counter concurrency/rollback/replay, Hive permit/egress, Fire Earth/Fire Feathered, Stampede, Yasir and Yeo. Tests below include short non-PG unit cases; durations are nextest execution times, separate from compilation.
+
+| Focused group | Case | Seconds |
+| --- | --- | ---: |
+| owner-native-pg | `gameplay_transport::item_use::fluid_map_tests::srv9b_native_fluid_namespace_matches_shop_craft_and_drinking` | 0.011 |
+| owner-native-pg | `gameplay_transport::kill_reward::tests::worldchg_native_death_uses_carrier_floor_not_overlay_floor` | 0.013 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::map_harvest::worldchg_thawing_stale_epoch_refuses_without_value` | 41.649 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::map_harvest::worldchg_thawing_ordinary_flower_at_daily_coordinate_is_not_day_gated` | 41.676 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::map_harvest::worldchg_thawing_inactive_daily_source_refuses_without_value` | 41.710 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::map_harvest::worldchg_thawing_daily_added_use_yield_replay_restart` | 41.716 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::raid_live::worldchg_postgres_stampede_map_runtime_e2e` | 44.520 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_blessings::s10_blessings_enforced_pvp_postgres_refuses_purchase` | 81.179 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_blessings::s10_blessings_postgres_nonpremium_and_phoenix_stages` | 81.238 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_bank::s10_eva_postgres_bank_deposit_and_withdraw` | 81.307 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_blessings::s10_twist_postgres_accepts_amulet_carried_in_backpack` | 84.449 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_rashid::s10_weekday_rollover_moves_live_rashid_on_postgres` | 5.697 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_healing::s10_healing_postgres_restores_only_emergency_health` | 80.993 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_rashid::s10_rashid_wandering_postgres_shop_payment_and_replay` | 80.953 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_voices::s10_valindara_postgres_source_voice_reaches_chat` | 44.470 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_travel::s10_travel_postgres_source_keywords_and_free_arrival` | 84.981 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_wandering::s10_wandering_postgres_moves_within_source_radius_and_pauses_for_customers` | 81.195 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::srv9b_fluids::srv9b_charges_postgres_source_purchase_and_replay` | 85.964 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::srv9b_fluids::srv9b_fluids_postgres_buy_sell_subtype_fence_and_replay` | 85.499 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::srv9b_marriage::srv9b_marriage_postgres_native_lynda_service` | 85.829 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::s10_promotions::s10_promotions_postgres_registered_sources_charge_and_replay` | 251.690 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::terrain_tool::worldchg_voice_active_gobbler_wire_and_replay` | 45.218 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::terrain_tool::worldchg_voice_inactive_gobbler_refuses_without_writes` | 43.879 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_grimvale::worldchg_grimvale_final_native_wave_projects_actual_source_portal` | 41.833 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_grimvale::worldchg_grimvale_native_entry_requires_current_moon_without_quest_writes` | 45.169 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_hive_egress::worldchg_hive_native_gate_closed_stage_and_missing_scent_allow_egress_only` | 43.999 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_benevola::worldchg_benevola_native_yes_debits_one_and_credits_ten_atomically` | 83.039 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_trader::worldchg_trader_postgres_yasir_current_day_ship_and_receipt_gate` | 80.107 |
+| owner-native-pg | `gameplay_transport::monk_save::postgres_tests::worldchg_yeo::worldchg_yeo_native_repeatable_ten_shrimp_one_gloo_atomic_replay` | 80.074 |
+| owner-server-pg | `node::serve::channel_boot::worldchg_bootstrap_tests::worldchg_bootstrap_uninitialized_epoch_has_no_activation` | 0.009 |
+| owner-server-pg | `combat::death_reward::tests::worldchg_actual_corpse_plan_still_refuses_thirty_one_entries` | 0.009 |
+| owner-server-pg | `lifted_tests_auto::worldchg_stampede_content::worldchg_stampede_content_qualifies_native_wave_region_and_achievement` | 0.057 |
+| owner-server-pg | `node::raid_scheduler::tests::world_src_furyosa_production_candidates_require_active_epoch_layer` | 6.451 |
+| owner-server-pg | `worldchg_counter::worldchg_postgres_shared_kill_counter_atomic_replay_and_save` | 6.408 |
+| owner-server-pg | `lifted_tests_auto::world_src_flower_postgres::world_src_flower_postgres_repeats_donor_cycle_without_duplicate_firing` | 14.761 |
+| owner-server-pg | `worldchg_fire_earth::worldchg_postgres_fire_earth_fifty_active_kills_grant_once` | 8.364 |
+| owner-server-pg | `worldchg_fire_feathered::worldchg_postgres_fire_feathered_guardian_completion_waits_for_quara_reset` | 8.360 |
+| owner-server-pg | `worldchg_stampede::worldchg_postgres_stampede_daily_gate_reaches_existing_raid_runner` | 7.939 |
+| owner-server-pg | `worldchg_owner::worldchg_postgres_persistence_reset_and_atomic_contribution` | 7.984 |
+| owner-server-pg | `worldchg_hive_shared::worldchg_postgres_hive_completed_task_and_cycle_reset_are_one_receipt` | 8.276 |
+| owner-server-pg | `combat::death_reward::tests::worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans` | 38.461 |
