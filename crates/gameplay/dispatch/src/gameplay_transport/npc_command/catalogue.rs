@@ -155,6 +155,14 @@ pub(super) fn prepare(
         npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
+    if plan.track_changes.is_empty()
+        && plan
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::Experience { .. }))
+    {
+        return Some(Step::Refused);
+    }
     if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
         let end = plan
             .effects

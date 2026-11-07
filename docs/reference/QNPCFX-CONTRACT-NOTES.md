@@ -726,3 +726,7 @@ Registry reconciliation validation: staged-tree duplicate-migration script passe
 ## Fifteen-minute publication checkpoint
 
 The verified migration reconciliation at 583d0994c is the current green baseline (three focused PostgreSQL cases, duplicate check and pins passed). Publication cadence is now every green step and at least every fifteen minutes. The next code step is general source achievement/XP rewards through the existing account achievement and quest XP obligation owners. The exact current refusal remains npc_rules/evaluate.rs, the storage-only effect match; value-only exchanges additionally require lifting npc_program.rs's nonempty-track receipt restriction with durable proof. No title qualification is claimed by this checkpoint.
+
+## General XP participant WIP
+
+General positive source XP now sums into the existing quest XP obligation owner in the same transaction as NPC progress and item consumption. The obligation capacity check applies to every XP-producing branch. Father hand-ins retain their exact source XP validation. Compilation passed (13.56s); the focused sum/bounds unit case passed (0.00s, 15.32s build). Real-dispatch positive XP proof is the next check. Value-only XP still explicitly refuses at npc_program.rs's nonempty-track selection and catalogue.rs's empty-track XP guard; it is not treated as a successful read-only dialogue.

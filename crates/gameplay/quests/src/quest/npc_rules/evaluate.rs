@@ -358,6 +358,7 @@ pub(super) fn plan(
                             | NpcRuleEffect::SetNowPlus { .. }
                             | NpcRuleEffect::SetTopic { .. }
                             | NpcRuleEffect::EndConversation { .. }
+                            | NpcRuleEffect::Experience { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));

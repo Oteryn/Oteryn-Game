@@ -34,7 +34,8 @@ impl NpcRuleCatalog {
                     NpcRuleEffect::Set { .. }
                     | NpcRuleEffect::Add { .. }
                     | NpcRuleEffect::SetTopic { .. }
-                    | NpcRuleEffect::EndConversation { .. } => {}
+                    | NpcRuleEffect::EndConversation { .. }
+                    | NpcRuleEffect::Experience { .. } => {}
                     NpcRuleEffect::TakeItem {
                         item,
                         count: 1..=100,

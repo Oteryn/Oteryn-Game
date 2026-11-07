@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::npc_rules::{
 mod fathers_burden;
 mod marlin_trophy;
 mod items;
+mod rewards;
 
 /// Constructed only by this fenced NPC owner after current equipment admission.
 pub(in crate::durability) struct NpcItemPermit(());
@@ -268,7 +269,7 @@ impl DurabilityRoot {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else { None };
             let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,inventory.as_ref());
-            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() {
+            if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
@@ -277,6 +278,13 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && !plan.track_changes.is_empty()=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            let experience = rewards::experience(&plan.effects)?;
+            if father_items && fathers_burden::experience(&plan)? != experience { return Err(DurabilityError::InvalidStoredState); }
+            if experience > 0 {
+                let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id).fetch_one(&mut **tx).await?;
+                if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
+            }
             let item_action = father_items || marlin_items || (generic_items && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
@@ -306,9 +314,6 @@ impl DurabilityRoot {
                     Err(super::super::character_equipment::EquipmentError::Durability(error)) => return Err(error),
                     Err(super::super::character_equipment::EquipmentError::Database(error)) => return Err(error.into()),
                 }
-                let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=encode($1,'hex')::uuid")
-                    .bind(id).fetch_one(&mut **tx).await?;
-                if !generic_items && pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
                 let applied = if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else if generic_items {
@@ -341,9 +346,8 @@ impl DurabilityRoot {
             }
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).execute(&mut **tx).await?;
-            if father_items {
-                let amount = fathers_burden::experience(&plan)?;
-                insert_xp_obligation(&mut tx, character, &q, amount, &pin).await?;
+            if experience > 0 {
+                insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;
             }
             let receipt=load_receipt(&mut tx,character,&q).await?.ok_or(DurabilityError::InvalidStoredState)?;
             let receipt=decode_receipt(&receipt)?;
