@@ -83,7 +83,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                             })
                             .collect(),
                         completes: false,
-                        experience: None,
+                        experience: None, world_change: None,
                     },
                 ],
             )

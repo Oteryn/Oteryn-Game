@@ -91,7 +91,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                             effect: QuestEffectKind::Set(old_scent),
                         }],
                         completes: false,
-                        experience: None,
+                        experience: None, world_change: None,
                     },
                     QuestTransition {
                         key: seed_key.into(),
@@ -106,7 +106,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                             })
                             .collect(),
                         completes: false,
-                        experience: None,
+                        experience: None, world_change: None,
                     },
                 ],
             )
