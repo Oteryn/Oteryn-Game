@@ -28,6 +28,7 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                     let mut cases = vec!["chyllfroest", "flower", "mummy"];
                     if spring_published { cases.push("spring"); }
                     if catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry|entry["key"]=="kingsday" && entry["status"]=="QUALIFIED") { cases.push("kingsday"); }
+                    if catalogue["entries"].as_array().ok_or("owner entries")?.iter().any(|entry|entry["key"]=="bank_robbery" && entry["status"]=="QUALIFIED") { cases.push("bank"); }
                     for case in cases {
                         let started = std::time::Instant::now();
                         let h = fixture::Harness::create(
@@ -41,7 +42,8 @@ fn wevents_postgres_first_title_bindings() -> fixture::TestResult {
                             "flower" => flower(&h).await,
                             "mummy" => mummy(&h).await,
                             "spring" => spring(&h).await,
-                            _ => kingsday(&h).await,
+                            "kingsday" => kingsday(&h).await,
+                            _ => bank(&h).await,
                         };
                         h.cleanup().await?;
                         result?;
@@ -1368,5 +1370,194 @@ async fn kingsday(h: &fixture::Harness) -> fixture::TestResult {
             .is_none()
     );
     tx.commit().await?;
+    Ok(())
+}
+
+async fn bank(h: &fixture::Harness) -> fixture::TestResult {
+    use crate::durability::bank::BankError;
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use oteryn_gameplay_world_change::timed::{EventState, HOUR};
+    let at = 1_934_078_400_000_i64;
+    let world = fixture::scope()?.world_id();
+    let epoch = (1_u64..=10_000)
+        .find(|e| {
+            let Ok(draw) = timed::hourly_trigger_draw(world, EventKind::BankRobbery, *e as i64, 1)
+            else {
+                return false;
+            };
+            EventState::for_kind(EventKind::BankRobbery, 0, 24 * HOUR)
+                .and_then(|mut s| s.advance(EventKind::BankRobbery, HOUR, Input::Tick, draw))
+                == Ok(true)
+        })
+        .ok_or("native robbery draw")?;
+    for e in [epoch, epoch + 1] {
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'bank-map',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp($4::double precision/1000),'2031-04')")
+            .bind(world.as_bytes().as_slice()).bind(i64::try_from(e)?).bind([7u8;32].as_slice()).bind(at).execute(&h.pool).await?;
+    }
+    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2)")
+        .bind(world.as_bytes().as_slice())
+        .bind(i64::try_from(epoch)?)
+        .execute(&h.pool)
+        .await?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let f = fixture::fence(1)?;
+    let item_fence = CurrentCharacterItemFence {
+        character_id: f.character_id,
+        game_session_id: f.game_session_id,
+        connection_generation: f.connection_generation,
+        character_lease_generation: f.character_lease_generation,
+        runtime_scope: f.runtime_scope,
+        scope_ownership_generation: f.scope_ownership_generation,
+    };
+    let selected = candidate("raid:world-events.bank-robbery-thais", 101)?;
+    let mut req = request(selected.clone(), at)?;
+    req.reset_epoch = epoch;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    h.root
+        .preview_hireling_bank(
+            &authority,
+            &h.node,
+            item_fence,
+            None,
+            None,
+            "oteryn:npc.naji".into(),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    req.now_ms = at + HOUR;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .len(),
+        1
+    );
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    assert!(matches!(
+        h.root
+            .preview_hireling_bank(
+                &authority,
+                &h.node,
+                item_fence,
+                None,
+                None,
+                "oteryn:npc.naji".into()
+            )
+            .await,
+        Err(BankError::AuthorityRejected)
+    ));
+    // An unrelated bank keeps its existing service authority.
+    h.root
+        .preview_hireling_bank(
+            &authority,
+            &h.node,
+            item_fence,
+            None,
+            None,
+            "oteryn:npc.paulie".into(),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    let wave = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(101),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await?
+        .ok_or("robber wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = &wave.action else {
+        return Err("robber action".into());
+    };
+    assert_eq!(creatures.len(), 1);
+    assert!(creatures[0].timed_event);
+    assert_eq!(
+        creatures[0].creature.as_str(),
+        "oteryn:creature.jesse_the_wicked"
+    );
+    h.root
+        .acknowledge_raid_effect(
+            &h.node,
+            wave.identity,
+            vec![RaidPlacementOutcome {
+                identity: creatures[0].identity,
+                placed: true,
+            }],
+            req.now_ms,
+        )
+        .await?;
+    let end = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            fixture::id(101),
+            req.channel,
+            req.generation,
+            selected.definition.clone(),
+            req.now_ms,
+        )
+        .await?
+        .ok_or("robber end")?;
+    h.root
+        .acknowledge_raid_effect(&h.node, end.identity, vec![], req.now_ms)
+        .await?;
+    // Full u64 generations survive source matching, including values above i64.
+    let encoded:Vec<u8>=sqlx::query_scalar("SELECT game_world_event_death_key(encode($1,'hex')::uuid,encode($2,'hex')::uuid,18446744073709551615,4294967295,18446744073709551615)")
+        .bind(world.as_bytes().as_slice()).bind(req.channel.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(encoded.len(), 52);
+    assert_eq!(&encoded[32..], &[255_u8; 20]);
+    let invalid:Option<Vec<u8>>=sqlx::query_scalar("SELECT game_world_event_death_key(encode($1,'hex')::uuid,encode($2,'hex')::uuid,18446744073709551616,1,1)")
+        .bind(world.as_bytes().as_slice()).bind(req.channel.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert!(invalid.is_none());
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=$2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(i64::try_from(epoch + 1)?)
+    .execute(&h.pool)
+    .await?;
+    req.reset_epoch = epoch + 1;
+    req.now_ms = at;
+    req.candidates = vec![candidate("raid:world-events.bank-robbery-thais", 102)?];
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, req.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    h.root
+        .preview_hireling_bank(
+            &authority,
+            &h.node,
+            item_fence,
+            None,
+            None,
+            "oteryn:npc.naji".into(),
+        )
+        .await
+        .map_err(fixture::debug)?;
     Ok(())
 }

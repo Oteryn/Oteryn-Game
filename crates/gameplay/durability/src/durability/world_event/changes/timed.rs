@@ -74,6 +74,7 @@ async fn window(
         return Ok(None);
     };
     let selected = match kind {
+        EventKind::BankRobbery => day.timed.bank,
         EventKind::SpringIntoLife => day.timed.spring,
         EventKind::RiseOfDevovorga => day.timed.rise,
         EventKind::DevovorgasEssence => day.timed.essence,
@@ -251,6 +252,26 @@ async fn poll_current(
     let mut state = state(tx, world, kind, bounds, cycle, now).await?;
     // Channel clocks can arrive out of order; never rewind a committed projection.
     let now = now.max(state.observed_ms);
+    let draw = hourly_trigger_draw(
+        world,
+        kind,
+        cycle,
+        (now - state.start_ms).div_euclid(oteryn_gameplay_world_change::timed::HOUR),
+    )?;
+    state
+        .advance(kind, now, Input::Tick, draw)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    save(tx, world, kind, &state, cycle).await?;
+    Ok(Some(state))
+}
+
+/// Deterministic server-owned draw; it grants no activation or mutation authority.
+pub fn hourly_trigger_draw(
+    world: WorldId,
+    kind: EventKind,
+    cycle: i64,
+    slot: i64,
+) -> Result<u64, DurabilityError> {
     let mut hash = Sha256::new();
     hash.update(b"oteryn.world_event.timed.v1\0");
     hash.update(world.as_bytes());
@@ -258,22 +279,14 @@ async fn poll_current(
     hash.update(cycle.to_be_bytes());
     let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
     let mut occurrence = [0; 16];
-    occurrence[8..].copy_from_slice(
-        &((now - state.start_ms).div_euclid(oteryn_gameplay_world_change::timed::HOUR))
-            .to_be_bytes(),
-    );
-    let draw = deterministic_decision_u64(
+    occurrence[8..].copy_from_slice(&slot.to_be_bytes());
+    deterministic_decision_u64(
         &root,
         DecisionOccurrenceId::from_bytes(occurrence),
         "hourly_trigger",
         0,
     )
-    .map_err(|_| DurabilityError::InvalidStoredState)?;
-    state
-        .advance(kind, now, Input::Tick, draw)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    save(tx, world, kind, &state, cycle).await?;
-    Ok(Some(state))
+    .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 /// A pending result commits with the quest's custody debit and physical-effect receipt.
@@ -451,8 +464,8 @@ pub async fn interact(
         (0, object)
     };
     save(tx, request.world, request.kind, &state, cycle).await?;
-    sqlx::query("UPDATE game_world_timed_participants SET credited=credited+$5,ready_ms=$6,ready_object=$7,reward_ready=reward_ready OR $8 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
-        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied && matches!(request.input,Input::Jar(_)|Input::BeginObject(_)|Input::Extinguish(_)|Input::Fill(_)))).bind(cooldown).bind(cooldown_object).bind(earned_hatch).execute(&mut **tx).await?;
+    sqlx::query("UPDATE game_world_timed_participants SET credited=credited+$5,ready_ms=$6,ready_object=$7,reward_ready=reward_ready OR $8,claimed=claimed OR $9 WHERE world_id=encode($1,'hex')::uuid AND event_key=$2 AND cycle_id=$3 AND character_id=encode($4,'hex')::uuid")
+        .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(i64::from(applied && matches!(request.input,Input::Jar(_)|Input::BeginObject(_)|Input::Extinguish(_)|Input::Fill(_)|Input::Recover))).bind(cooldown).bind(cooldown_object).bind(earned_hatch).bind(applied && request.input==Input::Recover).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_world_timed_receipts(world_id,event_key,cycle_id,character_id,operation_id,input,applied) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7)")
         .bind(request.world.as_bytes().as_slice()).bind(request.kind.key()).bind(cycle).bind(character.as_bytes().as_slice()).bind(request.operation.as_slice()).bind(input).bind(applied).execute(&mut **tx).await?;
     Ok(Some(applied))
@@ -656,3 +669,6 @@ pub use raids::{NativeKillOutcome, NativeKillRequest, RaidOrigin};
 pub(crate) use raids::{raid_origin, seal_raid_origin};
 
 pub(crate) mod schedules;
+
+#[path = "timed/services.rs"]
+pub(crate) mod services;

@@ -78,6 +78,7 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
                     u16::try_from(chance).map_err(|_| DurabilityError::InvalidStoredState)
                 };
                 match kind {
+                    K::BankRobbery => timed.bank = true,
                     K::SpringIntoLife => timed.spring = true,
                     K::RiseOfDevovorga => timed.rise = true,
                     K::DevovorgasEssence => timed.essence_permille = chance(16)?,

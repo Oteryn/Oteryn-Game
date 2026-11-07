@@ -56,6 +56,7 @@ impl Binding {
                 .copied()
                 .map(|count| (11666, count)),
             (EventKind::SpringIntoLife, Input::Observe) => Some((3043, 1)),
+            (EventKind::BankRobbery, Input::Recover) => Some((13429, 1)),
             _ => None,
         }
     }

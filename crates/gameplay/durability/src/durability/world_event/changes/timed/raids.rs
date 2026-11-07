@@ -205,7 +205,9 @@ async fn credit(
         // A late death may expire the shared attempt, but cannot win it.
         save(tx, world, origin.kind, &state, origin.cycle).await?;
     }
-    if state.lifecycle.generation != origin.generation
+    if (origin.kind == EventKind::BankRobbery
+        && state.phase != oteryn_gameplay_world_change::timed::Phase::Active)
+        || state.lifecycle.generation != origin.generation
         || !matches!(
             state.phase,
             oteryn_gameplay_world_change::timed::Phase::Active

@@ -334,6 +334,7 @@ impl EventState {
                 self.phase = Phase::Victory;
                 Ok(true)
             }
+            (EventKind::BankRobbery, Input::Recover) => Ok(false),
             (EventKind::InsectoidInvasion, Input::Extinguish(member))
                 if self.phase == Phase::Active =>
             {

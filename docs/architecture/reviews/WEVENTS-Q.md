@@ -396,3 +396,28 @@ previous-wave LOST cleanup, claimed-participant refusal and inactive reset.
 Strict six-crate clippy passed with `-D warnings` in **6m07s**; the focused model
 run passed **13 tests**. Workspace fmt, mounted-source rustfmt and diff checks
 passed. Logs: `/tmp/wevents-kingsday-{clippy-final,model,fmt,mounted-fmt}.log`.
+
+## Bank shared owner checkpoint
+
+The reusable bank-service gate, server hourly draw, recovery cost contract,
+reset-scoped banker projection, duplicate recovery refusal, native actor
+retirement/retry and exact unsigned death-key encoder are implemented. The
+activation remains off in this checkpoint; native loot/reward verification
+continues in the next slice. No new WORLDCHG-Q title row is claimed here.
+
+Red: the recovery contract required no bag and repeated recovery errored; both
+focused model tests now pass. The real PostgreSQL owner case exposed numeric
+division rounding at maximum u64; migration 1126 now uses exact PostgreSQL
+`div`, preserving every generation bit. Its executed Bank marker is
+**8.205666004 s**, with **1 passed / 57.14 s** across all six selected owner
+cases (`/tmp/wevents-bank-owner-pg-final.log`). This covers the production
+hourly draw, no reset-time robbery, replay, Jesse's admitted raid plan/ACK,
+Naji's closed service, unrelated banker admission, maximum-u64 encoding and
+next-reset reopening. The case enables the candidate binding in its working
+fixture; committed publication remains disabled until native reward proof.
+
+Cargo check passed six crates in **42.00 s**; strict six-crate clippy passed
+with `-D warnings` in **4m46s**. Focused cost/lifecycle and catalogue model tests
+passed; fmt and mounted-source formatting passed. Migrations 1120–1129 were
+checked against freshly fetched main, WVAR, WCONTRIB, WORLDCHG and QENGINE2;
+none of those branches uses this range.

@@ -195,6 +195,9 @@ impl DailyWorldChanges {
         [
             (self.flower_month || self.timed.spring).then_some(ROSEMARIE),
             self.timed
+                .bank
+                .then_some(("oteryn:npc.naji", (32_342, 32_229, 7))),
+            self.timed
                 .kingsday
                 .then_some(("oteryn:npc.king_tibianus", (32_311, 32_172, 6))),
         ]

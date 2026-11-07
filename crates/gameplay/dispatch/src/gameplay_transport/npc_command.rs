@@ -945,30 +945,17 @@ pub(super) async fn npc_bank_talk(
         BankNpcIntent::Transfer { name, .. } => Some(name.clone()),
         _ => None,
     };
-    let preview_result = if crate::durability::house_hireling::npc_identity(&npc_key).is_some() {
-        admission
-            .root
-            .preview_hireling_bank(
-                admission.character,
-                admission.holder,
-                fence,
-                coins.clone(),
-                recipient,
-                npc_key.clone(),
-            )
-            .await
-    } else {
-        admission
-            .root
-            .preview_npc_bank(
-                admission.character,
-                admission.holder,
-                fence,
-                coins.clone(),
-                recipient,
-            )
-            .await
-    };
+    let preview_result = admission
+        .root
+        .preview_hireling_bank(
+            admission.character,
+            admission.holder,
+            fence,
+            coins.clone(),
+            recipient,
+            npc_key.clone(),
+        )
+        .await;
     let preview = match preview_result {
         Ok(preview) => preview,
         Err(BankError::Unavailable(_)) => return unknown(),

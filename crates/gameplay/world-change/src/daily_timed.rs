@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Candidates {
+    pub bank: bool,
     pub spring: bool,
     pub rise: bool,
     pub essence_permille: u16,
@@ -14,6 +15,8 @@ pub struct Candidates {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Selection {
+    #[serde(default)]
+    pub bank: bool,
     pub spring: bool,
     pub rise: bool,
     pub essence: bool,
@@ -29,6 +32,7 @@ impl Candidates {
                 && (u128::from(draw(purpose)) * 1000) >> 64 < u128::from(chance)
         };
         Selection {
+            bank: self.bank,
             spring: self.spring && month == 4 && (16..23).contains(&day),
             rise: self.rise && month == 9 && (1..8).contains(&day),
             essence: roll("wevents-essence", self.essence_permille),
