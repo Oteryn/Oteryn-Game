@@ -338,6 +338,15 @@
               "maximum": 31536000
             }
           }
+        },
+        "cooldown_reply": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       }
     },

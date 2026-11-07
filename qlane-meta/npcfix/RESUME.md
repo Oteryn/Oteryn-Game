@@ -116,4 +116,10 @@ Fading reward component QUALIFIED: actual PG113.90s with marker, both legitimate
 
 Cooldown component9e51b3106 merged incoming physical batch5e463759f; all source histories preserved. Combined independent pin-check PASS ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a. Reward PG113.90s/7 units/17 authoring/123 content/5 repository/fmt/check/clippy all green. Publish immediately, then continue Fading physical+literal UI with independent placement rows; avoid redoing incoming Wandering/Doctor/Goldro.
 
+## Literal cooldown component pushed next
+
+A Fading Memory source cooldown response/reset is independently QUALIFIED. Actual isolated PostgreSQL GREEN1/111.14s with POSTGRES_STARTED marker, direct early DB refusal, exact literal/topic reset, post-expiry gift and malformed-plan rollback. Initial UI RED129.94s retained. quests/durability/dispatch all-target/all-feature check4m15s and strict clippy9m39s PASS; reward units7/2.47s, shared authoring12/13.302s, content integration123/6.92s, fmt PASS. This component uses read-only clock advice and preserves the independent fenced reward writer. Commit/push this green mechanic immediately while the separate physical/name generation completes; whole NPC placement remains active.
+
 Active workshop owner checkpoint: main checkout has committed d1ab73204 (paid Altar, delayed Sweaty amulet, Fading literal cooldown UI and all3 real placements). It is now combining with803a33d39, preserving incoming cooldown declaration support and malformed-clock rollback PG. Incoming1144 unchanged; localworkshop extension moves1145. Combined quest263 and native42 reproduction pass; focused PG8/check/clippy session66048 executing. Fading physical32952,31440,3 and literal grief/topic reset already locally validated—avoid duplicating these, select independent lane rows. No whole Fading qualification until combined validation/push. All normal profiles retained; no debug/incremental flag overrides adopted.
+
+Latest43c59ddb9 literal cooldown delivery acknowledged; combine/reuse it rather than duplicate. Main checkout owns paid Altar, delayed Sweaty and physical Fading. Continue independent rows.

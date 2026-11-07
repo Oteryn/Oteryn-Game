@@ -718,6 +718,28 @@
         "test": "npcfix_reward_postgres_fading_memory_story_and_database_cooldown",
         "postgres": "POSTGRES_STARTED a_fading_memory;113.90s",
         "scope": "Exact source story, item8746,20-hour DB cooldown, post-expiry reward and malformed-plan item+clock rollback"
+      },
+      "literal_cooldown_component": {
+        "name": "Literal cooldown response and topic reset",
+        "state": "QUALIFIED_COMPONENT",
+        "entry": "A Fading Memory",
+        "scope": "Reusable read-only DB cooldown advice and source literal/reset; independent fenced reward authority remains unchanged. Whole NPC placement continues in the active six-cell batch.",
+        "red": "Actual PG missing UI response RED129.94s; early durable refusal assertion passed before the UI assertion failed.",
+        "green": {
+          "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+          "duration_seconds": 111.14,
+          "result": "1 passed; exact literal cooldown reply, reset topic, independent early DB refusal, elapsed repeat gift, native deadlines and malformed-plan rollback",
+          "log": "/tmp/npcfix-evidence/fading-ui-only-green.log"
+        },
+        "checks": {
+          "fmt": "PASS cargo fmt --all -- --check and explicit mounted rustfmt",
+          "check": "PASS quests/durability/dispatch all targets/features4m15s",
+          "clippy": "PASS same packages/all targets/features -D warnings9m39s",
+          "quest_units": "7 passed2.47s",
+          "source_authoring": "12 shared passed13.302s; existing owned authoring cases also pass",
+          "integration": "123 passed6.92s",
+          "self_review": "Read-only advice cannot grant; every reward uses the existing fenced writer. Root/track locks and semantic deadline retained; callback text bounded and clock-owned; old callbacks default to prior behavior. No tests removed or relaxed."
+        }
       }
     },
     {
@@ -3421,6 +3443,28 @@
         "self_review": "No findings; declared clocks bounded/owned, missing facts fail closed, same-transaction elapsed/timestamp proof, exact MINT, paid/achievement/deadline arms preserved, no binaries/workflow/repository-tool edits."
       },
       "next": "Immediately push, then finish Fading placement and literal refusal with independent physical rows; preserve other worker Wandering/Doctor/Goldro ownership."
+    },
+    {
+      "name": "Literal cooldown response and topic reset",
+      "state": "QUALIFIED_COMPONENT",
+      "entry": "A Fading Memory",
+      "scope": "Reusable read-only DB cooldown advice and source literal/reset; independent fenced reward authority remains unchanged. Whole NPC placement continues in the active six-cell batch.",
+      "red": "Actual PG missing UI response RED129.94s; early durable refusal assertion passed before the UI assertion failed.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+        "duration_seconds": 111.14,
+        "result": "1 passed; exact literal cooldown reply, reset topic, independent early DB refusal, elapsed repeat gift, native deadlines and malformed-plan rollback",
+        "log": "/tmp/npcfix-evidence/fading-ui-only-green.log"
+      },
+      "checks": {
+        "fmt": "PASS cargo fmt --all -- --check and explicit mounted rustfmt",
+        "check": "PASS quests/durability/dispatch all targets/features4m15s",
+        "clippy": "PASS same packages/all targets/features -D warnings9m39s",
+        "quest_units": "7 passed2.47s",
+        "source_authoring": "12 shared passed13.302s; existing owned authoring cases also pass",
+        "integration": "123 passed6.92s",
+        "self_review": "Read-only advice cannot grant; every reward uses the existing fenced writer. Root/track locks and semantic deadline retained; callback text bounded and clock-owned; old callbacks default to prior behavior. No tests removed or relaxed."
+      }
     }
   ],
   "owner_constraints": {
@@ -3435,7 +3479,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
+  "next_batch": "Finish the separate six-NPC canonical placement/name batch and push immediately; keep all remaining owned scope active.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3552,6 +3596,28 @@
         "pin_check": "PASS ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
         "note": "Merge preserved both source/qualification histories; only independent physical-placement data and metadata changed from the validated runtime component."
       }
+    },
+    "fading_ui": {
+      "name": "Literal cooldown response and topic reset",
+      "state": "QUALIFIED_COMPONENT",
+      "entry": "A Fading Memory",
+      "scope": "Reusable read-only DB cooldown advice and source literal/reset; independent fenced reward authority remains unchanged. Whole NPC placement continues in the active six-cell batch.",
+      "red": "Actual PG missing UI response RED129.94s; early durable refusal assertion passed before the UI assertion failed.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX reward a_fading_memory",
+        "duration_seconds": 111.14,
+        "result": "1 passed; exact literal cooldown reply, reset topic, independent early DB refusal, elapsed repeat gift, native deadlines and malformed-plan rollback",
+        "log": "/tmp/npcfix-evidence/fading-ui-only-green.log"
+      },
+      "checks": {
+        "fmt": "PASS cargo fmt --all -- --check and explicit mounted rustfmt",
+        "check": "PASS quests/durability/dispatch all targets/features4m15s",
+        "clippy": "PASS same packages/all targets/features -D warnings9m39s",
+        "quest_units": "7 passed2.47s",
+        "source_authoring": "12 shared passed13.302s; existing owned authoring cases also pass",
+        "integration": "123 passed6.92s",
+        "self_review": "Read-only advice cannot grant; every reward uses the existing fenced writer. Root/track locks and semantic deadline retained; callback text bounded and clock-owned; old callbacks default to prior behavior. No tests removed or relaxed."
+      }
     }
   },
   "npcfix_active_workshop": {
@@ -3561,9 +3627,9 @@
       "A Sweaty Cyclops"
     ],
     "local_source_commit": "d1ab73204",
-    "merging_with": "803a33d39",
+    "merging_with": "43c59ddb9",
     "state": "MERGED_SOURCE_REVALIDATING_IN_MAIN_CHECKOUT",
-    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active.",
+    "work": "Incoming cooldown source and malformed-clock PG are retained. Generic bank+item atomic payments, delayed craft clocks, fresh database-time literal wait replies, and strict real map actors already locally validated. Incoming1144 unchanged; workshop extension1145. Fading physical32952,31440,3 already implemented and PG-qualified in main checkout; avoid duplicate Fading physical/UI work. Other entries remain active. Latest43c59ddb9 literal UI delivery acknowledged and will be reused in main; avoid duplicate Fading UI/physical work.",
     "local_proof": "PG6/183.57s plus funded missing parts96.27s and existing bank96.20s; quest261/fee43/NPC25; fmt/check/clippy and pins. Combined quest263 and native42 reproduction now pass; combined PG8/check/clippy running.",
     "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
   }
