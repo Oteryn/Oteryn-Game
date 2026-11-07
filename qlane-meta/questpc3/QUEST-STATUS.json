@@ -2,7 +2,7 @@
   "task_id": "questpc3-L4",
   "branch": "claude/happy-davinci-ijz3wy-questpc3",
   "phase": "AUTHORING",
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
   "counts": {
     "scope_total": 22,
     "in_progress": 4,
@@ -53,7 +53,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Kill sum and Kroazur report implemented with PG proof. Complete the remaining NPC Item/progress exchanges, light/barrier USE bindings and atomic final bag reward; reuse delivered engine code and implement remaining mechanisms here."
+      "next_actions": "Six actual light gathering/cosmetic transforms now PG-proven with exact carried-source, World time/area, receipt replay and lost-ack recovery. Implement the fifteen distinct world-target repairs, remaining source NPC/animal/object branches and full journey; whole quest remains IN_PROGRESS."
     },
     {
       "canonical": "oteryn:quest.pilgrimage_of_ashes",
@@ -279,7 +279,7 @@
   ],
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
+    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -810,12 +810,12 @@
         ]
       }
     ],
-    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "cloud_continuation": {
     "phase": "AUTHORING",
     "base": "968f6812010e719d91316f92eedb5732841283fd",
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
     "metadata_recovery": "Latest head removed qlane-meta; recovered the five handoff records from c5cdcd6ae without reference dumps.",
     "assumptions": [],
     "sources": [
@@ -850,7 +850,111 @@
         "sha256": "c172ebab19214e792f141fc1c38ef9f78b4cf3c508949bdb67d7a5a827533e2b"
       }
     ],
-    "current_batch": "threatened_light_07: generic carried-use area/time predicates and six source transform branches",
+    "current_batch": {
+      "id": "threatened_light_07",
+      "phase": "GREEN; commit and merge remote chest slice before fast-forward publication",
+      "scope": "Six source physical light transforms, generic carried-source regions/time/receipt recovery; whole Threatened Dreams remains IN_PROGRESS.",
+      "pg_red": {
+        "log": "/tmp/questpc3-threatened-light-red-world-fixture-fixed.log",
+        "sha256": "6caf461958623b4fc073c6ab2515ae0c7fa7c0c6f4becb72c963180348ea4254",
+        "duration_ms": 210324,
+        "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED",
+        "result": "all three families primary=false cosmetic=false receipts=0"
+      },
+      "pg_green": {
+        "log": "/tmp/questpc3-light-green-route-fixed.log",
+        "sha256": "2b40cea0aa87653830c2aa9b9751d6cdb479113b11090bde6c442196cc75bbcb",
+        "duration_ms": 213016,
+        "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED duration_ms=213016 success=true",
+        "result": "moon/star/sun primary=true cosmetic=true receipts=2 each; lost-ack recovery, later-clock replay and changed-source conflict asserted"
+      },
+      "ordinary_wire_regression": {
+        "log": "/tmp/questpc3-light-consumables-route-fixed.log",
+        "sha256": "7e3a18d668d0fd648b22f13f3f872dce1489046a6622fcb4ba1e1ba0c9c9a173",
+        "duration_ms": 74390,
+        "result": "PASS real PostgreSQL wire: mana potion/fish, four committed replies; GAP-SV2/I10 PostgreSQL marker"
+      },
+      "checks": {
+        "clock_unit": {
+          "log": "/tmp/questpc3-light-time-unit.log",
+          "sha256": "143b4bd6444d5bbd17e3b7f76dfc2115b9b1a01fa469ee2fd32071d68f39440a",
+          "tests": 1,
+          "result": "PASS"
+        },
+        "carried_units": {
+          "log": "/tmp/questpc3-light-carried-unit.log",
+          "sha256": "9e86185152bbe568f1403dc902b338e1334722fa7c9556ea4a6e56ad5ffa9038",
+          "tests": 3,
+          "result": "PASS"
+        },
+        "source_authoring": {
+          "log": "/tmp/questpc3-light-authoring.log",
+          "sha256": "916fbcd69fa35a8b61f02dcfc7c2c4411892d5e8ea267b5eb8db6f2688688c78",
+          "tests": 10,
+          "duration_seconds": 17.957,
+          "result": "PASS; corrected source contract additionally passed /tmp/questpc3-light-authoring-corrected.log"
+        },
+        "native_profiles": {
+          "log": "/tmp/questpc3-light-profile-tests.log",
+          "sha256": "adfc32854dd6f3ab681f086ec1be2349db331b8cef160f23e0d6aa4a0e121b7d",
+          "tests": 15,
+          "duration_seconds": 126.4,
+          "result": "PASS"
+        },
+        "native_producers": {
+          "log": "/tmp/questpc3-light-native-final-check.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "files": 41,
+          "result": "PASS"
+        },
+        "check": {
+          "log": "/tmp/questpc3-light-isolated-route-check.log",
+          "sha256": "60832ddb649c3470e2b6afbe8cb361c8963042fbce0ddab7713f388158f13318",
+          "duration_seconds": 267,
+          "result": "PASS; changed dependencies checked through dispatch --all-features"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-light-final-clippy-fixed.log",
+          "sha256": "371f442c5377d292f47df03f7a41128daa9845ecee070e6ef595343d35ece678",
+          "duration_seconds": 73,
+          "result": "PASS all five changed crates, all features/targets, -D warnings; equivalent None guard shortened per lint"
+        },
+        "pin_refresh": {
+          "log": "/tmp/questpc3-light-pin-refresh.log",
+          "sha256": "8a3dce53441217dce45318b5f1d4911b3b113fb37f3ab7e8ca57e055b73a69a8",
+          "result": "PASS"
+        },
+        "pin_check": {
+          "log": "/tmp/questpc3-light-pin-check.log",
+          "sha256": "5b140e033af4679b68ff3b0739b39e2f928b97acbc087f88f578bedf69851fda",
+          "result": "PASS; input11159aa64c00ebc29fcd3d701ae30cf09b53dd29d0d87fa0918f7ac0c3ae481f/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+        }
+      },
+      "native_delta": {
+        "added": [
+          25729,
+          25975,
+          25976,
+          25977
+        ],
+        "changed_existing": 0,
+        "removed_existing": 0,
+        "canonical_portable_admissions": [
+          25975,
+          25976,
+          25977
+        ],
+        "loot_changed": false
+      },
+      "corrections": [
+        "Required return_on_failure emitted by producer; strict loader unchanged.",
+        "Use actual retained counter initial value; seed only prior story, never physical outputs.",
+        "Fixture resolves pinned definition indices instead of passing raw Tibia object IDs.",
+        "Optional quest route isolated from ordinary item use; only matched sources require quest-session admission.",
+        "Interrupted carried attempts now hold the existing session resume gate and native ingress receipt."
+      ],
+      "remaining": "Fifteen actual distinct world-target barrier repairs and other remaining quest branches are the next implementation work, not delivered or globally completed by this slice."
+    },
     "tutorial_equipment_publication": {
       "id": "equipment-feyrist-native-merge",
       "phase": "GREEN; commit and fast-forward publication now",
@@ -2504,25 +2608,109 @@
         "published": "0874c2694"
       },
       "threatened_light_07": {
-        "status": "RED_PROVEN_IMPLEMENTING",
-        "red": {
-          "duration_ms": 210324,
+        "id": "threatened_light_07",
+        "phase": "GREEN; commit and merge remote chest slice before fast-forward publication",
+        "scope": "Six source physical light transforms, generic carried-source regions/time/receipt recovery; whole Threatened Dreams remains IN_PROGRESS.",
+        "pg_red": {
           "log": "/tmp/questpc3-threatened-light-red-world-fixture-fixed.log",
-          "markers": "moon/star/sun primary=false cosmetic=false receipts0 for allthree",
-          "success": false
+          "sha256": "6caf461958623b4fc073c6ab2515ae0c7fa7c0c6f4becb72c963180348ea4254",
+          "duration_ms": 210324,
+          "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED",
+          "result": "all three families primary=false cosmetic=false receipts=0"
         },
-        "invalid_setup": "Initial compile passed BundleWorld where native room expected; fixed to existing movement-cell world binding; not counted as RED.",
-        "source": "Three verified retained scripts action_moon_mirror.lua/action_starlight_vial.lua/action_sun_catcher.lua,6/8 branches and five distinct repair positions each. Source facts in CONTRACT-NOTES; no source copies committed.",
-        "feature": "Reuse existing world callback/quest/item replacement transaction. Add carried trigger, exact source, actor rectangle, recorded server clock, bound definition terms and exact replay. No competing ledger.",
-        "reuse_checked": "Explicit remote tracking refs refreshed qengine2 2638a83ca plus questpc5/questpc6/questl2; no matching carried area/time rule found. Existing World CLOCK-1 and source item replacement reused.",
-        "clock_support_checkpoint": {
-          "scope": "Deterministic recorded World-clock test source; production system clock unchanged; six-branch RED fixture remains uncommitted pending GREEN.",
-          "compatibility_pg_ms": 158618,
-          "compatibility_pg_log": "/tmp/questpc3-world-clock-fixture-inventory-pg.log",
-          "check": "PASS dispatch allfeatures/tests6m58s including build lock",
-          "clippy": "PASS dispatch allfeatures/alltargets -Dwarnings2m11s",
-          "fmt": "PASS cargo fmt --all --check"
-        }
+        "pg_green": {
+          "log": "/tmp/questpc3-light-green-route-fixed.log",
+          "sha256": "2b40cea0aa87653830c2aa9b9751d6cdb479113b11090bde6c442196cc75bbcb",
+          "duration_ms": 213016,
+          "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED duration_ms=213016 success=true",
+          "result": "moon/star/sun primary=true cosmetic=true receipts=2 each; lost-ack recovery, later-clock replay and changed-source conflict asserted"
+        },
+        "ordinary_wire_regression": {
+          "log": "/tmp/questpc3-light-consumables-route-fixed.log",
+          "sha256": "7e3a18d668d0fd648b22f13f3f872dce1489046a6622fcb4ba1e1ba0c9c9a173",
+          "duration_ms": 74390,
+          "result": "PASS real PostgreSQL wire: mana potion/fish, four committed replies; GAP-SV2/I10 PostgreSQL marker"
+        },
+        "checks": {
+          "clock_unit": {
+            "log": "/tmp/questpc3-light-time-unit.log",
+            "sha256": "143b4bd6444d5bbd17e3b7f76dfc2115b9b1a01fa469ee2fd32071d68f39440a",
+            "tests": 1,
+            "result": "PASS"
+          },
+          "carried_units": {
+            "log": "/tmp/questpc3-light-carried-unit.log",
+            "sha256": "9e86185152bbe568f1403dc902b338e1334722fa7c9556ea4a6e56ad5ffa9038",
+            "tests": 3,
+            "result": "PASS"
+          },
+          "source_authoring": {
+            "log": "/tmp/questpc3-light-authoring.log",
+            "sha256": "916fbcd69fa35a8b61f02dcfc7c2c4411892d5e8ea267b5eb8db6f2688688c78",
+            "tests": 10,
+            "duration_seconds": 17.957,
+            "result": "PASS; corrected source contract additionally passed /tmp/questpc3-light-authoring-corrected.log"
+          },
+          "native_profiles": {
+            "log": "/tmp/questpc3-light-profile-tests.log",
+            "sha256": "adfc32854dd6f3ab681f086ec1be2349db331b8cef160f23e0d6aa4a0e121b7d",
+            "tests": 15,
+            "duration_seconds": 126.4,
+            "result": "PASS"
+          },
+          "native_producers": {
+            "log": "/tmp/questpc3-light-native-final-check.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "files": 41,
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-light-isolated-route-check.log",
+            "sha256": "60832ddb649c3470e2b6afbe8cb361c8963042fbce0ddab7713f388158f13318",
+            "duration_seconds": 267,
+            "result": "PASS; changed dependencies checked through dispatch --all-features"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-light-final-clippy-fixed.log",
+            "sha256": "371f442c5377d292f47df03f7a41128daa9845ecee070e6ef595343d35ece678",
+            "duration_seconds": 73,
+            "result": "PASS all five changed crates, all features/targets, -D warnings; equivalent None guard shortened per lint"
+          },
+          "pin_refresh": {
+            "log": "/tmp/questpc3-light-pin-refresh.log",
+            "sha256": "8a3dce53441217dce45318b5f1d4911b3b113fb37f3ab7e8ca57e055b73a69a8",
+            "result": "PASS"
+          },
+          "pin_check": {
+            "log": "/tmp/questpc3-light-pin-check.log",
+            "sha256": "5b140e033af4679b68ff3b0739b39e2f928b97acbc087f88f578bedf69851fda",
+            "result": "PASS; input11159aa64c00ebc29fcd3d701ae30cf09b53dd29d0d87fa0918f7ac0c3ae481f/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+          }
+        },
+        "native_delta": {
+          "added": [
+            25729,
+            25975,
+            25976,
+            25977
+          ],
+          "changed_existing": 0,
+          "removed_existing": 0,
+          "canonical_portable_admissions": [
+            25975,
+            25976,
+            25977
+          ],
+          "loot_changed": false
+        },
+        "corrections": [
+          "Required return_on_failure emitted by producer; strict loader unchanged.",
+          "Use actual retained counter initial value; seed only prior story, never physical outputs.",
+          "Fixture resolves pinned definition indices instead of passing raw Tibia object IDs.",
+          "Optional quest route isolated from ordinary item use; only matched sources require quest-session admission.",
+          "Interrupted carried attempts now hold the existing session resume gate and native ingress receipt."
+        ],
+        "remaining": "Fifteen actual distinct world-target barrier repairs and other remaining quest branches are the next implementation work, not delivered or globally completed by this slice."
       }
     },
     "source_corrections": [
@@ -2550,7 +2738,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T05:11:22.694593+00:00",
+    "updated_at": "2026-11-07T06:18:58.110209+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2694,11 +2882,9 @@
       "review": "Conflicts resolved preserving both optional default-compatible hash extensions, all item/slot/value-free guards, current-level advisory selection and independently locked SQL level check. Schema/docs now declare minimum_level. No blocking finding."
     },
     "previous_publication": {
-      "batch": "corpse-pilgrimage-threatened-merge",
-      "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
-      "remote_verified": true,
-      "head": "0746ef43c530dfe9c9f460a7b802872793bec675",
-      "pushed": true
+      "commit": "9a95cb0fda24e6341af0153d644ef2eb9c1cbea0",
+      "pushed": true,
+      "remote_verified": true
     },
     "integrating_remote_batch": {
       "commit": "73a106fc5035885a844c81e8618900f80c028116",
@@ -3070,7 +3256,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -3342,6 +3528,111 @@
           "retry": "Single normal-profile --no-run build succeeded48.24s; then3actual focusedPG commands running. Build-only is not claimed asPGproof."
         },
         "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
+      },
+      "threatened_light_07": {
+        "id": "threatened_light_07",
+        "phase": "GREEN; commit and merge remote chest slice before fast-forward publication",
+        "scope": "Six source physical light transforms, generic carried-source regions/time/receipt recovery; whole Threatened Dreams remains IN_PROGRESS.",
+        "pg_red": {
+          "log": "/tmp/questpc3-threatened-light-red-world-fixture-fixed.log",
+          "sha256": "6caf461958623b4fc073c6ab2515ae0c7fa7c0c6f4becb72c963180348ea4254",
+          "duration_ms": 210324,
+          "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED",
+          "result": "all three families primary=false cosmetic=false receipts=0"
+        },
+        "pg_green": {
+          "log": "/tmp/questpc3-light-green-route-fixed.log",
+          "sha256": "2b40cea0aa87653830c2aa9b9751d6cdb479113b11090bde6c442196cc75bbcb",
+          "duration_ms": 213016,
+          "marker": "THREATENED_LIGHTS POSTGRES_CASE_COMPLETED duration_ms=213016 success=true",
+          "result": "moon/star/sun primary=true cosmetic=true receipts=2 each; lost-ack recovery, later-clock replay and changed-source conflict asserted"
+        },
+        "ordinary_wire_regression": {
+          "log": "/tmp/questpc3-light-consumables-route-fixed.log",
+          "sha256": "7e3a18d668d0fd648b22f13f3f872dce1489046a6622fcb4ba1e1ba0c9c9a173",
+          "duration_ms": 74390,
+          "result": "PASS real PostgreSQL wire: mana potion/fish, four committed replies; GAP-SV2/I10 PostgreSQL marker"
+        },
+        "checks": {
+          "clock_unit": {
+            "log": "/tmp/questpc3-light-time-unit.log",
+            "sha256": "143b4bd6444d5bbd17e3b7f76dfc2115b9b1a01fa469ee2fd32071d68f39440a",
+            "tests": 1,
+            "result": "PASS"
+          },
+          "carried_units": {
+            "log": "/tmp/questpc3-light-carried-unit.log",
+            "sha256": "9e86185152bbe568f1403dc902b338e1334722fa7c9556ea4a6e56ad5ffa9038",
+            "tests": 3,
+            "result": "PASS"
+          },
+          "source_authoring": {
+            "log": "/tmp/questpc3-light-authoring.log",
+            "sha256": "916fbcd69fa35a8b61f02dcfc7c2c4411892d5e8ea267b5eb8db6f2688688c78",
+            "tests": 10,
+            "duration_seconds": 17.957,
+            "result": "PASS; corrected source contract additionally passed /tmp/questpc3-light-authoring-corrected.log"
+          },
+          "native_profiles": {
+            "log": "/tmp/questpc3-light-profile-tests.log",
+            "sha256": "adfc32854dd6f3ab681f086ec1be2349db331b8cef160f23e0d6aa4a0e121b7d",
+            "tests": 15,
+            "duration_seconds": 126.4,
+            "result": "PASS"
+          },
+          "native_producers": {
+            "log": "/tmp/questpc3-light-native-final-check.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "files": 41,
+            "result": "PASS"
+          },
+          "check": {
+            "log": "/tmp/questpc3-light-isolated-route-check.log",
+            "sha256": "60832ddb649c3470e2b6afbe8cb361c8963042fbce0ddab7713f388158f13318",
+            "duration_seconds": 267,
+            "result": "PASS; changed dependencies checked through dispatch --all-features"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-light-final-clippy-fixed.log",
+            "sha256": "371f442c5377d292f47df03f7a41128daa9845ecee070e6ef595343d35ece678",
+            "duration_seconds": 73,
+            "result": "PASS all five changed crates, all features/targets, -D warnings; equivalent None guard shortened per lint"
+          },
+          "pin_refresh": {
+            "log": "/tmp/questpc3-light-pin-refresh.log",
+            "sha256": "8a3dce53441217dce45318b5f1d4911b3b113fb37f3ab7e8ca57e055b73a69a8",
+            "result": "PASS"
+          },
+          "pin_check": {
+            "log": "/tmp/questpc3-light-pin-check.log",
+            "sha256": "5b140e033af4679b68ff3b0739b39e2f928b97acbc087f88f578bedf69851fda",
+            "result": "PASS; input11159aa64c00ebc29fcd3d701ae30cf09b53dd29d0d87fa0918f7ac0c3ae481f/world5feab142eb4a4387acf986fec44841e269c58848c4188160871945936863c973/31102319bytes"
+          }
+        },
+        "native_delta": {
+          "added": [
+            25729,
+            25975,
+            25976,
+            25977
+          ],
+          "changed_existing": 0,
+          "removed_existing": 0,
+          "canonical_portable_admissions": [
+            25975,
+            25976,
+            25977
+          ],
+          "loot_changed": false
+        },
+        "corrections": [
+          "Required return_on_failure emitted by producer; strict loader unchanged.",
+          "Use actual retained counter initial value; seed only prior story, never physical outputs.",
+          "Fixture resolves pinned definition indices instead of passing raw Tibia object IDs.",
+          "Optional quest route isolated from ordinary item use; only matched sources require quest-session admission.",
+          "Interrupted carried attempts now hold the existing session resume gate and native ingress receipt."
+        ],
+        "remaining": "Fifteen actual distinct world-target barrier repairs and other remaining quest branches are the next implementation work, not delivered or globally completed by this slice."
       }
     },
     "completed_batches": [
@@ -3890,7 +4181,7 @@
       "scope": "Source clothing checks at greet3/4 and one club grant; reusable occupied-slot predicates and explicitly value-free repeatable checks, current transaction fenced. Chest/ground delivery/vitals/trade remain subsequent owned mechanisms.",
       "test_draft": "/tmp/questpc3-next-equipment-test.py",
       "implementation_draft": "/tmp/questpc3-next-equipment-production.py",
-      "reused": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
+      "reused": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
       "dependency_heads": {
         "qengine2": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
         "questpc2": "97c922c33db60f315e95a9cbe5057078b7ec2c48",

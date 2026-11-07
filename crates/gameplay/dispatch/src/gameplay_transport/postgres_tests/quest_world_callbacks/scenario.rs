@@ -510,6 +510,7 @@ fn scenario_case(
                 let context = {
                     let runtime = deps.runtime.lock().await;
                     crate::durability::quest_world_callback::QuestWorldContext {
+                    carried: None,
                         map_revision: crate::map::overlay::map_revision(world.base()),
                         content_revision: format!(
                             "sha256:{}",

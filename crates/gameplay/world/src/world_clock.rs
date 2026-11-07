@@ -108,7 +108,7 @@ impl RetainedWorldConfig {
 }
 
 /// `WORLDINT0-RL-16`: real milliseconds per Tibian minute.
-pub const TIBIAN_MINUTE_MS: u64 = 2_500;
+pub const TIBIAN_MINUTE_MS: u64 = crate::foundation::world_time::TIBIAN_MINUTE_MS;
 /// `WORLDINT0-RL-17`: the light level at night and by day, and the light color.
 pub const NIGHT_LIGHT_LEVEL: u8 = 40;
 pub const DAY_LIGHT_LEVEL: u8 = 250;
@@ -208,8 +208,7 @@ impl WorldClockSource {
 
     /// §11.2: `floor((t - epoch) / 2,500 ms) mod 1,440`. `None` before the epoch.
     pub fn tibian_minute(&self, now_utc_ms: u64) -> Option<u32> {
-        let elapsed = self.absolute_elapsed_ms(now_utc_ms)?;
-        u32::try_from((elapsed / TIBIAN_MINUTE_MS) % u64::from(TIBIAN_MINUTES_PER_DAY)).ok()
+        crate::foundation::world_time::tibian_minute(self.epoch_utc_ms, now_utc_ms)
     }
 
     /// The wire payload at a time fact; `None` before the epoch.

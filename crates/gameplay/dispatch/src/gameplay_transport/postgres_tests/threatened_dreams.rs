@@ -5,6 +5,8 @@
 mod final_reward;
 #[path = "threatened_dreams/inventory.rs"]
 mod inventory;
+#[path = "threatened_dreams/lights.rs"]
+mod lights;
 #[path = "threatened_dreams/maps.rs"]
 mod maps;
 

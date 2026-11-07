@@ -6,6 +6,8 @@
 #[path = "drome_cube_use.rs"]
 pub(super) mod drome_cube;
 
+#[path = "quest_carried_use.rs"]
+pub(super) mod carried;
 #[path = "item_use_gourmet.rs"]
 pub(super) mod gourmet;
 
@@ -415,6 +417,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok_or(UseDisposition::Rejected);
                 }
             }
+        }
+        if let Some(result) = carried::use_source(self, actor, command, &source).await {
+            return result;
         }
         if let Some(result) = gourmet::use_gourmet(self, actor, command, &source).await {
             return result;
