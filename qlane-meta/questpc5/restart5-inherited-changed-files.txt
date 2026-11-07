@@ -1,8 +1,8 @@
-apps/game-server/migrations/0969_quest_finish.sql
-apps/game-server/migrations/1000_corruptor_lifecycle.sql
-apps/game-server/migrations/1001_questpc_npc_revision.sql
-apps/game-server/migrations/1002_questpc_viola.sql
-apps/game-server/migrations/1003_questpc_viola_book.sql
+apps/game-server/migrations/1200_quest_finish.sql
+apps/game-server/migrations/1201_corruptor_lifecycle.sql
+apps/game-server/migrations/1202_questpc_npc_revision.sql
+apps/game-server/migrations/1203_questpc_viola.sql
+apps/game-server/migrations/1204_questpc_viola_book.sql
 apps/game-server/src/node/serve/bundle_npcs.rs
 apps/game-server/src/node/serve/qualification_fixture.rs
 apps/game-server/src/quest_catalogue_boot_tests.rs

@@ -1,4 +1,4 @@
-apps/game-server/migrations/0969_quest_finish.sql
+apps/game-server/migrations/1200_quest_finish.sql
 apps/game-server/src/node/serve/qualification_fixture.rs
 apps/game-server/src/quest_catalogue_boot_tests.rs
 apps/game-server/tests/integration_rest/world_reward_claims_binding.rs

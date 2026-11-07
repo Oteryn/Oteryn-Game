@@ -41,8 +41,8 @@
     "native_binding_security_rust_units": 1,
     "generator": "PASS registered spell import files43; collectible proof --check PASS",
     "fmt": "PASS",
-    "cargo_check": "PASS104s after cache recovery",
-    "strict_clippy": "active; checkpoint compiles and actual whole PG GREEN",
+    "cargo_check": "PASS104s",
+    "strict_clippy": "PASS213s all changed crates, all targets/features, -D warnings after cache recovery",
     "pin_check": "pending"
   },
   "environment_recovery": "Verification initially encountered No space left on device. Removed only inactive Rust incremental caches after proving no live compiler; freed15GB; reran checks without skipping or weakening. Actual PG GREEN is positive-duration and independent."

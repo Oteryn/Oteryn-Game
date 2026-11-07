@@ -6,7 +6,7 @@
     "QUALIFIED": 3
   },
   "product_hashes": {
-    "apps/game-server/migrations/1004_fathers_burden_items.sql": "98556abbafa6b961a51029cfe2cee8923322006eec6bb2c737d99b9e5a1a29f9",
+    "apps/game-server/migrations/1205_fathers_burden_items.sql": "98556abbafa6b961a51029cfe2cee8923322006eec6bb2c737d99b9e5a1a29f9",
     "content/content.lock.json": "34b663eebc4d16899cd8fd151f66cafd5406046d5020efbac1911098bd0be0d1",
     "content/items/definitions/spell-native-profiles.json": "9332e23548fb551f64ba661394b86f902804f3218f5e93d87b80d6bd5c66f9a6",
     "content/items/index.json": "0a591ff9f37a8855244781f6687b08f9a9de81639eba92e1cb0b5067b97129af",

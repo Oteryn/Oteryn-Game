@@ -1,0 +1,116 @@
+{
+  "owner_registry": "QENGINE2 0999\u20131006; QBASE1200\u20131205; questpc5 1270\u20131279",
+  "qengine2_source_commit": "69609ef781c4e66d9c25fa61392c1ec0b6680033",
+  "qengine2_policy": "All eight canonical files consumed byte-for-byte. No own variant retained in0999\u20131006.",
+  "qbase_policy": "Six shared files renamed with git mv and preserved byte-for-byte against shared peer source. Father local-variable repair is an additive1272 function transformation; eleven-track write remains unchanged.",
+  "lane_migrations": [
+    "1270_spell_static_map_fields.sql",
+    "1271_quest_world_reward_sources.sql",
+    "1272_fathers_burden_xp_guard.sql"
+  ],
+  "world_guard": "1271 transforms only the one exact cause-kind predicate on the canonical current function, preserving QENGINE2 target-set/state-operation guards; unexpected body refuses migration.",
+  "checks": {
+    "duplicates": "PASS .claude/skills/oteryn-dev/scripts/dup-migrations.sh on staged candidate tree",
+    "old_filename_references": "NONE, including protected workflows/repository tools (unmodified)",
+    "canonical_bytes": "PASS8QENGINE2+6QBASE",
+    "focused_postgres": {
+      "nimmersatt_whole": 104.657881932,
+      "father_atomic_eleven_acceptance": 103.899473728,
+      "father_values": "active",
+      "static_field": "queued"
+    },
+    "fmt": "PASS",
+    "cargo_check_clippy": "pending",
+    "pins": "prior whole-Nimmersatt pin PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b; repeat after migration tests",
+    "cargo_check": "PASS16.78s dispatch+server",
+    "strict_clippy": "PASS87s all targets/features -D warnings dispatch+server"
+  },
+  "migrations": [
+    {
+      "path": "apps/game-server/migrations/0999_quest_reward_callbacks.sql",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+      "sqlx_sha384": "edec9249a80e08baa87bed7a93e709d0038c4798216e38b8a607288562e1f98a7a8145673ba19a7aa5bd9de82e2ad7c3"
+    },
+    {
+      "path": "apps/game-server/migrations/1000_quest_reward_payments.sql",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+      "sqlx_sha384": "f031f9b383f94ccb2b468bd90d0205a0d61866d3267a591706758b74a440c230bc0287d806f2f7ed5c46691ea4dda5b4"
+    },
+    {
+      "path": "apps/game-server/migrations/1001_quest_reward_participants.sql",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5",
+      "sqlx_sha384": "fed1507bb51d99e87955b2b1b833ee6fe9428f8cb6b4bf95a98b73666b0d0f573ecef9919304ae95b87d845699489121"
+    },
+    {
+      "path": "apps/game-server/migrations/1002_quest_reward_state_operations.sql",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8",
+      "sqlx_sha384": "7a43792de62e005fa20c232b20a6763cec10ce7c6d8f18df2a9ecad6e5351562c7dc4256e7892752c059ea229c7348f3"
+    },
+    {
+      "path": "apps/game-server/migrations/1003_quest_reward_target_sets.sql",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf",
+      "sqlx_sha384": "0014f9930da18a4d08651ce0682414994923573b226f36bf0d8675089042f06dea54d8e707766defcc0f9ac17e954378"
+    },
+    {
+      "path": "apps/game-server/migrations/1004_quest_paid_item_exchanges.sql",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800",
+      "sqlx_sha384": "99f60940ebd9b834095140677bd1f1ca536e4944a9c3f0bafe4d6b8826c941144afcda238936a29a3dea22a6ed08bc76"
+    },
+    {
+      "path": "apps/game-server/migrations/1005_quest_carried_use_proofs.sql",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023",
+      "sqlx_sha384": "306416cd8f89881aa431e60d461c9a47f73a7864e0ec79c8c4e7bd810d72d50b77dd1c67de8948317ef6ca2009f8aee6"
+    },
+    {
+      "path": "apps/game-server/migrations/1006_quest_owned_base_predicates.sql",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2",
+      "sqlx_sha384": "0f1c28185ddd53c936ca9df8d30a62c4a8522acc0e19adef806bf499ef84377e88bac54853b43f3c2ff992902c22d407"
+    },
+    {
+      "path": "apps/game-server/migrations/1200_quest_finish.sql",
+      "sha256": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+      "sqlx_sha384": "db94049089a2e7ce47fc46dfa7c5187d3e7cbe8f43eef69ff65a1fb34b2cfaaf44b5e24f2b997653e960667d32ca0ad6"
+    },
+    {
+      "path": "apps/game-server/migrations/1201_corruptor_lifecycle.sql",
+      "sha256": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+      "sqlx_sha384": "c1bd0765ec3630e56e63860070ad45f0c3120f1d85cf1794fb00c11d8b22b8cdaec4d8456bd5ee1a4cb15d1502eb6541"
+    },
+    {
+      "path": "apps/game-server/migrations/1202_questpc_npc_revision.sql",
+      "sha256": "557e97c2d6530e7cb9104d2cdaffbc3fd2b17a68446fd1575419117f5429be41",
+      "sqlx_sha384": "790dad728cb4ed980823ad6ed1d10a1e8f72494519bcf58569c58589b947726798d44fdd3c675c441babc86a275ce174"
+    },
+    {
+      "path": "apps/game-server/migrations/1203_questpc_viola.sql",
+      "sha256": "2fcccdb63dc6bc5da0b285392b090204caa1d670d51243cad3c67b39f4563b28",
+      "sqlx_sha384": "7162e38faf7cd91422d00fda8521a99bcb83b9bef53e3cc8ec8ba1360ff0e5fd30c49fc35d8dfd32acbc1d005e34cfe1"
+    },
+    {
+      "path": "apps/game-server/migrations/1204_questpc_viola_book.sql",
+      "sha256": "53b825590b3894684d38333b98e7b8e419c8a9d749e9e325d45a2c1575a43ab1",
+      "sqlx_sha384": "46686dbd093028f689c036083fe71ff6e5689cfab6c7b311f06e01beda01e6c5aeb3af8667eadc662e942f05e6f4aa10"
+    },
+    {
+      "path": "apps/game-server/migrations/1205_fathers_burden_items.sql",
+      "sha256": "8c5da07a907b1325c5fe10d0263ecb26d62e198f968fd1a1f5d8b9faad84ed0d",
+      "sqlx_sha384": "ee716785355878f4b0b1db56cec6543409b7e58e3d38491357eba2e4e92b391bf656ba4308dff1081ea572fd72f1833c"
+    },
+    {
+      "path": "apps/game-server/migrations/1270_spell_static_map_fields.sql",
+      "sha256": "0f53a89b28e1c3f78f07abb8f86a018adc5ff75f1da20f0a3ccecd09d5696b2b",
+      "sqlx_sha384": "6db060987d922d16448af62db5f246adffd8e743b582c4db6793c8681af188a210c20300e23d1123b60c0b79a611e569"
+    },
+    {
+      "path": "apps/game-server/migrations/1271_quest_world_reward_sources.sql",
+      "sha256": "3c800c08e7de4be194fd61eaa080e77799d168e941683d8146ce4edbdf6e37d4",
+      "sqlx_sha384": "a48114860cac9d38dc3d62661a135ed5259fe5c9c6397e44bcbb55481b6d6f45628e08cf2d904c1d7ff9060c48c82cb9"
+    },
+    {
+      "path": "apps/game-server/migrations/1272_fathers_burden_xp_guard.sql",
+      "sha256": "edc0c8faf83982724ced90a7130caa04aac7de39e87d93247676c47487d9c1e8",
+      "sqlx_sha384": "e226637b5305a6acdf6419d46c1a17de98cae3852f806a51425c3cfadfa3cb8ca24f960ce8abe49962d742163541e914"
+    }
+  ],
+  "checksum_policy": "SQLx compile-time migrator embeds the renamed/replaced files and recomputes checksums. No checked-in SQLx checksum cache or explicit migration filename registry exists outside the updated reference."
+}
