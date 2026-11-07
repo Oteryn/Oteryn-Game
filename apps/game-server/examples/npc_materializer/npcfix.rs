@@ -93,7 +93,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
     if draft.core.project_revision != "e06-market-crystal-parity-20261031-r1" {
         return Err("NPCFIX predecessor revision drifted".into());
     }
-    if hex_sha256(PACKET) != "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66" {
+    if hex_sha256(PACKET) != "bde7214723c91671cf00238d9db6b8de64c58323c5591de0cd7b1ed3c44bfcae" {
         return Err("NPCFIX repair packet digest drifted".into());
     }
     let packet: Packet = serde_json::from_slice(PACKET)?;

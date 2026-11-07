@@ -18816,6 +18816,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Guardian of the Deep Seas"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -18834,13 +18841,6 @@
             "value": {
               "type": "Text",
               "value": "normal"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "Guardian of the Deep Seas"
             }
           }
         ],
@@ -18926,6 +18926,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Hemor, the guard"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -18944,13 +18951,6 @@
             "value": {
               "type": "Text",
               "value": "normal"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "Hemor, the guard"
             }
           }
         ],
@@ -19036,6 +19036,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Humnog, the guard"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -19054,13 +19061,6 @@
             "value": {
               "type": "Text",
               "value": "normal"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "Humnog, the guard"
             }
           }
         ],
@@ -19146,6 +19146,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Lesser Messenger of Heaven"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -19164,13 +19171,6 @@
             "value": {
               "type": "Text",
               "value": "normal"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "Lesser Messenger of Heaven"
             }
           }
         ],
@@ -19270,6 +19270,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "Nah'Bob"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -19288,13 +19295,6 @@
             "value": {
               "type": "Text",
               "value": "trade"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "Nah'Bob"
             }
           }
         ],
@@ -19422,6 +19422,13 @@
             }
           },
           {
+            "field_path": "oteryn:source.npc.display_name",
+            "value": {
+              "type": "Text",
+              "value": "One-Eyed Joe"
+            }
+          },
+          {
             "field_path": "oteryn:source.npc.floor_change",
             "value": {
               "type": "Boolean",
@@ -19468,13 +19475,6 @@
             "value": {
               "type": "Text",
               "value": "[{\"text\":\"Did you hear that, too?\",\"yell\":false}]"
-            }
-          },
-          {
-            "field_path": "oteryn:source.npc.display_name",
-            "value": {
-              "type": "Text",
-              "value": "One-Eyed Joe"
             }
           }
         ],

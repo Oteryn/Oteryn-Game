@@ -8439,7 +8439,7 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "POSTGRES_GREEN; GAME_SERVER_CHECK_PASS; FINAL_GENERATION_CLIPPY_PIN_GATES_RUNNING",
+    "state": "POSTGRES_AND_CATALOGUE_GREEN; CANONICAL_ORDER_FIXED; FINAL_RECHECKS_RUNNING",
     "entries": [
       "Guardian of the Deep Seas",
       "Hemor, the guard",
@@ -8520,6 +8520,24 @@
           "oteryn:npc.one_eyed_joe"
         ]
       }
+    },
+    "canonical_order_fix": {
+      "old_packet_sha256": "0ba41960fed44d4535c0b494e2b6fb158c7481f4da08d0f18e7bd99caf629a66",
+      "new_packet_sha256": "bde7214723c91671cf00238d9db6b8de64c58323c5591de0cd7b1ed3c44bfcae",
+      "original54_unchanged": true,
+      "all6_after_records_equal_existing_legacy_records": true,
+      "fix": "Canonical field_path ordering in only six new after-records; no canonical data or test assertion changed."
+    },
+    "catalogue": "Fresh NPC catalogue target compiled and passed55.83s after canonical field order correction",
+    "world_pin": {
+      "inputs_digest": "3f6980e2c46edc44d3cccf4e9204b49cd242c50855c0b45f91154535f1a8f307",
+      "pins": [
+        {
+          "bytes": 31822062,
+          "digest": "bebbda21662d3b0e37b68a718b5b11b9903e2647e5b7f40173842a3916e06e27",
+          "world": "oteryn"
+        }
+      ]
     }
   }
 }
