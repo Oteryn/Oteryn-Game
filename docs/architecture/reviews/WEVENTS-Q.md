@@ -110,3 +110,17 @@ Spring native membership scan found exactly six current B3 item14098 dragon
 nests. Candidate coordinates and region SHA256 values are retained in the
 session scratch record `/tmp/wevents-native-spring-nests.json`; authored seasonal
 policy will bind those existing objects rather than infer empty map positions.
+
+Final first-batch native rerun: 2 passed, 78.70 s; execution markers
+`wevents_flower_map` 72.133108776 s and `wevents_mummy_map` 78.699636997 s.
+
+Shared-object foundation: red E0432 for absent `objects`, then 2 Cargo tests
+passed for hatch boundary/one-time claim, shared units/fire, reset and atomic
+rejection of invalid times/overflow. `cargo check`, strict library clippy and
+package fmt check passed for world-change. This is a reusable primitive; native
+bindings for the remaining titles are recorded when their complete slices land.
+Reused worldchg `318ab59d200ad2030ca7c829566b88175cb7e2dc` through merge
+`fd1421e2b`: native death capture and World-owned credit authority/receipts.
+Its focused real PG case passed (7.27 s), printing `WORLDCHG-Q PG EXECUTED`
+with elapsed 7.262177514 s after concurrent writers, dedupe, rollback, stale
+scope/epoch and reset checks. No full PostgreSQL suite ran.
