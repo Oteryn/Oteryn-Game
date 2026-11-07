@@ -746,3 +746,12 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
   ordinary admission hostility filter; its targeting profile is unchanged. The actual
   native Chocolate Blob/core `49087` regression proves ordinary refusal, Soulpit
   admission, retained passive targeting, and rejection after actor retirement.
+
+- The Soulpit static authoring generator also owns the client's placement-index
+  digest in `crates/client-assets/src/world.rs`: it hashes the exact emitted index
+  bytes and requires exactly one constant projection. Its check covers the Rust
+  consumer together with the JSON inventory.
+- Soulpit reads retry only the existing nonblocking root-holder busy result under
+  the existing command budget; authority, history and unknown-commit failures
+  remain closed. Autonomous traversal filters current readiness before its bounded
+  page limit so an earlier unready fight cannot hide a later current fight.

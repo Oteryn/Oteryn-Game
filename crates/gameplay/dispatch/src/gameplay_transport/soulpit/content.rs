@@ -1,6 +1,7 @@
 //! Qualify a private Soulpit child of the activated full World bundle.
 use super::super::activity_runtime::{ActivityRuntimeAssets, ActivityTemplateKey};
-use super::super::{ComposedFreshAdmission, SeamRooms};
+use super::super::{AdmissionRetryBudget, ComposedFreshAdmission, SeamRooms};
+use super::handoff_owner::read_with_budget;
 use crate::content::soulpit_activity::{
     SOULPIT_BOUNDS, SOULPIT_TEMPLATE_KEY, SOULPIT_TEMPLATE_REVISION,
 };
@@ -10,7 +11,10 @@ use crate::map::boot::BundleCollisionIndexExt;
 use std::sync::Arc;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
-    pub(super) async fn ensure_soulpit_template_runtime(&self) -> Result<(), ActivityRefusal> {
+    pub(super) async fn ensure_soulpit_template_runtime(
+        &self,
+        retry: &AdmissionRetryBudget<'_>,
+    ) -> Result<(), ActivityRefusal> {
         let _transition = self.activity_runtimes.transitions.lock().await;
         let template = self
             .activity_runtimes
@@ -42,12 +46,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         else {
             return Err(ActivityRefusal::AuthorityRejected);
         };
-        let issued = self
-            .root
-            .read_current_content_activation(world_id, channel_id)
-            .await
-            .map_err(|_| ActivityRefusal::AuthorityRejected)?
-            .ok_or(ActivityRefusal::ContentUnavailable)?;
+        let issued = read_with_budget(retry, async || {
+            self.root
+                .read_current_content_activation(world_id, channel_id)
+                .await
+        })
+        .await
+        .map_err(|_| ActivityRefusal::AuthorityRejected)?
+        .ok_or(ActivityRefusal::ContentUnavailable)?;
         if issued.activation_sequence != active.activation_sequence()
             || issued.server_artifact_digest != active.identity().server_artifact_digest()
             || issued.client_artifact_digest != active.identity().client_artifact_digest()
@@ -57,10 +63,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let mut after = None;
         loop {
-            let candidates = owner
-                .ready_allocations(self.character, self.holder, world_id, after)
-                .await
-                .map_err(|_| ActivityRefusal::AuthorityRejected)?;
+            let candidates = read_with_budget(retry, async || {
+                owner
+                    .ready_allocations(self.character, self.holder, world_id, after)
+                    .await
+            })
+            .await
+            .map_err(|_| ActivityRefusal::AuthorityRejected)?;
             for allocation in &candidates {
                 if let Some(existing) = self
                     .activity_runtimes
@@ -74,11 +83,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     }
                     continue;
                 }
-                let Some(assignment) = self
-                    .root
-                    .read_runtime_scope_assignment(allocation.scope)
-                    .await
-                    .map_err(|_| ActivityRefusal::AuthorityRejected)?
+                let Some(assignment) = read_with_budget(retry, async || {
+                    self.root
+                        .read_runtime_scope_assignment(allocation.scope)
+                        .await
+                        .map_err(|error| match error {
+                            crate::durability::runtime_scope_assignment::AssignmentError::Unavailable(error) => error,
+                            // Only the nested RootUnavailable is a busy root. All typed
+                            // assignment refusals remain fail-closed, without retry.
+                            _ => crate::durability::DurabilityError::Unavailable,
+                        })
+                })
+                .await
+                .map_err(|_| ActivityRefusal::AuthorityRejected)?
                 else {
                     continue;
                 };

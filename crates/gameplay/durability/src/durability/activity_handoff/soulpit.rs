@@ -119,16 +119,24 @@ impl ActivityHandoffOwner {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             if !prove_current_incarnation(&mut tx, &node).await? { return Err(DurabilityError::Unavailable); }
+            let history: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+                .fetch_one(&mut *tx).await?;
+            if !history { return Err(DurabilityError::Unavailable); }
             let fact = node.fact();
+            // Readiness must filter before LIMIT: fifteen unready retained fights must
+            // not hide later ready Instances by turning a full page into a short one.
             let rows = sqlx::query("SELECT uuid_send(g.handoff_id) AS handoff,uuid_send(g.instance_id) AS instance,g.ownership_generation::text AS generation \
                 FROM game_activity_handoff_groups g JOIN game_soulpit_encounters f USING(handoff_id) \
                 JOIN game_runtime_scope_assignments a ON a.scope_key='\\x03'::bytea || uuid_send(g.world_id) || uuid_send(g.instance_id) \
+                JOIN game_durability_admission_runtime_guards rg ON rg.scope_key='\\x02'::bytea || uuid_send(g.world_id) || uuid_send(g.instance_id) \
                 WHERE g.world_id=encode($1,'hex')::uuid AND g.activity_key=$2 AND g.state=2 \
-                  AND a.state=1 AND a.ownership_generation=g.ownership_generation \
+                  AND a.scope_kind=3 AND a.state=1 AND a.world_id=g.world_id AND a.activity_instance_id=g.instance_id \
+                  AND a.channel_id IS NULL AND a.house_key IS NULL AND a.ownership_generation=g.ownership_generation \
                   AND a.holder_node_id=encode($3,'hex')::uuid AND a.holder_registration_revision=$4::text::numeric \
+                  AND rg.ready AND rg.ownership_generation=a.ownership_generation \
                   AND ($5::bytea IS NULL OR g.handoff_id>encode($5,'hex')::uuid) \
                   AND EXISTS(SELECT 1 FROM game_activity_handoff_participants p WHERE p.handoff_id=g.handoff_id AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns r WHERE r.handoff_id=p.handoff_id AND r.character_id=p.character_id)) \
-                ORDER BY g.handoff_id LIMIT 15")
+                ORDER BY g.handoff_id LIMIT 15 FOR SHARE OF a,rg")
                 .bind(world.as_bytes().as_slice()).bind(SOULPIT_ACTIVITY_KEY)
                 .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
                 .bind(after.as_ref().map(|id| id.as_slice())).fetch_all(&mut *tx).await?;
@@ -136,9 +144,10 @@ impl ActivityHandoffOwner {
             for row in rows {
                 let scope = RuntimeScopeRefV1::instance(world, bytes16(row.try_get("instance")?)?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let generation = ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                if assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
-                    result.push(SoulpitBinding { handoff_id: bytes16(row.try_get("handoff")?)?, scope, generation });
+                if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
+                    return Err(DurabilityError::Unavailable);
                 }
+                result.push(SoulpitBinding { handoff_id: bytes16(row.try_get("handoff")?)?, scope, generation });
             }
             Ok(result)
         })).await

@@ -1,9 +1,11 @@
 //! The production adapter uses the same native reservation and durable group owner
 //! as other activities. It cannot allocate an Instance or clone Channel authority.
+use super::super::connection::AdmissionRefusal;
 use super::super::connection::{ConnectionIdentifiers, UseOutcome};
 use super::super::native_activity::NativeActivityOutcome;
-use super::super::{ComposedFreshAdmission, SecureIdentifiers};
+use super::super::{AdmissionRetryBudget, ComposedFreshAdmission, SecureIdentifiers};
 use super::{SoulpitEntryIntent, outcome};
+use crate::durability::DurabilityError;
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterRequest, ActivityHandoffOwner, ActivityParticipant,
     ActivityReturnReason,
@@ -17,6 +19,38 @@ use crate::foundation::{
 };
 use oteryn_gameplay_domain::domain::soulpit::{self, EXIT_POSITION};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+// RootUnavailable is the nonblocking root holder's busy result. All other failures,
+// including lost current authority and unknown commits, retain their fail-closed path.
+fn classify_read(error: DurabilityError) -> AdmissionRefusal {
+    match error {
+        DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+        _ => AdmissionRefusal::Rejected,
+    }
+}
+
+pub(super) async fn read_with_budget<T>(
+    retry: &AdmissionRetryBudget<'_>,
+    mut read: impl AsyncFnMut() -> Result<T, DurabilityError>,
+) -> Result<T, ()> {
+    retry
+        .retry_unavailable(async || read().await.map_err(classify_read))
+        .await
+        .map_err(|_| ())
+}
+
+fn owner_read<T>(read: Result<T, DurabilityError>) -> Result<Option<T>, ()> {
+    match read {
+        Ok(value) => Ok(Some(value)),
+        Err(DurabilityError::RootUnavailable) => Ok(None),
+        Err(_) => Err(()),
+    }
+}
+
+fn read_retry_deadline(now: u64, prior: Option<u64>) -> Option<u64> {
+    let retry = now.saturating_add(10_000);
+    Some(prior.map_or(retry, |prior| prior.min(retry)))
+}
 
 pub struct NativeSoulpitHandoff;
 
@@ -39,19 +73,27 @@ impl NativeSoulpitHandoff {
         let mut after = None;
         let mut next = None;
         loop {
-            let bindings = owner
-                .active_soulpits(admission.character, admission.holder, world, after)
-                .await
-                .map_err(|_| ())?;
+            let Some(bindings) = owner_read(
+                owner
+                    .active_soulpits(admission.character, admission.holder, world, after)
+                    .await,
+            )?
+            else {
+                return Ok(read_retry_deadline(now_micros, next));
+            };
             for binding in &bindings {
                 let registered = admission
                     .activity_runtimes
                     .get(binding.scope, binding.generation.get())
                     .ok_or(())?;
-                let members = owner
-                    .soulpit_members(admission.character, admission.holder, *binding)
-                    .await
-                    .map_err(|_| ())?;
+                let Some(members) = owner_read(
+                    owner
+                        .soulpit_members(admission.character, admission.holder, *binding)
+                        .await,
+                )?
+                else {
+                    return Ok(read_retry_deadline(now_micros, next));
+                };
                 let driven = super::owner_runtime::drive_registered(
                     admission,
                     &registered,
@@ -118,17 +160,20 @@ async fn return_shared_soulpit<'a, 'f, 's>(
     }
     let fence = admitted.item_fence.ok_or(())?;
     let owner = ActivityHandoffOwner::new(admission.root.clone());
+    let retry = AdmissionRetryBudget::for_command(admission.root);
     let mut after = None;
     let binding = loop {
-        let bindings = owner
-            .active_soulpits(
-                admission.character,
-                admission.holder,
-                admitted.world_id,
-                after,
-            )
-            .await
-            .map_err(|_| ())?;
+        let bindings = read_with_budget(&retry, async || {
+            owner
+                .active_soulpits(
+                    admission.character,
+                    admission.holder,
+                    admitted.world_id,
+                    after,
+                )
+                .await
+        })
+        .await?;
         if let Some(binding) = bindings.iter().find(|binding| {
             binding.scope == fence.runtime_scope
                 && binding.generation == fence.scope_ownership_generation
@@ -140,10 +185,12 @@ async fn return_shared_soulpit<'a, 'f, 's>(
         }
         after = bindings.last().map(|binding| binding.handoff_id);
     };
-    let members = owner
-        .soulpit_members(admission.character, admission.holder, binding)
-        .await
-        .map_err(|_| ())?;
+    let members = read_with_budget(&retry, async || {
+        owner
+            .soulpit_members(admission.character, admission.holder, binding)
+            .await
+    })
+    .await?;
     let member = members
         .iter()
         .find(|member| member.session == session && member.character == fence.character_id)
@@ -254,17 +301,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        if self.ensure_soulpit_template_runtime().await.is_err() {
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        if self.ensure_soulpit_template_runtime(&retry).await.is_err() {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
         let template = self.activity_runtimes.soulpit_template().ok_or(())?;
         let mut after = None;
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let destination = loop {
-            let candidates = owner
-                .ready_allocations(self.character, self.holder, admitted.world_id, after)
-                .await
-                .map_err(|_| ())?;
+            let candidates = read_with_budget(&retry, async || {
+                owner
+                    .ready_allocations(self.character, self.holder, admitted.world_id, after)
+                    .await
+            })
+            .await?;
             let mut found = None;
             for allocation in &candidates {
                 if let Some(registered) = self
@@ -405,5 +455,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             participants,
         };
         self.soulpit_result(self.enter_native_soulpit(group, entry).await?)
+    }
+}
+
+#[cfg(test)]
+mod read_retry_tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn soulpit_owner_busy_reads_retry_next_deadline_without_masking_authority_loss() {
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::RootUnavailable)),
+            Ok(None)
+        );
+        assert_eq!(owner_read::<()>(Err(DurabilityError::Unavailable)), Err(()));
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::InvalidStoredState)),
+            Err(())
+        );
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::CommitOutcomeUnknown)),
+            Err(())
+        );
+        assert_eq!(read_retry_deadline(1_000, None), Some(11_000));
+        assert_eq!(read_retry_deadline(1_000, Some(5_000)), Some(5_000));
+    }
+
+    #[test]
+    fn soulpit_command_reads_retry_only_busy_root_under_existing_budget() -> Result<(), String> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .map_err(|error| format!("{error:?}"))?;
+        runtime.block_on(async {
+            tokio::time::pause();
+            let budget = AdmissionRetryBudget {
+                deadline: tokio::time::Instant::now() + Duration::from_secs(1),
+                backoff: Duration::from_millis(50),
+                stale_rounds: 1,
+                root: None,
+            };
+            let mut calls = 0;
+            let result = read_with_budget(&budget, async || {
+                calls += 1;
+                if calls == 1 {
+                    Err(DurabilityError::RootUnavailable)
+                } else {
+                    Ok(7)
+                }
+            })
+            .await;
+            assert_eq!(result, Ok(7));
+            assert_eq!(calls, 2);
+            let mut calls = 0;
+            let result = read_with_budget::<()>(&budget, async || {
+                calls += 1;
+                Err(DurabilityError::Unavailable)
+            })
+            .await;
+            assert_eq!(result, Err(()));
+            assert_eq!(calls, 1);
+        });
+        Ok(())
     }
 }
