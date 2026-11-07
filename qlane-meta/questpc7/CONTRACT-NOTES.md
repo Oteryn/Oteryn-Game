@@ -432,3 +432,29 @@ Arena anchor data-global/scripts/quests/grave_danger/actions_king_zelos_lever.lu
 Arena anchor data-global/scripts/quests/grave_danger/actions_lord_azaram_lever.lua:1-22, Crystal9f, sha256 61767895e2331b8c03f0e031846af8f4dc761f8554c120ba13787440f2b56649.
 Arena anchor data-global/scripts/quests/grave_danger/actions_sir_baeloc_sir_nictros_lever.lua:1-22, Crystal9f, sha256 74d75d91cefa47e03d6f93f79fe3283e0229924f0482ef5dd108c356465a9f14.
 Arena anchor data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua:1-22, Crystal9f, sha256 7cf1f42e77e0f20423eae7cc8d898200cd7f739e6c4fa0bc57cad08398f9ac2c.
+
+## Grimvale native contacts — 2026-11-07
+
+Reuse canonical NPC declarations oteryn:npc.rhargu and oteryn:npc.domizian;
+no new identity or donor Lua is fabricated. Existing approximate visual mapping
+is retained without a canonical appearance-fidelity claim. Peer70a0d92af's
+apply_authored_placements is reused, extended to pinned completion242 recipe
+records as well as authored68 recipes. Admission still requires the canonical
+NPC identity, an explicit scoped key, exact recipe SHA256, named talk target,
+chosen-approximation basis, bounded cells, directions and no donor replacement.
+
+Chosen Rhargu(33138,32353,-5) and Domizian(33140,32353,-5) stand outside the
+Ancient Feud entrance. These are selected contact cells, not original NPC
+coordinates. Physical region-z05-x129-y126.b3 SHA256
+60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062
+has clear unowned ground4559 at both cells; native compiler collision admission
+is tested separately. Retained entrance source:
+data-global/scripts/quests/grimvale/actions_ancient_feud_entrances.lua:1-8
+at Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d, SHA256
+3570f68f69848c0176703c72cb35a6316c5986bdf1ce4214272fd659b608a1ef.
+The frozen recipe names both talk targets; contact placement alone cannot
+advance or qualify the subject quest. Full selected programme remains ACTIVE.
+
+PG RED41.1128287s reaches PostgreSQL18.6 and refuses absent Rhargu placement.
+The same test will require both published contacts, distinct real runtime
+actors, and unchanged absent Grimvale programme state after native admission.

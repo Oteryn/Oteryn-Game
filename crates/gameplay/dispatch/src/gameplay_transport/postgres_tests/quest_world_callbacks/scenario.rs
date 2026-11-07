@@ -306,7 +306,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "questpc7-grave" {
+        if name == "qengine-rewards-grimvale-contacts" {
+            super::super::questpc7_grimvale::contacts(&mut owner,&mut admitted,&h).await?;
+        } else if name == "questpc7-grave" {
             super::super::questpc7_grave::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "questpc7-ferumbras" {
             super::super::questpc7_ferumbras::exercise(&mut owner,&mut admitted,&h).await?;

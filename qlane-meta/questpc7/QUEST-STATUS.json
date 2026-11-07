@@ -1069,11 +1069,11 @@
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
     },
     "current_batch": {
-      "kind": "coordinator migration registry reconciliation",
-      "state": "migration registry complete: three focused PG proofs, strict checks and regenerated pins PASS",
-      "proof": "qlane-meta/questpc7/MIGRATION-REGISTRY-PROOF.json",
+      "kind": "generic pinned recipe NPC placement and native Grimvale contacts",
+      "state": "PG GREEN74.382453038s, collision admission, strict check/clippy and refreshed pins PASS; final gates running",
+      "proof": "qlane-meta/questpc7/GRIMVALE-CONTACTS-PG-PROOF.json",
       "scope_unchanged": true,
-      "next": "Resume native Grimvale contacts and whole route; entry stays ACTIVE."
+      "next": "Complete collision/strict/pin gates, push this mechanism, then full selected programme."
     }
   },
   {

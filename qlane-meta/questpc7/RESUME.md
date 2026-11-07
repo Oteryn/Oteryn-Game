@@ -1,3 +1,41 @@
+# Grimvale contacts compiling checkpoint — 2026-11-07
+
+Actual PG18.6 RED41.1128287s then GREEN74.382453038s proves both contacts
+and no seeded subject state. Native production compiler realizes both cells
+(18.83s);11 placement authoring tests, Cargo check, strict Clippy and pin
+refresh all pass. Push this compiling checkpoint now; final pin-check/world/fmt
+are still running in34962. No current failing gate; exact remaining point is
+pending validation, not qualification of the whole quest. After all8 records
+in /tmp/questpc7-grimvale-contacts-validation.json pass, update proof/status
+and push final verification immediately. Seven entries remain ACTIVE.
+
+Full13-stage Grimvale producer draft /tmp/questpc7-grimvale-pending/programme.py
+compiles as Python. Before integration verify entry appearance at33328,31690,-7.
+No static22063/22064 plants were found in the selected surface region; five
+clear native personal botanical survey plots are a documented chosen harvesting
+adaptation, yielding real22082 blossoms once each without global bloom state.
+Actual Hyaena Lairs/Oskayaat area anchors and selected clear endpoints are in
+native-sites.json beside it. Original silveredtrap22074 is consumed through
+existing world item_on_target on a native ground target; normal USE already
+supports that carried input owner, no new protocol needed. Add generic greeting
+fallback to common retained npc_handler messages for missing per-NPC Lua.
+Integrate generator outputs/world fixtures and obtain whole-route PG RED before
+authoring, then GREEN and qualify the entire selected programme.
+
+# Grimvale contact mechanism RED, GREEN running — 2026-11-07
+
+Migration registry fully verified and pushed4c04e4da7. Seven ACTIVE remain.
+Reused peer70a0d92af pinned-recipe NPC placement support, extended for the
+completion242 record container. Rhargu/Domizian remain existing identities.
+Chosen native exterior contact cells and exact source pin are documented in
+CONTRACT-NOTES.md; no donor NPC position or Lua claim. Eleven authoring tests
+pass. Actual PG18.6 RED41.1128287s sees absent Rhargu placement; GREEN same
+scenario is session37953, /tmp/questpc7-grimvale-contacts-green.log.
+Native compiler test questpc7_authored_npc must pass actual source map and
+spawn collision admission before qualification of this mechanism. This is
+contact infrastructure only, not whole quest qualification. Finish strict
+checks/pins and push, then implement all13 selected stages immediately.
+
 # Coordinator migration registry fully verified — 2026-11-07
 
 All thirteen git mv renames preserve SQL content exactly. QENGINE2 shared
