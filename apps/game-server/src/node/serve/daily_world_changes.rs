@@ -156,7 +156,7 @@ pub(super) fn utc_month_day(unix_ms: i64) -> (u8, u8) {
 
 #[cfg(test)]
 #[allow(clippy::expect_used, reason = "test fixtures")]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::foundation::{ChannelId, NodeId, NpcPlacementTable};
     use crate::gameplay_transport::NpcTalkBook;
@@ -731,6 +731,202 @@ mod tests {
         crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
         assert!(runtime.spawn_point_creatures()[0].2.is_some());
         assert_ne!(runtime.spawn_point_creatures()[0].2, Some(actor));
+    }
+
+    pub(crate) fn qworld_physical_case() -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            let run = || -> crate::bestiary_postgres_harness::TestResult {
+                runtime()?.block_on(async {
+                    let h = Harness::create(admin, "qworld_physical", false).await?;
+                    let world = world();
+                    let active = (1..=128).find(|epoch| {
+                        let day = roll_calendar(world, *epoch, 6, 13);
+                        day.their_masters_voice && day.fury_gates.is_some()
+                    }).ok_or("active source occurrence")?;
+                    let inactive = (active + 1..=active + 128).find(|epoch| {
+                        let day = roll_calendar(world, *epoch, 6, 14);
+                        !day.their_masters_voice && day.fury_gates.is_none()
+                    }).ok_or("inactive source occurrence")?;
+                    for (epoch, day, enabled) in [(active, 13, true), (inactive, 14, false)] {
+                        let timestamp = format!("2026-06-{day:02} 06:00:00+00");
+                        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'qworld',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-06')")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).bind(timestamp).execute(&h.pool).await?;
+                        let announcement = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(epoch).unwrap_or_default();
+                        sqlx::query("INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4)")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(!announcement.is_empty()).bind(announcement).execute(&h.pool).await?;
+                        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
+                        assert_eq!(h.root.world_change_calendar(world, epoch).await?, (6, day));
+                        let snapshot = h.root.world_change_snapshot(world, epoch).await?;
+                        assert_eq!(snapshot.their_masters_voice, enabled);
+                        assert_eq!(snapshot.grimvale_full_moon, enabled);
+                        assert_eq!(snapshot.fury_gates.is_some(), enabled);
+                        assert_eq!(h.root.world_change_snapshot(world, epoch).await?, snapshot);
+                        // Separate native runtime: the spawn owner drives its own Tokio clock.
+                        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+                            exercise_fungus_snapshot(snapshot);
+                            exercise_grimvale_snapshot(snapshot);
+                            exercise_fury_snapshot(snapshot).map_err(|error| error.to_string())
+                        })?.join().map_err(|_| "QWORLD physical owner thread failed")??;
+                    }
+                    assert!(h.root.world_change_snapshot(world, active).await.is_err());
+                    h.cleanup().await
+                })
+            };
+            run().map_err(|error| error.to_string())
+        })?.join().map_err(|_| "QWORLD PostgreSQL thread failed")?.map_err(Into::into)
+    }
+
+    fn exercise_fury_snapshot(
+        changes: DailyWorldChanges,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use compile::{KeyResolver, Resolution};
+        use oteryn_world_bundle_compiler::{compile, source};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let layers: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/encounters/world-changes/layers.json"
+        ))?;
+        let source_layer = layers["layers"]
+            .as_array()
+            .ok_or("source layers")?
+            .iter()
+            .find(|layer| layer["key"] == changes.fury_exit)
+            .ok_or("selected Fury source layer")?;
+        let tiles = source_layer["tiles"].as_array().ok_or("source tiles")?;
+        let regions: std::collections::BTreeSet<_> = tiles
+            .iter()
+            .map(|tile| {
+                let x = tile["position"][0].as_u64().ok_or("source x")? as u16;
+                let y = tile["position"][1].as_u64().ok_or("source y")? as u16;
+                Ok::<_, &'static str>((x / 256, y / 256))
+            })
+            .collect::<Result<_, _>>()?;
+        let project = source::project_regions(&root, &regions.into_iter().collect::<Vec<_>>())?;
+        let (registry, palette) = source::registry(&root, &project)?;
+        let input = compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: oteryn_world_bundle::bundle::Identity {
+                project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+                world_schema_version: "world-schema-1".into(),
+                content_revision: "qworld".into(),
+                ..Default::default()
+            },
+            world: source::world_extent(&root)?,
+            build_class: oteryn_world_bundle::bundle::BuildClass::NonProduction,
+            draft_areas: Vec::new(),
+            families: &project.families,
+        };
+        let compiled = compile::compile(&input, &registry)?;
+        let pins = crate::map::BundlePins {
+            digest: compiled.digest,
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "qworld".into(),
+            production: false,
+        };
+        let base = crate::map::load(&compiled.bytes, &pins)?;
+        let decoded = oteryn_world_bundle::bundle::read(&compiled.bytes)?;
+        let (floor, x, y) = decoded
+            .sectors
+            .iter()
+            .filter(|sector| sector.floor == -7)
+            .flat_map(|sector| sector.tiles.iter().map(move |tile| (sector.floor, tile)))
+            .find(|(floor, tile)| {
+                base.tile(tile.x, tile.y, *floor)
+                    .is_some_and(|entry| entry.walkable())
+                    && tile.items.iter().all(|item| {
+                        let entry = &decoded.manifest.palette[item.palette as usize];
+                        entry.family != oteryn_world_bundle::bundle::Family::Item
+                            || !registry.solid(&entry.key)
+                            || (!registry.solid_stated(&entry.key)
+                                && entry.terrain.is_some_and(|terrain| {
+                                    terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
+                                }))
+                    })
+                    && !tiles.iter().any(|source| {
+                        source["position"][0].as_u64() == Some(u64::from(tile.x))
+                            && source["position"][1].as_u64() == Some(u64::from(tile.y))
+                    })
+            })
+            .map(|(floor, tile)| (floor, tile.x, tile.y))
+            .ok_or("enterable source entry outside Fury overlay")?;
+        let checked = crate::map::boot::check(
+            compiled.bytes,
+            crate::map::boot::BootPins {
+                bundle: pins,
+                map_revision: format!(
+                    "sha256:{}",
+                    compiled
+                        .digest
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                ),
+                start: TilePos { x, y, floor },
+            },
+        )?;
+        let projected = bind_layers(checked, &changes)?.boot(
+            world(),
+            crate::foundation::ChannelId::decode(&[
+                1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2,
+            ])?,
+            |key| {
+                let Resolution::Resolved(oteryn_world_bundle::bundle::Family::Item, id) =
+                    registry.resolve(key)
+                else {
+                    return None;
+                };
+                Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(id + 1)?,
+                    solid: registry.solid_stated(key).then(|| registry.solid(key)),
+                    blocks_projectile: registry.solid(key),
+                    pickupable: false,
+                    door: false,
+                })
+            },
+        )?;
+        assert_eq!(projected.base().layer_epoch(), Some(changes.reset_epoch));
+        assert_eq!(
+            projected
+                .base()
+                .active_layers()
+                .iter()
+                .any(|key| key == changes.fury_exit),
+            changes.fury_gates.is_some()
+        );
+        assert!(
+            projected
+                .base()
+                .exit_layers()
+                .iter()
+                .any(|key| key == changes.fury_exit)
+        );
+        if changes.fury_gates.is_some() {
+            let mut different = 0;
+            for tile in tiles {
+                let x = tile["position"][0].as_u64().ok_or("source x")? as u16;
+                let y = tile["position"][1].as_u64().ok_or("source y")? as u16;
+                let floor = -(tile["position"][2].as_i64().ok_or("source z")? as i8);
+                let active = projected
+                    .base()
+                    .tile(x, y, floor)
+                    .ok_or("active Fury tile")?;
+                different += usize::from(
+                    base.tile(x, y, floor)
+                        .is_none_or(|old| old.ids() != active.ids()),
+                );
+            }
+            assert!(
+                different > 0,
+                "source Fury layer must change physical tiles"
+            );
+        }
+        Ok(())
     }
 
     fn pg_physical(
