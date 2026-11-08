@@ -330,6 +330,68 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/cook-contact-0",
+      "quest": "oteryn:quest.authored.20_years_a_cook_quest",
+      "npc": "oteryn:npc.cheaty",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "premium_required": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/cook-twenty-years/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The Draccoon needs your help. Meet him at his Venore lair."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/cook-contact-1",
+      "quest": "oteryn:quest.authored.20_years_a_cook_quest",
+      "npc": "oteryn:npc.the_draccoon_npc",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "premium_required": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/cook-twenty-years/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i44527",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Find the Rest of Ratha in Kazordoon. This empty spirit container is for the three essences of the selected rescue."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.navigator",

@@ -170,6 +170,8 @@ def main() -> int:
         cosmetics_outputs = module.materialized_outputs(ROOT)
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
+    import questpc5_cook_npc_facts
+    declarations = questpc5_cook_npc_facts.extend(declarations, ROOT)
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
     imports = load(LEGACY / "provenance" / "imports.json")

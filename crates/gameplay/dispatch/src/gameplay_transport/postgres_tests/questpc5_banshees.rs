@@ -41,7 +41,7 @@ async fn stage(h: &Harness) -> TestResult<i64> {
 async fn rewards(h: &Harness) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT coalesce(sum(quantity) FILTER(WHERE definition_production_key='oteryn:item.tibia.i3079'),0)::bigint,coalesce(sum(quantity) FILTER(WHERE definition_production_key='oteryn:item.tibia.i3035'),0)::bigint FROM game_item_instances WHERE lifecycle=1").fetch_one(&h.pool).await?)
 }
-async fn use_at(
+pub(super) async fn use_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     pos: Position,

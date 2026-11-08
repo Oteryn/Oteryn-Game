@@ -956,12 +956,15 @@ def build():
     import banshees_programme
     banshees_world, banshees_npcs, banshees_gates = banshees_programme.documents()
     callbacks.extend(banshees_npcs)
+    import cook_programme
+    cook_programme.extend_rewards(callbacks, greetings)
     claim_gates = legion_helmet.claim_gates()
     claim_gates['gates'].append(serpentine_gate)
     claim_gates['gates'].extend(banshees_gates)
     claim_gates['gates'].sort(key=lambda row:row['claim'])
     generated['content/quests/reward-claim-gates.json']=encoded(claim_gates)
     authored_world=legion_helmet.world_callbacks()
+    cook_programme.extend_world(authored_world['callbacks'])
     authored_world['callbacks'].extend(serpentine_callbacks)
     authored_world['callbacks'].extend(banshees_world)
     import nimmersatt_programme

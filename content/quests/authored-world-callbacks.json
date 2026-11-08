@@ -387,6 +387,56 @@
       "minimum_level": 60
     },
     {
+      "key": "oteryn:quest-callback/authored-cook-venore-entry",
+      "quest": "oteryn:quest.authored.20_years_a_cook_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32974,
+          "y": 32110,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 44563
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32973,
+        "y": 32079,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/cook-twenty-years/stage",
+          "minimum": 0,
+          "maximum": 7,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "oteryn-authored:selected-personal-programme:venore-ominous-trashcan",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/84/definition:sha256:f15b77e82d5d30228f02a074f2ff7b31afbfbd8d54597187382eb2929754ed3e",
+        "https://www.tibiawiki.com.br/index.php?curid=61193&oldid=445567:42:sha256:983ebc56f56394cbacf6e69c4dfc41a0cb2489fdbc1a799bb5ffa09fa18f5f2f",
+        "oteryn:source-map:content/world/placements/region-z07-x128-y125.b3:sha256:4d8eddf9d19b47a689221359549cc4443b8fd534c30dfab6036ba2e0897a8b13"
+      ],
+      "premium_required": true
+    },
+    {
       "key": "oteryn:quest-callback/authored-legion-cave-entry",
       "quest": "oteryn:quest.newhaven_legion_helmet_quest",
       "trigger": "step_in",

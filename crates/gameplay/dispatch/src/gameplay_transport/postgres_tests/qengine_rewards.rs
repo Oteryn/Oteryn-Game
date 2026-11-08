@@ -35,6 +35,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                     y: 31578,
                     floor: -7,
                 }
+            } else if name == "qengine-rewards-cook-contacts" {
+                Position { x:32844, y:32138, floor:-6 }
             } else if name.starts_with("qengine-rewards-banshees") {
                 Position { x: 32276, y: 31903, floor: -13 }
             } else if name == "qengine-rewards-serpentine" {

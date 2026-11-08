@@ -57,6 +57,34 @@
       "cause": "Collector integration retained 34111 native Item keys after adding three Cook definitions; compiler has 34114, shifting compact references for subsequent keys. Existing ItemKeySetTests reproduces the stale generation.",
       "repair": "Native-only repository regeneration now refreshes Item keys before pinning the manifest. No map-reference validation relaxed.",
       "validation": "Banshee PG18.6 2/2 PASS123.530500246s and162.660560198s; indexPython2PASS; orchestration13PASS; workspace alltargets414s/fmt/equivalence PASS. Pins/clippy finishing; full dispatch unit rerun pending under cadence exception. Cook contacts separate RED155.145328756s source NPC placement absent."
+    },
+    "engine_request": {
+      "feature": "Fenced item-on-world-target callback must relocate one exact live creature atomically with selected quest progress and carried-tool validation (Fryclops catapult).",
+      "needed_by": "20 Years a Cook Quest",
+      "where": "gameplay-quests world_callbacks; gameplay-dispatch quest_callbacks",
+      "checked_main": "78294c081a099c96a57948573d5dbf0caf398abf",
+      "checked_qengine2": "dd35529b6",
+      "evidence": "world_callbacks.rs Callback has player teleport effects but no live-creature relocation; source bridge comment explicitly records missing creature push.",
+      "decision": "Request shared support from qengine2; finish independently testable contacts, then continue another owned quest. Do not implement a second engine or mark the whole Cook quest qualified."
+    },
+    "contact_slice": {
+      "state": "WIP; not qualified",
+      "red_pg": {
+        "server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "seconds": 155.145328756,
+        "error": "source NPC placement absent"
+      },
+      "subsequent_red": {
+        "seconds": 198.007994378,
+        "error": "Json(\"authored callback missing recipe witness\")",
+        "repair": "Selected recipe citation added through qengine_rewards authorer; fresh test binary and PG rerun pending."
+      },
+      "implemented": [
+        "Exact retained Cheaty/Draccoon positions",
+        "Premium assignment and exact once-only empty44527 custody",
+        "Gated USE of captured ominous trashcan44563; no final quest completion"
+      ],
+      "tests": "Dispatch1604 and catalogue672 tests in progress, nofailfast. Also found collectible collision negative-test failure and starter-input expected13/actual10 failure; collect all and repair together."
     }
   },
   {

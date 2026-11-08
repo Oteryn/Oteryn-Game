@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "state": "WIP_NOT_QUALIFIED",
+  "canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+  "source": {
+    "url": "https://www.tibiawiki.com.br/index.php?curid=61193&oldid=445567",
+    "sha256": "983ebc56f56394cbacf6e69c4dfc41a0cb2489fdbc1a799bb5ffa09fa18f5f2f",
+    "trashcan_line": 42,
+    "trashcan": [
+      32974,
+      32110,
+      7
+    ],
+    "source_map_items": [
+      4515,
+      44563
+    ]
+  },
+  "implemented": [
+    "Retained Cheaty and Draccoon NPC cells",
+    "Premium stage-fenced contacts with one exact empty44527",
+    "Gated world USE through the captured trashcan",
+    "Replay and no-premature-completion assertions"
+  ],
+  "postgres": [
+    {
+      "server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "seconds": 155.145328756,
+      "result": "RED source NPC placement absent"
+    },
+    {
+      "server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "seconds": 198.007994378,
+      "result": "RED authored callback missing recipe witness; corrected authorer, fresh binary pending"
+    }
+  ],
+  "validation": {
+    "source_facts_python_tests": 3,
+    "equivalence": "PASS34114 Items/479bindings/1282NPCs",
+    "equipment": "PASS140checked/136new",
+    "binding_evidence": "PASS310identities/6628JSONpointers",
+    "world_metadata": "PASS0of4changes",
+    "duplicate_migrations": "PASS",
+    "world_pin_refresh": "PASS",
+    "world_pin_check": "PASS",
+    "world_digest": "82de459c8fb4c61828fe4561464d8d405b292c65eb1a069446223dfcaa25b9d7",
+    "workspace_all_targets": "PASS postpin6m59s; previous check18m08s including build-lock wait",
+    "fmt": "PASS postpin"
+  },
+  "pending": {
+    "dispatch_selected_tests": 1604,
+    "catalogue_unit_tests": 672,
+    "known_failure_groups": [
+      "Pre-fix embedded recipe witness",
+      "Collectible empty reviewed fallback packet invalidates legacy negative fixture",
+      "Three starter profiles3571/3572/7991 moved to base provider; preserve original13-item union check"
+    ],
+    "clippy": "Queued run deferred for cadence checkpoint; previous index-repair strict clippy passed"
+  },
+  "whole_quest_qualification": false
+}

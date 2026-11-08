@@ -523,6 +523,8 @@ def validate_native_bank_admission(declarations: Any) -> None:
 
 def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, int]:
     """Round-trip the admitted NPC declarations (with source bindings) and Service declarations."""
+    import questpc5_cook_npc_facts
+    declarations = questpc5_cook_npc_facts.extend(declarations, ROOT)
     validate_native_bank_admission(declarations)
     legacy_npcs = [row for row in declarations["records"] if row.get("kind") == "NPC"]
     require(len(legacy_npcs) == NPC_COUNT, "LEGACY_NPC_COUNT")

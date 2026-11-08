@@ -1,3 +1,21 @@
+## Compiling checkpoint ready — 2026-11-08 02:09 UTC
+
+PostpinworkspacealltargetsPASS6m59s, fmtPASS. Pinrefresh/check, bindingfreshness, duplicate-migrationcheck and sourcefact/equivalence gatesPASS. PushcompilingWIP now underPREPUSH-2 exception; ownPGfreshGREEN, allcrateunitcompletion and freshClippy remainpending. No qualification added. Currenttestsusepre-witness-fixembeddedcallbacks; do not overwrite their dispatchbinary before collection completes. Next batches: generateallpins BEFORE the singlecheck/build queue to avoid another fullcheck rerun. Foreign1300notstaged.
+
+## PREPUSH-2 checkpoint gates — 2026-11-08 02:03 UTC
+
+Latestfetchmain78294c081andownbranch92c56e49b: zero behind both. Pinrefresh/checkPASSnew82de459c8fb4c61828fe4561464d8d405b292c65eb1a069446223dfcaa25b9d7; newNPCcells64. WorkspacealltargetsPASS18m08s including build-lock waits; postpinrepeat running. FmtPASS, bindingevidencecheckPASS310/6628, dupmigrationsPASS, Item+Mount+NPCequivalencePASS. PublishingcompilingWIP underPREPUSH-2 cadenceexception oncepostpincheckreturns; full1604+672runs remainpending. Knownstarterrootcause proven: main1ae39c7 had13overlayprofiles; three3571/3572/7991nowliveinbaseprovider, leaving10overlayrows. Keepassert13bytestingactualbase+overlayunion, ratherthanloweringit. Collectibleproofpacketnowemptyrequiresanexplicitnegative-fixtureseam, preservingallcollision/tamperguards. No wholequestpromoted.
+
+## Compiling Cook checkpoint; no qualification — 2026-11-08 01:56 UTC
+
+PREPUSH-2 cadence publication planned once workspacecheck/fmt/pins pass; full unit tests remain pending. OwnPG contactRED155.145328756s missingNPCplacement; after sourcefacts/placement/callbackauthoring, second realPGRED198.007994378s failsglobalWorldCallbackbook with missingselectedrecipewitness. Authorer now adds the witness; newbinary/PGproof stillpending. Keep contact slice WIP, wholeCookUNFINISHED, wholecount13/23. Dispatch1604selectedtests and content/quests/NPC672tests running nofailfast. Found additional collectiblecollisionnegativeassertion and starterprofileexpected13/actual10; collectALLfailuregroups, repair, rerun. Do not mistake an old compiled callback error for proof that the regenerated witness is invalid.
+
+SourcefactPython3PASS, Item+Mount+NPCequivalencePASS34114/479/1282, equipment140/136PASS, allcentralbinding/mint30/matrixlists regenerated; Worldmetadata0/4changes. Pendinglive-creaturecatapult ENGINE-REQUEST recorded with QENGINE2dd35529b6 check. After contacts, continue another ownedquest while qengine2 owns this missing effect. Foreign1300 remains untracked and must not ship.
+
+## Cook contacts authoring — 2026-11-08 01:33 UTC
+
+Indexrepair pushed92c56e49b; strictdispatchClippyPASS7m53s. ActualPGcontactsRED155.145328756s/server18.6: sourceNPCplacementabsent. FiniteDraccoon sourcefactsoverlay3PythonPASS, sourceplacements selectedCheaty/Draccoon; programmeusesexistingfencedcallbacks stage-1→0→1, exact44527once, no completion. Native/tree/postauthoring regenerating; then actualcontactPGGREEN plus unchangedBanshee/materials and targetedunits. Full dispatch unit rerun frompreviousrepair stillpending and will run with this batch; no source test weakened.
+
 ## Publication gate — 2026-11-08 01:29 UTC
 
 World pin-refresh and pin-check PASS, unchanged605c3d395ae90f2e8a3fb8dcef3e627b6ff69f4388857fabf225a522172d4893. PREPUSH-2 steps1/2/4 PASS and ownPG2/2PASS. Dispatch full units and strictClippy remain pending under30minute publication exception; continue them afterpush. Cook NPChelper/tests untracked, contactREDtestunstaged, foreign1300untracked: none belong to this indexrepair commit.

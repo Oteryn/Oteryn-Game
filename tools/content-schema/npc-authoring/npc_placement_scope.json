@@ -16,6 +16,7 @@
     "oteryn:npc.broken_servant_sentry",
     "oteryn:npc.cael",
     "oteryn:npc.carlos",
+    "oteryn:npc.cheaty",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cranky_lizard_crone",
@@ -50,6 +51,7 @@
     "oteryn:npc.razan",
     "oteryn:npc.santiago",
     "oteryn:npc.seymour",
+    "oteryn:npc.the_draccoon_npc",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.the_oracle",
     "oteryn:npc.the_queen_of_the_banshees",
@@ -86,6 +88,20 @@
       "source_index": 0,
       "direction": "north",
       "rule": "Permanent first retained source position for the selected personal Nimmersatt trial; global raid scheduling is separate."
+    },
+    {
+      "npc": "oteryn:npc.cheaty",
+      "source_field": "oteryn:source.npc.bulk.wiki_positions",
+      "source_index": 0,
+      "direction": "north",
+      "rule": "Select the retained Venore position for the personal Cook recipe; direction uses the engine default because the source gives no facing."
+    },
+    {
+      "npc": "oteryn:npc.the_draccoon_npc",
+      "source_field": "oteryn:source.npc.bulk.wiki_positions",
+      "source_index": 0,
+      "direction": "north",
+      "rule": "Select the retained Venore position for the personal Cook recipe; direction uses the engine default because the source gives no facing."
     }
   ]
 }
