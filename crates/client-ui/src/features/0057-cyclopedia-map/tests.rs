@@ -72,3 +72,27 @@ fn cyclopedia_sections_have_stable_navigation_and_distinct_titles() {
     assert_eq!(panel.section, Section::Analytics);
     assert!(!panel.pending);
 }
+
+#[test]
+fn map_projects_only_visible_points_on_the_selected_floor() {
+    let panel = Panel {
+        map: Some(oteryn_client_runtime::cyclopedia_map::MapResult {
+            code: 0,
+            revision: 1,
+            discovered: false,
+            found: 2,
+            area_percent: 25,
+            pool: 10,
+            epoch: 1,
+            improved: false,
+            visible: vec![(65535, 65535, 0), (65534, 65535, 0), (1, 2, -1)],
+        }),
+        ..Default::default()
+    };
+    let cells = map_points(&panel);
+    assert_eq!(cells.len(), 2);
+    assert!(cells.iter().all(|p| p.column < 32 && p.row < 12));
+    assert!(map_text(&panel).contains("65535,65535"));
+    assert!(!map_text(&panel).contains("1,2,-1"));
+    assert!(map_text(&Panel::default()).contains("Query"));
+}

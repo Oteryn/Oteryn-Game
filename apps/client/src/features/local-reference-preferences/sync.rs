@@ -18,7 +18,13 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 5] = [Self::Gameplay, Self::Interface, Self::Graphics, Self::Sound, Self::Help];
+    pub const ALL: [Self; 5] = [
+        Self::Gameplay,
+        Self::Interface,
+        Self::Graphics,
+        Self::Sound,
+        Self::Help,
+    ];
 
     pub const fn label(self) -> &'static str {
         match self {
@@ -31,7 +37,19 @@ impl SettingsPage {
     }
 }
 
+pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
+    ("0199-cyclopedia-character-open", "Cyclopedia"),
+    ("0287-actor-spell-catalog-open", "Spellbook"),
+    ("local-spell-action-bar-open", "Spell action bar"),
+    ("0279-skill-progress-open", "Skills"),
+    ("0276-condition-status-open", "Conditions"),
+    ("0277-rest-status-open", "Rest and stamina"),
+    ("0016-quest-log-open", "Quest log"),
+    ("0007-chat-keybindings", "Chat"),
+];
+
 pub struct SettingsState {
+    window_action: Option<&'static str>,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     pub preferences: ReferencePreferences,
@@ -42,6 +60,20 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn queue_window(&mut self, id: &str) -> bool {
+        let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
+            return false;
+        };
+        self.window_action = Some(id);
+        true
+    }
+
+    pub fn take_window_events(&mut self) -> Vec<NormalizedInputEvent> {
+        self.window_action.take().map_or_else(Vec::new, |id| {
+            super::bindings::window_events(&self.preferences, id)
+        })
+    }
+
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
         PreferenceStore::export_to(&self.preferences, path)
     }
@@ -91,6 +123,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            window_action: None,
             store,
             preferences,
             feedback,
