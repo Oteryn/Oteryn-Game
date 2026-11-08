@@ -1,3 +1,6 @@
+#[path = "state/reasons.rs"]
+mod reasons;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Bug,
