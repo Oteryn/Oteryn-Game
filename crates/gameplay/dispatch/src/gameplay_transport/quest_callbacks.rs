@@ -4,6 +4,7 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod clear_area;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod effects;

@@ -28,6 +28,9 @@ impl MountReward {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Current native occupants must be absent before a previously started stage commits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clear_area: Option<ClearArea>,
     /// Finish this quest only through its bound, irreversible native trial.
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes_quest: bool,
@@ -222,6 +225,13 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects
+        .clear_area
+        .as_ref()
+        .is_some_and(|area| !area.valid(callback))
+    {
+        return false;
+    }
     if effects.completes_quest
         && (!callback.requires_world_admission
             || callback.actor_kind != ActorKind::Player

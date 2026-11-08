@@ -10930,15 +10930,45 @@
       ],
       "whole_treasure_hunt_done": false,
       "source": "n2 61a1f24af source tools/tests restored; packet regenerated from pinned local donor"
+    },
+    "latest_revalidation": {
+      "after_qmech_sync": "3c06a2442",
+      "test": "l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+      "postgres_version": "18.6",
+      "seconds": 61.95,
+      "completed_marker_seconds": 61.90461723,
+      "log": "/tmp/questpc4-m07-area-dispatch-final.log"
     }
   },
   "qmech_m07": {
     "status": "IN_PROGRESS",
-    "slice": "Bound native world predicates and own-quest completion",
-    "code_commit": "96a1d1cfb",
+    "slice": "Native-bound world predicates/own completion plus current-carrier area-clear",
     "red": "/tmp/questpc4-m07-red.log: 2 failed (invalid callback; unknown effect)",
     "green": "/tmp/questpc4-m07-green2.log: 15 passed, including 3 M07 tests",
-    "clippy": "/tmp/questpc4-m07-clippy.log: all targets passed 12.29s",
-    "remaining": "Source-specific lifecycle projection, five quest bindings and PG scenarios"
+    "clippy": "quests+dispatch all-targets/all-features -Dwarnings PASS 4m01s",
+    "remaining": "Source-specific lifecycle resets, puzzle operations and five quest bindings/PG routes; do not mark M07 DONE from an engine slice",
+    "qmech_sync": "3c06a2442",
+    "area_clear_model_tests": "4 passed, 0.044s; /tmp/questpc4-m07-area-quests-final.log",
+    "area_clear_runtime_test": "m07_area_clear_observes_live_carrier_and_refuses_partial_census: PASS 0.018s",
+    "integration_regressions": {
+      "mead_postgres_version": "18.6",
+      "mead_nextest_seconds": 61.95,
+      "mead_completed_marker_seconds": 61.90461723,
+      "equipment_pin_seconds": 65.979
+    },
+    "authoring_checks": {
+      "checks_seconds": 291.955,
+      "unit_modules_counted": 111,
+      "units_seconds": 489.519,
+      "existing_optional_skips_counted": 8,
+      "content_tree_seconds": 185.202,
+      "all_exit_codes": 0
+    },
+    "resource_recovery": "Removed stale own artifacts after disk-full; target-only test debug=0 with jobs=2 after compiler SIGKILL; no assertion/gating changes",
+    "first_slice_commit": "96a1d1cfb",
+    "qualification_base_merge": "17d4beb85",
+    "workspace_check": "cargo check --workspace --all-targets PASS 4m25s",
+    "fmt": "cargo fmt --all --check PASS",
+    "pin_and_packet_verification": "pin-check, duplicate migrations, quest binding, completion matrix and reward variant packet checks PASS"
   }
 }

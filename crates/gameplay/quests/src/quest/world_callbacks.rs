@@ -27,6 +27,8 @@ pub enum Trigger {
     StepOut,
 }
 
+mod clear_area;
+pub use clear_area::ClearArea;
 mod clock;
 mod counterparts;
 mod effects;
@@ -1625,6 +1627,3 @@ mod qn1_lifecycle_tests {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod m07_trials_tests;

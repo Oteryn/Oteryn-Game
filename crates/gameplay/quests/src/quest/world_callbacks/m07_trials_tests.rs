@@ -63,3 +63,51 @@ fn m07_trial_binding_covers_world_requirement_and_completion() -> Result<(), Str
     assert!(parse(&encode(&c)).is_err());
     Ok(())
 }
+
+#[test]
+fn m07_clear_area_requires_native_personal_stage_and_bounded_same_floor() -> Result<(), String> {
+    let mut c = trial()?;
+    let mut v = serde_json::to_value(&c).map_err(|e| e.to_string())?;
+    v["effects"]["clear_area"] = serde_json::json!({
+        "minimum":{"x":100,"y":100,"floor":-3},
+        "maximum":{"x":110,"y":110,"floor":-3},
+        "creatures":["oteryn:creature.dragon"]
+    });
+    let parsed = parse(&serde_json::json!({"schema":1,"callbacks":[v.clone()]}).to_string())?;
+    assert_ne!(gated_binding(&c)?, gated_binding(&parsed[0])?);
+    for mutation in 0..7 {
+        let mut bad = v.clone();
+        match mutation {
+            0 => bad["requires_world_admission"] = false.into(),
+            1 => bad["effects"]["clear_area"]["maximum"]["floor"] = (-4).into(),
+            2 => bad["effects"]["clear_area"]["maximum"]["x"] = 65535.into(),
+            3 => bad["effects"]["clear_area"]["minimum"]["x"] = 111.into(),
+            4 => bad["effects"]["clear_area"]["creatures"] = serde_json::json!([]),
+            5 => {
+                bad["effects"]["clear_area"]["creatures"] =
+                    serde_json::json!(["oteryn:creature.dragon", "oteryn:creature.dragon"])
+            }
+            _ => {
+                bad["effects"]["clear_area"]["creatures"] = serde_json::json!(["oteryn:creature."])
+            }
+        }
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err());
+    }
+    c.effects = parsed[0].effects.clone();
+    let mut unstarted = c.clone();
+    unstarted.storage.retain(|state| !state.preserve);
+    assert!(
+        parse(&encode(&unstarted)).is_err(),
+        "an initially empty room is not a started trial"
+    );
+    let started = unstarted.storage.first_mut().ok_or("trial stage")?;
+    started.minimum = 1;
+    started.maximum = 1;
+    started.set = 2;
+    parse(&encode(&unstarted))?;
+    for state in &mut c.storage {
+        state.preserve = true;
+    }
+    assert!(parse(&encode(&c)).is_err());
+    Ok(())
+}
