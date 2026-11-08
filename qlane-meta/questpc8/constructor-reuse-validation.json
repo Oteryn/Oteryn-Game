@@ -1,9 +1,0 @@
-{
-  "scope": "Regression coverage only for the unchanged exact first-party constructor reuse validator; no gameplay or persistence code changes in this slice.",
-  "base": "37aa8adda",
-  "python_tests": 3,
-  "duration_seconds": 3.36,
-  "log_sha256": "90e1a38eb0e7090c560dd611000ff0a640c6906466900ae10ead9fa5ee187fb0",
-  "postgres": "No new PostgreSQL claim; existing constructor qualification remains in static-constructor-validation.json.",
-  "cases": "All four qualified profiles remain immutable on reuse; each altered source revision is rejected."
-}

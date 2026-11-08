@@ -1,9 +1,0 @@
-{
-  "scope": "Compiling WIP, not quest qualification",
-  "test": "questpc8_mystery_assembly_consumes_all_three_or_none",
-  "postgres_duration_seconds": 108.89,
-  "log_sha256": "b99cd99cdac57b87ca647544366d74790851c58b0597cca8571b75ce7692bf6c",
-  "server_error": "quest reward consumed an unauthored input",
-  "root_cause": "reward_claim_mint/quest.rs give_world records take=[] after the world owner consumed authored inputs",
-  "next": "Populate the existing reward proof from declared consumed inputs; preserve all SQL guards; rerun focused PG."
-}

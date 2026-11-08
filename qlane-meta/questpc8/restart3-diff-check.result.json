@@ -1,4 +1,0 @@
-{
-  "command": "git diff --check -- <all product paths>",
-  "exit": 0
-}

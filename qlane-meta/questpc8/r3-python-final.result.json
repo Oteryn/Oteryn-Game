@@ -1,5 +1,0 @@
-{
-  "command": "python3 .questpc/checks_final.py",
-  "exit": 1,
-  "duration_seconds": 379.633
-}

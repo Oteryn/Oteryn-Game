@@ -1,9 +1,0 @@
-{
-  "state": "actual native PostgreSQL RED; active implementation",
-  "duration_seconds": 75.313223529,
-  "marker": "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route",
-  "log_sha256": "112ff8cac0e7432de3f3f9688c846a9b304c497a8990081faaab12d739dd2118",
-  "exact_red_point": "Source bonfire30250at33743,31061,z8ordinal1 returnsNothingToUse instead of chosen physical components",
-  "qualified_l7": 20,
-  "remaining_l7": 3
-}
