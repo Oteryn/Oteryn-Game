@@ -43,6 +43,14 @@ pub(super) struct State {
 
 #[cfg(test)]
 impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_quest_topic(
+        &self,
+        session: GameSessionId,
+    ) -> Result<u16, String> {
+        let sessions = self.sessions.lock().map_err(|_| "sessions")?;
+        Ok(sessions.get(&session).ok_or("session")?.quest_dialogue.topic.number)
+    }
+
     pub(in crate::gameplay_transport) fn fixture_interrupt_quest_dialogue_commit(
         &self,
         session: GameSessionId,
