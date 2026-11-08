@@ -66,7 +66,7 @@
 
 | M25 — BossLever Ahau configured exit teleporter and Mitmah Vanguard callback closure | boss2 (SRX3-BOSS2) | none planned; 2171–2172 reserved within 2170–2179; 2170 is the existing boss2 cleanup | Adventures of Galthen (s5 Ahau; s8 Mitmah Vanguard) | CLAIMED |
 
-| M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
+| M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED: source audit in docs/reference/content-prep/qmech-season/M18.md; reuse existing Activity owner where applicable |
 
 | M38: conditional NPC presence, stationary/water admission, returns/tickets and Mistrock binding | npcfix | 2140–2149 reserved by coordinator; none allocated yet | Five checked rows in MISSING-npcfix.md, including The Hidden City of Beregar — Way to Beregar | CLAIMED |
 
