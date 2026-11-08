@@ -1425,6 +1425,41 @@ pub async fn prepare_corpse_in_transaction(
     })
 }
 
+/// An item-arrival consequence must consume the exact arrived root, never a
+/// same-definition corpse substituted at the top of the destination stack.
+/// Reuse the real corpse/subtree reader and retain its locks in this transaction.
+/// This reservation is preparation data; the arrival receipt must still prove
+/// its ordinary move and commit retirement and the summon in the same fence.
+pub async fn prepare_arrival_corpse_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    target: &SpellGroundTarget,
+    qualified: &QualifiedItemDefinition,
+    arrived: ([u8; 16], u64),
+) -> Result<DurableCorpseReservation> {
+    if arrived.0 == [0; 16]
+        || arrived.1 == 0
+        || arrived.1 == u64::MAX
+        || qualified.content_generation_digest != authority.compatible_content_digest
+        || !qualified.ground_destination
+        || qualified.stack_maximum != 1
+    {
+        return Err(SpellItemError::Rejected(
+            "arrival corpse identity or Content",
+        ));
+    }
+    let reservation = prepare_corpse_in_transaction(tx, authority, target, qualified).await?;
+    if reservation.item_instance_id != arrived.0
+        || reservation.state_revision != arrived.1
+        || reservation.quantity != 1
+    {
+        return Err(SpellItemError::Rejected(
+            "arrived corpse no longer current top root",
+        ));
+    }
+    Ok(reservation)
+}
+
 pub async fn read_spell_tile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
