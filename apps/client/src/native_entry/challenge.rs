@@ -4,6 +4,9 @@ use super::*;
 use oteryn_platform_client::native_login::{AccessToken, ChallengeProof, TokenExchange};
 
 #[cfg(test)]
+#[path = "challenge/e2e_n06.rs"]
+mod e2e_n06;
+#[cfg(test)]
 mod tests;
 
 pub(super) async fn exchange(
