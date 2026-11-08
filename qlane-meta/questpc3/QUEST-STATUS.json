@@ -10190,7 +10190,18 @@
         "proof": "real native ground moves17/1units retain identity/quantity; exact replay leaves one receipt per command",
         "execution": "unchanged RED test executable; runtime content manifest reloaded after final repo generation"
       },
-      "unit_suite": "changed-crate broad unit run pending under PREPUSH-2 step3 cadence exception; helper6 tests and own realPG case pass"
+      "unit_suite": "changed-crate broad unit run pending under PREPUSH-2 step3 cadence exception; helper6 tests and own realPG case pass",
+      "publication": "1c85599f12d4fe03fe9d6acb2cd0b36f0d646e90 pushed",
+      "unit_attempts": [
+        {
+          "log": "/tmp/questpc3b-tainted-dispatch-units.log",
+          "result": "INTERRUPTED to use4CPUworkers;118PASS,2SIGINT,remaining unrun; no assertion failure claimed"
+        },
+        {
+          "log": "/tmp/questpc3b-tainted-dispatch-units-four.log",
+          "result": "compile failed No space left on device before tests; stale cache cleanup recovered3.3GiB"
+        }
+      ]
     }
   },
   "counts": {
@@ -11047,67 +11058,10 @@
     }
   },
   "current_main_integration": {
-    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-    "state": "compilation-qualified main c77d436d8 integration; quest units348PASS; Carlos PostgreSQL remains RED pending allocated forward migration",
-    "published_parent": "72de110ec12136db2269f21cb8df481b35cd539d",
-    "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
-    "decisions": [
-      "Preserve numeric PC3 and boolean main storage increment wire encodings.",
-      "Preserve published PC3 effect tags while using main tags for main transitions.",
-      "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
-      "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
-    ],
-    "checks": "Current workspace-all-targets PASS6m43s; five-crate library Clippy-Dwarnings PASS; fmt-all-check PASS; quest348units PASS66.459s; QREADY source13testsPASS; capture regression RED on oldtool/GREEN current; full world-base validator PASS. Native/allcentral/pin regeneration PASS, equipment3802 strict union PASS, duplicate migrations CLEAR. Broader client-assets/NPC/durability/dispatch unit suites and current-merge PG requalification pending under explicit PREPUSH-2 step3 cadence exception; prior72de PG8PASS2FAIL remains RED evidence only. No new wholequest qualification.",
-    "latest_main": "c77d436d8",
-    "local_merge_commits": [
-      "4933f9bbd",
-      "5b9b2b2f8",
-      "47a5fc6f3",
-      "7998af2c7",
-      "523100030"
-    ],
-    "final_world_pin": "0150fa8ddcd156f5ec3180fd0ffaa2cad8884cd06d75b9dd19d503f3e535ccb2",
-    "equipment_profile_union": 3802,
-    "quest_unit_log": "/tmp/questpc3b-main3037-quest-units.log",
-    "own_pg_log": "/tmp/questpc3b-mainred3038-own-pg.log",
-    "lane_migration_files": [
-      "1220_questpc3_npc_exchanges.sql",
-      "1221_sinatuki_cumulative_fish.sql",
-      "1222_quest_blessing_grants.sql",
-      "1223_npc_trade_quest_obligations.sql",
-      "1224_quest_reward_backpack_outputs.sql",
-      "1225_quest_world_reward_participants.sql",
-      "1226_quest_carried_exchange_inputs.sql",
-      "1227_quest_earned_repeat_occurrences.sql",
-      "1228_quest_carried_world_rewards.sql",
-      "1229_quest_reward_occurrence_guards.sql"
-    ],
-    "pending_unit_crates": [
-      "oteryn-client-assets",
-      "oteryn-gameplay-npc",
-      "oteryn-gameplay-durability",
-      "oteryn-gameplay-dispatch"
-    ],
-    "scoped_pg_result": {
-      "head": "72de110ec12136db2269f21cb8df481b35cd539d",
-      "log": "/tmp/questpc3b-mainred3038-own-pg.log",
-      "sha256": "92916d44ab3eed841b42662f479a621612ba416c06b3be577c2b8dff1a734c5f",
-      "duration_seconds": 419.491,
-      "passed": 8,
-      "failed": 2,
-      "postgres": "18.6",
-      "red_point": "Both Carlos cases fail Greet6!=7. Main1258 replaces receipt cause constraint without trade_obligation; exact schema probe reproduces rejection. Forward repair SQL tested on temporary clone; migration number above1258 needs allocation because1220-1229 full."
-    },
-    "trade_repair": {
-      "root": "canonical trade transitions missing from bound registry",
-      "red_logs": [
-        "/tmp/questpc3b-carlos-trade-registry-unit-red.log",
-        "/tmp/questpc3b-trade-encoding-unit-red.log"
-      ],
-      "unit_green": "/tmp/questpc3b-carlos-trade-registry-units-green.log",
-      "unit_count": 348,
-      "unit_duration_seconds": 72.73,
-      "pg": "current10case cohort BUILDING after all final gates passed"
-    }
+    "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+    "result": "clean merge; all incoming Soulpit/NPC-service/WP3 fixes retained",
+    "conflicts": 0,
+    "validation": "pending on merged candidate",
+    "migrations": "unchanged; own1220-1229; no out-of-range forward cause migration"
   }
 }
