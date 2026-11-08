@@ -22,9 +22,31 @@ impl DurabilityRoot {
         self.commit_quest_inner_resolved::<_, 0>(
             authority, node, fence, request, catalogue, None, None, None, None,
             &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
-            vec![callback],
+            vec![callback], Vec::new(),
         )
         .await
+    }
+
+    /// The same immutable fixture resolution as NPC rewards, retaining every World fence.
+    #[cfg(feature = "test-support")]
+    #[allow(clippy::too_many_arguments, reason = "fixture retains the complete production World admission tuple")]
+    pub async fn commit_fixture_world_reward(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        admission: QuestRewardAdmission<'_>,
+        callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority, node, fence, request, catalogue, Some((permit, context, Some(admission.native))),
+            None, None, None, &grizzly::NoGrizzlyPremium, None, None, Some(admission), None, None,
+            Vec::new(), vec![callback],
+        ).await
     }
 
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
@@ -227,10 +249,12 @@ impl DurabilityRoot {
     ) -> Result<QuestTransitionOutcome> {
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let world_callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         self.commit_quest_inner_resolved(
             authority, node, fence, request, catalogue, context, grizzly_action,
             grizzly_boss, grizzly_party, grizzly_gate, grizzly_policy, payment,
-            reward_admission, native, benevola, reward_callbacks,
+            reward_admission, native, benevola, reward_callbacks, world_callbacks,
         )
         .await
     }
@@ -267,6 +291,7 @@ impl DurabilityRoot {
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
+        world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
@@ -348,10 +373,9 @@ impl DurabilityRoot {
         }
         let callback = if context.is_some() {
             Some(
-                oteryn_gameplay_quests::quest::world_callbacks::load()
-                    .map_err(|_| CharacterProgressionError::InvalidInput)?
-                    .into_iter()
+                world_callbacks.iter()
                     .find(|c| c.key == request.transition_key)
+                    .cloned()
                     .ok_or(CharacterProgressionError::InvalidInput)?,
             )
         } else {
@@ -390,8 +414,7 @@ impl DurabilityRoot {
         // Value-bearing or context-dependent callbacks cannot use a weaker generic caller.
         if context.is_none()
             && (native_world_rule
-                || oteryn_gameplay_quests::quest::world_callbacks::load()
-                    .map_err(|_| CharacterProgressionError::InvalidInput)?
+                || world_callbacks
                     .iter()
                     .any(|c| {
                         c.key == request.transition_key
@@ -894,9 +917,15 @@ impl DurabilityRoot {
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
+                        let claim = if let Some(track) = world.effects.item_reward_cycle.as_deref() {
+                            let initial = catalogue.track(track).ok_or(DurabilityError::InvalidStoredState)?.initial;
+                            super::super::reward_claim_mint::quest::QuestMintClaim::Cycle {
+                                track, value: stored.get(track).copied().unwrap_or(initial),
+                            }
+                        } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission).await?.is_none()
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
                     if let Some(world) = &callback

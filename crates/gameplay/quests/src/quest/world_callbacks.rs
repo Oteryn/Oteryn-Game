@@ -665,6 +665,9 @@ mod clock_tests;
 mod literal_text_tests;
 
 #[cfg(test)]
+mod cycle_tests;
+
+#[cfg(test)]
 mod batch4_tests;
 
 #[cfg(test)]
@@ -1495,3 +1498,7 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_callbacks/readable_text_tests.rs"]
+mod readable_text_tests;

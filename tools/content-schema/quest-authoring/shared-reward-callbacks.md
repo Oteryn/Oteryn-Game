@@ -29,7 +29,7 @@ Each record has these fields:
 | `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
-| `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
+| `give` | Optional/null `{item, count, contents?, additional?, text?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
 | `achievement` | Optional/null canonical `oteryn:achievement/<name>` from the admitted achievement catalogue. |
 | `reply` | One to eight response lines, each at most 512 UTF-8 bytes. |
@@ -180,7 +180,7 @@ Each record has these fields:
 | `requires` | Optional, up to eight distinct read-only `{track, minimum, maximum}` prerequisites. Tracks must already be declared and cannot also occur in `storage`. Their original quest retains ownership. The writer locks them in sorted order with written tracks and rechecks their fresh values before any consumption or reward. |
 | `take` | Up to eight distinct `{item, count}` requirements, counts `1..65535`, aggregated across carried stacks, equipment and closed nested containers. Filled containers and items with keys, timers, text or imbuements refuse consumption. |
 | `present` | Optional, up to eight distinct `{item,count}` carried requirements (`1..65535`). Uses the same bounded locked custody scan as `take`, including closed nested containers. It retains the original instances, quantities and receipts. |
-| `give` | Optional/null `{item, count, contents?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
+| `give` | Optional/null `{item, count, contents?, additional?, text?}`: one native reward root, count `1..100`, optionally up to twenty `{item, count}` children in a container. Native stack/container and weight rules still apply. The equipped main backpack needs room after the hand-in. |
 | `outfit` | Optional/null `{outfit, addons}`. `outfit` is the canonical `oteryn:outfit.<name>`; `addons` is a bitmask `0..3`: base only `0`, first addon `1`, second addon `2`, both `3`. Base is always included. |
 | `achievement` | Optional/null canonical `oteryn:achievement/<name>` from the admitted achievement catalogue. |
 | `reply` | One to eight response lines, each at most 512 UTF-8 bytes. |
@@ -307,3 +307,21 @@ the generated donor packet.
 the existing owning Quest completion transition. Its source proof must match
 the same transaction's Quest receipt and completed revision, enforced by
 `1254_quest_reward_completion.sql`. It grants no outfit or item by itself.
+
+## M09 independent item outputs
+
+`give.additional` (also `effects.item_reward.additional` for world USE) contains
+up to nineteen ordinary `{item, count}` outputs placed directly in the equipped
+main backpack. They share the primary output's once-only claim, frozen intent,
+reservation and SQL transaction. They are not children of the primary item and
+do not require an invented reward container. Existing `contents` remain nested
+children and keep their original deterministic identities and fluid proofs.
+
+The complete output plan must fit both remaining backpack entries and carrying
+weight before reserving or consuming the claim. A failed output rolls back all
+outputs and quest effects. Sibling fluid subtypes, numbered keys and authored
+text are refused; the existing primary/nested owners keep those metadata paths.
+The internal equivalent is `RewardClaimMintRequest.additional_items`, with
+ordinary `RewardClaimMintContent` entries and no metadata modifiers. Migration
+2100 freezes and proves the complete sibling plan, including each audit event
+and direct placement. Empty sibling lists preserve legacy intent hashes.

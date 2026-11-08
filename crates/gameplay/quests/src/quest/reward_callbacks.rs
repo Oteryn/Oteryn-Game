@@ -38,6 +38,9 @@ pub struct ItemReward {
     /// Literal source-authored text initialized by this reward's existing MINT.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+    /// Independent top-level items committed in the same quest receipt.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub additional: Vec<ItemAmount>,
 }
 
 impl ItemReward {
@@ -509,6 +512,10 @@ fn validate_document(document: Document) -> Result<Document, String> {
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
                     || !r.valid_literal_text()
+                    || r.additional.len() > 19
+                    || r.additional
+                        .iter()
+                        .any(|s| !item(&s.item, s.count) || s.fluid_subtype.is_some())
                     || r.contents.len() > 20
                     || r.contents.iter().any(|s| {
                         !item(&s.item, s.count)
@@ -1235,3 +1242,10 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "reward_callbacks/readable_text_tests.rs"]
+mod readable_text_tests;
+
+#[cfg(test)]
+mod multiple_rewards_tests;
