@@ -43,6 +43,8 @@
 
 | Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | CLAIMED |
 
-| Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
+| Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | RELEASED: coordinator ASSIGN transfers Cake Golem to SRVENC/M24; no Cake code written |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
+
+| M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
