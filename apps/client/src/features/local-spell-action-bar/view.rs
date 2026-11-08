@@ -9,6 +9,9 @@ impl PlayView {
 
     #[must_use]
     pub fn hud_status(&self) -> String {
+        if self.preferences().compact_status {
+            return oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals());
+        }
         format!(
             "{}   {}   {}   {}   {}   {}   {}",
             self.served_channel_text().unwrap_or_default(),

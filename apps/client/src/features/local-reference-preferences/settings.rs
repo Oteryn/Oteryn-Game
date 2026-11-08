@@ -85,6 +85,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default)]
+    pub compact_status: bool,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
     #[serde(default = "default_arc_size")]
@@ -143,6 +145,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            compact_status: false,
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),

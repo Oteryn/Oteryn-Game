@@ -1,6 +1,17 @@
 use super::*;
 
 #[test]
+fn compact_status_style_projects_confirmed_vitals_only() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals { health: 50, max_health: 100, mana: 20, max_mana: 40, ..Default::default() });
+    let mut preferences = play.preferences().clone();
+    preferences.compact_status = true;
+    play.set_preferences(preferences)?;
+    assert_eq!(play.hud_status(), oteryn_client_ui::spell_action_bar::vitals_text(play.actor_vitals()));
+    Ok(())
+}
+
+#[test]
 fn hud_arc_geometry_uses_configured_distance_and_size() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     play.vitals = Some(oteryn_session::ActorVitals {
@@ -280,5 +291,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 9);
+    assert_eq!(SettingsPage::ALL.len(), 10);
 }
