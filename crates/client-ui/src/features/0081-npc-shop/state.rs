@@ -1,4 +1,7 @@
 //! Live server quotes. Display positions are never trade identities.
+mod options;
+pub use options::ShopOptions;
+
 use super::{EntityRef, NpcIntentDisposition, NpcTradeSide, npc_service};
 use oteryn_client_runtime::npc_shop::{CharacterInventory, container_tree, resources};
 
@@ -13,6 +16,7 @@ pub struct Quote {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LiveShop {
+    pub options: ShopOptions,
     pub selected: bool,
     pub resources_selected: bool,
     pub balances: Option<resources::ResourceBalances>,
@@ -52,6 +56,11 @@ impl LiveShop {
             .into_iter()
             .filter(|quote| side.is_none_or(|side| quote.side == side))
             .filter(|quote| self.quote_text(*quote).to_lowercase().contains(&query))
+            .filter(|quote| {
+                !self.options.only_owned
+                    || quote.side == NpcTradeSide::Buy
+                    || self.owned(quote.item) > 0
+            })
             .collect()
     }
     pub fn owned(&self, item: u32) -> u64 {
@@ -59,8 +68,19 @@ impl LiveShop {
             inventory
                 .entries
                 .iter()
-                .chain(inventory.main_backpack.iter())
-                .chain(inventory.equipment.iter().map(|entry| &entry.item))
+                .chain(
+                    inventory
+                        .main_backpack
+                        .iter()
+                        .filter(|_| !self.options.ignore_equipped),
+                )
+                .chain(
+                    inventory
+                        .equipment
+                        .iter()
+                        .filter(|_| !self.options.ignore_equipped)
+                        .map(|entry| &entry.item),
+                )
                 .filter(|entry| entry.item_definition_ref.get() == item)
                 .map(|entry| u64::from(entry.count.get()))
                 .sum()
@@ -123,6 +143,10 @@ impl LiveShop {
             self.feedback = "Amount must be 1–100 and within the server's gold limit".into();
             return None;
         }
+        if !self.can_trade(quote, amount) {
+            self.feedback = "No free backpack slot in the current view; enable Ignore capacity to ask the server".into();
+            return None;
+        }
         let index = self.quotes().iter().position(|live| *live == quote)?;
         let intent = npc_service::NpcTradeIntent {
             npc_actor: quote.npc,
@@ -171,7 +195,8 @@ impl LiveShop {
         );
         format!(
             "{state}\n{}\n{gold}\n{slots}\n{}",
-            self.feedback, "Counts cover the visible carried inventory."
+            self.feedback,
+            "Purchases go into the main backpack. Sales use its direct entries; move equipped items there first."
         )
     }
 }
