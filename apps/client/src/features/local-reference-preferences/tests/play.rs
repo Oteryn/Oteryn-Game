@@ -503,3 +503,20 @@ fn o025_health_circle_tracks_confirmed_resources_and_hides_without_vitals()
     assert!(circle.iter().any(|segment| segment.uv != circle[31].uv));
     Ok(())
 }
+
+#[test]
+fn o037_shortcut_panel_collapse_and_order_survive_restart() -> Result<(), Box<dyn std::error::Error>> {
+    let path = std::env::temp_dir().join(format!("cg-mainpanel-{}.json", std::process::id()));
+    let mut state = crate::play::SettingsState::new(Some(path.clone()));
+    let mut json = serde_json::to_value(&state.preferences)?;
+    json["shortcuts_collapsed"] = serde_json::json!(true);
+    json["shortcut_order"] = serde_json::json!(["0287-actor-spell-catalog-open", "0279-skill-progress-open"]);
+    state.apply(serde_json::from_value(json.clone())?);
+    let restored = crate::play::SettingsState::new(Some(path.clone()));
+    assert_eq!(serde_json::to_value(&restored.preferences)?["shortcut_order"], json["shortcut_order"]);
+    assert_eq!(serde_json::to_value(&restored.preferences)?["shortcuts_collapsed"], true);
+    json["shortcut_order"] = serde_json::json!(["unknown"]);
+    assert!(view()?.set_preferences(serde_json::from_value(json)?).is_err());
+    std::fs::remove_file(path)?;
+    Ok(())
+}
