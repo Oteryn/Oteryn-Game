@@ -327,7 +327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry> {
         if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
             || self.bundle_map().is_some()
@@ -362,7 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The source-world guard protects only the legacy entry-room fallback.
         if self.bundle_map().is_none()
             && self
-                .rooms
+                .rooms()
                 .gate_source_world()
                 .is_some_and(|room| room.source_world().is_some())
         {

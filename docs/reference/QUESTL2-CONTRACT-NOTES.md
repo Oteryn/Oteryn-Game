@@ -225,3 +225,18 @@ before that fallback so the physical fountain/lamp donor targets are present.
 This fixture correction still requires fresh PostgreSQL proof; no qualification
 is claimed from the unit tests. The earlier fluid intake engine request is
 withdrawn: existing L2 exact-subtype intake already supplies that mechanism.
+
+Soulpit main reconciliation (98d6ae8ce): retain the L2 bundle source guard while
+using the activity-aware room accessor, retain Corruptor's ordinary loot binding,
+and apply main's Soulpit guard to Grizzly kill capture. The existing world overlay
+reapplies the Family Brooch binding to main's placement palette. Three overlay
+unit tests pass. Main's 1140/1141 belong to Soulpit; L2 stays at 1210–1219.
+
+Sea Serpent engine request, checked against qengine2 2ddd4f9cd: native NPC travel
+has a quest prerequisite but no atomic departure progress effect. Captain Haba's
+pinned source writes QuestLine=1 only when the player confirms departure
+(captain_haba.lua:105–112, source SHA256
+8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909).
+Do not move that write into the final fish delivery or omit it. QENGINE2 owns the
+reusable travel departure effect; keep the quest IN_PROGRESS until the complete
+ordered-fish and physical-departure PostgreSQL journey passes.

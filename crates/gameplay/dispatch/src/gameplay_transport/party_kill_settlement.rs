@@ -379,11 +379,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entry.creature,
-                        entry
-                            .row
-                            .as_ref()
-                            .ok_or(DurabilityError::InvalidStoredState)?
-                            .xp_amount
+                        entry.experience().ok_or(DurabilityError::InvalidStoredState)?
                             .get(),
                         (
                             entry.facts.death_at_ms,
@@ -481,11 +477,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                             creature: entry.creature.clone(),
-                            base_xp: entry
-                                .row
-                                .as_ref()
-                                .ok_or(DurabilityError::InvalidStoredState)?
-                                .xp_amount
+                            base_xp: entry.experience().ok_or(DurabilityError::InvalidStoredState)?
                                 .get(),
                             death_at_ms: entry.facts.death_at_ms,
                             death_at_us: entry

@@ -3808,5 +3808,16 @@
       "failed": 0
     },
     "post_merge_postgres": "PENDING; pre-merge qualification evidence retained"
+  },
+  "latest_pushed_head": "df5d019f97f9c3cdaa4778cf7bbe0e3d18109c2b",
+  "travel_departure_engine_request": {
+    "owner": "qengine2",
+    "checked_head": "2ddd4f9cd",
+    "needed_by": [
+      "Hunt for the Sea Serpent"
+    ],
+    "feature": "Atomic quest progress write on NPC-confirmed physical departure",
+    "source": "captain_haba.lua:105-112; sha256:8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909",
+    "state": "REQUESTED; existing full-journey test remains enabled"
   }
 }

@@ -1467,7 +1467,7 @@ async fn reward_delivery(
         assert!(
             crate::gameplay_transport::hazard::qualified_source_frame(
                 &runtime,
-                owner.movement_cells
+                owner.movement_cells()
             )
             .is_some(),
             "source USE frame"

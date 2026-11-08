@@ -1,0 +1,3834 @@
+{
+  "family": "Terrain",
+  "records": [
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11075",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11075
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11075,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11077",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11077
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11077,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11079",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11079
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11079,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11102",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11102
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11102,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11103",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11103
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11103,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11104",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11104
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11104,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i11105",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 11105
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 11105,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i33017",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 210
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 33017
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 33017,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i34943",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 34943
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 34943,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i34946",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 34946
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 34946,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i34951",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 34951
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 34951,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i34953",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 34953
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 34953,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42880",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42880
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42880,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42887",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42887
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42887,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42892",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42892
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42892,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42893",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42893
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42893,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42894",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42894
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42894,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42895",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42895
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42895,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42896",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42896
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42896,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42897",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42897
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42897,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42898",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42898
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42898,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42899",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42899
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42899,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42900",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42900
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42900,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42901",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42901
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42901,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42902",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 186
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42902
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42902,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42909",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42909
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42909,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42910",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42910
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42910,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42914",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42914
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42914,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42916",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42916
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42916,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42917",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42917
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42917,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42918",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42918
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42918,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42923",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42923
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42923,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42929",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42929
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42929,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42930",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42930
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42930,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42933",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42933
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42933,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i42936",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "common"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 42936
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 42936,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i43516",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": false
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 86
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 43516
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 43516,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 1
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46629",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46629
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46629,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46630",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46630
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46630,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46631",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46631
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46631,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46632",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46632
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46632,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46633",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46633
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46633,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46634",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46634
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46634,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46635",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46635
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46635,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46636",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46636
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46636,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46637",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46637
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46637,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46638",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46638
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46638,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46639",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46639
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46639,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46640",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46640
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46640,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46641",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46641
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46641,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46643",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46643
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46643,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46644",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46644
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46644,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46645",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46645
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46645,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i46646",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "border"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": false
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 46646
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 46646,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i48236",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 129
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 48236
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "official_client",
+          "publisher": "CipSoft",
+          "product": "Tibia-client",
+          "revision": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "profile": "OTERYN_OFFICIAL_CLIENT_SOULPIT_STATIC/v1",
+          "client_version": "15.30",
+          "artifact": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "membership_manifest_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+          "membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df"
+        },
+        "source_item_id": 48236,
+        "route": {
+          "owner": "Terrain",
+          "reason": "soulpit_static_appearance"
+        },
+        "fields": {
+          "kind": [
+            "derived:soulpit_static_layer"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ]
+        }
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 100
+      }
+    }
+  ]
+}

@@ -116,7 +116,7 @@ def refresh_pin(root, path, previous):
     return actual, len(raw)
 
 
-def refresh_list(root, pins):
+def refresh_list(root, pins, additional_owner_inputs=()):
     for pin in pins:
         actual, size = refresh_pin(root, pin["path"], pin["sha256"])
         pin["sha256"] = actual
@@ -126,12 +126,20 @@ def refresh_list(root, pins):
         for path in (
             "content/world/terrain/" + GROUND,
             HERE + "historical_world_owner_context.py",
+            *additional_owner_inputs,
         ):
             raw = (root / path).read_bytes()
             pins.append({"path": path, "sha256": digest(raw), "bytes": len(raw)})
 
 
-def refresh(root, recipe):
+def refresh(
+    root,
+    recipe,
+    additional_owner_inputs=(),
+    base_head="4224c44239d0913e6dc14b6e30bcb18e1b248c43",
+    reason="W15c owner footprint; original source records and closed scope unchanged",
+    generator=HERE + Path(__file__).name,
+):
     module, kind, source, expected, version = recipe
     raw = (root / source).read_bytes()
     if digest(raw) != expected:
@@ -146,23 +154,32 @@ def refresh(root, recipe):
     ):
         pins = packet.get(key)
         if isinstance(pins, list):
-            refresh_list(root, pins)
+            refresh_list(root, pins, additional_owner_inputs)
         elif isinstance(pins, dict):
             for path, previous in pins.items():
                 pins[path] = refresh_pin(root, path, previous)[0]
+            if MARKER in pins:
+                for path in additional_owner_inputs:
+                    pins[path] = digest((root / path).read_bytes())
     if "world_owner_baseline" in packet:
-        refresh_list(root, packet["world_owner_baseline"]["input_digests"])
+        refresh_list(
+            root,
+            packet["world_owner_baseline"]["input_digests"],
+            additional_owner_inputs,
+        )
     if "historical_source_proof_sha256" in packet:
-        proof = root / RECIPES[2][2].replace("-v1.json", "-v2.json")
+        proof = root / re.sub(
+            r"-v[0-9]+\.json$", f"-v{RECIPES[2][4]}.json", RECIPES[2][2]
+        )
         packet["historical_source_proof_sha256"] = digest(proof.read_bytes())
     if "actual_published_parent" in packet:
-        packet["actual_published_parent"] = "4224c44239d0913e6dc14b6e30bcb18e1b248c43"
+        packet["actual_published_parent"] = base_head
     packet["input_footprint_refresh"] = {
-        "base": "4224c44239d0913e6dc14b6e30bcb18e1b248c43",
+        "base": base_head,
         "supersedes": source,
         "sha256": expected,
-        "reason": "W15c owner footprint; original source records and closed scope unchanged",
-        "generator": HERE + Path(__file__).name,
+        "reason": reason,
+        "generator": generator,
     }
     output = re.sub(r"-v[0-9]+\.json$", f"-v{version}.json", source)
     # Preserve the frozen source's serialization style, avoiding unrelated churn.

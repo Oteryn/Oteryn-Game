@@ -70,6 +70,7 @@ pub(super) async fn return_in_transaction(
     r: &ActivityReturnRequest,
     recovering: bool,
 ) -> Result<ActivityReturnOutcome> {
+    super::super::soulpit::lock_shared_return(tx, &r.handoff_id).await?;
     let character = foundation_character(r.source)?;
     let row = sqlx::query("SELECT uuid_send(p.origin_channel_id) AS origin, p.account_id::text, g.content_revision,g.ownership_generation::text AS generation, \
         e.deadline,e.holder_node_id::text AS original_node,e.holder_registration_revision::text AS original_registration, \
@@ -230,6 +231,8 @@ pub(super) async fn return_in_transaction(
         },
         ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2)")
             .bind(r.handoff_id.as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::SoulpitTerminal => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_soulpit_encounters WHERE handoff_id=encode($1,'hex')::uuid AND terminal)")
+            .bind(r.handoff_id.as_slice()).fetch_one(&mut **tx).await?,
     };
     if !due {
         return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::NotDue));
@@ -318,6 +321,7 @@ pub(super) async fn return_in_transaction(
         ));
     }
     // This is the same issuance/transport/publisher operation as enter, in reverse.
+    super::super::soulpit::shared_returning(tx, r, recovering).await?;
     super::entry::issue_successor(
         tx,
         root,

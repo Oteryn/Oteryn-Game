@@ -26,7 +26,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         runtime.player_control_facts(actor, session).ok()?;
         let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
             &mut runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
         );
         let minute = self.world_clock_utc_ms().and_then(|now| {
