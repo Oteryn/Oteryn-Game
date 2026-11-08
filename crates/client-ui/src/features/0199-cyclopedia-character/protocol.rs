@@ -87,6 +87,23 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     };
     match text {
         Some(v) => {
+            if let Some(tab) = tab.filter(|t| {
+                matches!(
+                    t,
+                    cyclopedia_character::CharacterTab::RecentDeaths
+                        | cyclopedia_character::CharacterTab::RecentPvpKills
+                )
+            }) {
+                let Some(rows) = decode_history(&r.payload, tab, p.limit) else {
+                    p.feedback = Some("The server returned invalid character history");
+                    return false;
+                };
+                p.history = rows;
+                p.history_tab = Some(tab);
+            } else {
+                p.history.clear();
+                p.history_tab = None;
+            }
             p.result = Some(v);
             p.feedback = None;
             true
@@ -277,4 +294,36 @@ impl<'a> Reader<'a> {
         self.0 = &self.0[len..];
         Some(text)
     }
+}
+
+fn decode_history(
+    b: &[u8],
+    tab: cyclopedia_character::CharacterTab,
+    limit: u8,
+) -> Option<Vec<super::HistoryRow>> {
+    use cyclopedia_character::{CharacterTab, KillStatus};
+    if b.first() != Some(&(tab as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let count = r.count(limit)?;
+    let mut rows = Vec::with_capacity(usize::from(count));
+    for _ in 0..count {
+        let at = i64::from_le_bytes(r.bytes()?);
+        let status = if tab == CharacterTab::RecentPvpKills {
+            Some(match r.u8()? {
+                1 => KillStatus::Unjustified,
+                2 => KillStatus::GuildWar,
+                _ => return None,
+            })
+        } else {
+            None
+        };
+        rows.push(super::HistoryRow {
+            at,
+            status,
+            description: r.text()?.into(),
+        });
+    }
+    r.0.is_empty().then_some(rows)
 }

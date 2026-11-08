@@ -25,6 +25,15 @@ pub(in crate::play) fn submit(
     if p.pending || !p.selected {
         return None;
     }
+    if matches!(id, 114..=116) {
+        use oteryn_client_runtime::cyclopedia_character::KillStatus;
+        p.kill_filter = match id {
+            115 => Some(KillStatus::Unjustified),
+            116 => Some(KillStatus::GuildWar),
+            _ => None,
+        };
+        return None;
+    }
     if id == 111 {
         return request(p, Intent::Badges);
     }
@@ -107,7 +116,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=113)
+                    && matches!(id, 101..=116)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -229,6 +238,34 @@ mod window {
                 [10, 355, 690, 240],
                 ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
             );
+            for (id, label, x) in [
+                (114, "All PvP results", 10),
+                (115, "Unjustified", 190),
+                (116, "Guild war", 370),
+            ] {
+                control(hwnd, "BUTTON", label, id, [x, 155, 165, 28], WS_TABSTOP);
+            }
+            let heading = control(hwnd, "STATIC", "", 401, [10, 355, 690, 22], 0);
+            let history = control(
+                hwnd,
+                "LISTBOX",
+                "",
+                402,
+                [10, 380, 690, 155],
+                WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP | LBS_USETABSTOPS as u32,
+            );
+            let detail = control(
+                hwnd,
+                "EDIT",
+                "",
+                403,
+                [10, 545, 690, 50],
+                ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
+            );
+            let tabs: [i32; 2] = [100, 180];
+            SendMessageW(history, LB_SETTABSTOPS, tabs.len(), tabs.as_ptr() as isize);
+            SendMessageW(history, LB_SETHORIZONTALEXTENT, 1800, 0);
+            let mut held_history = Vec::new();
             let mut message: MSG = std::mem::zeroed();
             loop {
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -263,6 +300,58 @@ mod window {
                     output,
                     wide(&display(&mailbox.cyclopedia_character)).as_ptr(),
                 );
+                let panel = &mailbox.cyclopedia_character;
+                let table = panel.history_tab == Some(panel.tab);
+                let pvp = panel.tab
+                    == oteryn_client_runtime::cyclopedia_character::CharacterTab::RecentPvpKills;
+                for id in 114..=116 {
+                    ShowWindow(GetDlgItem(hwnd, id), if pvp { SW_SHOW } else { SW_HIDE });
+                }
+                ShowWindow(output, if table { SW_HIDE } else { SW_SHOW });
+                for handle in [heading, history, detail] {
+                    ShowWindow(handle, if table { SW_SHOW } else { SW_HIDE });
+                }
+                if table {
+                    let note = if panel.pending {
+                        "Loading"
+                    } else {
+                        panel.feedback.unwrap_or("")
+                    };
+                    use oteryn_client_runtime::cyclopedia_character::KillStatus;
+                    let filter = match panel.kill_filter {
+                        None => "All results",
+                        Some(KillStatus::GuildWar) => "Guild war",
+                        Some(KillStatus::Unjustified) => "Unjustified",
+                    };
+                    let columns = format!(
+                        "Time (server Unix ms)     Result     Description | {filter} | {note}"
+                    );
+                    SetWindowTextW(heading, wide(&columns).as_ptr());
+                    let rows: Vec<_> = oteryn_client_ui::cyclopedia_character::history_rows(panel)
+                        .into_iter()
+                        .cloned()
+                        .collect();
+                    if held_history != rows {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for row in &rows {
+                            let kind = match row.status {
+                                Some(KillStatus::Unjustified) => "Unjustified",
+                                Some(KillStatus::GuildWar) => "Guild war",
+                                None => "Death",
+                            };
+                            let label = format!("{}\t{}\t{}", row.at, kind, row.description);
+                            SendMessageW(history, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                        }
+                        held_history = rows;
+                    }
+                    let selected = usize::try_from(SendMessageW(history, LB_GETCURSEL, 0, 0)).ok();
+                    let description = selected
+                        .and_then(|i| held_history.get(i))
+                        .map_or("Select a row to read its complete description", |r| {
+                            r.description.as_str()
+                        });
+                    SetWindowTextW(detail, wide(description).as_ptr());
+                }
                 drop(mailbox);
                 std::thread::sleep(Duration::from_millis(25));
             }

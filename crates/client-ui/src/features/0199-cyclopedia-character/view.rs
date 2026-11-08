@@ -14,3 +14,16 @@ pub fn panel_text(p: &CyclopediaCharacterPanel) -> String {
         None => format!("{heading}\r\n{state}"),
     }
 }
+
+/// Filter only the confirmed history page; the wire pagination remains unchanged.
+pub fn history_rows(p: &CyclopediaCharacterPanel) -> Vec<&super::HistoryRow> {
+    if p.history_tab != Some(p.tab) {
+        return Vec::new();
+    }
+    p.history
+        .iter()
+        .filter(|row| {
+            row.status.is_none() || p.kill_filter.is_none() || row.status == p.kill_filter
+        })
+        .collect()
+}

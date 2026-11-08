@@ -5,8 +5,8 @@ mod state;
 mod view;
 pub use input::{open_key, set_target};
 pub use protocol::{Intent, apply_result, request};
-pub use state::CyclopediaCharacterPanel;
-pub use view::panel_text;
+pub use state::{CyclopediaCharacterPanel, HistoryRow};
+pub use view::{history_rows, panel_text};
 
 #[cfg(test)]
 mod tests;
