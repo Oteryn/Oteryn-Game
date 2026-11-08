@@ -117,6 +117,7 @@
   "feature": "Friends, main character, zaproszenia",
   "status": "PARTIAL",
   "gap": "Są zgody/status VIP; brak pełnego kontowego Friends i main character.",
+  "evidence": "apps/client/src/features/0043-vip/native.rs:181 + friends_view_separates_confirmed_contacts_and_pending_invitations; remaining: accepted account-wide Friends/main-character authority contract; vip_v1.md scopes consent to a Character",
   "lane": "cg_analytics"
  },
  {
