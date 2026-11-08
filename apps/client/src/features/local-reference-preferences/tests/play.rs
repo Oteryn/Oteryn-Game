@@ -333,8 +333,6 @@ fn t012_visual_preferences_control_live_effect_projection() -> Result<(), Box<dy
     Ok(())
 }
 
-
-
 #[test]
 fn t162_monk_hud_has_independent_visibility() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;

@@ -18,7 +18,13 @@ pub enum SettingsPage {
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 5] = [Self::Gameplay, Self::Interface, Self::Graphics, Self::Sound, Self::Help];
+    pub const ALL: [Self; 5] = [
+        Self::Gameplay,
+        Self::Interface,
+        Self::Graphics,
+        Self::Sound,
+        Self::Help,
+    ];
 
     pub const fn label(self) -> &'static str {
         match self {

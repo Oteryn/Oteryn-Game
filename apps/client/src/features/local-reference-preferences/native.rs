@@ -468,12 +468,19 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for (index, handle) in hud_checks.iter().enumerate() {
-                let page = if index < 3 { SettingsPage::Interface } else { SettingsPage::Graphics };
+                let page = if index < 3 {
+                    SettingsPage::Interface
+                } else {
+                    SettingsPage::Graphics
+                };
                 ShowWindow(*handle, if state.page == page { SW_SHOW } else { SW_HIDE });
             }
             ShowWindow(
                 apply,
-                if matches!(state.page, SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics) {
+                if matches!(
+                    state.page,
+                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                ) {
                     SW_SHOW
                 } else {
                     SW_HIDE
