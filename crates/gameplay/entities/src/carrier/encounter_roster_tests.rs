@@ -275,3 +275,23 @@ fn qm50_platform_checks_all_destinations_before_projecting_or_moving() -> TestRe
     );
     Ok(())
 }
+
+#[test]
+fn m49_arrival_spawn_rolls_back_when_the_world_readset_fence_fails() -> TestResult {
+    let mut runtime = runtime(1)?;
+    let before = runtime.encounter_fixture_snapshot();
+    let monsters = [("creature:rat", 20, position(110))];
+    assert!(
+        runtime
+            .commit_quest_creature_spawn_with_projection(&monsters, || false)
+            .is_err()
+    );
+    assert_eq!(runtime.encounter_fixture_snapshot(), before);
+    let actors = checked(runtime.commit_quest_creature_spawn_with_projection(&monsters, || true))?;
+    assert_eq!(actors.len(), 1);
+    assert_eq!(
+        checked(runtime.read_actor_position(actors[0]))?.position(),
+        position(110)
+    );
+    Ok(())
+}
