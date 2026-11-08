@@ -1,3 +1,25 @@
+# Current checkpoint: Wrath four-crystal native slice GREEN; coordinator handoff
+
+Continuation branch: claude/happy-davinci-ijz3wy-questpc8b. Original lane branch remains frozen.
+Focused rerun3/3PASS: native crystals71.744319s (marker confirms real PostgreSQL),
+source-world dragon104.027s, exhaustive equipment profile unit42.983s.
+Quest units355/355PASS37.99s; source-profile admission17PASS119.994s;
+pin tool7, recipe identity3 and completion matrix8 tests PASS.
+Final workspace check121.396s; fmt11.713s;
+clippy180.985s; duplicate migrations and all repository generation PASS.
+No new migrations. Exact equipment union3925; immutable baseline3663 preserved.
+See wrath-crystals-validation.json and CONTRACT-NOTES for scope and source differences.
+
+Active L7 packet:21/23 qualified (18here +3reused from questpc4), with Colours
+and Wrath still IN_PROGRESS. Earlier Lone Medusa contract is outside this23-entry
+packet; it explains22 qualified status rows, not a packet-count discrepancy.
+Wrath now has qualified opening, imperial hunt, dream and crystal components;
+teleport/Keeper/sceptre assembly and final chosen reward bindings remain to finish.
+Colours peer predicate and Wrath item-look disguise stay queued with qengine2
+(last checked0aa80f984). This batch is ready for coordinator PR/heavy CI as
+finished component work; it does not qualify either whole remaining quest.
+Known shared generated-file overlap: qengine2, questpc4, qready1, qready2, wpkg.
+
 # Collector handoff: freeze this branch after the one merge push
 
 Collector main78294c081 is integrated with both main and questpc8 logic retained.

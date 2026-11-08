@@ -5,6 +5,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
 use crate::map::overlay::TilePos;
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     world_callbacks::{Offering, Position},
@@ -106,14 +107,12 @@ fn target(
     let (x, y, ordinal) = CRYSTALS[index];
     let map = owner.bundle_map().ok_or("map")?;
     let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(
-        &oteryn_world_bundle::bundle::placement_key(-15, x, y, u8::try_from(ordinal)?)
-            .ok_or("crystal placement")?
-            .to_be_bytes(),
-    );
+    let key = oteryn_world_bundle::bundle::placement_key(-15, x, y, u8::try_from(ordinal)?)
+        .ok_or("crystal placement")?;
+    placement.extend_from_slice(&key.to_be_bytes());
     Ok(WorldObjectTarget {
         placement,
-        expected_revision: 0,
+        expected_revision: map.facts.object_revision(key),
     })
 }
 async fn use_target(
@@ -260,7 +259,7 @@ pub(super) async fn exercise(
     for (index, &approach) in APPROACHES.iter().enumerate() {
         super::questpc8_mystery_geometry::arrive(owner, admitted, approach).await?;
         let object = target(owner, index)?;
-        let command = 10 + u64::try_from(index)? * 2;
+        let command = 4 + u64::try_from(index)? * 3;
         assert_eq!(
             use_target(owner, admitted, command, &object).await?,
             UseDisposition::Committed
@@ -272,8 +271,15 @@ pub(super) async fn exercise(
         );
         assert_eq!(
             use_target(owner, admitted, command + 1, &object).await?,
+            UseDisposition::StaleState
+        );
+        let current = target(owner, index)?;
+        assert!(current.expected_revision > object.expected_revision);
+        assert_eq!(
+            use_target(owner, admitted, command + 2, &current).await?,
             UseDisposition::Rejected
         );
+        assert_eq!(count(h).await?, i64::try_from(index + 1)?);
         if index == 1 {
             owner
                 .states

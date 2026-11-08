@@ -1776,10 +1776,11 @@
       ]
     },
     "crystal_slice": {
-      "state": "COMPILE_READY_NATIVE_POSTGRES_PENDING",
+      "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-crystals-validation.json",
       "scope": "Chosen s8 four literal native11427 corners, exact retained carried11371, clockwise per-character counter; no donor boss graph or whole completion",
-      "red_postgres_seconds": 4.003721107
+      "red_postgres_seconds": 4.003721107,
+      "postgres_seconds": 71.744319386
     }
   },
   {

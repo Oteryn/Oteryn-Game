@@ -1,5 +1,5 @@
 {
-  "state": "COMPILE_READY_NATIVE_POSTGRES_PENDING",
+  "state": "NATIVE_POSTGRES_GREEN",
   "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
   "red": {
     "postgres_seconds": 4.003721107,
@@ -80,23 +80,53 @@
   "whole_quests_qualified": 21,
   "packet_quests": 23,
   "checks": {
+    "pg": {
+      "exit": 0,
+      "seconds": 351.8414616120135
+    },
     "workspace": {
       "exit": 0,
-      "seconds": 206.4279068169999
+      "seconds": 121.39616280699556
     },
     "fmt": {
       "exit": 0,
-      "seconds": 12.493389438997838
+      "seconds": 11.71321694299695
     },
     "dups": {
       "exit": 0,
-      "seconds": 0.32411981200857554
+      "seconds": 0.2937963799922727
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 180.98534404899692
     }
   },
   "pending": [
-    "clippy changed crates",
-    "focused native crystal PG and source dragon regression",
-    "remaining dispatch unit inventory in CI"
+    "CI heavy suites"
   ],
-  "review": "Read-only focused review: no findings; no builds run by reviewer"
+  "review": "Two read-only reviews found no issues; reviewers did not build or test",
+  "green": {
+    "postgres_seconds": 71.744319386,
+    "nextest_seconds": 71.786,
+    "marker": "POSTGRES_WRATH_FOUR_NATIVE_CRYSTALS_EXACT_TOOL_ORDER_COLD_REPLAY_PASS",
+    "dream_nextest_seconds": 104.027,
+    "equipment_unit_seconds": 42.983,
+    "selected_cases_passed": 3,
+    "selected_cases_failed": 0,
+    "log": "/tmp/questpc8b-crystals-final-pg.log"
+  },
+  "test_repairs": [
+    {
+      "seconds": 71.043811312,
+      "error": "CommandSequenceGap from fixture command3 to10",
+      "fix": "Contiguous wire command IDs; all assertions retained"
+    },
+    {
+      "seconds": 68.687909522,
+      "error": "StaleState observed for a new command with an old object revision",
+      "fix": "Assert old revision is stale; fetch current revision and retain new-command Rejected plus unchanged counter assertions"
+    }
+  ],
+  "finished_components_ready_for_coordinator": true,
+  "whole_quest_complete": false
 }
