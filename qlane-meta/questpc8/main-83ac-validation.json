@@ -2,7 +2,7 @@
   "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
   "branch": "claude/happy-davinci-ijz3wy-questpc8b",
   "previous_pushed": "4c27b37d50d8ba555cff32232353bcc06bc5f8cb",
-  "state": "MERGE_COMPILE_AND_FOCUSED_UNIT_GREEN_DISPATCH_PG_PENDING",
+  "state": "MERGED_FOCUSED_GREEN",
   "timestamp_utc": "2026-11-08T04:50:50.350835+00:00",
   "conflict_files_resolved": 64,
   "quest_units": {
@@ -178,19 +178,57 @@
     "world_pins": "PASS repo pin-refresh; incoming World content and own native additions preserved"
   },
   "dispatch_pg": {
-    "state": "BUILDING",
+    "state": "PASS",
+    "source_commit": "56668c09daefe7c06dcda379d51b75b7e410a0a4",
+    "passed": 6,
+    "failed": 0,
+    "seconds": 139.88,
     "cases": [
-      "Colours opening",
-      "Exact fluid output proof",
-      "Braindeath native route",
-      "Main Mead native route",
-      "Winterlight native route",
-      "Wrath exact-material NPC opening"
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_authored_programmes::questpc8_braindeath_exploration_native_death_coffin_and_replay",
+        "seconds": 39.117,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+        "seconds": 40.324,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_fluid_output_proof::questpc8_fluid_outputs_preserve_exact_subtype_and_legacy_plan_postgres",
+        "seconds": 3.531,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_colours_opening::questpc8_colours_native_envelope_and_self_marking_postgres",
+        "seconds": 68.605,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_winterlight::questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit",
+        "seconds": 67.51,
+        "result": "PASS"
+      },
+      {
+        "case": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_opening::questpc8_wrath_native_opening_exact_materials_crate_and_replay",
+        "seconds": 97.229,
+        "result": "PASS"
+      }
+    ],
+    "markers": [
+      "POSTGRES_EXACT_FLUID_OUTPUTS_LEGACY_AND_REFUSALS_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_fluid_outputs duration=3.518522072s result=Ok(())",
+      "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_colours_opening duration=68.565456562s result=Ok(())",
+      "POSTGRES_WINTERLIGHT_PHYSICAL_COMPONENTS_DISGUISE_COLD_FOUR_FIRES_QUEEN_BASE_OUTFIT_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_winterlight_native_route duration=67.473280041s result=Ok(())",
+      "POSTGRES_WRATH_EXACT_CRATE_OPENING_AND_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_native_opening duration=97.179776055s result=Ok(())"
     ],
     "log": "/tmp/questpc8b-6f61-own-pg.log",
-    "full_success_claimed": false
+    "full_backend_suite_success_claimed": false
   },
-  "prepush2_cadence_exception": "Own complete schema/fluid PostgreSQL regression,355quest units,100focusedPython tests,workspace/clippy/fmt/generation green. Five full dispatch PG cases continue after publication. No full backend suite success claimed.",
+  "prepush2_cadence_exception": "Closed for six focused native dispatch cases. Full remaining backend units remain CI scope; no full backend suite completion claimed.",
   "whole_quest_qualification_unchanged": true,
   "migration_files": [
     "apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql",
@@ -209,10 +247,11 @@
     "conflicts": 1,
     "resolution": "Canonical main physical item lane; remove obsolete unreferenced input_authority declaration and unused lifetime; preserve selected-source filter",
     "workspace": "PASS2m41s",
-    "clippy": "PASS",
+    "clippy": "PASS2m47s",
     "data_inputs_changed": false,
     "generator_reuse": "Same data/authoring inputs as validated83ac generation and369migration probe",
     "fmt": "PASS",
-    "state": "COMPILE_CLEAN_PG_BUILDING"
-  }
+    "state": "FOCUSED_GREEN"
+  },
+  "completed_utc": "2026-11-08T05:09:26.478535+00:00"
 }

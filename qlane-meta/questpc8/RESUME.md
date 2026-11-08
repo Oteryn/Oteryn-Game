@@ -1,3 +1,22 @@
+# Latest checkpoint: main6f61 integrated; six native PG GREEN
+
+Pushed integration56668c09d preserves both main QUESTPC4 and physical-item-lane
+fixes with questpc8 mechanics. Final native PostgreSQL6/6PASS139.880s on that
+exact unchanged product tree: Braindeath39.117s, Mead40.324s, exactfluid3.531s,
+Colours68.605s, Winterlight67.510s, WrathNPCopening97.229s (wire marker97.1798s).
+Markers and exact case durations are in main-83ac-validation.json. These cover
+all three reviewed integration P1s plus selected-instance exchange, premium
+world stages, completion, filled bags, replay and the new physical input pin.
+Quest units355PASS; focusedPython100PASS; workspace all-targets, changed-crate
+clippy, fmt, duplicate migrations, independent3924-key equipment union and
+generated files/pins all PASS.369migration PG probe RED2.988s/GREEN3.265s.
+Full remaining backend-unit coverage remains CI scope, not claimed complete.
+Own migration1308 forwards exact optional fluid output projection; no canonical
+merged migration was rewritten. Original questpc8 remains frozen.
+Whole quest count remains21/23; no partial opening is promoted to whole quest.
+Fresh QENGINE2 at2ddd4f9cd still explicitly QUEUES selected-player colour
+predicates and item-look disguise/restoration. Preserve owner engine boundary.
+
 # Latest main synchronization:6f61ac15d physical item lane
 
 Normal push guard caught newer main6f61ac15d after83ac integration was fully
