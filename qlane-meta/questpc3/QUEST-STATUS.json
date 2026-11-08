@@ -10697,7 +10697,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified Santiago/Zirella rewards, coat chest/equipment/health, Carlos six lessons, committed food sale and both post-sale reports/return greeting. Finish actual bridge/log8 completion, lost-coat replacement and five ground-wood/cart deliveries; whole quest remains IN_PROGRESS."
+      "next_actions": "Retain qualified Santiago/Zirella rewards, coat chest/equipment/health and owned-absence lost-coat replacement (batch18 PG120264ms), Carlos lessons/food/report logic. Current main integration requalifies Carlos trade continuation. Remaining whole-quest gaps are actual bridge/log8 completion and five source ground-wood/cart deliveries; generic missing features are requested from qengine2."
     },
     {
       "canonical": "oteryn:quest.the_first_dragon_quest",
@@ -10708,7 +10708,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Retain qualified 200-kill counter, four sacrifices/two lava directions, three life sites and ordered Gelidrazah quiz/placement. Next four unconditional source exits reuse current movement engine; season, treasure conditional achievement, boss admission/cleanup and recurrent rewards await qengine2 requests. Whole quest remains IN_PROGRESS."
+      "next_actions": "Retain qualified200kills, four sacrifices/two lava directions, three life sites and ordered Gelidrazah quiz/placement. Do not qualify the exit draft from synthetic geometry: admitted map lacks35005..35008 selectors; owned room lifecycle must supply native exits. Season, conditional treasure achievement, boss admission/cleanup and recurring rewards remain qengine2 requests. Whole quest IN_PROGRESS."
     },
     {
       "canonical": "oteryn:quest.the_tainted_soul",
@@ -10719,7 +10719,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Implement talisman assembly and live-target cleansing, 100-soul gate, Ekatrix encounter and 20-hour personal reset; author required Item/creature/NPC bindings and shared mechanisms here."
+      "next_actions": "Qualify owned source Item/creature/data bindings and reuse delivered mechanisms. Talisman assembly requires whole-target-stack preservation demonstrated by pinned CPP; fixed-unit crafting must not substitute. Live-target cleansing,100-soul gate, Ekatrix encounter and20hour reset remain generic-engine requests. Native133/10297 already admitted; do not redo. Canonical22008/22009 Item preparation remains independently authorable."
     },
     {
       "canonical": "oteryn:quest.threatened_dreams_quest",
