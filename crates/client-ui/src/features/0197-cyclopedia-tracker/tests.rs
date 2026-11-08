@@ -85,3 +85,31 @@ fn bosstiary_widget_has_independent_config_and_survives_bestiary_updates()
     assert_eq!(bestiary_rows(&p).len(), 1);
     Ok(())
 }
+
+#[test]
+fn nearest_completion_sorts_by_next_unfinished_stage() {
+    let p = CyclopediaTrackerPanel {
+        sort: TrackerSort::Remaining,
+        bestiary_snapshot: Some(TrackerSnapshot {
+            boss: false,
+            entries: vec![entry("rat", 9, false), entry("bear", 18, false)],
+        }),
+        ..Default::default()
+    };
+    assert_eq!(bestiary_rows(&p)[0].creature_key, "rat");
+}
+
+#[test]
+fn boss_selection_follows_identity_when_sort_or_filter_changes() {
+    let mut p = CyclopediaTrackerPanel {
+        bosstiary_snapshot: Some(TrackerSnapshot {
+            boss: true,
+            entries: vec![entry("alpha", 1, false), entry("beta", 9, false)],
+        }),
+        ..Default::default()
+    };
+    p.boss_sort = TrackerSort::Kills;
+    assert_eq!(tracker_selection(&p, true, "alpha"), Some(1));
+    p.boss_search = "beta".into();
+    assert_eq!(tracker_selection(&p, true, "alpha"), None);
+}

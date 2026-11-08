@@ -91,6 +91,18 @@ fn active_client(install_dir: &Path) -> Result<PathBuf, LaunchError> {
     }
 }
 
+/// Local diagnosis never downloads or replaces a release behind the installer.
+fn installation_report(install_dir: &Path) -> String {
+    let status = match active_client(install_dir) {
+        Ok(client) => format!("Ready to launch: {}", client.display()),
+        Err(error) => format!("Installation check failed: {error}"),
+    };
+    format!(
+        "Oteryn installation check\r\nLauncher: {}\r\n{status}\r\nRepair: run the Oteryn installer and choose the same installation directory. Keep the client closed until setup finishes. Updates must come from your operator's trusted release channel.",
+        oteryn_client::RELEASE_ID
+    )
+}
+
 #[cfg(windows)]
 fn wait_for_setup_exit() -> Result<(), LaunchError> {
     use oteryn_client::win_mutex;
@@ -122,6 +134,13 @@ fn launch() -> Result<(), LaunchError> {
     let install_dir = launcher
         .parent()
         .ok_or(LaunchError::Os(io::Error::from(io::ErrorKind::NotFound)))?;
+    if arguments
+        .iter()
+        .any(|argument| argument == "--check-install")
+    {
+        oteryn_client::win_mutex::show_error(&installation_report(install_dir));
+        return Ok(());
+    }
     let client = active_client(install_dir)?;
     std::process::Command::new(client)
         .args(arguments)
@@ -154,6 +173,11 @@ fn main() {
     {
         eprintln!("Oteryn: {error}");
     }
+    if std::env::args_os().any(|argument| argument == "--check-install")
+        && let Ok(directory) = std::env::current_dir()
+    {
+        println!("{}", installation_report(&directory));
+    }
     println!("Oteryn launcher: Windows desktop target only");
 }
 
@@ -175,6 +199,17 @@ mod tests {
         let release_dir = directory.join("releases").join(release);
         assert!(std::fs::create_dir_all(&release_dir).is_ok());
         assert!(std::fs::write(release_dir.join("oteryn-client.exe"), b"").is_ok());
+    }
+
+    #[test]
+    fn installation_check_explains_repair_and_active_release() {
+        let directory = install_dir("check-report");
+        assert!(installation_report(&directory).contains("Repair: run the Oteryn installer"));
+        install_release(&directory, RELEASE);
+        assert!(std::fs::write(directory.join("current.txt"), RELEASE).is_ok());
+        let report = installation_report(&directory);
+        assert!(report.contains(RELEASE));
+        assert!(report.contains("Ready to launch"));
     }
 
     #[test]

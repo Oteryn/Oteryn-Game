@@ -37,7 +37,7 @@ pub use help::{HelpTopic, help_text};
 pub use profiles::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
 pub use store::PreferenceStore;
-pub use sync::SettingsState;
+pub use sync::{SettingsPage, SettingsState};
 
 const PANEL_IDS: &[&str] = &[
     "battle",
@@ -59,6 +59,14 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
+fn enabled() -> bool {
+    true
+}
+
+fn default_hud_bounds() -> [u16; 4] {
+    [8, 8, 900, 40]
+}
+
 fn default_scale() -> u16 {
     100
 }
@@ -74,6 +82,15 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    /// Saved HUD position and size in client pixels; editable through settings transfer.
+    #[serde(default = "default_hud_bounds")]
+    pub hud_bounds: [u16; 4],
+    #[serde(default = "enabled")]
+    pub hud_bars: bool,
+    #[serde(default = "enabled")]
+    pub show_effects: bool,
+    #[serde(default = "enabled")]
+    pub show_lights: bool,
     #[serde(default)]
     pub arcs: ArcPreferences,
     #[serde(default)]
@@ -112,6 +129,10 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            hud_bounds: default_hud_bounds(),
+            hud_bars: true,
+            show_effects: true,
+            show_lights: true,
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
@@ -144,6 +165,9 @@ impl ReferencePreferences {
             || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()
             || !self.skills_layout.valid()
+            || self.hud_bounds[2] < 120
+            || self.hud_bounds[3] < 24
+            || self.hud_bounds.iter().any(|value| *value > 4096)
             || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
