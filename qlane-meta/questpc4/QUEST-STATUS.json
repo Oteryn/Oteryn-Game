@@ -10816,5 +10816,156 @@
     "workspace_check": "cargo check --workspace --all-targets --keep-going PASS8m19s; /tmp/questpc4-b386-workspace-check.log",
     "duplicate_migrations": 0,
     "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes."
+  },
+  "n2_reward_profiles": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc4-n2",
+    "base": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+    "status": "QUALIFIED_COMPONENT",
+    "items": [
+      9204,
+      9616,
+      9617,
+      9618,
+      9619
+    ],
+    "qualification_scope": "Explicit readability and ROTATE metadata plus physical custody/replay only; no default text, operation execution, quest grant or whole-quest promotion.",
+    "source_unit_tests": "22 focused tool/source controls PASS15.365s, including nine new-profile tests and stale-pin --check regression; RuffPASS",
+    "postgres": "Actual18.6; five new cases44.354\u201345.925s plus retained Stag43.926s, complete SQL-version/start/completion markers. Two pure controls also passed.",
+    "packaged_branch": "questpc4d9ebc3d6b1 untouched; no packaged commits merged.",
+    "main_before_final_generation": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
+    "canonical": "oteryn:quest.treasure_hunt_quest",
+    "validation": {
+      "generation": "N2_GENERATION_EXIT=0",
+      "source-controls": "N2_SOURCE_CONTROLS_EXIT=0 duration=16s",
+      "source-freshness": "N2_SOURCE_FRESHNESS_EXIT=0",
+      "green": "N2_GREEN_EXIT=0 duration=872s",
+      "authoring-checks": "N2_AUTHORING_CHECKS_EXIT=0 duration=306s",
+      "authoring-units": "N2_AUTHORING_UNITS_EXIT=0 duration=490s",
+      "content-tree": "N2_CONTENT_TREE_EXIT=0 duration=175s",
+      "workspace-check": "N2_WORKSPACE_CHECK_EXIT=0 duration=233s",
+      "clippy": "N2_CLIPPY_EXIT=0 duration=235s",
+      "fmt": "N2_FMT_EXIT=0",
+      "pin-check": "N2_PIN_CHECK_EXIT=0",
+      "duplicate-migrations": "N2_DUP_MIGRATIONS_EXIT=0"
+    },
+    "red": {
+      "rows": [
+        {
+          "status": "PASS",
+          "seconds": 0.016,
+          "test": "gameplay_transport::module_registration_block_is_sorted_and_complete"
+        },
+        {
+          "status": "PASS",
+          "seconds": 44.931,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_stag_item::l6_stag_source_sword_has_native_custody_and_exact_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 53.388,
+          "test": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes"
+        },
+        {
+          "status": "FAIL",
+          "seconds": 44.156,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9204_native_custody_and_replay"
+        },
+        {
+          "status": "FAIL",
+          "seconds": 44.462,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9616_native_custody_and_replay"
+        },
+        {
+          "status": "FAIL",
+          "seconds": 43.793,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9617_native_custody_and_replay"
+        },
+        {
+          "status": "FAIL",
+          "seconds": 43.727,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9618_native_custody_and_replay"
+        },
+        {
+          "status": "FAIL",
+          "seconds": 44.32,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9619_native_custody_and_replay"
+        }
+      ],
+      "expected_red_items": [
+        9204,
+        9616,
+        9617,
+        9618,
+        9619
+      ],
+      "unexpected_failures": [],
+      "missing_red": []
+    },
+    "green": {
+      "exit": 0,
+      "seconds": 871.915,
+      "rows": [
+        {
+          "status": "PASS",
+          "seconds": 0.011,
+          "test": "gameplay_transport::module_registration_block_is_sorted_and_complete"
+        },
+        {
+          "status": "PASS",
+          "seconds": 43.926,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_stag_item::l6_stag_source_sword_has_native_custody_and_exact_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 52.514,
+          "test": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes"
+        },
+        {
+          "status": "PASS",
+          "seconds": 45.825,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9204_native_custody_and_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 45.882,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9616_native_custody_and_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 45.509,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9617_native_custody_and_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 45.925,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9618_native_custody_and_replay"
+        },
+        {
+          "status": "PASS",
+          "seconds": 44.354,
+          "test": "gameplay_transport::monk_save::postgres_tests::l6_treasure_rewards::l6_treasure_reward_9619_native_custody_and_replay"
+        }
+      ]
+    },
+    "native_preservation": {
+      "before": 3736,
+      "after": 3741,
+      "added": [
+        "oteryn:item.tibia.i9204",
+        "oteryn:item.tibia.i9616",
+        "oteryn:item.tibia.i9617",
+        "oteryn:item.tibia.i9618",
+        "oteryn:item.tibia.i9619"
+      ],
+      "old_changed": 0
+    },
+    "equipment": "Generated independent five-item cohort;3779 profile union validated by tooling and actual strict equipment unit52.514s.",
+    "whole_quest": "IN_PROGRESS; no default poem text, rotation execution, quest reward default or whole-quest completion claimed.",
+    "counts": {
+      "IN_PROGRESS": 17,
+      "QUALIFIED": 4,
+      "SKIPPED_EXTERNAL_OWNER": 2
+    },
+    "crate_units": "Full unfiltered content+dispatch nextest command starts on the frozen local candidate before push; pending under PREPUSH-2 cadence exception. Own mechanic/PG cases and mandatory authoring unit runner are all complete."
   }
 }
