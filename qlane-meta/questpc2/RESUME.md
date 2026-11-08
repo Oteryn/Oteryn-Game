@@ -11,3 +11,5 @@ Engine refresh: ENGNPC 3423ac56e supplies the sixteen-track receipt bound. Dange
 Merged main 83ee3c950 (native-login challenge). ENGNPC e22dff551 adds paid-travel confirmation ownership; that fix does not add the still-missing source NPC item/points/clock, equipment, name or magic-effect transaction capabilities. All 26 engine waits remain.
 
 Merged subsequent main e9276ad7e (client settings import/export/backups/defaults); no quest-engine API changes or new quest qualifications.
+
+Engine refresh: ENGENC2 523ba7411 supplies the Cults phase foundation but explicitly lacks production admission/death-loop/durable settlement integration. L2 already supplies atomic direct-backpack outputs (shared migration 1213), but its source NPC planner/MINT bridge remains single-grant. Narrowed Cults and Tower Defence requests to those remaining integrations. ENGITEM 183f49bc1 deduplicates capacity onto ENGNPC 1600; no new whole quest qualifies.

@@ -97,13 +97,20 @@
       "quest": "Cults of Tibia Quest",
       "canonical": "oteryn:quest.cults_of_tibia_quest",
       "state": "WAITING-ENGINE",
-      "engine_owner": "ENGENC",
+      "engine_owner": "ENGENC2",
       "feature": "cults_boss_phase_closures",
-      "acceptance": "Execute the Essence of Malice multi-actor encounter and participant settlement; Gerimor's already pushed assignments do not prove boss completion.",
+      "acceptance": "Reuse ENGENC2 523ba7411f951b9638815fd1514b375e0e02dced NativePhaseOwner and cults::CultsEncounter. Remaining shared work is production admission/death-loop registration and durable participant settlement; the published README explicitly leaves cults_boss_phase_closures unqualified. Do not rewrite the pillar/guardian/Essence phase plan.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00100-00199.json",
         "json_pointer": "/records/26/definition",
         "identity": "oteryn:quest.cults_of_tibia_quest"
+      },
+      "available_engine_reuse": {
+        "branch": "claude/happy-davinci-ijz3wy-engenc2",
+        "sha": "523ba7411f951b9638815fd1514b375e0e02dced",
+        "capability": "NativePhaseOwner and physical CultsEncounter phase foundation",
+        "remaining": "Production admission, death-loop registration and durable participant settlement",
+        "evidence": "crates/gameplay/encounters/src/bosses/phase_controller/README.md:14-18"
       }
     },
     {
@@ -435,12 +442,23 @@
       "canonical": "oteryn:quest.tower_defence_quest",
       "state": "WAITING-ENGINE",
       "engine_owner": "ENGNPC",
-      "feature": "atomic_multi_type_npc_grant",
-      "acceptance": "Commit Bunny's four chosen fifty-arrow reward types with the completion flag in one receipt. Source NPC item_exchange_keys permits at most one grant type; RewardCallback.give has one root. Do not invent a reward bag or split completion from three of the grants.",
+      "feature": "source_npc_multiple_grants_mint_bridge",
+      "acceptance": "Reuse L2 atomic direct-backpack outputs (96d03398ff4fa6a4b4600bce114209738e072d5f; current migration 1213). The source NPC planner still refuses grants > 1 and its npc_program mint sets backpack_outputs=false. Connect that existing MINT owner to one source NPC receipt for all four fifty-arrow grants and the completion flag; do not invent a container or duplicate the MINT primitive.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/55/definition",
         "identity": "oteryn:quest.tower_defence_quest"
+      },
+      "available_engine_reuse": {
+        "branch": "claude/happy-davinci-ijz3wy-questl2b",
+        "sha": "be6626b49508c33b062c097480ed173472a8bdba",
+        "capability": "RewardCallback ItemReward.backpack_outputs and atomic direct backpack MINT outputs",
+        "migration": "1213_quest_reward_backpack_outputs.sql",
+        "evidence": [
+          "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs:61",
+          "crates/gameplay/durability/src/durability/reward_claim_mint/npc_program.rs:67"
+        ],
+        "remaining": "Source NPC planning and MINT bridge for multiple grant types"
       }
     },
     {
