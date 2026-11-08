@@ -252,3 +252,32 @@ uncredited reward callback. Pinned biff_the_baker.lua:69–98, SHA256
 a590a49ebec09956779a7ca9776c449dc4e6d849e9821c5ddcd6df9da0b36a9d,
 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d; 20-substance/Cake Backpack
 personal contract comes directly from the owner's L2 packet.
+
+Djinn final native proof on pushed 6b9c07783444eef9d3e2ae93feda573615784492:
+all five selected cases pass (259.496 s test runtime). Efreet scenario completes
+in 106.773665810 s (111.743 s case), Marid in 107.829692865 s (112.705 s case).
+Both print PostgreSQL 18.6 and POSTGRES_CASE_COMPLETED with success=true. The
+existing White Raven journey also passes (90.187310845 s scenario, 96.312 s
+case), paid travel passes (92.995 s), and the complete source equipment identity
+and raw-attribute audit passes (50.475 s). No skipped case qualifies an entry.
+The initial native Djinn failures were NothingToUse at the absent source target;
+the specialized-world selection fix preserves source selectors and all negative
+checks. Both factions now prove real shop buy and sell entitlement after the
+missions, exclusive allegiance, wrong-faction lamp refusal, single lamp issue,
+physical transformation, achievement, and literal replay. Both entries QUALIFIED.
+
+Additional QENGINE2 requests from the pinned source, not new lane engine code:
+- Postman mission 1 also needs the existing requested travel departure writer:
+  Kevin's four ordered routes are kevin.lua:191–205. The same script's :53–60
+  and :225–229 requires twenty total bones across Items3115/3116 and removes
+  all carried bones of both identities. Reuse the NPC input owner, adding an
+  aggregate minimum and consume-all item-set plan. SHA256
+  7f3a304002acd6277bc8981f0e07e045e84eda518cbdb46f245e0e6b898f9691,
+  Crystal revision9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.
+- Shattered Isles uses data-global/scripts/actions/tools/rake.lua:9–14 to create
+  actual ring6093 on ground32422/32770/1 and write GovernorDaughter=2 atomically.
+  SHA256 c3a636bdb1ed7a1ed0670692eab4d6c3e74f5239581c5cd2411f15a17f37fd61,
+  same Crystal revision. The current world gift adapter reads a backpack and
+  ItemPresence explicitly represents no Item instance. Extend the existing mint
+  owner with an authored ground destination and ordinary pickup; do not replace
+  the physical Item with an appearance or silently grant it into the backpack.

@@ -1429,25 +1429,61 @@
     },
     {
       "title": "Djinn War Efreet",
-      "status": "IN_PROGRESS",
-      "evidence": [],
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "head": "6b9c07783444eef9d3e2ae93feda573615784492",
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-djinn-efreet",
+          "duration_seconds": 106.77366581,
+          "test_duration_seconds": 111.743,
+          "test": "questl2_djinn_efreet_full_player_journey",
+          "passed": true,
+          "log": "/tmp/l2b-main47-focused-pg.log"
+        }
+      ],
       "initial_red": {
         "postgres_version": "18.6",
         "duration_seconds": 5.03,
         "log": "/tmp/l2-djinn-initial-red-postgres.log",
         "point": "Required complete mission callbacks are absent; native full scenario remains mandatory after binding."
-      }
+      },
+      "native_red": {
+        "postgresql": "18.6",
+        "duration_seconds": 102.827,
+        "log": "/tmp/l2b-final-focused.log",
+        "point": "NothingToUse at the real fountain/lamp because the generic world shadowed the specialized source fixture."
+      },
+      "journey": "Exclusive faction enlistment; ordered source mission hand-ins and missing-item refusals; physical fountain/lamp callbacks; once-only lamp issue and transformation; wrong-faction refusal; completion achievement; real shop purchase and sale with replay protection."
     },
     {
       "title": "Djinn War Marid",
-      "status": "IN_PROGRESS",
-      "evidence": [],
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "head": "6b9c07783444eef9d3e2ae93feda573615784492",
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-djinn-marid",
+          "duration_seconds": 107.829692865,
+          "test_duration_seconds": 112.705,
+          "test": "questl2_djinn_marid_full_player_journey",
+          "passed": true,
+          "log": "/tmp/l2b-main47-focused-pg.log"
+        }
+      ],
       "initial_red": {
         "postgres_version": "18.6",
         "duration_seconds": 5.002,
         "log": "/tmp/l2-djinn-initial-red-postgres.log",
         "point": "Required complete mission callbacks are absent; native full scenario remains mandatory after binding."
-      }
+      },
+      "native_red": {
+        "postgresql": "18.6",
+        "duration_seconds": 103.266,
+        "log": "/tmp/l2b-final-focused.log",
+        "point": "NothingToUse at the real fountain/lamp because the generic world shadowed the specialized source fixture."
+      },
+      "journey": "Exclusive faction enlistment; ordered source mission hand-ins and missing-item refusals; physical fountain/lamp callbacks; once-only lamp issue and transformation; wrong-faction refusal; completion achievement; real shop purchase and sale with replay protection."
     },
     {
       "title": "Gravedigger of Drefia",
@@ -1543,6 +1579,15 @@
           "log": "/tmp/l2b-final-focused.log",
           "passed": true,
           "red_log": "/tmp/l2-white-raven-travel-diagnostic-pg.log"
+        },
+        {
+          "head": "6b9c07783444eef9d3e2ae93feda573615784492",
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-white-raven",
+          "duration_seconds": 90.187310845,
+          "test_duration_seconds": 96.312,
+          "passed": true,
+          "log": "/tmp/l2b-main47-focused-pg.log"
         }
       ],
       "red": {
@@ -1787,7 +1832,10 @@
         1213,
         1214,
         1215,
-        1216
+        1216,
+        1217,
+        1218,
+        1219
       ],
       "authority": "Coordinator binding supersedes all prior local allocation checks."
     },
@@ -1915,59 +1963,17 @@
       "failed": 0
     },
     "latest_focused_postgres": {
-      "passed": 4,
+      "head": "6b9c07783444eef9d3e2ae93feda573615784492",
+      "postgresql": "18.6",
+      "run_id": "5fe18bc4-da97-4ced-923c-cb8a2353007d",
+      "passed": 5,
       "failed": 0,
-      "selected_skipped": 0,
-      "unselected": 2612,
-      "seconds": 485.917,
-      "log": "/tmp/l2-foundation-merge-pg.log",
-      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
-      "scenarios": [
-        "conditional failure landing",
-        "blocked conditional failure landing",
-        "atomic source acceptance and replay",
-        "eight Father hand-ins, cape, XP, replay",
-        "exact reset match",
-        "absent reset preservation",
-        "later reset preservation",
-        "paid repeat token exchange"
-      ],
-      "atomic_acceptance_seconds": 212.269035909,
-      "father_handins_seconds": 235.933230805,
-      "repeat_exchange_seconds": 134.911461154,
-      "runs": [
-        {
-          "passed": 3,
-          "unselected": 2631,
-          "seconds": 295.502,
-          "log": "/tmp/l2-priests-merged-pg.log"
-        },
-        {
-          "passed": 1,
-          "unselected": 2633,
-          "seconds": 286.922,
-          "log": "/tmp/l2-priests-merged-priest-pg.log"
-        }
-      ],
-      "cases": [
-        {
-          "test": "questl2_paid_stake_full_priest_journey",
-          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
-          "seconds": 286.804990407
-        },
-        {
-          "test": "questl2_paid_stake_fee_is_atomic_and_repeatable",
-          "seconds": 295.386499161
-        },
-        {
-          "test": "questl2_draconia_greeting_item_lifecycle",
-          "seconds": 246.423434931
-        },
-        {
-          "test": "qengine_l4_nobleman_paid_outfit_story",
-          "seconds": 267.830092855
-        }
-      ]
+      "postgres_journeys": 4,
+      "equipment_regressions": 1,
+      "test_runtime_seconds": 259.496,
+      "total_seconds": 717.4895188880037,
+      "log": "/tmp/l2b-main47-focused-pg.log",
+      "command": "cargo nextest run --lib --bins --no-fail-fast --test-threads 2 -p oteryn-gameplay-content -p oteryn-gameplay-dispatch --features oteryn-gameplay-content/test-support,oteryn-gameplay-dispatch/test-support -E 'test(/questl2_djinn_.*full_player_journey|questl2_passage_batch_white_raven_full_journey|npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals|equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes/)' --success-output immediate --failure-output immediate-final"
     },
     "latest_clippy": {
       "packages": [
@@ -3123,6 +3129,11 @@
         "log": "/tmp/l2-tomes-completion-matrix-tests.log",
         "regenerated_with": "quest_completion_matrix.py"
       }
+    },
+    "latest_world_pins": {
+      "digest": "217f8cf4409b2e64f131222cf1c0e8d1c1249d738542b74730772646bd450fc9",
+      "refresh_log": "/tmp/l2b-main47-pin.log",
+      "check_log": "/tmp/l2b-main98-pin-check2.log"
     }
   },
   "cross_lane_inspection": {
@@ -3536,24 +3547,31 @@
       "central_generated": "PASS /tmp/l2-djinn-wip-central-generated-check.log",
       "pin_refresh": "PASS /tmp/l2-djinn-wip-pin-refresh.log"
     },
-    "pending": [
-      "Finish collecting changed-crate unit failures; retry disk-exhaustion failures after cleanup",
-      "Fix source reward-boss fixture regression without weakening source loot checks",
-      "qengine2 reconciliation of main1314 receipt cap versus existing1210",
-      "Run both authored physical Djinn player journeys and fix any native failures",
-      "Final Clippy rerun"
-    ],
+    "pending": [],
     "binding_slice": {
-      "state": "IN_PROGRESS",
+      "state": "QUALIFIED",
       "npc_callbacks": 17,
       "dialogue_offers": 15,
       "physical_callbacks": 3,
       "source_shop_menus": 4,
       "shop_field_unit": "RED before adapter; GREEN 1 passed via cargo test -p oteryn-gameplay-content --lib quest_shops_native_fields",
-      "journeys": "Full physical fixtures authored; native PG verification pending.",
+      "journeys": "Both complete source-world native PostgreSQL journeys pass on 6b9c07783444eef9d3e2ae93feda573615784492",
       "main_merged": "47db34f09",
       "prepush_workspace": "PASS cargo check --workspace --all-targets, 188s, /tmp/l2-djinn-workspace-final.log",
       "main_merge_commit": "02ebc5ffa"
+    },
+    "green": {
+      "head": "6b9c07783444eef9d3e2ae93feda573615784492",
+      "postgresql": "18.6",
+      "run_id": "5fe18bc4-da97-4ced-923c-cb8a2353007d",
+      "passed": 5,
+      "failed": 0,
+      "postgres_journeys": 4,
+      "equipment_regressions": 1,
+      "test_runtime_seconds": 259.496,
+      "total_seconds": 717.4895188880037,
+      "log": "/tmp/l2b-main47-focused-pg.log",
+      "command": "cargo nextest run --lib --bins --no-fail-fast --test-threads 2 -p oteryn-gameplay-content -p oteryn-gameplay-dispatch --features oteryn-gameplay-content/test-support,oteryn-gameplay-dispatch/test-support -E 'test(/questl2_djinn_.*full_player_journey|questl2_passage_batch_white_raven_full_journey|npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals|equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes/)' --success-output immediate --failure-output immediate-final"
     }
   },
   "collector_round1": {
@@ -3797,7 +3815,7 @@
     }
   },
   "current_merge_validation": {
-    "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "main": "47baa7bb8",
     "quest_unit_tests": {
       "passed": 335,
       "failed": 0,
@@ -3807,9 +3825,9 @@
       "passed": 7,
       "failed": 0
     },
-    "post_merge_postgres": "PENDING; pre-merge qualification evidence retained"
+    "post_merge_postgres": "PASS: four native PostgreSQL journeys and one equipment regression; only these cases are claimed."
   },
-  "latest_pushed_head": "df5d019f97f9c3cdaa4778cf7bbe0e3d18109c2b",
+  "latest_pushed_head": "6b9c07783444eef9d3e2ae93feda573615784492",
   "travel_departure_engine_request": {
     "owner": "qengine2",
     "checked_head": "2ddd4f9cd",
@@ -3819,5 +3837,66 @@
     "feature": "Atomic quest progress write on NPC-confirmed physical departure",
     "source": "captain_haba.lua:105-112; sha256:8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909",
     "state": "REQUESTED; existing full-journey test remains enabled"
-  }
+  },
+  "qualification_counts": {
+    "IN_PROGRESS": 6,
+    "PENDING": 27,
+    "QUALIFIED": 18
+  },
+  "engine_requests_current": [
+    {
+      "owner": "qengine2",
+      "feature": "Atomic NPC travel departure progress writes",
+      "needed_by": [
+        "Hunt for the Sea Serpent",
+        "Postman Missions"
+      ],
+      "where": "durability/npc_travel/paid.rs"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Atomic personal contribution threshold with once-per-event item reward; reuse season 7bf97ab17 global donation owner",
+      "needed_by": [
+        "A Piece of Cake"
+      ],
+      "where": "durability/consume_transform/cake.rs"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Item-set aggregate minimum with consume-all hand-in",
+      "needed_by": [
+        "Postman Missions"
+      ],
+      "where": "quest/reward_callbacks.rs; durability/quest_state/npc_program"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Source-position ground Item reward mint with atomic quest progress and normal pickup",
+      "needed_by": [
+        "Shattered Isles"
+      ],
+      "where": "quest_callbacks/rewards.rs"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Post-1251 compatibility for exact charge plans and root/child fluid proofs; retain existing 1219 source-qualified value owners",
+      "needed_by": [
+        "Hot Cuisine",
+        "Annual Autumn Vintage",
+        "Demon's Lullaby"
+      ],
+      "where": "durability/reward_claim_mint/fluid.rs; migrations/1219 and 1251",
+      "state": "Existing request retained; no new migration or shared engine implementation in this lane"
+    },
+    {
+      "owner": "qengine2",
+      "feature": "Keep the generic 16-effect Rust contract and PostgreSQL effect limits consistent; synthetic eleven-track case remains enabled",
+      "needed_by": [
+        "A Father's Burden"
+      ],
+      "scope": "Actual source Father eleven-track journey already qualified; this request preserves its separately shipped generic regression contract",
+      "where": "questl2_eleven_tracks_commit_atomically; quest reward effect-limit SQL",
+      "state": "Existing generic regression request retained"
+    }
+  ]
 }
