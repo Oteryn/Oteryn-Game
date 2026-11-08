@@ -125,3 +125,32 @@ fn time_alert(remaining_ms: u32) -> &'static str {
         _ => "",
     }
 }
+
+/// The shrine protocol currently confirms one item, so label that scope explicitly.
+pub fn tracker_text(panel: &ImbuePanel) -> String {
+    let mut text = String::from("Imbuement time tracker — selected item snapshot\r\n");
+    let limit = if panel.tracker_minutes.trim().is_empty() {
+        0
+    } else {
+        let Ok(minutes) = panel.tracker_minutes.trim().parse::<u32>() else {
+            return format!("{text}Enter minutes (0 shows all times)");
+        };
+        minutes.saturating_mul(60_000)
+    };
+    let Some(window) = &panel.window else {
+        text.push_str("Select an item and refresh its server state");
+        return text;
+    };
+    let mut found = false;
+    for applied in &window.applied {
+        if limit == 0 || applied.remaining_ms <= limit {
+            text.push_str(&slot_label(panel, applied.slot));
+            text.push_str("\r\n");
+            found = true;
+        }
+    }
+    if !found {
+        text.push_str("No confirmed imbuements match this time filter");
+    }
+    text
+}
