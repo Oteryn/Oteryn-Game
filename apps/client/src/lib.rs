@@ -23,6 +23,7 @@ pub mod scene;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 
