@@ -21,7 +21,7 @@ impl Mailbox {
         self.depot_search.pending = Default::default();
         self.hotkey_equip.pending = Default::default();
         self.potion_durations.pending = Default::default();
-        self.item_forge.pending = Default::default();
+        self.item_forge.scope_changed();
         self.store.pending = Default::default();
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();

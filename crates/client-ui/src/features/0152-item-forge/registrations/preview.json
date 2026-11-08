@@ -1,0 +1,18 @@
+{
+  "mechanic": "0152-item-forge",
+  "kind": "handlers",
+  "id": "0152-item-forge-preview",
+  "status": "supported",
+  "commands": [
+    6116
+  ],
+  "direction": "client_to_server",
+  "capability": 152,
+  "entry": "protocol.rs::preview_request",
+  "not_applicable": {
+    "state": "The existing 0152 Forge panel retains bounded current item observations and matched advisory quotes.",
+    "view": "The existing 0152 Forge native selectors show current named items, verified sprites and server costs and chances.",
+    "input": "The existing 0152 Forge panel requests current candidates and a quote for the selected pair.",
+    "settings": "Forge custody, rules and resource prices remain server-owned."
+  }
+}
