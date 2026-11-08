@@ -1322,3 +1322,43 @@ House, seasonal Item and Cake source generators pass their --check modes
 against pinned donor snapshots. Nineteen compact/House/SRX tests passed.
 The committed immutable Cake source packet requires a local checkpoint
 before downstream native regeneration; publication remains one final push.
+
+Post-checkpoint generation also refreshes the Cake raid capture hash and
+three Cake-golem attack-authoring rows via build_monster_attack_authoring.py.
+The current main f5b584ef1 is merged (only repository CI policy changed).
+The broad native-gameplay Python discovery exposed an unrelated existing
+loot-section byte comparison failure in
+test_full_spell_artifact.LootTablesTests.test_checked_in_section_is_generated_from_the_production_profiles.
+It reproduces unchanged at published head48bfdb692 (2.821s): the standalone
+loot producer lacks the registered WorldChange refinement/serialization.
+No WorldChange facts or tests were altered in this frozen quest/format repair.
+
+Final focused Python verification: compact/House/SRX19 tests pass16.442s;
+seasonal Item, source audit, raids, Cake successor/admission19 pass125.891s.
+House, seasonal Item, Cake and attack-authoring --check modes pass.
+Native-gameplay discovery ran130 tests164.191s:115 pass,14 existing retained
+source-fixture skips, and only the baseline loot comparison above fails.
+Architecture workspace boundaries and duplicate-migration checks pass.
+Migration numbers remain1160-1162,1164-1169;1161 formatting only.
+
+Final f5b584ef1-merged tree: exact CI quest-authoring checks runner passes
+509.362s; unit-tests runner passes513.597s. Source/content-tree validation
+passes315.809s. Both originally failing quest modules are green unchanged.
+Talk-NPC candidates were regenerated last after the final main merge.
+
+Real PostgreSQL proof (admin URL present; no PG source/test edits):
+qready1_crystal_wand_quest_exact_reward_once passes115.740s, minting3068
+through both Crystal Wand reward claims and checking exact-once semantics.
+w18_house_container_capacity_v2_retains_legacy_bound_and_preserves_graph
+passes52.583s through the compacted migration1161; nextest2/2 pass168.327s
+execution (compilation/lock wait excluded). No reward proof re-import needed.
+
+Changed content/native-admission-source crates: clippy --all-targets with
+-D warnings passes66.180s. World bundle pin-refresh passes59.305s and
+pin-check passes67.413s; final pins are already current (no hand edits).
+
+Both changed Rust crates' complete nextest run passes488/488 tests,531.312s
+execution (one existing ignored case;1081.878s including build/lock wait).
+Final workspace all-target check passes370.559s and cargo fmt --all --check
+passes16.447s. Before publication origin/main was fetched again and remains
+f5b584ef1, already merged. No tests, pins or source-gap guards were weakened.
