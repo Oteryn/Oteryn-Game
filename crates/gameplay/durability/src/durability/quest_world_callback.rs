@@ -183,6 +183,13 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    // M03: promotion is a permanent Character purchase, not a client vocation
+    // name or copied quest storage. The outer writer holds the Character root.
+    if callback.admission.as_ref().is_some_and(|a| a.promotion)
+        && !super::character_promotion::read_durable_promotion(tx, fence.character_id).await?
+    {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \
@@ -680,4 +687,15 @@ pub(super) async fn consume_npc_inputs(
         apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
+}
+
+/// Exercise the exact durable predicate from auto-mounted PostgreSQL cases.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn matches_ground_stack_for_test(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
 }

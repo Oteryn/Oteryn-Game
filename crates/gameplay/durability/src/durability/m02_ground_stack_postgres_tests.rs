@@ -1,6 +1,6 @@
 mod m02_ground_stacks {
     use super::*;
-    use crate::durability::quest_world_callback::ground_stack::matches;
+    use crate::durability::quest_world_callback::matches_ground_stack_for_test as matches;
     use oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry;
 
     #[test]

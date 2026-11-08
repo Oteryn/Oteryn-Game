@@ -1208,3 +1208,19 @@ rejecting use of a prior physical transaction's sealed scope token. Clippy
 for quests/durability/dispatch passed with warnings denied in2m17s; fmt passed.
 No upstream M02-specific PostgreSQL cases were found under authority_cases;
 the added PG case is the actual durable readset/locking coverage.
+
+### M03 promotion admission (tested engine slice)
+The chosen Oteryn 25 Years recipe explicitly requires vocation promotion
+(`tools/content-schema/quest-authoring/samples/completion242/recipes.json:28`).
+The existing shared world callback `admission.promotion` reads the permanent Character promotion owner
+in the fenced quest transaction before consuming items or applying quest effects.
+The shared schema requires personal Player state. This slice
+adds no migration and does not claim that the full M03 blessing/Premium route is wired.
+The PostgreSQL scenario exercises refusal, the real NPC promotion purchase, quest
+commit and command replay through the existing fixture catalogue resolver.
+Validation: `encx_m03_world_promotion_postgres_refusal_purchase_commit_and_replay`
+passed against PostgreSQL in 51.14 s (scenario 46.174806262 s). The preceding
+52.22 s red run exposed an invalid MINT participant in the rewardless fixture;
+the adapter now selects it only for an actual item reward. Production writer
+validation is unchanged. Generic context-free commits also reject live admission
+callbacks, so promotion cannot be bypassed through the weaker entry point.
