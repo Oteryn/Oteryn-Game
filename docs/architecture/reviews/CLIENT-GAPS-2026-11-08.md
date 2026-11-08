@@ -163,7 +163,7 @@ Zasady przeciw dublowaniu:
 |---|---|---|---|---|
 | T149 | Appearance | Outfits/mounts/addons/colors | PARTIAL | Apply przez klucze/mask/colors/revision; brak galerii i preview. |
 | T150 | Appearance | Outfit Memorial golden/token outfits | MISSING | Brak zakładek token exchange i preview memorial outfits. |
-| O043 | Appearance | Wybór stroju, dodatków i kolorów | PARTIAL | Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów. |
+| O043 | Appearance | Wybór stroju, dodatków i kolorów | DONE | evidence: apps/client/src/features/0025-appearance/preview.rs:30 + appearance_preview_selectors_reach_the_wire_command; outfit_mask_tints_all_four_parts_without_changing_alpha |
 | T127 | Depot | Search/details po item/tier, retrieve | PARTIAL | Retrieve one/all są już w cgmech; dodano indeksy, sumy, tier i zakres retrieve-all. Brak pełnego natywnego widżetu wyboru wyników. |
 | T118 | Exaltation | Tier effects i rezultat exaltation | PARTIAL | Są wyniki forge i item effects; brak pełnej prezentacji tier bonuses i wyniku. |
 | T116 | Forge | Fusion/convergence i transfer/convergence | PARTIAL | Numeric operation/item handles/occurrence zamiast selektora i podglądu przedmiotów. |
