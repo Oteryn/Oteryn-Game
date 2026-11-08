@@ -16,6 +16,8 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fmt;
 
+mod selected_leaf;
+
 /// The `unique` attribute of a top-level entry and the appearance id of its palette key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UniqueEntry {
@@ -335,6 +337,15 @@ fn candidate(
     }) {
         return Ok(Err(LeftOut::ItemNotAdmitted));
     }
+    // Selection is applied only after the complete original bag and every
+    // sibling have passed their existing source and Item admission checks.
+    if let Some(recipes) = native_contents {
+        for (placement, recipe) in parsed.iter_mut().zip(recipes) {
+            if !selected_leaf::apply(placement, recipe) {
+                return Ok(Err(LeftOut::UnencodedField));
+            }
+        }
+    }
     Ok(Ok(Candidate {
         revision: revision.to_owned(),
         placements: parsed,
@@ -437,6 +448,7 @@ fn candidate_container_placement(
             "completion",
             "achievement",
             "root_text",
+            "selected_leaf",
         ],
     ) {
         return Ok(None);
@@ -945,6 +957,60 @@ mod container_tests {
             }
         }
         None
+    }
+
+    #[test]
+    fn selected_native_leaf_keeps_full_source_and_once_claim_identity() {
+        let mut source = authored("kv.ornamentedshield").expect("source bag");
+        let recipe = &mut source["native_contents"]["placements"][0];
+        let children = recipe["contents"].clone();
+        assert_eq!(children.as_array().expect("children").len(), 5);
+        let child = children[3].clone();
+        assert_eq!(child["item"]["key"], "oteryn:item.tibia.i3035");
+        recipe["selected_leaf"] = serde_json::json!({
+            "source_unique_id":6063,"path":[3],"item":child["item"],"count":child["count"]
+        });
+        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("selected native leaf");
+        let selected = &parsed.placements[0];
+        assert_eq!(selected.item.key().as_str(), "oteryn:item.tibia.i3035");
+        assert_eq!(selected.count, 5);
+        assert_eq!(selected.crystal_unique_id, Some(6063));
+        assert!(selected.contents.is_empty());
+        assert_eq!(
+            source["native_contents"]["placements"][0]["contents"],
+            children
+        );
+        assert!(
+            matches!(
+                candidate(source.as_object().expect("definition"), &|item| item
+                    .key()
+                    .as_str()
+                    != "oteryn:item.tibia.i3083")
+                .expect("decoded"),
+                Err(LeftOut::ItemNotAdmitted)
+            ),
+            "selection cannot bypass sibling admission"
+        );
+        for mutation in 0..6 {
+            let mut bad = source.clone();
+            let recipe = &mut bad["native_contents"]["placements"][0];
+            match mutation {
+                0 => recipe["contents"].as_array_mut().expect("children").clear(),
+                1 => recipe["selected_leaf"]["path"] = serde_json::json!([8]),
+                2 => recipe["selected_leaf"]["source_unique_id"] = 6062.into(),
+                3 => recipe["selected_leaf"]["count"] = 2.into(),
+                4 => recipe["selected_leaf"]["item"]["revision"] = "foreign".into(),
+                _ => recipe["selected_leaf"]["path"] = serde_json::json!([3, 0]),
+            }
+            assert!(
+                candidate(bad.as_object().expect("definition"), &|_| true)
+                    .expect("decoded")
+                    .is_err(),
+                "mutation {mutation}"
+            );
+        }
     }
 
     #[test]

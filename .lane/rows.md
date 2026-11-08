@@ -6,12 +6,14 @@ The five untagged questpc5 rows below are explicitly assigned to ENGITEM.
 Earlier broad audit is preserved in `legacy-engine-requests.md`; its dependency
 statuses are historical, not the active work queue.
 
-ROWS: done 1 / open 4 / blocked 0
+ROWS: engine done 2 / open 3 / blocked 0
+
+Counts describe engine capability, not whole-quest or Content qualification.
 
 | Capability | Needed by | Status |
 |---|---|---|
 | Literal readable reward text | Nomads Land | DONE: optional bounded ItemReward.text for NPC/World; existing root_text MINT and exact source proof (migration1641). RED PG unknown text field (3.42s); GREEN PG marker43.93607223s, atomic text/source/MINT/progress, refusal and replay. Three Rust cases and authoring tests pass. |
-| Exact nested native source leaf selection | Ornamented Shield | OPEN |
+| Exact nested native source leaf selection | Ornamented Shield | ENGINE DONE: optional UID/path/item/count selection after complete original bag and sibling admission; original claim/placement and once ledger retained. Rust, Python and real MINT refusal/replay/once fixture use qualified UID6063. Requested UID6062 remains Content-held: SOURCE_CHARGE_MISMATCH (siblings 6/7) and ITEM_SEMANTICS_MISSING (3085); its eight source rewards and holds are unchanged. |
 | Quest-guarded object taming | Targuna | OPEN |
 | Recipe-scoped nondecay specimen | Explorer Society | OPEN |
 | Cycle-scoped repeatable World item MINT | Oramond | OPEN |
