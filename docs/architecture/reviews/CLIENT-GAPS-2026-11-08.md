@@ -82,7 +82,7 @@ Zasady przeciw dublowaniu:
 | T094 | Cyclopedia / Character | Store Summary / services/hirelings | PARTIAL | Brak pełnego wizualnego zestawienia usług. |
 | T095 | Cyclopedia / Character | Item Summary / inventory/depot/stash/inboxes | PARTIAL | Jest Inspection/item summary; brak grid/list/filter wszystkich lokacji. |
 | T096 | Cyclopedia / Character | Titles: unlock/select/filter | PARTIAL | Operacje istnieją; brak pełnego selektora i filtrów tytułów. |
-| T097 | Cyclopedia / Character | Badges / cudza postać / inspection | PARTIAL | Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges. |
+| T097 | Cyclopedia / Character | Badges / cudza postać / inspection | DONE | Evidence: crates/gameplay/durability/src/durability/cyclopedia_character/profile.rs:5 + character_profile_postgres_real_dispatch_and_privacy + native_badge_target_and_refresh_do_not_query_viewer_badges |
 | O015 | Cyclopedia / Character | Błogosławieństwa i ochrona po śmierci | PARTIAL | Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci. |
 | T143 | Highscores | Kategorie/world/vocation, paging/show-me | PARTIAL | Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone. |
 | T113 | Hunting tasks | Bounty, rewards, shop i talisman | PARTIAL | Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji. |

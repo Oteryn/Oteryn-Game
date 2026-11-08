@@ -679,9 +679,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Badges / cudza postać / inspection",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "crates/gameplay/durability/src/durability/cyclopedia_character/profile.rs:5 + character_profile_postgres_real_dispatch_and_privacy + native_badge_target_and_refresh_do_not_query_viewer_badges"
  },
  {
   "id": "T098",
