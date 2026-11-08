@@ -12,6 +12,9 @@ use std::sync::Arc;
 mod bindings;
 #[path = "controls.rs"]
 mod controls;
+#[path = "frames.rs"]
+mod frames;
+pub use frames::{FramePacer, FramePreferences};
 #[path = "help.rs"]
 mod help;
 #[path = "profiles.rs"]
@@ -66,6 +69,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub frames: FramePreferences,
+    #[serde(default)]
     pub archive_bindings: crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings,
     #[serde(default)]
     pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
@@ -101,6 +106,7 @@ impl Default for ReferencePreferences {
         Self {
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
+            frames: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
@@ -123,6 +129,7 @@ impl ReferencePreferences {
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()
+            || !self.frames.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()
