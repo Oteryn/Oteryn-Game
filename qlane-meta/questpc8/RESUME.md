@@ -1,3 +1,21 @@
+# Latest checkpoint: Wrath imperial hunt compile green; native fixture RED
+
+Zlak's captured source placement33082,31220,z7 is now scoped. Selected Wrath
+stage6 requires exactly four Magistratus and six Noble native deaths in the
+bounded source floor3 imperial quarter. Counters activate only from stage5,
+saturate separately, and the once-only report advances stage5 to6. Accepted
+recipe omission of potion minigames readies the existing source dream adapter;
+no potion is minted, no reward/completion is granted, later source phases cannot
+regress. All80 earlier placement records remain identical; one Zlak row added.
+PG RED3.298s proved missing objectives. Quest units355PASS37.53s; NPC placement
+units14PASS. Current state: COMPILE_GREEN_NATIVE_FIXTURE_RED.
+Exact red point: StartNotEnterable at33082,31219,z7; PG35.533s.
+NX6 dream regression remainsPASS68.927s. Repair landing before qualification.
+Measured checks/commands and native cases: wrath-imperial-validation.json.
+Full dispatch unit coverage remains CI scope, not claimed complete. Whole quest
+qualification stays21/23. Colours' player predicate and Wrath's item-look disguise
+remain qengine2-owned. No new migration or generic engine implementation.
+
 # Latest checkpoint: Wrath dream report native PostgreSQL GREEN
 
 Main47baa7bb8 merged. Chosen Wrath s7 now has a receipt-bound `dream journey`

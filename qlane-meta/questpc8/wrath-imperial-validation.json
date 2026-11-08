@@ -1,0 +1,146 @@
+{
+  "state": "COMPILE_GREEN_NATIVE_FIXTURE_RED",
+  "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "red": {
+    "postgres_seconds": 3.298,
+    "marker": "POSTGRES_CASE_STARTED questpc8_wrath_imperial_hunt after PostgreSQL fixture initialization",
+    "error": "WRATH_IMPERIAL_HUNT_RED: missing native imperial objectives",
+    "log": "/tmp/questpc8b-imperial-red.log"
+  },
+  "quest_units": {
+    "passed": 355,
+    "seconds": 37.53,
+    "log": "/tmp/questpc8b-imperial-quest-units.log"
+  },
+  "placement_tests": {
+    "passed": 14,
+    "convert_seconds": 1.006,
+    "overrides_seconds": 0.0,
+    "authored_seconds": 0.006
+  },
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 195.9275635459926
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.659296035999432
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.29384936300630216
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 184.48640465798962
+    },
+    "pg": {
+      "exit": 100,
+      "seconds": 394.7877000980079
+    }
+  },
+  "regeneration": {
+    "placement-check": {
+      "exit": 0,
+      "seconds": 0.33601813499990385
+    },
+    "proof": {
+      "exit": 0,
+      "seconds": 0.4016651200072374
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 35.55667045500013
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 2.879429449007148
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 14.79170665499987
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 4.897506736000651
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.48842305500875227
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 333.94519165699603
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.01891064300434664
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 115.90144585999951
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.31413513798906934
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.3315553389984416
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.476663763998658
+    }
+  },
+  "scope": "Wrath selected s6: exact four magistrati and six nobles, counter activation, bounded native source floor, saturation, cold reload, once-only Zlak report; stage5 to6 and existing source dream readiness",
+  "source_placement": {
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml",
+    "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+    "matches": [
+      {
+        "spawn": {
+          "centerx": "33082",
+          "centery": "31220",
+          "centerz": "7",
+          "radius": "1"
+        },
+        "npc": {
+          "name": "Zlak",
+          "x": "0",
+          "y": "0",
+          "z": "7",
+          "spawntime": "60"
+        }
+      }
+    ]
+  },
+  "placement_preservation": {
+    "prior_records": 80,
+    "new_records": 81,
+    "prior_npcs": 70,
+    "new_npcs": 71,
+    "all_prior_records_identical": true
+  },
+  "shared_reuse": "Existing authored-death-objectives engine, NPC reward callbacks, captured NPC placement generator, native kill settlement and fixture helpers; no new engine or migration",
+  "own_migrations": "1300-1308 unchanged",
+  "review": "Independent scoped data/test review: no findings",
+  "remaining_quests": {
+    "qualified": 21,
+    "total": 23,
+    "scope": "Quest slices only; no whole Wrath or Colours completion claimed"
+  },
+  "pending": [
+    "Fix source-native fixture landing without weakening collision; rerun both focused PG cases",
+    "remaining dispatch full unit coverage: CI scope"
+  ],
+  "native_red_point": {
+    "case": "questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
+    "seconds": 35.533,
+    "error": "StartNotEnterable",
+    "point": "source fixture boot at33082,31219,z7; native collision checks remain strict",
+    "other_case": "NX6 dream PASS68.927s",
+    "log": "/tmp/questpc8b-imperial-first-green-attempt.log"
+  }
+}

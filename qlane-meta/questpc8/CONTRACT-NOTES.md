@@ -842,3 +842,21 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   latched Premium authority through the existing scenario setup. The new test
   asserts that authority is present before testing the missing-receipt refusal;
   it does not turn a Premium refusal into evidence of receipt enforcement.
+
+- Selected Wrath s6 retains exact quotas of four Lizard Magistratus and six
+  Lizard Noble native deaths in one stage, rather than allowing any ten kills.
+  Counters start only through the stage5 Zlak callback, saturate independently,
+  and report atomically to stage6. The chosen recipe explicitly omits potion
+  minigames: this report readies Questline27/Mission09=1/Potion=1 for the existing
+  source Sleeping Dragon adapter, without minting a potion or another reward.
+  Source stores may not regress from an already-later source phase.
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua
+- Zlak uses the existing captured placement candidate33082,31220,z7. Independently
+  verified in pinned Crystal world-npc.xml (sha256
+  db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029):
+  https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml
+  Native objectives conservatively bind the existing floor3 imperial quarter
+  x33055..33090/y31140..31200, including captured Magistratus33080,31192 and
+  Noble33066,31147 spawns. Credit is restricted to the actual present principal;
+  other floors and extra same-type kills cannot fill the other quota. No guardian
+  replacement, fabricated creature, new engine type or migration is added.

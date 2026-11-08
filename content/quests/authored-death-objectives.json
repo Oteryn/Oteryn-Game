@@ -531,6 +531,56 @@
         "https://www.tibiawiki.com.br/Winterlight_Solstice",
         "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
       ]
+    },
+    {
+      "key": "oteryn:quest-death/wrath-magistratus",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "creature": "oteryn:creature.lizard_magistratus",
+      "stage": "oteryn:quest-progress/chosen/wrath/stage",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/chosen/wrath/magistrati",
+      "required": 4,
+      "minimum": {
+        "x": 33055,
+        "y": 31140,
+        "floor": -3
+      },
+      "maximum": {
+        "x": 33090,
+        "y": 31200,
+        "floor": -3
+      },
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_lizard_magistratus_kill.lua",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "Conservative source spawn quarter: existing native lizard_magistratus33080,31192,z3 and lizard_noble33066,31147,z3. Present principal only; exact quota, no phantom party credit."
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/wrath-noble",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "creature": "oteryn:creature.lizard_noble",
+      "stage": "oteryn:quest-progress/chosen/wrath/stage",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/chosen/wrath/nobles",
+      "required": 6,
+      "minimum": {
+        "x": 33055,
+        "y": 31140,
+        "floor": -3
+      },
+      "maximum": {
+        "x": 33090,
+        "y": 31200,
+        "floor": -3
+      },
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/creaturescripts_lizard_noble_kill.lua",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
+        "Conservative source spawn quarter: existing native lizard_magistratus33080,31192,z3 and lizard_noble33066,31147,z3. Present principal only; exact quota, no phantom party credit."
+      ]
     }
   ]
 }

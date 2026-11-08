@@ -1462,8 +1462,8 @@
     },
     "main_sync": {
       "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-      "state": "NATIVE_POSTGRES_GREEN",
-      "proof": "wrath-dream-validation.json"
+      "state": "COMPILE_GREEN_NATIVE_FIXTURE_RED",
+      "proof": "wrath-imperial-validation.json"
     },
     "authoring_round_trip": "Published envelope/self-mark rows restored to canonical author input; opening PG revalidation included in wrath-dream-validation.json"
   },
@@ -1753,13 +1753,26 @@
     },
     "main_sync": {
       "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
-      "state": "NATIVE_POSTGRES_GREEN",
-      "proof": "wrath-dream-validation.json"
+      "state": "COMPILE_GREEN_NATIVE_FIXTURE_RED",
+      "proof": "wrath-imperial-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
       "proof": "wrath-dream-validation.json",
       "scope": "Chosen Wrath s7 report advances stage6 to7 after exact dream receipt; no item/achievement reward and no whole-quest completion"
+    },
+    "imperial_slice": {
+      "state": "COMPILE_GREEN_NATIVE_FIXTURE_RED",
+      "proof": "wrath-imperial-validation.json",
+      "scope": "Wrath selected s6: exact four magistrati and six nobles, counter activation, bounded native source floor, saturation, cold reload, once-only Zlak report; stage5 to6 and existing source dream readiness",
+      "red_point": {
+        "case": "questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
+        "seconds": 35.533,
+        "error": "StartNotEnterable",
+        "point": "source fixture boot at33082,31219,z7; native collision checks remain strict",
+        "other_case": "NX6 dream PASS68.927s",
+        "log": "/tmp/questpc8b-imperial-first-green-attempt.log"
+      }
     }
   },
   {
