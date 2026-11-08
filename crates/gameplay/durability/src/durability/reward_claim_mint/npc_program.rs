@@ -28,9 +28,12 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
             _ => None,
         })
         .collect::<Vec<_>>();
-    let [(reward_item, quantity @ 1..=100)] = gifts.as_slice() else {
+    let Some((reward_item, quantity @ 1..=100)) = gifts.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
+    if gifts.len() > 20 || gifts.iter().any(|(_, count)| !(1..=100).contains(count)) {
+        return Ok(Err(RewardClaimMintError::InvalidInput));
+    }
     let quantity = *quantity;
     let Some(rule) = plan.selected_rule_keys.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
@@ -63,8 +66,29 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     if item.container_capacity.is_some() {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
+    let mut additional_items = Vec::new();
+    for (key, quantity) in gifts.iter().skip(1) {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: (*key).clone(),
+            revision_ref: "definition-r1".into(),
+        };
+        let Some(item) = content.loop_facts(&definition) else {
+            return Ok(Err(RewardClaimMintError::InvalidInput));
+        };
+        if item.container_capacity.is_some() {
+            return Ok(Err(RewardClaimMintError::InvalidInput));
+        }
+        additional_items.push(RewardClaimMintContent {
+            item,
+            quantity: *quantity,
+            key_number: None,
+            text: None,
+            fluid_subtype: None,
+        });
+    }
     let request = RewardClaimMintRequest {
-            additional_items: Vec::new(),
+        additional_items,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
@@ -120,26 +144,11 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         Ok(admitted) => admitted,
         Err(error) => return Ok(Err(error)),
     };
-    let incoming = InventoryItem {
-        item_instance_id: reservation.item_instance_id,
-        definition: request.item.definition.clone(),
-        quantity,
-    };
-    if let Err(refusal) = super::super::item_transfer::check_incoming_capacity(
-        tx,
-        fence.character_id,
-        world.as_bytes(),
-        &request.item,
-        &incoming,
-        content,
-    )
-    .await?
+    if let Err(error) =
+        contents::check_capacity(tx, fence.character_id, *world.as_bytes(), &request, content)
+            .await?
     {
-        return Ok(Err(if refusal == ItemTransferRefusal::Overweight {
-            RewardClaimMintError::Refused(RewardClaimRefusal::CarryingCapacity)
-        } else {
-            RewardClaimMintError::InvalidInput
-        }));
+        return Ok(Err(error));
     }
     insert_reservation(tx, &request, &binding, &reservation).await?;
     sqlx::query("UPDATE game_reward_claim_mint_reservations SET work_units_used=work_units_used+1 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")

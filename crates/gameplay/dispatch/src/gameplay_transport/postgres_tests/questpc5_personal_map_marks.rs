@@ -119,6 +119,7 @@ pub(super) async fn exercise(
                 fee_payment: None,
                 actor_conditions: None,
                 carried_use: None,
+                creature_use: None,
                 peer_use: None,
             },
             callback,
