@@ -15,9 +15,12 @@ use durability::item_loop_move::ItemLoopContent;
 use durability::item_mint::TypedDefinitionRef;
 #[path = "support/native_inventory.rs"]
 mod native_inventory;
+use durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use native_inventory::mint_to_bag;
 use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
+use oteryn_gameplay_quests::quest::{QuestRefusal, QuestStateCatalogue};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+use std::sync::Arc;
 
 impl ItemLoopContent for reward_fixture::Weights<'_> {
     fn loop_content_digest(&self) -> [u8; 32] {
@@ -108,6 +111,26 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         decay: vec![],
     };
     let command = reward_fixture::command(9500)?;
+    let catalogue = terrain_catalogue()?;
+    let request = |suffix: &str| QuestTransitionRequest {
+        transition_key: format!("oteryn:quest-terrain-use/m01c-{suffix}"),
+        cause: QuestCause::Command(command),
+    };
+    let missing = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(1)?,
+            request("exact"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        missing,
+        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+    ));
     let permit = durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
         f::item_fence()?.runtime_scope,
     )
@@ -130,6 +153,65 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .map_err(f::debug)?;
         assert_eq!(outcome, Some(UseDisposition::Committed));
     }
+    let wrong_pair = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(1)?,
+            request("cross-pair"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        wrong_pair,
+        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+    ));
+    let committed = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(1)?,
+            request("exact"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(committed, QuestTransitionOutcome::Committed(_)));
+    let replayed = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(1)?,
+            request("exact"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        replayed,
+        QuestTransitionOutcome::AlreadyCommitted(_)
+    ));
+    let second_stage = h
+        .root
+        .commit_character_quest_transition(
+            &authority,
+            &h.node,
+            f::fence(2)?,
+            request("second-stage"),
+            Arc::clone(&catalogue),
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(matches!(
+        second_stage,
+        QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+    ));
+    let advances: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.m01c_terrain_fixture'").fetch_one(&h.pool).await?;
+    assert_eq!(advances, 1);
     let captured: (String,String,String,i64) = sqlx::query_as("SELECT tool_definition_family,tool_definition_production_key,tool_definition_revision_ref,transformed_item_id FROM game_terrain_tool_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=9500")
         .bind(f::id(f::SESSION).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
@@ -154,4 +236,43 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         "terrain tool definition snapshot is immutable"
     );
     Ok(())
+}
+
+fn terrain_catalogue() -> f::TestResult<Arc<QuestStateCatalogue>> {
+    use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
+    let mut stages = Vec::new();
+    for (suffix, before, after, tools) in [
+        (
+            "exact",
+            0,
+            1,
+            serde_json::json!([{"key":"oteryn:item.tibia.i3457","revision":"definition-r1"}]),
+        ),
+        (
+            "cross-pair",
+            0,
+            1,
+            serde_json::json!([{"key":"oteryn:item.tibia.i3457","revision":"definition-r2"},{"key":"oteryn:item.tibia.i3458","revision":"definition-r1"}]),
+        ),
+        (
+            "second-stage",
+            1,
+            2,
+            serde_json::json!([{"key":"oteryn:item.tibia.i3457","revision":"definition-r1"}]),
+        ),
+    ] {
+        stages.push(serde_json::json!({"key":suffix,"completes":false,"trigger":{"kind":"terrain_use","usage":{
+            "key":format!("oteryn:quest-terrain-use/m01c-{suffix}"),"tools":tools,"placement":vec![0x31_u8;40],"result":469,
+            "storage":[{"track":"oteryn:quest-progress/m01c-terrain","minimum":before,"maximum":before,"set":after,"preserve":false}],
+            "sources":["M01c fenced engine fixture; no production quest qualification"]
+        }}}));
+    }
+    let value = serde_json::json!({"schema":1,"quests":[{
+        "quest":"oteryn:quest.m01c_terrain_fixture","recipe_sha256":"a".repeat(64),
+        "tracks":[{"key":"oteryn:quest-progress/m01c-terrain","initial":0,"minimum":0,"maximum":2}],
+        "stages":stages,"sources":["M01c engine fixture"]
+    }]});
+    let bindings = Bindings::parse(&serde_json::to_vec(&value)?).map_err(f::debug)?;
+    let base = QuestStateCatalogue::empty("content-1").ok_or("catalogue revision")?;
+    Ok(Arc::new(bindings.attach(&base).map_err(f::debug)?))
 }

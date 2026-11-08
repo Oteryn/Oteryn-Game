@@ -429,6 +429,29 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        let terrain_usage = catalogue
+            .authored_bindings()
+            .and_then(|bindings| {
+                bindings
+                    .quests
+                    .iter()
+                    .flat_map(|quest| &quest.stages)
+                    .find_map(|stage| match &stage.trigger {
+                        oteryn_gameplay_quests::quest::authored_bindings::Trigger::TerrainUse {
+                            usage,
+                        } if usage.key == request.transition_key => Some(usage.as_ref()),
+                        _ => None,
+                    })
+            })
+            .cloned();
+        if (request
+            .transition_key
+            .starts_with(oteryn_gameplay_quests::quest::authored_bindings::terrain_use::PREFIX)
+            && terrain_usage.is_none())
+            || (terrain_usage.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let collection = catalogue
             .authored_bindings()
             .and_then(|bindings| {
@@ -893,6 +916,12 @@ impl DurabilityRoot {
                     let refusal = if refusal.is_none() {
                         if let Some(collection) = &collection {
                             (!super::collection::admit(&mut tx, fence, &request, collection).await?)
+                                .then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
+                    let refusal = if refusal.is_none() {
+                        if let Some(usage) = &terrain_usage {
+                            (!super::terrain_use::admit(&mut tx, fence, &request, quest, usage).await?)
                                 .then_some(QuestRefusal::StageMismatch)
                         } else { None }
                     } else { refusal };

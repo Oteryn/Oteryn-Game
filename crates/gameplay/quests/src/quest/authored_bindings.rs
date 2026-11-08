@@ -7,6 +7,7 @@ pub(crate) mod embedded;
 mod imported_recipe;
 pub mod kills;
 mod state_operations;
+pub mod terrain_use;
 pub use kills::KillCounter;
 
 use super::reward_callbacks::RewardCallback;
@@ -51,6 +52,9 @@ pub enum Trigger {
     },
     Collect {
         collection: Box<collection::Collection>,
+    },
+    TerrainUse {
+        usage: Box<terrain_use::TerrainUse>,
     },
 }
 
@@ -191,6 +195,13 @@ impl Bindings {
                     }
                     continue;
                 }
+                if let Trigger::TerrainUse { usage } = &stage.trigger {
+                    usage.validate(quest)?;
+                    if !transitions.insert(&usage.key) {
+                        return Err("authored terrain USE binding collision".into());
+                    }
+                    continue;
+                }
                 if let Trigger::Collect { collection } = &stage.trigger {
                     collection.validate(quest)?;
                     if !transitions.insert(&collection.key) {
@@ -206,7 +217,9 @@ impl Bindings {
                     continue;
                 }
                 let (key, owner, storage) = match &stage.trigger {
-                    Trigger::Kill { .. } | Trigger::Collect { .. } => continue,
+                    Trigger::Kill { .. } | Trigger::Collect { .. } | Trigger::TerrainUse { .. } => {
+                        continue;
+                    }
                     Trigger::NpcDialogue { callback, .. } | Trigger::CarriedUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
@@ -389,6 +402,7 @@ impl Stage {
                 world_change: None,
             },
             Trigger::Collect { collection } => collection.transition(quest, self.completes)?,
+            Trigger::TerrainUse { usage } => usage.transition(quest, self.completes)?,
         };
         transition.completes = self.completes;
         Ok(transition)
@@ -422,3 +436,6 @@ impl Trigger {
         first.into_iter().chain(others.iter())
     }
 }
+
+#[cfg(test)]
+mod terrain_use_tests;

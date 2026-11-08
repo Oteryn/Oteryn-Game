@@ -562,6 +562,7 @@ pub mod rotten_blood_access;
 pub mod soul_war;
 pub mod source_deaths;
 mod storage;
+mod terrain_use;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
