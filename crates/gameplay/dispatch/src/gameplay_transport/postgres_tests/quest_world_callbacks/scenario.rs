@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let m01b_explore = name.starts_with("m01b/");
     let small_ruby = name.starts_with("l6-small-ruby");
     let shared_gate = name.starts_with("l6-tomb-gate-");
     let shared_switch = name.starts_with("l6-tomb-switch-");
@@ -39,7 +40,7 @@ fn scenario_case(
     let native_room = name.starts_with("l6-native-room-");
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
-    let native_crop = small_ruby
+    let native_crop = m01b_explore || small_ruby
         || mead
         || spirit
         || tomb_native
@@ -53,7 +54,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if native_upper {
+    let start = if m01b_explore {
+        Position { x: trigger.x + 1, ..trigger }
+    } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
         super::super::l6_paradox_story::start()
@@ -313,7 +316,11 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if native_upper {
+        let world = if m01b_explore {
+            super::super::m01b_explore::world(
+                generation.native_gameplay().ok_or("native explore policies")?,
+            )?
+        } else if native_upper {
             super::super::l6_paradox_upper::world(
                 generation
                     .native_gameplay()
@@ -607,7 +614,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if mead {
+        if m01b_explore {
+            super::super::m01b_explore::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
         } else if reward_fluids {

@@ -30,6 +30,7 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, Portal, PortalPair,
@@ -448,15 +449,20 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     })
             })
             || (!callback.offerings.is_empty() && !callback.has_personal_state())
+            || (callback.key.starts_with("oteryn:quest-callback/m01b/")
+                && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
-            || !callback.sources.iter().any(|source| {
-                // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
-                    || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
-                    || (callback.effects.outfit_reward.is_some()
-                        && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
-                    || source.starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
-            })
+            || !(imported_explore::admitted(callback)
+                || callback.sources.iter().any(|source| {
+                    // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
+                    source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                        || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
+                        || (callback.effects.outfit_reward.is_some()
+                            && source
+                                .starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                        || source
+                            .starts_with("crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+                }))
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 let accepted: BTreeSet<_> = std::iter::once(item.item.as_str())
                     .chain(item.alternatives.iter().map(String::as_str))
@@ -550,11 +556,12 @@ fn extend_callbacks(
                         callback.key, storage.track
                     ));
                 }
+                let initial = imported_explore::initial(callback, storage);
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
-                    initial: -1,
-                    min: -1,
+                    initial,
+                    min: initial,
                     max: if storage.preserve {
                         storage.maximum
                     } else {
