@@ -79,3 +79,26 @@ fn gallery_navigation_uses_catalogue_and_never_changes_confirmed_selection()
     assert!(!panel.cycle_outfit(false));
     Ok(())
 }
+
+#[test]
+fn memorial_token_preview_requires_explicit_offer_and_balance() {
+    let mut memorial = MemorialGallery::default();
+    assert!(memorial.preview().is_none());
+    memorial.offers.push(MemorialOffer {
+        outfit_key: "golden_knight".into(),
+        look_type: 500,
+        token_key: "memorial_token".into(),
+        cost: 25,
+    });
+    memorial.balances.insert("memorial_token".into(), 24);
+    assert!(!memorial.can_exchange());
+    memorial.balances.insert("other_token".into(), 100);
+    assert!(!memorial.can_exchange());
+    memorial.balances.insert("memorial_token".into(), 25);
+    assert!(memorial.can_exchange());
+    assert_eq!(memorial.preview().map(|offer| offer.look_type), Some(500));
+    memorial.pending = true;
+    assert!(!memorial.can_exchange());
+    memorial.selected = 99;
+    assert!(memorial.preview().is_none());
+}
