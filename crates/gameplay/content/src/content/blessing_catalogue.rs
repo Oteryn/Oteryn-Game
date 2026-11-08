@@ -85,11 +85,11 @@ impl BlessingCatalogue {
         Ok(catalogue)
     }
 
-    /// The owner-selected five regular blessings, excluding enhanced and Twist.
+    /// The seven regular death-protection blessings; Twist is a separate PvP protection.
     pub fn regular_blessings(&self) -> impl Iterator<Item = &Blessing> {
         self.blessings
             .iter()
-            .filter(|blessing| blessing.price_family == PriceFamily::Regular)
+            .filter(|blessing| blessing.price_family != PriceFamily::Twist)
     }
 
     /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.

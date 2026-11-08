@@ -70,7 +70,7 @@ fn registry() -> Result<&'static Registry, String> {
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
-            for counter in super::native_kills::COUNTERS {
+            for counter in super::native_kills::registered_counters()? {
                 add(counter.transition(), false, true)?;
             }
             // M24 source deaths may share questline tracks with existing NPC
