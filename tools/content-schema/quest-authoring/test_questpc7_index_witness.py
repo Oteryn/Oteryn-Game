@@ -27,6 +27,12 @@ class PlannedIndexWitnessTests(unittest.TestCase):
                          [self.prefix + hashlib.sha256(self.after).hexdigest()])
         self.assertEqual(self.path.read_bytes(), self.before)
 
+    def test_shared_source_list_is_rebound_once(self):
+        self.callbacks *= 3
+        witness.rebind(self.root, self.callbacks, {witness.INDEX: self.after})
+        self.assertTrue(all(c['sources'] == [self.prefix + hashlib.sha256(self.after).hexdigest()]
+                            for c in self.callbacks))
+
     def test_changed_palette_is_rejected(self):
         changed = json.dumps({'palette': [1], 'regions': []}).encode()
         with self.assertRaisesRegex(ValueError, 'native palette'):

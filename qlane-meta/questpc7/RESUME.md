@@ -1,3 +1,33 @@
+# Fresh-main generation and validation checkpoint — 2026-11-08
+
+Main c68395ccc is merged as a533ad557. All18 conflicts resolved; all21 compile
+adapters fixed together. Counter MINT claims now match migration1286 occurrence
+keys; paid-exchange hashes remain unchanged. Exact typed runtime scope replaces
+the obsolete Corruptor channel-only comparison. Whole-route PG rerun is building;
+current-main qualification is NOT claimed before actual GREEN durations.
+Authoring checks PASS; full authoring units106modules/1152reported cases/8existing
+skips PASS. Content-tree validator PASS34111Items/252Mounts/1864Creaturebindings.
+Monster overlay12tests PASS295.246s; import9tests PASS76.396s; source witness4
+regressions RED→GREEN; regeneration-order self-tests12PASS. All-target workspace
+check PASS297s; strict six-crate clippy PASS582s. Equipment3947; exact old union
+plus18main additions, no removals; residual97. World official pin5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d.
+Generation ordering repaired: World/tree → qengine callbacks/authored props →
+room provenance → final pins. Aliased callback source lists are validated and
+rebound once, while stale hashes/native palette changes still refuse. No tests
+weakened. Optional content_world_project_repository build is pending under the
+PREPUSH2 budget; interrupted after all generated writes to prioritize own PG and
+workspacecheck. Do not describe whole regenerate command as PASS (optional test
+was interrupted); individual generation/check evidence is in merge-proof JSON.
+Node proxy forwarding reached PHP/Composer pulls (registry networking solved),
+but image extraction filled disk and invalidated concurrent final builds. Stopped
+that retry; deleted only inactive lane fixture databases and completed own caches.
+Serialize future whole-node retries AFTER Rust proof; all seven variants required.
+NEXT merge fetched main107625470 (activation-wait change only plus its new test),
+finish own five-case PG, remaining unit checks and pending optional content test,
+then push exact results. Hot Cuisine remains ACTIVE behind qengine2 guarded
+planner execution; eight source-qualified Bat/Chicken profile drafts are scratch
+only, not admitted or PG-qualified. Do not redo delegated21 quests.
+
 # Publish compiling runtime repairs — 2026-11-08 12:07 UTC
 
 Main64d8bb8 remains merged; remote PR list is empty. Removed duplicate fresh

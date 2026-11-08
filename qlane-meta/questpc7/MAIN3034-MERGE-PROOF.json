@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-08T12:21:07.014334+00:00",
+  "at": "2026-11-08T13:05:45.563675+00:00",
   "main": "c68395ccc",
-  "state": "AUTHORING_REGENERATION_IN_PROGRESS",
+  "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
   "resolved_conflicts": 18,
   "repairs": [
     "Retain main instance corpse custody with mutable Corruptor loot plan",
@@ -32,5 +32,44 @@
     "whole_script": "FAIL",
     "error": "failed to fetch anonymous token: Get https://auth.docker.io/token: dial tcp 172.64.144.78:443: connect: connection refused",
     "cleanup": "complete"
+  },
+  "authoring_units": {
+    "modules": 106,
+    "reported_cases": 1152,
+    "preexisting_skips": 8,
+    "failed_modules": []
+  },
+  "workspace_all_targets": {
+    "result": "PASS",
+    "seconds": 297
+  },
+  "clippy": {
+    "result": "PASS",
+    "crates": 6,
+    "seconds": 582
+  },
+  "content_tree": {
+    "result": "PASS",
+    "items": 34111,
+    "mounts": 252,
+    "creature_bindings": 1864
+  },
+  "world_pin": "5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d",
+  "native_profiles": 3947,
+  "remaining": [
+    "Five-case PG requalification building; no current-main whole-route GREEN claimed",
+    "Remaining Rust unit suites pending PREPUSH-2 budget",
+    "Optional content_world_project_repository test build interrupted to prioritize workspace check and own PG",
+    "Whole node matrix retry after Rust validation and cache cleanup"
+  ],
+  "authoring_repairs": [
+    "Shared source-list rebinding validates each list exactly once; regression RED then GREEN with stale-hash negative retained",
+    "Normal regeneration now runs qengine producer after world tree and before room provenance",
+    "Main two-creature Sugar Daddy/Primal custody fixture preserved exactly"
+  ],
+  "node_proxy_retry": {
+    "registry_proxy": "WORKED; reached PHP/Composer image pull",
+    "result": "stopped after disk exhaustion; no GREEN claimed",
+    "next": "serialize node build after focused Rust validation; clear this lane completed caches"
   }
 }

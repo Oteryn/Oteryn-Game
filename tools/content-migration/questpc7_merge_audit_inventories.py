@@ -54,10 +54,11 @@ def main():
     assert matches == 1, 'quest-profile inventory assertion is missing or ambiguous'
     if refreshed != previous:
         equipment_path.write_text(refreshed)
-    # Full regeneration restores five source-qualified shared corpse bodies.
-    # Preserve the original closed fixture; the partial-provider count was stale.
-    replace('crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs',
-            '(52, 334, 1)', '(52, 329, 1)')
+    # Main #3034 qualifies Sugar Daddy alongside Primal. Preserve its exact
+    # two-creature custody closure; the old one-creature repair is superseded.
+    activation = (ROOT / 'crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs').read_text()
+    assert '(52, 328, 2)' in activation, 'main Sugar Daddy/Primal custody inventory drift'
+    assert all(f'\"oteryn:creature.{name}\"' in activation for name in ('sugar_daddy', 'the_primal_menace'))
 
     # Count the merged registered union once: older cohort totals omit the
     # lane's Newhaven/recipe/source-custody overlays and overlap the pick.

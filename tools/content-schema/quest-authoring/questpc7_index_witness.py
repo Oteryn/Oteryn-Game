@@ -16,8 +16,12 @@ def rebind(root, callbacks, generated):
     prefix = INDEX + ':1:sha256:'
     expected = prefix + hashlib.sha256(before).hexdigest()
     replacement = prefix + hashlib.sha256(after).hexdigest()
+    seen = set()
     for callback in callbacks:
         sources = callback['sources']
+        if id(sources) in seen:
+            continue
+        seen.add(id(sources))
         for index, source in enumerate(sources):
             if source.startswith(prefix):
                 if source != expected:

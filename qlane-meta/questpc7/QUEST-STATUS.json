@@ -34,11 +34,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
-      "state": "COMPILING_WIP_PG_COUNTER_COMPLETION_FIXES_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
+      "main": "c68395ccc",
+      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
+      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five cases; L6fluid PASS93.030637369s PG18.6; remaining cases pending"
+      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
     }
   },
   {
@@ -1756,11 +1756,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
-      "state": "COMPILING_WIP_PG_COUNTER_COMPLETION_FIXES_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
+      "main": "c68395ccc",
+      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
+      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five cases; L6fluid PASS93.030637369s PG18.6; remaining cases pending"
+      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
     }
   },
   {
@@ -1957,11 +1957,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
-      "state": "COMPILING_WIP_PG_COUNTER_COMPLETION_FIXES_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
+      "main": "c68395ccc",
+      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
+      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five cases; L6fluid PASS93.030637369s PG18.6; remaining cases pending"
+      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
     },
     "latest_engine_review": {
       "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
@@ -2078,11 +2078,11 @@
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
-      "main": "64d8bb8b8e7c7733f3840cc9ceb9134ce70b0b8c",
-      "state": "COMPILING_WIP_PG_COUNTER_COMPLETION_FIXES_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN3040-MERGE-PROOF.json",
+      "main": "c68395ccc",
+      "state": "COMPILING_WIP_FOCUSED_PG_REQUALIFICATION_RUNNING",
+      "proof": "qlane-meta/questpc7/MAIN3034-MERGE-PROOF.json",
       "qualification_change": false,
-      "own_pg_requalification": "RUNNING five cases; L6fluid PASS93.030637369s PG18.6; remaining cases pending"
+      "own_pg_requalification": "RUNNING five actual-PG cases after main merge/counter occurrence-key repair; historical pushed proofs retained"
     }
   },
   {
