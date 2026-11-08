@@ -5,6 +5,8 @@
 pub mod collection;
 pub(crate) mod embedded;
 mod imported_recipe;
+mod npc_keys;
+pub use npc_keys::native_dialogue_npcs;
 pub mod kills;
 mod state_operations;
 pub use kills::KillCounter;

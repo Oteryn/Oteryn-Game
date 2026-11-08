@@ -359,10 +359,14 @@ impl LoadedNpcCatalogue {
             .map_err(|_| BootError::ContentActivation("NPC catalogue digest"))?;
         let programs = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime()
             .map_err(|_| BootError::ContentActivation("NPC quest programs"))?;
+        let authored_npcs =
+            oteryn_gameplay_quests::quest::authored_bindings::native_dialogue_npcs()
+                .map_err(|_| BootError::ContentActivation("authored NPC dialogue bindings"))?;
         let native_npcs = programs
             .programs()
             .iter()
             .flat_map(|program| program.document.rules.iter().map(|rule| rule.npc.as_str()))
+            .chain(authored_npcs.iter().map(String::as_str))
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
