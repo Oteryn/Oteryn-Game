@@ -541,6 +541,7 @@ def main() -> int:
     if args.native_only:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-schema/native-gameplay/build_full_spell_artifact.py", "--refresh-item-keys"])
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         if not args.skip_checks:
@@ -569,6 +570,10 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # Tree-first Item overlays can add keys after World materialization. Refresh
+    # the activated index before pinning it, keeping compact references aligned.
+    run(["python3", "tools/content-schema/native-gameplay/build_full_spell_artifact.py", "--refresh-item-keys"])
+    run(["python3", "tools/content-migration/register_spell_families.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])

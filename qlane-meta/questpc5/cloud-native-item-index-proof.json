@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "root_cause": "Generated native index omitted exact Cook IDs44525/44527/44528; source compiler enumerated34114 keys versus activated34111.",
+  "red": {
+    "unit_log": "/tmp/questpc5-item-index-red.log",
+    "postgres_log": "/tmp/questpc5-postcollector-own-tests.log",
+    "error": "ItemReference"
+  },
+  "green": {
+    "item_keys": 34114,
+    "index_unit_tests": 2,
+    "orchestration_checks": 13,
+    "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "postgres_cases": [
+      {
+        "name": "banshees-low-level",
+        "seconds": 123.530500246
+      },
+      {
+        "name": "banshees-whole",
+        "seconds": 162.660560198
+      }
+    ],
+    "postgres_log": "/tmp/questpc5-index-banshees-direct.log",
+    "workspace_check_seconds": 414,
+    "fmt": "PASS",
+    "world_pin_refresh": "PASS unchanged605c3d395ae90f2e8a3fb8dcef3e627b6ff69f4388857fabf225a522172d4893",
+    "world_pin_check": "PASS"
+  },
+  "pending": "Full dispatch crate units and strict dispatch clippy still pending; publishing under PREPUSH-2 cadence exception after fetch/main ancestry, regeneration, own PG, workspace all-targets check and fmt passed. Cook contacts separate uncommitted RED155.145328756s source NPC placement absent."
+}

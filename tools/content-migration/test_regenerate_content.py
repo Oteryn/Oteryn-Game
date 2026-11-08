@@ -333,8 +333,18 @@ def test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths() -> N
             assert rc.unresolved_worktree_paths() == ["conflict.json", "missing.json"]
 
 
+def test_native_regeneration_refreshes_item_keys_before_manifest() -> None:
+    calls = []
+    with patch.object(sys, "argv", ["regenerate_content.py", "--native-only", "--skip-checks"]), patch.object(rc, "run", side_effect=calls.append):
+        assert rc.main() == 0
+    refresh = ["python3", "tools/content-schema/native-gameplay/build_full_spell_artifact.py", "--refresh-item-keys"]
+    register = ["python3", "tools/content-migration/register_spell_families.py"]
+    assert calls.index(refresh) < calls.index(register)
+
+
 def main() -> None:
     tests = [
+        test_native_regeneration_refreshes_item_keys_before_manifest,
         test_no_stage_checks_binary_conflicts_without_decoding,
         test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths,
         test_import_conflict_fails_closed_and_keeps_both_sides,

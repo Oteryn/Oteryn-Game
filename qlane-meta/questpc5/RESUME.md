@@ -1,3 +1,15 @@
+## Publication gate — 2026-11-08 01:29 UTC
+
+World pin-refresh and pin-check PASS, unchanged605c3d395ae90f2e8a3fb8dcef3e627b6ff69f4388857fabf225a522172d4893. PREPUSH-2 steps1/2/4 PASS and ownPG2/2PASS. Dispatch full units and strictClippy remain pending under30minute publication exception; continue them afterpush. Cook NPChelper/tests untracked, contactREDtestunstaged, foreign1300untracked: none belong to this indexrepair commit.
+
+## Index repair validated — 2026-11-08 01:28 UTC
+
+Banshee PG18.6 2/2 PASS286.21s: actual level59 rejection123.530500246s, fullseven-seal/Queen/two-originalclaims/escape162.660560198s (body42.916786427s). Strict reference validation unchanged. Workspace alltargetscheck PASS6m54s; fmt PASS; itemindexPython2PASS, orchestrator13PASS, equivalence34114/479PASS, equipment140/136PASS, bindinglists regenerated, worldmetadata0/4changes. Pin refresh/check and strictdispatchClippy finishing. Full dispatch unit rerun pending after parallel heavycompiler/pin OOM; publication uses explicit PREPUSH-2 cadence exception, no test weakened. Cook contacts actualPGRED155.145328756s now sourceNPCplacementabsent; uncommitted test not part of this repair commit. Nextfinite Draccoon factshelper3PythonPASS awaits wiring after publication.
+
+## Current integration repair — 2026-11-08 01:19 UTC
+
+Postcollector focused tests: 8 passed, 2 Banshee map-boot failures. Cook contacts also failed before dialogue with ItemReference. Root cause proven: generated native Item key set has 34111 entries, source shards have 34114; missing exact Cook44525/44527/44528 shifts compact references. Existing ItemKeySetTests RED /tmp/questpc5-item-index-red.log. Repository native-only orchestrator now refreshes keys before manifest generation; orchestration13 checks PASS. Native regeneration, focused Banshee/Cook PG, dispatch units and workspace check running. No whole-quest promotion. Local untracked1300 remains test-only and must never be staged.
+
 ## Main merge and Ground/pot component batch GREEN — 2026-11-07 18:38 UTC
 
 Merge main 1ae39c7fb9bef09c3cd50d16410374f4134b1676 is ready to commit/push. Main 0999-1008 unchanged, no 1200-1205 files or duplicate numbers. Distinct lane schema: 1270_spell_static_map_fields, 1271_quest_world_reward_sources, 1272_quest_finish, 1273_corruptor_lifecycle, 1274_questpc_npc_revision, 1275_questpc_viola, 1276_questpc_viola_book, 1277_fathers_burden_items, 1278_fathers_burden_xp_guard. Peer canonical 1300 retained. Father's eleven-track write remains atomic.
