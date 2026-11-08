@@ -20,3 +20,15 @@ production callback registry and premium latch. Their fenced setup transitions
 arrange programme phases; they do not claim to qualify the preceding NPC story
 or the whole quest. They check phase refusal, destinations, level/premium refusal,
 flag writes and command replay. No new database migration is needed.
+
+## Local execution proof
+
+After merging qmech `4bed43770`, both real-dispatch PostgreSQL cases passed:
+- `m33_feaster_initial_phase_uses_first_portal_and_live_requirements`: 53.679 s.
+- `m33_feaster_purification_phase_uses_second_portal_and_replays_once`: 53.244 s.
+
+The focused world-callback unit set passed 36 tests (8.54 s). Before the engine
+changes, the disjoint-selector test failed with duplicate-selector rejection and
+the authored programme-domain test failed because phase 5 exceeded the derived
+track bound. Both are now green. The first PG run also exposed the fixture's
+wall-at-destination error; only fixture geometry was corrected for that failure.
