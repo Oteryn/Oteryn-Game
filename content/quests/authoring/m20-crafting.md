@@ -36,3 +36,19 @@ identities, quantities, station selectors or collection consequences. Cradle
 s8/s9, Scatterbrained s3/s4, multi-output recipe qualification and their container
 stage consequences remain blocked until a pinned implementation source is
 provided or another behavior source is authorized. No substitute data is authored.
+
+## Native Item admission blocker
+
+The final Cursed Crystal mix's native route also remains closed. Its source
+crystal dust (21507) and output Medusa's Ointment (21506) have no native Item
+profiles in `content/items/definitions/spell-native-profiles.json` or its Item
+profile supplements. Only the first mixture (21505) is admitted there. The
+attempted real final-mix caller reaches `Unavailable(InvalidStoredState)` when
+the existing reward MINT owner resolves the unadmitted output. No admission is
+fabricated and no Item guard is weakened. Item profiles and their registration
+are outside this lane's owned paths; the temporary caller opening was removed.
+
+The source's Molten Wax message and yellow-smoke effect (`actions_MedusaOil.lua:40-41`)
+are not emitted by the existing carried callback adapter. This delivery proves
+the item debit, self identity, area and source storage consequence, not full
+visual feedback parity or a complete quest route.
