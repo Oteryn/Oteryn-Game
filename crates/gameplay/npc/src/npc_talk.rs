@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 mod dark_trails;
 mod isle_of_evil;
+mod questpc7_reward_bounds;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -87,11 +88,13 @@ fn reward_callback_npc(key: &str) -> bool {
             let mut keys = std::collections::BTreeSet::new();
             for source in REWARD_CALLBACKS {
                 let document = serde_json::from_str::<Document>(source).ok()?;
-                if document.schema != 1 {
+                if document.schema != 1
+                    || document.callbacks.len() > questpc7_reward_bounds::PER_DOCUMENT
+                {
                     return None;
                 }
                 count = count.checked_add(document.callbacks.len())?;
-                if count > 256 {
+                if !questpc7_reward_bounds::within_registered_total(count, REWARD_CALLBACKS.len()) {
                     return None;
                 }
                 keys.extend(document.callbacks.into_iter().map(|c| c.npc));

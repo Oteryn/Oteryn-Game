@@ -817,6 +817,11 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
                 },
             })
             .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+            .chain(callback.counter.iter().map(|counter| QuestEffect {
+                track: counter.track.clone(),
+                from: QuestComparison::Between(0, counter.maximum - 1),
+                effect: QuestEffectKind::Add(1),
+            }))
             .collect(),
         completes: callback.completes,
         experience: None,
@@ -1451,6 +1456,11 @@ mod lane_counter_tests {
             std::slice::from_ref(&callback),
         )?;
         let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        assert_eq!(
+            *transition,
+            primary_transition(&callback)?,
+            "bound admission must validate the same counter operation as lowering"
+        );
         let mut stored = BTreeMap::from([(parent.clone(), 1)]);
         for value in 1..=2 {
             let changes = catalogue

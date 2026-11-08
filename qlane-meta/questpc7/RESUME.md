@@ -1,3 +1,24 @@
+# Publish compiling runtime repairs — 2026-11-08 12:07 UTC
+
+Main64d8bb8 remains merged; remote PR list is empty. Removed duplicate fresh
+admission in callback scenario, repaired two-shard NPC greeting bound, made
+counter primary transition match lowering, and wrote exact flat completion
+flag required by main's owning receipt/state constraint. No tests weakened.
+Whole quests/NPC unit suites: 369 PASS, 0 skipped, 212.956s. Workspace all-targets
+check PASS139s; fmt and migration uniqueness PASS. Native profiles/pins, quest
+packets, binding evidence and completion matrix regenerated with no byte drift.
+Previous exact authoring checks/106-module units and content-tree group remain
+valid for unchanged content; fresh authoring checks/units are running.
+WIP publication under PREPUSH-2 cadence exception: five-case actualPG run is
+running, L6 fluid GREEN93.030637369s, PG18.6. Friends previous RED68.509770041s
+InvalidInput; Hidden previous RED38.095162264s SQL23514 exact owning receipt/state.
+Counter/completion fixes await their GREEN. Strict four-crate clippy and remaining
+durability/dispatch units are running/queued. Whole nodeboot full_manifest retry
+queued after lane-only cache cleanup. No false current-head qualification.
+NEXT collect ALL five PG results, unit/lint/authoring results, fix together;
+then publish green proof and proceed with source-qualified Bat/Chicken ingredient
+support for own Hot Cuisine while qengine2 supplies guarded planner execution.
+
 # Publish compiling fresh-main checkpoint — 2026-11-08 11:16 UTC
 
 Main64d8bb8 merged, localheadff18477. ExactauthoringchecksPASS; authoringunits106

@@ -1,3 +1,20 @@
+# Fresh-main runtime reconciliation — 2026-11-08
+
+- Current ownership is the four titles in LANE-questpc7.json; the 21 explicit
+  remote-packet claims there override the older 25-title notes below.
+- Registered callback documents retain the original 256-record limit each.
+  The NPC greeting reader must accept the combined two registered documents
+  (254 shared plus 7 L6), as the strict quest parser already does.
+- A repeatable reward's bound-admission transition includes the exact same
+  bounded Add(1) counter operation as catalogue lowering. No counter, payment,
+  input or receipt checks are bypassed.
+- Legacy completing world rewards set the flat plan completion flag as well
+  as the nested callback flag. Main's deferred owning receipt/state constraint
+  remains authoritative; no migration or constraint relaxation is needed.
+- Hot Cuisine planner is production-exported, but native NPC execution does
+  not call it. Qengine2 must provide that wiring and actual level/Premium
+  admission before this lane can qualify the complete cooking route.
+
 # questpc7 contract decisions
 
 - Scope is the owner's25 ACTIVE ledger entries, with entries already QUALIFIED

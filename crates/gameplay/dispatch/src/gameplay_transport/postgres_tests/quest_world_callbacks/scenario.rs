@@ -337,7 +337,6 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
                 .await?
         };
-        prepare_current_session(&h).await?;
         if name == "qengine-rewards-goblin-signs" {
             let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
             eprintln!("QUESTPC7_GOBLIN_SIGNS POSTGRES_STARTED version={version}");

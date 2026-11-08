@@ -647,9 +647,12 @@ pub(crate) async fn give_world(
     else {
         return Ok(false);
     };
-    let plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
+    let mut plan = serde_json::json!({"key": callback.key, "quest": callback.quest,
         "storage": callback.storage, "take": [], "present": [], "give": reward,
         "outfit": null, "world_callback": callback});
+    if callback.completes {
+        plan["completes"] = serde_json::Value::Bool(true);
+    }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,encode($6,'hex')::uuid,ARRAY[]::text[])")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice())
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
