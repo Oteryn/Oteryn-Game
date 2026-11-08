@@ -10816,5 +10816,504 @@
     "workspace_check": "cargo check --workspace --all-targets --keep-going PASS8m19s; /tmp/questpc4-b386-workspace-check.log",
     "duplicate_migrations": 0,
     "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes."
+  },
+  "n3_end_to_end": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc4-n2-n3",
+    "main": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+    "goal": "Fresh selected start, every selected step, reward and completion; item admission and reward-only components are insufficient.",
+    "ledger": ".lane/rows.md (local only, not committed)",
+    "counts": {
+      "WAITING-ENGINE": 19,
+      "DONE": 2,
+      "BLOCKED": 2
+    },
+    "engine_heads": {
+      "qengine2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+      "engitem": "bbe0184821852828c3686d33d936709c9859618f",
+      "engenc": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+      "engnpc": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+    },
+    "done": [
+      {
+        "quest": "The Spirit Will Get You Quest",
+        "owner": "questpc4",
+        "test": "l6_spirit_three_retained_wills_unlock_only_confession"
+      },
+      {
+        "quest": "Hydra Egg Quest",
+        "owner": "questpc7 (reuse, do not rewrite)",
+        "test": "questpc7_hydra_requires_personal_native_nest_pickup"
+      }
+    ],
+    "waiting_engine": {
+      "oteryn:quest.the_hidden_city_of_beregar_quest": {
+        "owner": "ENGNPC",
+        "feature": "Source NPC level/premium guards and value effects through the fenced production planner; then the royal-rescue route.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+            "line": 148,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9f880dd17a57515723eb7028f3669b084c98ae6db25187e8fe431f1b07082ff4",
+            "text": "level: 0"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          }
+        ],
+        "note": "Selected NPC hand-ins and Pythius route are not an end-to-end source-program execution."
+      },
+      "oteryn:quest.the_order_of_the_stag_quest": {
+        "owner": "ENGNPC / ENGITEM",
+        "feature": "Source achievement finale and corpse-provenance beak hand-ins; native authored full-route binding.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          },
+          {
+            "path": "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+            "line": 151,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9f880dd17a57515723eb7028f3669b084c98ae6db25187e8fe431f1b07082ff4",
+            "text": "outfits: &BTreeMap::new()"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Do not reimplement generic outfit/achievement reward storage: RewardCallback already has it; source-program delivery and whole-route binding are the gaps."
+      },
+      "oteryn:quest.the_paradox_tower_quest": {
+        "owner": "ENGNPC",
+        "feature": "Atomic NPC quest teleport with dialogue progress, destination authority and replay for the Riddler.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs",
+            "line": 333,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "aa570268ec0809b846efc98ab1191c9016f61654832a35a736395b3f0e738801",
+            "text": "NpcRuleError::MissingNativeResolution(rule.key.clone())"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          }
+        ],
+        "note": "Published story/climb components remain; historical actual-PG missing-teleport RED80.837680549s is recorded in RESUME, not current completion proof."
+      },
+      "oteryn:quest.in_service_of_yalahar_quest": {
+        "owner": "ENGNPC / ENGENC",
+        "feature": "Source NPC money/teleport/outfit delivery and phase-bound Azerus encounter admission.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs",
+            "line": 333,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "aa570268ec0809b846efc98ab1191c9016f61654832a35a736395b3f0e738801",
+            "text": "NpcRuleError::MissingNativeResolution(rule.key.clone())"
+          }
+        ],
+        "note": "Native crowbar and source NPC programs are components; do not duplicate the other engine lanes."
+      },
+      "oteryn:quest.chayenne_realm": {
+        "owner": "QENGINE2 / ENGENC",
+        "feature": "Native authored live kill/area-clear and key/book-gated map/step stage binding.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "The source area-clear/hidden lever route and reward completion need stage ownership, not additional plain item profiles."
+      },
+      "oteryn:quest.the_ancient_tombs_quest": {
+        "owner": "QENGINE2 / ENGENC",
+        "feature": "Native pharaoh kill-stage and encounter/reward provenance bindings composed through final quest completion.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Assembly, timers, instruments, flame flags and selected room tests are retained; none proves all thirteen stages in one fresh route."
+      },
+      "oteryn:quest.cradle_of_monsters": {
+        "owner": "ENGITEM / ENGENC",
+        "feature": "Multi-input/output laboratory crafting, collection-container consequences and stage-bound boss trial ownership.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "line": 106,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+            "text": "pub struct ItemOnTarget"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
+            "line": 163,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "ff668bbebd5b44921d5877dd84313e5244037cc2cee6742b619ddfbe85ff0ac2",
+            "text": "pub give: Option<ItemReward>"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "No laboratory output, actor trial or receipt may be inferred from item identity alone."
+      },
+      "oteryn:quest.the_cursed_crystal": {
+        "owner": "ENGITEM",
+        "feature": "Inventory-item-on-inventory-item recipes, exact self-target wax consumption and timed vortex consequences.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "line": 106,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+            "text": "pub struct ItemOnTarget"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+            "line": 15,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a0e8426567bb452cad0f609290568c3ddac105f217bf05529111fda28c9d4812",
+            "text": "pub struct CallbackEffects"
+          }
+        ],
+        "note": "Keep verified donor consumption of wax and both mixture inputs; do not substitute ordinary USE without the selected target."
+      },
+      "oteryn:quest.the_outlaw_camp_quest": {
+        "owner": "ENGITEM",
+        "feature": "Native nested map-container pickup/reset and exact numbered-key provenance.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/content/src/content/project/native_spell_world.rs",
+            "line": 466,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "69cba4fae2641f22b7099e763c4229b08547efe3697609cc2d2da33726458688",
+            "text": "if item.depth != 0"
+          }
+        ],
+        "note": "Dead-tree key pickups cannot be substituted with a personal fabricated reward claim."
+      },
+      "oteryn:quest.the_rookie_guard_quest": {
+        "owner": "ENGNPC / ENGITEM",
+        "feature": "Atomic multiple independent reward outputs for shield plus seven potions, source mission hand-ins and native stage binding.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
+            "line": 163,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "ff668bbebd5b44921d5877dd84313e5244037cc2cee6742b619ddfbe85ff0ac2",
+            "text": "pub give: Option<ItemReward>"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Do not invent an extra bag to work around the single-root reward contract."
+      },
+      "oteryn:quest.the_scatterbrained_sorcerer_quest": {
+        "owner": "ENGITEM / ENGNPC",
+        "feature": "World-tool crafting from several carried ingredients, feed/sweep consequences and source paid hand-ins.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "line": 106,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+            "text": "pub struct ItemOnTarget"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/npc_rules/item_exchange.rs",
+            "line": 8,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a547e8398e2d10fa4b12b463219eb24556aae3534d8a6a52180a7f6f2ad64d0c",
+            "text": "pub fn item_exchange_keys"
+          }
+        ],
+        "note": "Source item names are not executable task or recipe selection."
+      },
+      "oteryn:quest.too_hot_to_handle_quest": {
+        "owner": "QENGINE2",
+        "feature": "Native authored repair/inspection/step stage admission and personal completion for the selected entry journey.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Heat/decay timers, shield-currency progression and deeper timed tasks are explicitly omitted by the chosen recipe; the old500-point blocker is withdrawn."
+      },
+      "oteryn:quest.treasure_hunt_quest": {
+        "owner": "QENGINE2 / ENGITEM",
+        "feature": "Native authored joint dice/map/NPC stage bindings and multiple final reward outputs.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/reward_callbacks.rs",
+            "line": 163,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "ff668bbebd5b44921d5877dd84313e5244037cc2cee6742b619ddfbe85ff0ac2",
+            "text": "pub give: Option<ItemReward>"
+          }
+        ],
+        "note": "Poem/telescope and map-piece physical profiles remain partial evidence; no code, read payload, puzzle solve or whole completion is implied."
+      },
+      "oteryn:quest.authored.waterskin_of_mead_quest": {
+        "owner": "QENGINE2",
+        "feature": "Standalone child-quest completion participant on the existing parent Ice Islands world reward transaction.",
+        "evidence": [
+          {
+            "path": "content/quests/world-callbacks/l6-item-rewards.json",
+            "line": 6,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "e215724fca30d47ba3aaf9d1c691493cc210743fbd7f5eca749fafbeb1d4d916",
+            "text": "\"quest\": \"oteryn:quest.the_ice_islands_quest\""
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "line": 602,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+            "text": "completes: false"
+          }
+        ],
+        "note": "Prior qualification covers the complete filled gift and once/replay. Do not set completes=true on the parent Ice Islands transition; that would complete the wrong quest."
+      },
+      "oteryn:quest.dreamer_s_challenge_quest": {
+        "owner": "QENGINE2 / ENGITEM",
+        "feature": "Shared entrance offering/reset owner and native authored puzzle/advancement stage admission.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+            "line": 15,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a0e8426567bb452cad0f609290568c3ddac105f217bf05529111fda28c9d4812",
+            "text": "pub struct CallbackEffects"
+          }
+        ],
+        "note": "Seven stateless exits are not entrance reset, puzzle progression or selected Nightmare document completion."
+      },
+      "oteryn:quest.lions_rock": {
+        "owner": "QENGINE2 / ENGITEM",
+        "feature": "Fenced native trial-object lifecycle and authored offering/cache completion binding.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+            "line": 15,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a0e8426567bb452cad0f609290568c3ddac105f217bf05529111fda28c9d4812",
+            "text": "pub struct CallbackEffects"
+          }
+        ],
+        "note": "No source UID may be borrowed for an invented reward placement."
+      },
+      "oteryn:quest.machinery_of_war_quest": {
+        "owner": "ENGITEM / QENGINE2",
+        "feature": "Source world-target restoration/lifecycle and authored per-object repair/burn occurrence binding.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "line": 115,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "9ed0b20ef1d869e997e11120da189ca8d894a4cacf8f8bcb0c492ec20eb3c7f9",
+            "text": "pub reusable: bool"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+            "line": 15,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "a0e8426567bb452cad0f609290568c3ddac105f217bf05529111fda28c9d4812",
+            "text": "pub struct CallbackEffects"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Reusable tools already work; the old claim that count0 is required is withdrawn. Six repairs must consume the selected total44 kits without inventing mandatory waves."
+      },
+      "oteryn:quest.skeleton_decoration_quest": {
+        "owner": "ENGITEM",
+        "feature": "Shared pickup/reset for nested items inside native map barrels.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/content/src/content/project/native_spell_world.rs",
+            "line": 466,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "69cba4fae2641f22b7099e763c4229b08547efe3697609cc2d2da33726458688",
+            "text": "if item.depth != 0"
+          }
+        ],
+        "note": "Top-level MapBase and personal once-claim owners do not represent the physical barrel contents."
+      },
+      "oteryn:quest.authored.small_ruby_quest": {
+        "owner": "ENGITEM / QENGINE2",
+        "feature": "Provenance-bound native map pickup to personal quest-completion participant, preserving shared reset custody.",
+        "evidence": [
+          {
+            "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_world_pickups.rs",
+            "line": 78,
+            "commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "file_sha256": "148d86424edb66d932fc76eb28c988da20d13016fc561950f2234337ef944b2a",
+            "text": "prior_pickups + 1, 0"
+          },
+          {
+            "path": "crates/gameplay/quests/src/quest/authored_bindings.rs",
+            "main_state": "ABSENT",
+            "main_commit": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+            "upstream_commit": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+            "upstream_line": 31,
+            "upstream_source_sha256": "55895b3c488514b8ce53694fe76b05fa87e3e8209cb6c24c25ade7da2aefcdc2",
+            "qualification": "Current upstream publication notes explicitly retain pending durability/dispatch and clock PG qualification; do not merge that WIP wholesale into a quest lane."
+          }
+        ],
+        "note": "Prior qualification covers physical pickup/reset only. The selected authored recipe says once, but the tested shared pickup has zero quest-callback receipts; no end-to-end personal completion is claimed."
+      }
+    },
+    "blocked": {
+      "oteryn:quest.awash_world_change": "Outside questpc4 ownership under the binding cross-lane world-change exclusion. Must not implement or duplicate the owning lane.",
+      "oteryn:quest.chyllfroest_mini_world_change": "Outside questpc4 ownership under the binding cross-lane world-change exclusion. Must not implement or duplicate the owning lane."
+    },
+    "qualification_correction": "Historical packet QUALIFIED values remain unchanged. Small Ruby and Mead are component qualifications only under the stricter new completion goal; do not report them DONE.",
+    "prior_n2_units": {
+      "head": "61a1f24af71944a528e0ac98e938750d75120fde",
+      "result": "3241passed/0failed,17repository-default skips",
+      "test_run_seconds": 3169.784,
+      "total_seconds": 3226,
+      "scope": "Prior frozen n2 head only; not current n3 proof."
+    },
+    "engnpc_reuse_review": "3423ac56e adds16-track guards/reward receipt capacity, not live level/outfit source inputs, NPC quest teleport or multiple independent item reward roots. These requested boundaries remain unmet.",
+    "scope": "qlane-meta/questpc4/LANE-L6.json:23identities, not the historical100-title packet",
+    "season_review": "Merged6ef6b0cad. House container/decorations require a house context and exact house_id; public native map initialization still skips nested items. No awaited native authored-stage module or source NPC live guard/teleport/multi-output API added.",
+    "validation": {
+      "authored_changes": "Lane metadata and engine handoff only; no runtime, test or content modifications; generation has no product diff.",
+      "current_main": "6ef6b0cad05b8f85219e8215973563dbc6973e34",
+      "quest_units": "307/307 PASS, zero skipped; 24.284s test execution (25s command).",
+      "workspace_check": "N3_SEASON_WORKSPACE_CHECK_EXIT=0 duration=258s",
+      "fmt": "N3_SEASON_FMT_EXIT=0",
+      "duplicate_migrations": "N3_SEASON_DUP_MIGRATIONS_EXIT=0",
+      "generation": "Current compiler rebuilt; native content, equipment pins, bindings, completion matrix, reward variant packet and world pins regenerated; no product diff; pin-check PASS.",
+      "prior_base_pg": {
+        "main": "3b4696be3",
+        "postgres": "18.6",
+        "results": [
+          {
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_mead::l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag",
+            "status": "PASS",
+            "seconds": 57.065
+          },
+          {
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_spirit::l6_spirit_three_retained_wills_unlock_only_confession",
+            "status": "PASS",
+            "seconds": 99.002
+          },
+          {
+            "test": "gameplay_transport::monk_save::postgres_tests::l6_world_pickups::l6_small_ruby_actual_reset_replenishes_and_refuses_old_epoch",
+            "status": "PASS",
+            "seconds": 117.432
+          }
+        ],
+        "scope": "Spirit proves selected personal completion; Mead and Ruby prove components only. Not rerun after unrelated seasonal merge."
+      },
+      "prior_base_authoring": {
+        "main": "3b4696be3",
+        "checks": "PASS 288s",
+        "unit_tests": "1118 tests across 103 modules PASS 479s",
+        "content_tree": "PASS 166s"
+      },
+      "changed_crate_clippy": "No crates changed by this audit commit.",
+      "ledger": "All 23 rows terminal: 2 DONE, 19 WAITING-ENGINE, 2 ownership BLOCKED. .lane remains local/uncommitted."
+    }
   }
 }

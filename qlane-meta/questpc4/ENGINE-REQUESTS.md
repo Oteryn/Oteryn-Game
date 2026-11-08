@@ -1,0 +1,14 @@
+
+# n3 strict end-to-end dependencies
+
+Main6ef6b0cad (reset read-lock and seasonal/house integration); QENGINE2 reviewed925d8480e, ENGITEMbbe018482, ENGENC4ffd19f3a, ENGNPC3423ac56e. ENGNPC current work raises atomic track capacity to16; it does not supply the missing live source guards, teleport or multi-root rewards. Per-quest references and exact Main file SHA256/line witnesses are in QUEST-STATUS.json:n3_end_to_end. This is a missing-feature handoff, not quest completion.
+
+- QENGINE2: qualify/integrate native authored NPC/map/step/kill stages and final completion; needed by Realm of Dreams, Ancient Tombs, Too Hot to Handle, Treasure Hunt, Dreamer's Challenge and Lion's Rock. Main lacks crates/gameplay/quests/src/quest/authored_bindings.rs; upstream defines Trigger/Stage.completes but current publication still names pending PG qualification.
+- QENGINE2: standalone child completion in the parent world-reward transaction; Waterskin of Mead's callback belongs to Ice Islands (l6-item-rewards.json:6), and world_callbacks.rs:602 deliberately lowers completes=false. Never complete Ice Islands merely to mark the side quest done.
+- ENGITEM: provenance-bound native map-pickup personal completion; Small Ruby already has real shared pickup/reset, but l6_world_pickups.rs asserts zero quest callback receipts. Preserve physical custody/reset and add the completion participant, not a fabricated personal MINT.
+- ENGNPC: fenced source NPC live guards/value effects, Riddler atomic quest teleport, and source multi-output hand-ins; needed by Beregar, Order of the Stag, Paradox, Yalahar and Rookie Guard. Native source item_exchange_keys accepts only a closed storage/plain-item subset and at most one grant; its supplied level is0/outfits empty. Existing RewardCallback outfit/achievement stores do not by themselves execute source NPC effects.
+- ENGITEM: inventory-to-inventory recipes, multi-carried-input world crafting, exact self-target wax and timed world-target restoration; needed by Cursed Crystal, Scatterbrained Sorcerer, Cradle of Monsters and Machinery of War. Reusable tools already work; that is not an engine request.
+- ENGITEM: nested native map-container pickup/reset; Outlaw Camp keys and Skeleton Decoration barrel. native_spell_world.rs skips item.depth!=0. Top-level pickup is not a nested-content implementation.
+- ENGENC: stage-bound boss/trial lifecycle and provenance for Yalahar, Ancient Tombs, Realm of Dreams and Cradle of Monsters; reuse the owning lane's qualified implementations when integrated. No fake kill flags or admin-spawn-only qualification.
+
+Awash and Chyllfroest remain excluded from questpc4 writes by cross-lane world-change ownership. Hydra Egg is reused from questpc7's published HYDRA-PG-PROOF.json, test questpc7_hydra_requires_personal_native_nest_pickup at1044b2a278cd1b8b6c9dd6a50e2fae3a36e58300; no rewrite or new local proof claim.
