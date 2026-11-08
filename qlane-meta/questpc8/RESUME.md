@@ -1,3 +1,16 @@
+# Latest main synchronization:6f61ac15d physical item lane
+
+Normal push guard caught newer main6f61ac15d after83ac integration was fully
+resolved. Merge its13-file NPC physical-input-lane fix, retaining canonical
+permit and questpc8 selected-source filters. One source header conflict resolved;
+obsolete unreferenced input_authority declaration removed with canonicalmain.
+No product data/generator input changed. Workspace all-targets PASS2m41s;
+clippy/fmt PASS;355quest and100Python tests remain proof of unchanged
+Quest/authoring sources. Six native dispatch cases now BUILDING in
+/tmp/questpc8b-6f61-own-pg.log, adding Wrath exact-material NPC hand-in to
+the previous five cases. Continue after cadence checkpoint; no full dispatch
+or backend suite success claimed. main-83ac-validation.json tracks both merges.
+
 # Active checkpoint: main83ac integrated; full dispatch PG running
 
 Resolved64conflicts while retaining both accepted main QUESTPC4 and questpc8

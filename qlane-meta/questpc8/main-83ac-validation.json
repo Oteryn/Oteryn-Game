@@ -182,11 +182,12 @@
     "cases": [
       "Colours opening",
       "Exact fluid output proof",
-      "Braindeath full native route",
-      "Accepted-main Mead full native route",
-      "Winterlight full native route"
+      "Braindeath native route",
+      "Main Mead native route",
+      "Winterlight native route",
+      "Wrath exact-material NPC opening"
     ],
-    "log": "/tmp/questpc8b-83ac-own-pg.log",
+    "log": "/tmp/questpc8b-6f61-own-pg.log",
     "full_success_claimed": false
   },
   "prepush2_cadence_exception": "Own complete schema/fluid PostgreSQL regression,355quest units,100focusedPython tests,workspace/clippy/fmt/generation green. Five full dispatch PG cases continue after publication. No full backend suite success claimed.",
@@ -201,5 +202,17 @@
     "apps/game-server/migrations/1306_questpc8_father_reward_amount.sql",
     "apps/game-server/migrations/1307_questpc8_canonical_father_values.sql",
     "apps/game-server/migrations/1308_questpc8_exact_fluid_reward_outputs.sql"
-  ]
+  ],
+  "latest_main_sync": {
+    "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "files": 13,
+    "conflicts": 1,
+    "resolution": "Canonical main physical item lane; remove obsolete unreferenced input_authority declaration and unused lifetime; preserve selected-source filter",
+    "workspace": "PASS2m41s",
+    "clippy": "PASS",
+    "data_inputs_changed": false,
+    "generator_reuse": "Same data/authoring inputs as validated83ac generation and369migration probe",
+    "fmt": "PASS",
+    "state": "COMPILE_CLEAN_PG_BUILDING"
+  }
 }

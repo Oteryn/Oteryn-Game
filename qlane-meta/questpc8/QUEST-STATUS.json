@@ -1461,7 +1461,7 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+      "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
       "proof": "main-83ac-validation.json",
       "state": "COMPILE_UNIT_GREEN_DISPATCH_PG_PENDING",
       "qualification_unchanged": true
@@ -1752,7 +1752,7 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+      "main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
       "proof": "main-83ac-validation.json",
       "state": "COMPILE_UNIT_GREEN_DISPATCH_PG_PENDING",
       "qualification_unchanged": true
