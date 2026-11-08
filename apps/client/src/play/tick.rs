@@ -36,6 +36,9 @@ impl PlayView {
         self.world_context_feedback = link.world_context_feedback();
         self.project_death(link).map_err(|_error| UNAVAILABLE)?;
         self.vitals = link.actor_vitals();
+        self.party_icons = link.party_skull_panel().icons;
+        self.project_presentation(std::time::Instant::now())
+            .map_err(|_| UNAVAILABLE)?;
         let battle = link.battle_instinct_status_panel();
         self.battle_instinct = if battle.selected && battle.error.is_none() {
             battle.snapshot
