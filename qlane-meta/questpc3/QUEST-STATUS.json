@@ -10999,8 +10999,8 @@
   },
   "current_main_integration": {
     "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-    "state": "main QREADY merge resolved; generation and compile gates running; Carlos cause-constraint forward migration requested",
-    "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
+    "state": "compilation-qualified main c77d436d8 integration; quest units348PASS; Carlos PostgreSQL remains RED pending allocated forward migration",
+    "published_parent": "72de110ec12136db2269f21cb8df481b35cd539d",
     "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
     "decisions": [
       "Preserve numeric PC3 and boolean main storage increment wire encodings.",
@@ -11008,17 +11008,18 @@
       "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
       "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
     ],
-    "checks": "Current c77d436d8 merge checks running; prior72de evidence retained only in scoped_pg_result. QREADY2 chest tests2/2 PASS3.125s and QREADY1 source tests11/11 PASS7.376s. No new wholequest qualification.",
+    "checks": "Current workspace-all-targets PASS6m43s; five-crate library Clippy-Dwarnings PASS; fmt-all-check PASS; quest348units PASS66.459s; QREADY source13testsPASS; capture regression RED on oldtool/GREEN current; full world-base validator PASS. Native/allcentral/pin regeneration PASS, equipment3802 strict union PASS, duplicate migrations CLEAR. Broader client-assets/NPC/durability/dispatch unit suites and current-merge PG requalification pending under explicit PREPUSH-2 step3 cadence exception; prior72de PG8PASS2FAIL remains RED evidence only. No new wholequest qualification.",
     "latest_main": "c77d436d8",
     "local_merge_commits": [
       "4933f9bbd",
       "5b9b2b2f8",
       "47a5fc6f3",
-      "7998af2c7"
+      "7998af2c7",
+      "523100030"
     ],
-    "final_world_pin": "62543f3e8b65186e3edb555417fd492246eaf1379fa0caee0d6148d1714b3ae4",
+    "final_world_pin": "0150fa8ddcd156f5ec3180fd0ffaa2cad8884cd06d75b9dd19d503f3e535ccb2",
     "equipment_profile_union": 3802,
-    "quest_unit_log": "/tmp/questpc3b-pc4-quests-unit-final.log",
+    "quest_unit_log": "/tmp/questpc3b-main3037-quest-units.log",
     "own_pg_log": "/tmp/questpc3b-mainred3038-own-pg.log",
     "lane_migration_files": [
       "1220_questpc3_npc_exchanges.sql",
