@@ -805,8 +805,6 @@ def main() -> int:
     refresh_bestiary_inventory(ROOT)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
-    import questpc7_creature_inventory
-    questpc7_creature_inventory.refresh(ROOT)
     import prey_difficulty
     prey_difficulty.regenerate(ROOT)
     # Preserve independently authored spell collections on every regeneration.

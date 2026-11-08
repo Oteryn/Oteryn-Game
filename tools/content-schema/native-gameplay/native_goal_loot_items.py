@@ -84,12 +84,19 @@ def apply_admissions(definitions, root=ROOT):
     if pending:
         planned = copy.deepcopy(pending)
         source = importer(root)
+        import grizzly_shop_profiles as shop
+        # Shop custody is already source-qualified. Reuse its admission without
+        # rewriting the separate frozen charge and temporal SOURCE witnesses.
+        shop_keys = {r['production_definition']['production_key'] for r in
+                     json.loads((root / shop.PATH).read_bytes())['records']}
         for alternate in (False, True):
-            group = [d for d in planned if d['identity']['key'].endswith('.i44158') == alternate]
-            if group:
-                ids = {int(d['identity']['key'].rsplit('.i', 1)[1]) for d in group}
-                source.apply_admissions(group, root, ids, source_core=True,
-                    xml_override=alternate_xml(root) if alternate else None)
+            for source_core in (False, True):
+                group = [d for d in planned if d['identity']['key'].endswith('.i44158') == alternate
+                         and (d['identity']['key'] not in shop_keys) == source_core]
+                if group:
+                    ids = {int(d['identity']['key'].rsplit('.i', 1)[1]) for d in group}
+                    source.apply_admissions(group, root, ids, source_core=source_core,
+                        xml_override=alternate_xml(root) if alternate else None)
         for definition, replacement in zip(pending, planned):
             definition.clear()
             definition.update(replacement)

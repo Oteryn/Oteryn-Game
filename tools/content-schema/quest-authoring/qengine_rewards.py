@@ -42,6 +42,15 @@ def donor_inputs():
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     paths += ["data-global/npc/dermot.lua"]
+    # Selected programmes share this source map with the canonical rewards.
+    paths += [f'data-global/npc/{npc}.lua' for npc in (
+        'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius', 'isimov',
+        'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias',
+        'the_forgemaster', 'henricus', 'rafzan', 'jorge', 'yana',
+        'ivalisse', 'a_strange_chalice')]
+    paths += ['data/XML/imbuements.xml',
+              'data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua']
+    paths = list(dict.fromkeys(paths))
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -977,12 +986,16 @@ def build():
     ready_callbacks.sort(key=lambda c:c['key'])
     lane=load_module('questpc7_integration','tools/content-schema/quest-authoring/questpc7_integration.py')
     lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
+    endgame_callbacks = [c for c in callbacks if c['key'].startswith('oteryn:quest-reward/l13-')]
+    callbacks = [c for c in callbacks if c not in endgame_callbacks]
     fibula_callbacks = []
     load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
+    endgame_callbacks.sort(key=lambda c:c['key'])
+    validate_callbacks({'schema':1,'callbacks':endgame_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -995,6 +1008,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
+            'content/quests/npc-callbacks/l13-endgame.json': encoded({'schema':1,'callbacks':endgame_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})

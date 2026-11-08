@@ -145,6 +145,11 @@ def admit(root, generated):
     reference = read_project_document(root, 'definitions/reference.json')
     rows = []
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
+        # Unrelated generated shards may be repartitioned by another admission.
+        # Only Cake's input shard participates here and still must match HEAD.
+        candidate = json.loads(path.read_bytes())
+        if not any(identity(r['definition']['identity']) == CAKE for r in candidate['records']):
+            continue
         document, _ = read_canonical(path)
         rows.extend(document['records'])
     item_bindings, _ = read_canonical(root / 'imports/crystalserver/bindings/items.json')

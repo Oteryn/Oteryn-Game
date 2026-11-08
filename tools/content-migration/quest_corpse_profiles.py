@@ -179,6 +179,11 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
                 {'capacity': grizzly.source.K(int(source_capacity))})):
             raise ValueError('QUEST_CORPSE_DECAY_ITEM_OWNER')
     source = grizzly.source.profile(number, node, appearance, physical, bindings, None)
+    # The shared Ground-only corpse owner takes decay-stage capacity from XML.
+    # A missing capacity is non-container; the generic DAT container default of
+    # eight slots must not replace that accepted terminal-body policy.
+    if not fresh and 'containersize' not in grizzly.source.attrs(node):
+        source['semantics']['container'] = copy.deepcopy(grizzly.source.NA)
     expected = source['semantics']
     for group in GROUPS:
         accepted = definition.get('semantics', {}).get(group, grizzly.source.U)

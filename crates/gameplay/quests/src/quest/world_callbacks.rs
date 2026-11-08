@@ -11,8 +11,10 @@ mod published_markers;
 mod selector_partitions;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// Static callbacks and the dynamic altar share the same boot bound.
+// Each source document remains bounded independently of the combined boot registry.
 pub const MAX_CALLBACKS: usize = 512;
+// Main and the quest package contribute separate source documents and native owners.
+const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -490,10 +492,14 @@ pub fn load() -> Result<Vec<Callback>, String> {
     );
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
-    callbacks.extend(parse_with_provenance(
-        include_str!("../../../../../content/quests/authored-world-callbacks.json"),
-        true,
-    )?);
+    callbacks.extend(
+        parse_with_provenance(
+            include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+            true,
+        )?
+        .into_iter()
+        .filter(questpc7_compat::retained_authored),
+    );
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
     let mut native_callbacks = vec![
@@ -504,7 +510,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::fire_feathered_native::callbacks());
     native_callbacks.extend(super::shared_world_progress::callbacks());
     native_callbacks.extend(super::hive_access::callbacks());
-    if callbacks.len() > MAX_CALLBACKS.saturating_sub(native_callbacks.len()) {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(native_callbacks);
@@ -513,7 +519,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("duplicate callback across registries".into());
     }
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
-    if callbacks.len() > MAX_CALLBACKS {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
         return Err("callback bounds including native access".into());
     }
     callbacks.extend(parse(include_str!(
@@ -528,6 +534,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
 mod selector_gates;
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+        return Err("callback runtime registry bounds".into());
+    }
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {

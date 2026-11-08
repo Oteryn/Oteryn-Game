@@ -98,7 +98,9 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(mounts['oteryn:content.mount.wind_up_loco']['look']['id'],1459)
 
     def test_endgame_native_bits_and_completed_parent_contract(self):
-        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        document=json.loads(self.outputs['content/quests/npc-callbacks/l13-endgame.json'])
+        self.assertEqual(len(document['callbacks']),7)
+        rows={c['key'].rsplit('/',1)[-1]:c for c in document['callbacks']}
         for family,items,bits in [('revenant',[34075,34076],[2,1]),('decaying_defender',[43899,43900],[1,2])]:
             for index,stage in enumerate(['first','second']):
                 row=rows[f'l13-{family}-{stage}']
@@ -109,7 +111,7 @@ class QuestRewards(unittest.TestCase):
         base=rows['l13-rift-base']
         self.assertEqual(base['requires_completed_quests'],['oteryn:quest.ferumbras_ascension_quest'])
         for parents in [[base['quest']],['oteryn:quest.INVALID'],['oteryn:quest.parent']*2,[f'oteryn:quest.parent_{i}' for i in range(9)]]:
-            bad=copy.deepcopy(self.callbacks)
+            bad=copy.deepcopy(document)
             next(c for c in bad['callbacks'] if c['key']==base['key'])['requires_completed_quests']=parents
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
 

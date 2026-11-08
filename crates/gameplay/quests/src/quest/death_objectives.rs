@@ -198,8 +198,13 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             ],
         });
     }
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|e| format!("{e:?}"))
+    let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|e| format!("{e:?}"))?;
+    extended.npc_legacy = catalogue.npc_legacy;
+    extended.predecessors = catalogue.predecessors;
+    extended.authored_bindings = catalogue.authored_bindings;
+    extended.native_recipe_evidence = catalogue.native_recipe_evidence;
+    Ok(extended)
 }
 
 #[cfg(test)]

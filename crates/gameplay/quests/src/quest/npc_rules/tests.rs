@@ -1013,11 +1013,11 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        11
+        16
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.
-    assert_eq!(active.npc_legacy.len(), 9);
+    assert_eq!(active.npc_legacy.len(), 14);
     // Main adds independently owned programmes; retain the exact original lane set.
     let original = [
         "oteryn:quest.a_father_s_burden_quest",
@@ -1109,7 +1109,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 9);
+    assert_eq!(loaded.catalogue().npc_legacy.len(), 14);
     assert!(
         !loaded
             .catalogue()
@@ -1134,7 +1134,7 @@ fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap_mai
     let source = NpcRuleCatalog::runtime()?;
     let facts = Facts::empty();
     let input = facts.input("oteryn:npc.tereban", "yes", 1);
-    assert_eq!(MAX_NPC_TRACK_CHANGES, 8);
+    assert_eq!(MAX_NPC_TRACK_CHANGES, 16);
     let plan = source
         .plan_storage(&input)?
         .ok_or_else(|| NpcRuleError::Invalid("father acceptance".into()))?;

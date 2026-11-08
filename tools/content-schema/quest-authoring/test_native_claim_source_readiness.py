@@ -52,7 +52,7 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
             source_witnesses[key] = witness
         changed = {key for key in native if native[key] != source_witnesses[key]}
         self.assertEqual(changed, {
-            'oteryn:reward-claim.kv.madmageroom3', triangle, desert, draconia,
+            'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
             'oteryn:reward-claim.kv.ornamentedshield',
             'oteryn:reward-claim.kv.present_box',
             'oteryn:reward-claim.kv.edrongoblin1', 'oteryn:reward-claim.kv.ghoulroom1',

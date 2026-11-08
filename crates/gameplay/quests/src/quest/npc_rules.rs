@@ -678,6 +678,11 @@ pub(super) fn extend(
         let quest = &program.document.quest;
         if program.document.schema == 1
             && quest != "oteryn:quest.the_order_of_the_stag_quest"
+            && program
+                .document
+                .tracks
+                .iter()
+                .any(|track| source_tracks.contains_key(&track.key))
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(

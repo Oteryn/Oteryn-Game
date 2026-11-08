@@ -33,8 +33,13 @@ def consumptive_mappings(root, outfits, mappings):
             target = {'kind': 'Addon', 'outfit_key': row['key'], 'addon': grant['addon']}
         else:
             target = {'kind': 'Outfit', 'outfit_key': row['key']}
-        mappings.append({'grant_key': grant['key'], 'target': target,
-                         'compatible_provenance': [document['provenance']]})
+        mapping = {'grant_key': grant['key'], 'target': target,
+                   'compatible_provenance': [document['provenance']]}
+        previous = next((row for row in mappings if row['grant_key'] == grant['key']), None)
+        if previous is None:
+            mappings.append(mapping)
+        elif previous != mapping:
+            raise ValueError('QUESTPC7_CONFLICTING_CONSUMPTIVE_GRANT')
     return {'reference': ITEM_ACTIONS, 'revision': document['crystal_commit'],
             'sha256': hashlib.sha256(raw).hexdigest()}
 

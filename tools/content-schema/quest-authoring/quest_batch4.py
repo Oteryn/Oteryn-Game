@@ -458,7 +458,7 @@ def validate_callback(callback, directory):
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])
-                and callback['trigger'] == 'use' and callback.get('teleport') is not None
+                and callback.get('teleport') is not None
                 and not callback.get('lever') and not callback['passages']
                 and not callback['offerings'] and not callback.get('item_on_target')
                 and callback.get('minimum_level') is None and callback.get('experience') is None

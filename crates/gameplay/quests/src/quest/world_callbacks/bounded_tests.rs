@@ -1,4 +1,56 @@
 use super::*;
+
+#[test]
+fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
+    let callbacks = load()?;
+    assert!(callbacks.len() > MAX_CALLBACKS);
+    assert!(callbacks.len() <= MAX_RUNTIME_CALLBACKS);
+    let smith = callbacks
+        .iter()
+        .filter(|callback| {
+            callback
+                .key
+                .starts_with("oteryn:quest-callback/authored-smith-cache")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(smith.len(), 2);
+    let reward = smith
+        .iter()
+        .find(|callback| callback.key.ends_with("-reward"))
+        .ok_or("native smith reward")?;
+    assert_eq!(
+        reward.selector.position,
+        Some(Position {
+            x: 32777,
+            y: 32254,
+            floor: -8
+        })
+    );
+    let source = callbacks.first().ok_or("callback")?;
+    let mut bounded = Vec::new();
+    for index in 0..MAX_RUNTIME_CALLBACKS {
+        let mut callback = source.clone();
+        callback.key = format!("oteryn:quest-callback/runtime-bounded-{index}");
+        callback.selector = Selector {
+            position: Some(Position {
+                x: index as u16,
+                y: 1,
+                floor: -1,
+            }),
+            ..callback.selector.clone()
+        };
+        bounded.push(callback);
+    }
+    validate_registry(&bounded)?;
+    assert!(parse(&serde_json::json!({"schema":1,"callbacks":bounded}).to_string()).is_err());
+    bounded.push(source.clone());
+    assert_eq!(
+        validate_registry(&bounded),
+        Err("callback runtime registry bounds".into())
+    );
+    Ok(())
+}
+
 fn fixture() -> Result<serde_json::Value, String> {
     let source: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../content/quests/questpc7-world-callbacks.json"

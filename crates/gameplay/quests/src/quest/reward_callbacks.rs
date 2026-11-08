@@ -287,6 +287,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l13-endgame.json"),
     include_str!("../../../../../content/quests/chosen-reward-callbacks.json"),
 ];
 
@@ -1674,7 +1675,7 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        assert_eq!(load()?.len(), 254 + 7 + 3);
+        assert_eq!(load()?.len(), 254 + 20 + 7 + 3 + 7 + 28);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -1687,7 +1688,7 @@ mod tests {
             Some("reward callback bounds")
         );
         assert_eq!(
-            parse_documents(&[DOCUMENTS[0], DOCUMENTS[1], DOCUMENTS[1], DOCUMENTS[1]])
+            parse_documents(&[DOCUMENTS[0]; DOCUMENTS.len() + 1])
                 .err()
                 .as_deref(),
             Some("reward callback document bounds")

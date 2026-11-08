@@ -284,8 +284,6 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
-    lowered.catalogue =
-        super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -309,6 +307,11 @@ pub(super) fn lower_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    // Complete NPC reward activations and counters before validating native goals.
+    lowered.catalogue =
+        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
@@ -316,8 +319,6 @@ pub(super) fn lower_embedded_quest_state(
         "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
         "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
     );
-    lowered.catalogue =
-        super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Authored world programmes lower their tracks from the pinned canonical recipe.
     // Register that evidence after legacy NPC alias compilation, retaining every
@@ -540,13 +541,18 @@ mod tests {
             include_str!("../../../../../content/quests/native-scene-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
+            include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
+            include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();
         for text in registries {
             let source: serde_json::Value =
                 serde_json::from_str(text).map_err(|e| e.to_string())?;
             for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
-                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                if callback["quest"] != "oteryn:quest.dawnport_quest"
+                    && callback["key"]
+                        != "oteryn:quest-callback/questpc7-feaster-purification-entry"
+                {
                     expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
                 }
             }
@@ -600,6 +606,11 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}")));
         }
         assert_eq!(expected.len() - before_main_native, 14);
+        let before_elvenbane = expected.len();
+        for suffix in ["poison", "dragon-floor"] {
+            assert!(expected.insert(format!("oteryn:quest-callback/elvenbane/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_elvenbane, 2);
         assert_eq!(
             callbacks
                 .into_iter()

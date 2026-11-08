@@ -401,4 +401,3 @@ class FeasterPrefix(unittest.TestCase):
             self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']})
             for field in ['movable','pickupable']:
                 self.assertEqual(row['semantics']['physical']['value'][field],{'state':'KNOWN','value':False})
-

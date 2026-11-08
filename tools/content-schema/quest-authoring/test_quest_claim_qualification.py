@@ -31,7 +31,7 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # Keep the exact outstanding denominator; qualified and not-playable
         # source claims remain in their separate coverage categories.
-        self.assertEqual(sum(counts.values()), 162)
+        self.assertEqual(sum(counts.values()), 145)
 
         # 189 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
@@ -84,6 +84,8 @@ class QualificationTests(unittest.TestCase):
                     'oteryn:reward-claim.kv.ornamentedshield':
                         'quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal',
                     'oteryn:reward-claim.kv.powerring2':
+                        'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
+                    'oteryn:reward-claim.kv.triangletower':
                         'quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal',
                 }[key])
 

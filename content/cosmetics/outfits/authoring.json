@@ -59618,11 +59618,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -59783,11 +59778,6 @@
           "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -59948,11 +59938,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -60113,11 +60098,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -60278,11 +60258,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -60603,11 +60578,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -60768,11 +60738,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -60933,11 +60898,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61098,11 +61058,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61263,11 +61218,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61428,11 +61378,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61593,11 +61538,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61758,11 +61698,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
@@ -61923,11 +61858,6 @@
           "reference": "crystal:data/XML/outfits.xml",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
-        },
-        {
-          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
-          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
-          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
         }
       ],
       "state": "PROMOTED",
