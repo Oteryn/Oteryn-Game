@@ -24,7 +24,8 @@
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/25/definition",
         "native_evidence": [
-          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS."
+          "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
+          "Additional plain NPC item custody8774/8777(Beregar),8820/8822/8827(Yalahar): five actualPGRED missing-policy controls, then all19 custody/drop/replay regressions GREEN. Raw3738->3743, all prior records identical; equipment3781. Only8822admitted fromrange8822-8825. WholequestIN_PROGRESS. /tmp/questpc4b-npc5-pg-green.log"
         ],
         "tried": [
           "Read retained source at .questpc4/evidence/wiki/The Hidden City of Beregar Quest_Spoiler.wiki:14; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/25/definition).",
@@ -446,7 +447,8 @@
         "reuse_from_main": "f641d8d6c",
         "native_evidence": [
           "Source NPC program reused from main f641d8d6c; whole quest remains IN_PROGRESS.",
-          "Eight plain NPC items8758-8763/8818/8819: PG18.6 RED missing policy41.858-43.631s, then all8 custody/drop/exact-replay cases GREEN44.278-45.018s; six Stag regressions alsoGREEN. Raw3730->3738, prior records unchanged; independent equipment3776. Physical custody only; whole route remainsIN_PROGRESS. /tmp/questpc4b-yalahar-pg-green.log"
+          "Eight plain NPC items8758-8763/8818/8819: PG18.6 RED missing policy41.858-43.631s, then all8 custody/drop/exact-replay cases GREEN44.278-45.018s; six Stag regressions alsoGREEN. Raw3730->3738, prior records unchanged; independent equipment3776. Physical custody only; whole route remainsIN_PROGRESS. /tmp/questpc4b-yalahar-pg-green.log",
+          "Additional plain NPC item custody8774/8777(Beregar),8820/8822/8827(Yalahar): five actualPGRED missing-policy controls, then all19 custody/drop/replay regressions GREEN. Raw3738->3743, all prior records identical; equipment3781. Only8822admitted fromrange8822-8825. WholequestIN_PROGRESS. /tmp/questpc4b-npc5-pg-green.log"
         ]
       },
       "sources": [

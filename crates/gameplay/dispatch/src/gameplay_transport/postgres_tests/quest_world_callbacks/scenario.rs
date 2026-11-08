@@ -117,6 +117,11 @@ fn scenario_case(
             | "l6-yalahar-item-8763"
             | "l6-yalahar-item-8818"
             | "l6-yalahar-item-8819"
+            | "l6-yalahar-item-8820"
+            | "l6-yalahar-item-8822"
+            | "l6-yalahar-item-8827"
+            | "l6-beregar-item-8774"
+            | "l6-beregar-item-8777"
     );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
@@ -729,6 +734,15 @@ fn scenario_case(
             super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, source_id)
                 .await?;
         } else if let Some(source_id) = super::super::l6_yalahar_items::source_id(name) {
+            super::super::l6_stag_item::exercise_plain(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
+                source_id,
+            )
+            .await?;
+        } else if let Some(source_id) = super::super::l6_beregar_items::source_id(name) {
             super::super::l6_stag_item::exercise_plain(
                 &mut owner,
                 &mut admitted,

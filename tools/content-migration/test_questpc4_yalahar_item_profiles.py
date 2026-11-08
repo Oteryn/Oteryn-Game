@@ -10,7 +10,9 @@ from test_questpc4_stag_item_profiles import ROOT, definitions
 
 class YalaharCustodyTests(unittest.TestCase):
     def fixture(self, item_id=8758):
-        weights = dict(zip(profile.IDS, (280, 500, 80, 750, 500, 1100, 200, 180)))
+        weights = dict(
+            zip(profile.IDS, (280, 500, 80, 750, 500, 1100, 200, 180, 4600, 900, 900))
+        )
         node = ET.fromstring(
             f'<item id="{item_id}" name="fixture"><attribute key="weight" value="{weights[item_id]}"/></item>'
         )
@@ -55,6 +57,19 @@ class YalaharCustodyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "INSTANCE_FLAGS"):
                 profile.qualify(*values)
 
+    def test_only_selected_member_of_source_range_is_admitted(self):
+        values = self.fixture(8822)
+        values[1].attrib.pop("id")
+        values[1].set("fromid", "8822")
+        values[1].set("toid", "8825")
+        self.assertEqual(
+            profile.qualify(*values)["production_definition"]["production_key"],
+            "oteryn:item.tibia.i8822",
+        )
+        values[0] = 8823
+        with self.assertRaisesRegex(ValueError, "IDENTITY"):
+            profile.qualify(*values)
+
     def test_custom_attributes_and_scripts_are_rejected(self):
         for raw in (
             '<attribute key="armor" value="0"/>',
@@ -92,14 +107,14 @@ class YalaharCustodyTests(unittest.TestCase):
     def test_pin_insertion_is_source_bounded_and_idempotent(self):
         source = '    ("QUESTPC4-STAG-ITEMS", 6),'
         generated = refresh(source, self.packet())
-        self.assertEqual(generated, source + '\n    ("QUESTPC4-YALAHAR-ITEMS", 8),')
+        self.assertEqual(generated, source + '\n    ("QUESTPC4-YALAHAR-ITEMS", 11),')
         self.assertEqual(refresh(generated, self.packet()), generated)
 
     def test_pin_rejects_missing_duplicate_or_unrelated_source_keys(self):
         original = self.packet()
         for rows in (
             original["records"][:-1],
-            [original["records"][0]] * 8,
+            [original["records"][0]] * len(profile.IDS),
             [{"production_definition": {"production_key": "oteryn:item.tibia.i1"}}]
             + original["records"][1:],
         ):
@@ -112,7 +127,7 @@ class YalaharCustodyTests(unittest.TestCase):
         for source in (
             "",
             '("QUESTPC4-STAG-ITEMS", 6),\n("QUESTPC4-STAG-ITEMS", 6),',
-            '("QUESTPC4-YALAHAR-ITEMS", 8),' * 2,
+            '("QUESTPC4-YALAHAR-ITEMS", 11),' * 2,
         ):
             with self.assertRaises(ValueError):
                 refresh(source, self.packet())

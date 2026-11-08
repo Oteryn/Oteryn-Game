@@ -10993,6 +10993,72 @@
         "duplicate_migrations": 0,
         "main": "6f61ac15d merged4b34dda9b, no conflicts; upstream physical-item lane fix reused",
         "unit_crates": "Fresh content+dispatch+durability nextestallfeatures rebuild started after gates; pending under PREPUSH-2 step3 cadence allowance. Earlier failed-launch run invalid, not a code pass."
+      },
+      "pushed": "27d91e49f19be64bf54f19a8db724009bfbbf1e6"
+    },
+    "npc5_slice": {
+      "quests": [
+        "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "oteryn:quest.in_service_of_yalahar_quest"
+      ],
+      "items": [
+        8774,
+        8777,
+        8820,
+        8822,
+        8827
+      ],
+      "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "source_xml_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "source_lines": {
+        "8774": 23442,
+        "8777": 23453,
+        "8820": 23502,
+        "8822": 23509,
+        "8827": 23517
+      },
+      "decision": "Reuse plain source qualification and shared custody proof. Only8822 is selected from XML8822-8825 range; other range members remain unadmitted. No fluid, written-text, equipment or custom-use behavior inferred.",
+      "validation": "24 qualifier/pin controls PASS27.787s;RuffPASS; existing eight Yalahar captured records identical. Native baseline3738/equipment3776; independent pinRED3781vs3776. OwnfivePGREDcasescompiling.",
+      "state": "Physical custody slice qualified; whole Beregar/Yalahar quests remain IN_PROGRESS.",
+      "red_postgres": "5/5 actualPG18.6 missing-policy failures, total127.534s; all configured database markers present before generation.",
+      "native_delta": "3738->3743, only8774/8777/8820/8822/8827 added; no prior record changed or removed. Equipment3781 from independent source cohorts.",
+      "green_postgres": {
+        "passed": 19,
+        "failed": 0,
+        "durations_seconds": {
+          "l6_beregar_item_8774_native_custody_and_replay": 59.263,
+          "l6_beregar_item_8777_native_custody_and_replay": 59.246,
+          "l6_stag_material_bronze_native_custody_and_replay": 58.174,
+          "l6_stag_material_certificate_native_custody_and_replay": 58.111,
+          "l6_stag_material_iron_native_custody_and_replay": 52.316,
+          "l6_stag_material_silver_native_custody_and_replay": 52.291,
+          "l6_stag_source_compass_has_native_custody_and_exact_replay": 44.448,
+          "l6_stag_source_sword_has_native_custody_and_exact_replay": 44.381,
+          "l6_yalahar_item_8758_native_custody_and_replay": 44.91,
+          "l6_yalahar_item_8759_native_custody_and_replay": 44.922,
+          "l6_yalahar_item_8760_native_custody_and_replay": 44.217,
+          "l6_yalahar_item_8761_native_custody_and_replay": 44.251,
+          "l6_yalahar_item_8762_native_custody_and_replay": 43.794,
+          "l6_yalahar_item_8763_native_custody_and_replay": 43.747,
+          "l6_yalahar_item_8818_native_custody_and_replay": 45.428,
+          "l6_yalahar_item_8819_native_custody_and_replay": 45.356,
+          "l6_yalahar_item_8820_native_custody_and_replay": 45.132,
+          "l6_yalahar_item_8822_native_custody_and_replay": 45.15,
+          "l6_yalahar_item_8827_native_custody_and_replay": 42.614
+        },
+        "proof": "All isolated processes exit0 with PostgreSQL18.6/version/completion markers; /tmp/questpc4b-npc5-pg-green.log"
+      },
+      "workspace_check": "PASS4m36s",
+      "freshness": "NATIVE=0 STAG=0 YALAHAR=0 BEREGAR=0 EQUIPMENT=0 MATRIX=0 VARIANT=0",
+      "publication_checks": {
+        "workspace": "PASS4m36s",
+        "clippy": "dispatch alltargets/allfeatures -Dwarnings PASS3m45s",
+        "fmt": "PASS",
+        "freshness": "All native,threecaptures,equipment,matrix,variant checksEXIT0;RuffPASS;24source/pin controlsPASS27.787s",
+        "postgres": "19/19 actualPG18.6 custody/replay casesPASS; fiveREDcontrols before admission",
+        "duplicate_migrations": 0,
+        "unit_crates": "Fresh content+dispatch+durability nextestallfeatures rebuild running; pending under PREPUSH-2 step3 cadence allowance",
+        "main": "6f61ac15d ancestor; fetched before publication"
       }
     }
   }

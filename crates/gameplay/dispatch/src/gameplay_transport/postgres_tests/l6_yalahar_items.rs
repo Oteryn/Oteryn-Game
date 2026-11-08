@@ -47,6 +47,21 @@ fn l6_yalahar_item_8819_native_custody_and_replay() -> TestResult {
     run("l6-yalahar-item-8819")
 }
 
+#[test]
+fn l6_yalahar_item_8820_native_custody_and_replay() -> TestResult {
+    run("l6-yalahar-item-8820")
+}
+
+#[test]
+fn l6_yalahar_item_8822_native_custody_and_replay() -> TestResult {
+    run("l6-yalahar-item-8822")
+}
+
+#[test]
+fn l6_yalahar_item_8827_native_custody_and_replay() -> TestResult {
+    run("l6-yalahar-item-8827")
+}
+
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         assert!(
@@ -77,6 +92,9 @@ pub(super) fn source_id(name: &str) -> Option<u32> {
         "l6-yalahar-item-8763" => Some(8763),
         "l6-yalahar-item-8818" => Some(8818),
         "l6-yalahar-item-8819" => Some(8819),
+        "l6-yalahar-item-8820" => Some(8820),
+        "l6-yalahar-item-8822" => Some(8822),
+        "l6-yalahar-item-8827" => Some(8827),
         _ => None,
     }
 }
