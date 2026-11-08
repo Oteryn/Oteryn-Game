@@ -17,13 +17,15 @@
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
 pub mod admission_binding;
-pub mod authored_bindings;
 
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
+pub mod authored_bindings;
+pub mod barbarian_mead;
 #[cfg(test)]
 pub mod batch3_a;
 pub mod carried_step;
+pub mod children_puzzle;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
@@ -32,12 +34,14 @@ pub mod deepling_boss_access;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
+pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;
+pub mod map_marks;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
@@ -52,6 +56,8 @@ pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod source_deaths;
+pub mod source_world_objects;
+pub mod targuna_ram;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod timers;
@@ -198,6 +204,13 @@ pub enum QuestEffectKind {
     Computed,
     /// A source-specific bounded rule over its complete locked snapshot.
     Native(native_rules::NativeRule),
+    /// Preserve this track until another effect's original locked value reaches a threshold.
+    /// Reused from questpc3 262618b3; the index remains inside this transition.
+    SetWhenAtLeast {
+        other_effect: u8,
+        minimum: i64,
+        value: i64,
+    },
 }
 
 impl QuestEffectKind {
@@ -235,6 +248,15 @@ impl QuestEffectKind {
             Self::Native(rule) => {
                 out.push(5);
                 rule.encode(out);
+            }
+            Self::SetWhenAtLeast {
+                other_effect,
+                minimum,
+                value,
+            } => {
+                out.extend_from_slice(&[11, other_effect]);
+                out.extend_from_slice(&minimum.to_be_bytes());
+                out.extend_from_slice(&value.to_be_bytes());
             }
         }
     }
@@ -323,9 +345,9 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    authored_bindings: Option<std::sync::Arc<authored_bindings::RuntimeBindings>>,
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
     predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
-    authored_bindings: Option<std::sync::Arc<authored_bindings::Bindings>>,
     native_recipe_evidence: Option<std::sync::Arc<authored_bindings::embedded::RecipeEvidence>>,
 }
 
@@ -403,7 +425,7 @@ impl QuestStateCatalogue {
                 return Err(E::InvalidEffect(transition.key));
             }
             let mut seen = BTreeSet::new();
-            for effect in &transition.effects {
+            for (index, effect) in transition.effects.iter().enumerate() {
                 let Some(track) = track_map.get(&effect.track) else {
                     return Err(E::UnknownTrack(effect.track.clone()));
                 };
@@ -425,6 +447,16 @@ impl QuestStateCatalogue {
                     | QuestEffectKind::RaiseToWithBinding { value, .. } => {
                         (track.min..=track.max).contains(&value)
                     }
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        value,
+                        ..
+                    } => {
+                        usize::from(other_effect) < transition.effects.len()
+                            && usize::from(other_effect) != index
+                            && (track.min..=track.max).contains(&value)
+                    }
+
                     _ => true,
                 };
                 if !comparison_ok || !effect_ok {
@@ -498,9 +530,16 @@ impl QuestStateCatalogue {
         Self::new(content_revision, Vec::new(), Vec::new()).ok()
     }
 
-    #[must_use]
+    pub fn authored_world_callbacks(&self) -> Option<&[world_callbacks::Callback]> {
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| runtime.world.as_slice())
+    }
+
     pub fn authored_bindings(&self) -> Option<&authored_bindings::Bindings> {
-        self.authored_bindings.as_deref()
+        self.authored_bindings
+            .as_ref()
+            .map(|runtime| &runtime.source)
     }
 
     pub fn content_revision(&self) -> &str {
@@ -533,10 +572,11 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         now: i64,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
-        if transition
-            .effects
-            .iter()
-            .any(|effect| effect.effect == QuestEffectKind::Computed)
+        if transition.effects.iter().enumerate().any(|(index,effect)| {
+            effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
+                QuestEffectKind::SetWhenAtLeast {other_effect,..}
+                    if usize::from(other_effect)==index || usize::from(other_effect)>=transition.effects.len())
+        })
         {
             return Err(QuestRefusal::NotSupported);
         }
@@ -574,7 +614,7 @@ impl QuestStateCatalogue {
         transition
             .effects
             .iter()
-            .zip(current)
+            .zip(current.iter().copied())
             .map(|(effect, (track, before))| {
                 let after = match effect.effect {
                     QuestEffectKind::RaiseTo(value)
@@ -587,6 +627,13 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
+                    QuestEffectKind::SetWhenAtLeast {
+                        other_effect,
+                        minimum,
+                        value,
+                    } => current
+                        .get(usize::from(other_effect))
+                        .map(|(_, observed)| if *observed >= minimum { value } else { before }),
                     QuestEffectKind::Native(_) => native_after
                         .as_ref()
                         .and_then(|after| after.get(&effect.track).copied()),

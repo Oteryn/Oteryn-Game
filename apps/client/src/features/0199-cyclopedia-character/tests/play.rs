@@ -394,3 +394,42 @@ fn gap_cl6_native_character_paging_preserves_cl5_controls_and_pending_fence() {
     let bounded = native_controls::submit(&mut p, 113, ["65530", "20", ""]);
     assert_eq!(bounded.map(|c| c.payload), Some(vec![2, 255, 255, 20]));
 }
+
+#[test]
+fn native_pvp_filters_keep_the_confirmed_history_and_do_not_send_game_commands()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_character::{CharacterTab, KillStatus, TabView};
+    use oteryn_client_ui::cyclopedia_character::{
+        CyclopediaCharacterPanel, apply_result, history_rows,
+    };
+    let mut p = CyclopediaCharacterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(native_controls::submit(&mut p, 103, ["0", "20", ""]).is_some());
+    assert_eq!(p.tab, CharacterTab::RecentPvpKills);
+    let payload = TabView::RecentPvpKills(vec![
+        (1, KillStatus::GuildWar, "A".into()),
+        (2, KillStatus::Unjustified, "B".into()),
+    ])
+    .encode()
+    .map_err(|_| "encode")?;
+    assert!(apply_result(
+        &mut p,
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            status: oteryn_client_runtime::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload
+        }
+    ));
+    assert!(native_controls::submit(&mut p, 116, ["", "", ""]).is_none());
+    assert_eq!(history_rows(&p)[0].description, "A");
+    assert_eq!(history_rows(&p).len(), 1);
+    assert!(native_controls::submit(&mut p, 115, ["", "", ""]).is_none());
+    assert_eq!(history_rows(&p)[0].description, "B");
+    assert!(native_controls::submit(&mut p, 114, ["", "", ""]).is_none());
+    assert_eq!(history_rows(&p).len(), 2);
+    assert!(!p.pending);
+    Ok(())
+}

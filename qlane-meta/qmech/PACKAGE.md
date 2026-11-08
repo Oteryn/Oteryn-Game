@@ -23,6 +23,6 @@ Molehill PC, merged with main, validated there, and only then marked ready.
 | boss / encounter | engenc, engenc2 | (lane's range) | 27 | ENGENC2: shared native phase foundation; Cults production closure claimed, not DONE; ENGENC: tested private boss loot imported (Soul War/Rotten Blood); native arena reused; MISSING-ENGENC.md PARTIAL |
 | reward / achievement claims | engclaim | 1830-1839 (unused) | 0 full; 4 reward-binding prerequisites | PARTIAL: native placement / once leaf+container / achievement slice; independent outputs and quest bindings pending |
 | world change | engworldchg | 1840-1859 | 10 | open |
-| NPC quest dialogue | engnpc2 | 1650-1659 | Twenty Miles equipped-head prerequisite | 88d39c9d9 merged; engine PG 4.449471887s, 328 quest tests, 740 durability tests, clippy and pins; other requests in progress |
+| NPC quest dialogue | engnpc2 | 2290-2299; none used | Twenty Miles equipped-head prerequisite; M11 The Dream Courts / Stricken Soul name branch | 88d39c9d9 merged; M11 eb9aae7e3828e112982be054de300827085ae039; source two-confirmation/name conversation, locked current-name predicate, PG 6.72541493s; full Dream Courts quest remains outside this mechanic |
 | quest items | engitem | 2250-2259 (new);1641 legacy | Oramond M12; Goblin/Seal/Targuna M13 | M12 engine slice01b524d4d PG GREEN; content wiring continuing; M13 next |
 | other blockers | (to assign) | - | 44 | open |
