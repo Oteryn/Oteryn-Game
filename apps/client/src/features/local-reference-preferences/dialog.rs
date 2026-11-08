@@ -5,7 +5,6 @@ mod controls;
 use controls::Controls;
 #[path = "page_help.rs"]
 mod page_help;
-
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -34,6 +33,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            stability,
             battle_sounds,
             frames,
             arcs,
@@ -140,6 +140,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
                 (
                     &[
+                        stability,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -254,6 +255,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
+                            preferences.optimise_connection =
+                                SendMessageW(stability, BM_GETCHECK, 0, 0) == 1;
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
                             preferences.keyboard_delay_ms = value;
@@ -321,6 +324,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                set_checked(stability, state.preferences.optimise_connection);
                 battle_sounds.refresh(&state.preferences);
                 frames.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);

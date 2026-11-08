@@ -88,6 +88,9 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    /// Disable TCP small-packet buffering on the next gameplay connection.
+    #[serde(default)]
+    pub optimise_connection: bool,
     #[serde(default)]
     pub ambient_brightness: u8,
     #[serde(default = "default_foreground_fps")]
@@ -152,6 +155,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            optimise_connection: false,
             ambient_brightness: 0,
             foreground_fps: default_foreground_fps(),
             background_fps: default_background_fps(),

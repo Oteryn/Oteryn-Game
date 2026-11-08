@@ -14,6 +14,7 @@ mod battle_sound_controls;
 use battle_sound_controls::BattleSoundControls;
 
 pub(super) struct Controls {
+    pub(super) stability: HWND,
     pub(super) battle_sounds: BattleSoundControls,
     pub(super) frames: FrameControls,
     pub(super) arcs: ArcControls,
@@ -53,6 +54,14 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let stability = control(
+                hwnd,
+                "BUTTON",
+                "Optimise connection stability (next login): disable TCP buffering",
+                0,
+                [10, 265, 710, 26],
+                BS_AUTOCHECKBOX as u32,
+            );
             let battle_sounds = BattleSoundControls::new(hwnd)?;
             let frames = FrameControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
@@ -280,6 +289,7 @@ impl Controls {
             .collect::<Vec<_>>();
             let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
             if [
+                stability,
                 profile_name,
                 profile_save,
                 profile_load,
@@ -317,6 +327,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                stability,
                 battle_sounds,
                 frames,
                 arcs,

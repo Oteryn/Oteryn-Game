@@ -431,9 +431,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Miscellaneous: optimise connection stability",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak ustawienia optymalizacji połączenia i jego konsumenta w panelu Settings.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/controls.rs:57 + apps/client/src/native_entry.rs:146 + crates/session-tcp/src/lib.rs:96; connection_optimisation_configures_real_tls_socket (crates/session-tcp/src/tests.rs:101), connection_optimisation_survives_the_admission_store_read. Settings disables TCP small-packet buffering at next login; existing TLS, admission and retries preserved. Checked origin/main 2033ddc54 and own branch first."
  },
  {
   "id": "T069",

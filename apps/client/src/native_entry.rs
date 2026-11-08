@@ -143,7 +143,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
-        let session = oteryn_session_tcp::connection::admit(
+        let session = oteryn_session_tcp::connection::admit_optimized(
             &self.grant.endpoint.host,
             self.grant.endpoint.port,
             &self.grant.endpoint.tls_server_name,
@@ -157,6 +157,9 @@ impl AdmissionAttempt for NativeAttempt<'_> {
                 deadline: CONNECT_DEADLINE,
             },
             &self.root,
+            crate::play::PreferenceStore::path()
+                .and_then(|path| crate::play::PreferenceStore::load(path).ok())
+                .is_some_and(|store| store.preferences().optimise_connection),
         )
         .await?;
         Ok(AdmittedSession {

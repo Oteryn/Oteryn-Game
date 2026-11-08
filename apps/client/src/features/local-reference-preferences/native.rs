@@ -304,3 +304,9 @@ unsafe fn text(hwnd: HWND) -> String {
 
 #[path = "dialog.rs"]
 mod dialog;
+
+unsafe fn set_checked(handle: HWND, checked: bool) {
+    unsafe {
+        SendMessageW(handle, BM_SETCHECK, usize::from(checked), 0);
+    }
+}
