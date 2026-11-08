@@ -22,6 +22,8 @@ IDS |= {21291}
 IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 # Vascalir's source-authored mission 11 grants this ordinary flask with 3054.
 IDS |= {12785}
+# QN4 Cursed Crystal actions_MedusaOil.lua:2-4 uses these plain carried ingredients.
+IDS |= {21504, 21505}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'

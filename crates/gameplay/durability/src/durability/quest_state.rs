@@ -551,15 +551,16 @@ pub(super) fn report_refused_experience(
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
+mod collection;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
-mod planegazer_finale;
 pub mod native_kills;
-pub mod source_deaths;
+mod planegazer_finale;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;
+pub mod source_deaths;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
