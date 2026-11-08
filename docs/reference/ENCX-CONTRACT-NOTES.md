@@ -1224,3 +1224,14 @@ passed against PostgreSQL in 51.14 s (scenario 46.174806262 s). The preceding
 the adapter now selects it only for an actual item reward. Production writer
 validation is unchanged. Generic context-free commits also reject live admission
 callbacks, so promotion cannot be bypassed through the weaker entry point.
+
+### M29: refuse an unversioned party snapshot before admission
+Crystal `data/libs/functions/boss_lever.lua:183-218` checks every roster slot.
+The shared qualifier now also rejects Character revision zero, which cannot
+represent a current fenced Character snapshot, before invoking the Instance
+owner. The regression covers each of the five Primal slots and verifies that
+admission is never called. This adds no game requirement or migration.
+Red evidence: `primal_entry_rejects_unversioned_party_member_before_shared_owner`
+returned `Ready(Ok(()))` rather than `InvalidInput` before the fix.
+The unchanged deadline PG regression was rerun from the existing durability test
+binary: one case passed in 16.18 s; this is not a newly compiled PG binary.
