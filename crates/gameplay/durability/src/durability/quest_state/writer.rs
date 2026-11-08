@@ -164,6 +164,27 @@ impl DurabilityRoot {
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
     ) -> Result<QuestTransitionOutcome> {
+        self.commit_character_world_callback_with_items_and_premium(
+            authority, node, fence, request, catalogue, permit, context, native,
+            admission, &grizzly::NoGrizzlyPremium,
+        ).await
+    }
+
+    /// Native Premium authority is retained across this exact world callback transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_items_and_premium<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        admission: Option<QuestRewardAdmission<'_>>,
+        premium: &G,
+    ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
             node,
@@ -174,7 +195,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            premium,
             None,
             None,
             admission,
@@ -650,13 +671,11 @@ impl DurabilityRoot {
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
-                        let account: String = sqlx::query_scalar(
-                            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
-                        ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-                        if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
-                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
-                        }
+                    if (reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || callback.as_ref().and_then(|c| c.character_requirements.as_ref()).is_some_and(|requirements| requirements.premium))
+                        && !super::super::quest_world_callback::character_requirements::premium_is_current(&mut tx, character, *grizzly_gate).await?
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(

@@ -1999,3 +1999,30 @@ engitem_oramond.rs and questpc5_map_marks.rs admission fixtures. Both are repair
 without changing assertions. M03's PG test uses the existing harness's explicit
 noncanonical pre-routing behavior when PG is absent; only the real configured PG
 execution is counted as validation evidence.
+
+## M03: transaction-scoped Premium admission slice
+
+Pits of Inferno's chosen Premium requirement is recorded in
+content/quests/definitions/quests-00000-00099.json:1, record 89. The native
+SpellPremiumCoordinator already implements the transaction-scoped quest Premium
+port (spell_premium_coordinator/promotion_gate.rs:48-59); M03 reuses that owner.
+The writer resolves the account from the fenced Character root and asks that
+owner inside the same transaction. Missing authority refuses admission. Both
+immediate world callbacks and queued retries retain the native coordinator.
+Legacy callers without an owner remain fail-closed for newly gated callbacks.
+Reward callback Premium admission keeps its existing owner through the same
+helper. No new Premium projection, migration or numeric registry entry is added.
+
+The new Premium schema test first failed on the absent premium field, then
+passed. Its PG probe checks the actual durable account and PostgreSQL transaction
+ID, plus current/refused/missing-owner cases. Production entrance content wiring
+remains the next M03 slice; this engine slice alone is not marked DONE.
+Premium slice proof: both M03 PG tests executed on the configured real database
+and passed in 5.09 s (wall 132.715 s including compilation). Premium schema RED:
+unknown premium field; GREEN: both M03 schema tests pass. Changed production
+crates clippy -D warnings passed in 137.728 s; native regeneration passed in
+223.558 s without changing outputs. No content input changed in this slice.
+The compiled M03 PG cases were executed again with a clean proof log: 2 PASS,
+6.52 s (wall 6.523 s). Workspace all-target check passed in 307.226 s; format
+check and duplicate-migration check passed. The initial compile error from a
+borrowed Premium gate was fixed before these successful checks.

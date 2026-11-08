@@ -1656,6 +1656,24 @@ mod srvenc_live_requirements_tests {
     use super::*;
 
     #[test]
+    fn m03_live_premium_requirement_is_native_bound() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|callback| callback.requires_world_admission && !callback.storage.is_empty())
+            .ok_or("world fixture")?;
+        let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+        value["character_requirements"] = serde_json::json!({"premium":true});
+        let packet = |value: &serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[value]}).to_string()
+        };
+        let admitted = parse(&packet(&value))?;
+        assert!(gated_binding(&admitted[0])?.is_some());
+        value["character_requirements"]["premium"] = false.into();
+        assert!(parse(&packet(&value)).is_err());
+        Ok(())
+    }
+
+    #[test]
     fn m03_character_requirements_are_registered_and_bound() -> Result<(), String> {
         let callback = load()?
             .into_iter()
