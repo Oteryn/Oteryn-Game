@@ -102,10 +102,10 @@ pub(crate) fn page_hint(page: SettingsPage) -> &'static str {
             "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
         }
         SettingsPage::BarHotkeys => {
-            "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+            "Choose a shortcut for each spell slot. Configure its screen position and grid under Interface / action bar layout."
         }
         SettingsPage::Graphics => {
-            "Renderer and window options use the supported native renderer. Additional controls are not available yet."
+            "Light and combat effect visibility apply to the live world. HUD presentation is configured under Interface."
         }
         SettingsPage::Sound => "Master volume % (0–100). Changes apply to playback immediately.",
         _ => "",

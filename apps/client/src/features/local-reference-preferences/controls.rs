@@ -18,8 +18,12 @@ use screenshot_controls::ScreenshotControls;
 #[path = "minimap_controls.rs"]
 mod minimap_controls;
 use minimap_controls::MinimapControls;
+#[path = "presentation_controls.rs"]
+mod presentation_controls;
+use presentation_controls::PresentationControls;
 
 pub(super) struct Controls {
+    pub(super) presentation: PresentationControls,
     pub(super) minimap: MinimapControls,
     pub(super) guide: HelpControls,
     pub(super) screenshots: ScreenshotControls,
@@ -66,6 +70,7 @@ impl Controls {
             let screenshots = ScreenshotControls::new(hwnd)?;
             let guide = HelpControls::new(hwnd)?;
             let minimap = MinimapControls::new(hwnd)?;
+            let presentation = PresentationControls::new(hwnd)?;
             let interface = InterfaceControls::new(hwnd)?;
             let profile_name = control(
                 hwnd,
@@ -327,6 +332,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                presentation,
                 minimap,
                 guide,
                 screenshots,
@@ -365,5 +371,14 @@ impl Controls {
                 feedback,
             })
         }
+    }
+}
+
+pub(super) unsafe fn update_feedback(handle: HWND, state: &SettingsState) {
+    unsafe {
+        SetWindowTextW(
+            handle,
+            wide(&format!("{}\r\n{}", page_hint(state.page), state.feedback)).as_ptr(),
+        );
     }
 }

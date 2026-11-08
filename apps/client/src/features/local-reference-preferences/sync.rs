@@ -22,10 +22,12 @@ pub enum SettingsPage {
     Help,
     HelpGuide,
     MinimapTransfer,
+    Console,
+    ActionBarLayout,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 14] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
@@ -38,6 +40,8 @@ impl SettingsPage {
         Self::Help,
         Self::HelpGuide,
         Self::MinimapTransfer,
+        Self::Console,
+        Self::ActionBarLayout,
     ];
 
     pub const fn label(self) -> &'static str {
@@ -54,6 +58,8 @@ impl SettingsPage {
             Self::Help => "Help / settings transfer",
             Self::HelpGuide => "Help / guide and support",
             Self::MinimapTransfer => "Help / minimap transfer",
+            Self::Console => "Console",
+            Self::ActionBarLayout => "Interface / action bar layout",
         }
     }
 }
@@ -74,7 +80,7 @@ pub struct SettingsState {
     pub(super) help_report: Option<super::help::Report>,
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
-    window_action: Option<&'static str>,
+    pub(super) window_actions: std::collections::VecDeque<&'static str>,
     battle_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
@@ -91,14 +97,19 @@ impl SettingsState {
         let Some((id, _)) = WINDOW_ACTIONS.iter().find(|(key, _)| *key == id) else {
             return false;
         };
-        self.window_action = Some(id);
+        if self.window_actions.len() >= 32 {
+            return false;
+        }
+        self.window_actions.push_back(id);
         true
     }
 
     pub fn take_window_events(&mut self) -> Vec<NormalizedInputEvent> {
-        self.window_action.take().map_or_else(Vec::new, |id| {
-            super::bindings::window_events(&self.preferences, id)
-        })
+        let preferences = &self.preferences;
+        self.window_actions
+            .drain(..)
+            .flat_map(|id| super::bindings::window_events(preferences, id))
+            .collect()
     }
 
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
@@ -155,7 +166,7 @@ impl SettingsState {
             help_report: None,
             screenshot_runtime: Default::default(),
             screenshot_requested: false,
-            window_action: None,
+            window_actions: Default::default(),
             battle_edit: 0,
             store,
             preferences,

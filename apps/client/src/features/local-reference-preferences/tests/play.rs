@@ -3,6 +3,9 @@ use super::*;
 #[path = "options.rs"]
 mod options;
 
+#[path = "presentation_options.rs"]
+mod presentation_options;
+
 #[path = "gameplay.rs"]
 mod gameplay;
 

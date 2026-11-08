@@ -4,8 +4,19 @@ use std::fmt::Write;
 #[must_use]
 pub fn panel_text(panel: &ChatPanel) -> String {
     let mut text = String::from("Local Chat — Say / Whisper / Yell / Private\n");
-    text.push_str(&crate::chat_guild_room::panel_text(panel));
-    for line in &panel.lines {
+    if panel.console.presentation.visible[2] {
+        text.push_str(&crate::chat_guild_room::panel_text(panel));
+    }
+    let presentation = &panel.console.presentation;
+    for line in panel.lines.iter().skip(
+        panel
+            .lines
+            .len()
+            .saturating_sub(usize::from(presentation.limit)),
+    ) {
+        if !presentation.shows(line) {
+            continue;
+        }
         if !panel.console.communication.visible(line) {
             continue;
         }
@@ -30,13 +41,21 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                 text: message,
                 ..
             } => {
-                let _ = writeln!(text, "[{mode:?}] {speaker_name}: {message}");
+                if presentation.mode_labels {
+                    let _ = writeln!(text, "[{mode:?}] {speaker_name}: {message}");
+                } else {
+                    let _ = writeln!(text, "{speaker_name}: {message}");
+                }
             }
             ChatLine::Private {
                 speaker_name,
                 text: message,
             } => {
-                let _ = writeln!(text, "[Private] {speaker_name}: {message}");
+                if presentation.mode_labels {
+                    let _ = writeln!(text, "[Private] {speaker_name}: {message}");
+                } else {
+                    let _ = writeln!(text, "{speaker_name}: {message}");
+                }
             }
             ChatLine::Guild(line)
                 if matches!(
@@ -45,13 +64,32 @@ pub fn panel_text(panel: &ChatPanel) -> String {
                         if *guild_id == line.guild_id
                 ) =>
             {
-                let _ = writeln!(text, "[Guild] {}: {}", line.speaker_name, line.text);
+                let label = if presentation.mode_labels {
+                    "[Guild] "
+                } else {
+                    ""
+                };
+                let _ = writeln!(text, "{label}{}: {}", line.speaker_name, line.text);
             }
             ChatLine::Dropped => text.push_str("[Some chat lines were dropped]\n"),
+            ChatLine::Party {
+                speaker_name,
+                text: message,
+                ..
+            } => {
+                let label = if presentation.mode_labels {
+                    "[Party] "
+                } else {
+                    ""
+                };
+                let _ = writeln!(text, "{label}{speaker_name}: {message}");
+            }
             _ => {}
         }
     }
-    if let Some(feedback) = &panel.feedback {
+    if let Some(feedback) = &panel.feedback
+        && presentation.feedback
+    {
         let _ = writeln!(text, "{feedback}");
     }
     text

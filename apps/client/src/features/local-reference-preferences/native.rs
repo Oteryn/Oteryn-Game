@@ -23,6 +23,8 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "action_bar_controls.rs"]
+mod action_bar;
 #[path = "screenshot_native.rs"]
 mod screenshot_native;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
@@ -38,6 +40,7 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(super) struct Settings {
+    action_bar: Option<action_bar::Buttons>,
     // Win32 borrows the Arc handle address; Box keeps it stable when Settings moves.
     #[allow(clippy::redundant_allocation)]
     shared: Box<Arc<Mutex<Shared>>>,
@@ -48,6 +51,7 @@ pub(super) struct Settings {
 impl Settings {
     pub(super) fn new() -> Self {
         Self {
+            action_bar: None,
             shared: Box::new(Arc::new(Mutex::new(SettingsState::new(
                 PreferenceStore::path(),
             )))),
@@ -88,6 +92,7 @@ impl Settings {
                 DrawMenuBar(self.parent);
             }
             self.collapse = control(self.parent, "BUTTON", "▼ Game", 25200, [8, 64, 150, 26], 0);
+            self.action_bar = action_bar::Buttons::new(self.parent);
             self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
                 .iter()
                 .enumerate()
@@ -118,6 +123,13 @@ impl Settings {
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
             GetClientRect(self.parent, &mut rect);
+            if let Some(bar) = &self.action_bar {
+                bar.show(
+                    &state.preferences,
+                    [rect.right.max(0) as u32, rect.bottom.max(0) as u32],
+                    playing,
+                );
+            }
             let x = (rect.right - 160).max(0);
             MoveWindow(self.collapse, x, 64, 150, 26, 1);
             ShowWindow(self.collapse, if playing { SW_SHOW } else { SW_HIDE });
@@ -178,6 +190,7 @@ impl Settings {
             Ok(false) => {}
         }
         state.sync_battle_lists(link);
+        state.sync_presentation(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }
@@ -231,6 +244,13 @@ unsafe extern "system" fn menu_proc(
             return 0;
         }
         if msg == WM_COMMAND {
+            let slot = (w & 0xffff).wrapping_sub(25300);
+            if slot < 4 {
+                let shared = &*(data as *const Arc<Mutex<Shared>>);
+                lock(shared).queue_bar_slot(slot);
+                windows_sys::Win32::UI::Input::KeyboardAndMouse::SetFocus(hwnd);
+                return 0;
+            }
             let index = (w & 0xffff).wrapping_sub(25100);
             if let Some((id, _)) = oteryn_client::play::WINDOW_ACTIONS.get(index) {
                 let shared = &*(data as *const Arc<Mutex<Shared>>);
@@ -267,7 +287,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271)
+                && matches!(id, 103 | 106 | 110..=113 | 223 | 225..=226 | 231..=233 | 250..=251 | 260..=261 | 270..=271 | 280..=281)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);

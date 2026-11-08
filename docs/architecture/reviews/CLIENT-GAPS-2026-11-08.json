@@ -1241,9 +1241,10 @@
   "src": "OTCAUD1108",
   "area": "Options",
   "feature": "Opcje i ustawienia",
-  "status": "PARTIAL",
-  "gap": "Brakuje pełnych stron ustawień grafiki/efektów, konsoli i układu pasków akcji z OTClient; obecny formularz zapisuje ograniczony zestaw preferencji.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/presentation.rs:72 + console_and_action_bar_settings_reach_received_chat_and_cast_caller; existing graphics projection covered by t012_visual_preferences_control_live_effect_projection"
  },
  {
   "id": "O010",

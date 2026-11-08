@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            presentation,
             minimap,
             mut guide,
             screenshots,
@@ -133,6 +134,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             screenshots.show(state.page == SettingsPage::Screenshots);
             guide.update(&state);
             minimap.show(state.page == SettingsPage::MinimapTransfer);
+            presentation.show(state.page);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
@@ -202,6 +204,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if presentation.action(action, &mut state) {
+                    continue;
+                }
                 if minimap.action(action, &mut state) {
                     continue;
                 }
@@ -321,6 +326,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                presentation.refresh(&state.preferences);
                 gameplay.refresh(&state.preferences);
                 screenshots.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);
@@ -378,11 +384,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 selected = -1;
                 held = Some(state.preferences.clone());
             }
-            let page_help = controls::page_hint(state.page);
-            SetWindowTextW(
-                feedback,
-                wide(&format!("{page_help}\r\n{}", state.feedback)).as_ptr(),
-            );
+            controls::update_feedback(feedback, &state);
             drop(state);
             std::thread::sleep(Duration::from_millis(20));
         }

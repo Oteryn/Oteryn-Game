@@ -40,15 +40,34 @@ pub fn panel_text(panel: &ChatPanel) -> String {
         };
         let _ = writeln!(text, "{}: {state}", room_name(room));
     }
-    for line in &panel.lines {
+    let presentation = &panel.console.presentation;
+    for line in panel.lines.iter().skip(
+        panel
+            .lines
+            .len()
+            .saturating_sub(usize::from(presentation.limit)),
+    ) {
+        if !presentation.shows(line) {
+            continue;
+        }
         if !panel.console.communication.visible(line) {
             continue;
         }
-        if let Some(line) = line_text(line) {
+        if !presentation.mode_labels
+            && let ChatLine::Room {
+                speaker_name,
+                text: message,
+                ..
+            } = line
+        {
+            let _ = writeln!(text, "{speaker_name}: {message}");
+        } else if let Some(line) = line_text(line) {
             let _ = writeln!(text, "{line}");
         }
     }
-    if let Some(feedback) = &panel.feedback {
+    if let Some(feedback) = &panel.feedback
+        && presentation.feedback
+    {
         let _ = writeln!(text, "{feedback}");
     }
     text

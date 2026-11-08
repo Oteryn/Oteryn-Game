@@ -110,7 +110,7 @@ impl Pixels {
         file.write_all(&size.to_le_bytes())?;
         file.write_all(&[0; 16])?;
         for row in self.rgba.chunks_exact(self.width as usize * 4).rev() {
-            for pixel in row.chunks_exact(4) {
+            for pixel in row.as_chunks::<4>().0 {
                 file.write_all(&[pixel[2], pixel[1], pixel[0]])?;
             }
             file.write_all(&[0; 3][..(stride - self.width * 3) as usize])?;

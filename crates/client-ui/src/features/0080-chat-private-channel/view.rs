@@ -21,21 +21,33 @@ pub fn panel_text(panel: &ChatPanel) -> String {
     }
     if let Some(id) = panel.channel {
         let _ = writeln!(text, "Selected channel: {id}");
-        let start = panel.history_start.get(&id).copied().unwrap_or(0);
+        let start = panel.history_start.get(&id).copied().unwrap_or(0).max(
+            panel
+                .lines
+                .len()
+                .saturating_sub(usize::from(panel.presentation.limit)),
+        );
         for line in panel.lines.iter().skip(start) {
             if !panel.communication.visible(line) {
                 continue;
             }
             match line {
                 ChatLine::PrivateChannel(line) if line.channel_id == id => {
+                    if !panel.presentation.visible[1] {
+                        continue;
+                    }
                     let _ = writeln!(text, "{}: {}", line.speaker_name, line.text);
                 }
-                ChatLine::Dropped => text.push_str("[Some chat lines were dropped]\n"),
+                ChatLine::Dropped if panel.presentation.dropped => {
+                    text.push_str("[Some chat lines were dropped]\n")
+                }
                 _ => {}
             }
         }
     }
-    if let Some(feedback) = &panel.feedback {
+    if let Some(feedback) = &panel.feedback
+        && panel.presentation.feedback
+    {
         let _ = writeln!(text, "{feedback}");
     }
     text

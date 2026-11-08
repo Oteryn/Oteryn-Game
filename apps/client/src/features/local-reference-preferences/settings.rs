@@ -16,6 +16,8 @@ mod gameplay;
 pub mod help;
 #[path = "minimap_transfer.rs"]
 mod minimap_transfer;
+#[path = "presentation.rs"]
+mod presentation;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "screenshot.rs"]
@@ -94,6 +96,10 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub console: presentation::ConsolePreferences,
+    #[serde(default)]
+    pub action_bar: presentation::ActionBarPreferences,
+    #[serde(default)]
     pub screenshots: screenshot::ScreenshotPreferences,
     #[serde(default)]
     pub gameplay: gameplay::GameplayPreferences,
@@ -155,6 +161,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            console: Default::default(),
+            action_bar: Default::default(),
             screenshots: screenshot::ScreenshotPreferences::default(),
             gameplay: gameplay::GameplayPreferences::default(),
             arc_distance: 8,
@@ -188,6 +196,9 @@ impl Default for ReferencePreferences {
 
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
+        if !(1..=1000).contains(&self.console.line_limit) || !self.action_bar.valid() {
+            return Err(PreferenceError);
+        }
         if self.screenshots.backlog_frames > 10 {
             return Err(PreferenceError);
         }
