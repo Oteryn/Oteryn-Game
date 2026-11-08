@@ -26,3 +26,17 @@
 | Native authored RewardClaim placement/allocation admission through shared binder | engclaim | none; 1830–1839 reserved if required | Kormarak, Magic Sword, Mastermind Potion, Mystery of the Valley (engine prerequisite; exact native bindings remain) | IN PROGRESS |
 
 | Quest-guarded object taming with atomic quest progress | SRV7 | none planned; retained own range 0992–0993 only | Targuna Quest (Reliable Ram step; preceding stages remain separate) | CLAIMED |
+
+| Source-bound native boss-death quest adapter: frozen personal/room recipients and replay-safe fenced progress | SRVENC | 1108 reserved if a forward schema extension is needed; retained range 1100–1109 | Heart of Destruction (six boss deaths); The Order of the Stag (Court Warlock); Tower Defence (Goblin Leader); The Primal Ordeal (Magma Bubble only) | CLAIMED |
+| Quest-cycle-scoped repeatable World Item MINT using a preserved, fenced local epoch (no command-created cycles or fabricated price) | engitem | none; existing range1640–1659 retained | Oramond Quest (repeatable item reward boundary; random/reset owners remain separate) | CLAIMED; assigned ENGITEM work already has an isolated real PG green40.331345675s, focused package validation next |
+
+| Annual UTC month/day window for source NPC dialogue, derived from the transaction clock | SRVWLD | none planned; retained range 1110–1119 | The First Dragon Quest (Tamoril Jan 14–Feb 12 opening only; other encounter/binding gaps remain) | CLAIMED |
+| Quest item-look disguise and exact exit restoration through the existing condition/appearance owner | srvgap1108 | 1669–1670 reserved if required; retained original range 1660–1679 | Wrath of the Emperor (carried crate USE and restoration step); reusable adapter for Last Creep Standing, whose form/portal identities remain unresolved | CLAIMED |
+
+| Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | CLAIMED |
+
+| Live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; retained 1650–1659 | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
+
+| Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
+
+| World-change conditions on the existing personal native-death counter adapter, with Fury/Werewolf/Mad Mage registrations | qworld | none planned; retained range1320–1329 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf); Their Master's Voice World Change (Mad Mage stage) | CLAIMED; preceding personal stages remain separate bindings |
