@@ -1,6 +1,8 @@
 //! Native client process and component composition.
+
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
+pub mod bulletin;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
 pub mod character_selection;
