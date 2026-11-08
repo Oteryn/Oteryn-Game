@@ -1533,8 +1533,18 @@
     },
     {
       "title": "White Raven Monastery",
-      "status": "IN_PROGRESS",
-      "evidence": [],
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgresql": "18.6",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-white-raven",
+          "duration_seconds": 92.508357247,
+          "test_duration_seconds": 98.002,
+          "log": "/tmp/l2b-final-focused.log",
+          "passed": true,
+          "red_log": "/tmp/l2-white-raven-travel-diagnostic-pg.log"
+        }
+      ],
       "red": {
         "postgres_version": "18.6",
         "duration_seconds": 4.58115352,
@@ -1553,8 +1563,10 @@
         "owner": "qengine2",
         "feature": "Pending paid-travel confirmation must retain ownership over generic reward unhandled_confirmation fallback for the same NPC/context/fence",
         "where": "npc_command.rs:881 and newhaven_travel.rs:99",
-        "source_proof": "Real PG quote: Do you seek a passage to passage for 10 gold?; yes is intercepted by unhandled_confirmation before paid_travel_talk."
-      }
+        "source_proof": "Real PG quote: Do you seek a passage to passage for 10 gold?; yes is intercepted by unhandled_confirmation before paid_travel_talk.",
+        "state": "Resolved by existing paid-travel owner confirmation routing; full native PG journey green."
+      },
+      "journey": "Source chest issues Family Brooch once; Dalbrect consumes it atomically with friendship; passage denied before friendship and without fee; real ten-gold paid travel arrives on Isle of Kings; Costello grants catacomb access; diary consumed for Ankh; replays preserve single outputs."
     },
     {
       "title": "To Blind the Enemy",
@@ -3668,12 +3680,13 @@
       "seconds": 49.63245245800499
     },
     "equipment_union": {
-      "baseline_items": 3668,
-      "historical_overlaps": 38,
+      "baseline_items": 3706,
+      "historical_overlaps": 0,
       "new_items": 185,
-      "total_items": 3853,
+      "total_items": 3891,
       "source_reward_items": 137,
-      "state": "GENERATED_PENDING_RUST_TEST"
+      "state": "PASS",
+      "duration_seconds": 51.288
     },
     "white_raven_red": {
       "postgres": "18.6",
@@ -3682,14 +3695,16 @@
       "actual_travel_receipts": 0
     },
     "djinn_red": {
-      "postgres": "18.6",
-      "efreet_seconds": 105.768800891,
-      "marid_seconds": 106.121182864,
-      "error": "Carrier(CapacityExceeded)",
-      "root_cause": "Five fixture actor slots cannot hold twelve NPCs plus the player",
-      "corrected_actor_slots": 13
+      "postgresql": "18.6",
+      "efreet_seconds": 97.840219821,
+      "marid_seconds": 98.329197003,
+      "error": "NothingToUse at actual fountain/lamp USE; expected Committed/Rejected",
+      "merchant_admission": "fixed; both journeys now progress through native mission dialogue",
+      "registry_diagnostic": "386 callbacks load successfully, including all three exact Djinn callbacks",
+      "next_step": "Inspect source map target resolution and device callback selection; no missing engine mechanism established",
+      "log": "/tmp/l2b-final-focused.log"
     },
-    "qualification": "No quest newly qualified before the fresh full journeys pass.",
+    "qualification": "White Raven full PG journey verified; Djinn entries remain IN_PROGRESS with exact device-use red point.",
     "checks": {
       "workspace": {
         "state": "PASS",
@@ -3759,6 +3774,26 @@
         "native_freshness": "PASS 46 outputs; equipment source-ID and identity-union checks pass"
       },
       "merge_commit": "72979ce3b"
+    },
+    "white_raven_green": {
+      "postgresql": "18.6",
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-white-raven",
+      "duration_seconds": 92.508357247,
+      "test_duration_seconds": 98.002,
+      "log": "/tmp/l2b-final-focused.log"
+    },
+    "npc_unit_regressions": {
+      "result": "31 passed, 4 failed before grouped fixes; fresh full run pending",
+      "failures": [
+        "Dalbrect newly qualified route incorrectly expected absent",
+        "Alesar newly qualified merchant incorrectly expected absent in two existing tests",
+        "Generic conditional greeting shadowed exact Strange Pipe greeting"
+      ],
+      "repairs": "Preserve source-gated Dalbrect and closed Alesar assertions; prioritize existing pipe greeting; admit source-qualified conditional merchants only"
+    },
+    "qengine_reinspection": {
+      "head": "7019e60a8",
+      "merchant_greeting_helper": "not present; local helper 24 lines retains all trade requirements"
     }
   }
 }

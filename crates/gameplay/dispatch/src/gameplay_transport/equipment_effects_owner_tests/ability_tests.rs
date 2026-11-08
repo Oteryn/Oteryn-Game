@@ -592,14 +592,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .chain(
             [
                 347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835,
-                2842, 3212, 3505, 3507,
+                2842, 3505, 3507,
                 4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
                 8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
                 9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
-                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,
+                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // QENGINE2's captured profiles qualify 3212/31266/31268 with zero speed;
+        // the exact source records and raw attributes are asserted above.
         // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
         .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
         .collect()

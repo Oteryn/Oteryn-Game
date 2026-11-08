@@ -939,7 +939,8 @@ def build():
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_rewards.djinn.world_callbacks(inputs,PIN))
     generated['content/quests/shared-kill-callbacks.json']=encoded(questl2_knowledge.kill_bindings(inputs,PIN))
     greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks}):
+    greeting_npcs = {c['npc'] for c in callbacks} | {shop['npc'] for shop in shop_document['shops']}
+    for npc in sorted(greeting_npcs):
         path=questl2_rewards.source_path(npc)
         messages={}
         citations=[]

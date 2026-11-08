@@ -175,8 +175,9 @@ regression now checks that choice and all schema/hash and charge tampering.
 No other quest's authored reward data was changed.
 
 Equipment audit decision: reuse qengine2 dd35529b6's source-ID audit generator.
-The immutable collector baseline has3668 profiles; historical cohort totals
-contain38 overlaps. L2's source union adds185 distinct identities, for3853.
+The immutable collector baseline has 3706 composed profiles: 3668 base
+profiles plus 13 starting-loadout and 25 additional item-update identities.
+L2 adds 185 identities, for 3891 composed profiles; overrides do not add identities.
 The separate137-Item reward source packet overlaps existing cohorts; Item3079
 has captured speed20. Preserve every raw-ability and unknown-speed assertion,
 and additionally pin the exact sorted identity-set SHA through the new audit
@@ -187,3 +188,24 @@ source identity check; no cardinality is edited by hand.
 Custody evidence must hash the final Creature provider after Prey embeds its
 rules, rather than the intermediate provider. Finalize that source binding in
 the native generator, retaining the exact same gameplay profiles and loot.
+
+Sea Serpent source lookup: Haba's canonical donor filename is
+`data-global/npc/captain_haba.lua`, not `haba.lua`. At crystal revision
+`9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`, SHA256
+`8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909`,
+lines 99–133 require five each of fish 3578, northern pike 3580, green perch
+7159 and rainbow trout 7158, in order. Lines 95–112 gate the explicit hunt
+confirmation and destination 31942/31047/6 on completion. Reuse these exact
+ordered hand-ins and the existing travel owner; no missing NPC assumption.
+
+Conditional merchant admission: the generated source greeting and the validated
+conditional-shop identity must both exist. The 24-line local NPC helper grants
+conversation access only; native trade retains every quest predicate. Fresh PG
+runs pass White Raven (92.508357247 s scenario, 98.002 s test) and paid travel
+(91.501 s). The equipment audit passes in 51.288 s, including exact unknown-speed
+membership after captured profiles qualify 3212/31266/31268 with zero speed.
+Both Djinn journeys progress past merchant lookup but remain red at actual
+fountain/lamp use (`NothingToUse`). The current Quest library loads 386 callbacks,
+including all three Djinn callbacks; inspect fixture target resolution next.
+QENGINE2 7019e60a8 retains the callback-only greeting guard; no existing merchant
+helper was available to reuse. No large shared engine feature was added.

@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import re
 import sys
+from questl2_equipment_inputs import keys as composed_keys
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = '78294c081a099c96a57948573d5dbf0caf398abf'
@@ -15,10 +16,9 @@ DEST = 'tools/content-schema/native-gameplay/questl2-equipment-cohort.json'
 
 def main():
     baseline = subprocess.check_output(['git', 'show', BASE + ':' + PROFILE], cwd=ROOT)
-    old = {r['production_definition']['production_key'] for r in json.loads(baseline)['records']}
-    current = json.loads((ROOT / PROFILE).read_bytes())['records']
-    keys = [r['production_definition']['production_key'] for r in current]
-    if len(keys) != len(set(keys)) or not old <= set(keys):
+    old = composed_keys(lambda path: subprocess.check_output(['git', 'show', BASE + ':' + path], cwd=ROOT))
+    keys = composed_keys(lambda path: (ROOT / path).read_bytes())
+    if not old <= keys:
         raise ValueError('L2_EQUIPMENT_LOST_OR_DUPLICATE_SOURCE_KEY')
     old_proof = json.loads(subprocess.check_output(['git', 'show', BASE + ':' + PROOF], cwd=ROOT))
     test_path = 'crates/gameplay/dispatch/src/gameplay_transport/equipment_effects_owner_tests/ability_tests.rs'

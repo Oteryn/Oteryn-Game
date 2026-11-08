@@ -1,5 +1,6 @@
 """Djinn source counts are charges, never a stack of nonstackable amulets."""
 import unittest
+import json
 
 import qengine_rewards
 import questl2_djinn
@@ -18,6 +19,14 @@ class DjinnNativeTradeFields(unittest.TestCase):
                         o['direction'] == 'SellToPlayer')
         self.assertEqual((necklace['count'], necklace['sub_type'], necklace['unit_price']),
                          (1, 200, 1000))
+
+    def test_every_conditional_merchant_has_a_source_qualified_greeting(self):
+        produced = qengine_rewards.build()
+        shops = json.loads(produced['content/quests/shared-quest-shops.json'])['shops']
+        greetings = json.loads(produced['content/dialogues/quests/shared-reward-greetings.json'])['npcs']
+        actual = {row['npc'] for row in greetings}
+        self.assertTrue({shop['npc'] for shop in shops} <= actual,
+                        'all conditional merchants must exist in the native conversation book')
 
     def test_source_charge_mismatch_cannot_be_published_as_an_ordinary_stack(self):
         inputs = dict(self.inputs)

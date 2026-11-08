@@ -27,6 +27,8 @@ const REWARD_CALLBACKS: &str =
 const REWARD_GREETINGS: &str =
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
 
+mod quest_merchant;
+
 #[derive(serde::Deserialize)]
 struct RewardMessages {
     npc: String,
@@ -48,7 +50,7 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
             .filter(|d| d.schema == 1 && d.npcs.len() <= 256)
             .map(|d| d.npcs)
     });
-    reward_callback_npc(key).then_some(())?;
+    (reward_callback_npc(key) || quest_merchant::contains(key)).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
 }
 
@@ -527,22 +529,6 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
-                // Conditional native greeting rules own the text. An absent literal
-                // greeting still admits focus so that their reply or dismissal runs.
-                let greeting = npc
-                    .bank_dialogue
-                    .as_ref()
-                    .and_then(|dialogue| dialogue.greet.first())
-                    .cloned()
-                    .unwrap_or_default();
-                let farewell = npc
-                    .bank_dialogue
-                    .as_ref()
-                    .and_then(|dialogue| dialogue.farewell.first())
-                    .cloned()
-                    .unwrap_or_else(|| "Farewell.".into());
-                (greeting, farewell, None, Vec::new())
             } else if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -561,6 +547,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else if native_quest && npc.dialogue.is_some() {
                 // The closed native caller supplies conditional replies and writes
                 // after this existing conversation owner admits the speaker.
@@ -978,7 +980,7 @@ mod tests {
             ])
         );
         // Sam is independently admitted by QENGINE2's bounded reward callbacks.
-        // Alesar remains an unqualified Dialogue-backed merchant.
+        // L2 now qualifies Alesar through source-bound reward callbacks and gated trade.
         assert!(reward_callback_npc("oteryn:npc.sam"));
         let sam = book
             .get("oteryn:npc.sam")
@@ -990,7 +992,10 @@ mod tests {
                 .iter()
                 .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
         );
-        assert!(book.get("oteryn:npc.alesar").is_none());
+        assert!(reward_callback_npc("oteryn:npc.alesar"));
+        let alesar = book.get("oteryn:npc.alesar").ok_or("qualified Alesar")?;
+        assert!(alesar.dialogue_keywords.is_empty());
+        assert!(!alesar.offers().is_empty());
         assert!(!asks_to_trade_for(OROCKLE, "ariki"));
         Ok(())
     }
@@ -1024,7 +1029,7 @@ mod tests {
         assert_eq!(entry.offers(), offers.as_slice());
         // The closed branch must not admit another Dialogue-backed merchant incidentally.
         // Sam is independently admitted by QENGINE2's bounded reward callbacks.
-        // Alesar remains an unqualified Dialogue-backed merchant.
+        // L2 now qualifies Alesar through source-bound reward callbacks and gated trade.
         assert!(reward_callback_npc("oteryn:npc.sam"));
         let sam = book
             .get("oteryn:npc.sam")
@@ -1036,7 +1041,10 @@ mod tests {
                 .iter()
                 .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
         );
-        assert!(book.get("oteryn:npc.alesar").is_none());
+        assert!(reward_callback_npc("oteryn:npc.alesar"));
+        let alesar = book.get("oteryn:npc.alesar").ok_or("qualified Alesar")?;
+        assert!(alesar.dialogue_keywords.is_empty());
+        assert!(!alesar.offers().is_empty());
         assert_eq!(
             entry.render_source_text(&entry.greeting_reply, "Hero"),
             "Greetings, Hero."
@@ -1628,13 +1636,20 @@ mod s10_tests {
                 (x, y, floor)
             );
         }
-        for key in ["oteryn:npc.rapanaio_boat", "oteryn:npc.dalbrect"] {
-            assert!(
-                book.get(key)
-                    .is_none_or(|entry| entry.travel_routes.is_empty()),
-                "quest-only route escaped admission: {key}"
-            );
-        }
+        assert!(
+            book.get("oteryn:npc.rapanaio_boat")
+                .is_none_or(|entry| entry.travel_routes.is_empty()),
+            "quest-only Rapanaio route escaped admission"
+        );
+        let dalbrect = book.get("oteryn:npc.dalbrect").ok_or("Dalbrect")?;
+        assert_eq!(dalbrect.travel_routes.len(), 1);
+        let passage = &dalbrect.travel_routes[0];
+        assert_eq!(passage.keyword, "passage");
+        assert_eq!(passage.route.price, 10);
+        assert_eq!(
+            passage.quest_gate.as_deref(),
+            Some("oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log")
+        );
         Ok(())
     }
 
