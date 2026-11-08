@@ -88,3 +88,5 @@ No qmech/main merges;continue43routes/53stages after these3.
 Alawar approach activated as fourth stage without modifying its portal. RED missing binding0.02s -> GREEN5Rust profile tests0.04s;11Python tests3.689s. Native Alawar PG case remains compiling and is not claimed passed. Continue proof,then42routes/52stages. No merges.
 
 Alawar native PG GREEN61.222120123s,1passed0failed:actual STEP credits once,immediate replay and fresh revisit do not duplicate. New PG case is published with this proof;4wired stages now PG-proven. Continue42routes/52stages,no whole-quest completion claim.
+
+Three-entry slice:Elvenbane s1,Edron Goblin s1,Lion's Rock s1 use exact canonical Area points and retained B3 ground. Both Premium routes keep Current admission. RED1missing Elvenbane binding andRED2missing Premium bindings -> GREEN13Python tests9.395s;Rust profile5tests0.04s. Clippyquests+dispatch all-targets strictPASS7m03s before final2Premium PGcases added. Native PGcases are PENDING:Elvenbane compiling,Premium tests written.7wired/4PG-proven;continue39routes/49stages. No merges.

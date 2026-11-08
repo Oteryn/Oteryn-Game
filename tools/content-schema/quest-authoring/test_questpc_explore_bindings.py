@@ -21,6 +21,29 @@ def canonical_recipe(quest):
 
 
 class ExploreBindingsTests(unittest.TestCase):
+    def test_edron_goblin_and_lions_rock_keep_current_premium(self):
+        for quest, x, y, appearance in (
+                ('oteryn:quest.edron_goblin_quest', 33108, 31850, 355),
+                ('oteryn:quest.lions_rock', 33138, 32358, 4399)):
+            with self.subTest(quest=quest):
+                callback = next((c for c in explore.callbacks(ROOT) if c['quest'] == quest), None)
+                self.assertIsNotNone(callback, 'native Premium EXPLORE entry is bound')
+                self.assertEqual(callback['selector']['native'], {
+                    'position': {'x': x, 'y': y, 'floor': -7},
+                    'ordinal': 0, 'appearance': appearance})
+                self.assertEqual(callback['admission'], {'premium': True})
+
+    def test_elvenbane_first_stage_uses_the_canonical_clear_entry(self):
+        callback = next((c for c in explore.callbacks(ROOT)
+                         if c['quest'] == 'oteryn:quest.authored.elvenbane_quest'), None)
+        self.assertIsNotNone(callback, 'Elvenbane native EXPLORE entry is bound')
+        self.assertEqual(callback['selector']['native'], {
+            'position': {'x': 32590, 'y': 31645, 'floor': -7},
+            'ordinal': 0, 'appearance': 436})
+        self.assertEqual(callback['storage'][1]['track'],
+                         'oteryn:quest-progress/authored/elvenbane_quest/s1')
+        self.assertNotIn('admission', callback)
+
     def test_source_portal_approach_keeps_the_original_teleport_separate(self):
         bindings = (('oteryn:quest.alawar_s_vault_quest', 's1',
                      'callback:oteryn:quest-callback/alawars-vault-entrance',

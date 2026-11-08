@@ -33,3 +33,20 @@ real-PG reproduction stops at missing native material definition admission.
 The NPC programme writer also hardcodes completes=false; source completion
 needs the ENGNPC owner. The reproduction stays local until those dependencies
 land. No incomplete Father test is published or counted as DONE.
+
+M01b Elvenbane s1 chooses the canonical Area entry (32590,31645,floor -7),
+not a guessed basement rectangle. The pinned Area source is
+https://tibia.fandom.com/index.php?curid=4498&oldid=1113998 ; the selected
+quest programme separately retains its spoiler source
+https://tibia.fandom.com/index.php?curid=8007&oldid=265159 . Native B3 decoding
+confirms ground436 and clear east/west approaches,house0. This callback only
+records the first selected entrance visit. It does not claim s2's poison-floor
+crossing, dragon defeat, reward delivery or whole-quest completion.
+
+M01b Premium entrance choices: Edron Goblin s1 uses the canonical cave entry
+(33108,31850,floor -7,ground355); Lion's Rock s1 uses the canonical trial
+entrance (33138,32358,floor -7,ground4399). Retained B3 confirms clear east
+approaches and house0. Both keep Current Premium admission, once-only visit
+flags, no teleport/items/XP and no whole-quest completion effect. Sources:
+https://tibia.fandom.com/index.php?curid=27120&oldid=748545
+https://tibia.fandom.com/index.php?curid=69447&oldid=1192599

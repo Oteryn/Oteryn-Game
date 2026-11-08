@@ -259,6 +259,113 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/m01b/edron-goblin/s1/entry",
+      "quest": "oteryn:quest.edron_goblin_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33108,
+          "y": 31850,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 355,
+        "native": {
+          "position": {
+            "x": 33108,
+            "y": 31850,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 355
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/edron_goblin_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/109",
+        "https://tibia.fandom.com/index.php?curid=27120&oldid=748545",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/elvenbane/s1/entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32590,
+          "y": 31645,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 436,
+        "native": {
+          "position": {
+            "x": 32590,
+            "y": 31645,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 436
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/authored/elvenbane_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/118",
+        "https://tibia.fandom.com/index.php?curid=4498&oldid=1113998",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/geomancer/s1/entry",
       "quest": "oteryn:quest.geomancer_quest",
       "trigger": "step_in",
@@ -309,6 +416,61 @@
         "https://tibia.fandom.com/index.php?curid=20335&oldid=1114489",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/m01b/lions-rock/s1/entry",
+      "quest": "oteryn:quest.lions_rock",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33138,
+          "y": 32358,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4399,
+        "native": {
+          "position": {
+            "x": 33138,
+            "y": 32358,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 4399
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/lions_rock/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/lions_rock/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/world/areas/hunting-places/hunting-places-00000-00444.json#/records/242",
+        "https://tibia.fandom.com/index.php?curid=69447&oldid=1192599",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+      ],
+      "admission": {
+        "premium": true
+      }
     },
     {
       "key": "oteryn:quest-callback/m01b/longsword/s1/entry",

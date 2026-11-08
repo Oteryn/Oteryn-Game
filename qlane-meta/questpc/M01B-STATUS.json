@@ -11,9 +11,12 @@
       "Longsword Quest",
       "Geomancer Quest",
       "Asura Palace Quest",
-      "Alawar's Vault Quest"
+      "Alawar's Vault Quest",
+      "Elvenbane Quest",
+      "Edron Goblin Quest",
+      "Lion's Rock Quest"
     ],
-    "wired_explore_stages": 4,
+    "wired_explore_stages": 7,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -27,11 +30,11 @@
     "authoring_modules": "112 passed,0 failed",
     "authoring_checks": "PASS",
     "content_tree": "PASS",
-    "clippy": "quests+durability+dispatch PASS6m13s;authority target interrupted for coordinator-requested merge",
+    "clippy": "quests+dispatch --all-targets strict PASS7m03s before final2Premium PG cases added",
     "postgres_catalogue": "PASS PostgreSQL18.6,8.262173426s",
     "postgres_native_step": "PASS Longsword60.462902524s,Geomancer60.816349711s",
     "workspace_all_targets": "PASS7m46s --keep-going after four incoming constructor/test-export repairs",
-    "fmt": "pending after coordinator merge",
+    "fmt": "PASS cargo fmt --all --check and explicit own-file rustfmt",
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "No further merges permitted;all4cases executed on current mechanic Rust/data",
@@ -44,9 +47,12 @@
     "map_approach_resolver": "RED1missing-source-mode -> GREEN11Python tests3.635s;unchanged active JSON checkPASS",
     "alawar_profile": "RED missing binding0.02s -> GREEN5Rust tests0.04s",
     "alawar_authoring": "11passed3.689s",
-    "alawar_postgres": "PASS m01b_alawar_native_approach_credits_once_without_replacing_portal61.222120123s;real native STEP,once,replay,revisit"
+    "alawar_postgres": "PASS m01b_alawar_native_approach_credits_once_without_replacing_portal61.222120123s;real native STEP,once,replay,revisit",
+    "entrance_batch_authoring": "Elvenbane RED1missing binding4.416s;Premium entries RED2missing bindings7.116s -> GREEN13tests9.395s",
+    "entrance_batch_profile": "5Rust testsPASS0.04s",
+    "entrance_batch_postgres": "PENDING:Elvenbane compiling;EdronGoblin/LionsRock cases written,not qualified"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Continue42routes/52stages. Four wired stages PG-proven;M01b remains PARTIAL."
+  "continuation": "Finish3new native PG cases;then39routes/49stages.7wired,4PG-proven;M01b PARTIAL."
 }

@@ -5,6 +5,12 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.edron_goblin_quest', 's1',
+     'oteryn:area.hunting_place.edron_goblin_cave', 'chosen-source/edron_goblin_quest'),
+    ('oteryn:quest.lions_rock', 's1',
+     'oteryn:area.hunting_place.lion_s_rock', 'chosen-source/lions_rock'),
+    ('oteryn:quest.authored.elvenbane_quest', 's1',
+     'oteryn:area.hunting_place.elvenbane', 'authored/elvenbane_quest'),
     ('oteryn:quest.alawar_s_vault_quest', 's1',
      'callback:oteryn:quest-callback/alawars-vault-entrance', 'chosen-source/alawar_s_vault_quest'),
     ('oteryn:quest.longsword_quest', 's1',
@@ -15,6 +21,9 @@ BINDINGS = (
      'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
 )
 ANCHORS = {
+    'oteryn:area.hunting_place.edron_goblin_cave': (33108, 31850, -7, 355),
+    'oteryn:area.hunting_place.lion_s_rock': (33138, 32358, -7, 4399),
+    'oteryn:area.hunting_place.elvenbane': (32590, 31645, -7, 436),
     'oteryn:area.hunting_place.asura_palace': (32953, 32685, -7, 923),
     'oteryn:area.hunting_place.edron_dragon_lair': (33098, 31701, -7, 4409),
     'oteryn:area.hunting_place.dusalk_s_troll_clan_cave': (32663, 31970, -7, 4525),
