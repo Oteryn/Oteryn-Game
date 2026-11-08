@@ -176,7 +176,7 @@ async fn apply(
             accept(view, receipt);
             return Ok(());
         }
-        Action::Back | Action::CoinShop => return Ok(()),
+        Action::Back | Action::CoinShop | Action::Premium => return Ok(()),
     };
     if view.pending() {
         view.feedback = "Resolve the pending operation before starting another.".into();

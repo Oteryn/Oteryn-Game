@@ -171,3 +171,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
 #[cfg(test)]
 #[path = "features/local-coin-shop/tests/entry.rs"]
 mod coin_shop_tests;
+
+#[cfg(test)]
+#[path = "features/local-premium/entry_tests.rs"]
+mod premium_tests;
