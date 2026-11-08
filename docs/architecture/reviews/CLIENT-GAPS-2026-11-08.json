@@ -1354,9 +1354,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Kalkulator podziału łupu drużyny",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "apps/client/src/features/0010-analyser/input/party_import.rs:11 + party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched (apps/client/src/features/0010-analyser/tests/party_import.rs)"
  },
  {
   "id": "O037",
