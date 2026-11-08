@@ -39,6 +39,19 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
+        actual = [r['declaration'] for r in self.records
+                  if r['declaration']['npc'] == 'oteryn:npc.a_swan']
+        self.assertEqual(len(actual), 1)
+        self.assertEqual(actual[0]['cell'], {'x': 33185, 'y': 31732, 'floor': 7})
+        self.assertIn('placements-00000-00055.json', self.files)
+        candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())['candidates']
+                         if c['identity']['key'] == 'oteryn:npc.a_swan')
+        self.assertEqual(candidate['movement']['walk_interval_ms'], 0)
+        self.assertTrue(all(p['definition_sha256'] in
+                           {v['sha256'] for v in candidate['provenance'].values()}
+                           for p in actual[0]['provenance']))
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
