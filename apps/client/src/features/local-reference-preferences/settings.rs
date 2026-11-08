@@ -213,6 +213,7 @@ impl ReferencePreferences {
             || self.hud_bounds[3] < 24
             || self.hud_bounds.iter().any(|value| *value > 4096)
             || self.audio.battle_volumes.iter().any(|volume| *volume > 100)
+            || self.audio.ambient_volume > 100
             || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()

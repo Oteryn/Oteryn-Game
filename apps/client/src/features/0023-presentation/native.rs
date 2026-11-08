@@ -52,13 +52,13 @@ impl AudioOutput {
             voice.set_volume(settings.source_gain(*source));
         }
         if let Some((_, voice)) = &self.ambient {
-            voice.set_volume(settings.gain());
+            voice.set_volume(settings.ambient_gain());
         }
         for cue in cues {
             if !cue.ambient && settings.source_gain(cue.source) == 0.0 {
                 continue;
             }
-            if let Err(error) = self.play(cue, settings.source_gain(cue.source)) {
+            if let Err(error) = self.play(cue, if cue.ambient { settings.ambient_gain() } else { settings.source_gain(cue.source) }) {
                 self.error = Some(error);
             }
         }

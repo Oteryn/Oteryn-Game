@@ -2,8 +2,8 @@
 use super::*;
 use oteryn_client::play::ReferencePreferences;
 pub(crate) struct BattleSoundControls {
-    labels: [HWND; 3],
-    edits: [HWND; 3],
+    labels: [HWND; 4],
+    edits: [HWND; 4],
 }
 impl BattleSoundControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
@@ -12,9 +12,10 @@ impl BattleSoundControls {
                 "Own battle volume %",
                 "Other players volume %",
                 "Creatures volume %",
+                "Ambient volume %",
             ]
             .map(|label| control(hwnd, "STATIC", label, 0, [0, 0, 340, 26], 0));
-            let edits = [0; 3].map(|_| {
+            let edits = [0; 4].map(|_| {
                 control(
                     hwnd,
                     "EDIT",
@@ -24,7 +25,7 @@ impl BattleSoundControls {
                     WS_BORDER | ES_NUMBER as u32,
                 )
             });
-            for i in 0..3 {
+            for i in 0..4 {
                 MoveWindow(labels[i], 10, 185 + i as i32 * 35, 340, 26, 1);
                 MoveWindow(edits[i], 380, 185 + i as i32 * 35, 100, 26, 1);
             }
@@ -41,17 +42,25 @@ impl BattleSoundControls {
     }
     pub(crate) unsafe fn read(&self, preferences: &mut ReferencePreferences) -> Result<(), String> {
         unsafe {
-            for (index, handle) in self.edits.iter().enumerate() {
+            for (index, handle) in self.edits[..3].iter().enumerate() {
                 preferences.audio.battle_volumes[index] = text(*handle)
                     .parse()
                     .map_err(|_| "Enter source volumes from 0 to 100")?;
             }
         }
+        preferences.audio.ambient_volume = unsafe { text(self.edits[3]) }
+            .parse()
+            .map_err(|_| "Enter ambient volume from 0 to 100")?;
         Ok(())
     }
     pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         unsafe {
-            for (handle, value) in self.edits.iter().zip(preferences.audio.battle_volumes) {
+            for (handle, value) in self.edits.iter().zip([
+                preferences.audio.battle_volumes[0],
+                preferences.audio.battle_volumes[1],
+                preferences.audio.battle_volumes[2],
+                preferences.audio.ambient_volume,
+            ]) {
                 SetWindowTextW(*handle, wide(&value.to_string()).as_ptr());
             }
         }

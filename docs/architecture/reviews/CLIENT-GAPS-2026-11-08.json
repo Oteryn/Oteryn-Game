@@ -395,7 +395,8 @@
   "feature": "Sound: master/mute/device/music/ambient/items/events/UI",
   "status": "PARTIAL",
   "gap": "Tylko master/mute; brak wyboru urządzenia i niezależnych kanałów miksera.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/0023-presentation/native.rs:54 + ambient_channel_gain_is_independent_and_honours_master_mute; checked origin/main 2033ddc54 and lane before implementation. Ambient mixer applies to new and existing loops with persisted Sound control. Remaining: device selection and music/items/events/UI channels; native playback caller test."
  },
  {
   "id": "T065",
