@@ -39,3 +39,14 @@ NEED-FETCH (wiki-pending; exact requests refused):
 The retained recipe source references revision 1002600 (spoiler) and 842864
 (base). Remaining consumer qualification: exact source window/cabinet placement,
 crate/amphora identities and arrangement, plus the production quest binding.
+
+## Qmech merge reconciliation
+
+The 20:25 UTC fetch advanced qmech to `3c06a2442`, whose updated INDEX assigns
+M02 to ENGNPC2 and includes the shared `quest::ground_stack` rule owner. This
+lane releases full M02 consumer work to that owner. The native callback adapter
+now delegates ordered comparison to that shared owner, including exact definition
+revision and positive ordered observation ordinals; no second comparison rule is
+retained. All three SRV7 regression behaviours remain tested. Ground predicates
+are explicitly value-free even after M07 admits *static* personal trial predicates:
+a mutable read-only projection cannot authorize a personal durable write.

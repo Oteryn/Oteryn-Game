@@ -110,6 +110,10 @@ pub(super) async fn exercise(
     h: &Harness,
     name: &str,
 ) -> TestResult {
+    if name.ends_with("-srv7-m02") {
+        return super::srv7_m02_ground_stack::exercise(owner, admitted, h).await;
+    }
+
     let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
         .fetch_one(&h.pool)
         .await?;

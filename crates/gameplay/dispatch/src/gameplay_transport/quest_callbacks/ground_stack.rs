@@ -30,9 +30,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         required.all(|r| {
-            r.ground_stack
-                .as_ref()
-                .is_some_and(|stack| matches(ground.overlay(), &map.facts, tile(r.position), stack))
+            r.ground_stack.as_ref().is_some_and(|stack| {
+                matches(
+                    ground.overlay(),
+                    &map.facts,
+                    tile(r.position),
+                    stack,
+                    |id| ground.ground_ordinal(id),
+                )
+            })
         })
     }
 }
@@ -42,6 +48,7 @@ pub(super) fn matches(
     facts: &impl MapFacts,
     pos: TilePos,
     required: &[GroundStackEntry],
+    ordinal: impl Fn(&[u8; 16]) -> Option<u64>,
 ) -> bool {
     // Read base roots separately: BundleFacts intentionally cannot reconstruct
     // portable Item facts from an appearance. Ground records below already carry
@@ -62,6 +69,11 @@ pub(super) fn matches(
         return false;
     }
     ground_stack_matches(
+        Position {
+            x: pos.x,
+            y: pos.y,
+            floor: pos.floor,
+        },
         required,
         view.added().iter().map(|entry| {
             let AddedItem::Ground(ground) = entry.item() else {
@@ -72,8 +84,10 @@ pub(super) fn matches(
                 && ground.runtime_scope == overlay.runtime_scope())
             .then_some(GroundStackFact {
                 instance: ground.item_instance_id,
-                item: &ground.definition.production_key,
-                count: ground.quantity,
+                item: ground.definition.production_key.clone(),
+                revision: ground.definition.revision_ref.clone(),
+                quantity: ground.quantity,
+                ordinal: ordinal(&ground.item_instance_id)?,
             })
         }),
     )
@@ -138,11 +152,13 @@ mod tests {
         let required = [
             GroundStackEntry {
                 item: "oteryn:item.crate".into(),
-                count: 1,
+                quantity: 1,
+                revision: "definition-r1".into(),
             },
             GroundStackEntry {
                 item: "oteryn:item.amphora".into(),
-                count: 1,
+                quantity: 1,
+                revision: "definition-r1".into(),
             },
         ];
         let ground = |id, item: &str| GroundItemInstance {
@@ -172,13 +188,21 @@ mod tests {
         };
         let crate_item = ground(3, "oteryn:item.crate");
         let amphora = ground(4, "oteryn:item.amphora");
-        assert!(!matches(&overlay, &Facts, pos, &required));
+        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
+            u64::from(id[0])
+        )));
         overlay.add_ground(crate_item)?;
-        assert!(!matches(&overlay, &Facts, pos, &required));
+        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
+            u64::from(id[0])
+        )));
         let amphora_entry = overlay.add_ground(amphora)?;
-        assert!(matches(&overlay, &Facts, pos, &required));
+        assert!(matches(&overlay, &Facts, pos, &required, |id| Some(
+            u64::from(id[0])
+        )));
         overlay.remove(pos, amphora_entry)?;
-        assert!(!matches(&overlay, &Facts, pos, &required));
+        assert!(!matches(&overlay, &Facts, pos, &required, |id| Some(
+            u64::from(id[0])
+        )));
         Ok(())
     }
 }
