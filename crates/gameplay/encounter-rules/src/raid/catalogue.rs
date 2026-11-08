@@ -53,7 +53,8 @@ pub struct CatalogueWorldChange {
 }
 impl CatalogueWorldChange {
     fn validate(&self) -> Result<(), RaidError> {
-        if self.key != "fury_gates"
+        if !matches!(self.key.as_str(), "fury_gates" | "grimvale")
+            || (self.key == "grimvale" && self.variant.as_deref() != Some("full_moon"))
             || self.variant.as_ref().is_some_and(|v| {
                 v.is_empty()
                     || v.len() > 64
@@ -342,6 +343,9 @@ impl CatalogueRaid {
         }
         if let Some(required) = &self.requires_world_change {
             required.validate()?;
+            if required.key == "grimvale" && self.key != "raid:edron.feroxa" {
+                return Err(RaidError::InvalidDefinition);
+            }
         }
         match &self.schedule {
             CatalogueSchedule::LegacyXml { interval_s: 0, .. } | CatalogueSchedule::Unknown => {
