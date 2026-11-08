@@ -1,8 +1,7 @@
 //! A bounded complete portable Ground read, protected through the quest commit.
 use super::*;
-use oteryn_gameplay_quests::quest::ground_stack::{
-    GroundStackEntry, GroundStackSnapshot, MAX_STACK_ITEMS, match_stack,
-};
+use oteryn_gameplay_quests::quest::world_callbacks::{GroundStackFact, ground_stack_matches};
+const MAX_STACK_ITEMS: usize = 64;
 
 pub(super) async fn require(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -13,7 +12,7 @@ pub(super) async fn require(
     let mut requirements = callback
         .world_requirements
         .iter()
-        .filter_map(|r| r.ground_stack())
+        .filter(|r| r.ground_stack.is_some())
         .collect::<Vec<_>>();
     if requirements.is_empty() {
         return Ok(true);
@@ -40,9 +39,6 @@ pub(super) async fn require(
     }
     requirements.sort_by_key(|requirement| requirement.position);
     for requirement in requirements {
-        requirement
-            .validate()
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
         if !(-15..=0).contains(&requirement.position.floor) {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -61,7 +57,8 @@ pub(super) async fn require(
         if rows.len() > MAX_STACK_ITEMS {
             return Ok(false);
         }
-        let mut entries = Vec::with_capacity(rows.len());
+        let mut entries: Vec<([u8; 16], String, u32)> = Vec::with_capacity(rows.len());
+        let mut previous_ordinal = 0;
         for row in rows {
             if row.try_get::<String, _>("definition_family")? != "Item"
                 || row.try_get::<String, _>("map_revision")? != context.map_revision
@@ -79,26 +76,32 @@ pub(super) async fn require(
             let Some(ordinal) = ordinal else {
                 return Ok(false);
             };
-            entries.push(GroundStackEntry {
-                instance: row
-                    .try_get::<Vec<u8>, _>("item")?
+            if ordinal <= previous_ordinal {
+                return Ok(false);
+            }
+            previous_ordinal = ordinal;
+            entries.push((
+                row.try_get::<Vec<u8>, _>("item")?
                     .try_into()
                     .map_err(|_| DurabilityError::InvalidStoredState)?,
-                item: row.try_get("definition_production_key")?,
-                revision: row.try_get("definition_revision_ref")?,
-                quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                row.try_get("definition_production_key")?,
+                u32::try_from(row.try_get::<i64, _>("quantity")?)
                     .map_err(|_| DurabilityError::InvalidStoredState)?,
-                ordinal,
-            });
+            ));
         }
-        let snapshot = GroundStackSnapshot {
-            position: requirement.position,
-            entries,
+        let Some(expected) = requirement.ground_stack.as_ref() else {
+            return Err(DurabilityError::InvalidStoredState);
         };
-        if match_stack(requirement, &snapshot)
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-            .is_none()
-        {
+        if !ground_stack_matches(
+            expected,
+            entries.iter().map(|(instance, item, count)| {
+                Some(GroundStackFact {
+                    instance: *instance,
+                    item,
+                    count: *count,
+                })
+            }),
+        ) {
             return Ok(false);
         }
     }

@@ -453,7 +453,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 };
             let mut selected = bound.into_iter().filter(|c| {
-                (c.peer_requires.is_some() == intent.use_with.is_some())
+                ((c.peer_requires.is_some() || c.creature_target.is_some())
+                    == intent.use_with.is_some())
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
@@ -485,9 +486,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.item_fence() != item_fence {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        let peer = match self.quest_peer_use(actor, command, intent).await {
-            Ok(peer) => peer,
-            Err(()) => return Ok(Some(outcome(UseDisposition::Rejected))),
+        let creature = if callback.creature_target.is_some() {
+            let runtime = self.runtime.lock().await;
+            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
+                &runtime, actor, fence, command_ref, &callback, intent);
+            let Some(proof) = proof else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(proof)
+        } else {
+            None
+        };
+        let peer = if callback.peer_requires.is_some() {
+            match self.quest_peer_use(actor, command, intent).await {
+                Ok(peer) => peer,
+                Err(()) => return Ok(Some(outcome(UseDisposition::Rejected))),
+            }
+        } else {
+            None
         };
         let native = self
             .active_generation
@@ -518,6 +534,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: Some(&use_),
+                    creature_use: creature.as_ref(),
                     peer_use: peer.as_ref(),
                 },
                 &self.premium_coordinator,

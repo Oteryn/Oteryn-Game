@@ -345,6 +345,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         effects: Vec::new(),
         continue_matching: false,
         inventory_failure_reply: Vec::new(),
+        completes: false,
         sources: recipe.sources.clone(),
     }
 }

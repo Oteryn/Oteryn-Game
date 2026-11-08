@@ -51,10 +51,10 @@ fn callback() -> f::TestResult<Callback> {
         "storage":[{"track":TRACK,"minimum":0,"maximum":0,"set":1,"increment":false}],
         "offerings":[],"return_on_failure":false,"failure_message":null,
         "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13"],
-        "world_requirements":[{"ground_stack":{"position":{"x":2,"y":1,"floor":-1},"items":[
-            {"item":CRATE,"revision":"definition-r1","quantity":1},
-            {"item":CRATE,"revision":"definition-r1","quantity":1},
-            {"item":AMPHORA,"revision":"definition-r1","quantity":1}]}}]
+        "requires_world_admission":true,"world_requirements":[{"position":{"x":2,"y":1,"floor":-1},"appearance":1739,"ground_stack":[
+            {"item":CRATE,"count":1},
+            {"item":CRATE,"count":1},
+            {"item":AMPHORA,"count":1}]}]
     }]});
     Ok(serde_json::from_value(document["callbacks"][0].clone())?)
 }

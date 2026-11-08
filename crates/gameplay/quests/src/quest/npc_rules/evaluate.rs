@@ -340,6 +340,7 @@ fn plan_with_teleport(
         let mut selected_rule_keys = Vec::new();
         let mut reply = Vec::new();
         let mut effects = Vec::new();
+        let mut completes = false;
         let mut inventory_failure_reply = Vec::new();
         for rule in &program.document.rules {
             if rule.npc != input.npc
@@ -411,6 +412,7 @@ fn plan_with_teleport(
                     }
                 }
             }
+            completes |= rule.completes;
             selected_rule_keys.push(rule.key.clone());
             reply.extend_from_slice(&rule.reply);
             if reply.len() > 32 {
@@ -446,6 +448,7 @@ fn plan_with_teleport(
         }
         return Ok(Some(NpcRulePlan {
             quest: program.document.quest.clone(),
+            completes,
             program_digest: program.digest,
             selected_rule_keys,
             reply,

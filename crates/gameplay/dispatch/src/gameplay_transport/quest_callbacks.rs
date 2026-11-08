@@ -9,6 +9,7 @@ mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+mod ground_stack;
 pub(super) mod monsters;
 mod rewards;
 mod shared_gate;
@@ -159,7 +160,7 @@ fn shared_added_source(
         .then_some((pos, entry.facts))
 }
 
-fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
+pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
         return shared_added_source(map, callback, key).is_some();
     }
@@ -360,6 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         actor_conditions: None,
                         carried_use: None,
+                        creature_use: None,
                         peer_use: None,
 
                         native,
@@ -440,6 +442,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revision: u64,
         expected: Option<MovementPositionSnapshot>,
     ) -> Result<Option<ObservedWorldCallback>, UseDisposition> {
+        if callback
+            .world_requirements
+            .iter()
+            .any(|r| r.ground_stack.is_some())
+        {
+            let index = {
+                let runtime = self.runtime.lock().await;
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+            };
+            if super::loop_move::loop_ground(self, map.overlay.base(), index)
+                .await
+                .is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+        }
         if callback.has_personal_state()
             || world_callbacks::world_change_requirement(&callback.key).is_none()
         {
@@ -1160,25 +1178,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
-        let position = tile(requirement.position());
-        if requirement.ground_stack().is_some() {
-            // Preview only checks the target cell. The current Ground owner
-            // validates and protects the complete stack in the quest transaction.
-            return callback.supports_ground_stack_guard()
-                && !map.facts.house_tile(position)
-                && map
-                    .overlay
-                    .base()
-                    .tile(position.x, position.y, position.floor)
-                    .is_some();
-        }
-        let oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement::Immovable {
-            appearance,
-            ..
-        } = requirement
-        else {
-            return false;
-        };
+        let position = tile(requirement.position);
         !map.facts.house_tile(position)
             && map
                 .overlay
@@ -1199,7 +1199,10 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             };
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
-                                    |entry| !entry.pickupable && entry.appearance_id == *appearance,
+                                    |entry| {
+                                        !entry.pickupable
+                                            && entry.appearance_id == requirement.appearance
+                                    },
                                 )
                         })
                 })
