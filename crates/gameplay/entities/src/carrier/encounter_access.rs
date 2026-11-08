@@ -160,6 +160,17 @@ impl ChannelRuntimeV1 {
         monsters: &[(&str, i64, MovementLocalPosition)],
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<MovementPositionSnapshot>, CarrierError> {
+        self.commit_quest_encounter_entry_with_roster(players, monsters, project)
+            .map(|(positions, _)| positions)
+    }
+
+    /// Return the exact admitted actors in the same atomic publication as entry.
+    pub fn commit_quest_encounter_entry_with_roster<P: SourceStepCommitProof>(
+        &mut self,
+        players: Vec<P>,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<(Vec<MovementPositionSnapshot>, Vec<ExactActorRef>), CarrierError> {
         if players.is_empty() || players.len() > 8 || monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -170,6 +181,10 @@ impl ChannelRuntimeV1 {
         snapshots
             .try_reserve(players.len())
             .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut actors = Vec::new();
+        actors
+            .try_reserve(monsters.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
         // Only the carrier changes below; policy registry/content/owner binding stay borrowed.
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
@@ -177,6 +192,7 @@ impl ChannelRuntimeV1 {
             for (key, health, at) in monsters {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
+                actors.push(actor);
             }
             for proof in players {
                 snapshots.push(self.commit_source_step(proof)?);
@@ -184,7 +200,7 @@ impl ChannelRuntimeV1 {
             if !project() {
                 return Err(CarrierError::PlanConflict);
             }
-            Ok(snapshots)
+            Ok((snapshots, actors))
         })();
         if result.is_err() {
             self.carrier = before;
@@ -513,3 +529,7 @@ impl CreatureSelfHealLedger {
         self.entries.get(actor, key).map(|entry| entry.sequence)
     }
 }
+
+#[cfg(test)]
+#[path = "encounter_roster_tests.rs"]
+mod encounter_roster_tests;

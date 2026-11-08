@@ -659,6 +659,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
         "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.dangerous_depths_quest",
         "oteryn:quest.draconia_quest",
         "oteryn:quest.elemental_spheres_quest",
         "oteryn:quest.hero_of_rathleton_quest",
@@ -670,6 +671,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_hidden_city_of_beregar_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.tibia_tales",
+        "oteryn:quest.tower_defence_quest",
     ]);
     assert_eq!(
         runtime
@@ -747,8 +749,8 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    // Both the Dream Courts and Tamoril source defaults remain registered.
-    assert_eq!(defaults, BTreeMap::from([(-1, 199), (0, 52)]));
+    // Dream Courts, Tamoril and Gnomus source defaults remain registered.
+    assert_eq!(defaults, BTreeMap::from([(-1, 203), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
