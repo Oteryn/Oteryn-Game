@@ -270,3 +270,45 @@ pub(super) async fn exercise_signs(
     assert!(!finished, "three signs do not complete the six-job programme");
     Ok(())
 }
+
+
+const POND: Position = Position { x: 33134, y: 32093, floor: -10 };
+#[test]
+fn questpc7_goblin_exact_pond_consumes_rat_urine_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e::scenario_thread::run("questpc7-goblin-pond", || {
+        super::quest_world_callbacks::scenario("qengine-rewards-goblin-pond",
+            Position { x: 33134, y: 32092, floor: -10 }, false)
+    });
+    eprintln!("QUESTPC7_GOBLIN_POND POSTGRES_CASE_COMPLETED duration={:?} success={}", started.elapsed(), result.is_ok());
+    result
+}
+pub(super) fn pond_objects() -> Vec<(Position, u16)> {
+    // Test travel floor; only the exact native pond target claims a source placement.
+    (33132..=33135).flat_map(|x| (32091..=32094).map(move |y| (Position { x,y,floor:-10 },100))).collect()
+}
+pub(super) async fn exercise_pond(owner: &mut ComposedFreshAdmission<'_, '_, '_>, a: &mut AdmittedSession, h: &Harness) -> TestResult {
+    use super::questpc7_ferumbras::{use_at,value};
+    use oteryn_protocol_oteryn::world_object::{UseDisposition,decode_use_result};
+    let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+    eprintln!("QUESTPC7_GOBLIN_POND POSTGRES_STARTED version={version}");
+    exercise(owner,a,h).await?;
+    let command=a.continuity.next_command_id;
+    let payload=super::questpc7_hoist_story::target(owner,POND,9527)?;
+    assert_eq!(use_at(owner,a,POND,9527).await?,UseDisposition::Committed);
+    assert_eq!(quantity(h,17671).await?,0);
+    assert_eq!(value(owner,a,&format!("{ROOT}urine")).await?,1);
+    assert_eq!(receipts(h).await?,3);
+    let replay=super::quest_world_callbacks::wire(owner,a,command,2,payload).await?;
+    assert_eq!(decode_use_result(&replay).map_err(debug)?,UseDisposition::Committed);
+    assert_eq!(use_at(owner,a,POND,9527).await?,UseDisposition::Rejected);
+    assert_eq!(receipts(h).await?,3);
+    assert_eq!(quantity(h,17671).await?,0);
+    assert_eq!(money(h).await?,8875);
+    for suffix in ["programme","signs","odours","captures","trunks","stalkers"] {
+        assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0);
+    }
+    for (item,count) in TOOLS.into_iter().filter(|(item,_)| *item!=17671) { assert_eq!(quantity(h,item).await?,count); }
+    Ok(())
+}

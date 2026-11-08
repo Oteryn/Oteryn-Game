@@ -148,9 +148,11 @@
   },
   "clippy_reuse": "Metadata-only qualification; runtime/code identical to1982a397b, whose changed3 strict clippy passed3m09s.",
   "rust_crate_unit_run": {
-    "state": "RUNNING_CONTENT_DISPATCH_QUESTS",
+    "state": "INTERRUPTED_ENVIRONMENT_REPLACED_RESULTS_UNVERIFIED",
     "postgres_admin_unset": true,
     "log": "/tmp/questpc7-signs-final-rust-unit.log",
-    "actual_pg_proof_separate": true
+    "actual_pg_proof_separate": true,
+    "reason": "The execution environment disappeared; /tmp full-run log/result were lost. Do not infer full-suite success.",
+    "last_observed": "content330passed/0failed/1existingignored; dispatch incomplete; quests pending"
   }
 }

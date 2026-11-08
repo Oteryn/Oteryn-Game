@@ -793,3 +793,25 @@ remain available to other Characters. Do not introduce a shared respawn lock
 or claim source ground-sign decay. The synthetic fixture corridor and adjacent
 NPC are test travel geometry; only targets and their native identities are
 asserted source placements. Whole six-job quest remains ACTIVE.
+
+## Thaian source decision, no runtime admission claim (2026-11-08)
+
+The existing wiki-authored monster path is wiki_authored.py:494: authored Lua
+is converted in a temporary directory by canary_batch.Converter.convert, then
+bound to the Wiki page identity rather than impersonating a donor monster file.
+Thaian page48123/revision445240 supplies50000HP, non-illusionability, physical
+modifier100%, paralysis immunity and invisibility sensing; XP/speed/attacks lack
+facts. Conservative chosen draft: speed125, armor/defense0, basic0..100 melee
+at2s, zero XP/no loot/corpse, using admitted ghost presentation outfit48 as an
+explicit visual approximation. These unknowns are not asserted source values.
+The Lua draft is /tmp/questpc7-authored-thaian.lua only: not registered, run or
+qualified. Reuse the normal converter and native schema after an actual
+admission RED; no new generic runtime or fabricated Tibia monster ID is needed.
+
+## Pond personal application
+
+Retained33134,32093,z10 contains9527water and16299, flags0/house0; region SHA
+49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1. Existing
+consume-only callback records one personal job. Preserve shared water for other
+Characters; no global pollution or new world-change state is claimed. Source
+physical9527 is Ground-only NonStackable.

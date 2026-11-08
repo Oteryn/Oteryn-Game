@@ -304,6 +304,58 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/questpc7-goblin-pond",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33134,
+          "y": 32093,
+          "floor": -10
+        },
+        "appearance": 9527,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17671",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You apply the rat urine to the marked pond for Rafzan.",
+      "sources": [
+        "content/world/placements/region-z10-x129-y125.b3:1:sha256:49f46bde1d2fd6d8e3083ba3aea1e02bd60b2199efe086d3760178f8a7e348a1",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:a12be07ddc3dd94a32206b735e30f78d80bdafceb757d603b99124e85442ae6e",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/questpc7-hidden-entry",
       "quest": "oteryn:quest.hidden_threats_quest",
       "trigger": "step_in",

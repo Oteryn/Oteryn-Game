@@ -1,3 +1,48 @@
+# Pond green slice ready to publish
+
+PG18.6 RED65.860055344s -> GREEN68.421387159s; quests308units PASS20.69s;
+workspace all-target PASS5m33s; strict changed3clippy PASS4m20s; fmt PASS;
+equipment inventory PASS49.38s; generated freshness/duplicates/pins PASS.
+Content full unit still running, no failure reported; dispatch full unit pending
+under PREPUSH-2 deadline exception. Do not claim either full crate suite green.
+Publish now with owner author/trailers. Then apply prepared test-only script
+/workspace/scratch/questpc7-trunks-apply.py and run focused actual PG RED for
+questpc7_goblin_three_trunks_retain_the_source_hammer. That script wraps old
+exercise with empty probes and inserts missing-tool probes before funding;
+all prior assertions remain. No trunk production callback/profile until RED.
+Keep current production data unchanged until content unit finishes. Runtime
+trunk callbacks later use bounded ADD with exact activation, source3positions,
+retained17676hammer and per-site once flags. Native17677 Ground-only profile
+uses existing qualifier. Whole Goblin remains ACTIVE; counts21/4 unchanged.
+
+# Native pond job PG QUALIFIED — restored session
+
+PG18.6 RED65.860055344s -> GREEN68.421387159s. Native9527pond33134,32093,-10
+consumes one rat urine17671 and sets personal counter; replay/duplicate have no
+additional effect. Other jobs/tools and8875gold intact. Whole Goblin ACTIVE.
+Producer verifies B3 hash/cell and chosen recipe. No global pollution mechanic.
+Quests308/308 units GREEN20.69s; content full unit running. Workspace check,
+changed3 strict clippy, fmt and equipment inventory test run before publication.
+Dispatch full units pending PREPUSH-2 cadence exception. Logs now persist under
+/workspace/scratch. Last pushed2a9f20510; publish pond when gates finish.
+Then reconstruct three-trunk regression and obtain actual PG RED before data.
+Main6f61ac15d still has recorded67-file shared-effects collision. Peerqengine2
+ aa85b2500 adopts canonical main but has no retained activation/read_only fields.
+
+# Restored environment: pond regression RED building
+
+HEAD2a9f20510 retained. /tmp logs/drafts were lost; interrupted full Rust unit
+run is UNVERIFIED and no longer running. PostgreSQL18.6 startup check passed
+with fsync/synchronous_commit/full_page_writes on. Reconstructed one focused
+pond PG regression in questpc7_goblin.rs and wired scenario. No production
+callback or physical profile for9527 changed before RED. Logs/results now
+in /workspace/scratch/questpc7-pond-red.{log,result}. Run uses real NPC intro
+and paid toolkit, then exact consumption/replay/duplicate and other-job guards.
+After actual PG RED: author source-bound personal pond callback and qualify
+9527 using existing static Item qualifier, repo tooling/pins, fast quests units
+before heavy PG GREEN. Main6f61ac15d shared-effects collision remains unchanged
+from prior recorded abort exception and routed to qengine2.
+
 # Native sign-stage proof publishing — 2026-11-08 04:15 UTC
 
 Actual PG18.6 sign case GREEN91.409172094s on1982a397b. Workspace all-target

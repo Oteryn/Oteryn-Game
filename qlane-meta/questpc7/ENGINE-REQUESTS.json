@@ -165,5 +165,10 @@
     "head": "cca7c5790",
     "reviewed_at_utc": "2026-11-08 01:04",
     "result": "Collector merged; seven historical PG cases documented. World delivery and generic kill remain explicitly pending; durable NPC input still level0. No matching implementation of this lane's pending requests found. Preserve owned independent Goblin jobs."
+  },
+  "restored_peer_review": {
+    "head": "aa85b2500",
+    "main": "6f61ac15d",
+    "finding": "Peer now adopts canonical main effects API. No activation/read_only/reward_bundle compatibility fields observed; request remains open. Reuse its canonical implementation when compatibility is delivered."
   }
 }
