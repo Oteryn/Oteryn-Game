@@ -1,5 +1,6 @@
 //! Native local-chat panel. HWND access remains on its creating thread.
 #![allow(unsafe_code)]
+use super::super::input::console;
 use crate::combat_input::PlayCommand;
 use crate::play::feature_0080_chat_private_channel::view::Controls as PrivateControls;
 use crate::play::{
@@ -63,13 +64,6 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         }
         DefWindowProcW(hwnd, msg, w, l)
     }
-}
-
-fn wide(text: &str) -> Vec<u16> {
-    text.replace('\0', "\u{fffd}")
-        .encode_utf16()
-        .chain(Some(0))
-        .collect()
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
@@ -266,7 +260,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 if private.action(action, &mut mailbox, &commands) {
                     continue;
                 }
-                use oteryn_client_ui::chat::{ComposerMode, ConsoleTab};
+                use oteryn_client_ui::chat::ConsoleTab;
                 match action {
                     IGNORE | ALLOW | BLOCK | CLEAR_LISTS => {
                         use oteryn_client_ui::chat::CommunicationList;
@@ -276,71 +270,47 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             BLOCK => CommunicationList::Blacklist,
                             _ => CommunicationList::Ignore,
                         };
-                        if action == CLEAR_LISTS {
-                            for list in [
-                                CommunicationList::Ignore,
-                                CommunicationList::Whitelist,
-                                CommunicationList::Blacklist,
-                            ] {
-                                mailbox.chat.console.communication.edit(list, &name, false);
-                            }
-                        } else {
-                            mailbox.chat.console.communication.edit(list, &name, true);
-                        }
-                        mailbox.chat_private.communication =
-                            mailbox.chat.console.communication.clone();
-                        mailbox.chat_party_room.communication =
-                            mailbox.chat.console.communication.clone();
-                        mailbox.chat.feedback = Some(format!(
-                            "Ignore: {:?}; whitelist: {:?}; blacklist: {:?}",
-                            mailbox.chat.console.communication.ignored,
-                            mailbox.chat.console.communication.whitelist,
-                            mailbox.chat.console.communication.blacklist
-                        ));
+                        console::edit_lists(
+                            &mut mailbox,
+                            if action == CLEAR_LISTS {
+                                None
+                            } else {
+                                Some(list)
+                            },
+                            &name,
+                            action != CLEAR_LISTS,
+                        );
                         continue;
                     }
                     SAVE | APPEND => {
                         let path = read_text(log_path);
-                        let snapshot = mailbox.chat.clone();
                         drop(mailbox);
-                        let result = std::fs::OpenOptions::new()
-                            .create(true)
-                            .write(true)
-                            .append(action == APPEND)
-                            .truncate(action == SAVE)
-                            .open(path)
-                            .and_then(|mut file| {
-                                oteryn_client_ui::chat::write_log(&snapshot, &mut file)
-                            });
+                        let _ = console::save_log(
+                            &shared,
+                            std::path::Path::new(&path),
+                            action == APPEND,
+                        );
                         mailbox = lock(&shared);
-                        mailbox.chat.feedback = Some(match result {
-                            Ok(()) => "Channel log written".into(),
-                            Err(error) => format!("Could not write channel log: {error}"),
-                        });
                         continue;
                     }
                     TAB => {
-                        mailbox
-                            .chat
-                            .console
-                            .select(match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
+                        console::select(
+                            &mut mailbox,
+                            match SendMessageW(tabs, LB_GETCURSEL, 0, 0) {
                                 1 => ConsoleTab::Local,
                                 2 => ConsoleTab::Private,
                                 3 => ConsoleTab::Guild,
                                 _ => ConsoleTab::All,
-                            });
+                            },
+                        );
                         continue;
                     }
                     FILTER => {
-                        mailbox.chat.console.show_messages = !mailbox.chat.console.show_messages;
+                        console::toggle_filter(&mut mailbox);
                         continue;
                     }
                     CHAT_MODE => {
-                        mailbox.chat.console.mode = match mailbox.chat.console.mode {
-                            ComposerMode::On => ComposerMode::Off,
-                            ComposerMode::Off => ComposerMode::Temporary,
-                            ComposerMode::Temporary => ComposerMode::On,
-                        };
+                        console::cycle_mode(&mut mailbox);
                         continue;
                     }
                     _ => {}
@@ -394,37 +364,6 @@ fn close(weak: &WeakMailbox) {
     }
 }
 
-unsafe fn control(
-    parent: HWND,
-    class: &str,
-    text: &str,
-    id: usize,
-    bounds: [i32; 4],
-    style: u32,
-) -> HWND {
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide(class).as_ptr(),
-            wide(text).as_ptr(),
-            WS_CHILD | WS_VISIBLE | style,
-            bounds[0],
-            bounds[1],
-            bounds[2],
-            bounds[3],
-            parent,
-            id as _,
-            null_mut(),
-            null(),
-        )
-    }
-}
-
-unsafe fn read_text(hwnd: HWND) -> String {
-    unsafe {
-        let length = GetWindowTextLengthW(hwnd);
-        let mut value = vec![0; usize::try_from(length).unwrap_or(0) + 1];
-        let read = GetWindowTextW(hwnd, value.as_mut_ptr(), length + 1);
-        String::from_utf16_lossy(&value[..usize::try_from(read).unwrap_or(0)])
-    }
-}
+#[path = "native/controls.rs"]
+mod controls;
+use controls::{control, read_text, wide};

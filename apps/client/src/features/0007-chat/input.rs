@@ -1,3 +1,5 @@
+#[path = "console.rs"]
+pub(super) mod console;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,

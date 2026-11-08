@@ -85,8 +85,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Tabbed console, chat on/off i filtry",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:9 + console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once",
   "lane": "cg_analytics"
  },
  {
@@ -94,8 +95,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Save / append channel log",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak zapisu i dopisywania treści kanału do pliku.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:26 + channel_log_control_saves_appends_replaces_and_reports_io_errors",
   "lane": "cg_analytics"
  },
  {
@@ -103,8 +105,9 @@
   "src": "TIBAUD-1",
   "area": "Chat",
   "feature": "Ignore / whitelist / blacklist",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brak dedykowanych list komunikacji i wyjątków.",
+  "evidence": "apps/client/src/features/0007-chat/console.rs:18 + communication_control_filters_live_lines_and_propagates_whitelist_exceptions",
   "lane": "cg_analytics"
  },
  {

@@ -40,9 +40,9 @@ Zasady przeciw dublowaniu:
 | T110 | Analytics | Kill / Hunting Task Tracker | PARTIAL | Brak samodzielnego trackera; postęp pozostaje w Task Board. |
 | O012 | Analytics | Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny | PARTIAL | Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal. |
 | O036 | Analytics | Kalkulator podziału łupu drużyny | MISSING | Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny. |
-| T022 | Chat | Tabbed console, chat on/off i filtry | PARTIAL | Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off. |
-| T023 | Chat | Save / append channel log | MISSING | Brak zapisu i dopisywania treści kanału do pliku. |
-| T024 | Chat | Ignore / whitelist / blacklist | MISSING | Brak dedykowanych list komunikacji i wyjątków. |
+| T022 | Chat | Tabbed console, chat on/off i filtry | DONE | Transport jest; brak pełnej konsoli z niezależnymi filtrami i kontekstami chat-on/off. evidence: apps/client/src/features/0007-chat/console.rs:9 + console_controls_preserve_tab_filters_and_temporary_mode_reaches_session_once |
+| T023 | Chat | Save / append channel log | DONE | Brak zapisu i dopisywania treści kanału do pliku. evidence: apps/client/src/features/0007-chat/console.rs:26 + channel_log_control_saves_appends_replaces_and_reports_io_errors |
+| T024 | Chat | Ignore / whitelist / blacklist | DONE | Brak dedykowanych list komunikacji i wyjątków. evidence: apps/client/src/features/0007-chat/console.rs:18 + communication_control_filters_live_lines_and_propagates_whitelist_exceptions |
 | T038 | Containers | Managed containers i loot destinations | PARTIAL | Listy/destination/nearby loot są; brak pełnego menu managed containers i przenoszenia całej zawartości. evidence: apps/client/src/features/0014-container-tree/input/bulk.rs:14 + move_all_moves_every_displayed_stack_when_the_server_accepts + move_all_uses_live_container_handles_and_stops_at_first_server_refusal; managed_container_reset_uses_the_selected_category_and_existing_wire; remaining: persistent destination settings readback for the managed menu |
 | T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
 | T029 | Party | Team Finder assemble/join | PARTIAL | Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów. |
