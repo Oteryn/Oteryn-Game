@@ -148,6 +148,11 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 .await?,
             QuestTransitionOutcome::Committed(_)
         ));
+        let progress: (Vec<String>, Vec<i64>) = sqlx::query_as(
+            "SELECT track_keys,values_after FROM game_character_event_quest_progress WHERE character_id=encode($1,'hex')::uuid AND transition_key=$2 LIMIT 2",
+        ).bind(fixture::id(fixture::CHARACTER).as_slice()).bind(seed_key).fetch_one(&h.pool).await?;
+        assert_eq!(progress.0, fixture_tracks);
+        assert_eq!(progress.1, values);
         // The native completion shares the definition pinned by the earned-progress receipt.
         catalogue = seeded;
     }
@@ -440,7 +445,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(
-        entries, 1,
+        entries, 2,
         "replay and refused actions do not add occurrence progress"
     );
     // The view follows independently owned World reset state, preserving history.
@@ -463,7 +468,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         sqlx::query_scalar("SELECT count(*) FROM game_character_event_quest_progress")
             .fetch_one(&h.pool)
             .await?;
-    assert_eq!(history, 1);
+    assert_eq!(history, 2);
     let stale = sqlx::query("INSERT INTO game_character_event_quest_progress SELECT character_id,world_id,2,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after FROM game_character_event_quest_progress").execute(&h.pool).await.err().ok_or("historical receipt accepted in a new occurrence")?;
     assert_eq!(
         stale.as_database_error().and_then(|e| e.code()).as_deref(),

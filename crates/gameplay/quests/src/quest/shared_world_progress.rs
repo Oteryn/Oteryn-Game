@@ -193,6 +193,17 @@ pub const HIVE_QUEST: &str = "oteryn:quest.hive_native_shared";
 pub const DEEPLING_QUEST: &str = "oteryn:quest.deeplings_native_shared";
 pub const HIVE_OBJECTIVE_PREFIX: &str = "oteryn:quest-callback/hive-native-objective-";
 
+/// Retain every mission progress receipt in its counter cycle, including native
+/// object and kill objectives. Private Favour and scent purchases stay persistent.
+pub fn records_counter_progress(transition: &super::QuestTransition) -> bool {
+    matches!(transition.quest.as_str(), HIVE_QUEST | DEEPLING_QUEST)
+        && transition.effects.iter().any(|effect| {
+            BINDINGS.iter().any(|binding| binding.track == effect.track)
+                || ACTIVE_TRACKS.contains(&effect.track.as_str())
+                || effect.track == HATCHLINGS_TRACK
+        })
+}
+
 /// Existing object USE owner supplies real handle, range, position and revision.
 /// Tool appearances are source mission tools, retained across a successful action.
 pub fn callbacks() -> Vec<super::world_callbacks::Callback> {
@@ -537,6 +548,41 @@ mod tests {
 #[cfg(test)]
 mod native_cycle_tests {
     use super::*;
+    #[test]
+    fn qm55_counter_history_includes_native_objectives_and_excludes_private_scent()
+    -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        for binding in BINDINGS {
+            assert!(records_counter_progress(
+                catalogue.transition(binding.key).ok_or("native binding")?
+            ));
+        }
+        for index in 0..6 {
+            let objective = if index == 4 {
+                "oteryn:quest-transition/hive-native-kollos-kill".into()
+            } else {
+                format!("{HIVE_OBJECTIVE_PREFIX}{index}")
+            };
+            for key in [accept_key(index), objective] {
+                assert!(records_counter_progress(
+                    catalogue.transition(&key).ok_or("native mission")?
+                ));
+            }
+        }
+        assert!(records_counter_progress(
+            catalogue
+                .transition("oteryn:quest-callback/hive-native-hatchlings")
+                .ok_or("compound objective")?
+        ));
+        assert!(!records_counter_progress(
+            catalogue
+                .transition(super::super::hive_access::BUY)
+                .ok_or("scent purchase")?
+        ));
+        Ok(())
+    }
     #[test]
     fn worldchg_hive_native_objectives_require_full_count_then_npc_resets_cycle()
     -> Result<(), String> {

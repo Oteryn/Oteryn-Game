@@ -1244,8 +1244,7 @@ impl DurabilityRoot {
                     // also owns personal progress in this World occurrence. Historical
                     // replay returned earlier, so it cannot attach to a later save.
                     if transition.world_change.is_some()
-                        || oteryn_gameplay_quests::quest::shared_world_progress::binding(&request.transition_key).is_some()
-                        || oteryn_gameplay_quests::quest::shared_world_progress::accepted_task(&request.transition_key).is_some()
+                        || oteryn_gameplay_quests::quest::shared_world_progress::records_counter_progress(transition)
                     {
                         sqlx::query("INSERT INTO game_character_event_quest_progress(character_id,world_id,reset_epoch,committed_character_revision,quest_key,transition_key,completes,track_keys,values_after) SELECT r.character_id,a.world_id,a.reset_epoch,r.committed_character_revision,r.quest_key,r.transition_key,r.completes,r.track_keys,r.values_after FROM game_character_quest_receipts r JOIN game_world_reset_active a ON a.world_id=encode($3,'hex')::uuid WHERE r.character_id=encode($1,'hex')::uuid AND r.committed_character_revision=$2::text::numeric")
                             .bind(id).bind(&committed).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
