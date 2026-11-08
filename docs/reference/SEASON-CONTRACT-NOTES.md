@@ -1391,3 +1391,11 @@ extra Loot identity. The combined source-qualified inventory regression was
 red before this composition fix and both positive and unqualified-extra-Loot
 rejection tests pass7.891s. Family equality and all existing source-gap pins
 remain strict. No new rule or inferred loot admission is introduced.
+
+The all-target workspace check collected five Cake fixture API errors after
+#3034: two movement-cell references now need `SharedOwner::Borrowed`, and
+three Ground palette initializers need `Terrain.blocks_projectile`. The
+fixtures retain their borrowed cells and use None for the additive field,
+which preserves legacy terrain-kind behavior (world-bundle/bundle.rs:140-142).
+No assertions or scenario preconditions change. Both affected real Cake PG
+cases are included with the S17, House-container and QREADY1 focused rerun.

@@ -121,7 +121,7 @@ async fn scenario(h: &Harness) -> TestResult {
     deps.combat_room = Some(room);
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = &cells;
+    owner.movement_cells = crate::gameplay_transport::activity_runtime::SharedOwner::Borrowed(&cells);
     owner.reset_epoch = 1;
     let key = ProductionKey::new("oteryn:raid.piece_of_cake").map_err(debug)?;
     let firing = id(91);
@@ -433,6 +433,7 @@ fn cake_bundle(
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         },
         PaletteEntry {
@@ -443,6 +444,7 @@ fn cake_bundle(
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         },
     ];

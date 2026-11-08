@@ -35,7 +35,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 runtime.initialize_pinned_test_position(deps.actor,start).map_err(debug)?;
                 runtime.bind_attacker_lease(deps.actor,deps.admitted.game_session_id,crate::foundation::CharacterLease::new(crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,2).map_err(debug)?).map_err(debug)?;
                 deps.runtime=tokio::sync::Mutex::new(runtime);
-                let mut owner=deps.owner(&h,&authority);owner.active_generation=Some(active);owner.movement_cells=&cells;
+                let mut owner=deps.owner(&h,&authority);owner.active_generation=Some(active);owner.movement_cells=crate::gameplay_transport::activity_runtime::SharedOwner::Borrowed(&cells);
                 owner.rooms=crate::gameplay_transport::SeamRooms::new(None,Some(&room));
                 deps.initialize(&owner).await;
                 let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?.0;
@@ -142,6 +142,7 @@ fn cake_bundle(
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             })
         })
