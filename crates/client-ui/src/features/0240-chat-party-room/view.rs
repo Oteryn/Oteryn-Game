@@ -6,6 +6,9 @@ pub fn panel_text(panel: &ChatPartyRoomPanel) -> String {
     }
     let mut text = String::from("Party chat");
     for line in &panel.lines {
+        if !panel.communication.visible(line) {
+            continue;
+        }
         if let oteryn_client_runtime::cl25a_protocol::ChatLine::Party {
             speaker_name,
             text: line,

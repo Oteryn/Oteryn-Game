@@ -77,10 +77,10 @@ fn wide(text: &str) -> Vec<u16> {
 unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if message == WM_COMMAND
-            && w & 0xffff == SUBMIT
+            && (1..=5).contains(&(w & 0xffff))
             && (w >> 16) & 0xffff == BN_CLICKED as usize
         {
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, 1);
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
             return 0;
         }
         if message == WM_CLOSE {
@@ -96,6 +96,17 @@ fn run(
     ready: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
     let path = settings_path();
+    let mut bulletin = crate::bulletin::Browser::default();
+    let bulletin_warning = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(std::path::Path::to_owned))
+        .and_then(|p| match crate::bulletin::Browser::load(&p) {
+            Ok(loaded) => {
+                bulletin = loaded;
+                None
+            }
+            Err(error) => Some(error),
+        });
     let loaded = path
         .as_ref()
         .map_err(Clone::clone)
@@ -118,7 +129,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             680,
-            520,
+            760,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -149,7 +160,36 @@ fn run(
             [15, 315, 200, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
         );
-        let status = control(hwnd, "STATIC", form.message(), 201, [15, 365, 630, 100], 0);
+        for (id, label, x) in [
+            (2, "News", 15),
+            (3, "Previous month", 155),
+            (4, "Calendar", 315),
+            (5, "Next month", 475),
+        ] {
+            controls.push(control(
+                hwnd,
+                "BUTTON",
+                label,
+                id,
+                [x, 355, 140, 30],
+                WS_TABSTOP,
+            ));
+        }
+        if let Some(error) = bulletin_warning {
+            form.feedback(error);
+        }
+        let status = control(
+            hwnd,
+            "EDIT",
+            form.message(),
+            201,
+            [15, 400, 630, 300],
+            WS_BORDER
+                | WS_VSCROLL
+                | ES_MULTILINE as u32
+                | ES_READONLY as u32
+                | ES_AUTOVSCROLL as u32,
+        );
         if controls
             .iter()
             .chain([&button, &status])
@@ -181,7 +221,22 @@ fn run(
                 Err(TryRecvError::Disconnected) => break,
                 Err(TryRecvError::Empty) => {}
             }
-            if GetWindowLongPtrW(hwnd, GWLP_USERDATA) != 0 {
+            let action = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+            if action >= 2 {
+                SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+                if action == 3 {
+                    bulletin.previous_month();
+                }
+                if action == 5 {
+                    bulletin.next_month();
+                }
+                form.feedback(if action == 2 {
+                    bulletin.news()
+                } else {
+                    bulletin.month()
+                });
+            }
+            if action == SUBMIT as isize {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
                 if !form.pending() {
                     form.settings = LoginSettings::from_values(std::array::from_fn(|index| {
@@ -203,6 +258,7 @@ fn run(
             }
             for edit in controls
                 .iter()
+                .take(FIELDS.len() * 2)
                 .skip(1)
                 .step_by(2)
                 .chain(std::iter::once(&button))
