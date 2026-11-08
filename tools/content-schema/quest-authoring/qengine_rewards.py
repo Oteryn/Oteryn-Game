@@ -1017,10 +1017,16 @@ def validate_callbacks(document):
         if reward and reward.get('text') is not None and len(reward['text'].encode('utf-8'))>7996:
             raise ValueError('literal reward text exceeds UTF-8 byte bound')
         storage=callback['storage']
-        if callback.get('carried_item') is not None and (
-                callback['take']!=[{'item':callback['carried_item'],'count':1}]
-                or callback.get('give') is not None or callback.get('fee') is not None
-                or callback.get('requires_actor_conditions')):
+        source, target = callback.get('carried_item'), callback.get('carried_target')
+        if target is not None:
+            if (source is None or source == target or not callback.get('give')
+                    or callback.get('peer_requires') or callback.get('creature_target')
+                    or any({'item': item, 'count': 1} not in callback['take'] for item in (source, target))):
+                raise ValueError('invalid carried quest recipe '+callback['key'])
+        if source is not None and (
+                (target is None and (callback['take']!=[{'item':source,'count':1}]
+                    or callback.get('give') is not None))
+                or callback.get('fee') is not None or callback.get('requires_actor_conditions')):
             raise ValueError('invalid carried quest tool '+callback['key'])
         targets=([callback['outfit']] if callback.get('outfit') is not None else callback.get('outfits',[]))
         value_guard=any(t['outfit']==g['outfit'] and t['addons'] & g['addons']
