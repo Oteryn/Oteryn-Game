@@ -3,17 +3,38 @@ fn m38_hoaxette_requires_the_frozen_april_calendar_and_retires_only_its_actor() 
     let key = "oteryn:npc.hoaxette";
     let boot = timed_boot(&[key]);
     let mut runtime = channel_runtime_with(8);
-    let unrelated = runtime.place_dynamic_npc(key, NpcPlacement {
-        x: 32381, y: 32215, floor: -7, direction: MovementFacing::North,
-    }).expect("other occurrence");
+    let unrelated = runtime
+        .place_dynamic_npc(
+            key,
+            NpcPlacement {
+                x: 32381,
+                y: 32215,
+                floor: -7,
+                direction: MovementFacing::North,
+            },
+        )
+        .expect("other occurrence");
     let mut timed = TimedNpcSpawns::from_boot(Some(&boot))
         .with_seasonal(Some(&boot), &[], |_| true)
         .with_calendar(Some((4, 30)));
-    timed.reconcile(&mut runtime, 720).expect("April source presence");
-    assert_eq!(runtime.visible_entities().npcs.len(), 2, "April must admit Hoaxette's own source occurrence");
-    let actor = runtime.visible_entities().npcs.into_iter()
-        .find(|npc| npc.position.x == 32380).expect("source actor").actor;
-    timed.reconcile(&mut runtime, 0).expect("world time cannot change the frozen month");
+    timed
+        .reconcile(&mut runtime, 720)
+        .expect("April source presence");
+    assert_eq!(
+        runtime.visible_entities().npcs.len(),
+        2,
+        "April must admit Hoaxette's own source occurrence"
+    );
+    let actor = runtime
+        .visible_entities()
+        .npcs
+        .into_iter()
+        .find(|npc| npc.position.x == 32380)
+        .expect("source actor")
+        .actor;
+    timed
+        .reconcile(&mut runtime, 0)
+        .expect("world time cannot change the frozen month");
     assert_eq!(runtime.visible_entities().npcs.len(), 2);
     assert_eq!(runtime.npc_key(actor), Some(key));
     timed = timed.with_calendar(Some((5, 1)));
@@ -38,8 +59,11 @@ fn m38_hoaxette_refuses_absent_calendar_unadmitted_catalogue_and_bad_anchor() {
     ] {
         let mut runtime = channel_runtime_with(4);
         let mut timed = TimedNpcSpawns::from_boot(source)
-            .with_seasonal(source, &[], |_| enterable).with_calendar(calendar);
-        timed.reconcile(&mut runtime, 720).expect("closed source predicate");
+            .with_seasonal(source, &[], |_| enterable)
+            .with_calendar(calendar);
+        timed
+            .reconcile(&mut runtime, 720)
+            .expect("closed source predicate");
         assert!(runtime.visible_entities().npcs.is_empty());
     }
 }
@@ -48,7 +72,9 @@ fn m38_hoaxette_refuses_absent_calendar_unadmitted_catalogue_and_bad_anchor() {
 fn m38_hoaxette_postgres_reset_calendar_controls_presence_and_epoch_replay()
 -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
-    let Some(admin) = configured_admin() else { return Ok(()); };
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
         let run = || -> crate::bestiary_postgres_harness::TestResult {
@@ -105,6 +131,10 @@ fn m38_hoaxette_postgres_reset_calendar_controls_presence_and_epoch_replay()
         };
         run().map_err(|error| error.to_string())
     })?.join().map_err(|_| "M38 Hoaxette PG thread panicked")?;
-    eprintln!("POSTGRES_CASE_COMPLETED NPCFIX_M38 Hoaxette calendar duration={:?} passed={}", started.elapsed(), result.is_ok());
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED NPCFIX_M38 Hoaxette calendar duration={:?} passed={}",
+        started.elapsed(),
+        result.is_ok()
+    );
     result.map_err(Into::into)
 }
