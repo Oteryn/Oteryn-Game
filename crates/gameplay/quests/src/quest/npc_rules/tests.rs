@@ -1035,52 +1035,6 @@ fn m54_source_completion_does_not_complete_shared_canonical_quest() -> Result<()
 }
 
 #[test]
-fn m54_source_completion_does_not_complete_shared_canonical_quest() -> Result<(), NpcRuleError> {
-    let marker = "oteryn:quest-progress/source-completion/test_npc/rook";
-    let rule = fixture_rule(
-        "rook",
-        serde_json::json!([
-            {"kind":"complete_source", "track":marker}
-        ]),
-    );
-    let mut document = fixture_document(vec![rule]);
-    document["tracks"][0]["key"] = marker.into();
-    document["tracks"][0]["initial"] = 0.into();
-    document["tracks"][0]["min"] = 0.into();
-    document["tracks"][0]["max"] = 1.into();
-    let catalog = fixture_catalog(&document)?;
-    let mut facts = Facts::empty();
-    facts.tracks.insert(
-        "oteryn:quest-progress/source-completion/test_npc/mainland".into(),
-        1,
-    );
-    let plan = catalog
-        .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
-        .ok_or_else(|| NpcRuleError::Invalid("source completion plan".into()))?;
-    assert!(!plan.completes);
-    assert_eq!(
-        plan.track_changes,
-        vec![NpcTrackChange {
-            key: marker.into(),
-            before: 0,
-            after: 1
-        }]
-    );
-    facts.tracks.insert(marker.into(), 1);
-    assert!(
-        catalog
-            .plan_storage(&facts.input("oteryn:npc.test", "mission", 0))?
-            .is_none()
-    );
-    document["rules"][0]["completes"] = true.into();
-    assert!(fixture_catalog(&document).is_err());
-    document["rules"][0]["completes"] = false.into();
-    document["rules"][0]["effects"][0]["track"] = "oteryn:quest-progress/test/value".into();
-    assert!(fixture_catalog(&document).is_err());
-    Ok(())
-}
-
-#[test]
 fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleError> {
     let runtime = NpcRuleCatalog::runtime()?;
     let loaded = super::super::loader::load_embedded_quest_state("m54-source-sagas")
