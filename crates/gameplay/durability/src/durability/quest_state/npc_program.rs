@@ -3,11 +3,11 @@ use super::*;
 use oteryn_gameplay_quests::quest::npc_rules::{
     NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRulePlan, NpcRuleTrigger,
 };
+mod equipped;
 mod fathers_burden;
-mod marlin_trophy;
 mod items;
+mod marlin_trophy;
 mod rewards;
-
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NpcProgramRequest {
@@ -91,8 +91,13 @@ pub fn preview(
             now,
             Some(&marlin_trophy::optimistic_inventory()),
         ),
-        Err(error) => match source.optimistic_item_inventory(&request.npc) {
-            Some(inventory) => evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory)),
+        Err(error) => match source
+            .optimistic_item_inventory(&request.npc)
+            .or_else(|| source.optimistic_equipped_inventory(&request.npc))
+        {
+            Some(inventory) => {
+                evaluate_source(&source, request, tracks, catalogue, now, Some(&inventory))
+            }
             None => Err(error),
         },
         result => result,
@@ -110,7 +115,12 @@ fn evaluate_source(
 {
     let mut complete = tracks.clone();
     for program in source.programs() {
-        for rule in program.document.rules.iter().filter(|rule| rule.npc == request.npc) {
+        for rule in program
+            .document
+            .rules
+            .iter()
+            .filter(|rule| rule.npc == request.npc)
+        {
             for guard in &rule.guards {
                 if let oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Storage {
                     track, ..
@@ -154,6 +164,8 @@ fn evaluate_source(
         source.plan_marlin_items(&input)
     } else if inventory.is_some() && fathers_burden::owns(request) {
         source.plan_father_items(&input)
+    } else if inventory.is_some() && source.equipped_storage_requirements(&request.npc).is_some() {
+        source.plan_equipped_storage(&input)
     } else if inventory.is_some() {
         source.plan_item_exchange(&input)
     } else {
@@ -187,7 +199,10 @@ impl DurabilityRoot {
     }
 
     /// One source storage operation, including Father's eleven-track acceptance, is one transaction.
-    #[allow(clippy::too_many_arguments, reason = "physical lane, current authority and item content are independent proofs")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "physical lane, current authority and item content are independent proofs"
+    )]
     pub async fn commit_character_npc_program<C: super::super::item_loop_move::ItemLoopContent>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -197,6 +212,34 @@ impl DurabilityRoot {
         request: NpcProgramRequest,
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
+    ) -> Result<NpcProgramCommit> {
+        self.commit_npc_program_source(
+            authority,
+            node,
+            permit,
+            fence,
+            request,
+            catalogue,
+            items,
+            NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "immutable source shares all production authority inputs"
+    )]
+    async fn commit_npc_program_source<C: super::super::item_loop_move::ItemLoopContent>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
+        request: NpcProgramRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        items: &C,
+        source: &NpcRuleCatalog,
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
@@ -208,14 +251,15 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        permit.check_scope(fence.runtime_scope)
+        permit
+            .check_scope(fence.runtime_scope)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
-        let source = NpcRuleCatalog::runtime()
-            .and_then(|source| source.admitted_for_npc(&request.npc, &catalogue))
+        let source = source
+            .admitted_for_npc(&request.npc, &catalogue)
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .ok_or(CharacterProgressionError::InvalidInput)?;
         let mut content = items;
@@ -266,8 +310,11 @@ impl DurabilityRoot {
             let marlin_items = marlin_trophy::owns(&request);
             let plain_keys = source.item_exchange_keys(&request.npc);
             let generic_items = !father_items && !marlin_items && plain_keys.is_some();
-            let inventory_owned = father_items || marlin_items || generic_items;
-            let inventory = if marlin_items {
+            let equipped_storage = source.equipped_storage_requirements(&request.npc).is_some();
+            let inventory_owned = father_items || marlin_items || generic_items || equipped_storage;
+            let inventory = if equipped_storage {
+                Some(equipped::inventory(&mut tx, &recovery, &node, fence, request.command, content.loop_content_digest()).await?)
+            } else if marlin_items {
                 Some(fathers_burden::inventory_for(&mut tx, fence, &[marlin_trophy::FISH.into()]).await?)
             } else if father_items {
                 Some(fathers_burden::inventory(&mut tx, fence).await?)
@@ -395,21 +442,27 @@ async fn load(
         read_only: false,
         inventory_changed: response.try_get("inventory_changed")?,
         end_conversation: response.try_get("end_conversation")?,
-        end_delay_ms: u64::try_from(response.try_get::<i32, _>("end_delay_ms")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+        end_delay_ms: u64::try_from(response.try_get::<i32, _>("end_delay_ms")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
     })))
 }
 
 // Civil-from-days, inverse of the UTC scheduler conversion in gameplay-foundation.
 // Locked evaluation supplies PostgreSQL transaction time; previews supply server time.
-fn utc_calendar_month(seconds: i64) -> std::result::Result<u8, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
+fn utc_calendar_month(
+    seconds: i64,
+) -> std::result::Result<u8, oteryn_gameplay_quests::quest::npc_rules::NpcRuleError> {
     let days = seconds.div_euclid(86_400) + 719_468;
     let era = days.div_euclid(146_097);
     let day_of_era = days - era * 146_097;
-    let year_of_era = (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
     let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
     let shifted_month = (5 * day_of_year + 2) / 153;
     let month = shifted_month + if shifted_month < 10 { 3 } else { -9 };
-    u8::try_from(month).map_err(|_| oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::Arithmetic("calendar month".into()))
+    u8::try_from(month).map_err(|_| {
+        oteryn_gameplay_quests::quest::npc_rules::NpcRuleError::Arithmetic("calendar month".into())
+    })
 }
 
 #[cfg(test)]
@@ -418,9 +471,20 @@ mod calendar_tests {
 
     #[test]
     fn authoritative_epoch_month_boundaries() -> Result<(), String> {
-        for (second, before, after) in [(0, 12, 1), (1_706_745_600, 1, 2), (1_709_251_200, 2, 3), (1_735_689_600, 12, 1)] {
-            assert_eq!(utc_calendar_month(second - 1).map_err(|e| e.to_string())?, before);
-            assert_eq!(utc_calendar_month(second).map_err(|e| e.to_string())?, after);
+        for (second, before, after) in [
+            (0, 12, 1),
+            (1_706_745_600, 1, 2),
+            (1_709_251_200, 2, 3),
+            (1_735_689_600, 12, 1),
+        ] {
+            assert_eq!(
+                utc_calendar_month(second - 1).map_err(|e| e.to_string())?,
+                before
+            );
+            assert_eq!(
+                utc_calendar_month(second).map_err(|e| e.to_string())?,
+                after
+            );
         }
         Ok(())
     }

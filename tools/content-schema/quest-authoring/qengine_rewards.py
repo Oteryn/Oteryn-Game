@@ -13,6 +13,8 @@ from pathlib import Path
 import sys
 import tarfile
 import xml.etree.ElementTree as ET
+import taming_cosmetics
+import wizard_cosmetics
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,7 +34,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/mounts.xml', 'data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
+        *wizard_cosmetics.DONOR_NPCS, 'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -112,9 +114,9 @@ def build():
     scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
     for outfit in outfits:
         if outfit['key'] not in scoped:continue
-        looks=sorted([outfit['female']['id'],outfit['male']['id']])
+        outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
-            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=looks:continue
+            if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
@@ -180,6 +182,8 @@ def build():
             existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
             if existing['target'] != row['target']:
                 existing['outfit_aliases'] = [row['target']['outfit_key']]
+    # Taming uses the same production cosmetics owner as quest/item grants.
+    taming_source = taming_cosmetics.append(ROOT, doc, looks)
     nx5_promotions = {row['path']: row for row in nx5['promotions']}
     quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
@@ -190,7 +194,9 @@ def build():
         if nx5_path is not None:
             author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
             continue
-        citation=ram_source if parts[1] == 'mounts' else palette_source if path == '/palette' else source
+        citation=palette_source if path == '/palette' else source
+        if parts[1] == 'mounts':
+            citation = ram_source if doc['mounts'][int(parts[2])]['key'] == ram_key else taming_source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
@@ -516,6 +522,7 @@ def build():
         take=[(3374,1),(5902,50),(5890,100)],outfit=('citizen',2),topic=2)
     offers.append({'npc':'oteryn:npc.norma','keywords':['addon','outfit','hat'],'topic':0,'next_topic':2,
         'storage':states,'reply':['Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?']})
+    wizard_cosmetics.append(add, storage, offers, prefix)
     beggar=prefix+'u7_8/beggar_outfits/'
     beggar_stage=beggar+'beggar_outfit'
     beggar_timer=beggar+'beggar_outfit_timer'
