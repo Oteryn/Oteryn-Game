@@ -115,9 +115,9 @@
   "src": "TIBAUD-1",
   "area": "Social",
   "feature": "Friends, main character, zaproszenia",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Są zgody/status VIP; brak pełnego kontowego Friends i main character.",
-  "evidence": "apps/client/src/features/0043-vip/native.rs:181 + friends_view_separates_confirmed_contacts_and_pending_invitations; docs/contracts/ACCOUNT_FRIENDS_T026_PROPOSAL.md:1; remaining: owner choice of separate account-level consent and authoritative main-character producer",
+  "evidence": "apps/client/src/features/0043-vip/account.rs:11 + account_friends_caller_sends_explicit_consent_and_main_selection_without_optimistic_state; crates/gameplay/durability/src/durability/vip/account.rs:24 + account_friends_postgres_main_consent_revocation_replay_and_fences",
   "lane": "cg_analytics"
  },
  {

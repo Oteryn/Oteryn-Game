@@ -18,8 +18,18 @@ pub(in crate::play) fn refresh_after(
     if command.kind == vip::COMMAND_TYPE_VIP_QUERY || response.result.code != 1 {
         return None;
     }
+    let operation = vip::decode_request(command.kind, &command.payload)
+        .ok()?
+        .operation;
+    if operation == vip::Operation::FriendsQuery {
+        return None;
+    }
     VipCommand::new(&vip::Request {
-        operation: vip::Operation::Query,
+        operation: if operation.is_account() {
+            vip::Operation::FriendsQuery
+        } else {
+            vip::Operation::Query
+        },
         number: 0,
         text: String::new(),
         icon: 0,

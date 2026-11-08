@@ -1,3 +1,5 @@
+#[path = "account.rs"]
+mod account;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::vip::{Intent, request};
@@ -14,6 +16,9 @@ impl PlayLink {
         }
     }
     pub fn vip_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if events.iter().any(|event| matches!(event,NormalizedInputEvent::Key {code,state:ButtonState::Pressed,modifiers,repeat:false} if *code==oteryn_input_actions::KeyCode::KEY_F && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super))) {
+            self.account_friends_open();return true;
+        }
         let open = events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 25 && modifiers.contains(Modifier::Control) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)));
         if !open {
             return false;
