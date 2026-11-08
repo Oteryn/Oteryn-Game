@@ -1,0 +1,50 @@
+{
+  "audited_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "files": [
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json",
+      "sha256": "97727a9c43ef719bb3a5b13322d138dd7717cf42ce3f511b4461522b65bbd844",
+      "bytes": 146002
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/classification.json",
+      "sha256": "58032bd84ec76dffa27c160e1c96d3298041c47af4962864c329b61cfa674873",
+      "bytes": 890487
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/item-outfit-bindings.json",
+      "sha256": "ef23c152b6ea2fdd5613f4dd35c6ab63cff6457a799d4c09084cf36c75e6b5a0",
+      "bytes": 25910
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/npc-bindings.json",
+      "sha256": "0b800c0e6aec6ffa25ccc59b17001e80c18f1361b4cdad52d1f247fa87a78f89",
+      "bytes": 286604
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/reward-bindings.json",
+      "sha256": "33c7fee8f42c4beb9afe2ce4abece8241e1ef153d47504feb581f6cef397c84c",
+      "bytes": 1095904
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/runtime-loader.json",
+      "sha256": "d9a6f25f05f228688fa8d9a5dcc9dbf989200efd2f6ae3662ced6c4387c125b7",
+      "bytes": 134601
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/selected-programs.json",
+      "sha256": "aadd5f247ef44274243549ae4182c9ba792f223a01e6c88304efc1b45e523c33",
+      "bytes": 276961
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/validation.json",
+      "sha256": "ae8816a63ec5d36e0a3e8f492d20cae5dac0528210ed5a6d5380f5a62cdf0abc",
+      "bytes": 7356
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/world-bindings.json",
+      "sha256": "a0ac5cd74a5eba5a8ed98e4843f81367a763fcc65605198339390b4692d5bdb1",
+      "bytes": 927416
+    }
+  ]
+}

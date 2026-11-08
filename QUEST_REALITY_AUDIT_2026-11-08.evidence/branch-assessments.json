@@ -1,0 +1,3364 @@
+{
+  "schema": "QUEST_REALITY_BRANCH_DIFF_AUDIT/v1",
+  "audited_main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "method": "Read exact head files and relevant native-owner method bodies; compare structurally parsed callback documents; separately record merge-base diff scope to avoid stale-main deletion claims. No merge, checkout, compile or external mutation.",
+  "decisions": [
+    "Only a whole-quest start-to-finish real dispatch proof can change PLAYABLE_PROVEN; callback counts never stand in for quest counts.",
+    "Hypothetical merge deltas stay terminal UNKNOWN when source branches alter shared registries, admit only subsets of effects, or require composed native map/item policies; no untested merged tree is invented.",
+    "An already-identical, already-counted proof slice has exact additive delta zero even when unrelated source files differ."
+  ],
+  "branches": [
+    {
+      "suffix": "boss2",
+      "head": "31a0305e4e0bf50f7a7369f3f676a77f97ff2c8e",
+      "pr": null,
+      "family": "boss2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 10,
+        "behind": 8,
+        "merge_base": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+        "files": 1117
+      },
+      "implementation_observation": "Native source boss callback families, retained position teleports, Soul War scene/torment and Rotten Blood source effects. Native encounter support is broader than a complete wiki quest journey.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/time_guardian.rs",
+          "line": 95,
+          "text": "pub(super) async fn drive(",
+          "ref": "31a0305e4e0bf50f7a7369f3f676a77f97ff2c8e"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/soul_war_scene.rs",
+          "line": 11,
+          "text": "pub(super) fn source_map(room: &QualifiedNativeEntryRoom) -> Option<&BundleMap> {",
+          "ref": "31a0305e4e0bf50f7a7369f3f676a77f97ff2c8e"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 37,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "44 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 8 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Encounter gains depend on generation-specific source-hook closure, physical corpse Item admission, candidate layout and exact room publication, then the owning quest start/final reward bindings."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/source_bundle.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/drome_modifiers.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/rotten_blood.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/soul_war_torment.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/boss_activity/source_extra.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/native_cues.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/effective_rooms.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use/rotten_essence.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use/soul_war_source.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/bog.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/casts.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/conditions.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/death_items.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/eruption.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/gaz.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/omrafir.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_cast.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_events.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/outburst_state.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/smelly.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/spawns.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/teleports.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/tenebris.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/thresholds.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/time_guardian.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/time_guardian/returns.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/native_callbacks/vortex.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/physical_spell/smelly_reader.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_area.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/native_cue_offer.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/outburst_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/paced_movement/drunk.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/primal_callbacks/deferred.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/primal_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rotten_flame.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/bak_preparation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/effects.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/plan.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/portals.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/advanced/step.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_callbacks/mushroom.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/rotten_blood_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/attacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/cruelty.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/entry_state.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/hatred.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/megalomania.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/player_source.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/taint_five.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/taint_one.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/taints.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/white.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_malice.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_scene.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_world.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soul_war_world_raid.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/native_driver.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/scene.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/shared_entry.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/soulpit/shared_owner.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/source_death.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/source_names.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/spite_global.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/tibiadrome/modifiers.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/tibiadrome/modifiers/actions.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/tibiadrome/modifiers/hazards.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/wire_position.rs",
+        "crates/gameplay/quests/src/quest/rotten_blood/area_icons.rs",
+        "crates/gameplay/quests/src/quest/rotten_blood/flames.rs",
+        "crates/gameplay/quests/src/quest/soul_war/source_items.rs"
+      ],
+      "literal_registry_sha256": "c969a50452a74c88a9702d064ab537a9d176574dde73cb6f1776003b7a9a109c",
+      "same_literal_registries_as": [
+        "e2e-rows",
+        "qready2"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 462
+        }
+      ]
+    },
+    {
+      "suffix": "e2e-rows",
+      "head": "e078d36ea5579aa2425349149bbbd7efb22ab62e",
+      "pr": 3023,
+      "family": "e2e-rows",
+      "compare": {
+        "status": "diverged",
+        "ahead": 10,
+        "behind": 14,
+        "merge_base": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+        "files": 327
+      },
+      "implementation_observation": "Adds node-boot client feature scenario rows and mount files. These are protocol/gameplay feature rows, not complete wiki quest scenarios; no Quest definition/callback content changes.",
+      "native_owner_evidence": [
+        {
+          "file": "apps/game-server/src/qualification/client_phases/client_row_i07.rs",
+          "line": 20,
+          "text": "fn request(action: QuickLootAction) -> QuickLootRequest {",
+          "ref": "e078d36ea5579aa2425349149bbbd7efb22ab62e"
+        },
+        {
+          "file": "apps/game-server/src/qualification/client_phases/client_row_c01.rs",
+          "line": 6,
+          "text": "pub(super) async fn run_packet(clients: &SeamClients<'_>) {",
+          "ref": "e078d36ea5579aa2425349149bbbd7efb22ab62e"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 37,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "44 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": {
+        "scope": "new production quest bindings",
+        "delta": {
+          "LIVE_UNPROVEN": 0,
+          "REWARD_ONLY_LIVE": 0,
+          "BINDING_MISSING": 0,
+          "MECHANIC_MISSING": 0
+        },
+        "reason": "No production quest/content/dispatch files changed in its merge-base patch. Newly added client-row functions exercise feature protocol paths, not wiki whole-quest completions.",
+        "unchanged_production_roots": [
+          "content/quests",
+          "crates/gameplay/quests",
+          "crates/gameplay/dispatch"
+        ]
+      },
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 14 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "c969a50452a74c88a9702d064ab537a9d176574dde73cb6f1776003b7a9a109c",
+      "same_literal_registries_as": [
+        "boss2",
+        "qready2"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 462
+        }
+      ]
+    },
+    {
+      "suffix": "qready1b",
+      "head": "39a47f16ed6e58de8375fedc9d59da47d9e01bf0",
+      "pr": null,
+      "family": "qready1b",
+      "compare": {
+        "status": "diverged",
+        "ahead": 24,
+        "behind": 4,
+        "merge_base": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+        "files": 93
+      },
+      "implementation_observation": "Exact source UID reward placements, native item profile admission and reward proof packets. Current qready1_reward_claims.rs is byte-identical to main: this proof slice is already counted.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready1_reward_claims.rs",
+          "line": 739,
+          "text": "fn qready1_doublet_quest_exact_reward_once() -> TestResult {",
+          "ref": "39a47f16ed6e58de8375fedc9d59da47d9e01bf0"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": {
+        "scope": "qready1 test proof additions",
+        "delta": {
+          "PLAYABLE_PROVEN": 0,
+          "REWARD_ONLY_LIVE": 0
+        },
+        "reason": "Proof test source is byte-identical to main; not an extra independent 17/35 quests. Other native profile/claim changes are outside this zero assertion.",
+        "equal_paths": [
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready1_reward_claims.rs"
+        ]
+      },
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 4 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "4c6d404bb6ac3c1d6d0ef3e6c59bc77d6d2c76a7cca86ec1c70a2e1b252d1f47",
+      "same_literal_registries_as": [
+        "questpc4b",
+        "season",
+        "srvenc"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "qready2",
+      "head": "a9f723152f128ce76c0a793dae0f6905bd85ca73",
+      "pr": null,
+      "family": "qready2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 4,
+        "behind": 14,
+        "merge_base": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+        "files": 53
+      },
+      "implementation_observation": "Twenty-four exact source chest placements/Purple Tome choices with native-profile and proof work; the qready2 reward tests and proof files are identical to main; three plain claim readiness regressions plus desert2 native_contents removal differ from main.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+          "line": 255,
+          "text": "fn qready2_heaven_blossom_quest_1() -> TestResult {",
+          "ref": "a9f723152f128ce76c0a793dae0f6905bd85ca73"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_purple_claims.rs",
+          "line": 253,
+          "text": "fn qready2_purple_tome_quest_1() -> TestResult {",
+          "ref": "a9f723152f128ce76c0a793dae0f6905bd85ca73"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 37,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "44 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": {
+        "scope": "qready2 existing test/proof additions only; excludes changed claim shards",
+        "delta": {
+          "PLAYABLE_PROVEN": 0,
+          "REWARD_ONLY_LIVE": 0
+        },
+        "reason": "qready2 test/proof files are byte-identical to main; their gains are already counted. Claim shards differ and are assessed separately.",
+        "equal_paths": [
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_purple_claims.rs",
+          "tools/content-schema/quest-authoring/samples/completion-matrix/reward-use-proofs/qready2-batch1.json",
+          "tools/content-schema/quest-authoring/samples/completion-matrix/reward-use-proofs/qready2-batch2.json",
+          "tools/content-schema/quest-authoring/samples/completion-matrix/reward-use-proofs/qready2-batch3.json",
+          "tools/content-schema/quest-authoring/samples/completion-matrix/reward-use-proofs/qready2-purple.json"
+        ]
+      },
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 14 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Stale shard edits change timering3/weddingring1/trollcave1 readiness ready to waiting_item_semantics and remove desert2 native_contents; binder exclusion at world_reward_claims.rs:282 makes the surviving merge hunk decisive."
+        ]
+      },
+      "new_native_owner_files": [],
+      "code_relevant_claim_delta": [
+        {
+          "claim": "oteryn:reward-claim.kv.desert2",
+          "file": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json",
+          "line": 1,
+          "pointer": "/records/3/definition",
+          "main_readiness": "waiting_implementation",
+          "qready2_readiness": "waiting_data",
+          "main_native_contents": true,
+          "qready2_native_contents": false,
+          "production_enforcement": "crates/gameplay/content/src/content/world_reward_claims.rs:273-283,384-413"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.trollcave1",
+          "file": "content/interactions/reward_claims/reward-claims-00100-00199.json",
+          "line": 1,
+          "pointer": "/records/4/definition",
+          "main_readiness": "ready",
+          "qready2_readiness": "waiting_item_semantics",
+          "main_native_contents": false,
+          "qready2_native_contents": false,
+          "production_enforcement": "crates/gameplay/content/src/content/world_reward_claims.rs:273-283,384-413"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.timering3",
+          "file": "content/interactions/reward_claims/reward-claims-00100-00199.json",
+          "line": 1,
+          "pointer": "/records/3/definition",
+          "main_readiness": "ready",
+          "qready2_readiness": "waiting_item_semantics",
+          "main_native_contents": false,
+          "qready2_native_contents": false,
+          "production_enforcement": "crates/gameplay/content/src/content/world_reward_claims.rs:273-283,384-413"
+        },
+        {
+          "claim": "oteryn:reward-claim.kv.weddingring1",
+          "file": "content/interactions/reward_claims/reward-claims-00100-00199.json",
+          "line": 1,
+          "pointer": "/records/7/definition",
+          "main_readiness": "ready",
+          "qready2_readiness": "waiting_item_semantics",
+          "main_native_contents": false,
+          "qready2_native_contents": false,
+          "production_enforcement": "crates/gameplay/content/src/content/world_reward_claims.rs:273-283,384-413"
+        }
+      ],
+      "literal_registry_sha256": "c969a50452a74c88a9702d064ab537a9d176574dde73cb6f1776003b7a9a109c",
+      "same_literal_registries_as": [
+        "boss2",
+        "e2e-rows"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 462
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 462
+        }
+      ]
+    },
+    {
+      "suffix": "questl2-wip",
+      "head": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d",
+      "pr": null,
+      "family": "questl2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 5,
+        "behind": 24,
+        "merge_base": "dc1cd724b4b4149b53b151954717a69270353539",
+        "files": 81
+      },
+      "implementation_observation": "Generic source kill callbacks plus quest shop eligibility, NPC rule inventory/confirmation and Falcon/Viola source item handling.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 103,
+          "text": "pub struct Callback {",
+          "ref": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 39,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 14,
+          "removed_keys": 196,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.the_ape_city_quest",
+            "oteryn:quest.the_thieves_guild_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "235 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 24 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "ae44424b7bdf886980eff92b6b97083fb25f27666df40e70dea43df257feab41",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questl2b",
+          "shared_callback_keys": 285
+        },
+        {
+          "head_suffix": "questl2",
+          "shared_callback_keys": 285
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 271
+        }
+      ]
+    },
+    {
+      "suffix": "questl2",
+      "head": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+      "pr": null,
+      "family": "questl2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 92,
+        "behind": 7,
+        "merge_base": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "files": 864
+      },
+      "implementation_observation": "Generic source kill callbacks plus quest shop eligibility, NPC rule inventory/confirmation and Falcon/Viola source item handling.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_callbacks.rs",
+          "line": 8,
+          "text": "pub(super) async fn credit_source_quest_kill(&self, entry: &PendingKillSettlement) -> bool {",
+          "ref": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/kill_callbacks.rs",
+          "line": 48,
+          "text": "pub fn load() -> Result<Vec<KillCallback>, String> {",
+          "ref": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_shop.rs",
+          "line": 10,
+          "text": "pub(super) fn eligible_items(",
+          "ref": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 50,
+          "removed_keys": 34,
+          "changed_existing": 2,
+          "new_owner_strings": [
+            "oteryn:quest.a_father_s_burden_quest",
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.an_uneasy_alliance_quest",
+            "oteryn:quest.authored.cartography_101_quest",
+            "oteryn:quest.sam_s_old_backpack_quest",
+            "oteryn:quest.steal_from_thieves_quest",
+            "oteryn:quest.the_djinn_war_efreet_faction",
+            "oteryn:quest.the_djinn_war_marid_faction",
+            "oteryn:quest.the_order_of_the_stag_quest",
+            "oteryn:quest.tomes_of_knowledge_quest",
+            "oteryn:quest.troll_sabotage_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 135,
+          "removed_keys": 7,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.an_uneasy_alliance_quest",
+            "oteryn:quest.authored.cartography_101_quest",
+            "oteryn:quest.children_of_the_revolution_quest",
+            "oteryn:quest.draconia_quest",
+            "oteryn:quest.friends_and_traders",
+            "oteryn:quest.hunting_for_tokens",
+            "oteryn:quest.kilmaresh_quest",
+            "oteryn:quest.steal_from_thieves_quest",
+            "oteryn:quest.the_ape_city_quest",
+            "oteryn:quest.the_djinn_war_efreet_faction",
+            "oteryn:quest.the_djinn_war_marid_faction",
+            "oteryn:quest.the_thieves_guild_quest",
+            "oteryn:quest.the_white_raven_monastery_quest",
+            "oteryn:quest.troll_sabotage_quest",
+            "oteryn:quest.vampire_hunter_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "41 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 90,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 272,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 279,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_shop.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/reward_facts.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/kill_callbacks.rs",
+        "crates/gameplay/quests/src/quest/npc_predecessors.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/inventory.rs"
+      ],
+      "literal_registry_sha256": "c24ab426e59b822b500ea0a28fbbc36c2b2d975a49a2b7fe3068c4cb3e081ded",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questl2b",
+          "shared_callback_keys": 650
+        },
+        {
+          "head_suffix": "questpc-pc2",
+          "shared_callback_keys": 476
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 474
+        }
+      ]
+    },
+    {
+      "suffix": "questl2b",
+      "head": "be6626b49508c33b062c097480ed173472a8bdba",
+      "pr": null,
+      "family": "questl2",
+      "compare": {
+        "status": "ahead",
+        "ahead": 106,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 881
+      },
+      "implementation_observation": "Generic source kill callbacks plus quest shop eligibility, NPC rule inventory/confirmation and Falcon/Viola source item handling.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_callbacks.rs",
+          "line": 8,
+          "text": "pub(super) async fn credit_source_quest_kill(&self, entry: &PendingKillSettlement) -> bool {",
+          "ref": "be6626b49508c33b062c097480ed173472a8bdba"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/kill_callbacks.rs",
+          "line": 48,
+          "text": "pub fn load() -> Result<Vec<KillCallback>, String> {",
+          "ref": "be6626b49508c33b062c097480ed173472a8bdba"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_shop.rs",
+          "line": 10,
+          "text": "pub(super) fn eligible_items(",
+          "ref": "be6626b49508c33b062c097480ed173472a8bdba"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 50,
+          "removed_keys": 0,
+          "changed_existing": 2,
+          "new_owner_strings": [
+            "oteryn:quest.a_father_s_burden_quest",
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.an_uneasy_alliance_quest",
+            "oteryn:quest.authored.cartography_101_quest",
+            "oteryn:quest.sam_s_old_backpack_quest",
+            "oteryn:quest.steal_from_thieves_quest",
+            "oteryn:quest.the_djinn_war_efreet_faction",
+            "oteryn:quest.the_djinn_war_marid_faction",
+            "oteryn:quest.the_order_of_the_stag_quest",
+            "oteryn:quest.tomes_of_knowledge_quest",
+            "oteryn:quest.troll_sabotage_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 180,
+          "removed_keys": 0,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.an_uneasy_alliance_quest",
+            "oteryn:quest.authored.cartography_101_quest",
+            "oteryn:quest.children_of_the_revolution_quest",
+            "oteryn:quest.draconia_quest",
+            "oteryn:quest.friends_and_traders",
+            "oteryn:quest.hunting_for_tokens",
+            "oteryn:quest.kilmaresh_quest",
+            "oteryn:quest.secret_service_quest",
+            "oteryn:quest.steal_from_thieves_quest",
+            "oteryn:quest.the_ape_city_quest",
+            "oteryn:quest.the_djinn_war_efreet_faction",
+            "oteryn:quest.the_djinn_war_marid_faction",
+            "oteryn:quest.the_thieves_guild_quest",
+            "oteryn:quest.the_white_raven_monastery_quest",
+            "oteryn:quest.troll_sabotage_quest",
+            "oteryn:quest.vampire_hunter_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 95,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 279,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "be6626b49508c33b062c097480ed173472a8bdba"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 286,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "be6626b49508c33b062c097480ed173472a8bdba"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_shop.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/reward_facts.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/paid_travel/quest_confirmation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_callbacks.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/kill_callbacks.rs",
+        "crates/gameplay/quests/src/quest/npc_predecessors.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/inventory.rs"
+      ],
+      "literal_registry_sha256": "c3db5b82dcd5d6d489ac4187a4ff7148f1674fa38fecd3f5d78179d8e7b9f756",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questl2",
+          "shared_callback_keys": 650
+        },
+        {
+          "head_suffix": "questpc-pc2",
+          "shared_callback_keys": 517
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 515
+        }
+      ]
+    },
+    {
+      "suffix": "questpc-pc2",
+      "head": "ca32e1a335d48bd54ff286f881c84b77c2433920",
+      "pr": null,
+      "family": "questpc",
+      "compare": {
+        "status": "ahead",
+        "ahead": 191,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 1551
+      },
+      "implementation_observation": "Questpc-owned source/callback/shrine work; later integration versions add Kingsday finite journal, source death, static object and position predicates. Old snapshots are stale relative to the live main registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/log/questpc_authored.rs",
+          "line": 4,
+          "text": "pub const QUEST: &str = \"oteryn:quest.authored.kingsday_mini_world_change\";",
+          "ref": "ca32e1a335d48bd54ff286f881c84b77c2433920"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/objects.rs",
+          "line": 7,
+          "text": "pub(super) fn apply_callback_objects(",
+          "ref": "ca32e1a335d48bd54ff286f881c84b77c2433920"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/conditions.rs",
+          "line": 6,
+          "text": "pub(super) fn satisfied(map: &BundleMap, conditions: &[ObjectCondition]) -> bool {",
+          "ref": "ca32e1a335d48bd54ff286f881c84b77c2433920"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 40,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.devil_helmet_quest",
+            "oteryn:quest.life_ring_quest",
+            "oteryn:quest.mintwallin_cyclops_quest",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 8,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.decaying_defender_outfits_quest",
+            "oteryn:quest.draconia_quest",
+            "oteryn:quest.revenant_outfits_quest",
+            "oteryn:quest.rift_warrior_outfits_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 96,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 345,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "ca32e1a335d48bd54ff286f881c84b77c2433920"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 352,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "ca32e1a335d48bd54ff286f881c84b77c2433920"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/loop_move/container_stock.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc_citizen_intro.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/reward_callbacks/questpc_sources.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/conditions.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/ejection.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/objects.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/source_dropdown.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/source_quest_death.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/authored_bindings.rs",
+        "crates/gameplay/quests/src/quest/catalogue_history.rs",
+        "crates/gameplay/quests/src/quest/creature_death.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/log/questpc_authored.rs",
+        "crates/gameplay/quests/src/quest/questpc_clock_fixture.rs",
+        "crates/gameplay/quests/src/quest/questpc_npc13_prefix.rs",
+        "crates/gameplay/quests/src/quest/questpc_sources.rs",
+        "crates/gameplay/quests/src/quest/questpc_yalahar_fixture.rs",
+        "crates/gameplay/quests/src/quest/raid_tokens.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/carried.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/conditions.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/objects.rs"
+      ],
+      "literal_registry_sha256": "950c790fe9f874314b6f66edfccb6e68b5ebc5e41cb8b9d493eaa03c787e2192",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questl2b",
+          "shared_callback_keys": 517
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 515
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 515
+        }
+      ]
+    },
+    {
+      "suffix": "questpc-snap",
+      "head": "f85f43ab49366eda609337ec2800d3911ea4dfae",
+      "pr": null,
+      "family": "questpc",
+      "compare": {
+        "status": "diverged",
+        "ahead": 1,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 116
+      },
+      "implementation_observation": "Questpc-owned source/callback/shrine work; later integration versions add Kingsday finite journal, source death, static object and position predicates. Old snapshots are stale relative to the live main registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "f85f43ab49366eda609337ec2800d3911ea4dfae"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 96,
+          "text": "pub struct Callback {",
+          "ref": "f85f43ab49366eda609337ec2800d3911ea4dfae"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 238,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "f85f43ab49366eda609337ec2800d3911ea4dfae"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 245,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "f85f43ab49366eda609337ec2800d3911ea4dfae"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "4fb4b21acffab09bd398a8a00027ef068ea890af952f772dd788fef40b4b84f2",
+      "same_literal_registries_as": [
+        "questpc",
+        "questpc2-wip",
+        "questpc3-wip",
+        "questwip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 256
+        }
+      ]
+    },
+    {
+      "suffix": "questpc-wip",
+      "head": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54",
+      "pr": null,
+      "family": "questpc",
+      "compare": {
+        "status": "diverged",
+        "ahead": 9,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 800
+      },
+      "implementation_observation": "Questpc-owned source/callback/shrine work; later integration versions add Kingsday finite journal, source death, static object and position predicates. Old snapshots are stale relative to the live main registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 99,
+          "text": "pub struct Callback {",
+          "ref": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 9,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 79,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 241,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 248,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "9bf74b42d3d73aa9e3b875cfcea94695502fdf54"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/raid_tokens.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/raid_tokens.rs"
+      ],
+      "literal_registry_sha256": "d2cc65fbdda942258dd72b81ccee83ecf5457c81ca498ce0a36ccafb1b010193",
+      "same_literal_registries_as": [
+        "questpc6-wip",
+        "questpc8-wip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8-wip",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc",
+      "head": "6c09e0365110db6683f938dd08d5d584744cbf37",
+      "pr": 3007,
+      "family": "questpc",
+      "compare": {
+        "status": "diverged",
+        "ahead": 1,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 93
+      },
+      "implementation_observation": "Questpc-owned source/callback/shrine work; later integration versions add Kingsday finite journal, source death, static object and position predicates. Old snapshots are stale relative to the live main registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "6c09e0365110db6683f938dd08d5d584744cbf37"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 96,
+          "text": "pub struct Callback {",
+          "ref": "6c09e0365110db6683f938dd08d5d584744cbf37"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 238,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "6c09e0365110db6683f938dd08d5d584744cbf37"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 245,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "6c09e0365110db6683f938dd08d5d584744cbf37"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "4fb4b21acffab09bd398a8a00027ef068ea890af952f772dd788fef40b4b84f2",
+      "same_literal_registries_as": [
+        "questpc-snap",
+        "questpc2-wip",
+        "questpc3-wip",
+        "questwip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 256
+        }
+      ]
+    },
+    {
+      "suffix": "questpc2-wip",
+      "head": "c913a88349317056cf8f2db83e52a0911200ce53",
+      "pr": null,
+      "family": "questpc2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 8,
+        "behind": 25,
+        "merge_base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+        "files": 223
+      },
+      "implementation_observation": "Personal native kill objectives, Elvenbane finite programme, NPC item exchange and original source-custody qualification for Albinius/Gerimor/Henricus/Oldrak.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "c913a88349317056cf8f2db83e52a0911200ce53"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 96,
+          "text": "pub struct Callback {",
+          "ref": "c913a88349317056cf8f2db83e52a0911200ce53"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/oriental_trader.rs"
+      ],
+      "literal_registry_sha256": "4fb4b21acffab09bd398a8a00027ef068ea890af952f772dd788fef40b4b84f2",
+      "same_literal_registries_as": [
+        "questpc-snap",
+        "questpc",
+        "questpc3-wip",
+        "questwip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 256
+        }
+      ]
+    },
+    {
+      "suffix": "questpc2",
+      "head": "0a6d6e208a6d92c8873e36b92475b64a13375785",
+      "pr": null,
+      "family": "questpc2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 93,
+        "behind": 7,
+        "merge_base": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "files": 552
+      },
+      "implementation_observation": "Personal native kill objectives, Elvenbane finite programme, NPC item exchange and original source-custody qualification for Albinius/Gerimor/Henricus/Oldrak.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/kill_objectives.rs",
+          "line": 9,
+          "text": "pub const QUEST: &str = \"oteryn:quest.authored.elvenbane_quest\";",
+          "ref": "0a6d6e208a6d92c8873e36b92475b64a13375785"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_objectives.rs",
+          "line": 37,
+          "text": "pub(super) fn capture(",
+          "ref": "0a6d6e208a6d92c8873e36b92475b64a13375785"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 4,
+          "removed_keys": 34,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.elvenbane_quest",
+            "oteryn:quest.desert_dungeon_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "41 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/bundle_ladder.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/native_goals.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/oriental_trader.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/party_transfer.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/reward_door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_objectives.rs",
+        "crates/gameplay/quests/src/quest/elvenbane.rs",
+        "crates/gameplay/quests/src/quest/kill_objectives.rs",
+        "crates/gameplay/quests/src/quest/native_kill_goals.rs"
+      ],
+      "literal_registry_sha256": "089fcb02ef8752b4caf54c7635004b8ad3afd1f4c84196c210e4b933a10e99a7",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc2b",
+          "shared_callback_keys": 469
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 465
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 465
+        }
+      ]
+    },
+    {
+      "suffix": "questpc2b",
+      "head": "3886f31acd21f3a2ee5ca26530109bbcc5911f81",
+      "pr": null,
+      "family": "questpc2",
+      "compare": {
+        "status": "ahead",
+        "ahead": 109,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 602
+      },
+      "implementation_observation": "Personal native kill objectives, Elvenbane finite programme, NPC item exchange and original source-custody qualification for Albinius/Gerimor/Henricus/Oldrak.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/kill_objectives.rs",
+          "line": 9,
+          "text": "pub const QUEST: &str = \"oteryn:quest.authored.elvenbane_quest\";",
+          "ref": "3886f31acd21f3a2ee5ca26530109bbcc5911f81"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_objectives.rs",
+          "line": 37,
+          "text": "pub(super) fn capture(",
+          "ref": "3886f31acd21f3a2ee5ca26530109bbcc5911f81"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/npc_rules/questpc2_oldrak_source.rs",
+          "line": 10,
+          "text": "pub(super) fn custody(document: &NpcRuleDocument) -> bool {",
+          "ref": "3886f31acd21f3a2ee5ca26530109bbcc5911f81"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 4,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.elvenbane_quest",
+            "oteryn:quest.desert_dungeon_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/bundle_ladder.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/native_goals.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue_track_mutation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/oriental_trader.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/party_transfer.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/reward_door.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_kill_objectives.rs",
+        "crates/gameplay/quests/src/quest/elvenbane.rs",
+        "crates/gameplay/quests/src/quest/kill_objectives.rs",
+        "crates/gameplay/quests/src/quest/native_kill_goals.rs",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_albinius_source.rs",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_gerimor_source.rs",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_henricus_source.rs",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_oldrak_source.rs"
+      ],
+      "literal_registry_sha256": "f7893ba6469b8feaafad4dd2b5c039a1656fb11804990f82f34c6dd97253d2c2",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "questpc3-wip",
+      "head": "968f6812010e719d91316f92eedb5732841283fd",
+      "pr": null,
+      "family": "questpc3",
+      "compare": {
+        "status": "diverged",
+        "ahead": 7,
+        "behind": 25,
+        "merge_base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+        "files": 111
+      },
+      "implementation_observation": "Carried quest uses, native health owner, Rookgaard exchanges, trade callbacks and Stampede five-kill goal; exact item source bindings are guarded separately.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/stampede.rs",
+          "line": 8,
+          "text": "pub const QUEST: &str = \"oteryn:quest.stampede_mini_world_change\";",
+          "ref": "968f6812010e719d91316f92eedb5732841283fd"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/rookgaard_exchanges.rs",
+        "crates/gameplay/quests/src/quest/rookgaard_exchanges.rs",
+        "crates/gameplay/quests/src/quest/stampede.rs"
+      ],
+      "literal_registry_sha256": "4fb4b21acffab09bd398a8a00027ef068ea890af952f772dd788fef40b4b84f2",
+      "same_literal_registries_as": [
+        "questpc-snap",
+        "questpc",
+        "questpc2-wip",
+        "questwip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 256
+        }
+      ]
+    },
+    {
+      "suffix": "questpc3",
+      "head": "09c26dcee6ca67f43b89bee6523e011f4f466c03",
+      "pr": null,
+      "family": "questpc3",
+      "compare": {
+        "status": "diverged",
+        "ahead": 118,
+        "behind": 7,
+        "merge_base": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "files": 309
+      },
+      "implementation_observation": "Carried quest uses, native health owner, Rookgaard exchanges, trade callbacks and Stampede five-kill goal; exact item source bindings are guarded separately.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs",
+          "line": 82,
+          "text": "pub(super) async fn use_source(",
+          "ref": "09c26dcee6ca67f43b89bee6523e011f4f466c03"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/stampede.rs",
+          "line": 8,
+          "text": "pub const QUEST: &str = \"oteryn:quest.stampede_mini_world_change\";",
+          "ref": "09c26dcee6ca67f43b89bee6523e011f4f466c03"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 114,
+          "removed_keys": 34,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 79,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.pilgrimage_of_ashes",
+            "oteryn:quest.the_beginning_quest",
+            "oteryn:quest.threatened_dreams_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "41 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/quest_health_owner.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/beginning.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs",
+        "crates/gameplay/quests/src/quest/beginning.rs",
+        "crates/gameplay/quests/src/quest/rookgaard_exchanges.rs",
+        "crates/gameplay/quests/src/quest/stampede.rs",
+        "crates/gameplay/quests/src/quest/trade_callbacks.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/carried.rs"
+      ],
+      "literal_registry_sha256": "d55487e872c07fdeeea5edaff0357bfa31260e107a37e8ab07c73b19deffd2db",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc3b",
+          "shared_callback_keys": 658
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 465
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 465
+        }
+      ]
+    },
+    {
+      "suffix": "questpc3b",
+      "head": "27d2708c3a71858ab3838f5d28d9101db2932f24",
+      "pr": null,
+      "family": "questpc3",
+      "compare": {
+        "status": "ahead",
+        "ahead": 135,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 325
+      },
+      "implementation_observation": "Carried quest uses, native health owner, Rookgaard exchanges, trade callbacks and Stampede five-kill goal; exact item source bindings are guarded separately.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs",
+          "line": 82,
+          "text": "pub(super) async fn use_source(",
+          "ref": "27d2708c3a71858ab3838f5d28d9101db2932f24"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/stampede.rs",
+          "line": 8,
+          "text": "pub const QUEST: &str = \"oteryn:quest.stampede_mini_world_change\";",
+          "ref": "27d2708c3a71858ab3838f5d28d9101db2932f24"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks/carried_selectors.rs",
+          "line": 4,
+          "text": "pub(super) fn disjoint(left: &Callback, right: &Callback) -> bool {",
+          "ref": "27d2708c3a71858ab3838f5d28d9101db2932f24"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 114,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 79,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.pilgrimage_of_ashes",
+            "oteryn:quest.the_beginning_quest",
+            "oteryn:quest.threatened_dreams_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/actor_spell/quest_health_owner.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/beginning.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/rookgaard_exchanges.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs",
+        "crates/gameplay/quests/src/quest/admission_binding/trade.rs",
+        "crates/gameplay/quests/src/quest/beginning.rs",
+        "crates/gameplay/quests/src/quest/legacy_effect_encoding.rs",
+        "crates/gameplay/quests/src/quest/rookgaard_exchanges.rs",
+        "crates/gameplay/quests/src/quest/stampede.rs",
+        "crates/gameplay/quests/src/quest/trade_callbacks.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/carried.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/carried_binding.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/carried_selectors.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/source_authority.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/storage_increment.rs"
+      ],
+      "literal_registry_sha256": "a7c4f8ef2fbcf969ecb3639c425b085495f7902fdbfd3d5e08c8dd7ff8dc4c7d",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc3",
+          "shared_callback_keys": 658
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "questpc4-wip",
+      "head": "30e0b2af23a01fae1d932395b13d1c2365b65662",
+      "pr": null,
+      "family": "questpc4",
+      "compare": {
+        "status": "diverged",
+        "ahead": 7,
+        "behind": 25,
+        "merge_base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+        "files": 121
+      },
+      "implementation_observation": "Main-relative callback documents have no new keys in integration head; native item profile completion and retained-map/recipe/item PG scenarios are the substantive follow-up. Existing callbacks may become materializable only if exact Item profile predicates admit them.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+          "line": 3,
+          "text": "pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {",
+          "ref": "30e0b2af23a01fae1d932395b13d1c2365b65662"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 1,
+          "removed_keys": 39,
+          "changed_existing": 4,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "241 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "New profile admission can activate pre-existing callback rewards; evaluate real binder and retained source map on a composed tree rather than counting new callback keys (zero)."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "af8922e365055afff6ef0acc51c97203c7d9d8064439d6ddaa325034e0e6a57e",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc4b",
+      "head": "9ee8b80795135a87841ea835cb426cd08ab23c66",
+      "pr": null,
+      "family": "questpc4",
+      "compare": {
+        "status": "ahead",
+        "ahead": 139,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 55
+      },
+      "implementation_observation": "Main-relative callback documents have no new keys in integration head; native item profile completion and retained-map/recipe/item PG scenarios are the substantive follow-up. Existing callbacks may become materializable only if exact Item profile predicates admit them.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_recipe_items.rs",
+          "line": 11,
+          "text": "fn l6_recipe_item_14682_native_custody_and_replay() -> TestResult {",
+          "ref": "9ee8b80795135a87841ea835cb426cd08ab23c66"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+          "line": 3,
+          "text": "pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {",
+          "ref": "9ee8b80795135a87841ea835cb426cd08ab23c66"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "New profile admission can activate pre-existing callback rewards; evaluate real binder and retained source map on a composed tree rather than counting new callback keys (zero)."
+        ]
+      },
+      "new_native_owner_files": [],
+      "literal_registry_sha256": "4c6d404bb6ac3c1d6d0ef3e6c59bc77d6d2c76a7cca86ec1c70a2e1b252d1f47",
+      "same_literal_registries_as": [
+        "qready1b",
+        "season",
+        "srvenc"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "questpc5-wip",
+      "head": "be670b5c145bd14882926e917299b4bd35c480b3",
+      "pr": null,
+      "family": "questpc5",
+      "compare": {
+        "status": "diverged",
+        "ahead": 6,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 706
+      },
+      "implementation_observation": "Counted use, passage-departure state and reward-claim gates plus native kill goals and map utility content; repeats shared integration work present on other lane heads.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "be670b5c145bd14882926e917299b4bd35c480b3"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 100,
+          "text": "pub struct Callback {",
+          "ref": "be670b5c145bd14882926e917299b4bd35c480b3"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 11,
+          "removed_keys": 48,
+          "changed_existing": 2,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 241,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "be670b5c145bd14882926e917299b4bd35c480b3"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 248,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "be670b5c145bd14882926e917299b4bd35c480b3"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs"
+      ],
+      "literal_registry_sha256": "5bbe94b7550805145fade15deb97376f76cc292995ab8f4cfaf0b85fc9138397",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questl2b",
+          "shared_callback_keys": 267
+        },
+        {
+          "head_suffix": "questl2",
+          "shared_callback_keys": 267
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc5",
+      "head": "51a476805fe543f912bde3bf7eaf476de837669e",
+      "pr": null,
+      "family": "questpc5",
+      "compare": {
+        "status": "ahead",
+        "ahead": 99,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 1005
+      },
+      "implementation_observation": "Counted use, passage-departure state and reward-claim gates plus native kill goals and map utility content; repeats shared integration work present on other lane heads.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/native_kill_goals.rs",
+          "line": 30,
+          "text": "pub struct Goal {",
+          "ref": "51a476805fe543f912bde3bf7eaf476de837669e"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/native_goals.rs",
+          "line": 34,
+          "text": "pub(super) fn freeze(",
+          "ref": "51a476805fe543f912bde3bf7eaf476de837669e"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks/counted_use.rs",
+          "line": 5,
+          "text": "pub struct CountedUse {",
+          "ref": "51a476805fe543f912bde3bf7eaf476de837669e"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 46,
+          "removed_keys": 0,
+          "changed_existing": 4,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.authored.20_years_a_cook_quest",
+            "oteryn:quest.authored.nimmersatt_s_lair",
+            "oteryn:quest.authored.nomads_mini_world_change",
+            "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+            "oteryn:quest.demon_helmet_quest",
+            "oteryn:quest.devil_helmet_quest",
+            "oteryn:quest.newhaven_legion_helmet_quest",
+            "oteryn:quest.newhaven_quest",
+            "oteryn:quest.serpentine_tower_quest",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 15,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.20_years_a_cook_quest",
+            "oteryn:quest.authored.nimmersatt_s_lair",
+            "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+            "oteryn:quest.newhaven_legion_helmet_quest",
+            "oteryn:quest.newhaven_quest",
+            "oteryn:quest.present_quest",
+            "oteryn:quest.the_queen_of_the_banshees_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 94,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 301,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "51a476805fe543f912bde3bf7eaf476de837669e"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 308,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "51a476805fe543f912bde3bf7eaf476de837669e"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/native_goals.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_use/map_utility.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/occupancy.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/native_kill_goals.rs",
+        "crates/gameplay/quests/src/quest/reward_claim_gates.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/counted_use.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/passage_departure.rs"
+      ],
+      "literal_registry_sha256": "7a65b256f244b81f105e0cdec3429b20e45a9cc91c2398f53dcda10fa6d3004e",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 515
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 515
+        },
+        {
+          "head_suffix": "questpc-pc2",
+          "shared_callback_keys": 515
+        }
+      ]
+    },
+    {
+      "suffix": "questpc6-wip",
+      "head": "db355fae2d4900be2728eca6d645f72376134b5a",
+      "pr": null,
+      "family": "questpc6",
+      "compare": {
+        "status": "diverged",
+        "ahead": 7,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 704
+      },
+      "implementation_observation": "Source dropdown movement plus native kill goals, callbacks and reward content. Old WIP versions predate current shared callback registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs",
+          "line": 70,
+          "text": "pub(in crate::gameplay_transport) async fn use_bundle_dropdown(",
+          "ref": "db355fae2d4900be2728eca6d645f72376134b5a"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 9,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 241,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "db355fae2d4900be2728eca6d645f72376134b5a"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 248,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "db355fae2d4900be2728eca6d645f72376134b5a"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs"
+      ],
+      "literal_registry_sha256": "d2cc65fbdda942258dd72b81ccee83ecf5457c81ca498ce0a36ccafb1b010193",
+      "same_literal_registries_as": [
+        "questpc-wip",
+        "questpc8-wip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8-wip",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc6",
+      "head": "53d5648b88e48bed2b9f27545334c21ea6f37028",
+      "pr": null,
+      "family": "questpc6",
+      "compare": {
+        "status": "diverged",
+        "ahead": 21,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 807
+      },
+      "implementation_observation": "Source dropdown movement plus native kill goals, callbacks and reward content. Old WIP versions predate current shared callback registries.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs",
+          "line": 70,
+          "text": "pub(in crate::gameplay_transport) async fn use_bundle_dropdown(",
+          "ref": "53d5648b88e48bed2b9f27545334c21ea6f37028"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/native_kill_goals.rs",
+          "line": 30,
+          "text": "pub struct Goal {",
+          "ref": "53d5648b88e48bed2b9f27545334c21ea6f37028"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 10,
+          "removed_keys": 37,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 3,
+          "removed_keys": 188,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.deeper_fibula_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "225 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 80,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 246,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "53d5648b88e48bed2b9f27545334c21ea6f37028"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 253,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "53d5648b88e48bed2b9f27545334c21ea6f37028"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects/dropdown.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/native_goals.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/native_kill_goals.rs"
+      ],
+      "literal_registry_sha256": "edbcb5ce6d97af22d67b0222808ce5de436f9d2e52ac7eafe7043c59ee290be4",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc-pc2",
+          "shared_callback_keys": 291
+        },
+        {
+          "head_suffix": "questl2b",
+          "shared_callback_keys": 291
+        },
+        {
+          "head_suffix": "questl2",
+          "shared_callback_keys": 291
+        }
+      ]
+    },
+    {
+      "suffix": "questpc7-wip",
+      "head": "06c1349463051f39823a8f8e5d8b4326c120f868",
+      "pr": null,
+      "family": "questpc7",
+      "compare": {
+        "status": "diverged",
+        "ahead": 8,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 734
+      },
+      "implementation_observation": "Bounded authored death objectives and guardians; imbuement learning is gated on native quest completion, with source NPC/prop authoring work.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "06c1349463051f39823a8f8e5d8b4326c120f868"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 113,
+          "text": "pub struct Callback {",
+          "ref": "06c1349463051f39823a8f8e5d8b4326c120f868"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 10,
+          "removed_keys": 48,
+          "changed_existing": 3,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 241,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "06c1349463051f39823a8f8e5d8b4326c120f868"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 248,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "06c1349463051f39823a8f8e5d8b4326c120f868"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs"
+      ],
+      "literal_registry_sha256": "ded0ab77337b245522d2632fef6e2c7226bc6a62edb459ff92e45933cd71842f",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc7",
+          "shared_callback_keys": 266
+        },
+        {
+          "head_suffix": "questpc5",
+          "shared_callback_keys": 266
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc7",
+      "head": "c5cc4325927d98d1af90c7041352d8c1d32a3361",
+      "pr": null,
+      "family": "questpc7",
+      "compare": {
+        "status": "diverged",
+        "ahead": 90,
+        "behind": 6,
+        "merge_base": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+        "files": 956
+      },
+      "implementation_observation": "Bounded authored death objectives and guardians; imbuement learning is gated on native quest completion, with source NPC/prop authoring work.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/guardians.rs",
+          "line": 21,
+          "text": "pub(in crate::gameplay_transport) async fn refresh_quest_guardians(",
+          "ref": "c5cc4325927d98d1af90c7041352d8c1d32a3361"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/death_objectives.rs",
+          "line": 11,
+          "text": "pub struct DeathObjective {",
+          "ref": "c5cc4325927d98d1af90c7041352d8c1d32a3361"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/imbuement/knowledge.rs",
+          "line": 48,
+          "text": "pub(super) fn requirement(family: u8, tier: u8) -> Result<Option<&'static Rule>, String> {",
+          "ref": "c5cc4325927d98d1af90c7041352d8c1d32a3361"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 120,
+          "removed_keys": 34,
+          "changed_existing": 3,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.ferumbras_ascension_quest",
+            "oteryn:quest.formal_dress_outfits_quest",
+            "oteryn:quest.goblin_merchant_quest",
+            "oteryn:quest.heart_of_destruction_quest",
+            "oteryn:quest.hero_of_rathleton_quest",
+            "oteryn:quest.hidden_threats_quest",
+            "oteryn:quest.hydra_egg_quest",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 59,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+            "oteryn:quest.feaster_of_souls_quest",
+            "oteryn:quest.fiend_slayer_outfits_quest",
+            "oteryn:quest.forgotten_knowledge_quest",
+            "oteryn:quest.formal_dress_outfits_quest",
+            "oteryn:quest.friends_and_traders",
+            "oteryn:quest.goblin_merchant_quest",
+            "oteryn:quest.grimvale_quest",
+            "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+            "oteryn:quest.heart_of_destruction_quest",
+            "oteryn:quest.hunter_outfits_quest",
+            "oteryn:quest.hunting_for_tokens"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "41 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 90,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 289,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "c5cc4325927d98d1af90c7041352d8c1d32a3361"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 296,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "c5cc4325927d98d1af90c7041352d8c1d32a3361"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 6 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/guardians.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/imbuement/knowledge.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/death_objectives.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/bindings.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/rewards.rs"
+      ],
+      "literal_registry_sha256": "40248b19a7600376f0444426584aaadd1b81efc0c657622ba9dc4c89ad7a7e67",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc5",
+          "shared_callback_keys": 475
+        },
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 474
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 474
+        }
+      ]
+    },
+    {
+      "suffix": "questpc8-wip",
+      "head": "4bc2bdb420845626d23c958205fb97bd823ac590",
+      "pr": null,
+      "family": "questpc8",
+      "compare": {
+        "status": "diverged",
+        "ahead": 8,
+        "behind": 33,
+        "merge_base": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "files": 718
+      },
+      "implementation_observation": "Source scene edits, scene actor moves/item custody, disguise and quest death loot; finite Grizzly campaign and guardian groups, sharing much of wpkg2 integration.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/loader.rs",
+          "line": 196,
+          "text": "pub fn load_embedded_quest_state(",
+          "ref": "4bc2bdb420845626d23c958205fb97bd823ac590"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 99,
+          "text": "pub struct Callback {",
+          "ref": "4bc2bdb420845626d23c958205fb97bd823ac590"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 9,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.the_order_of_the_stag_quest"
+          ]
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 78,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 241,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "4bc2bdb420845626d23c958205fb97bd823ac590"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 248,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "4bc2bdb420845626d23c958205fb97bd823ac590"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs"
+      ],
+      "literal_registry_sha256": "d2cc65fbdda942258dd72b81ccee83ecf5457c81ca498ce0a36ccafb1b010193",
+      "same_literal_registries_as": [
+        "questpc-wip",
+        "questpc6-wip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 265
+        },
+        {
+          "head_suffix": "questpc8",
+          "shared_callback_keys": 265
+        }
+      ]
+    },
+    {
+      "suffix": "questpc8",
+      "head": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e",
+      "pr": null,
+      "family": "questpc8",
+      "compare": {
+        "status": "diverged",
+        "ahead": 96,
+        "behind": 7,
+        "merge_base": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "files": 922
+      },
+      "implementation_observation": "Source scene edits, scene actor moves/item custody, disguise and quest death loot; finite Grizzly campaign and guardian groups, sharing much of wpkg2 integration.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+          "line": 10,
+          "text": "pub(super) async fn prepare_scene_items(",
+          "ref": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+          "line": 5,
+          "text": "pub(super) async fn refresh_quest_disguise(&self, session: GameSessionId) -> bool {",
+          "ref": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks/scene.rs",
+          "line": 8,
+          "text": "pub struct SceneEdit {",
+          "ref": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 80,
+          "removed_keys": 34,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.authored.braindeath_quest",
+            "oteryn:quest.authored.kingdom_of_kormarak_quest",
+            "oteryn:quest.authored.magic_sword_quest",
+            "oteryn:quest.authored.mastermind_potion_quest",
+            "oteryn:quest.authored.mystery_of_the_valley_quest",
+            "oteryn:quest.authored.tibia_anniversary",
+            "oteryn:quest.authored.torch_quest",
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.authored.voodoo_doll_quest",
+            "oteryn:quest.life_ring_quest",
+            "oteryn:quest.mintwallin_cyclops_quest",
+            "oteryn:quest.the_order_of_the_stag_quest",
+            "oteryn:quest.tinder_box_quest_chyllfroest",
+            "oteryn:quest.treasure_island_quest",
+            "oteryn:quest.winterlight_solstice"
+          ]
+        },
+        "reward": {
+          "added_keys": 23,
+          "removed_keys": 7,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.killing_in_the_name_of_quest",
+            "oteryn:quest.the_travelling_trader_quest",
+            "oteryn:quest.wrath_of_the_emperor_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": "41 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 88,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 268,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 275,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/guardians.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_actors.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_death_loot.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/death_objectives.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/grizzly_adams/campaign.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/scene.rs"
+      ],
+      "literal_registry_sha256": "e68fda24bb3fd7fc53218a829d30b69d243645b1d871c94e30e9cfc39943d3b1",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 568
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 568
+        },
+        {
+          "head_suffix": "questpc7",
+          "shared_callback_keys": 474
+        }
+      ]
+    },
+    {
+      "suffix": "questpc8b",
+      "head": "393380ba2654388bb87b50a3c2f506e4010cdb4a",
+      "pr": null,
+      "family": "questpc8",
+      "compare": {
+        "status": "ahead",
+        "ahead": 117,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 965
+      },
+      "implementation_observation": "Source scene edits, scene actor moves/item custody, disguise and quest death loot; finite Grizzly campaign and guardian groups, sharing much of wpkg2 integration.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+          "line": 10,
+          "text": "pub(super) async fn prepare_scene_items(",
+          "ref": "393380ba2654388bb87b50a3c2f506e4010cdb4a"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+          "line": 5,
+          "text": "pub(super) async fn refresh_quest_disguise(&self, session: GameSessionId) -> bool {",
+          "ref": "393380ba2654388bb87b50a3c2f506e4010cdb4a"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks/scene.rs",
+          "line": 8,
+          "text": "pub struct SceneEdit {",
+          "ref": "393380ba2654388bb87b50a3c2f506e4010cdb4a"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 84,
+          "removed_keys": 0,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.authored.braindeath_quest",
+            "oteryn:quest.authored.kingdom_of_kormarak_quest",
+            "oteryn:quest.authored.magic_sword_quest",
+            "oteryn:quest.authored.mastermind_potion_quest",
+            "oteryn:quest.authored.mystery_of_the_valley_quest",
+            "oteryn:quest.authored.tibia_anniversary",
+            "oteryn:quest.authored.torch_quest",
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.authored.voodoo_doll_quest",
+            "oteryn:quest.life_ring_quest",
+            "oteryn:quest.mintwallin_cyclops_quest",
+            "oteryn:quest.the_order_of_the_stag_quest",
+            "oteryn:quest.tinder_box_quest_chyllfroest",
+            "oteryn:quest.treasure_island_quest",
+            "oteryn:quest.winterlight_solstice"
+          ]
+        },
+        "reward": {
+          "added_keys": 28,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.the_colours_of_magic",
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.killing_in_the_name_of_quest",
+            "oteryn:quest.the_travelling_trader_quest",
+            "oteryn:quest.wrath_of_the_emperor_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 93,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 275,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "393380ba2654388bb87b50a3c2f506e4010cdb4a"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 282,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "393380ba2654388bb87b50a3c2f506e4010cdb4a"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/guardians.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_actors.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_death_loot.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/death_objectives.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/grizzly_adams/campaign.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/carried.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/carried_bounds.rs",
+        "crates/gameplay/quests/src/quest/reward_callbacks/published_markers.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/published_markers.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/scene.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/selector_partitions.rs"
+      ],
+      "literal_registry_sha256": "96766110b36fa808ee6ac2a6d346d47cdad9819813335fb05c94d31781b49c55",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 609
+        },
+        {
+          "head_suffix": "questpc8",
+          "shared_callback_keys": 568
+        },
+        {
+          "head_suffix": "questpc5",
+          "shared_callback_keys": 515
+        }
+      ]
+    },
+    {
+      "suffix": "questwip",
+      "head": "19126b2482effd4f6529016234659e95341793ac",
+      "pr": null,
+      "family": "questwip",
+      "compare": {
+        "status": "diverged",
+        "ahead": 6,
+        "behind": 42,
+        "merge_base": "c475b511ba82c20597fbefa3e179c4be5b015217",
+        "files": 139
+      },
+      "implementation_observation": "Early aggregate source NPC/callback snapshot; later source-owned value paths and callback batches in main mean two-dot removals are stale history, not merge deletions.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/quests/src/quest/npc_rules.rs",
+          "line": 165,
+          "text": "pub enum NpcRuleEffect {",
+          "ref": "19126b2482effd4f6529016234659e95341793ac"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "line": 96,
+          "text": "pub struct Callback {",
+          "ref": "19126b2482effd4f6529016234659e95341793ac"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 48,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 202,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": "250 main callback keys absent in this head; these are not asserted deletions of a three-way merge.",
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 77,
+          "text": "pub fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 238,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "19126b2482effd4f6529016234659e95341793ac"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 245,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "19126b2482effd4f6529016234659e95341793ac"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 42 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_rules.rs"
+      ],
+      "literal_registry_sha256": "4fb4b21acffab09bd398a8a00027ef068ea890af952f772dd788fef40b4b84f2",
+      "same_literal_registries_as": [
+        "questpc-snap",
+        "questpc",
+        "questpc2-wip",
+        "questpc3-wip"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 256
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 256
+        }
+      ]
+    },
+    {
+      "suffix": "season",
+      "head": "48bfdb69248469cfe80751fd99f449f273ed5ea8",
+      "pr": 3039,
+      "family": "season",
+      "compare": {
+        "status": "ahead",
+        "ahead": 42,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 381
+      },
+      "implementation_observation": "Cake bite, contribution/phases/map projections and Santa present NPC MINT route; House decoration is separate gameplay. No new shared quest callback/reward keys.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/cake_event.rs",
+          "line": 78,
+          "text": "fn cake_sources(&self) -> Option<Vec<CakeMapSource>> {",
+          "ref": "48bfdb69248469cfe80751fd99f449f273ed5ea8"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/seasonal.rs",
+          "line": 72,
+          "text": "pub(super) fn prepare(",
+          "ref": "48bfdb69248469cfe80751fd99f449f273ed5ea8"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cake_phases.rs",
+          "line": 10,
+          "text": "fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResult {",
+          "ref": "48bfdb69248469cfe80751fd99f449f273ed5ea8"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "A Piece of Cake depends on current seasonal reset/calendar/raid phase and shipped cake creature/object admission; component Cake/Santa scenarios do not by themselves prove an entire wiki campaign."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/cake_event.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/chat_intent/cake_speech.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/connection/routing/house_rotation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/house_base_decorations.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/house_item_use/presentation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/house_rotation.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/cake.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/seasonal.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/raid_live_world/cake.rs"
+      ],
+      "literal_registry_sha256": "4c6d404bb6ac3c1d6d0ef3e6c59bc77d6d2c76a7cca86ec1c70a2e1b252d1f47",
+      "same_literal_registries_as": [
+        "qready1b",
+        "questpc4b",
+        "srvenc"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "srvenc",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "srvenc",
+      "head": "370423fbc54319aeb5f715519b86edce1b2db3bb",
+      "pr": 3034,
+      "family": "srvenc",
+      "compare": {
+        "status": "ahead",
+        "ahead": 75,
+        "behind": 0,
+        "merge_base": "3209d3d61d87451339ca09095e00aa43617bb83f",
+        "files": 392
+      },
+      "implementation_observation": "Qualifies all captured boss rooms instead of selecting one, closes Instance physical corpse/loot custody, and admits exact native source hooks with explicit diagnostics. Drome rankings are separate from wiki quest completion.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/content/src/content/bosses/activity_template.rs",
+          "line": 243,
+          "text": "pub fn qualify_initial_activity_template(",
+          "ref": "370423fbc54319aeb5f715519b86edce1b2db3bb"
+        },
+        {
+          "file": "crates/gameplay/content/src/content/bosses/activity_template.rs",
+          "line": 548,
+          "text": "fn qualify_instance_death_descendant(",
+          "ref": "370423fbc54319aeb5f715519b86edce1b2db3bb"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/primal_menace_native.rs",
+          "line": 10,
+          "text": "fn primal_menace_postgres_native_cadence_spawns_and_retires_actual_beasts() -> TestResult {",
+          "ref": "370423fbc54319aeb5f715519b86edce1b2db3bb"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        },
+        "reward": {
+          "added_keys": 0,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": []
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": null,
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Encounter gains depend on generation-specific source-hook closure, physical corpse Item admission, candidate layout and exact room publication, then the owning quest start/final reward bindings."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/primal_menace.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/primal_pods.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/source_volatile_items.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/tibiadrome/modifiers.rs"
+      ],
+      "literal_registry_sha256": "4c6d404bb6ac3c1d6d0ef3e6c59bc77d6d2c76a7cca86ec1c70a2e1b252d1f47",
+      "same_literal_registries_as": [
+        "qready1b",
+        "questpc4b",
+        "season"
+      ],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "wpkg2",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "season",
+          "shared_callback_keys": 506
+        },
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 506
+        }
+      ]
+    },
+    {
+      "suffix": "wpkg2",
+      "head": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa",
+      "pr": null,
+      "family": "wpkg2",
+      "compare": {
+        "status": "diverged",
+        "ahead": 320,
+        "behind": 1,
+        "merge_base": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+        "files": 394
+      },
+      "implementation_observation": "Source scene transforms, actor/item scene custody, quest disguise and native guardian/death-objective paths, plus finite Grizzly campaign; also deliberately excludes Dawnport.",
+      "native_owner_evidence": [
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+          "line": 10,
+          "text": "pub(super) async fn prepare_scene_items(",
+          "ref": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa"
+        },
+        {
+          "file": "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+          "line": 5,
+          "text": "pub(super) async fn refresh_quest_disguise(&self, session: GameSessionId) -> bool {",
+          "ref": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa"
+        },
+        {
+          "file": "crates/gameplay/quests/src/quest/grizzly_adams/campaign.rs",
+          "line": 5,
+          "text": "pub const PHASE: &str = \"oteryn:quest-progress/chosen/killing_in_the_name_of/phase\";",
+          "ref": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa"
+        }
+      ],
+      "literal_callback_node_delta": {
+        "world": {
+          "added_keys": 80,
+          "removed_keys": 0,
+          "changed_existing": 1,
+          "new_owner_strings": [
+            "oteryn:quest.a_pirates_tail",
+            "oteryn:quest.authored.braindeath_quest",
+            "oteryn:quest.authored.kingdom_of_kormarak_quest",
+            "oteryn:quest.authored.magic_sword_quest",
+            "oteryn:quest.authored.mastermind_potion_quest",
+            "oteryn:quest.authored.mystery_of_the_valley_quest",
+            "oteryn:quest.authored.tibia_anniversary",
+            "oteryn:quest.authored.torch_quest",
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.authored.voodoo_doll_quest",
+            "oteryn:quest.life_ring_quest",
+            "oteryn:quest.mintwallin_cyclops_quest",
+            "oteryn:quest.the_order_of_the_stag_quest",
+            "oteryn:quest.tinder_box_quest_chyllfroest",
+            "oteryn:quest.treasure_island_quest",
+            "oteryn:quest.winterlight_solstice"
+          ]
+        },
+        "reward": {
+          "added_keys": 23,
+          "removed_keys": 0,
+          "changed_existing": 0,
+          "new_owner_strings": [
+            "oteryn:quest.authored.venore_daily_tasks_quest",
+            "oteryn:quest.killing_in_the_name_of_quest",
+            "oteryn:quest.the_travelling_trader_quest",
+            "oteryn:quest.wrath_of_the_emperor_quest"
+          ]
+        }
+      },
+      "stale_snapshot_warning": null,
+      "dawnport_scope_effect": {
+        "effect": "Dawnport explicitly excluded from runtime scope on this exact head",
+        "evidence": {
+          "file": "crates/gameplay/quests/src/quest/mod.rs",
+          "line": 93,
+          "text": "pub(super) fn in_runtime_scope(quest: &str) -> bool {",
+          "body": "pub(super) fn in_runtime_scope(quest: &str) -> bool {\n    quest != \"oteryn:quest.dawnport_quest\"\n}\n"
+        },
+        "C_effect_if_filter_survives_merge": "Dawnport cannot remain LIVE_UNPROVEN through the old state/callback path; replacement path not established",
+        "loader_call_evidence": [
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 275,
+            "text": ".filter(|track| super::in_runtime_scope(&track.quest))",
+            "ref": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa"
+          },
+          {
+            "file": "crates/gameplay/quests/src/quest/loader.rs",
+            "line": 282,
+            "text": ".filter(|transition| super::in_runtime_scope(&transition.quest))",
+            "ref": "440e6d5834f3ffc09c4c8313eefd671f0eaa25aa"
+          }
+        ]
+      },
+      "exact_slice_delta": null,
+      "C_merge_delta": {
+        "status": "UNKNOWN",
+        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "dependencies": [
+          "Head is 1 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
+          "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
+        ]
+      },
+      "new_native_owner_files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills/guardians.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_actors.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/scene_items.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_death_loot.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_disguise.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs",
+        "crates/gameplay/quests/src/quest/death_objectives.rs",
+        "crates/gameplay/quests/src/quest/falcon.rs",
+        "crates/gameplay/quests/src/quest/grizzly_adams/campaign.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/scene.rs",
+        "crates/gameplay/quests/src/quest/world_callbacks/selector_gates.rs"
+      ],
+      "literal_registry_sha256": "599b4c9bc5388234dfe73928504470d793c6bd6c63d3e143bcf85826b00f99d8",
+      "same_literal_registries_as": [],
+      "largest_existing_key_overlap_heads": [
+        {
+          "head_suffix": "questpc8b",
+          "shared_callback_keys": 609
+        },
+        {
+          "head_suffix": "questpc8",
+          "shared_callback_keys": 568
+        },
+        {
+          "head_suffix": "questpc5",
+          "shared_callback_keys": 515
+        }
+      ]
+    }
+  ]
+}

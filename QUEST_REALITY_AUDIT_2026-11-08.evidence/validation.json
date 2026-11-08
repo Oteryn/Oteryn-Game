@@ -1,0 +1,113 @@
+{
+  "quest_unit": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "31db5679f548f492ae6af61070656e1f63ba7acf1c49b9bdfbd7e1390a733548",
+    "results": [
+      "test result: ok. 307 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 24.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.31s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.97s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.02s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.93s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.93s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.90s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.09s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    ],
+    "status": "PASS"
+  },
+  "outfit_stories": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "4ddc2007e49645eb0355657c3366bb7065d83c2511e9d748b0fb1e25f2dc31de",
+    "results": [
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l2-elementalist-story duration=69.228111891s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l10-golden-story duration=76.937881109s success=true",
+      ".POSTGRES_CASE_COMPLETED qengine-rewards-l2-battle-mage-story duration=77.010078404s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l2-festive-story duration=72.833105987s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l3-dark-trails-story duration=68.67648098s success=true",
+      ".POSTGRES_CASE_COMPLETED qengine-rewards-l3-demon-story duration=68.758701566s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l3-glooth-engineer-story duration=69.944122378s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l4-nobleman-story duration=70.693573807s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l4-pirate-story duration=74.38755237s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=72.135006324s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=71.555751688s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l4-royal-costume-story duration=128.946387505s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=75.708026688s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=77.941922455s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=74.392192578s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=69.384639593s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-assassin-story duration=81.721948225s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-druid-story duration=75.935213447s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l7-knight-story duration=74.054584404s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l8-dream-warden-story duration=72.753717674s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l8-hunter-female-story duration=75.610327107s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l8-hunter-male-story duration=72.931607818s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l8-mage-female-story duration=76.269590803s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l8-mage-male-story duration=71.87743754s success=true",
+      "test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 2901 filtered out; finished in 638.78s"
+    ],
+    "status": "PASS"
+  },
+  "more_stories": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "27334491a5e7f9c58118f65bb55e0ab3b03c90af25f0bcf51abe3b764394cc22",
+    "results": [
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l10-documents-nightmare-story duration=72.837609615s success=true",
+      ".POSTGRES_CASE_COMPLETED qengine-rewards-l10-documents-brotherhood-story duration=72.840199392s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l11-dream-warrior-story duration=78.820750121s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l11-makeshift-story duration=69.964802177s success=true",
+      ".POSTGRES_CASE_COMPLETED qengine-rewards-l11-issavi-story duration=69.990332111s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l9-afflicted-story duration=70.618952298s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l9-soil-guardian-story duration=70.166265349s success=true",
+      ".POSTGRES_CASE_COMPLETED qengine-rewards-l9-crystal-warlord-story duration=70.250412757s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l9-crystal-warlord-package-story duration=69.210726044s success=true",
+      "POSTGRES_CASE_COMPLETED qengine-rewards-l9-soil-guardian-package-story duration=70.918248374s success=true",
+      "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 2915 filtered out; finished in 283.92s"
+    ],
+    "status": "PASS"
+  },
+  "doublet_reward": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "4152cbc742c884a6e8ea6c2def923c0d71d1497ec97f70d855a4be8a12a7a166",
+    "results": [
+      "POSTGRES_CASE_COMPLETED qready1_doublet_quest duration=66.500734706s success=true",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2924 filtered out; finished in 66.50s"
+    ],
+    "status": "PASS"
+  },
+  "world_pin": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "ecfddc7fe58abadc0bd99b28e0924c39d5b181a1634c4669386e44d732abc7fe",
+    "results": [],
+    "status": "PASS",
+    "result": {
+      "inputs_digest": "ac74c6d8fe2d87c251fa9782c2c38ecff6813d3e53453eeacbf774cf6022d555",
+      "pins": [
+        {
+          "bytes": 32867111,
+          "digest": "0aac4a46b1eef52983f86141295f59f9063296e20723ee8551108f5e80db8b58",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "qready_map": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "3913dc46633422ae3881f5f59facaf3fc98fa88a8b8088a5ace3793a4168e521",
+    "results": [
+      "Ran 2 tests in 2.032s",
+      "OK"
+    ],
+    "status": "PASS"
+  },
+  "reward_proof_packets": {
+    "command_scope": "audited game code at3209d3d61; continuation changes only audit docs/evidence",
+    "log_sha256": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4",
+    "results": [
+      "Ran 2 tests in 0.002s",
+      "OK"
+    ],
+    "status": "PASS"
+  }
+}
