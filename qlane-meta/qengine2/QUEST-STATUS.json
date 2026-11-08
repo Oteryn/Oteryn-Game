@@ -3413,6 +3413,7 @@
     },
     "whole_quest_qualification_changed": false,
     "pending": [
+      "post-b3864f14a own sequential/burst PostgreSQL refresh",
       "full durability/dispatch crate suites (PREPUSH-2 budget exception)"
     ],
     "first_green_attempt": {
@@ -3444,7 +3445,7 @@
       "scope": "all-features lib, -D warnings",
       "log": "/tmp/qengine2-kill-qualified-clippy.log"
     },
-    "publication": "GREEN slice; full dispatch/durability unit completion remains pending under PREPUSH-2 budget exception",
+    "publication": "Merged compilation/lint/fmt/generation GREEN; own merged PG and full units pending under PREPUSH-2 budget exception",
     "existing_burst_guard": {
       "sha": "6738c1da7ad5cf35110145fe33dfa9ea377ab0d7",
       "file": "crates/gameplay/durability/src/durability/quest_state/writer.rs:709",
@@ -3470,7 +3471,8 @@
         }
       ],
       "completion_markers": 2,
-      "execution": "real native lethal queue, ordinary NPC start; duplicate projections/drains; no SQL quest seeds"
+      "execution": "real native lethal queue, ordinary NPC start; duplicate projections/drains; no SQL quest seeds",
+      "qualified_source_commit": "e0255349a"
     },
     "generated_checks": {
       "native_regeneration": "PASS;44 spell imports,30 Grizzly rooms, equipment expected60",
@@ -3479,6 +3481,21 @@
       "world_metadata": "PASS",
       "duplicate_migrations": "PASS",
       "logs_prefix": "/tmp/qengine2-kill-qualified-"
+    },
+    "post_main_refresh": {
+      "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+      "merge": "4ea7a667824ba02ba5826428487d395804e4eb8d",
+      "conflicts": 0,
+      "pg": "PENDING after compiling merge push under PREPUSH-2 step-3 budget exception",
+      "reason": "main changed native lethal statistics capture; do not relabel premerge PG as merged proof",
+      "publication_gates": {
+        "workspace": "PASS6m38s",
+        "clippy": "PASS5m31s all-feature engine libs -Dwarnings",
+        "fmt": "PASS",
+        "native_regeneration": "PASS44 imports/30rooms/equipment60",
+        "registry_and_duplicate_migrations": "PASS",
+        "logs_prefix": "/tmp/qengine2-pubproj-"
+      }
     }
   }
 }

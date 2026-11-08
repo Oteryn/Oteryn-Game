@@ -1078,3 +1078,23 @@ world item delivery (peer653feac45), explicit native binding admission and world
 real-dispatch tests. Do NOT implement the disproved queued-gate bug: existing
 main6738c1da7a guard already preserves native unchanged effects. Packet44/66 and
 larger68-binding feature IN_PROGRESS remain unchanged.
+
+02:14UTC main moved DURING final prepush fetch to b3864f14a (#3031 PUBPROJ).
+Committed premerge qualified proof as e0255349a, then merged main cleanly as
+4ea7a6678; zero conflicts. Main adds physical lethal statistics capture to
+kill_reward.rs before reward admission. Native quest fallback/capture changes
+merged without conflict. Do NOT relabel e025 premerge PG proof as merged GREEN.
+Merged workspace/fmt/clippy and native/registry generation are running in
+/tmp/qengine2-pubproj-*.log. Publish compiling merge immediately when those pass
+under PREPUSH-2 step-3 budget exception, with own postmerge PG/full crate units
+explicitly pending. Start focused sequential/burst PG AFTER that push to avoid
+Git-HEAD build invalidation; keep HEAD stable during build+tests. Then publish
+actual merged proof and ENGINE-DONE authored_native_kill_counters. No gate-revision
+fix is needed: main6738 guard already handles bursts. Packet44/66 unchanged.
+
+02:27UTC merged publication gates PASS: workspace6m38s, strict engine lib clippy
+5m31s, fmt, native44imports/30rooms/equipment60, registry generation and duplicate
+migrations. Push merge+premerge qualified proof+this checkpoint immediately.
+Post-b386 own PG is explicitly pending under PREPUSH-2 step-3 budget exception;
+next action after push is focused sequential/burst real PG build with debug0,j2,
+keep HEAD stable, testthreads2. No ENGINE-DONE on merged source before actual PG.

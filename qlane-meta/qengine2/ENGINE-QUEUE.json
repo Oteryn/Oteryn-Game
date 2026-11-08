@@ -117,7 +117,8 @@
       "retained_legacy_pg_seconds": 134.14,
       "threshold_effect_reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7",
       "burst_guard_reuse": "existing main 6738c1da7ad5cf35110145fe33dfa9ea377ab0d7 writer.rs:709-710",
-      "whole_quest_qualification_changed": false
+      "whole_quest_qualification_changed": false,
+      "post_main_pg_refresh": "PENDING after main b3864f14a clean merge; retain premerge proof only"
     }
   ]
 }
