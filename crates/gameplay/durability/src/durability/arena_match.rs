@@ -34,6 +34,27 @@ pub struct MatchState {
     pub run: [u8; 16],
 }
 impl MatchState {
+    /// M51: project the state committed by pit custody/fee admission, never a
+    /// refused next-pit proposal. Source arena_kill.lua:37 preserves a credited
+    /// victory even when movements_arena_pit.lua:52-56 refuses the next room.
+    pub fn reconcile_arena_refusal(
+        &mut self,
+        before: &Self,
+        disposition: ArenaDisposition,
+        committed: &ArenaState,
+    ) {
+        match disposition {
+            ArenaDisposition::Busy => {
+                *self = before.clone();
+                self.phase = committed.phase;
+            }
+            ArenaDisposition::InsufficientGold | ArenaDisposition::InventoryFull => {
+                *self = before.clone()
+            }
+            _ => {}
+        }
+    }
+
     pub fn wire(&self, now_ms: i64, masks: [u8; 3]) -> ArenaState {
         ArenaState {
             completed_rank: self.completed,
@@ -366,3 +387,7 @@ fn valid_transition(
             || (now_ms < after.deadline_ms
                 && after.deadline_ms <= now_ms + i64::from(donor::PIT_SECONDS) * 1000))
 }
+
+#[cfg(test)]
+#[path = "arena_match/projection_tests.rs"]
+mod projection_tests;

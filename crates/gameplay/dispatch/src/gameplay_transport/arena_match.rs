@@ -473,9 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let result = wire::decode_match_result(&bytes).ok()?;
         // The fee owner can refuse the proposed entry atomically. Project only
         // the state it committed, never the unpaid proposal.
-        if matches!(result.disposition, D::InsufficientGold | D::InventoryFull) {
-            after = before.clone();
-        }
+        after.reconcile_arena_refusal(&before, result.disposition, &result.state);
         if result.disposition != D::Applied
             && !matches!(result.disposition, D::TimedOut)
             && after == before
