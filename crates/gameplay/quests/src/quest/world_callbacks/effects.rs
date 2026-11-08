@@ -13,6 +13,9 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Complete a separately owned child quest with this native once-only reward.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quest_completion: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_reward: Option<super::super::reward_callbacks::ItemReward>,
     /// An existing, preserved local quest epoch; commands never create reward cycles.
@@ -205,6 +208,19 @@ pub(super) fn valid(callback: &Callback) -> bool {
                     && !state.at_least
                     && state.minimum >= 0
             })
+    }) {
+        return false;
+    }
+    if effects.quest_completion.as_ref().is_some_and(|quest| {
+        !super::super::valid_quest_key(quest)
+            || !quest.starts_with("oteryn:quest.")
+            || quest == &callback.quest
+            || callback.trigger != Trigger::Use
+            || callback.reversible
+            || callback.opening_only
+            || callback.actor_kind != ActorKind::Player
+            || effects.item_reward.is_none()
+            || callback.storage.iter().all(|s| s.preserve)
     }) {
         return false;
     }

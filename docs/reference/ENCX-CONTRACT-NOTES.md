@@ -1101,3 +1101,51 @@ optional pin-check process and the NPC dispatch test build suffered memory kills
 while running together; the publication pin-check completed successfully, and
 the one-job unit retry remains active. No assertion failure is being reported as
 a pass. The NPC PG case has not executed yet and remains explicitly pending.
+
+## M29 — qualified Primal corpse deadlines in Instance (QMECH)
+
+Coordinator allocation is now **2200–2209**, superseding the old ENCX range for
+new QMECH work; **2200** extends the existing Item temporal receipt owner. No
+command, capability, mechanic ordinal or registry number is allocated.
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`data/items/items.xml:73328–73347` defines 39530 → 39529 after 10s, →39528 after
+300s, →39527 after 300s, terminal retirement another 60s later. The existing
+content overlay `tools/content-schema/native-gameplay/primal_corpse_items.py`
+and `content::bosses::primal_closure::qualify` already qualify all four source
+Items; the quest's native kill/corpse producer already mints 39530. Migration
+2200 connects that exact production key to the existing original-mint schedule
+producer. No quest graph or fabricated content row is needed.
+
+Instance due passes now drain the existing frozen field-chain schedules rather
+than returning zero. Receipts carry exactly one Channel/Instance identity;
+Instance receipts support only physical Ground corpse custody. Original death
+scope/generation stays immutable. The current assignment and generation are
+resolved independently, with the native due-pass permit, node and recovery
+fences still checked at the production transaction boundary. Existing source,
+clock, previous-stage, compare-and-change and same-XID audit guards remain.
+The existing scoped corpse retirement owner reads the original +670000ms
+terminal deadline; stage replay cannot restart that deadline.
+
+Party refusal fidelity was transferred separately in `ed8f218de`: a level-499
+teammate yields `Level`, without calling shared admission. Donor:
+Crystal `data/libs/functions/boss_lever.lua:183–218`.
+
+Red PG proof: `primal_ordeal_instance_corpse_postgres_deadline_and_scope_fences`
+failed in **12.42s**, with zero schedules versus the three donor deadlines.
+First green ran in **23.94s**, including the real 10-second source deadline,
+physical native death/MINT, immutable schedule, scoped terminal recovery,
+wrong permit/generation rejection, exact first-stage transform, audit and replay.
+
+Final focused PG run: four `native_corpse::` cases passed in **32.91s**, with
+M29's actual Instance case **15.890s**. The existing Channel takeover PG control
+also passed (**5.39s**, timer participant **187.736ms**). Crate library tests
+passed **742/742** in **97.26s** in unit mode (PG disabled there; the five focused
+PG cases above were separately run against PostgreSQL 18.6). The repository's
+`migration_numbers_are_unique_and_match_embedded_migrator` check passed.
+Quest-authoring checks passed; all **105** quest-authoring unit-test modules
+passed, and materialized content-tree validation passed **97/97**. No content
+input changed, so the standing rule requires pin/lock verification, not World
+regeneration. Production caller: `dispatch::gameplay_transport::source_item_cycle`
+reads the runtime's exact scope/generation and calls `drain_spell_item_deadlines`;
+its Ground invalidation is retained when a physical Item changes.
