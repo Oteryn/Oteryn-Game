@@ -33,6 +33,17 @@ pub(super) fn prepare(
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
+    prepare_with_callbacks(admission, actor, command, intent, runtime, &callbacks)
+}
+
+pub(super) fn prepare_with_callbacks(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+    callbacks: &[reward_callbacks::RewardCallback],
+) -> Option<Step> {
     let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
@@ -59,6 +70,9 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, topic, _, tracks| {
+            if admission.has_pending_paid_confirmation(command, intent, context) {
+                return None;
+            }
             let text = intent.text.trim().to_ascii_lowercase();
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {

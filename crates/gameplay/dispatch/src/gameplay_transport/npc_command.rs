@@ -66,6 +66,19 @@ mod wrath_sleeping_dragon;
 mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn fixture_prepare_reward_callbacks(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: super::connection::UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+    callbacks: &[oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback],
+) -> bool {
+    reward_callbacks::prepare_with_callbacks(admission, actor, command, intent, runtime, callbacks)
+        .is_some()
+}
+
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {
@@ -714,6 +727,18 @@ pub(super) async fn npc_bank_talk(
     );
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
+        return ordinary;
+    }
+    if intent.text.trim().eq_ignore_ascii_case("yes")
+        && let Some(context) = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        )
+        && admission.has_pending_paid_confirmation(command, &intent, &context)
+    {
         return ordinary;
     }
     if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {

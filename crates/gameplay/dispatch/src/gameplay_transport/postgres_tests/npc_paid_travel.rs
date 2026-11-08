@@ -25,7 +25,7 @@ fn npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "paid travel thread panicked")??;
     Ok(())
@@ -75,7 +75,11 @@ fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> Str
         .unwrap_or_default()
 }
 
-fn scenario() -> TestResult {
+pub(super) fn confirmation_scenario() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(check_confirmation: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "npc_paid_travel", true, false).await?;
@@ -178,6 +182,17 @@ fn scenario() -> TestResult {
             .chat
             .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
+        if check_confirmation {
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
+                    "content-1",
+                    Vec::new(),
+                    Vec::new(),
+                )
+                .map_err(debug)?,
+            ));
+            owner.refresh_quest_session(session, true).await;
+        }
         let npc = {
             let mut runtime = dependencies.runtime.lock().await;
             runtime
@@ -251,7 +266,19 @@ fn scenario() -> TestResult {
             }
         };
         talk(&owner, &dependencies, npc, 1, "hi").await?;
+        if check_confirmation {
+            assert!(
+                reward_fallback(&owner, &dependencies, npc).await?,
+                "fixture must reach the reward keyword fallback before a quote"
+            );
+        }
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
+        if check_confirmation {
+            assert!(
+                !reward_fallback(&owner, &dependencies, npc).await?,
+                "reward keyword fallback stole the live paid-travel confirmation"
+            );
+        }
         let refused = talk(&owner, &dependencies, npc, 3, "yes").await?;
         assert!(
             line(&refused).contains("don't have enough money"),
@@ -935,6 +962,45 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn reward_fallback(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+    npc: EntityRef,
+) -> TestResult<bool> {
+    let fence = owner
+        .current_quest_fence(dependencies.admitted.game_session_id)
+        .await
+        .map_err(|_| "confirmation fence")?
+        .ok_or("confirmation session")?
+        .item_fence();
+    let mut callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+        .map_err(debug)?
+        .into_iter()
+        .find(|c| c.carried_item.is_none())
+        .ok_or("callback fixture")?;
+    callback.npc = "oteryn:npc.captain_bluebear".into();
+    callback.topic = 0;
+    callback.keywords = vec!["yes".into()];
+    let runtime = owner.runtime.lock().await;
+    Ok(
+        crate::gameplay_transport::npc_command::fixture_prepare_reward_callbacks(
+            owner,
+            dependencies.actor,
+            UseCommand {
+                game_session_id: dependencies.admitted.game_session_id,
+                command_id: 3,
+                item_fence: Some(fence),
+            },
+            &NpcTalkIntent {
+                npc_actor: npc,
+                text: "yes".into(),
+            },
+            &runtime,
+            &[callback],
+        ),
+    )
 }
 
 fn xp_request() -> TestResult<crate::durability::character_progression::ExperienceAwardRequest<2>> {
