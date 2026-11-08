@@ -182,3 +182,42 @@ The production scene preserves committed interest's own-actor-first ordering:
 public handle 1 is the caster camera anchor. Its relative x/y is (16,16), with
 the native floor packed into y as above. Floor perspective uses that anchor;
 map chunks never expose the caster's absolute world coordinates.
+
+### CLCAST public camera
+
+Within PublicMedia (Message kind 21), nested kind 34 is Camera: required
+varint field 2 is `floor + 15`, bounded 0..15. The map producer sends it before
+the reset map chunk. It shares that capture's consent binding and chosen delay.
+It contains no absolute position, actor identity or actionable handle. The
+native viewer stages the camera and scene until the final map chunk, and drops
+all staged/shown data on a slate, clear or terminal failure. Kind 34 is the next
+free nested kind (4) plus CLCAST's assigned lane offset (30).
+
+### CLCAST character consent read
+
+Message kind 52 is ConsentQuery, with no fields. Existing player command 503
+(capability 292) replies with ConsentState for the current fenced character.
+It cannot be carried by an observer envelope. Native settings read the current
+revision before enabling/disabling consent. Kind 52 is next free outer kind 22
+plus the assigned CLCAST lane offset 30; no new command or capability is used.
+
+### CLCAST readiness, roster and control read
+
+Outer kind 53 Ready has required epoch (varint field 2, >0), selected-and-enabled
+chat (boolean field 3), and chosen delay (varint field 4, 0..300). It is the first
+server observer frame and replaces an immediate clear when policy/epoch changes.
+It clears staged/shown pictures; it contains no delayed cast content or viewer
+count. Generation remains bound by the observer envelope. Unknown fields and
+role/direction mismatches fail closed.
+
+Owner-only kind 54 CasterRoster has required cast revision (varint field 2, >0)
+and zero to 50 repeated field-3 byte strings, exactly 16 bytes each. Handles must
+be nonzero, unique and strictly sorted. It is carried only by Foundation domain
+103, delta type 32 (next free type 2 + CLCAST offset 30), maximum 1024 bytes.
+Domain revision advances with both roster and live-line frames. It never carries
+account IDs and is forbidden in observer envelopes.
+
+Outer kind 55 ControlQuery has no fields and uses existing player command 502.
+It returns CasterState or End for the current fenced caster session. Busy owners
+remain a refused request, not an assertion that a still-running cast is stopped.
+Kinds 53–55 continue CLCAST's allocation from next-free outer kind 22 + offset 30.

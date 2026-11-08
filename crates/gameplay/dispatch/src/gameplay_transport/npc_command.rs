@@ -35,17 +35,24 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+#[path = "benevola.rs"]
+mod benevola;
+mod catalogue;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
 mod endgame;
+mod fire_feathered;
 mod grizzly;
 mod grizzly_shop;
+mod healing;
 mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
+mod marriage;
 mod monk;
 mod planegazer_finale;
 mod premium_purchase;
@@ -55,12 +62,15 @@ mod service_context;
 mod session_transfer;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
+#[path = "yeo.rs"]
+mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
+    healing_command: Option<u64>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
@@ -72,10 +82,17 @@ struct SessionNpc {
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
     exchange: Option<coin_exchange::Pending>,
+    benevola: Option<benevola::Pending>,
+    yeo: Option<yeo::Pending>,
+    #[cfg(test)]
+    yeo_last_request: Option<crate::durability::npc_trade::NpcTradeRequest>,
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
+    marriage: Option<marriage::Pending>,
     monk: Option<monk::Pending>,
     quest_dialogue: quest_dialogue::State,
+    catalogue: Option<catalogue::Pending>,
+    delayed_end: Option<catalogue::DelayedEnd>,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
     liquid_black: Option<liquid_black::State>,
@@ -253,6 +270,7 @@ impl NpcConversations {
         session: GameSessionId,
         shown: Option<EntityRef>,
     ) -> Option<NpcUpdate> {
+        catalogue::follow_end(self, chat, session);
         chat.close_out_of_range(runtime, session);
         let current = chat.engaged(session).and_then(|npc_ref| {
             if let Some((viewer, named)) = self.sessions.lock().ok().and_then(|sessions| {
@@ -316,7 +334,11 @@ impl NpcConversations {
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
+            && ChatText::parse(&intent.text).is_ok_and(|text| {
+                service_context::live_npc(runtime, actor, session, intent.npc_actor).is_some_and(
+                    |npc| oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str()),
+                )
+            }))
         .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
         .flatten();
         outcome.window = match opened {
@@ -420,13 +442,11 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.is_some()
-            || source.sub_type.is_some()
-        {
+        if !entry.offers().contains(source) || source.currency.is_some() {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
+            sub_type: source.sub_type,
             npc_key: npc_key.to_owned(),
             catalogue_revision: intent.catalogue_revision,
             offer_index: intent.offer_index,
@@ -619,6 +639,15 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = marriage::replay(admission, command, Some(&intent)).await {
+        return outcome;
+    }
+    if let Some(outcome) = yeo::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
+    if let Some(outcome) = benevola::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
@@ -687,6 +716,14 @@ pub(super) async fn npc_bank_talk(
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
     }
+    if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
+        if matches!(step, marriage::Step::Ordinary) {
+            return ordinary;
+        }
+        drop(runtime);
+        drop(_trade_permit.take());
+        return marriage::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(context) = admission
         .states
         .npc_conversations
@@ -707,6 +744,19 @@ pub(super) async fn npc_bank_talk(
             _trade_permit = Some(permit);
         }
         runtime = admission.runtime.lock().await;
+    }
+    if let Some(outcome) = healing::apply(admission, &mut runtime, actor, command, &intent) {
+        return outcome;
+    }
+    if let Some(step) = yeo::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return yeo::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = benevola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return benevola::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
@@ -731,6 +781,16 @@ pub(super) async fn npc_bank_talk(
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
     if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hive_shared::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
@@ -761,6 +821,17 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         return monk::apply(admission, actor, command, intent, step).await;
     }
+    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = catalogue::prepare(admission, actor, command, &intent, &runtime, &ordinary)
+    {
+        drop(runtime);
+        drop(_trade_permit);
+        return catalogue::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = classic_quests::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);
@@ -784,11 +855,6 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return wrath_sleeping_dragon::apply(admission, actor, command, intent, step).await;
-    }
-    if let Some(step) = hero_of_bounac::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return hero_of_bounac::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = planegazer_finale::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

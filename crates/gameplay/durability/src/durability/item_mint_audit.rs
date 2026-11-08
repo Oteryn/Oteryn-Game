@@ -2062,6 +2062,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
                 // W19 map harvest binds the caller's fenced Type2Transaction tuple.
                 "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
+                // SRV9 marriage item debits bind the caller's fenced Type2 tuple.
+                "crates/gameplay/durability/src/durability/item_craft/marriage.rs",
                 // Soul Core conversion and the shared-transaction entry debit both bind
                 // their existing CRAFT audit envelope to the caller's Type2 transaction.
                 "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
@@ -2085,6 +2087,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
                 "crates/gameplay/durability/src/durability/player_death_items.rs",
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
+                // NPC hand-ins bind the tuple selected by their Type2Transaction.
+                "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs",
                 // W03 collection keeps the caller's Type2Transaction through delivery
                 // and binds its selected tuple in both the envelope and outbox.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",

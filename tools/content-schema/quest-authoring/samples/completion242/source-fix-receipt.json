@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "08ff123be4ebf0b36c1d458e2b005d9677684330f751246df199a92abe70d69c"
+    "sha256": "17582c5138ae11162fd4234d2ac811b22d445e2f138d41881382d55762e76a70"
   },
   "changes": [
     {
@@ -314863,7 +314863,7 @@
   "compiler_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/amend_monk_source_receipt.py",
-      "sha256": "6ef13056cc46c9263d61415e1bd503f97d31238cf8e63904bbce37627635ec7c"
+      "sha256": "6117549553349d6691d9e09660ba2bdb871ca17ab6d8fd67b43fdf37b511c8ae"
     },
     {
       "path": "tools/content-schema/quest-authoring/lua_writers.py",
@@ -314891,7 +314891,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree.schema.json",
-      "sha256": "fa6765c57fe18ff40b935821d3b13f58041c19ae6760af6220e436d2b9adcbf0"
+      "sha256": "d67629a2a840ce69dfb743b2f08f081918f47f00a69842588aae16e8e044c34c"
     },
     {
       "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
@@ -315021,7 +315021,7 @@
     },
     {
       "path": "content/quests/world-callbacks.json",
-      "sha256": "3eb71d110defce1ffdddf4662345965a1b94bde672a71b99ebfc10af3e6aa716"
+      "sha256": "59e992218f26406f8a28f85c20d48ea6e894a07aea886da138873a15e1253572"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
@@ -315169,7 +315169,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
+      "sha256": "5f9c5a6aa180e67f638adc7d234b84dcc2514ffb912495ee12fb0bf7cd81ed1e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/uid-range-fix/graphs.json",

@@ -24,9 +24,12 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
+pub mod deepling_boss_access;
+pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
+pub mod hive_access;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
@@ -34,13 +37,13 @@ pub mod log;
 pub mod monk_shrines;
 pub mod native_kills;
 pub mod native_rules;
-#[cfg(test)]
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
@@ -213,6 +216,8 @@ pub struct QuestTransition {
     /// quest XP obligation written by the committing transition. In the definition hash: a reward
     /// edit is a `REVISION_MISMATCH` for players in progress, like any transition edit (§6).
     pub experience: Option<i64>,
+    /// Current global occurrence required by this transition. Rechecked under the durable fence.
+    pub world_change: Option<String>,
 }
 
 /// Why a transition writes nothing (§4 "Validation").
@@ -275,6 +280,14 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
+    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NpcDefinitionPredecessor {
+    hash: [u8; 32],
+    defaults: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -316,9 +329,20 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
-                && !(transition.key.starts_with("oteryn:quest-reward/")
+                && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
+                    && transition.quest == "oteryn:quest/worldchange/benevola")
+                    || transition.key.starts_with("oteryn:quest-reward/"))
                     && transition.experience.is_none())
             {
+                return Err(E::InvalidEffect(transition.key));
+            }
+            if transition.world_change.as_ref().is_some_and(|key| {
+                key.is_empty()
+                    || key.len() > 100
+                    || !key
+                        .bytes()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+            }) {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition
@@ -381,6 +405,8 @@ impl QuestStateCatalogue {
             tracks: track_map,
             transitions: transition_map,
             hashes,
+            npc_legacy: BTreeMap::new(),
+            predecessors: BTreeMap::new(),
         })
     }
 
@@ -566,6 +592,16 @@ fn definition_hash(
             }
         }
     }
+    for transition in transitions
+        .values()
+        .filter(|transition| transition.quest == quest && transition.world_change.is_some())
+    {
+        out.extend_from_slice(b"world-change-gate/v1");
+        push_text(&mut out, &transition.key);
+        if let Some(change) = &transition.world_change {
+            push_text(&mut out, change);
+        }
+    }
     Sha256::digest(&out).into()
 }
 
@@ -598,6 +634,7 @@ mod tests {
 
     fn transition(key: &str, effects: Vec<QuestEffect>, completes: bool) -> QuestTransition {
         QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,
@@ -709,6 +746,7 @@ mod tests {
         assert!(build(transition("oteryn:t/1", vec![], true)).is_ok());
         // QUESTGATE0-RL-05: experience is 1 to 100,000,000; anything else is not admitted.
         let rewarded = |experience| QuestTransition {
+            world_change: None,
             experience: Some(experience),
             ..transition("oteryn:t/1", vec![set(STAGE)], false)
         };
@@ -957,6 +995,7 @@ mod tests {
         // A reward is part of the transition (§6; QUEST-GATE-0 §5.5): adding or changing one
         // changes the hash, so an in-progress Character is refused, never awarded the new amount.
         let rewarded = catalogue(vec![QuestTransition {
+            world_change: None,
             experience: Some(500),
             ..transition(
                 "oteryn:t/start",
@@ -971,6 +1010,7 @@ mod tests {
         let rewarded_hash = rewarded.definition_hash(QUEST).expect("hash");
         assert_ne!(rewarded_hash, hash);
         let rewarded_more = catalogue(vec![QuestTransition {
+            world_change: None,
             experience: Some(501),
             ..transition(
                 "oteryn:t/start",

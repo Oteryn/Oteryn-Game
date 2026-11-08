@@ -6038,12 +6038,12 @@
   "corpus_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
   "external_wiki_read": false,
   "input_sha256": {
-    "content/quests/definitions/quests-00000-00099.json": "94d40a91b69bcc139729668fe8083935565d373f824bab8730a334420dc0b439",
-    "content/quests/definitions/quests-00100-00199.json": "764a53a067410c1a265caacdc32ee3d72e9848d16375c06266fe4fe456b0e354",
-    "content/quests/definitions/quests-00200-00299.json": "ac5b6b9de7a432ebeddeb286a47b76d45570bc3d42d5fee744cab4bccceb1f06",
+    "content/quests/definitions/quests-00000-00099.json": "e756eb279dc19625aa89ff4190f4d576e67c97df7880ddbc125e2e95dbb4a69a",
+    "content/quests/definitions/quests-00100-00199.json": "75be1ce1045107d3dbbe23bee3d7967b9ad80a3e117e7bc36e6f4b3555e6581c",
+    "content/quests/definitions/quests-00200-00299.json": "cf06399d477d26082e4ec2b3c2fb8ffd5ca9bc0ced6a78b3ecfac755dcb176dd",
     "content/quests/definitions/quests-00300-00351.json": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
-    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "25389a51fcfd6dd464abf9d07edda40156d3f7666e228794319f1bf517888386",
-    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "c8f1d7f883c555ed4a3f158fd4be3d5b9a72f4d9a22038bf0736d05f39b48693",
+    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "5f9c5a6aa180e67f638adc7d234b84dcc2514ffb912495ee12fb0bf7cd81ed1e"
   },
   "quests": [
     {

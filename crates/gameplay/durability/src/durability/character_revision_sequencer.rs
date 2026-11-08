@@ -23,6 +23,7 @@
 mod appearance_revision;
 mod arena_match;
 mod atelier;
+mod npc_program;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -33,6 +34,7 @@ mod cyclopedia;
 mod death_promotion;
 mod grizzly;
 mod native_kills;
+mod npc_marriage;
 mod npc_purchase;
 mod npc_travel;
 mod proficiency_catalyst;
@@ -478,6 +480,36 @@ impl RevisionSlot {
                     std::sync::Arc::clone(&catalogue),
                     admission,
                     gate,
+                )
+            },
+        )
+        .await
+    }
+
+    /// Benevola uses the same Quest receipt revision cursor as ordinary NPC quests.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_benevola_handover(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        handover: super::world_event::changes::counters::benevola::BenevolaHandover,
+        catalogue: Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_benevola_handover(
+                    authority,
+                    node,
+                    fence,
+                    permit,
+                    handover.clone(),
+                    Arc::clone(&catalogue),
                 )
             },
         )

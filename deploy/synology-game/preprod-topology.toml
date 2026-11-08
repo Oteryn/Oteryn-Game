@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "6ee7d89618edd5fc74285502a7f94c4f8921c00992c4961176f5e6d0d7ff4652"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "7ed469b0c3ddc392d495210cafef598162606e135896f82c70a6a6c95ac5aa41"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "6ee7d89618edd5fc74285502a7f94c4f8921c00992c4961176f5e6d0d7ff4652"
+digest = "7ed469b0c3ddc392d495210cafef598162606e135896f82c70a6a6c95ac5aa41"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "e06-market-crystal-parity-20261031-r1"

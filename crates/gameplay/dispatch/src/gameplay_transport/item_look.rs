@@ -456,6 +456,34 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
+    if definition.production_key == "oteryn:item.tibia.i9585"
+        && distance <= 4
+        && let ItemKey::Instance(instance) = key
+    {
+        drop(runtime);
+        let inscription = admission
+            .root
+            .read_marriage_inscription(
+                admission.character,
+                *admission.world_id.as_bytes(),
+                instance,
+            )
+            .await
+            .map_err(|_| unavailable)?;
+        if let Some(inscription) = inscription {
+            let (current, _, current_distance) =
+                observe_item(admission, actor, session, fence, views, target).await?;
+            if current != definition || current_distance > 4 {
+                return Err(unavailable);
+            }
+            if let ItemLookResult::Text(text) = ordinary {
+                return Ok(ItemLookResult::Text(bounded_text(format!(
+                    "{text}\n{inscription}"
+                ))));
+            }
+        }
+        return Ok(ordinary);
+    }
     if is_spellbook(&definition.production_key) {
         // The runtime and spell-state locks preserve the Channel owner's established order. The
         // state lookup rechecks the exact actor/session binding, so reconnect cannot expose a

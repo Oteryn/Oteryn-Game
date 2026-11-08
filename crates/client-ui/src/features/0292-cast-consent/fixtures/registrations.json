@@ -2,18 +2,25 @@
   {
     "mechanic": "0292-cast-consent",
     "kind": "handlers",
-    "id": "0292-cast-consent-unsupported",
-    "status": "unsupported",
-    "reason": "S17-A is server phase 1; native client is a later task.",
+    "id": "0292-cast-consent-command",
+    "status": "supported",
     "commands": [
       503
     ],
+    "direction": "client_to_server",
+    "capability": 292,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Native cast UI is a later task.",
-      "protocol": "Native cast UI is a later task.",
-      "view": "Native cast UI is a later task.",
-      "input": "Native cast UI is a later task.",
-      "settings": "Native cast UI is a later task."
+      "state": "Shared confirmed character consent fields in cast_control::Panel.",
+      "input": "Read/allow/hide controls share the native Cast settings form.",
+      "settings": "Persisted only by the fenced Game character preference owner."
     }
+  },
+  {
+    "mechanic": "0292-cast-consent",
+    "kind": "panels",
+    "id": "0292-cast-consent-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

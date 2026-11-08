@@ -76,6 +76,52 @@ fn reward_callback_npc(key: &str) -> bool {
     .contains(key)
 }
 
+// Closed World-change native NPC consumers, never a general Dialogue fallback.
+// Crystal 9f5a72c: benevola.lua cdc852e9..:176-180; orockle.lua
+// d2c5d365..:77-83 (six canonical offers, no greeting override).
+// Shared default handler 8479e2aa..:81-82,92 supplies Orockle's text.
+const YEO_GREET: &str = "Ah, it's you. Nice to see you.";
+const BENE_GREET: &str = "Greetings. I hope you are here on a {mission} for nature!";
+const OROCKLE: &str = "oteryn:npc.orockle";
+const DEEP_SEAS_GUARDIAN: &str = "oteryn:npc.guardian_of_the_deep_seas";
+const OROCKLE_FAREWELL: &str = "Good bye, |PLAYERNAME|.";
+const OROCKLE_TRADE: &str = "Of course, just browse through my wares.";
+const SHARED_WORLD_NPC_SOURCE: &str = "cdc852e9469d0afe12f4f15294f4f22659454359b5da667358b4e5a4c3115422:176-180;d2c5d365f1478af39aefe90776226f016ddd6f2fb595c94d38e0a557ae148b8d:77-83;75ad4f7af508e8ab40004b3413ff831e331072c605d1d2ba29dc303dc29dfdc5:26-60;8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a:81-82,92;wiki:69583@1149608:4e4593cc7f581654f984a86a66309f349dfb23f19a38adf9856c625a8522c0eb:158;yeo-retained-canonical-greeting-v1";
+
+const YASIR: &str = "oteryn:npc.yasir";
+// Retained Crystal 9f5a72c: npc/yasir.lua d189aab0.. L812-833 and
+// npc_system/npc_handler.lua 8479e2aa.. L79-81 (unoverridden default greet).
+// The ariki handler opens the shop silently; durable successful trade already owns Si, Ariki!.
+const YASIR_GREET: &str = "Greetings, |PLAYERNAME|.";
+const YASIR_FAREWELL: &str = "Si, jema ze harun. <waves>";
+const YASIR_JOB: &str = "Tje hari ku ne finjala. {Ariki}?";
+const YASIR_NAME: &str = "Me Yasir.";
+const YASIR_PASSAGE: &str = "Soso yana. <shakes his head>";
+const YASIR_SOURCE: &str = "d189aab0cdedb7f00bec2977c92e116240a9ca029569f537d9b24afcefb3f8a3:812-833;8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a:79-81";
+
+fn yasir_keywords() -> Vec<crate::content::ProjectV2DialogueKeyword> {
+    [
+        ("name", YASIR_NAME),
+        ("job", YASIR_JOB),
+        ("passage", YASIR_PASSAGE),
+    ]
+    .into_iter()
+    .map(|(key, reply)| crate::content::ProjectV2DialogueKeyword {
+        key: key.into(),
+        triggers: vec![key.into()],
+        reply: vec![reply.into()],
+        fallback: false,
+        links: Vec::new(),
+        only_focus: true,
+        only_unfocus: false,
+        reset: false,
+        ungreet: false,
+        move_up: None,
+        children: Vec::new(),
+    })
+    .collect()
+}
+
 fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
     keyword.reply.len() == 1
         && keyword.children.is_empty()
@@ -158,6 +204,14 @@ impl NpcTalkEntry {
         }
     }
 
+    /// Source greeting for an explicit conversation test fixture.
+    #[doc(hidden)]
+    pub fn with_source_greeting(mut self, greeting: &str) -> Self {
+        self.greeting_reply = greeting.into();
+        self.source_name_templates = true;
+        self
+    }
+
     #[doc(hidden)]
     pub fn with_bank(mut self) -> Self {
         self.bank = true;
@@ -176,6 +230,7 @@ impl NpcTalkEntry {
 pub struct NpcTalkBook {
     /// Source-qualified automatic speech, installed only by the catalogue/bundle boot binding.
     source_voices: std::collections::BTreeMap<String, crate::npc_voice::VoiceProfile>,
+    source_walks: Option<crate::npc_actor::NpcWalkBook>,
     /// S-ENTNAME: all admitted catalogue names, including NPCs without native dialogue.
     display_names: HashMap<String, String>,
     npcs: HashMap<String, NpcTalkEntry>,
@@ -194,8 +249,15 @@ impl NpcTalkBook {
         if self.catalogue_revision != Self::from_model(model).catalogue_revision {
             return Err(crate::npc_voice::VoiceError::ContentSourceMismatch);
         }
+        let walks = crate::npc_actor::NpcWalkBook::from_catalogue(catalogue, model)
+            .map_err(|_| crate::npc_voice::VoiceError::ContentSourceMismatch)?;
         self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
+        self.source_walks = Some(walks);
         Ok(())
+    }
+
+    pub fn source_walks(&self) -> Option<&crate::npc_actor::NpcWalkBook> {
+        self.source_walks.as_ref()
     }
 
     pub fn source_voices(
@@ -207,16 +269,36 @@ impl NpcTalkBook {
     /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
     /// until a dialogue packet reads it.
     pub fn from_model(model: &NpcServiceModel) -> Self {
+        Self::from_model_with_native_quests(model, &[])
+    }
+
+    /// Admit source greetings for NPCs whose stateful rules have a native executor.
+    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
-                dark_trails::TEXT,
+                format_args!(
+                    "{}\0{}\0{}\0{}\0{}",
+                    dark_trails::TEXT,
+                    format_args!("{}\0{}", SHARED_WORLD_NPC_SOURCE, YEO_GREET),
+                    BENE_GREET,
+                    OROCKLE_FAREWELL,
+                    OROCKLE_TRADE
+                ),
                 isle_of_evil::revision_material(),
                 REWARD_CALLBACKS,
                 REWARD_GREETINGS,
+                crate::content::npc_catalogue::healing::DATA,
+                crate::content::npc_catalogue::travel::revision_material(),
+                YASIR_SOURCE,
+                YASIR_GREET,
+                YASIR_FAREWELL,
+                YASIR_JOB,
+                YASIR_NAME,
+                YASIR_PASSAGE,
             )),
             ..Self::default()
         };
@@ -250,6 +332,49 @@ impl NpcTalkBook {
                     "Good hunting!".into(),
                     Some("Ask me about tasks, points, rank, promotion or bosses.".into()),
                     Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.lynda" {
+                // Crystal201189f lynda.lua:307-309; only the native marriage caller opens.
+                (
+                    "Welcome in the name of the gods, pilgrim |PLAYERNAME|!".into(),
+                    "Be careful on your journeys.".into(),
+                    Some(
+                        "Ask me about marriage, celebration, removing a proposal, or divorce."
+                            .into(),
+                    ),
+                    Vec::new(),
+                )
+            } else if reference.key == DEEP_SEAS_GUARDIAN {
+                // Retained Crystal Guardian is an NPC stub with FocusModule and no overrides
+                // or shop. The same pinned default handler supplies greeting and farewell;
+                // the native quest adapter owns its authored stateful mission conversation.
+                (
+                    YASIR_GREET.into(),
+                    OROCKLE_FAREWELL.into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.yeo" {
+                // Retained canonical Yeo dialogue supplies these greeting/farewell lines.
+                // Wiki supplies the ten-shrimp barter; native dispatch owns confirmation.
+                (YEO_GREET.into(), "Mhm.".into(), None, Vec::new())
+            } else if reference.key == "oteryn:npc.benevola" {
+                (BENE_GREET.into(), "Good bye.".into(), None, Vec::new())
+            } else if reference.key == OROCKLE {
+                // Canonical catalogue offers remain the sole shop source; no mission mint.
+                (
+                    YASIR_GREET.into(),
+                    OROCKLE_FAREWELL.into(),
+                    Some(OROCKLE_TRADE.into()),
+                    Vec::new(),
+                )
+            } else if reference.key == YASIR {
+                // Closed native consumer: no other Dialogue-backed merchant is admitted.
+                (
+                    YASIR_GREET.into(),
+                    YASIR_FAREWELL.into(),
+                    Some(YASIR_JOB.into()),
+                    yasir_keywords(),
                 )
             } else if matches!(
                 reference.key.as_str(),
@@ -366,6 +491,16 @@ impl NpcTalkBook {
                         .cloned()
                         .collect(),
                 )
+            } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
+                (
+                    format!(
+                        "Greetings, I am {}. Ask me for healing if you are injured.",
+                        npc.name
+                    ),
+                    "Farewell.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if let Some((greet, farewell)) = &dark_messages {
                 (greet.clone(), farewell.clone(), None, Vec::new())
             } else if let Some(messages) = &isle_messages {
@@ -375,6 +510,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else {
                 continue;
             };
@@ -382,7 +533,8 @@ impl NpcTalkBook {
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
-                    admitted_dialogue: npc.dialogue.is_some()
+                    admitted_dialogue: !matches!(reference.key.as_str(), YASIR | OROCKLE)
+                        && npc.dialogue.is_some()
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
                     travel_routes,
@@ -395,9 +547,13 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: dark_messages.is_some()
+                    source_name_templates: bank
+                        || reference.key == "oteryn:npc.lynda"
+                        || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
+                        || dark_messages.is_some()
                         || isle_messages.is_some()
-                        || reward_callback_npc(&reference.key),
+                        || reward_callback_npc(&reference.key)
+                        || native_npcs.contains(&reference.key.as_str()),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
@@ -498,6 +654,11 @@ const TRADE_WORDS: [&str; 2] = ["trade", "offers"];
 /// Whether `text` asks the NPC to trade: the topic that opens the trade window.
 pub fn asks_to_trade(text: &str) -> bool {
     says_any(&words(text), &TRADE_WORDS)
+}
+
+/// Source-specific shop keyword; ordinary merchants retain the standard trade words.
+pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
+    asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {
@@ -617,6 +778,183 @@ mod tests {
             );
         }
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
+        Ok(())
+    }
+
+    #[test]
+    fn worldchg_shared_native_benevola_and_orockle_shop_are_closed() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let guardian = book
+            .get(DEEP_SEAS_GUARDIAN)
+            .ok_or("Deep Seas Guardian native greeting")?;
+        assert_eq!(
+            guardian.render_source_text(&guardian.greeting_reply, "Helper"),
+            "Greetings, Helper."
+        );
+        assert_eq!(
+            guardian.render_source_text(guardian.farewell(), "Helper"),
+            "Good bye, Helper."
+        );
+        assert!(guardian.offers().is_empty());
+        assert!(!guardian.bank());
+        assert!(guardian.travel_routes.is_empty());
+        assert!(guardian.premium_services.is_empty());
+        let yeo = book
+            .get("oteryn:npc.yeo")
+            .ok_or("Yeo native barter greeting")?;
+        assert_eq!(yeo.greeting_reply, YEO_GREET);
+        assert!(
+            yeo.offers().is_empty(),
+            "barter cannot enter a free generic shop window"
+        );
+        let benevola = book
+            .get("oteryn:npc.benevola")
+            .ok_or("Benevola native greeting")?;
+        assert_eq!(benevola.greeting_reply, BENE_GREET);
+        assert_eq!(benevola.farewell(), "Good bye.");
+        assert!(benevola.offers().is_empty());
+        let orockle = book.get(OROCKLE).ok_or("Orockle native shop")?;
+        assert!(!orockle.admitted_dialogue);
+        assert_eq!(
+            orockle.render_source_text(&orockle.greeting_reply, "Helper"),
+            "Greetings, Helper."
+        );
+        assert_eq!(
+            orockle.render_source_text(orockle.farewell(), "Helper"),
+            "Good bye, Helper."
+        );
+        assert_eq!(orockle.topic_reply.as_deref(), Some(OROCKLE_TRADE));
+        let offers: std::collections::BTreeMap<_, _> = orockle
+            .offers()
+            .iter()
+            .map(|offer| {
+                assert_eq!(
+                    offer.direction,
+                    crate::content::ProjectV2ServiceOfferDirection::SellToPlayer
+                );
+                (offer.item.key.as_str(), offer.unit_price)
+            })
+            .collect();
+        assert_eq!(orockle.offers().len(), 6);
+        assert_eq!(
+            offers,
+            std::collections::BTreeMap::from([
+                ("oteryn:item.tibia.i13974", 150),
+                ("oteryn:item.tibia.i13976", 150),
+                ("oteryn:item.tibia.i14051", 150),
+                ("oteryn:item.tibia.i14052", 150),
+                ("oteryn:item.tibia.i14054", 200),
+                ("oteryn:item.tibia.i14255", 200),
+            ])
+        );
+        // Sam is independently admitted by QENGINE2's bounded reward callbacks.
+        // Alesar remains an unqualified Dialogue-backed merchant.
+        assert!(reward_callback_npc("oteryn:npc.sam"));
+        let sam = book
+            .get("oteryn:npc.sam")
+            .ok_or("qualified Sam reward NPC")?;
+        assert!(sam.dialogue_keywords.is_empty());
+        assert!(
+            model
+                .npcs()
+                .iter()
+                .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
+        );
+        assert!(book.get("oteryn:npc.alesar").is_none());
+        assert!(!asks_to_trade_for(OROCKLE, "ariki"));
+        Ok(())
+    }
+
+    #[test]
+    fn worldchg_trader_yasir_closed_native_book_and_keywords() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let entry = book.get(YASIR).ok_or("native Yasir")?;
+        assert!(!entry.admitted_dialogue);
+        assert_eq!(entry.offers().len(), 757);
+        let (_, source) = model
+            .npcs()
+            .iter()
+            .find(|(key, _)| key.key == YASIR)
+            .ok_or("source Yasir")?;
+        let offers: Vec<_> = source
+            .services
+            .iter()
+            .filter_map(|key| model.services().get(key))
+            .flat_map(|service| service.offers.iter().cloned())
+            .collect();
+        assert_eq!(entry.offers(), offers.as_slice());
+        // The closed branch must not admit another Dialogue-backed merchant incidentally.
+        // Sam is independently admitted by QENGINE2's bounded reward callbacks.
+        // Alesar remains an unqualified Dialogue-backed merchant.
+        assert!(reward_callback_npc("oteryn:npc.sam"));
+        let sam = book
+            .get("oteryn:npc.sam")
+            .ok_or("qualified Sam reward NPC")?;
+        assert!(sam.dialogue_keywords.is_empty());
+        assert!(
+            model
+                .npcs()
+                .iter()
+                .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
+        );
+        assert!(book.get("oteryn:npc.alesar").is_none());
+        assert_eq!(
+            entry.render_source_text(&entry.greeting_reply, "Hero"),
+            "Greetings, Hero."
+        );
+        assert_eq!(entry.farewell(), YASIR_FAREWELL);
+        let position = ChatPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        };
+        let npcs = [TalkNpc {
+            id: 1u8,
+            position,
+            entry,
+        }];
+        let mut engaged = None;
+        assert_eq!(
+            talk(position, "hi", &npcs, &mut engaged).map(|r| r.text),
+            Some(YASIR_GREET.into())
+        );
+        for (text, expected) in [
+            ("name", YASIR_NAME),
+            ("job", YASIR_JOB),
+            ("passage", YASIR_PASSAGE),
+            ("trade", YASIR_JOB),
+        ] {
+            assert_eq!(
+                talk(position, text, &npcs, &mut engaged).map(|r| r.text),
+                Some(expected.into())
+            );
+        }
+        // Source ariki opens the window without a speech line or conversation reset.
+        assert!(talk(position, "ariki", &npcs, &mut engaged).is_none());
+        assert_eq!(engaged, Some(1));
+        assert!(asks_to_trade_for(YASIR, "Ariki?"));
+        assert!(!asks_to_trade_for("oteryn:npc.sam", "ariki"));
+        assert!(!asks_to_trade("ariki"));
+        assert!(asks_to_trade_for("oteryn:npc.sam", "trade"));
+        assert!(!asks_to_trade_for(YASIR, "marikina"));
         Ok(())
     }
 
@@ -1059,6 +1397,185 @@ mod dark_trails_admission_tests {
                 "missing {key}"
             );
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod s10_tests {
+    #[test]
+    fn s10_healers_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for key in [
+            "isimov",
+            "rahkem",
+            "rock_with_a_soft_spot",
+            "tibra",
+            "tyrias",
+            "cipfried",
+            "dallheim",
+            "zerbrus",
+            "hector_the_mentor",
+        ] {
+            let key = format!("oteryn:npc.{key}");
+            assert!(book.get(&key).is_some(), "healer missing: {key}");
+        }
+        Ok(())
+    }
+    #[test]
+    fn s10_nonpremium_blessing_givers_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for stem in ["norf", "humphrey", "edala", "quentin", "kawill", "pydar"] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable blessing NPC {key}"))?;
+            assert!(
+                crate::npc_promotion::select("blessing", &entry.premium_services).is_some(),
+                "{key}"
+            );
+        }
+        for stem in ["ishebad", "enpa_rudra", "emperor_rehal"] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable promotion NPC {key}"))?;
+            assert!(
+                crate::npc_promotion::select("promotion", &entry.premium_services).is_some(),
+                "{key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn s10_ungated_source_travel_reaches_the_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for (stem, keyword, price, x, y, floor) in [
+            ("scrutinon", "ab'dendriel", 0, 32734, 31668, 6),
+            ("scrutinon", "edron", 0, 33175, 31764, 6),
+            ("scrutinon", "venore", 0, 32954, 32022, 6),
+            ("scrutinon", "darashia", 0, 33289, 32480, 6),
+            ("rapanaio_isle_of_evil", "kazordoon", 0, 32700, 31990, 15),
+            ("a_ghostly_sage", "help", 0, 32834, 32275, 9),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable travel NPC {key}"))?;
+            let route = entry
+                .travel_routes
+                .iter()
+                .find(|route| route.keyword == keyword)
+                .ok_or_else(|| format!("missing {key}/{keyword}"))?;
+            assert!(!route.held, "{key}/{keyword}");
+            assert!(!route.route.premium);
+            assert_eq!(route.route.price, price);
+            assert_eq!(
+                (
+                    route.route.destination.x,
+                    route.route.destination.y,
+                    route.route.destination.floor
+                ),
+                (x, y, floor)
+            );
+        }
+        for key in ["oteryn:npc.rapanaio_boat", "oteryn:npc.dalbrect"] {
+            assert!(
+                book.get(key)
+                    .is_none_or(|entry| entry.travel_routes.is_empty()),
+                "quest-only route escaped admission: {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn s10_source_registered_bankers_reach_the_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = super::NpcTalkBook::from_model(&model);
+        for stem in [
+            "atur",
+            "ebenizer",
+            "eighty",
+            "elgar",
+            "eva",
+            "ferks",
+            "finarfin",
+            "gnomillion",
+            "jefrey",
+            "jessica",
+            "kaya",
+            "kepar",
+            "lokur",
+            "murim",
+            "muzir",
+            "naji",
+            "raffael",
+            "rokyn",
+            "siestaar",
+            "sissek",
+            "suzy",
+            "tesha",
+            "virgil",
+            "znozel",
+            "wentworth",
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("unavailable banker {key}"))?;
+            assert!(entry.bank(), "bank service missing for {key}");
+        }
+        // The owner excludes Dawnport; an existing NPC must not gain this new service.
+        let dawnport = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == "oteryn:npc.plunderpurse")
+            .map(|(_, npc)| npc)
+            .ok_or("Plunderpurse source NPC absent")?;
+        assert!(
+            !dawnport
+                .services
+                .iter()
+                .any(|service| service.key == "oteryn:service.bank.standard"),
+            "Dawnport banker escaped the S10 scope"
+        );
         Ok(())
     }
 }
