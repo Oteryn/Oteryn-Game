@@ -3,9 +3,9 @@
 pub mod details;
 mod input;
 mod view;
-pub use input::open_key;
+pub use input::{open_key, tracker_key};
 pub use oteryn_client_runtime::imbue::{ImbueCommand, ImbueResponse, ItemHandle, imbuement};
-pub use view::{panel_text, selected_detail_text, slot_label};
+pub use view::{panel_text, selected_detail_text, slot_label, tracker_text};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -23,6 +23,8 @@ pub struct ImbuePanel {
     pub details_feedback: Option<&'static str>,
     pub selected: bool,
     pub open: bool,
+    pub tracker_open: bool,
+    pub tracker_minutes: String,
     pub pending: bool,
     pub refresh_required: bool,
     pub item: Option<ItemHandle>,
@@ -38,6 +40,8 @@ impl ImbuePanel {
             selected: self.selected,
             details_selected: self.details_selected,
             open: self.open,
+            tracker_open: self.tracker_open,
+            tracker_minutes: self.tracker_minutes.clone(),
             feedback: Some("Select an item in the current activity and refresh it"),
             ..Self::default()
         };
@@ -255,3 +259,7 @@ mod tests {
         assert!(panel_text(&panel).contains("materials are missing"));
     }
 }
+
+#[cfg(test)]
+#[path = "tests/tracker.rs"]
+mod tracker_cases;

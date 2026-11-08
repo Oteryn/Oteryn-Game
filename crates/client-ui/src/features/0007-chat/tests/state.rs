@@ -163,3 +163,40 @@ fn guild_lines_require_current_matching_membership_and_preserve_order() {
     assert!(positions.iter().all(Option::is_some));
     assert!(positions.windows(2).all(|p| p[0] < p[1]));
 }
+
+#[test]
+fn console_tabs_have_independent_filters_and_temporary_chat_restores_off() {
+    let mut panel = ChatPanel::default();
+    panel.console.select(ConsoleTab::Private);
+    panel.console.show_messages = false;
+    panel.console.select(ConsoleTab::Local);
+    assert!(panel.console.show_messages);
+    panel.console.select(ConsoleTab::Private);
+    assert!(!panel.console.show_messages);
+    panel.console.mode = ComposerMode::Off;
+    panel.console.temporary_on();
+    assert!(panel.console.can_send());
+    panel.console.sent();
+    assert!(!panel.console.can_send());
+    panel.selected = true;
+    panel.text = "hello".into();
+    assert!(request(&mut panel, Mode::Say, "").is_none());
+}
+
+#[test]
+fn console_filter_changes_projection_without_removing_history() {
+    let mut panel = ChatPanel {
+        lines: vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "secret".into(),
+        }],
+        ..Default::default()
+    };
+    panel.console.select(ConsoleTab::Local);
+    assert!(!panel_text(&panel).contains("secret"));
+    panel.console.select(ConsoleTab::Private);
+    assert!(panel_text(&panel).contains("secret"));
+    panel.console.show_messages = false;
+    assert!(!panel_text(&panel).contains("secret"));
+    assert_eq!(panel.lines.len(), 1);
+}

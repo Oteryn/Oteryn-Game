@@ -15,22 +15,25 @@ use windows_sys::Win32::UI::WindowsAndMessaging::*;
 const SUBMIT: usize = 1;
 enum Update {
     Show(String),
+    Progress(String),
     Finish(Result<(), GameplayEntryError>),
 }
 pub struct LoginWindow {
     updates: Option<Sender<Update>>,
     requests: Receiver<NativeLoginConfig>,
+    cancellations: Receiver<()>,
     thread: Option<JoinHandle<()>>,
 }
 impl LoginWindow {
     pub fn open() -> Result<Self, String> {
         let (updates, incoming) = mpsc::channel();
         let (requests, outgoing) = mpsc::channel();
+        let (cancel, cancellations) = mpsc::sync_channel(1);
         let (ready, initialized) = mpsc::sync_channel(1);
         let thread = std::thread::Builder::new()
             .name("native-login".into())
             .spawn(move || {
-                let result = run(incoming, requests, &ready);
+                let result = run(incoming, requests, cancel, &ready);
                 if let Err(error) = result {
                     let _ = ready.send(Err(error));
                 }
@@ -42,11 +45,18 @@ impl LoginWindow {
         Ok(Self {
             updates: Some(updates),
             requests: outgoing,
+            cancellations,
             thread: Some(thread),
         })
     }
     pub fn poll(&self) -> Option<NativeLoginConfig> {
         self.requests.try_recv().ok()
+    }
+    pub fn cancel_requested(&self) -> bool {
+        self.cancellations.try_recv().is_ok()
+    }
+    pub fn progress(&self, message: String) {
+        self.send(Update::Progress(message));
     }
     pub fn show(&self, message: String) {
         self.send(Update::Show(message));
@@ -77,10 +87,10 @@ fn wide(text: &str) -> Vec<u16> {
 unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if message == WM_COMMAND
-            && w & 0xffff == SUBMIT
+            && (1..=8).contains(&(w & 0xffff))
             && (w >> 16) & 0xffff == BN_CLICKED as usize
         {
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, 1);
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
             return 0;
         }
         if message == WM_CLOSE {
@@ -93,9 +103,22 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
 fn run(
     updates: Receiver<Update>,
     requests: Sender<NativeLoginConfig>,
+    cancel: mpsc::SyncSender<()>,
     ready: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
+    crate::crash_report::review_pending();
     let path = settings_path();
+    let mut bulletin = crate::bulletin::Browser::default();
+    let bulletin_warning = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(std::path::Path::to_owned))
+        .and_then(|p| match crate::bulletin::Browser::load(&p) {
+            Ok(loaded) => {
+                bulletin = loaded;
+                None
+            }
+            Err(error) => Some(error),
+        });
     let loaded = path
         .as_ref()
         .map_err(Clone::clone)
@@ -118,7 +141,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             680,
-            520,
+            760,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -149,7 +172,46 @@ fn run(
             [15, 315, 200, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
         );
-        let status = control(hwnd, "STATIC", form.message(), 201, [15, 365, 630, 100], 0);
+        for (id, label, x) in [(6, "About", 235), (7, "Survey", 395), (8, "Cancel", 555)] {
+            controls.push(control(
+                hwnd,
+                "BUTTON",
+                label,
+                id,
+                [x, 315, if id == 8 { 90 } else { 140 }, 32],
+                WS_TABSTOP,
+            ));
+        }
+        for (id, label, x) in [
+            (2, "News", 15),
+            (3, "Previous month", 155),
+            (4, "Calendar", 315),
+            (5, "Next month", 475),
+        ] {
+            controls.push(control(
+                hwnd,
+                "BUTTON",
+                label,
+                id,
+                [x, 355, 140, 30],
+                WS_TABSTOP,
+            ));
+        }
+        if let Some(error) = bulletin_warning {
+            form.feedback(error);
+        }
+        let status = control(
+            hwnd,
+            "EDIT",
+            form.message(),
+            201,
+            [15, 400, 630, 300],
+            WS_BORDER
+                | WS_VSCROLL
+                | ES_MULTILINE as u32
+                | ES_READONLY as u32
+                | ES_AUTOVSCROLL as u32,
+        );
         if controls
             .iter()
             .chain([&button, &status])
@@ -169,6 +231,7 @@ fn run(
                 }
             }
             match updates.try_recv() {
+                Ok(Update::Progress(message)) => form.feedback(message),
                 Ok(Update::Show(message)) => {
                     form.feedback(message);
                     ShowWindow(hwnd, SW_SHOW);
@@ -181,7 +244,33 @@ fn run(
                 Err(TryRecvError::Disconnected) => break,
                 Err(TryRecvError::Empty) => {}
             }
-            if GetWindowLongPtrW(hwnd, GWLP_USERDATA) != 0 {
+            let action = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+            if action >= 2 {
+                SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+                if action == 8 {
+                    if form.pending() {
+                        let _ = cancel.try_send(());
+                        form.feedback("Cancelling sign-in…".into());
+                    }
+                } else if action == 6 {
+                    crate::about::show_information(&crate::about::about_text());
+                } else if action == 7 {
+                    crate::about::run_survey();
+                } else {
+                    if action == 3 {
+                        bulletin.previous_month();
+                    }
+                    if action == 5 {
+                        bulletin.next_month();
+                    }
+                    form.feedback(if action == 2 {
+                        bulletin.news()
+                    } else {
+                        bulletin.month()
+                    });
+                }
+            }
+            if action == SUBMIT as isize {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
                 if !form.pending() {
                     form.settings = LoginSettings::from_values(std::array::from_fn(|index| {
@@ -203,6 +292,7 @@ fn run(
             }
             for edit in controls
                 .iter()
+                .take(FIELDS.len() * 2)
                 .skip(1)
                 .step_by(2)
                 .chain(std::iter::once(&button))

@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "options.rs"]
+mod options;
+
 #[test]
 fn settings_transfer_backup_and_defaults_survive_restart() -> Result<(), Box<dyn std::error::Error>>
 {
@@ -233,40 +236,5 @@ fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::err
     Ok(())
 }
 
-#[test]
-fn moved_logout_suppresses_all_original_modifier_variants() -> Result<(), Box<dyn std::error::Error>>
-{
-    use crate::play::ReferencePreferences;
-    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
-    let mut preferences = ReferencePreferences::default();
-    preferences.rebind("0021-logout-logout-l", "ALT+L")?;
-    for bits in 0..16 {
-        let modifiers = Modifiers::from_bits(bits)?;
-        if !modifiers.contains(Modifier::Control) {
-            continue;
-        }
-        let routed = preferences.route_input(&[NormalizedInputEvent::Key {
-            code: KeyCode::new(15)?,
-            state: ButtonState::Pressed,
-            modifiers,
-            repeat: false,
-        }])?;
-        assert!(!crate::input::logout_key(&routed), "modifier bits {bits}");
-    }
-    Ok(())
-}
-
-#[test]
-fn t010_hud_layout_is_validated_and_restored() -> Result<(), Box<dyn std::error::Error>> {
-    let mut play = view()?;
-    let mut json = serde_json::to_value(play.preferences())?;
-    json["hud_bounds"] = serde_json::json!([20, 80, 640, 60]);
-    play.set_preferences(serde_json::from_value(json.clone())?)?;
-    assert_eq!(
-        serde_json::to_value(play.preferences())?["hud_bounds"],
-        json["hud_bounds"]
-    );
-    json["hud_bounds"] = serde_json::json!([20, 80, 0, 60]);
-    assert!(play.set_preferences(serde_json::from_value(json)?).is_err());
-    Ok(())
-}
+#[path = "presentation.rs"]
+mod presentation;

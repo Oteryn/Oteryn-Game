@@ -36,3 +36,46 @@ fn pc01_charm_progression_shortcut_and_request_gate() -> Result<(), Box<dyn std:
     assert!(panel_text(&panel).contains("ended"));
     Ok(())
 }
+
+#[test]
+fn bestiary_browser_filters_confirmed_stages_and_selects_without_index_entry()
+-> Result<(), &'static str> {
+    use oteryn_client_runtime::charm_progression::{
+        CharmProgressionOutcome, CharmProgressionReply, bestiary::BestiaryRaceProgress,
+        charm::CharmView,
+    };
+    let mut panel = Panel {
+        selected: true,
+        reply: Some(CharmProgressionReply {
+            outcome: CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            charms: CharmView::default(),
+            bestiary: vec![
+                BestiaryRaceProgress {
+                    race: std::num::NonZeroU32::new(1).ok_or("race")?,
+                    kill_count: 3,
+                    kill_thresholds: [5, 10, 20],
+                },
+                BestiaryRaceProgress {
+                    race: std::num::NonZeroU32::new(2).ok_or("race")?,
+                    kill_count: 20,
+                    kill_thresholds: [5, 10, 20],
+                },
+            ],
+        }),
+        ..Default::default()
+    };
+    panel.race_filter = RaceFilter::Complete;
+    panel.select_race(false);
+    assert_eq!(panel.fields[1], "2");
+    assert!(bestiary_text(&panel).contains("Stage 3: 20/20"));
+    assert!(!bestiary_text(&panel).contains("Race 1:"));
+    panel.race_filter = RaceFilter::InProgress;
+    panel.select_race(false);
+    assert_eq!(panel.fields[1], "1");
+    assert!(bestiary_text(&panel).contains("Stage 1: 3/5"));
+    panel.pending = true;
+    panel.select_race(true);
+    assert_eq!(panel.fields[1], "1");
+    Ok(())
+}

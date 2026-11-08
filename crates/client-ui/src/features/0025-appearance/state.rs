@@ -34,3 +34,97 @@ impl Panel {
         self.feedback = message.into();
     }
 }
+
+impl Panel {
+    /// Browse only outfits granted by the current server catalogue.
+    pub fn cycle_outfit(&mut self, forward: bool) -> bool {
+        if self.pending || !self.selected {
+            return false;
+        }
+        let Some(catalogue) = &self.catalogue else {
+            return false;
+        };
+        if catalogue.outfits.is_empty() {
+            return false;
+        }
+        let current = catalogue
+            .outfits
+            .iter()
+            .position(|outfit| outfit.key == self.fields[0]);
+        let index = current.map_or(0, |index| {
+            if forward {
+                (index + 1) % catalogue.outfits.len()
+            } else {
+                (index + catalogue.outfits.len() - 1) % catalogue.outfits.len()
+            }
+        });
+        let outfit = &catalogue.outfits[index];
+        self.fields[0].clone_from(&outfit.key);
+        let addons = self.fields[1].parse::<u8>().unwrap_or(0) & outfit.permitted_addons;
+        self.fields[1] = addons.to_string();
+        true
+    }
+}
+
+impl Panel {
+    fn colour_indices(&self) -> Option<[u16; 4]> {
+        self.fields[3]
+            .split(',')
+            .map(|part| part.trim().parse::<u16>().ok())
+            .collect::<Option<Vec<_>>>()?
+            .try_into()
+            .ok()
+    }
+    pub fn preview_colours(&self) -> Option<[[u8; 3]; 4]> {
+        let catalogue = self.catalogue.as_ref()?;
+        let indices = self.colour_indices()?;
+        let mut colours = [[0; 3]; 4];
+        for (colour, index) in colours.iter_mut().zip(indices) {
+            *colour = *catalogue.palette.get(usize::from(index))?;
+        }
+        Some(colours)
+    }
+    pub fn cycle_colour(&mut self, part: usize) -> bool {
+        if self.pending || !self.selected || part >= 4 {
+            return false;
+        }
+        let Some(catalogue) = &self.catalogue else {
+            return false;
+        };
+        let Some(mut indices) = self.colour_indices() else {
+            return false;
+        };
+        if catalogue.palette.is_empty() || self.preview_colours().is_none() {
+            return false;
+        }
+        let Ok(next) = u16::try_from((usize::from(indices[part]) + 1) % catalogue.palette.len())
+        else {
+            return false;
+        };
+        indices[part] = next;
+        let [head, body, legs, feet] = indices;
+        self.fields[3] = format!("{head},{body},{legs},{feet}");
+        true
+    }
+    pub fn toggle_addon(&mut self, bit: u8) -> bool {
+        if self.pending || !self.selected || !bit.is_power_of_two() {
+            return false;
+        }
+        let Some(outfit) = self.catalogue.as_ref().and_then(|catalogue| {
+            catalogue
+                .outfits
+                .iter()
+                .find(|outfit| outfit.key == self.fields[0])
+        }) else {
+            return false;
+        };
+        let Ok(addons) = self.fields[1].trim().parse::<u8>() else {
+            return false;
+        };
+        if bit & outfit.permitted_addons == 0 || addons & !outfit.permitted_addons != 0 {
+            return false;
+        }
+        self.fields[1] = (addons ^ bit).to_string();
+        true
+    }
+}

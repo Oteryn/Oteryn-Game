@@ -96,7 +96,7 @@ fn run(
             CW_USEDEFAULT,
             CW_USEDEFAULT,
             850,
-            860,
+            if panel == 232 { 950 } else { 860 },
             null_mut(),
             null_mut(),
             null_mut(),
@@ -154,6 +154,8 @@ fn specs(
                 "Clear list",
                 "Select mode",
                 "Set destination",
+                "Lists / Managed containers",
+                "Reset selected to main",
             ],
             &[
                 ("Item type", ""),
@@ -197,6 +199,8 @@ fn specs(
                 "Deny selected",
                 "Publish advertisement",
                 "Remove advertisement",
+                "Apply team filters",
+                "Clear team filters",
             ],
             &[
                 ("Minimum level", "1"),
@@ -209,6 +213,11 @@ fn specs(
                 ("Boss / hunt kind / quest", "0"),
                 ("Hunt area", "0"),
                 ("Start time (Unix seconds; 0 now)", "0"),
+                ("Filter leader name", ""),
+                ("Filter level (0 any)", "0"),
+                ("Filter vocations mask (0 any)", "0"),
+                ("Filter target: 0 any/1 boss/2 hunt/3 quest", "0"),
+                ("Filter only open: 0 no/1 yes", "0"),
             ],
         ),
         _ => (
@@ -217,8 +226,13 @@ fn specs(
                 "Next page in current tab",
                 "Catalogue",
                 "Purchase history",
+                "Apply purchase history filters",
             ],
-            &[],
+            &[
+                ("Offer text (this page)", ""),
+                ("From Unix milliseconds", ""),
+                ("Through Unix milliseconds", ""),
+            ],
         ),
     }
 }
@@ -278,7 +292,13 @@ unsafe fn window(
                 i + 1,
                 (
                     10 + (i % 3) as i32 * 270,
-                    (if fields.len() > 9 { 620 } else { 550 }) + (i / 3) as i32 * 42,
+                    (if fields.len() > 12 {
+                        680
+                    } else if fields.len() > 9 {
+                        620
+                    } else {
+                        550
+                    }) + (i / 3) as i32 * 42,
                     260,
                     36,
                 ),
@@ -316,10 +336,12 @@ unsafe fn window(
             if ended {
                 break;
             }
-            let link = PlayLink {
+            // This temporary facade borrows the live session; running PlayLink::drop
+            // here would shut the session down after the first panel repaint.
+            let mut link = std::mem::ManuallyDrop::new(PlayLink {
                 mailbox: shared,
                 commands: commands.clone(),
-            };
+            });
             for action in std::mem::take(&mut actions.0) {
                 let values: Vec<String> = inputs
                     .iter()
@@ -349,6 +371,10 @@ unsafe fn window(
                     if let Some(command) = command {
                         link.discovery_send(command);
                     }
+                } else if panel == 285 && action == 5 {
+                    if let [offer, from, until] = values.as_slice() {
+                        link.purchase_history_filter(offer, from, until);
+                    }
                 } else if panel == 285 && action == 4 {
                     lock(&link.mailbox).store.page = oteryn_client_ui::store::StorePage::History;
                     link.purchase_history(false);
@@ -361,19 +387,28 @@ unsafe fn window(
             let (display, names, available) = match panel {
                 98 => (
                     oteryn_client_ui::quick_loot::panel_text(&state.loot),
-                    state
-                        .loot
-                        .skipped
-                        .iter()
-                        .map(|id| format!("Skip item {id}"))
-                        .chain(
-                            state
-                                .loot
-                                .accepted
-                                .iter()
-                                .map(|id| format!("Accept item {id}")),
-                        )
-                        .collect(),
+                    if state.loot.managed {
+                        state
+                            .loot
+                            .destinations
+                            .iter()
+                            .map(|action| format!("{action:?}"))
+                            .collect()
+                    } else {
+                        state
+                            .loot
+                            .skipped
+                            .iter()
+                            .map(|id| format!("Skip item {id}"))
+                            .chain(
+                                state
+                                    .loot
+                                    .accepted
+                                    .iter()
+                                    .map(|id| format!("Accept item {id}")),
+                            )
+                            .collect()
+                    },
                     state.loot.selected && state.loot.pending.is_none(),
                 ),
                 132 => (
@@ -393,16 +428,7 @@ unsafe fn window(
                     state.inspection.selected && !state.inspection.pending,
                 ),
                 232 => {
-                    use oteryn_client_ui::team_finder::TeamFinderResult;
-                    let names = match &state.teams.result {
-                        Some(TeamFinderResult::Browse { listings, .. }) => {
-                            listings.iter().map(|r| r.name.clone()).collect()
-                        }
-                        Some(TeamFinderResult::Applicants { members, .. }) => {
-                            members.iter().map(|r| r.name.clone()).collect()
-                        }
-                        None => Vec::new(),
-                    };
+                    let names = state.teams.visible_names();
                     (
                         format!(
                             "{}\r\n{}",
@@ -438,7 +464,11 @@ unsafe fn window(
                 held_rows = names;
             }
             for (i, button) in controls.iter().enumerate() {
-                let enable = if panel == 232 && i >= 8 {
+                let enable = if panel == 98 && (1..5).contains(&i) {
+                    available && !state.loot.managed
+                } else if panel == 98 && i == 7 {
+                    available && state.loot.managed
+                } else if panel == 232 && (8..10).contains(&i) {
                     state.leader.selected && !state.leader.pending
                 } else if panel == 285 && i >= 2 {
                     store.selected || state.history.selected
@@ -471,7 +501,9 @@ unsafe fn window(
                 };
                 EnableWindow(*button, i32::from(enable));
             }
-            drop(link);
+            // Release both cloned handles without invoking the owning facade's destructor.
+            std::ptr::drop_in_place(&mut link.mailbox);
+            std::ptr::drop_in_place(&mut link.commands);
             MsgWaitForMultipleObjects(0, null(), 0, 50, QS_ALLINPUT);
         }
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);

@@ -5,6 +5,11 @@ impl PlayView {
             .map(oteryn_client_ui::world_light::clock_text)
     }
     pub(in crate::play) fn light_scene(&mut self) -> Result<(), oteryn_renderer::BatchError> {
+        if !self.preferences().show_lights {
+            self.scene.set_ambient([255; 3])?;
+            self.scene.set_lights(Vec::new());
+            return Ok(());
+        }
         self.scene.set_ambient(
             self.world_clock
                 .map_or([255; 3], oteryn_client_ui::world_light::ambient_rgb),

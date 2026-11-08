@@ -1,11 +1,41 @@
 use super::Panel;
 pub fn panel_text(panel: &Panel) -> String {
     let mut text = format!("Houses\r\n{}", panel.feedback);
-    for row in &panel.page.rows {
+    if panel.page.rows.is_empty() {
+        text.push_str("\r\nNo houses on this page. Choose a town and Query to refresh.");
+    }
+    for (index, row) in panel.page.rows.iter().enumerate() {
+        let kind = match row.kind {
+            2 => "shop",
+            3 => "guildhall",
+            _ => "house",
+        };
+        text.push_str(&format!(
+            "\r\n{}. {} [{kind}; {}]",
+            index + 1,
+            row.house,
+            if row.owned {
+                "owned by you"
+            } else {
+                "not owned by you"
+            }
+        ));
+        if let Some(ends) = row.ends {
+            text.push_str(&format!(
+                "\r\nAuction ends (Unix ms): {ends}; your maximum bid: {}",
+                row.maximum
+                    .map_or_else(|| "none".into(), |bid| bid.to_string())
+            ));
+        }
         text.push_str(&format!(
             "\r\n{}: rent {}, price {}, ends {:?}, maximum {:?}, notice {:?}",
             row.house, row.rent, row.price, row.ends, row.maximum, row.notice
         ));
     }
+    text.push_str(if panel.page.cursor.is_some() {
+        "\r\nNext page available"
+    } else {
+        "\r\nEnd of catalogue"
+    });
     text
 }

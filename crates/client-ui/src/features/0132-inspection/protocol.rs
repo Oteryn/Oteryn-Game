@@ -27,6 +27,14 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && let Ok(reply) = decode_reply(&response.payload)
     {
+        if reply.status == 1 && matches!(panel.last_request, Some(Request::Catalogue(_))) {
+            for item in &reply.items {
+                if panel.catalogue.contains_key(&item.definition_ref) || panel.catalogue.len() < 512
+                {
+                    panel.catalogue.insert(item.definition_ref, item.clone());
+                }
+            }
+        }
         panel.feedback = match reply.status {
             1 => "Inspection received",
             2 => "Unavailable",

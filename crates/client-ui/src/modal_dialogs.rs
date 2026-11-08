@@ -106,3 +106,219 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod server_dialog_tests {
+    use super::*;
+    #[test]
+    fn server_dialog_keeps_ids_and_content_image_reference() {
+        let dialog = ServerDialog {
+            id: 41,
+            title: "Choose a reward".into(),
+            message: "One choice".into(),
+            choices: vec![(7, "Sword".into()), (9, "Shield".into())],
+            buttons: vec![(2, "Accept".into()), (4, "Cancel".into())],
+            image: Some("oteryn:ui.reward".into()),
+        };
+        assert!(dialog.valid());
+        assert!(dialog.text().contains("7: Sword"));
+        assert!(dialog.text().contains("oteryn:ui.reward"));
+        let mut invalid = dialog.clone();
+        invalid.buttons.push((2, "Duplicate".into()));
+        assert!(!invalid.valid());
+        invalid = dialog;
+        invalid.image = Some("https://example.org/image.png".into());
+        assert!(!invalid.valid());
+    }
+}
+
+/// Presentation of an identified server modal. Image keys resolve through client assets;
+/// arbitrary network URLs are never fetched by the dialog.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerDialog {
+    pub id: u32,
+    pub title: String,
+    pub message: String,
+    pub choices: Vec<(u8, String)>,
+    pub buttons: Vec<(u8, String)>,
+    pub image: Option<String>,
+}
+impl ServerDialog {
+    pub fn valid(&self) -> bool {
+        fn items_valid(items: &[(u8, String)]) -> bool {
+            items.len() <= 32
+                && items.iter().enumerate().all(|(index, (id, text))| {
+                    !text.is_empty()
+                        && text.len() <= 256
+                        && !text.contains('\0')
+                        && !items[..index].iter().any(|(prior, _)| prior == id)
+                })
+        }
+        self.title.len() <= 256
+            && !self.title.contains('\0')
+            && self.message.len() <= 8192
+            && !self.message.contains('\0')
+            && !self.buttons.is_empty()
+            && items_valid(&self.buttons)
+            && items_valid(&self.choices)
+            && self.image.as_ref().is_none_or(|key| {
+                key.starts_with("oteryn:")
+                    && key.len() <= 128
+                    && key
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_:.-".contains(&b))
+            })
+    }
+    pub fn text(&self) -> String {
+        let mut text = format!("{}\r\n{}\r\n", self.title, self.message);
+        for (id, choice) in &self.choices {
+            text.push_str(&format!("{id}: {choice}\r\n"));
+        }
+        if let Some(image) = &self.image {
+            text.push_str(&format!("Image: {image}\r\n"));
+        }
+        text
+    }
+}
+
+#[cfg(test)]
+mod notice_tests {
+    use super::*;
+    #[test]
+    fn balancing_notice_requires_acknowledgement_before_suppression() {
+        let mut preferences = DismissedNotices::default();
+        let mut notice = NoticeDialog::new("balance:v2", "Damage rules changed", true);
+        assert!(notice.visible(&preferences));
+        assert!(!notice.acknowledge(false, true, &mut preferences));
+        assert!(notice.visible(&preferences));
+        assert!(notice.acknowledge(true, true, &mut preferences));
+        assert!(!notice.visible(&preferences));
+        assert!(
+            !NoticeDialog::new("balance:v2", "Damage rules changed", true).visible(&preferences)
+        );
+        assert!(NoticeDialog::new("balance:v3", "New rules", true).visible(&preferences));
+        let mut mandatory = NoticeDialog::new("shutdown:v1", "Save now", false);
+        assert!(mandatory.acknowledge(true, true, &mut preferences));
+        assert!(!preferences.contains("shutdown:v1"));
+    }
+}
+
+/// Interactive notice state shared by balancing and reminder presentations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoticeDialog {
+    pub key: String,
+    pub message: String,
+    pub suppressible: bool,
+    acknowledged: bool,
+}
+impl NoticeDialog {
+    pub fn new(key: &str, message: &str, suppressible: bool) -> Self {
+        Self {
+            key: key.into(),
+            message: message.into(),
+            suppressible,
+            acknowledged: false,
+        }
+    }
+    pub fn visible(&self, dismissed: &DismissedNotices) -> bool {
+        !self.acknowledged && !(self.suppressible && dismissed.contains(&self.key))
+    }
+    /// Closing or cancelling cannot silently acknowledge a warning.
+    pub fn acknowledge(
+        &mut self,
+        confirmed: bool,
+        dont_show_again: bool,
+        dismissed: &mut DismissedNotices,
+    ) -> bool {
+        if !confirmed || self.acknowledged {
+            return false;
+        }
+        if self.suppressible && dont_show_again && !dismissed.dismiss(&self.key) {
+            return false;
+        }
+        self.acknowledged = true;
+        true
+    }
+}
+
+#[cfg(test)]
+mod answer_tests {
+    use super::*;
+    #[test]
+    fn modal_handler_rejects_stale_unknown_and_duplicate_answers() {
+        let dialog = ServerDialog {
+            id: 8,
+            title: "Choice".into(),
+            message: String::new(),
+            choices: vec![(42, "Reward".into())],
+            buttons: vec![(3, "OK".into())],
+            image: None,
+        };
+        let mut handler = ServerDialogHandler::default();
+        assert!(handler.show(dialog));
+        assert_eq!(handler.answer(7, 3, Some(42)), None);
+        assert_eq!(handler.answer(8, 9, Some(42)), None);
+        assert_eq!(handler.answer(8, 3, Some(99)), None);
+        assert_eq!(handler.answer(8, 3, None), None);
+        assert_eq!(
+            handler.answer(8, 3, Some(42)),
+            Some(DialogAnswer {
+                dialog_id: 8,
+                button_id: 3,
+                choice_id: Some(42)
+            })
+        );
+        assert!(handler.active().is_none());
+        assert_eq!(handler.answer(8, 3, Some(42)), None);
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DialogAnswer {
+    pub dialog_id: u32,
+    pub button_id: u8,
+    pub choice_id: Option<u8>,
+}
+/// One active server modal; the session owner clears this state on disconnect.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ServerDialogHandler {
+    active: Option<ServerDialog>,
+}
+impl ServerDialogHandler {
+    pub fn active(&self) -> Option<&ServerDialog> {
+        self.active.as_ref()
+    }
+    pub fn show(&mut self, dialog: ServerDialog) -> bool {
+        if !dialog.valid() || self.active.is_some() {
+            return false;
+        }
+        self.active = Some(dialog);
+        true
+    }
+    pub fn clear(&mut self) {
+        self.active = None;
+    }
+    pub fn answer(
+        &mut self,
+        dialog_id: u32,
+        button_id: u8,
+        choice_id: Option<u8>,
+    ) -> Option<DialogAnswer> {
+        let dialog = self.active.as_ref()?;
+        if dialog.id != dialog_id
+            || !dialog.buttons.iter().any(|(id, _)| *id == button_id)
+            || match choice_id {
+                Some(choice) => !dialog.choices.iter().any(|(id, _)| *id == choice),
+                None => !dialog.choices.is_empty(),
+            }
+        {
+            return None;
+        }
+        self.active = None;
+        Some(DialogAnswer {
+            dialog_id,
+            button_id,
+            choice_id,
+        })
+    }
+}

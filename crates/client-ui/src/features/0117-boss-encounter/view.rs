@@ -9,12 +9,6 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
             "Boss points: {}\nServer time: {}",
             page.points, page.now
         );
-        for (key, at) in &page.cooldowns {
-            let _ = writeln!(text, "{key}: {} ms remaining", at.saturating_sub(page.now));
-        }
-        for (key, kills) in &page.progress {
-            let _ = writeln!(text, "{key}: {kills} kills");
-        }
         if let Some(taints) = page.taints {
             let _ = writeln!(text, "Soul War taints: {}", taints.soul_war);
             let _ = writeln!(
@@ -50,6 +44,27 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     } else {
         text.push_str("No server snapshot loaded\n");
     }
+    text.push_str(&super::browser_text(panel));
+    if let Some((unlocked, selected)) = panel.hazard {
+        let gauge: String = (1..=12)
+            .map(|level| {
+                if level <= selected {
+                    '■'
+                } else if level <= unlocked {
+                    '□'
+                } else {
+                    '×'
+                }
+            })
+            .collect();
+        let _ = writeln!(
+            text,
+            "\nHazard [{gauge}]\nSelected level {selected} of {unlocked} unlocked"
+        );
+        text.push_str("Use Lower/Raise hazard to choose an unlocked level, then Enter for the selected boss.\nEntry and cooldown eligibility are confirmed by the server.\n");
+    } else {
+        text.push_str("Query hazard to load unlocked levels before choosing an encounter.\n");
+    }
     let _ = writeln!(text, "{}", panel.summary);
     if panel.pending {
         text.push_str("Waiting for the server\n");
@@ -71,7 +86,11 @@ pub fn cooldown_text(panel: &BossEncounterPanel, elapsed_ms: u64) -> String {
         if snapshot.cooldowns.is_empty() {
             out.push_str("No cooldown records on this page\r\n");
         }
-        for (key, deadline) in &snapshot.cooldowns {
+        let mut cooldowns: Vec<_> = snapshot.cooldowns.iter().collect();
+        cooldowns.sort_by(|(a_key, a_deadline), (b_key, b_deadline)| {
+            a_deadline.cmp(b_deadline).then_with(|| a_key.cmp(b_key))
+        });
+        for (key, deadline) in cooldowns {
             let remaining = deadline
                 .saturating_sub(snapshot.now)
                 .saturating_sub(elapsed_ms);

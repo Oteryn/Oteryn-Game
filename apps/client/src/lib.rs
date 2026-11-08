@@ -1,12 +1,16 @@
 //! Native client process and component composition.
+
+pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
+pub mod bulletin;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
 pub mod character_selection;
 #[path = "features/local-coin-shop/mod.rs"]
 pub mod coin_shop;
 pub mod combat_input;
+pub mod crash_report;
 pub mod cyclopedia;
 pub mod input;
 pub mod map;
@@ -17,9 +21,11 @@ pub mod play;
 pub mod premium;
 pub mod reentry;
 pub mod scene;
+pub mod screenshots;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 
@@ -118,6 +124,9 @@ impl ClientBootstrap {
         link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
         link.house_world(admitted.world_id());
+        if admitted.training_requested() {
+            link.training_open();
+        }
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;

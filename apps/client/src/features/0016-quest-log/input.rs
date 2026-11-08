@@ -17,6 +17,10 @@ impl PlayLink {
 
     /// Opens the feature panel on Ctrl+J; returns whether the feature consumed the event.
     pub fn quest_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::quest_log::tracker_key(events) {
+            self.open_quest_tracker();
+            return true;
+        }
         if !oteryn_client_ui::quest_log::open_key(events) {
             return false;
         }

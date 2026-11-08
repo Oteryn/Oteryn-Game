@@ -128,7 +128,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         return true;
     }
     let text = if p.command_kind == 387 {
-        decode_badges(&r.payload)
+        let decoded = decode_badges(&r.payload);
+        if decoded.is_some() {
+            p.badges = Some(r.payload[1..].to_vec());
+        }
+        decoded
     } else {
         tab.and_then(|tab| decode_tab(&r.payload, tab, p.limit))
     };
@@ -285,6 +289,15 @@ fn decode_tab(
         }
         Tab::StoreSummary => {
             let count = r.u8()?;
+            rows.push("Blessings / death protection".into());
+            rows.push(format!("Owned blessings: {count}"));
+            if count == 0 {
+                rows.push("No blessings owned".into());
+            }
+            rows.push(
+                "Loss percentages are unavailable; ownership does not imply full protection."
+                    .into(),
+            );
             for _ in 0..count {
                 rows.push(format!("Blessing: {}", r.text()?));
             }
