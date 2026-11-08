@@ -36,7 +36,7 @@ Zasady przeciw dublowaniu:
 | T106 | Analytics | Input Analyser | PARTIAL | Brak typów/źródeł obrażeń, tempa i wykresów; jest received total. |
 | T107 | Analytics | Hunting Session Analyser | DONE | Brak zegara, XP/h, profit/balance, kills/loot breakdown i save/export sesji. evidence: `crates/client-ui/src/features/0010-analyser/view.rs:259 + analyser_session_export_writes_confirmed_report_through_native_action` |
 | T108 | Analytics | Party Hunt Analyser | DONE | Brak tabeli członków i rozliczenia loot/supplies/cost split. evidence: `crates/client-ui/src/features/0010-analyser/state/party.rs:119 + analyser_party_query_and_confirmed_table_use_production_mailbox` |
-| T109 | Analytics | Loot Tracker | PARTIAL | Brak listy śledzonych itemów i historii dropów/config. |
+| T109 | Analytics | Loot Tracker | DONE | Brak listy śledzonych itemów i historii dropów/config. evidence: `crates/client-ui/src/features/0010-analyser/state/tracking.rs:49 + analyser_loot_tracking_controls_filter_real_confirmed_drops` |
 | T110 | Analytics | Kill / Hunting Task Tracker | PARTIAL | Brak samodzielnego trackera; postęp pozostaje w Task Board. |
 | O012 | Analytics | Analizery polowania, XP, łupu, zapasów, obrażeń i drużyny | PARTIAL | Brakuje osobnych analizatorów z wykresami/stawkami w czasie, party hunt i boss cooldown/drop tracker; istnieje jeden panel sum kill/XP/loot/supply/damage/heal. |
 | O036 | Analytics | Kalkulator podziału łupu drużyny | DONE | evidence: apps/client/src/features/0010-analyser/input/party_import.rs:11 + party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched (apps/client/src/features/0010-analyser/tests/party_import.rs) |

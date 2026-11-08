@@ -792,9 +792,10 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Loot Tracker",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak listy śledzonych itemów i historii dropów/config.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/tracking.rs:49 + analyser_loot_tracking_controls_filter_real_confirmed_drops"
  },
  {
   "id": "T110",

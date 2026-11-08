@@ -311,7 +311,9 @@ fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
         tools + 8,
         vec![String::new(), "1".into(), String::new()],
     );
-    assert!(!oteryn_client_ui::analyser::panel_text(&mailbox.analyser).contains("#1"));
+    let filtered = oteryn_client_ui::analyser::panel_text(&mailbox.analyser);
+    assert!(!filtered.contains("#1"));
+    assert!(filtered.contains("No recent drops match the tracked item selection"));
 }
 
 #[path = "tasks.rs"]
