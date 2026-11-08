@@ -11649,6 +11649,68 @@
       "resolution": "Six generated-file conflicts resolved by repository regenerate_content.resolve_conflicts; main topology used as regeneration input. MainQREADY pin tool plus ownnative/equipment generator derivecompletecohorts; stage resolved outputs before pinrefresh. No hand-edited pin values.",
       "preservation": "Exact3773-recordunion verified: own3762 checkpoint plus11main additions and1authoritative main existing-row revision; no overlapping revised ownrows. Equipment3811.",
       "validation": "Normalmergecomplete;workspace/alltargets+fmt+clippychangedcratesPASS;native/equipment/QREADYpin/variant/completion/worldmetadata/donorinputchecksPASS;duplicate migrations0. FreshpostmergePG/unitexecutionpendingexplicitcadenceallowance."
+    },
+    "special5_slice": {
+      "status": "QUALIFIED_COMPONENT",
+      "items": [
+        8862,
+        21389,
+        5552,
+        9171,
+        21572
+      ],
+      "scope": "Five distinct custody profiles: explicitarmor/lifetime/fluiddefinition/partialtext/defaultweight; no customuse, rumgrant, readabletext or wholequest inference.",
+      "source": "Pinned Crystal201189f XML/client, lines23575/42586/15280/24682/42950; documented shared importerdefault0 decision for21572 in CONTRACT-NOTES.",
+      "source_controls": "49 item-profile controls PASS in68.249s, including10 special-profile controls and a new invented-mobility rejection; capture check and Ruff PASS.",
+      "postgres": "Five exact native-policy RED cases on PostgreSQL18.6,43.798\u201345.350s. All seven focused GREEN cases on PostgreSQL18.6,44.638\u201361.967s; version and completed-case markers checked for every case. Five new physical profiles plus two retained custody regressions; no whole-quest promotion.",
+      "engine_reuse": "qengine2 3babb30bd fetched; qualifiednativebindingadmission614d00506/192de4928 readyforreuseafteritembatch. Missingruntimefeatures recordedENGINE-REQUESTS.md, no competingenginebuilt.",
+      "last_pushed": "1550c4fff0b9d203a52315afd4aa8ec1ed7ef5f0 includesmainc77;check4m04s/clippy3m53s/fmt/freshnessPASS;ownsevenPGGREENbeforemerge.",
+      "ground_only_decision": "21572 admits only Ground with movable=false/pickupable=false. Generic carryable admission remains the default; the finite producer explicitly selects this one ground-only record. No backpack pickup or drop behavior is claimed.",
+      "red_proof": {
+        "postgres": "18.6",
+        "durations_seconds": {
+          "l6_special_item_21572_native_custody_and_replay": 44.968,
+          "l6_special_item_21389_native_custody_and_replay": 45.294,
+          "l6_special_item_5552_native_custody_and_replay": 45.35,
+          "l6_special_item_8862_native_custody_and_replay": 45.06,
+          "l6_special_item_9171_native_custody_and_replay": 43.798
+        },
+        "expected_missing_native_policies": 5
+      },
+      "green_proof": {
+        "postgres": "18.6",
+        "durations_seconds": {
+          "8862": 61.963,
+          "21389": 61.967,
+          "5552": 60.761,
+          "9171": 61.561,
+          "21572": 49.167,
+          "21466": 48.4,
+          "5949": 44.638
+        },
+        "passed": 7,
+        "failed": 0
+      },
+      "preservation": "3773 ->3778 native profiles; exactly five additions and all prior records unchanged. Independently regenerated equipment count3816; refreshed world pin unchanged43f9c852fd5587d1c500a110ee5379f706ff057f1ec99abcdac42774dcfee66f.",
+      "central_controls": "Dispatch/durability module registration and type2 mint-site audit:3/3 PASS; no new SQL insert site or migration.",
+      "authoring": "Own source capture, native/equipment/QREADY pins, variant packet, completion matrix and world metadata checks PASS. Complete prior donor check reused only after exact input/dependency equality proof.",
+      "validation": {
+        "workspace_all_targets": "Post-main PASS; rust3m56s, measured command239s",
+        "clippy": "Post-main content/dispatch/durability all-targets/all-features -Dwarnings PASS230s",
+        "fmt": "Post-main cargo fmt --all --check PASS",
+        "freshness": "Post-main native-only generation and world-pin refresh PASS; all source/equipment/native/variant/completion/world metadata checks PASS; exact donor inputs unchanged from completed check",
+        "duplicate_migrations": 0,
+        "broad_units": "Content/dispatch/durability nextest queued after compiler gates; pending under owner PREPUSH-2 cadence exception. No broad unit pass claimed.",
+        "fresh_postmain_pg": "Seven focused cases queued on freshly built post-main test binary; pending. Seven actual pre-merge PG cases already passed44.638\u201361.967s."
+      },
+      "main_integration": {
+        "main": "3209d3d61",
+        "merge": "db2f9a260",
+        "conflicts": 0,
+        "behind": 0,
+        "scope": "Reuse main Soulpit boot/error-classification/NPC-service fixes unchanged; no new quest content from this lane."
+      },
+      "next_step": "Complete queued crate units and fresh post-main PG confirmation, then reuse qengine2 native authored-binding admission614d00506/192de4928. Explicit canonical recipe item keys now leave only3295 unadmitted; improper-use weapon engine request already recorded."
     }
   }
 }

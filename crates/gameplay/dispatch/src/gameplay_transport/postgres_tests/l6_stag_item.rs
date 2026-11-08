@@ -154,6 +154,17 @@ pub(super) async fn exercise_typed(
     exercise_custody(owner, admitted, harness, fence, source_id, false, maximum).await
 }
 
+pub(super) async fn exercise_special(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: CurrentCharacterGameplayFence,
+    source_id: u32,
+) -> TestResult {
+    assert!(matches!(source_id, 8862 | 21389 | 5552 | 9171 | 21572));
+    exercise_custody(owner, admitted, harness, fence, source_id, false, 1).await
+}
+
 async fn exercise_custody(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -185,20 +196,45 @@ async fn exercise_custody(
             semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
             "EXTRA"
         );
+    } else if source_id == 8862 {
+        assert_eq!(
+            semantics["protection"]["value"]["armor"],
+            serde_json::json!({"state":"KNOWN","value":16})
+        );
+        assert_eq!(
+            semantics["protection"]["value"]["resistances"]["value"][0],
+            serde_json::json!({"kind":"DEATH","percent":{"state":"KNOWN","value":{"numerator":3,"denominator":1}}})
+        );
+        let pattern = &semantics["equipment"]["value"]["patterns"]["value"][0];
+        assert_eq!(pattern["primary_slot"]["value"], "TORSO");
+        assert_eq!(pattern["level"]["value"], 80);
+        assert_eq!(pattern["vocations"]["value"], serde_json::json!(["KNIGHT"]));
     } else if source_id == 5949 {
         assert_eq!(semantics["protection"]["state"], "UNKNOWN");
-        assert_eq!(semantics["container"]["value"]["capacity"], serde_json::json!({"state":"KNOWN","value":20}));
-        assert_eq!(semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"], "CONTAINER");
+        assert_eq!(
+            semantics["container"]["value"]["capacity"],
+            serde_json::json!({"state":"KNOWN","value":20})
+        );
+        assert_eq!(
+            semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
+            "CONTAINER"
+        );
     } else if source_id == 3398 {
-        assert_eq!(semantics["protection"], serde_json::json!({
-            "state":"KNOWN", "value": {
-                "armor":{"state":"KNOWN","value":7},
-                "resistances":{"state":"KNOWN","value":[{
-                    "kind":"PHYSICAL", "percent":{"state":"KNOWN","value":{"denominator":1,"numerator":3}}
-                }]}
-            }
-        }));
-        assert_eq!(semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"], "LEGS");
+        assert_eq!(
+            semantics["protection"],
+            serde_json::json!({
+                "state":"KNOWN", "value": {
+                    "armor":{"state":"KNOWN","value":7},
+                    "resistances":{"state":"KNOWN","value":[{
+                        "kind":"PHYSICAL", "percent":{"state":"KNOWN","value":{"denominator":1,"numerator":3}}
+                    }]}
+                }
+            })
+        );
+        assert_eq!(
+            semantics["equipment"]["value"]["patterns"]["value"][0]["primary_slot"]["value"],
+            "LEGS"
+        );
     } else {
         assert_eq!(semantics["protection"]["state"], "UNKNOWN");
         assert_eq!(semantics["equipment"]["state"], "NOT_APPLICABLE");
@@ -206,6 +242,38 @@ async fn exercise_custody(
     let qualified =
         crate::durability::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)?;
     assert_eq!(qualified.definition.production_key, key.as_str());
+    if source_id == 21572 {
+        assert!(qualified.materializable && qualified.ground_destination);
+        assert!(!qualified.movable && !qualified.inventory_destination);
+        assert_eq!(qualified.stack_maximum, 1);
+        assert_eq!(
+            semantics["physical"]["value"]["weight"],
+            serde_json::json!({"state":"KNOWN","value":0})
+        );
+        let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+            native,
+            &qualified.definition,
+        )?;
+        assert!(matches!(
+            facts.stack,
+            oteryn_gameplay_domain::domain::item_definition::ItemStackClass::Unknown
+        ));
+        super::quest_world_callbacks::input_item(
+            owner,
+            fence.item_fence(),
+            &Offering {
+                position: TILE,
+                item: key.clone(),
+                count: 1,
+            },
+            60,
+            false,
+        )
+        .await?;
+        let ground: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1 AND i.quantity=1").bind(key.as_str()).fetch_one(&harness.pool).await?;
+        assert_eq!(ground, 1);
+        return Ok(());
+    }
     assert!(
         qualified.materializable
             && qualified.movable
@@ -213,8 +281,42 @@ async fn exercise_custody(
             && qualified.ground_destination
     );
     assert_eq!(qualified.stack_maximum, expected_stack_maximum);
-    assert!(qualified.decay.is_none());
-    assert_eq!(qualified.container_capacity, if source_id == 5949 { Some(20) } else { None });
+    if source_id == 21389 {
+        let decay = qualified
+            .decay
+            .as_ref()
+            .ok_or("flower source decay missing")?;
+        assert_eq!(decay.duration_millis, 3_600_000);
+        assert!(decay.target.is_none());
+    } else {
+        assert!(qualified.decay.is_none());
+    }
+    if source_id == 5552 {
+        assert_eq!(
+            semantics["fluid"],
+            serde_json::json!({"state":"KNOWN","value":{"fluid_type":{"state":"NOT_APPLICABLE"}}})
+        );
+    }
+    if source_id == 9171 {
+        assert_eq!(
+            semantics["readable_writeable"]["value"]["max_text_length"],
+            serde_json::json!({"state":"KNOWN","value":1023})
+        );
+        assert_eq!(
+            semantics["readable_writeable"]["value"]["readable"]["state"],
+            "UNKNOWN"
+        );
+    }
+    if source_id == 21572 {
+        assert_eq!(
+            semantics["physical"]["value"]["weight"],
+            serde_json::json!({"state":"KNOWN","value":0})
+        );
+    }
+    assert_eq!(
+        qualified.container_capacity,
+        if source_id == 5949 { Some(20) } else { None }
+    );
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),

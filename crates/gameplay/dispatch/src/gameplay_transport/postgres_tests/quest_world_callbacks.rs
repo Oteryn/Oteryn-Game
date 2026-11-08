@@ -138,6 +138,15 @@ pub(super) async fn input_item(
     else {
         return Err("mint".into());
     };
+    // A ground-only fixture must never acquire inventory custody during setup.
+    if !carried
+        && matches!(
+            facts.stack,
+            oteryn_gameplay_domain::domain::item_definition::ItemStackClass::Unknown
+        )
+    {
+        return Ok(());
+    }
     let command = |offset| -> TestResult<_> {
         Ok(crate::foundation::CommandRef::new(
             fence.game_session_id,

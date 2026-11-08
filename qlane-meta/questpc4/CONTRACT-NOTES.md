@@ -257,3 +257,21 @@ Crystal201189f871d23597b82caf88fd611454a2ddefb8 XMLSHA8a4a526c6e45b5a282679334eb
 ## QREADY1+2 main c77 integration
 
 Reuse main's claims/world data as-is; no new QREADY quest work. Main adds11nativeprofiles,noneoverlaptyped5,andrevisesoneexistingprofilewithoutoverlapwithownrevisions. Resolvegeneratedconflictsusingrepo merge resolver; Main topology is regeneration base. RegenerateQREADYadmissiontablewithtools/contracts/update_equipment_profile_additions.py,thenownnative/equipmenttoolingandcurrentcompilerpin-refresh. Pin-refresh requires staged/resolved generated files; its initial "is unmerged" refusal was fixed by staging regenerated outputs, not by editing data or weakening validation. Exactmergedunion3773verified, includingallownadmissionsandMainrevision;equipment3811. Mainworldplacementsretained. Wholequestcountsunchanged.
+
+## Distinct special-item contracts
+
+Pinned Crystal201189f871d23597b82caf88fd611454a2ddefb8 XMLSHA8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509 witnesses8862:23575(Yalahar),21389:42586(Lion's Rock),5552:15280and9171:24682(Yalahar),21572:42950(Cursed Crystal). Armor8862 preserves armor16/death3, level80/Knight/torso source script. Flower21389 preserves3600000ms absolute lifetime and no decay target through the existing temporal owner. Flask5552 is an actual client liquid container; its definition has no fixed liquid subtype, and this admission does not grant rum or enable subtype-aware NPC exchange. Parchment9171 qualifies only maxtextlen1023; readable/writeable/distance-read/write-once remain UNKNOWN, with no invented text.
+
+Decision for21572: XML omits mass; reuse the existing native importer's documented constructor default0, rather than infer mass or fluid behavior from the name/description. The existing importer checks pinned Canary src/items/items.hpp's `int32_t weight = 0` in tools/content-schema/native-gameplay/build_source_item_profiles.py:127 and applies that shared loader default in profile():73. This is a loader-default decision, not an explicit Crystal XML weight fact. The closed source shape rejects any later explicit weight attribute pending recapture. Other physical flags remain source/client-owned. Owner's bounded-investigation/most-likely documented-behavior rule applies; record this assumption openly. No runtime engine feature is added.
+
+Bright sword3295 explicitly declares `unproperly=true`; do not replace that behavior with an invented strict level30 rule. Currentmain and fetchedqengine2 3babb30bd have no implementation under that source keyword. Requested generic equipment support; keep it out of this five-item cohort. Qengine2's native binding admission is qualified at614d00506/192de4928 and will be reused for subsequent authored routes, not reimplemented here.
+
+
+## Ground-only bloodstained crystal boundary
+
+Decision: source21572 is ground-only. The pinned physical policy says movable=false and pickupable=false, and the existing importer emits only Ground as a legal destination. The generic carryable-cohort guard correctly rejected this record during generation; retain that default guard and opt only this explicitly qualified record into ground-only authoring. The source qualifier rejects invented mobility. The PostgreSQL probe must mint the real ground item and verify inventory facts remain Unknown (the production transfer refusal boundary), rather than carry/drop it through a backpack. Test fixture setup leaves ground-only items on the ground; existing portable-item setup is unchanged. No pickup, quest grant, use effect or whole-quest completion is inferred.
+
+
+## MAINRED47 integration during special-item verification
+
+Main advanced to3209d3d61 (#3040) after the seven PostgreSQL cases passed. Merge it normally; five Soulpit boot/error-classification/NPC-service-test files integrate without conflicts and do not overlap item admission. Stop the pre-merge clippy process rather than count an interrupted or stale run as verification. Repeat native-only generation and world-pin refresh, then workspace/all-targets check, content/dispatch/durability clippy and fmt on the merged tree. The seven earlier PG cases remain real pre-merge evidence; fresh post-merge PG/broad units are explicitly pending under the owner cadence exception, not claimed as passes.

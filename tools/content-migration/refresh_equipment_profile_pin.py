@@ -11,6 +11,7 @@ from pathlib import Path
 
 import questpc4_beregar_equipment_pin
 import questpc4_recipe_equipment_pin
+import questpc4_special_equipment_pin
 import questpc4_stag_equipment_pin
 import questpc4_typed_equipment_pin
 import questpc4_yalahar_equipment_pin
@@ -127,6 +128,15 @@ def main():
             (
                 ROOT
                 / "tools/content-schema/native-gameplay/questpc4-typed-item-profiles.json"
+            ).read_text()
+        ),
+    )
+    source = questpc4_special_equipment_pin.refresh(
+        source,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json"
             ).read_text()
         ),
     )

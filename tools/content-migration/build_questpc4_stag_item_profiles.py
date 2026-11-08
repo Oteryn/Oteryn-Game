@@ -126,6 +126,7 @@ def admit(
     schema=SCHEMA,
     neutral=scoped.NEUTRAL_EQUIPMENT,
     equipment=(),
+    ground_only=(),
     producer="tools/content-migration/build_questpc4_stag_item_profiles.py",
 ):
     keys = {i: f"oteryn:item.tibia.i{i}" for i in items}
@@ -170,7 +171,11 @@ def admit(
                 )
             )
             or record["admission"]["legal_destinations"]
-            != ["CharacterInventory", "Ground"]
+            != (
+                ["Ground"]
+                if key in {keys[i] for i in ground_only}
+                else ["CharacterInventory", "Ground"]
+            )
             or not record["admission"]["materializable"]
         ):
             raise ValueError("STAG_ITEM_CAPTURE_FACT_DRIFT")

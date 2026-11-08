@@ -543,7 +543,17 @@
         "in/questpc.json#/quests/135",
         "in/questpc8.json#/2"
       ],
-      "partial_qualification": "cloud-exact-tools-02; both exact source tools, UID3073 only"
+      "partial_qualification": "cloud-exact-tools-02; both exact source tools, UID3073 only",
+      "special_item_admission_component": {
+        "status": "QUALIFIED",
+        "source_ids": [
+          8862,
+          5552
+        ],
+        "capture": "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json",
+        "postgres": "PostgreSQL18.6; five native-policy RED cases43.798\u201345.350s; each corresponding new case GREEN49.137\u201361.929s. See QUEST-STATUS.json for final measured results.",
+        "limits": "Physical item profile only; whole quest stays IN_PROGRESS.21572 is ground-only;5552 has no authored RUM subtype;9171 read/write remains UNKNOWN."
+      }
     },
     {
       "canonical": "oteryn:quest.chayenne_realm",
@@ -824,7 +834,16 @@
       "additional_mechanism_dependencies": [],
       "classification_evidence_sources": [
         "in/questpc4.json#/quests/12"
-      ]
+      ],
+      "special_item_admission_component": {
+        "status": "QUALIFIED",
+        "source_ids": [
+          21572
+        ],
+        "capture": "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json",
+        "postgres": "PostgreSQL18.6; five native-policy RED cases43.798\u201345.350s; each corresponding new case GREEN49.137\u201361.929s. See QUEST-STATUS.json for final measured results.",
+        "limits": "Physical item profile only; whole quest stays IN_PROGRESS.21572 is ground-only;5552 has no authored RUM subtype;9171 read/write remains UNKNOWN."
+      }
     },
     {
       "canonical": "oteryn:quest.the_outlaw_camp_quest",
@@ -1157,7 +1176,16 @@
       "additional_mechanism_dependencies": [],
       "classification_evidence_sources": [
         "in/questpc4.json#/quests/73"
-      ]
+      ],
+      "special_item_admission_component": {
+        "status": "QUALIFIED",
+        "source_ids": [
+          9171
+        ],
+        "capture": "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json",
+        "postgres": "PostgreSQL18.6; five native-policy RED cases43.798\u201345.350s; each corresponding new case GREEN49.137\u201361.929s. See QUEST-STATUS.json for final measured results.",
+        "limits": "Physical item profile only; whole quest stays IN_PROGRESS.21572 is ground-only;5552 has no authored RUM subtype;9171 read/write remains UNKNOWN."
+      }
     },
     {
       "canonical": "oteryn:quest.authored.waterskin_of_mead_quest",
@@ -1844,7 +1872,16 @@
       "classification_evidence_sources": [
         "in/questpc.json#/quests/158",
         "in/questpc8.json#/18"
-      ]
+      ],
+      "special_item_admission_component": {
+        "status": "QUALIFIED",
+        "source_ids": [
+          21389
+        ],
+        "capture": "tools/content-schema/native-gameplay/questpc4-special-item-profiles.json",
+        "postgres": "PostgreSQL18.6; five native-policy RED cases43.798\u201345.350s; each corresponding new case GREEN49.137\u201361.929s. See QUEST-STATUS.json for final measured results.",
+        "limits": "Physical item profile only; whole quest stays IN_PROGRESS.21572 is ground-only;5552 has no authored RUM subtype;9171 read/write remains UNKNOWN."
+      }
     },
     {
       "canonical": "oteryn:quest.machinery_of_war_quest",
