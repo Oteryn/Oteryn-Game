@@ -102,3 +102,42 @@ fn memorial_token_preview_requires_explicit_offer_and_balance() {
     memorial.selected = 99;
     assert!(memorial.preview().is_none());
 }
+
+#[test]
+fn palette_and_addon_selectors_stay_inside_the_server_catalogue() {
+    use oteryn_client_runtime::appearance::{Catalogue, Context, OutfitOption};
+    let mut panel = Panel {
+        selected: true,
+        catalogue: Some(Catalogue {
+            context: Context {
+                content_generation: [1; 32],
+                cosmetics_digest: [2; 32],
+            },
+            root_revision: 1,
+            selected: None,
+            palette: vec![[0, 0, 0], [255, 32, 16]],
+            outfits: vec![OutfitOption {
+                key: "knight".into(),
+                look_type: 128,
+                permitted_addons: 1,
+            }],
+            mounts: vec![],
+        }),
+        ..Default::default()
+    };
+    panel.fields[0] = "knight".into();
+    panel.fields[1] = "0".into();
+    panel.fields[3] = "0,0,0,0".into();
+    assert!(panel.cycle_colour(0));
+    assert_eq!(
+        panel.preview_colours(),
+        Some([[255, 32, 16], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    );
+    assert!(panel.cycle_colour(0));
+    assert!(!panel.cycle_colour(4));
+    assert!(panel.toggle_addon(1));
+    assert_eq!(panel.fields[1], "1");
+    assert!(!panel.toggle_addon(2));
+    assert_eq!(panel.fields[1], "1");
+    assert!(panel.confirmed.is_none());
+}
