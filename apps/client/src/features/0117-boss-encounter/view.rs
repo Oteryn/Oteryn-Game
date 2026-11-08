@@ -10,4 +10,4 @@ impl PlayLink {
 #[path = "native.rs"]
 mod native;
 #[cfg(windows)]
-pub(in crate::play) use native::open_window;
+pub(in crate::play) use native::{cooldown_window, open_window};

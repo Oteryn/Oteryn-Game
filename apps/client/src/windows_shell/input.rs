@@ -24,7 +24,8 @@ impl Application {
                 self.settings.capture(&mut play.view);
                 return;
             }
-            if play.view.container_input(&play.link, events)
+            if play.view.minimap_input(events)
+                || play.view.container_input(&play.link, events)
                 || play.link.inventory_input(events)
                 || play.link.battle_input(events)
                 || (oteryn_client_ui::party::open_key(events) && {
