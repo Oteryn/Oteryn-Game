@@ -292,4 +292,3 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         close(&weak);
     }
 }
-
