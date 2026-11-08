@@ -34,6 +34,9 @@ mod counterparts;
 mod effects;
 mod ground_stack;
 mod imported_explore;
+mod treasure_source;
+#[cfg(test)]
+mod treasure_source_tests;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -504,6 +507,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && !imported_explore::admitted(callback))
             || callback.sources.is_empty()
             || !(imported_explore::admitted(callback)
+                || treasure_source::admitted(callback)
                 || callback.sources.iter().any(|source| {
                     // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                     source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")

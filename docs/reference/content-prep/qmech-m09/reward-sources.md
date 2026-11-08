@@ -18,3 +18,22 @@ This lane reuses its Rust implementation, preserves subsequent fluid/container
 proofs, and writes its own forward migration instead of copying migration1007.
 The questpc4-n2 branch's `61a1f24af` already qualifies the Treasure Hunt poem and
 telescope profiles; reuse those facts instead of manufacturing another profile.
+
+## Treasure chest allocation decision (M09)
+
+The admitted region `content/world/placements/region-z13-x125-y128.b3`
+contains the two appearance-2478 chests at `(32144,32968,13)` and
+`(32139,32978,13)`. The wiki confirms separate caches but its reward-room
+images were inaccessible (HTTP 403), so the item-to-cell allocation is not
+source-verified. Selected Oteryn approximation: the northern chest grants the
+telescope (9616 ×1), the southern chest the gold ingots (9058 ×3). Each has an
+independent personal once track and reward receipt. This preserves both source
+reward quantities and separate chest claims; it does not claim source-exact
+allocation, daily floor-loot ownership, or completion of the other route steps.
+
+Rookie mission 11 uses its canonical initial storage value -1, not an invented
+zero alias. The source item XML names 12785 “special flask”, description
+“Vascalir gave it to you to collect wasp poison”, weight 180. Its physical
+profile must be qualified through the existing pinned importer before runtime
+activation. The grant reply intentionally omits the unimplemented map-marker
+claim; the separate source map-mark effect remains outside M09's item scope.
