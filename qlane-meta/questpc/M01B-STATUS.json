@@ -6,19 +6,29 @@
     "routes": 46,
     "explore_stages": 56,
     "first_wired_route": "Longsword Quest",
-    "first_wired_stage": "s1"
+    "first_wired_stage": "s1",
+    "wired_routes": [
+      "Longsword Quest",
+      "Geomancer Quest"
+    ],
+    "wired_explore_stages": 2
   },
   "validation": {
-    "quest_unit_tests": "329 passed,0 failed,23.00s",
-    "focused_profile_tests": "2 passed,0 failed,0.03s",
-    "authoring_modules": "107 passed,0 failed after authored-recipe lookup fix",
+    "quest_unit_tests": "356 passed,0 failed,41.91s after qmech41edb50ef merge",
+    "focused_profile_tests": "3 included in the356 passing quest units",
+    "authoring_modules": "111 passed,0 failed after merge",
     "authoring_checks": "PASS",
     "content_tree": "PASS",
-    "clippy": "quests+dispatch all-targets/all-features -D warnings PASS4m04s",
-    "postgres_catalogue": "PASS PostgreSQL18.6,7.422163852s",
-    "postgres_native_step": "counter/wrong-tile/revisit assertions passed; corrected immediate replay rerun in progress, not yet green"
+    "clippy": "PASS quests+dispatch all-targets/all-features -D warnings4m40s; changed game-server authority test target3m02s",
+    "postgres_catalogue": "PASS PostgreSQL18.6,8.222271585s",
+    "postgres_native_step": "PASS Longsword61.045918893s and Geomancer59.238595156s;3cases total128.51s,0failures",
+    "workspace_all_targets": "PASS7m59s after repairing the merged map-mark fixture initializer",
+    "fmt": "PASS cargo fmt --all --check",
+    "world_pin_verify": "PASS current locked repository compiler pin-check after native/source regeneration",
+    "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
+    "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish native replay validation, then extend all assigned EXPLORE bindings. Do not mark the entire mechanic DONE from this first slice."
+  "continuation": "Push this Geomancer slice, then implement authoritative Premium/level and predecessor/multi-visit guards for remaining44 routes/54 stages. Entire mechanic remains IN_PROGRESS."
 }

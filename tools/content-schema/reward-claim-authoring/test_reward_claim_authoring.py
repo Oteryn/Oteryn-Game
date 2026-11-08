@@ -389,14 +389,17 @@ def test_a_placement_carries_only_the_transition_the_lowering_constructed() -> N
     assert any("quest_transition" in e for e in rca.validate(bound, items(), None, [claim], []))
 
 
-def test_the_committed_content_binds_exactly_the_admitted_chest_transitions() -> None:
+def test_the_committed_content_binds_exact_source_chest_transitions() -> None:
     records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     bound = {r["identity"]["key"]: {p["quest_transition"] for p in r["placements"]}
              for r in records if any("quest_transition" in p for p in r["placements"])}
-    assert bound == {
-        **{f"oteryn:reward-claim.kv.{key}": {f"oteryn:quest-transition/kv/{key}/chest"}
-           for key in ("adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues")},
+    expected_claim_sets = {
+        "oteryn:reward-claim.kv." + marker: {"oteryn:quest-transition/kv/" + marker + "/chest"}
+        for marker in ("adoreduh", "barbarianaxe1", "battleaxe", "bloodherb", "captain_iglues",
+                       "bear_chest1", "bear_chest2", "bear_chest3")
+    }
+    assert bound == expected_claim_sets | {
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
             {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
         "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":

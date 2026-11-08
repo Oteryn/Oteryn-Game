@@ -407,10 +407,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let callbacks = reward_callbacks::load().map_err(|_| ())?;
+        let Some(catalogue) = self.quest_catalogue.as_deref() else {
+            return Ok(None);
+        };
+        let callbacks = reward_callbacks::load_for(catalogue).map_err(|_| ())?;
         let bound = callbacks
             .iter()
             .filter(|c| c.carried_item.as_deref() == Some(&item.definition.production_key))
+            // M20 recipe admission remains closed until the exact second operand is supplied.
+            .filter(|c| c.carried_target.is_none())
             .collect::<Vec<_>>();
         if bound.is_empty() {
             return Ok(None);

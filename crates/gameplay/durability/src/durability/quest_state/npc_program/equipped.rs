@@ -24,10 +24,15 @@ pub(super) async fn inventory(
         .await
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut inventory = NpcInventorySnapshot::default();
-    if let Some(head) = equipment.items.iter().find(|item| item.slot == 1) {
+    for item in &equipment.items {
+        let slot = match item.slot {
+            1 => "head",
+            2 => "necklace",
+            _ => continue,
+        };
         inventory
             .equipped
-            .insert("head".into(), head.definition.production_key.clone());
+            .insert(slot.into(), item.definition.production_key.clone());
     }
     Ok(inventory)
 }
@@ -53,7 +58,7 @@ impl DurabilityRoot {
         source: &NpcRuleCatalog,
     ) -> Result<NpcProgramCommit> {
         self.commit_npc_program_source(
-            authority, node, permit, fence, request, catalogue, items, source,
+            authority, node, permit, fence, request, catalogue, items, source, None,
         )
         .await
     }

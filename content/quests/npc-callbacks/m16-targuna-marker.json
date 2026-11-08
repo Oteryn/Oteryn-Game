@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/targuna/sterling-mark-treasure",
+      "quest": "oteryn:quest.targuna_quest",
+      "npc": "oteryn:npc.sterling",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/mission",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/treasure_marked",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/morla_done",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing me that map. Let me mark the treasure spot for you."
+      ],
+      "map_mark": {
+        "position": {
+          "x": 31948,
+          "y": 31924,
+          "floor": -7
+        },
+        "text": "Treasure",
+        "kind": "cross"
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sterling.lua:62,142-157:sha256:3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9"
+      ]
+    }
+  ]
+}
