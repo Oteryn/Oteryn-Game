@@ -13,6 +13,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod player_name;
 pub mod teleport;
 mod validate;
 
@@ -263,6 +264,10 @@ pub struct NpcRule {
     pub trigger: NpcRuleTrigger,
     #[serde(default)]
     pub keywords: Vec<String>,
+    /// Match the current Character owner's name instead of a source literal.
+    /// Omit false to preserve existing programme digests byte for byte.
+    #[serde(default, skip_serializing_if = "player_name::is_false")]
+    pub match_player_name: bool,
     #[serde(default)]
     pub exclude_keywords: Vec<String>,
     #[serde(default)]
@@ -281,7 +286,14 @@ pub struct NpcRule {
     pub continue_matching: bool,
     #[serde(default)]
     pub inventory_failure_reply: Vec<String>,
+    /// Canonical personal completion, committed with this selected source branch.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -338,6 +350,7 @@ pub struct NpcRuleInput<'a> {
     pub npc: &'a str,
     pub trigger: NpcRuleTrigger,
     pub message: &'a str,
+    pub player_name: Option<&'a str>,
     pub topic: i32,
     pub tracks: &'a BTreeMap<String, i64>,
     pub inventory: &'a NpcInventorySnapshot,
@@ -367,6 +380,7 @@ pub struct NpcTrackChange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRulePlan {
     pub quest: String,
+    pub completes: bool,
     pub program_digest: [u8; 32],
     pub selected_rule_keys: Vec<String>,
     pub reply: Vec<String>,
@@ -484,6 +498,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                         )

@@ -24,6 +24,7 @@ fn qn3_m05_gnomus_measurements_report_keeps_item_points_and_deadline() -> Result
         npc: "oteryn:npc.gnomus",
         trigger: NpcRuleTrigger::Say,
         message: "measurements",
+        player_name: None,
         topic: 0,
         tracks: &tracks,
         inventory: &inventory,
