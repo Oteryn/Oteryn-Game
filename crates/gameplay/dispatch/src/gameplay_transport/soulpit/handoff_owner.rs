@@ -42,7 +42,13 @@ pub(super) async fn read_with_budget<T>(
 fn owner_read<T>(read: Result<T, DurabilityError>) -> Result<Option<T>, ()> {
     match read {
         Ok(value) => Ok(Some(value)),
-        Err(DurabilityError::RootUnavailable) => Ok(None),
+        // These two callers only read current Soulpit bindings/members. A bounded
+        // read failing to acquire its locks does not prove the Channel was lost.
+        Err(
+            DurabilityError::RootUnavailable
+            | DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::Database(crate::durability::SqlxFailureClass::RetryableStatement),
+        ) => Ok(None),
         Err(_) => Err(()),
     }
 }
@@ -480,6 +486,23 @@ mod read_retry_tests {
 
     #[test]
     fn soulpit_owner_busy_reads_retry_next_deadline_without_masking_authority_loss() {
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::Database(
+                crate::durability::SqlxFailureClass::RetryableStatement
+            ))),
+            Ok(None)
+        );
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::Database(
+                crate::durability::SqlxFailureClass::Database(None)
+            ))),
+            Err(())
+        );
+        assert_eq!(
+            owner_read::<()>(Err(DurabilityError::RootPassDeadlineExceeded)),
+            Ok(None),
+            "a read deadline is not proof that the Channel owner became stale"
+        );
         assert_eq!(
             owner_read::<()>(Err(DurabilityError::RootUnavailable)),
             Ok(None)
