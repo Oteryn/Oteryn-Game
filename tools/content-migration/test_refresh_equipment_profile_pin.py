@@ -59,6 +59,16 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         )
         self.assertEqual(count, 6)
 
+    def test_existing_registered_engine_is_counted_once(self):
+        source = self.SOURCE.replace('("QNPCFX", 1)', '("QNPCFX", 1), ("QENGINE-REWARDS", 1)')
+        source = source.replace('            + npc_additions.len()',
+                                '            + (additions.len() - 1)\n            + npc_additions.len()')
+        fixed, count = self.generate(source)
+        self.assertEqual(count, 5)
+        self.assertIn('(additions.len() - 1)', fixed)
+        with self.assertRaisesRegex(ValueError, 'registered QENGINE cohort'):
+            self.generate(source.replace('additions.len() - 1', 'additions.len() - 2'))
+
     def test_duplicate_profile_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate production key"):
             self.generate(base=document(0, 0, 1, 2, 3))

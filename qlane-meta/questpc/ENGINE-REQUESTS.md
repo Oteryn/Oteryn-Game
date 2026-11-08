@@ -80,4 +80,3 @@ existing engine is already on main.
 - ENGNPC: final source NPC item receipt must set canonical journal completion in the same fenced operation; current npc_program writer hardcodes completes=false.
 
   Needed by: Marlin Trophy Quest
-

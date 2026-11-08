@@ -136,3 +136,61 @@ fn farewell_remains_visible_without_an_active_conversation() {
     panel = DialoguePanel::default();
     assert!(!panel.visible());
 }
+
+#[test]
+fn w05d_seasonal_npc_topics_decode_and_render_in_usable_native_dialogue()
+-> Result<(), Box<dyn std::error::Error>> {
+    let santa = EntityRef {
+        identity: [7; 16],
+        generation: 2,
+    };
+    let baker = EntityRef {
+        identity: [8; 16],
+        generation: 2,
+    };
+    let mut panel = DialoguePanel {
+        selected: true,
+        ..Default::default()
+    };
+    for (npc, topic, reply) in [
+        (santa, "present", "Merry Christmas!"),
+        (santa, "present", "You can't get other present."),
+        (
+            baker,
+            "mass",
+            "So far, 200 of the 200 Sweet and Sugary Substances have been delivered here in Thais.",
+        ),
+        (
+            baker,
+            "base",
+            "So far, 200 of the 200 Cake Golems have been lured to the machines.",
+        ),
+        (
+            baker,
+            "deliver",
+            "Wonderful, thank you! You delivered 200 substance(s). (200/200 total delivered)",
+        ),
+    ] {
+        let intent = panel.request(npc, topic).ok_or("native topic request")?;
+        let bytes =
+            npc_service::encode_npc_talk_intent(&intent).map_err(|_| "encode native talk")?;
+        let decoded =
+            npc_service::decode_npc_talk_intent(&bytes).map_err(|_| "decode native talk")?;
+        assert_eq!((decoded.npc_actor, decoded.text.as_str()), (npc, topic));
+        let conversation = npc_service::NpcConversation {
+            open: Some((npc, npc_service::NpcConversationState::Open)),
+            lines: vec![reply.into()],
+        };
+        let payload = npc_service::encode_npc_conversation(&conversation)
+            .map_err(|_| "encode native conversation")?;
+        panel.apply(
+            npc_service::decode_npc_conversation(&payload)
+                .map_err(|_| "decode native conversation")?,
+        );
+        assert!(panel.visible());
+        assert_eq!(panel.text(), reply);
+        assert_eq!(panel.target, Some(npc));
+        assert!(!panel.pending, "the next native topic must remain usable");
+    }
+    Ok(())
+}

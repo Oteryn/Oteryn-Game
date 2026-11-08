@@ -706,7 +706,10 @@ async fn prepare_source_reader<'native>(
             Some("life_drain") => Some(Kind::LifeDrain),
             Some("mana_drain") => Some(Kind::ManaDrain),
             Some("drowning") => Some(Kind::Drown),
-            None => None,
+            // Crystal src/items/functions/item/item_parse.cpp:528-536 excludes Undefined from
+            // absorbpercentall, and defines no specific Undefined item absorb.
+            // Keep the source element for HP delivery without inventing elemental absorption.
+            Some("undefined") | None => None,
             _ => continue,
         };
         let protection = kind.and_then(|kind| state.equipped_element_protection(kind));

@@ -779,8 +779,14 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // HIRELING: unlinks only a consumed lamp, proven by this transaction's
                 // native item-use receipt; the Inbox delete guard still rejects other rows.
                 "game_hireling_inbox_lamp_unlink",
+                // W18: SELECT the existing Inbox Gold Pouch custody for the
+                // registered coin-only destination; never creates an Inbox row.
+                "game_house_container_coin_pouch_destination",
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
+                // W18: verify final Inbox custody before removing only private
+                // House reclaim metadata; no Inbox row or delivery changes.
+                "game_house_nested_reclaim_reconcile",
                 "game_item_location_exclusive",
                 // QUICKLOOT-1: read-only Gold Pouch custody proofs. The pouch stays
                 // in Inbox; only nested coin entries change, never Inbox rows.
@@ -806,6 +812,27 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_reward_claim_inbox_mint_is_complete",
             ]
         );
+        // Register the two exact read-only custody users independently of the
+        // closed inventory above. A direct/dynamic Inbox DML path in either
+        // helper fails even if its name remains in the registered reader set.
+        for reader in [
+            "game_house_container_coin_pouch_destination",
+            "game_house_nested_reclaim_reconcile",
+        ] {
+            let no_inbox_dml: bool = sqlx::query_scalar(
+                r#"SELECT prosrc !~* '\m(insert[[:space:]]+into|update|delete[[:space:]]+from|truncate([[:space:]]+table)?)[[:space:]]+(only[[:space:]]+)?(("[^"]+"|[a-z_][a-z_0-9$]*)[.])?"?game_(item_character_inbox_locations|character_inbox_(deliveries|counters|cause_kinds))"?\M'
+                    AND prosrc !~* '\mexecute\M'
+                   FROM pg_proc WHERE proname=$1
+                    AND pronamespace=current_schema()::regnamespace"#,
+            )
+            .bind(reader)
+            .fetch_one(&mut *connection)
+            .await?;
+            assert!(
+                no_inbox_dml,
+                "registered custody reader acquired Inbox DML: {reader}"
+            );
+        }
         let kept = read_character_inbox(connection, &bytes(&character)?).await?;
         assert_eq!(kept.len(), 1);
         assert_eq!(kept[0].item_instance_id, bytes(item)?);
