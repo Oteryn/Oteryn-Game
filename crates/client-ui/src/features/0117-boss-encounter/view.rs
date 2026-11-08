@@ -71,7 +71,11 @@ pub fn cooldown_text(panel: &BossEncounterPanel, elapsed_ms: u64) -> String {
         if snapshot.cooldowns.is_empty() {
             out.push_str("No cooldown records on this page\r\n");
         }
-        for (key, deadline) in &snapshot.cooldowns {
+        let mut cooldowns: Vec<_> = snapshot.cooldowns.iter().collect();
+        cooldowns.sort_by(|(a_key, a_deadline), (b_key, b_deadline)| {
+            a_deadline.cmp(b_deadline).then_with(|| a_key.cmp(b_key))
+        });
+        for (key, deadline) in cooldowns {
             let remaining = deadline
                 .saturating_sub(snapshot.now)
                 .saturating_sub(elapsed_ms);
