@@ -19,5 +19,7 @@ pub fn panel_text(panel: &NoticePanel) -> String {
     } else {
         text.push_str("No server-save announcement received.");
     }
+    text.push_str("\r\n");
+    text.push_str(&panel.events.text());
     text
 }
