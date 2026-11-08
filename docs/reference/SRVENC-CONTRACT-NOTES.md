@@ -1879,3 +1879,29 @@ recipients. The producer now retains the actual native lethal ledger on this
 path as it already does on materialized and Soulpit entries. This grants no
 XP, corpse, loot or personal reward eligibility. The tests keep their exact
 source-stage and receipt-count assertions.
+
+M24 rule-level donor references (Crystal revision
+`201189f871d23597b82caf88fd611454a2ddefb8`):
+
+| Rules | Donor file:line | Implemented boundary |
+|---|---|---|
+| Anomaly, Rupture, Realityquake, Eradicator, Outburst, World Devourer | `data-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua:26`–138 | exact room recipients and source flags |
+| Court Warlock | `data-global/scripts/quests/the_order_of_the_stag/court_warlock_fight.lua:323`–329 | room recipients, questline 11→12 |
+| Goblin Leader | `data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3`–8 | damaging players, questline 2→3 |
+| Magma Bubble | `data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12`–23 | damage-map recipients and the killed flag only |
+| Cake Golem | `data-global/monster/quests/a_piece_of_cake/cake_golem.lua:1` | exact canonical killed creature identity |
+| Omruc | `data-global/monster/quests/ancient_tombs/omruc.lua:1` | exact canonical killed creature identity |
+| Thalas | `data-global/monster/quests/ancient_tombs/thalas.lua:1` | exact canonical killed creature identity |
+| Dipthrah | `data-global/monster/quests/ancient_tombs/dipthrah.lua:1` | canonical spelling for the recipe's Diphtrah label |
+| Mahrdis | `data-global/monster/quests/ancient_tombs/mahrdis.lua:1` | exact canonical killed creature identity |
+| Vashresamun | `data-global/monster/quests/ancient_tombs/vashresamun.lua:1` | exact canonical killed creature identity |
+| Morguthis | `data-global/monster/quests/ancient_tombs/morguthis.lua:1` | exact canonical killed creature identity |
+| Rahemos | `data-global/monster/quests/ancient_tombs/rahemos.lua:1` | exact canonical killed creature identity |
+
+The last eight rules intentionally use the already accepted chosen Oteryn
+recipe, not a claim of exact donor quest bookkeeping:
+`content/quests/missions/quest-state-completion-candidate.json:1`, Cake s2
+(personal count20), Ancient Tombs s2/s3/s5/s6/s8/s10/s12 (count1 each). The
+generator copies their exact predecessor guards, effects and bounds. Source
+URLs, pinned wiki revisions and this approximation distinction are retained
+in `docs/reference/content-prep/qmech-m24/source-notes.md`.
