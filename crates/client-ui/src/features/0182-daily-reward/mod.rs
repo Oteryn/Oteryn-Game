@@ -14,3 +14,7 @@ pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/e2e_p09.rs"]
+mod e2e_p09;

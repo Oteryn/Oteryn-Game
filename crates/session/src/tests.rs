@@ -70,6 +70,8 @@ mod e2e_m08;
 mod e2e_m09;
 #[path = "tests/e2e_m11a.rs"]
 mod e2e_m11a;
+#[path = "tests/e2e_p11.rs"]
+mod e2e_p11;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
 #[path = "features/0004-item-view-move/tests/e2e_i05.rs"]

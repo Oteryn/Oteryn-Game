@@ -94,3 +94,10 @@ pub(in crate::play) fn apply(
         panel.feedback = "Invalid character information reply".into();
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_p12a.rs"]
+mod e2e_p12a;
+#[cfg(test)]
+#[path = "tests/e2e_p12c.rs"]
+mod e2e_p12c;
