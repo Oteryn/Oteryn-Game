@@ -59,6 +59,8 @@ pub(super) struct Settings {
     #[allow(clippy::redundant_allocation)]
     shared: Box<Arc<Mutex<Shared>>>,
     parent: HWND,
+    shortcuts: Vec<HWND>,
+    collapse: HWND,
 }
 impl Settings {
     pub(super) fn new() -> Self {
@@ -67,6 +69,8 @@ impl Settings {
                 PreferenceStore::path(),
             )))),
             parent: null_mut(),
+            shortcuts: Vec::new(),
+            collapse: null_mut(),
         }
     }
     pub(super) fn attach(&mut self, window: &Window) {
@@ -100,6 +104,21 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
+            self.collapse = control(self.parent, "BUTTON", "▼ Game", 25200, [8, 64, 150, 26], 0);
+            self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
+                .iter()
+                .enumerate()
+                .map(|(index, (_, label))| {
+                    control(
+                        self.parent,
+                        "BUTTON",
+                        &format!("◆ {label}"),
+                        25100 + index,
+                        [8, 94 + index as i32 * 28, 150, 26],
+                        0,
+                    )
+                })
+                .collect();
             SetWindowSubclass(
                 self.parent,
                 Some(menu_proc),
@@ -108,8 +127,47 @@ impl Settings {
             );
         }
     }
-    pub(super) fn take_window_events(&self) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
-        lock(&self.shared).take_window_events()
+    pub(super) fn take_window_events(
+        &self,
+        playing: bool,
+    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        let mut state = lock(&self.shared);
+        unsafe {
+            let mut rect: RECT = std::mem::zeroed();
+            GetClientRect(self.parent, &mut rect);
+            let x = (rect.right - 160).max(0);
+            MoveWindow(self.collapse, x, 64, 150, 26, 1);
+            ShowWindow(self.collapse, if playing { SW_SHOW } else { SW_HIDE });
+            SetWindowTextW(
+                self.collapse,
+                wide(if state.preferences.shortcuts_collapsed {
+                    "▶ Game"
+                } else {
+                    "▼ Game"
+                })
+                .as_ptr(),
+            );
+            for (index, handle) in self.shortcuts.iter().enumerate() {
+                let id = oteryn_client::play::WINDOW_ACTIONS[index].0;
+                let position = state
+                    .preferences
+                    .shortcut_order
+                    .iter()
+                    .position(|key| key == id);
+                if let Some(position) = position {
+                    MoveWindow(*handle, x, 94 + position as i32 * 28, 150, 26, 1);
+                }
+                ShowWindow(
+                    *handle,
+                    if playing && position.is_some() && !state.preferences.shortcuts_collapsed {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+            }
+        }
+        state.take_window_events()
     }
     pub(super) fn control_events(
         &self,
@@ -168,6 +226,10 @@ impl Drop for Settings {
         lock(&self.shared).shutdown = true;
         unsafe {
             if !self.parent.is_null() && IsWindow(self.parent) != 0 {
+                for handle in &self.shortcuts {
+                    DestroyWindow(*handle);
+                }
+                DestroyWindow(self.collapse);
                 RemoveWindowSubclass(self.parent, Some(menu_proc), 25001);
                 let menu = GetMenu(self.parent);
                 SetMenu(self.parent, null_mut());
@@ -190,6 +252,14 @@ unsafe extern "system" fn menu_proc(
         if msg == WM_COMMAND && w & 0xffff == 25001 {
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             open(Arc::clone(shared));
+            return 0;
+        }
+        if msg == WM_COMMAND && w & 0xffff == 25200 {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            let mut state = lock(shared);
+            let mut preferences = state.preferences.clone();
+            preferences.shortcuts_collapsed = !preferences.shortcuts_collapsed;
+            state.apply(preferences);
             return 0;
         }
         if msg == WM_COMMAND {

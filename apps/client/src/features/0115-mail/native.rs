@@ -104,15 +104,17 @@ unsafe fn text(hwnd: HWND) -> String {
 }
 pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>, form: Form) {
     unsafe {
+        let mut bounds =
+            crate::window_layout::restore(form.title, [CW_USEDEFAULT, CW_USEDEFAULT, 680, 760]);
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
             wide(form.title).as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            680,
-            760,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE | WS_THICKFRAME,
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3],
             null_mut(),
             null_mut(),
             null_mut(),
@@ -197,6 +199,15 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
             let mut last_summary = String::new();
             let mut message: MSG = std::mem::zeroed();
             loop {
+                let mut rect: RECT = std::mem::zeroed();
+                if GetWindowRect(hwnd, &mut rect) != 0 && IsIconic(hwnd) == 0 {
+                    bounds = [
+                        rect.left,
+                        rect.top,
+                        rect.right - rect.left,
+                        rect.bottom - rect.top,
+                    ];
+                }
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                     if IsDialogMessageW(hwnd, &message) == 0 {
                         TranslateMessage(&message);
@@ -239,6 +250,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 }
                 MsgWaitForMultipleObjects(0, null(), 0, 50, QS_ALLINPUT);
             }
+            crate::window_layout::remember(form.title, bounds);
             if IsWindow(hwnd) != 0 {
                 DestroyWindow(hwnd);
             }

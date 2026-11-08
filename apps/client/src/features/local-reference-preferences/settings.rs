@@ -63,6 +63,13 @@ fn enabled() -> bool {
     true
 }
 
+fn default_shortcuts() -> Vec<String> {
+    WINDOW_ACTIONS
+        .iter()
+        .map(|(id, _)| (*id).to_owned())
+        .collect()
+}
+
 fn default_hud_bounds() -> [u16; 4] {
     [8, 8, 900, 40]
 }
@@ -109,6 +116,10 @@ pub struct ReferencePreferences {
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
+    #[serde(default)]
+    pub shortcuts_collapsed: bool,
+    #[serde(default = "default_shortcuts")]
+    pub shortcut_order: Vec<String>,
     #[serde(default)]
     pub arcs: ArcPreferences,
     #[serde(default)]
@@ -160,6 +171,8 @@ impl Default for ReferencePreferences {
             show_serene: true,
             creature_bars: false,
             health_circle: false,
+            shortcuts_collapsed: false,
+            shortcut_order: default_shortcuts(),
             spellbook_filter: Default::default(),
             archive_bindings: Default::default(),
             frames: Default::default(),
@@ -184,6 +197,14 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if self.shortcut_order.len() > WINDOW_ACTIONS.len()
+            || self.shortcut_order.iter().enumerate().any(|(i, id)| {
+                !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
+                    || self.shortcut_order[..i].contains(id)
+            })
+        {
+            return Err(PreferenceError);
+        }
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || !self.spellbook_filter.valid()
             || !self.archive_bindings.valid()

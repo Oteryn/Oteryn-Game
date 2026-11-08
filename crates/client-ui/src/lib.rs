@@ -317,3 +317,6 @@ pub mod skill_progress;
 
 #[path = "components/modal_dialogs.rs"]
 pub mod modal_dialogs;
+
+#[path = "components/notifications.rs"]
+pub mod notifications;
