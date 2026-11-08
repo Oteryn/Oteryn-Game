@@ -162,3 +162,25 @@ fn m56_self_target_is_explicit_and_bounded() -> Result<(), String> {
     assert!(parse(&document.to_string()).is_err());
     Ok(())
 }
+
+#[test]
+fn m56_self_target_cannot_also_select_a_carried_recipe_target() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| c.carried_target.is_some())
+        .ok_or("M20 recipe")?;
+    callback.self_target = Some(SelfTarget {
+        minimum: crate::quest::world_callbacks::Position {
+            x: 31938,
+            y: 32932,
+            floor: -10,
+        },
+        maximum: crate::quest::world_callbacks::Position {
+            x: 31946,
+            y: 32940,
+            floor: -10,
+        },
+    });
+    assert!(parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()).is_err());
+    Ok(())
+}
