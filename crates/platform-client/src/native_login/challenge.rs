@@ -31,7 +31,13 @@ pub struct ChallengeProof {
 
 impl ChallengeProof {
     pub fn new(challenge: LoginChallenge, token: &str) -> Result<Self, NativeLoginError> {
-        if !is_visible_ascii(token, 2048) || challenge.remaining().is_zero() {
+        // Unescaped query-safe proof bytes keep 2048 bytes plus state within the callback budget.
+        if !is_visible_ascii(token, 2048)
+            || !token
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+            || challenge.remaining().is_zero()
+        {
             return Err(NativeLoginError::TokenRefused);
         }
         Ok(Self {
@@ -158,6 +164,21 @@ fn parse_challenge(body: &[u8], received: Instant) -> Result<LoginChallenge, Nat
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn proof_encoding_fits_the_bounded_loopback_callback() {
+        let fresh = || LoginChallenge {
+            id: "01890a5d-ac96-774b-bcce-b302099a8057".into(),
+            usable_until: Instant::now() + Duration::from_secs(60),
+        };
+        // These require percent-encoding and could triple a maximum-sized proof's query size.
+        for escaped in ["+", "/", "=", "%", "&", "?", "#"] {
+            assert!(ChallengeProof::new(fresh(), &escaped.repeat(2048)).is_err());
+        }
+        assert!(ChallengeProof::new(fresh(), &"a-Z_0.1".repeat(292)).is_ok());
+        assert!(ChallengeProof::new(fresh(), &"a".repeat(2048)).is_ok());
+        assert!(ChallengeProof::new(fresh(), &"a".repeat(2049)).is_err());
+    }
 
     #[test]
     fn expired_or_invalid_proof_never_reaches_transport() -> Result<(), Box<dyn std::error::Error>>

@@ -30,7 +30,10 @@ verifier and access tokens are never placed in this URL.
 After completion, Platform redirects to that exact loopback URI with
 `code=<opaque challenge proof>&state=<exact state>`. `code` here is the existing
 callback envelope's field name, not an OAuth authorization code. Proof is visible
-ASCII, nonempty, at most 2048 bytes. Existing callback validation rejects wrong
+ASCII using only letters, digits, `-`, `_` and `.` (unpadded base64url segments),
+nonempty, at most 2048 bytes. This alphabet needs no query escaping and keeps
+proof plus state within the existing 4096-byte callback query budget.
+Existing callback validation rejects wrong
 state, duplicate parameters, bad paths and malformed callbacks. Timeout is the
 lesser of configured callback timeout and remaining challenge lifetime.
 
