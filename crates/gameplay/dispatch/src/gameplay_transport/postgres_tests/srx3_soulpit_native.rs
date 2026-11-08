@@ -86,6 +86,17 @@ fn native_soulpit_scenario_with_entry_cue(
                 room.pinned_activity_source_room(),
                 Some(PinnedActivitySourceRoom::Soulpit)
             );
+            // Use the same sealed template and canonical handoff owner as serving.rs.
+            // The source room remains actual pinned geometry; no private runtime is fabricated.
+            let soulpit_template = controller
+                .qualify_soulpit_activity_template(
+                    &room,
+                    native
+                        .training_formula()
+                        .ok_or("active Character interpretation")?
+                        .content_revision(),
+                )
+                .map_err(debug)?;
             // Issue all ready/session proofs after native catalogue parsing.
             let h = Harness::create_with_admission_seed(admin, "srx3_soulpit_native", false, false)
                 .await?;
@@ -135,6 +146,8 @@ fn native_soulpit_scenario_with_entry_cue(
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
+            owner.activity_runtimes.register_soulpit_template(&soulpit_template)
+                .map_err(|_| "register canonical Soulpit activity template")?;
             owner.proficiency_catalogue = crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue::embedded();
             assert!(
                 owner
@@ -144,7 +157,7 @@ fn native_soulpit_scenario_with_entry_cue(
                     .is_some(),
                 "actual promoted sword catalogue"
             );
-            owner.movement_cells = room.movement_cells();
+            owner.movement_cells = room.movement_cells().into();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
             {
                 let runtime = owner.runtime.lock().await;

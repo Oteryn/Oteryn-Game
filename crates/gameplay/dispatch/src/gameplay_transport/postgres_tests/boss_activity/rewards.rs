@@ -612,7 +612,12 @@ async fn assert_corpse_scope_guards(
     assert_eq!(stored_race.0, race.key());
     assert_eq!(stored_race.1, race.definition_revision());
     assert_eq!(
-        stored_race.2, envelope.transaction_id,
+        stored_race.2,
+        envelope
+            .transaction_event
+            .as_ref()
+            .ok_or("corpse audit transaction membership")?
+            .transaction_id,
         "source race belongs to this exact committed corpse audit transaction"
     );
     let mut request = ItemMintRequest {

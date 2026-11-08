@@ -89,6 +89,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        let cardinal = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+        };
         // Resolve steering before any direction-dependent field/floor read. Pass
         // this same frozen `now` to the common movement owner after preflight.
         let cardinal = match states.drome_step_direction(&runtime, actor, session, now, cardinal) {
@@ -103,6 +109,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
             Err(_) => return (StepOutcome::rejected(), None),
+        };
+        let direction = match cardinal {
+            CardinalStep::North => StepDirection::North,
+            CardinalStep::East => StepDirection::East,
+            CardinalStep::South => StepDirection::South,
+            CardinalStep::West => StepDirection::West,
         };
         let (direction, hicks) =
             drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now);

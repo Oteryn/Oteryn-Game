@@ -132,35 +132,6 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelRuntimeV1 {
-    /// Manual combat.md:271: the last hitter is the exact retained lethal
-    /// receipt's session, not the top-damage contributor or a client target.
-    pub fn tibiadrome_last_hitter(&self, actor: ExactActorRef) -> Option<GameSessionId> {
-        self.owner_fence().ok()?;
-        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
-        let Slot::CreatureOccupied {
-            health,
-            committed,
-            spell_combat,
-            ..
-        } = &self.carrier.slots[index]
-        else {
-            return None;
-        };
-        if !spell_combat.tibiadrome || *health != 0 {
-            return None;
-        }
-        committed
-            .entries
-            .iter()
-            .find(|record| {
-                record.result.applied
-                    && record.result.health_before > 0
-                    && record.result.health_after == 0
-            })
-            .and_then(|record| record.origin)
-            .map(|origin| origin.2)
-    }
-
     /// Manual combat.md:273: below 25% HP, use the existing working damage
     /// curve at five additional wave levels. Never heal or re-scale current HP.
     pub fn set_tibiadrome_escalation(

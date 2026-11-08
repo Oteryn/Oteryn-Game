@@ -329,15 +329,12 @@ impl Registry {
     /// with an UNKNOWN `walkable` or `ground_speed`, a speed outside `0..=1000` and a walkable
     /// ground with speed 0. A WorldObject route and a plain Item are never read.
     pub fn terrain_of(&self, key: &str) -> Result<Option<Terrain>, Error> {
-        if self
-            .static_surfaces
-            .get(key)
-            .is_some_and(|facts| !facts.ground)
-        {
+        if let Some(facts) = self.static_surfaces.get(key).filter(|facts| !facts.ground) {
             return Ok(Some(Terrain {
                 kind: TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: Some(facts.blocks_projectile),
             }));
         }
         let record = match self.ids.get(key) {

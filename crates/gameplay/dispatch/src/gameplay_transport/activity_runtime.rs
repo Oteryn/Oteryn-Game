@@ -1105,9 +1105,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 &world_policy_revision,
             )
             .map_err(|_| ActivityRuntimeRegistrationError)?;
-        let mut assets = assets;
-        if let Some(room) = source_room {
-            assets.activity_room = Some(room);
+        // The source registration must retain the same immutable room already
+        // owned by its seam assets, not a second room authority beside them.
+        if source_room
+            .as_deref()
+            .is_some_and(|source| !std::ptr::eq(source, room))
+        {
+            return Err(ActivityRuntimeRegistrationError);
         }
         let mut states = self.states.for_activity();
         if let Some(callbacks) = source_callbacks {

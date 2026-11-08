@@ -59,6 +59,8 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/wire_position.rs", 1),
             // SRX-3 source/current-owner reads; gate semantics remain unchanged.
             ("gameplay_transport/native_cue_offer.rs", 1),
+            ("gameplay_transport/native_activity.rs", 1),
+            ("gameplay_transport/soulpit/scene.rs", 2),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
             (
                 "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
@@ -1127,14 +1129,17 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     constructions.visit_file(&content);
     assert!(
         matches!(constructions.0.as_slice(), [source, inherited]
-            if source.args.len() == 2
-                && matches!(source.args.first(), Some(syn::Expr::Path(path))
-                    if path_name(&path.path) == "None")
-                && matches!(source.args.iter().nth(1), Some(syn::Expr::Call(some))
-                    if matches!(&*some.func, syn::Expr::Path(path) if path_name(&path.path) == "Some")
-                        && some.args.len() == 1
-                        && matches!(some.args.first(), Some(syn::Expr::Path(path))
-                            if path_name(&path.path) == "template_room"))
+            if matches!(&*source.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && source.args.len() == 2
+                && matches!(source.args.first(), Some(syn::Expr::Call(clone))
+                    if matches!(&*clone.func, syn::Expr::Path(path)
+                        if path_name(&path.path) == "std::sync::Arc::clone")
+                        && clone.args.len() == 1
+                        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+                            if reference.mutability.is_none()
+                                && named_expr(&reference.expr, "owned_room")))
+                && matches!(source.args.last(), Some(syn::Expr::Lit(literal))
+                    if matches!(&literal.lit, syn::Lit::Bool(value) if !value.value))
                 && matches!(&*inherited.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
                 && inherited.args.len() == 2
                 && inherited.args.first().is_some_and(|arg| named_expr(arg, "room"))

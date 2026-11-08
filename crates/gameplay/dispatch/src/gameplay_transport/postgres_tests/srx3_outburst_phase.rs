@@ -81,7 +81,7 @@ fn outburst_phase_case() -> TestResult {
             deps.runtime = tokio::sync::Mutex::new(runtime);
             let mut owner = deps.owner(&h,&authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             {
                 let runtime = owner.runtime.lock().await;
                 owner.states.spell_states.lock().await.initialize(&runtime,deps.actor,deps.admitted.game_session_id,

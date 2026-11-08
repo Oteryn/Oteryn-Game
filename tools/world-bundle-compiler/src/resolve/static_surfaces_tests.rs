@@ -22,6 +22,7 @@ fn srx3_source_static_world_objects_compile_without_inventory_identity() -> Resu
             kind: TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: Some(false),
         })
     );
     assert!(registry.solid(key));

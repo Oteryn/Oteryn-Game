@@ -155,7 +155,7 @@ async fn scenario(harness: &Harness) -> TestResult {
     deps.combat_room = Some(room);
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.reset_epoch = 1;
     seed_source_raid(
         harness,

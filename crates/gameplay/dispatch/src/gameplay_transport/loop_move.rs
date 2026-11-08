@@ -1179,6 +1179,7 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         use crate::durability::item_loop_move::LoopGroundItem;
         use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+        use crate::foundation::WorldId;
         let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
         let world = WorldId::decode(&id(1))?;
         let scope = crate::foundation::RuntimeScopeRefV1::Instance {
@@ -1194,6 +1195,8 @@ mod tests {
         let pin = ([7; 32], [8; 32], 2);
         let item = LoopGroundItem {
             native_corpse: true,
+            source_native_ground: false,
+            source_plain_corpse: false,
             field_collision: None,
             stack_ordinal: 1,
             item: GroundItemInstance {
@@ -1224,8 +1227,9 @@ mod tests {
             y: 0,
             floor: -7,
         };
-        let project =
-            |item| LoopGroundOverlay::build_for_scope(base.clone(), scope, &index, pin, vec![item]);
+        let project = |item| {
+            LoopGroundOverlay::build_with_native(base.clone(), scope, &index, pin, vec![item], None)
+        };
         assert!(
             project(item.clone()).overlay().has_added_item(tile),
             "accepted corpse history survives owner replacement"

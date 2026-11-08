@@ -2,6 +2,8 @@ use super::*;
 
 fn surface(appearance: u16) -> Result<PaletteEntry, String> {
     let key = format!("oteryn:world-object.tibia.i{appearance}");
+    let source = crate::content::qualified_static_surface(&key)
+        .ok_or("actual pinned static projectile facts")?;
     Ok(PaletteEntry {
         id: crate::content::static_surface_definition_id(&key).ok_or("source map definition")?,
         key,
@@ -10,6 +12,7 @@ fn surface(appearance: u16) -> Result<PaletteEntry, String> {
             kind: TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: Some(source.blocks_projectile),
         }),
     })
 }
@@ -19,6 +22,8 @@ fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() ->
 {
     let id = crate::content::static_surface_definition_id("oteryn:world-object.tibia.i10649")
         .ok_or("actual technical definition ID")?;
+    let source = crate::content::qualified_static_surface("oteryn:world-object.tibia.i10649")
+        .ok_or("actual pinned static projectile facts")?;
     let entry = PaletteEntry {
         key: "oteryn:world-object.tibia.i10649".into(),
         family: Family::Terrain,
@@ -27,6 +32,7 @@ fn srx3_static_world_object_keeps_native_blocking_and_has_no_item_reference() ->
             kind: TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: Some(source.blocks_projectile),
         }),
     };
     let item_resolver_called = std::cell::Cell::new(false);

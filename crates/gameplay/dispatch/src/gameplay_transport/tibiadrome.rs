@@ -23,6 +23,23 @@ pub(super) struct Drome {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
 }
+#[cfg(test)]
+impl Drome {
+    pub(in crate::gameplay_transport) fn test_exploding_corpses(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        modifiers::select_test_modifier(self, session,
+            oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::ExplodingCorpses)
+    }
+    pub(in crate::gameplay_transport) fn test_somersault(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        modifiers::select_test_modifier(self, session,
+            oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::DromeModifier::Somersault)
+    }
+}
 struct Live {
     actor: ExactActorRef,
     run: [u8; 16],

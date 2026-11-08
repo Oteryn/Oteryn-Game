@@ -82,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<Vec<(GameSessionId, u64)>, ()> {
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
         use crate::map::boot::BundleCollisionIndexExt as _;
-        let room = self.activity_room.as_ref().ok_or(())?;
+        let room = self.rooms().gate_wire_position().ok_or(())?;
         if room.pinned_activity_source_room()
             != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Soulpit)
         {
@@ -148,7 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn set_soulpit_obelisk(&self, active: bool) -> Result<(), ()> {
         use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
-        let room = self.activity_room.as_ref().ok_or(())?;
+        let room = self.rooms().gate_wire_position().ok_or(())?;
         if room.pinned_activity_source_room() != Some(PinnedActivitySourceRoom::Soulpit) {
             return Err(());
         }

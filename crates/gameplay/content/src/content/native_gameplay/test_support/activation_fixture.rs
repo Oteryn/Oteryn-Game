@@ -221,7 +221,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Exact native corpse/yield producer admission now qualifies twenty-four source
+    // Exact native corpse/yield producer admission qualifies twenty-five source
     // reward bosses. Eleven further admitted corpses retain unresolved loot yields;
     // those rows must remain refused rather than silently dropping their Items.
     // Shared demon, vampire and dragon bodies retain independent loot qualification.

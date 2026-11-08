@@ -20,7 +20,12 @@ impl Drop for CaseDuration {
 fn omrafir_case(explode: bool, exact_wall: Option<bool>, terminal: bool) -> TestResult {
     omrafir_attachment_case(explode, exact_wall, terminal, true)
 }
-fn omrafir_attachment_case(explode: bool, exact_wall: Option<bool>, terminal: bool, review_declared_event: bool) -> TestResult {
+fn omrafir_attachment_case(
+    explode: bool,
+    exact_wall: Option<bool>,
+    terminal: bool,
+    review_declared_event: bool,
+) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -83,7 +88,7 @@ fn omrafir_attachment_case(explode: bool, exact_wall: Option<bool>, terminal: bo
             deps.runtime = tokio::sync::Mutex::new(runtime);
             let mut owner = deps.owner(&h,&authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             {
                 let runtime = owner.runtime.lock().await;
                 owner.states.spell_states.lock().await.initialize(&runtime,deps.actor,deps.admitted.game_session_id,
@@ -243,8 +248,8 @@ fn srx3_omrafir_actual_native_rosha_no_exact_wall_does_not_heal_callback_postgre
 }
 
 #[test]
-fn srx3_omrafir_review_declared_terminal_undefined_type_records_source_failure_postgres() -> TestResult
-{
+fn srx3_omrafir_review_declared_terminal_undefined_type_records_source_failure_postgres()
+-> TestResult {
     omrafir_case(true, None, true)
 }
 

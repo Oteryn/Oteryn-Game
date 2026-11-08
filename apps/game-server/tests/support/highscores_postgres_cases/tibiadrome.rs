@@ -220,7 +220,7 @@ async fn drome_status(
     let reply = h
         .root
         .commit_tibiadrome(
-            authority, &h.node, fence, command, payload, before, after, 1, None,
+            authority, &h.node, fence, command, payload, before, after, 1, None, None,
         )
         .await
         .map_err(debug)?;

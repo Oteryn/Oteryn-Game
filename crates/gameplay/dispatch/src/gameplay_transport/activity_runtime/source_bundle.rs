@@ -179,12 +179,14 @@ pub(in crate::gameplay_transport) fn qualify(
                     kind: bundle::TerrainKind::Ground,
                     walkable: Some(!policy.block_solid),
                     ground_speed: Some(policy.ground_speed),
+                    blocks_projectile: Some(policy.block_projectile),
                 })
             } else {
                 static_surface.then_some(bundle::Terrain {
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: Some(policy.block_projectile),
                 })
             },
         });
@@ -222,6 +224,7 @@ pub(in crate::gameplay_transport) fn qualify(
             kind: bundle::TerrainKind::Wall,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: Some(policies.get(&id).ok_or(())?.block_projectile),
         });
         closed_palette_ids.insert(id, u32::try_from(palette.len()).map_err(|_| ())?);
         palette.push(closed);

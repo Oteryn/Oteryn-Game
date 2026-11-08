@@ -115,6 +115,17 @@ impl DromeModifierState {
         self.draw(ordinal, 100, 0)
             .and_then(|draw| u8::try_from(draw).ok())
     }
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn select_test_modifiers(
+        &mut self,
+        selected: [DromeModifier; 2],
+    ) -> Result<(), CarrierError> {
+        if selected[0] == selected[1] {
+            return Err(CarrierError::InvalidDamage);
+        }
+        self.selected = selected;
+        self.begin_wave(self.wave, self.started, self.group_size)
+    }
     pub fn selected(&self) -> [DromeModifier; 2] {
         self.selected
     }

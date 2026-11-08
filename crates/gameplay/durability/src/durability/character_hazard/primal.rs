@@ -10,6 +10,7 @@ use super::super::character_progression::{
 };
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterRevision;
+use crate::foundation::RuntimeScopeRefV1;
 use oteryn_gameplay_encounter_rules::hazard::unlocked_after_primal_menace;
 use sqlx::{Postgres, Row, Transaction};
 

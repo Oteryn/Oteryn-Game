@@ -110,7 +110,17 @@ impl ActivityHandoffOwner {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            let Some(definition)=read_definition(&mut tx,&expected.boss_key).await? else {return Ok(None)};
+            let Some(initiator)=participants.iter().find(|p|p.source.game_session_id==command.game_session_id()) else {return Ok(None)};
+            if retained_participant(&mut tx,&root,initiator.source).await?.is_none() {return Ok(None)}
+            let Ok(current)=assert_item_only_fence(&mut tx,&initiator.source,&node).await? else {return Ok(None)};
+            let source=initiator.source_position;
+            let origin_pin=ActivityContentPin {
+                coordinate_frame_digest:source.coordinate_frame_digest,
+                map_revision_digest:source.map_revision_digest,
+                server_artifact_digest:source.server_artifact_digest,
+            };
+            let Some(definition)=read_definition(&mut tx,&expected.boss_key,
+                initiator.source.runtime_scope.world_id(),&current.content_revision,Some(origin_pin)).await? else {return Ok(None)};
             if definition!=expected || source_kind(&definition)!=Some(kind) {return Ok(None)}
             let scope=participants[0].source.runtime_scope;
             let generation=participants[0].source.scope_ownership_generation;

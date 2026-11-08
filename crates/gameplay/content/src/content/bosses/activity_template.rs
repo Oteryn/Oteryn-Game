@@ -435,6 +435,7 @@ impl ActiveGeneration {
             activation_sequence: self.activation_sequence(),
             server_digest: self.identity().server_artifact_digest(),
             client_digest: self.identity().client_artifact_digest(),
+            activation_frame_binding_digest: room.frame_binding().digest(),
         })
     }
 }
@@ -772,9 +773,13 @@ fn qualify_instance_death_descendant(
         .corpse_item
         .as_ref()
         .ok_or(R::CreatureClosureUnavailable)?;
-    if rewards.corpse_item.family != "Item"
-        || rewards.corpse_item.production_key != corpse.key
-        || rewards.corpse_item.revision_ref != corpse.revision
+    let reward_corpse = rewards
+        .corpse_item
+        .as_ref()
+        .ok_or(R::CreatureClosureUnavailable)?;
+    if reward_corpse.family != "Item"
+        || reward_corpse.production_key != corpse.key
+        || reward_corpse.revision_ref != corpse.revision
     {
         return Err(R::CreatureClosureUnavailable);
     }
@@ -828,7 +833,10 @@ mod tests {
             );
             assert_ne!(room.frame_binding().digest(), base.frame_binding().digest());
             assert_ne!(room.map_revision_digest(), base.map_revision_digest());
-            assert_eq!(room.map_revision_digest(), sha256(source.bytes()));
+            assert_eq!(
+                room.map_revision_digest(),
+                crate::content::digest::sha256(source.bytes())
+            );
             assert!(room.source_world().is_some());
             let pair = crate::content::native_source_world_carrier::compile(
                 base.compiled(),
@@ -886,7 +894,11 @@ mod tests {
                 Ok(())
             );
             let mut mismatched = rewards.as_ref().clone();
-            mismatched.corpse_item.production_key = "oteryn:item.unadmitted_corpse".into();
+            mismatched
+                .corpse_item
+                .as_mut()
+                .ok_or("admitted corpse")?
+                .production_key = "oteryn:item.unadmitted_corpse".into();
             assert_eq!(
                 qualify_instance_death_descendant(&record.profile.data, &mismatched),
                 Err(ActivityTemplateRefusal::CreatureClosureUnavailable)

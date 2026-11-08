@@ -123,7 +123,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 {
                     continue;
                 }
-                let template_room = room;
                 let owned_room = self
                     .activity_runtimes
                     .fresh_source_room(source, active, world_id, channel_id)
@@ -225,9 +224,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     runtime,
                     door,
                     ActivityRuntimeAssets {
-                        activity_room: Some(owned_room.clone()),
-                        movement_cells: template_room.movement_cells(),
-                        rooms: SeamRooms::new(None, Some(template_room)),
+                        movement_cells: std::sync::Arc::new(room.movement_cells().clone()).into(),
+                        // This sealed source runtime owns its freshly scoped map;
+                        // source qualification never opens unrelated origin gates.
+                        rooms: SeamRooms::owned(std::sync::Arc::clone(&owned_room), false),
                     },
                     source_callbacks,
                     owned_room,

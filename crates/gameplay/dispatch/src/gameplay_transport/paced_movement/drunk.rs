@@ -36,6 +36,20 @@ pub(super) fn admitted_direction(
     {
         return (requested, false);
     }
+    // The retained Drome compatibility status has already been resolved by the
+    // pure drome_step_direction owner with this same time and position. Every
+    // other native Drunk condition keeps this ordinary source owner exactly once.
+    if states.get(runtime, actor, session).is_some_and(|state| {
+        state
+            .owned_conditions()
+            .active_at(
+                oteryn_gameplay_domain::domain::condition::ConflictKey::Status(StatusKind::Drunk),
+                now,
+            )
+            .is_some_and(|condition| condition.definition().key() == "drome.drunk")
+    }) {
+        return (requested, false);
+    }
     // The connection routes only due, non-replayed walks here (serve/route.rs).
     // An owner ordinal distinguishes blocked attempts without a second movement store.
     let Ok(stamp) = runtime.issue_owner_work() else {

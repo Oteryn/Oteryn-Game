@@ -1110,7 +1110,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .await?;
             connections.push((old, next));
         }
-        if attempt.soulpit.is_some() && destination_view.activity_room.as_ref().is_some_and(|room|
+        if attempt.soulpit.is_some() && destination_view.rooms().gate_wire_position().is_some_and(|room|
             room.pinned_activity_source_room() == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Soulpit)) {
             destination_view.activate_soulpit_obelisk().await?;
             if attempt.entry_effect_starts.is_none() {

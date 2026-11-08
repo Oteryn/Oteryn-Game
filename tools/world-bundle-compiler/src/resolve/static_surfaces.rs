@@ -7,6 +7,7 @@ use std::sync::OnceLock;
 pub(super) struct StaticSurface {
     pub solid: bool,
     pub ground: bool,
+    pub blocks_projectile: bool,
 }
 
 fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
@@ -31,6 +32,7 @@ fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
                         StaticSurface {
                             solid: row["policy"]["block_solid"].as_bool()?,
                             ground: row["policy"]["ground"].as_bool()?,
+                            blocks_projectile: row["policy"]["block_projectile"].as_bool()?,
                         },
                     ),
                 );

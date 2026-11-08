@@ -1033,11 +1033,13 @@ fn palette_facts(
                 kind: TerrainKind::Ground,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile: Some(surface.blocks_projectile),
             },
             None => oteryn_world_bundle::bundle::Terrain {
                 kind: TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: Some(surface.blocks_projectile),
             },
         };
         if entry.family != Family::Terrain

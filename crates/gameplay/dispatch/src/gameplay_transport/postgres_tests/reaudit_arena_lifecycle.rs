@@ -399,6 +399,7 @@ enum Physical {
     DelayedObservation,
     PendingCorpseEffects,
     ThreeWaveCommandCatchup,
+    SomersaultFx,
 }
 
 #[test]
@@ -421,6 +422,11 @@ fn srvenc_tibiadrome_postgres_native_victory_credits_before_reserved_corpse_effe
 #[test]
 fn srvenc_tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once() -> TestResult {
     run_physical_regression(Physical::ThreeWaveCommandCatchup)
+}
+
+#[test]
+fn srx3_drome_sealed_melee_somersault_publishes_both_native_teleport_cues_postgres() -> TestResult {
+    run_physical_regression(Physical::SomersaultFx)
 }
 
 fn run_physical_regression(case: Physical) -> TestResult {
@@ -804,6 +810,61 @@ fn physical_context(
                 .collect()
         };
         assert_eq!(targets.len(), 4);
+        if matches!(case, Physical::SomersaultFx) {
+            // The existing admitted physical fixture has a sealed ModifierOwner.
+            // This exercises its real draw and pending-effect consumer, not a raw
+            // Teleport effect or a second modifier engine.
+            owner.states.tibiadrome.test_somersault(session)?;
+            let actor = *targets.first().ok_or("actual admitted Drome opponent")?;
+            let baseline = world
+                .facts()
+                .movement_effects_since(0)
+                .last()
+                .map_or(0, |entry| entry.0);
+            let mut observed = None;
+            for _ in 0..256 {
+                let mut runtime = deps.runtime.lock().await;
+                let before = runtime.read_actor_position(actor).map_err(debug)?;
+                crate::gameplay_transport::tibiadrome::modifiers::melee(
+                    &owner,
+                    &mut runtime,
+                    actor,
+                );
+                crate::gameplay_transport::tibiadrome::tick(&owner, &mut runtime);
+                let after = runtime.read_actor_position(actor).map_err(debug)?;
+                if before.position() != after.position() {
+                    observed = Some((
+                        owner
+                            .wire_observation(&runtime, before.position())
+                            .ok_or("Somersault source frame")?
+                            .actor_position,
+                        owner
+                            .wire_observation(&runtime, after.position())
+                            .ok_or("Somersault destination frame")?
+                            .actor_position,
+                    ));
+                    break;
+                }
+            }
+            let (from, to) = observed.ok_or("real sealed Somersault draw must commit movement")?;
+            assert_ne!(
+                from, to,
+                "cue assertion requires actual committed translation"
+            );
+            let effects: Vec<_> = world
+                .facts()
+                .movement_effects_since(baseline)
+                .into_iter()
+                .filter(|(_, _, effect)| *effect == 11)
+                .map(|(_, at, _)| (i32::from(at.x), i32::from(at.y), i16::from(at.floor)))
+                .collect();
+            assert_eq!(
+                effects,
+                vec![(from.x, from.y, from.floor), (to.x, to.y, to.floor)],
+                "one committed sealed Somersault must publish effect11 at actual origin and destination"
+            );
+        }
+
         if matches!(case, Physical::ThreeWaveCommandCatchup) {
             owner.states.tibiadrome.test_somersault(session)?;
         }

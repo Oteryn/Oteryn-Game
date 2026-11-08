@@ -877,6 +877,9 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
             spell_tiles,
         });
         let view = Self {
+            // The region retains the same source bases qualified from the
+            // complete compiled Bundle bytes; clipping never invents geometry.
+            source_bases: Arc::clone(&self.source_bases),
             scope: self.scope.clone(),
             base,
             blocked: Arc::new(

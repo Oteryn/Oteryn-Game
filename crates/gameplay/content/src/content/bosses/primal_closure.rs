@@ -63,11 +63,13 @@ pub fn qualify(native: &NativeGameplayState) -> Option<QualifiedPrimalClosure> {
     // Crystal the_primal_menace.lua:79,118: source corpse and literal empty loot. An absent
     // binding is Unknown, not a source proof that a kill has no loot entries.
     let rewards = native.reward_table().row(PRIMAL_MENACE_KEY).ok()?;
-    if rewards.corpse_item.family != "Item"
-        || rewards.corpse_item.production_key != "oteryn:item.tibia.i39530"
-        || rewards.loot_table_ref.family != "Loot"
-        || rewards.loot_table_ref.production_key != "oteryn:loot.creature.the_primal_menace"
-        || rewards.loot_table_ref.revision_ref != "definition-r1"
+    let corpse = rewards.corpse_item.as_ref()?;
+    let loot = rewards.loot_table_ref.as_ref()?;
+    if corpse.family != "Item"
+        || corpse.production_key != "oteryn:item.tibia.i39530"
+        || loot.family != "Loot"
+        || loot.production_key != "oteryn:loot.creature.the_primal_menace"
+        || loot.revision_ref != "definition-r1"
         || !rewards.loot_table.entries.is_empty()
     {
         return None;

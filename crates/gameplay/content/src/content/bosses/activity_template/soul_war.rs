@@ -86,11 +86,11 @@ impl ActiveGeneration {
             .iter()
             .find(|r| r.profile.target.key == recipe.creature_key)
             .ok_or(R::CreatureClosureUnavailable)?;
-        qualify_instance_death_descendant(&record.profile.data)?;
-        native
+        let rewards = native
             .reward_table()
             .row(&recipe.creature_key)
             .map_err(|_| R::CreatureClosureUnavailable)?;
+        qualify_instance_death_descendant(&record.profile.data, &rewards)?;
         let cell = |[x, y, z]: [i32; 3]| LogicalCell { x, y, z };
         let levers: Vec<_> = recipe.levers.into_iter().map(cell).collect();
         let entries: Vec<_> = recipe.entries.into_iter().map(cell).collect();
@@ -134,6 +134,7 @@ impl ActiveGeneration {
             activation_sequence: self.activation_sequence(),
             server_digest: self.identity().server_artifact_digest(),
             client_digest: self.identity().client_artifact_digest(),
+            activation_frame_binding_digest: room.frame_binding().digest(),
         })
     }
 }

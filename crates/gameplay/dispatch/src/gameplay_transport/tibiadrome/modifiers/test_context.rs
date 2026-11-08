@@ -50,3 +50,34 @@ pub(super) fn context(
     }
     None
 }
+
+pub(in crate::gameplay_transport) fn select(
+    drome: &Drome,
+    session: GameSessionId,
+    modifier: DromeModifier,
+) -> Result<(), &'static str> {
+    let live = drome.live.lock().map_err(|_| "Drome registry")?;
+    let current = live
+        .get(&session)
+        .filter(|current| !current.ended)
+        .ok_or("current Drome participant")?;
+    let mut battle = current.battle.lock().map_err(|_| "Drome battle")?;
+    let owner = battle
+        .modifiers
+        .as_mut()
+        .ok_or("qualified Drome modifier owner")?;
+    let other = if modifier == DromeModifier::ThatEscalatedQuickly {
+        DromeModifier::Somersault
+    } else {
+        DromeModifier::ThatEscalatedQuickly
+    };
+    owner
+        .state
+        .select_test_modifiers([modifier, other])
+        .map_err(|_| "distinct qualified Drome modifiers")?;
+    owner.pending.clear();
+    owner.hazards.clear();
+    owner.ordinal = 0;
+    owner.melee_ordinal = 0;
+    Ok(())
+}

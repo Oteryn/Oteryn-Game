@@ -24,11 +24,11 @@ impl ActiveGeneration {
             .iter()
             .find(|r| r.profile.target.key == "oteryn:creature.outburst")
             .ok_or(R::CreatureClosureUnavailable)?;
-        qualify_instance_death_descendant(&record.profile.data)?;
-        native
+        let rewards = native
             .reward_table()
             .row("oteryn:creature.outburst")
             .map_err(|_| R::CreatureClosureUnavailable)?;
+        qualify_instance_death_descendant(&record.profile.data, &rewards)?;
         let cell = |x, y| LogicalCell { x, y, z: 14 };
         let levers = (31284..=31288).map(|y| cell(32207, y)).collect::<Vec<_>>();
         let entries = vec![cell(32234, 31292); 5];
@@ -74,6 +74,7 @@ impl ActiveGeneration {
             activation_sequence: self.activation_sequence(),
             server_digest: self.identity().server_artifact_digest(),
             client_digest: self.identity().client_artifact_digest(),
+            activation_frame_binding_digest: room.frame_binding().digest(),
         })
     }
 }
