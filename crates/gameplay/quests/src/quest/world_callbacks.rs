@@ -27,6 +27,7 @@ pub enum Trigger {
     StepOut,
 }
 
+mod clock;
 mod counterparts;
 mod effects;
 pub use effects::{
@@ -179,6 +180,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "CallbackEffectSet::is_empty")]
     pub effects: CallbackEffectSet,
     pub storage: Vec<Storage>,
+    /// Evaluated with SET_NOW against the fenced writer transaction clock.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub state_ops: Vec<super::reward_callbacks::StateOperation>,
     /// Opening predicates for value-free map puzzles, evaluated under the Channel turn.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub world_requirements: Vec<WorldRequirement>,
@@ -310,7 +314,18 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
         let unique_offerings: BTreeSet<_> = callback.offerings.iter().map(|o| o.position).collect();
         let unique_passages: BTreeSet<_> = callback.passages.iter().map(|p| p.position).collect();
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
-        if !super::valid_quest_key(&callback.key)
+        let operation_tracks: BTreeSet<_> = callback.state_ops.iter().map(|s| &s.track).collect();
+        if operation_tracks.len() != callback.state_ops.len()
+            || !operation_tracks.is_disjoint(&unique_storage)
+            || callback.storage.len() + callback.state_ops.len() > MAX_EFFECTS
+            || callback.state_ops.iter().any(|op| !op.valid())
+            || (!callback.state_ops.is_empty()
+                && (callback.actor_kind != ActorKind::Player
+                    || callback.reversible
+                    || callback.opening_only
+                    || callback.native_rule.is_some()
+                    || !callback.world_requirements.is_empty()))
+            || !super::valid_quest_key(&callback.key)
             || !super::valid_quest_key(&callback.quest)
             || !keys.insert(&callback.key)
             || (selector.position.is_none()
@@ -331,7 +346,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (callback.actor_kind == ActorKind::Monster
                 && (callback.selector.position.is_none()
                     || callback.trigger == Trigger::Use
-                    || !callback.storage.is_empty()
+                    || !!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.teleport.is_some()
@@ -352,7 +367,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && (callback.trigger != Trigger::Use
                     || callback.lever.is_none()
                     || !callback.reversible
-                    || callback.storage.is_empty()
+                    || !callback.has_personal_state()
                     || callback.offerings.is_empty()
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
@@ -368,7 +383,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .iter()
                 .any(|r| !valid_pos(r.position) || r.appearance == 0)
             || (!callback.world_requirements.is_empty()
-                && (!callback.storage.is_empty()
+                && (!!callback.has_personal_state()
                     || !callback.offerings.is_empty()
                     || callback.item_on_target.is_some()
                     || callback.minimum_level.is_some()
@@ -398,7 +413,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || callback.passages.len() != 1
                         || callback.lever.is_none()
                         || !callback.reversible
-                        || !callback.storage.is_empty()
+                        || !!callback.has_personal_state()
                         || callback.teleport.is_some()
                         || callback.item_on_target.is_some()
                         || !callback.offerings.is_empty()
@@ -411,7 +426,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.storage.len() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || callback.storage.is_empty())
+                .is_some_and(|level| level == 0 || !callback.has_personal_state())
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -419,7 +434,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.monk_reward.as_ref().is_some_and(|reward| {
                 callback.quest != super::monk_shrines::QUEST
                     || callback.trigger != Trigger::Use
-                    || callback.storage.is_empty()
+                    || !callback.has_personal_state()
                     || reward.item_source_id.is_some_and(|id| {
                         ![50267, 50271, 50269, 50273, 50274, 50272, 50268].contains(&id)
                     })
@@ -432,7 +447,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         .contains(&key)
                     })
             })
-            || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || (!callback.offerings.is_empty() && !callback.has_personal_state())
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
@@ -448,7 +463,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     .collect();
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
-                    || callback.storage.is_empty()
+                    || !callback.has_personal_state()
                     || callback.trigger != Trigger::Use
                     || item.count == 0
                     || item.count > 100
@@ -514,7 +529,7 @@ fn extend_callbacks(
 ) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
+    for callback in callbacks.iter().filter(|c| c.has_personal_state()) {
         for storage in &callback.storage {
             let maximum = if storage.increment {
                 storage
@@ -545,6 +560,21 @@ fn extend_callbacks(
                     } else {
                         maximum
                     },
+                });
+            }
+        }
+        for operation in &callback.state_ops {
+            if let Some(track) = tracks.iter().find(|track| track.key == operation.track) {
+                if track.quest != callback.quest {
+                    return Err(format!("foreign world clock track {}", operation.track));
+                }
+            } else {
+                tracks.push(QuestTrack {
+                    key: operation.track.clone(),
+                    quest: callback.quest.clone(),
+                    initial: -1,
+                    min: -1,
+                    max: i64::MAX,
                 });
             }
         }
@@ -598,6 +628,12 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
                     },
                 },
             })
+            .chain(
+                callback
+                    .state_ops
+                    .iter()
+                    .map(|operation| operation.quest_effect()),
+            )
             .collect(),
         completes: false,
         experience: callback.experience,
@@ -621,6 +657,9 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
 
 #[cfg(test)]
 mod timed_tests;
+
+#[cfg(test)]
+mod clock_tests;
 
 #[cfg(test)]
 mod literal_text_tests;
@@ -993,7 +1032,7 @@ mod tests {
             assert_eq!(callback.trigger, Trigger::Use);
             assert_eq!(callback.selector.unique, Some(unique));
             assert_eq!(callback.teleport, Some(destination));
-            assert!(callback.storage.is_empty());
+            assert!(!callback.has_personal_state());
             assert!(callback.sources.iter().all(|source| {
                 source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
             }));
@@ -1447,8 +1486,12 @@ mod worldchg_grimvale_tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(ordinary.len(), 9);
-        assert!(ordinary.iter().all(|callback| callback.storage.is_empty()
-            && world_change_requirement(&callback.key).is_none()));
+        assert!(
+            ordinary
+                .iter()
+                .all(|callback| !callback.has_personal_state()
+                    && world_change_requirement(&callback.key).is_none())
+        );
         Ok(())
     }
 }
