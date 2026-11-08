@@ -19,6 +19,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let owners = self.activity_runtimes.activity_owners().unwrap_or_default();
             for (key, stop, _) in &jobs {
                 if shutdown.is_cancelled()
+                    || owners.iter().any(|owner| {
+                        ScopeKey::new(owner.scope, owner.generation) == *key
+                            && owner.states.kill_source_owner.stop_requested()
+                    })
                     || !owners
                         .iter()
                         .any(|owner| ScopeKey::new(owner.scope, owner.generation) == *key)
@@ -55,6 +59,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if !inhabited {
                         continue;
                     }
+                    if !owner.states.kill_source_owner.start() {
+                        continue;
+                    }
                     let view = self.runtime_view(&owner);
                     let stop = Arc::new(CancellationToken::new());
                     let running = Arc::clone(&stop);
@@ -62,10 +69,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // heartbeat below only discovers newly occupied scopes.
                     let task = Box::pin(async move {
                         let _ = super::first(
-                            view.run_source_owner_cycles(&running),
-                            view.run_last_position_writes(&running),
+                            super::first(
+                                view.run_source_owner_cycles(&running),
+                                view.run_last_position_writes(&running),
+                            ),
+                            view.states.kill_source_owner.cancelled(),
                         )
                         .await;
+                        // first() has dropped both child futures before the join
+                        // acknowledgement; a terminal snapshot cannot race them.
+                        view.states.kill_source_owner.complete();
                     });
                     jobs.push((key, stop, task));
                 }
