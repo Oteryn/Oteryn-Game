@@ -63,10 +63,13 @@ pub(super) fn admitted(callback: &Callback) -> bool {
             })
             .count()
             == 1
-        && callback
-            .sources
-            .iter()
-            .any(|s| s == "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only")
+        && callback.sources.iter().any(|s| {
+            matches!(
+                s.as_str(),
+                "OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only"
+                    | "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+            )
+        })
 }
 
 pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
@@ -80,6 +83,31 @@ pub(super) fn initial(callback: &Callback, storage: &Storage) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::super::*;
+
+    #[test]
+    fn alawar_source_approach_is_bound_without_changing_its_teleport() -> Result<(), String> {
+        let callbacks = load()?;
+        let approach = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry")
+            .ok_or("bound Alawar approach")?;
+        assert!(super::admitted(approach));
+        assert!(approach.teleport.is_none());
+        let original = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/alawars-vault-entrance")
+            .ok_or("original Alawar portal")?;
+        assert_eq!(
+            original.teleport,
+            Some(Position {
+                x: 32107,
+                y: 31567,
+                floor: -9
+            })
+        );
+        assert!(original.storage.is_empty());
+        Ok(())
+    }
 
     #[test]
     fn asura_explore_binding_cannot_strip_current_premium() -> Result<(), String> {

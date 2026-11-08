@@ -5,6 +5,8 @@ from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
+    ('oteryn:quest.alawar_s_vault_quest', 's1',
+     'callback:oteryn:quest-callback/alawars-vault-entrance', 'chosen-source/alawar_s_vault_quest'),
     ('oteryn:quest.longsword_quest', 's1',
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
     ('oteryn:quest.authored.asura_palace_quest', 's1',

@@ -84,3 +84,5 @@ Alawar source-entry approach resolver:RED1 -> GREEN11Python tests3.635s;
 source ownership and original TP preservation proved. Still only3active
 EXPLORE stages. Next activate Alawar marker/point and add native move case.
 No qmech/main merges;continue43routes/53stages after these3.
+
+Alawar approach activated as fourth stage without modifying its portal. RED missing binding0.02s -> GREEN5Rust profile tests0.04s;11Python tests3.689s. Native Alawar PG case remains compiling and is not claimed passed. Continue proof,then42routes/52stages. No merges.

@@ -10,9 +10,10 @@
     "wired_routes": [
       "Longsword Quest",
       "Geomancer Quest",
-      "Asura Palace Quest"
+      "Asura Palace Quest",
+      "Alawar's Vault Quest"
     ],
-    "wired_explore_stages": 3,
+    "wired_explore_stages": 4,
     "pg_proven_routes": [
       "Longsword Quest",
       "Geomancer Quest",
@@ -39,9 +40,12 @@
     "merge_policy": "0326 merge ABORTED;no qmech/main merges",
     "stage_planner": "RED2missing-helper errors -> GREEN9Python tests2.865s; qengine_access --check PASS;active callback JSON unchanged",
     "postgres_total": "4passed,0failed,190.89s;Rust/data sourceff447b707",
-    "map_approach_resolver": "RED1missing-source-mode -> GREEN11Python tests3.635s;unchanged active JSON checkPASS"
+    "map_approach_resolver": "RED1missing-source-mode -> GREEN11Python tests3.635s;unchanged active JSON checkPASS",
+    "alawar_profile": "RED missing binding0.02s -> GREEN5Rust tests0.04s",
+    "alawar_authoring": "11passed3.689s",
+    "alawar_postgres": "PENDING: focused native approach case compiling;no qualification claim"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Activate and prove Alawar approach,then continue remaining43routes/53stages. Three active routes PG-proven;whole M01b remains PARTIAL."
+  "continuation": "Finish Alawar native PG proof;continue42routes/52stages. Four wired stages,three PG-proven;M01b PARTIAL."
 }

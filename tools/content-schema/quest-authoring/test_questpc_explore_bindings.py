@@ -142,7 +142,8 @@ class ExploreBindingsTests(unittest.TestCase):
                          'oteryn:quest-progress/chosen-source/geomancer_quest/s1')
 
     def test_native_anchor_has_no_value_or_movement_effect(self):
-        callback = explore.callbacks(ROOT)[0]
+        callback = next(c for c in explore.callbacks(ROOT)
+                        if c['quest'] == 'oteryn:quest.longsword_quest')
         self.assertEqual(callback['quest'], 'oteryn:quest.longsword_quest')
         self.assertEqual(callback['trigger'], 'step_in')
         self.assertEqual(callback['selector']['native'], {

@@ -151,6 +151,59 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
+      "quest": "oteryn:quest.alawar_s_vault_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32187,
+          "y": 31623,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409,
+        "native": {
+          "position": {
+            "x": 32187,
+            "y": 31623,
+            "floor": -8
+          },
+          "ordinal": 0,
+          "appearance": 409
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1/visited/entry",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/alawar_s_vault_quest/s1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "requires_world_admission": true,
+      "sources": [
+        "content/quests/world-callbacks.json#/callbacks/0",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:671-677",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/others/teleport.lua:4-20",
+        "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/m01b/asura-palace/s1/entry",
       "quest": "oteryn:quest.authored.asura_palace_quest",
       "trigger": "step_in",

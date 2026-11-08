@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b Current Premium native proof GREEN;3/56active stages proved. Alawar approach resolver tested but not activated;no DONE claim.",
+  "batch_state": "M01b Alawar approach activated:5Rust/11Python focused tests green;native PG compiling.4/56wired,3PG-proven;PARTIAL.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
