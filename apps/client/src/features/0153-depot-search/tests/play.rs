@@ -153,3 +153,46 @@ fn depot_result_controls_retrieve_all_and_keep_server_outcomes()
     );
     Ok(())
 }
+
+#[test]
+fn depot_native_callback_does_not_drop_the_session_owner() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_client_runtime::cui3::depot_search::{self as wire, Request};
+    let (link, mut receiver, _outbox) = play_channel();
+    let observed = std::sync::Arc::clone(&link.mailbox);
+    {
+        let mut mailbox = crate::play::mailbox::lock(&observed);
+        mailbox.depot_search.selected = true;
+        mailbox.properties.appearance.selected = true;
+        mailbox.properties.appearance.open = true;
+        mailbox.wheel.selected = true;
+        assert!(!mailbox.quest_shutdown && !mailbox.wheel_shutdown);
+    }
+    // These are exactly the references held by the native window's callback.
+    // Their scope must end without dropping another owning PlayLink.
+    {
+        let shared = std::sync::Arc::clone(&observed);
+        let commands = link.commands.clone();
+        native::activate_shared(&shared, &commands, &native::Inputs::default(), 5);
+    }
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing native list command".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|error| format!("{error:?}"))?,
+        Request::Open { after: 0 }
+    );
+    {
+        let mailbox = crate::play::mailbox::lock(&observed);
+        assert!(mailbox.depot_search.pending);
+        assert!(mailbox.properties.appearance.selected && mailbox.properties.appearance.open);
+        assert!(mailbox.wheel.selected);
+        assert!(!mailbox.quest_shutdown && !mailbox.wheel_shutdown);
+    }
+    // The original owning link still performs its established cleanup.
+    drop(link);
+    let mailbox = crate::play::mailbox::lock(&observed);
+    assert!(!mailbox.properties.appearance.selected && !mailbox.properties.appearance.open);
+    assert!(mailbox.quest_shutdown && mailbox.wheel_shutdown);
+    Ok(())
+}

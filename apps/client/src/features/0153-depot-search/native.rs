@@ -1,6 +1,11 @@
 //! Native presentation of the existing feature request and reducer state.
-use crate::play::{PlayLink, mailbox::lock};
+use crate::combat_input::PlayCommand;
+use crate::play::{
+    PlayLink,
+    mailbox::{SharedMailbox, lock},
+};
 use oteryn_client_ui::depot_search::DepotSearchPanel;
+use tokio::sync::mpsc::UnboundedSender;
 
 pub(in crate::play) const CONTROLS: &[(&str, &str, &str)] = &[
     ("EDIT", "Item id", "100"),
@@ -30,12 +35,25 @@ pub(in crate::play) fn presentation(panel: &DepotSearchPanel) -> String {
 
     text
 }
+#[cfg(test)]
 pub(in crate::play) fn submit(link: &PlayLink, inputs: &Inputs) {
     dispatch(link, inputs, false);
 }
+#[cfg(test)]
 pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
-    let mut mailbox = lock(&link.mailbox);
-    let panel = &mut mailbox.depot_search;
+    dispatch_panel(
+        &mut lock(&link.mailbox).depot_search,
+        &link.commands,
+        inputs,
+        detail,
+    );
+}
+fn dispatch_panel(
+    panel: &mut DepotSearchPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    detail: bool,
+) {
     if !enabled(panel) {
         return;
     }
@@ -65,28 +83,34 @@ pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) 
         oteryn_client_ui::depot_search::search(panel)
     };
     if let Some(command) = command
-        && link
-            .commands
-            .send(crate::combat_input::PlayCommand::ServerMechanic(command))
-            .is_err()
+        && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
         panel.feedback = Some("The session has ended".into());
     }
 }
 
+#[cfg(test)]
 pub(in crate::play) fn activate(link: &PlayLink, inputs: &Inputs, action: usize) {
+    activate_shared(&link.mailbox, &link.commands, inputs, action);
+}
+pub(in crate::play) fn activate_shared(
+    shared: &SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    inputs: &Inputs,
+    action: usize,
+) {
     use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
+    let mut mailbox = lock(shared);
+    let panel = &mut mailbox.depot_search;
     if action == 1 {
-        submit(link, inputs);
+        dispatch_panel(panel, commands, inputs, false);
         return;
     }
     if action == 4 {
-        dispatch(link, inputs, true);
+        dispatch_panel(panel, commands, inputs, true);
         return;
     }
-    let mut mailbox = lock(&link.mailbox);
-    let panel = &mut mailbox.depot_search;
     if !enabled(panel) {
         return;
     }
@@ -119,10 +143,7 @@ pub(in crate::play) fn activate(link: &PlayLink, inputs: &Inputs, action: usize)
     if let Some(command) = oteryn_client_ui::depot_search::request(
         panel,
         oteryn_client_ui::depot_search::command(payload),
-    ) && link
-        .commands
-        .send(crate::combat_input::PlayCommand::ServerMechanic(command))
-        .is_err()
+    ) && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {
         panel.pending = false;
         panel.feedback = Some("The session has ended".into());
@@ -278,10 +299,6 @@ mod windows {
                         if lock(&shared).quest_shutdown {
                             break;
                         }
-                        let link = PlayLink {
-                            mailbox: shared.clone(),
-                            commands: commands.clone(),
-                        };
                         for id in std::mem::take(&mut actions.0) {
                             if id < 100
                                 || id >= 100 + CONTROLS.len()
@@ -309,7 +326,7 @@ mod windows {
                                 inputs.0[2] = row.to_string();
                                 SetWindowTextW(handles[2], wide(&inputs.0[2]).as_ptr());
                             }
-                            activate(&link, &inputs, id - 100);
+                            activate_shared(&shared, &commands, &inputs, id - 100);
                         }
                         let panel = lock(&shared).depot_search.clone();
                         if held.as_ref() != Some(&panel) {
