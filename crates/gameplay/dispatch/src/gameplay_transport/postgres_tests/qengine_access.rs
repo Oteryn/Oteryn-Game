@@ -814,6 +814,7 @@ async fn wardrobe(
         completes: false,
         per_occurrence_mint: false,
         carried_item: None,
+        carried_exchange: false,
         minimum_level: None,
         requires_addons: vec![],
         forbids_outfits: vec![],

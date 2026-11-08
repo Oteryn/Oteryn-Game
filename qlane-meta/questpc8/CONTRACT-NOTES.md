@@ -798,3 +798,26 @@ of the three new corpse roots. The fixture now explicitly preserves their
 LootItemInadmissible refusal and verifies all eight unsupported source items;
 it retains the original totals and exact five shared-body bosses. No forbidden
 loot becomes a grant and no test count or refusal assertion is relaxed.
+
+- Continuation branch questpc8b reuses QENGINE2 dd35529b6's explicit carried
+  exchanges, selected-definition input rule, and migration1552 without changing
+  the upstream migration or its number. The original questpc8 head8639b16b1
+  remains frozen. This is consumption of qualified shared code, not a new engine.
+- Colours opening uses the packet's fixed blue route: envelope12204 yields one
+  blue powder12208 and letter12205. The source event randomises powder colour;
+  the chosen authored route deterministically selects blue. Source identities
+  are the pinned Canary items XML, and walkthrough obligations are documented at
+  https://tibia.fandom.com/index.php?curid=50851&oldid=844647 and
+  https://tibia.fandom.com/index.php?curid=50860&oldid=1128664 .
+  Conservative binding decision:12208 is initial blue powder and12228 its
+  remainder, based on the pinned source's duplicate-name initial/remainder
+  groups and the walkthrough's two uses. This is an explicit authored binding,
+  not a claim that a donor action script was found. Ordinary carried USE means
+  self-marking; the durable colour track records blue and does not change outfit.
+  No peer actor, green pairing, Nathaniel report or whole-quest completion is
+  fabricated by this opening. The live-player predicate remains qengine2-owned.
+- Independent review found upstream's carried-exchange loader accepts more than
+  migration1552's eight definitions / quantities1..100. A small new local
+  carried_bounds.rs helper aligns admission with that unchanged SQL proof.
+  Regression RED accepted nine inputs; rejection coverage also checks cost101.
+  This integration fix leaves the reused upstream helper/migration unchanged.

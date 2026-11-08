@@ -1011,7 +1011,7 @@
     "first_unqualified_stage": {
       "key": "s10",
       "kind": "collect",
-      "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
+      "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
       "targets": [
         "Winning Lottery Ticket"
       ]
@@ -1408,11 +1408,11 @@
     "status": "UNFINISHED",
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
+    "mechanism": "chosen fixed-blue native envelope exchange and self-marking; live-player pairing queued",
     "blocker": {
       "kind": "active_implementation",
       "owner": "questpc8",
-      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "missing_piece": "Opening slice PG green; live-player differently-coloured pairing remains queued with qengine2 under current owner rule.",
       "evidence": [
         "qlane-meta/questpc8/RESUME.md",
         "qlane-meta/questpc8/continuation-validation.json"
@@ -1431,9 +1431,9 @@
       "proof": "ENGINE-REQUESTS.md",
       "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
       "last_upstream_check": {
-        "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
-        "qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
-        "result": "Canonical NPC reward repairs available; selected-player colour predicate and item-look disguise still absent."
+        "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+        "qengine2": "dd35529b6f1c61042e798723f71768109f9573f8",
+        "result": "Qualified selected-instance exchanges reused; live-player colour predicate remains queued."
       }
     },
     "collector_handoff": {
@@ -1441,6 +1441,18 @@
       "continuation_branch": "claude/happy-davinci-ijz3wy-questpc8b",
       "proof": "collector-main-validation.json",
       "whole_quest_qualification_unchanged": true
+    },
+    "opening_slice": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+      "state": "POSTGRES_GREEN",
+      "red_seconds": 64.054450351,
+      "red_marker": "POSTGRES_CASE_STARTED authored-colours-opening after PostgreSQL fixture initialization",
+      "red_error": "source envelope binding missing",
+      "shared_reuse": "QENGINE2 dd35529b6; exact carried helper and migration1552",
+      "whole_quest_qualification_unchanged": true,
+      "green_seconds": 65.107784213,
+      "green_marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+      "proof": "colours-opening-validation.json"
     }
   },
   {

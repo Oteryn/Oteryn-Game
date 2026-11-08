@@ -90,6 +90,32 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
         "oteryn-authored:chosen-recipe:wrath-opening:authored-r1"
       ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/stage",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/colours/colour",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ]
     }
   ],
   "callbacks": [
@@ -1039,6 +1065,103 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zalamon.lua",
         "OTERYN_AUTHORED_APPROXIMATION: chosen once-only Wrath opening; three source nails953 and one wood5901 produce marked crate11328; original source questline and Mission01 retained."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/envelope",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours envelope"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12204",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12208",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i12205",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "The envelope contains blue powder and a letter."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12204",
+      "carried_exchange": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/colours/mark-blue",
+      "quest": "oteryn:quest.authored.the_colours_of_magic",
+      "npc": "oteryn:npc.nathaniel",
+      "keywords": [
+        "colours mark-blue"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/colours/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/colours/colour",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i12208",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12228",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "You are marked blue; retain the remaining powder for a differently marked participant."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=50851&oldid=844647",
+        "https://tibia.fandom.com/index.php?curid=50860&oldid=1128664",
+        "OTERYN_AUTHORED_APPROXIMATION: fixed blue envelope branch; pinned Canary XML identities12204,12205,12208,12228; NativeUseCarried denotes self use, not peer pairing."
+      ],
+      "carried_item": "oteryn:item.tibia.i12208",
+      "carried_exchange": true
     }
   ]
 }

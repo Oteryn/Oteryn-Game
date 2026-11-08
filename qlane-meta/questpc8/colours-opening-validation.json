@@ -1,0 +1,72 @@
+{
+  "branch": "claude/happy-davinci-ijz3wy-questpc8b",
+  "base": "8639b16b158d39e36bf08d98f2a4dd998a4e2c5e",
+  "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+  "shared_reuse": {
+    "source": "dd35529b6f1c61042e798723f71768109f9573f8",
+    "exact_files": [
+      "apps/game-server/migrations/1552_quest_carried_exchange_inputs.sql",
+      "crates/gameplay/quests/src/quest/reward_callbacks/carried.rs"
+    ],
+    "local_alignment": "carried_bounds.rs rejects more than8inputs and costs outside1..100; upstream files unchanged"
+  },
+  "postgres": {
+    "red_seconds": 64.054450351,
+    "red_error": "source envelope binding missing",
+    "green_seconds": 65.107784213,
+    "green_marker": "POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS",
+    "log": "/tmp/questpc8b-colours-pg-green.log",
+    "passed": 1,
+    "failed": 0
+  },
+  "admission_bounds": {
+    "red_error": "carried exchange exceeds PostgreSQL bounds; many_inputs=true",
+    "green": "PASS in full327quest-unit run"
+  },
+  "workspace_check": {
+    "result": "PASS",
+    "duration": "6m06s including build-lock wait"
+  },
+  "fmt": "PASS",
+  "dup_migrations": "PASS",
+  "generated": [
+    "native item profiles and provider registries",
+    "equipment custody census",
+    "quest binding evidence",
+    "completion candidates",
+    "item audit tags",
+    "bundle pins"
+  ],
+  "unit_tests": "Quest crate327/327PASS43.79s;2550selected changed-crate units running, no full completion claimed",
+  "clippy": {
+    "result": "PASS",
+    "crates": [
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-dispatch"
+    ],
+    "flags": "--all-targets -- -D warnings",
+    "duration": "6m18s including build-lock wait"
+  },
+  "whole_quest_qualification_unchanged": true,
+  "review": {
+    "p0_p1": 0,
+    "p2": 1,
+    "p2_disposition": "fixed; independent repair review no remaining findings"
+  },
+  "quest_units": {
+    "passed": 327,
+    "failed": 0,
+    "seconds": 43.79,
+    "includes_bounds_regression": true
+  },
+  "prepush2_budget_exception": {
+    "pending": "Full durability/dispatch non-PG units; selected2550-case run continues after publication",
+    "own_pg": "PASS",
+    "workspace_all_targets": "PASS",
+    "generated": "PASS",
+    "fmt": "PASS",
+    "clippy": "PASS",
+    "no_full_suite_claim": true
+  }
+}

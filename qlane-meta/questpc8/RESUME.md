@@ -1,3 +1,22 @@
+# Continuation AUTHORING: questpc8b Colours opening
+
+Original questpc8 is frozen at8639b16b158d39e36bf08d98f2a4dd998a4e2c5e.
+This continuation consumes QENGINE2dd35529b6 carried exchanges. Admission RED
+was unknown carried_exchange;325quest units GREEN24.60s after exact reuse.
+Real PostgreSQL opening RED64.054450351s: source envelope binding missing.
+Two blue-path callbacks are authored; native regeneration/pins PASS and own
+PostgreSQL GREEN65.107784213s, marker
+POSTGRES_COLOURS_ENVELOPE_SELF_MARK_AND_REPLAY_PASS. Exact selected envelope,
+letter/powder delivery, self-mark remainder, replay, reload and second-envelope
+refusal pass. Workspace check PASS6m06s; fmt and duplicate migrations PASS.
+Review bounds finding repaired in a new small helper; full327quest units
+PASS43.79s, including nine-input/cost101 rejection. Changed-crate clippy PASS.
+The2550-case changed-crate unit run continues under the PREPUSH-2 cadence
+exception; no complete durability/dispatch unit success is claimed.
+See colours-opening-validation.json.
+No whole quest count changes. Live-player colour pairing and Wrath item-look
+disguise restoration remain queued QENGINE2 requests.
+
 # Collector handoff: freeze this branch after the one merge push
 
 Collector main78294c081 is integrated with both main and questpc8 logic retained.

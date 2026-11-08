@@ -438,6 +438,10 @@
             }
           }
         },
+        "carried_exchange": {
+          "type": "boolean",
+          "default": false
+        },
         "carried_item": {
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",

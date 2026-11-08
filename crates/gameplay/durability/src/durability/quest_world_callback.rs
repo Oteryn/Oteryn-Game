@@ -213,17 +213,15 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     let mut inputs = Vec::new();
     for row in rows {
-        if carried_use.is_some_and(|use_| {
-            row.try_get::<&str, _>("item").ok()
-                != Some(
-                    sqlx::types::Uuid::from_bytes(use_.source)
-                        .to_string()
-                        .as_str(),
-                )
-        }) {
+        // QENGINE2 c7b6297fc / dd35529b6: bind only the selected definition to its instance.
+        let key: String = row.try_get("definition_production_key")?;
+        if let Some(use_) = carried_use
+            && callback.carried_item.as_deref() == Some(key.as_str())
+            && row.try_get::<String, _>("item")?
+                != sqlx::types::Uuid::from_bytes(use_.source).to_string()
+        {
             continue;
         }
-        let key: String = row.try_get("definition_production_key")?;
         let Some(required) = remaining.get_mut(key.as_str()) else {
             continue;
         };
