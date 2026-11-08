@@ -1,0 +1,205 @@
+//! Native account services run outside an admitted character session.
+mod controller;
+#[cfg(windows)]
+mod native;
+#[cfg(test)]
+pub(crate) mod test_server;
+#[cfg(test)]
+mod tests;
+#[cfg(windows)]
+pub(crate) mod window;
+
+use oteryn_foundation::CancellationToken;
+use oteryn_platform_client::native_login::bazaar::*;
+use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginClient};
+use std::{sync::Arc, time::Instant};
+
+#[derive(Debug, Clone)]
+pub enum Action {
+    Refresh(AuctionView),
+    Next,
+    Bid {
+        auction_id: String,
+        coins: u64,
+        confirmed: bool,
+    },
+    Sell {
+        character_id: String,
+        minimum_bid: u64,
+        duration_hours: u32,
+        confirmed: bool,
+    },
+    Quote {
+        character_id: String,
+        world_id: String,
+    },
+    Transfer {
+        confirmed: bool,
+    },
+    Retry,
+    Status,
+    Receipt(String),
+    Back,
+}
+
+#[derive(Debug)]
+pub struct View {
+    pub page: Option<BazaarPage>,
+    pub quote: Option<TransferQuote>,
+    pub receipt: Option<OperationReceipt>,
+    pub feedback: String,
+    pub selected_view: AuctionView,
+    pending: Option<BazaarRequest>,
+    unresolved: Option<String>,
+    quote_until: Option<Instant>,
+}
+impl Default for View {
+    fn default() -> Self {
+        Self {
+            page: None,
+            quote: None,
+            receipt: None,
+            feedback: "Browse Oteryn auctions, sell an offline character, or transfer worlds."
+                .into(),
+            selected_view: AuctionView::All,
+            pending: None,
+            unresolved: None,
+            quote_until: None,
+        }
+    }
+}
+impl View {
+    pub fn pending(&self) -> bool {
+        self.pending.is_some() || self.unresolved.is_some()
+    }
+    pub fn can_retry(&self) -> bool {
+        self.pending.is_some()
+    }
+    fn install_page(&mut self, page: BazaarPage) {
+        if !self.pending() {
+            self.unresolved = page
+                .recent_operations
+                .iter()
+                .find(|receipt| receipt.state == OperationState::Pending)
+                .map(|receipt| receipt.request_id.clone());
+        }
+        self.page = Some(page);
+    }
+    pub fn can_transfer(&self) -> bool {
+        !self.pending()
+            && self.quote.as_ref().is_some_and(|q| q.blockers.is_empty())
+            && self.quote_until.is_some_and(|until| until > Instant::now())
+    }
+    pub fn transfer_description(&self, quote: &TransferQuote) -> String {
+        let character = self
+            .page
+            .as_ref()
+            .and_then(|p| {
+                p.owned_characters
+                    .iter()
+                    .find(|c| c.id == quote.character_id)
+            })
+            .map_or(quote.character_id.as_str(), |c| c.name.as_str());
+        let world = self
+            .page
+            .as_ref()
+            .and_then(|p| p.worlds.iter().find(|w| w.id == quote.destination_world_id))
+            .map_or(quote.destination_world_id.as_str(), |w| w.name.as_str());
+        format!(
+            "Transfer {character} → {world}: {} coins; cooldown {} seconds. {}",
+            quote.price_coins,
+            quote.cooldown_seconds,
+            quote.blockers.join("; ")
+        )
+    }
+    pub fn status_text(&self) -> String {
+        let mut text = self.feedback.clone();
+        if let Some(id) = self
+            .pending
+            .as_ref()
+            .map(|p| p.request_id.as_str())
+            .or(self.unresolved.as_deref())
+        {
+            text.push_str(&format!(
+                "\nUnresolved operation {id}: check status before another action."
+            ));
+        }
+        if let Some(page) = &self.page {
+            text.push_str(&format!(
+                "\nLast refreshed balance: {} Oteryn coins",
+                page.balance
+            ));
+        }
+        if let Some(quote) = &self.quote {
+            text.push_str(&format!("\n{}", self.transfer_description(quote)));
+        }
+        if let Some(receipt) = &self.receipt {
+            text.push_str(&format!(
+                "\n{:?}: {} — operation {}; charged {} coins; balance after operation {}",
+                receipt.state,
+                receipt.code,
+                receipt.request_id,
+                receipt.charged_coins,
+                receipt.balance
+            ));
+            if let Some(id) = &receipt.receipt_id {
+                text.push_str(&format!("; receipt {id}"));
+            }
+        }
+        text
+    }
+}
+pub type Presenter = Arc<dyn Fn(&View, CancellationToken) -> Action + Send + Sync>;
+pub fn present(view: &View, cancel: CancellationToken) -> Action {
+    #[cfg(windows)]
+    {
+        native::present(view, cancel)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (view, cancel);
+        Action::Back
+    }
+}
+
+pub(crate) async fn run(
+    client: &NativeLoginClient,
+    token: &AccessToken,
+    presenter: &Presenter,
+    cancel: CancellationToken,
+) -> Result<(), crate::GameplayEntryError> {
+    let mut view = View::default();
+    controller::execute(
+        &mut view,
+        Action::Refresh(AuctionView::All),
+        client,
+        token,
+        cancel.clone(),
+    )
+    .await;
+    loop {
+        let (returned, action) = ask(view, presenter, cancel.clone()).await?;
+        view = returned;
+        if matches!(action, Action::Back) || cancel.is_cancelled() {
+            return Ok(());
+        }
+        controller::execute(&mut view, action, client, token, cancel.clone()).await;
+    }
+}
+pub(crate) async fn ask(
+    view: View,
+    presenter: &Presenter,
+    cancel: CancellationToken,
+) -> Result<(View, Action), crate::GameplayEntryError> {
+    let present = presenter.clone();
+    tokio::task::spawn_blocking(move || {
+        let action = present(&view, cancel);
+        (view, action)
+    })
+    .await
+    .map_err(|_| {
+        crate::GameplayEntryError::Rejected(
+            oteryn_platform_client::native_login::PublicClass::TemporarilyUnavailable,
+        )
+    })
+}

@@ -1,4 +1,7 @@
 //! Native login composition: Platform credentials, runtime retry and TCP transport adapters.
+#[cfg(test)]
+#[path = "features/local-account-services/tests/entry.rs"]
+mod account_services_tests;
 mod admitted;
 mod authorize;
 mod challenge;

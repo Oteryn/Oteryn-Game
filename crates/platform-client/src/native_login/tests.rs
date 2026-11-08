@@ -1,3 +1,5 @@
+#[path = "bazaar_tests.rs"]
+mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
 
