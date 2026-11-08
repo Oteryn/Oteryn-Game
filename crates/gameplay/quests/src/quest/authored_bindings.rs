@@ -2,6 +2,7 @@
 //!
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub(crate) mod embedded;
 pub mod kills;
 pub use kills::KillCounter;
 
@@ -191,6 +192,9 @@ impl Bindings {
 
     /// Compose explicit bindings with existing state. Every binding contributes to its quest hash.
     pub fn attach(&self, base: &QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+        if let Some(evidence) = &base.native_recipe_evidence {
+            evidence.verify(self)?;
+        }
         let mut normalized = self.clone();
         for quest in &mut normalized.quests {
             for stage in &mut quest.stages {
@@ -250,6 +254,7 @@ impl Bindings {
         if base.authored_bindings.is_some() {
             return Err("compose all authored bindings in one immutable set".into());
         }
+        catalogue.native_recipe_evidence = base.native_recipe_evidence.clone();
         catalogue.npc_legacy = base.npc_legacy.clone();
         catalogue.predecessors = base.predecessors.clone();
         for (key, hash) in &base.hashes {

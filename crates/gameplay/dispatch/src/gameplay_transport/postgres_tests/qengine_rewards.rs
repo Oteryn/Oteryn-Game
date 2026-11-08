@@ -780,6 +780,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-questpc4-spirit" {
         return super::l6_spirit::exercise(owner, admitted, h, authority).await;
     }
+    if name == "qengine-rewards-authored-native-admission" {
+        return super::authored_world_rewards::exercise_native_admission(owner, admitted, h).await;
+    }
     if matches!(name,"qengine-rewards-authored-world-rewards" | "qengine-rewards-authored-world-rewards-full") {
         return super::authored_world_rewards::exercise(owner, admitted, h, name.ends_with("-full")).await;
     }

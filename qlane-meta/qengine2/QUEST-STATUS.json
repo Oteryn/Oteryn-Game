@@ -3681,5 +3681,32 @@
       "postgresql": "PASS6/6 actual markers in364.679s againstaa85b2500",
       "pending_ci": "durability/dispatch/social crate unit suites per PREPUSH2 cadence exception"
     }
+  },
+  "native_admission_slice": {
+    "state": "IN_PROGRESS",
+    "red": {
+      "test": "authored_native_boot_recipe_admission_dispatch_postgres",
+      "seconds": 52.0,
+      "marker_seconds": 51.941706214,
+      "error": "native boot accepted a stale authored recipe digest",
+      "log": "/tmp/qengine2-native-admission-red.log"
+    },
+    "implemented": [
+      "bounded compiled binding registry",
+      "canonical recipe evidence on native boot catalogue",
+      "exact recipe/data-hold checks before binding attachment",
+      "evidence preserved through catalogue extension",
+      "explicit complete binding snapshot loader"
+    ],
+    "quest_units": {
+      "passed": 326,
+      "seconds": 42.66
+    },
+    "pending": [
+      "merge new main98d6ae8ce Soulpit",
+      "workspace/fmt/clippy/generated publication gates",
+      "own PostgreSQL GREEN after compiling checkpoint push"
+    ],
+    "whole_quest_counts_unchanged": true
   }
 }

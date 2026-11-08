@@ -1677,3 +1677,13 @@ Publish merged6PG proof now; shared authored_world_item_delivery QUALIFIED.
 Next: native boot recipe admission; scratch drafts already available. No code
 change in this proof batch; Rust clippy from tested merged source remains green.
 Packet44/66 unchanged; no whole-quest qualification claimed by shared fixture.
+
+05:14UTC native admission RED confirmed52.000s with realPGmarker51.941706214s:
+native boot accepted a stale authored recipe digest. Applied canonical RecipeEvidence
+on native boot catalogues, preserved through attach/with_quest, compiled bounded
+binding registry, explicit-set loader. All326questunits PASS42.66s including6new.
+No production binding JSON. Workspace/PGGREEN pending. Newmain98d6ae8ce Soulpit
+arrived (large shared-code/World update). Commit admission checkpoint locally,
+merge newMain, retain its authoritative generatedWorld (we author noWorldchanges),
+regenerate affected native outputs/pins and run publication gates. GREEN PG next
+AFTER compiling checkpoint push; pending tests stated under PREPUSH2 cadence.

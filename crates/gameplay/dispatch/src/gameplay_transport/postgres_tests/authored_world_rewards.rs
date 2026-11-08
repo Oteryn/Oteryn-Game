@@ -29,6 +29,11 @@ fn authored_world_full_backpack_rolls_back_reward_and_quest_postgres() -> TestRe
     super::qengine_rewards::scenario("qengine-rewards-authored-world-rewards-full")
 }
 
+#[test]
+fn authored_native_boot_recipe_admission_dispatch_postgres() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-authored-native-admission")
+}
+
 /// This runs before the PG harness: it deliberately uses only already-supported fields.
 pub(super) fn placeholder(at: Position) -> TestResult<Callback> {
     let mut callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
@@ -101,6 +106,24 @@ pub(super) async fn exercise(
     h: &Harness,
     full: bool,
 ) -> TestResult {
+    exercise_mode(owner, admitted, h, full, false).await
+}
+
+pub(super) async fn exercise_native_admission(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    exercise_mode(owner, admitted, h, false, true).await
+}
+
+async fn exercise_mode(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    full: bool,
+    native_admission: bool,
+) -> TestResult {
     // Parse the NEW reward field after Harness creation, so RED proves actual PG execution.
     let mut callback = serde_json::to_value(placeholder(AT)?)?;
     callback["effects"]["item_reward"] =
@@ -110,16 +133,36 @@ pub(super) async fn exercise(
         "sources":["synthetic engine fixture; no production quest authoring"],
         "tracks":[{"key":PHASE,"initial":0,"minimum":0,"maximum":1}],
         "stages":[{"key":"claim","completes":true,"trigger":{"kind":"map_use","callback":callback}}]}]});
-    let bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
-    let base = QuestStateCatalogue::empty(
-        owner
-            .quest_catalogue
-            .as_ref()
-            .ok_or("catalogue")?
-            .content_revision(),
-    )
-    .ok_or("revision")?;
-    owner.quest_catalogue = Some(Arc::new(bindings.attach(&base)?));
+    let mut bindings = Bindings::parse(&serde_json::to_vec(&document)?)?;
+    let revision = owner
+        .quest_catalogue
+        .as_deref()
+        .ok_or("native catalogue")?
+        .content_revision()
+        .to_owned();
+    let catalogue = if native_admission {
+        let native = owner.quest_catalogue.as_deref().ok_or("native catalogue")?;
+        let Err(error) = bindings.attach(native) else {
+            return Err("native boot accepted a stale authored recipe digest".into());
+        };
+        assert!(
+            error.contains("recipe digest differs"),
+            "unexpected refusal: {error}"
+        );
+        // Exact canonical chosen recipe, not a production quest qualification.
+        bindings.quests[0].recipe_sha256 =
+            "c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708".into();
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state_with_bindings(
+            &revision, &bindings,
+        )
+        .map_err(debug)?
+        .catalogue()
+        .clone()
+    } else {
+        let base = QuestStateCatalogue::empty(revision).ok_or("revision")?;
+        bindings.attach(&base)?
+    };
+    owner.quest_catalogue = Some(Arc::new(catalogue));
     if full {
         let native = owner
             .active_generation
