@@ -83,7 +83,40 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     // #2546 adds the official creature-balance batch without reimport states.
     // #2673 adds the drown-protection item batch without reimport states.
     // E06 adds the client market mint and the Crystal market parity batches, without states.
-    assert_eq!(batches.len(), 34);
+    // This count is refreshed by the normal repin_rust_inventory source tool.
+    assert_eq!(batches.len(), 35);
+    let cake = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(cake.len(), 1, "one separately qualified Cake source batch");
+    assert_eq!(
+        batches.len() - cake.len(),
+        34,
+        "all historical source batches retained"
+    );
+    let cake = cake[0];
+    assert_eq!(cake.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        cake.source_generation_profile,
+        "OTERYN_SEASONAL_CREATURE_ADMISSION/v1"
+    );
+    assert_eq!(
+        cake.source_revision,
+        "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    assert_eq!(
+        cake.mapper_revision,
+        "201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    assert_eq!(
+        cake.source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/cake-creature-admission.json"
+        ))
+    );
+    assert!(cake.candidates.is_empty());
+    assert!(cake.reimport_states.is_empty());
     assert_eq!(
         batches
             .iter()
@@ -93,7 +126,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     let prior = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(296));
-    assert_eq!(&batches[..34], prior.as_slice());
+    assert_eq!(&batches[..prior.len()], prior.as_slice());
     let once = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(0));
     assert_eq!(batches, once);

@@ -40,6 +40,89 @@ fn item_listeners<K>(
 }
 
 impl ChatRuntime {
+    /// Crystal 201189f `data/scripts/actions/objects/wall_mirror.lua:17-24`:
+    /// sourced automatic speech comes from the player, inside its actual House.
+    pub(in crate::gameplay_transport) fn publish_house_decoration_speech(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        speech: &str,
+    ) {
+        self.publish_house_speech(runtime, actor, session, speech, false);
+    }
+
+    fn publish_house_speech(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        speech: &str,
+        private: bool,
+    ) {
+        if runtime.owner_fence().is_err()
+            || !runtime
+                .house_player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        let Ok(house) = runtime.house_actor_state(actor, session) else {
+            return;
+        };
+        let (Some(generation), Ok(floor), Ok(text)) = (
+            NonZeroU64::new(actor.actor_local_generation()),
+            u8::try_from(house.position.floor),
+            ChatText::parse(speech),
+        ) else {
+            return;
+        };
+        let at = ChatPosition {
+            x: house.position.x,
+            y: house.position.y,
+            floor,
+        };
+        let Ok(visible) = runtime.house_visible_players(actor, session) else {
+            return;
+        };
+        let listeners = visible.into_iter().filter_map(|player| {
+            let (listener, current) = runtime.house_observer(player.actor).ok()??;
+            if private && listener != session {
+                return None;
+            }
+            Some((
+                listener,
+                ChatPosition {
+                    x: current.position.x,
+                    y: current.position.y,
+                    floor: u8::try_from(current.position.floor).ok()?,
+                },
+            ))
+        });
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return;
+        };
+        let Some(speaker) = sessions.get(&session) else {
+            return;
+        };
+        let name = speaker.name.clone();
+        let speaker_id = ChatSpeaker {
+            identity: actor.placement_identity(),
+            generation,
+        };
+        for (listener, heard) in local_listeners(SpeechMode::Say, at, listeners) {
+            if let Some(entry) = sessions.get_mut(&listener) {
+                let mut line = local_line(speaker_id, &name, SpeechMode::Say, &text, at, heard);
+                // Crystal data/scripts/actions/objects/wall_mirror.lua:17-22
+                // uses TALKTYPE_MONSTER_SAY while keeping local SAY listeners.
+                if let ChatLine::Local { mode, .. } = &mut line {
+                    *mode = ChatSpeechMode::MonsterSay;
+                }
+                entry.egress.push(line);
+            }
+        }
+    }
+
     /// Automatic NPC speech shares the bounded CHAT egress, without player ingress limits
     /// or the player-only uppercase transformation for YELL.
     pub(in crate::gameplay_transport) fn publish_npc_voice(
@@ -100,6 +183,18 @@ impl ChatRuntime {
         session: GameSessionId,
         effects: &NoveltyEffects,
     ) {
+        if runtime.house_actor_state(actor, session).is_ok() {
+            if effects.dice_value.is_none()
+                && let Some(speech) = effects.speech.as_deref()
+            {
+                if effects.private_speech {
+                    self.publish_house_speech(runtime, actor, session, speech, true);
+                } else {
+                    self.publish_house_decoration_speech(runtime, actor, session, speech);
+                }
+            }
+            return;
+        }
         if runtime.player_control_facts(actor, session).is_err() {
             return;
         }

@@ -199,3 +199,47 @@ fn browse_field_native_item_controls_preserve_move_and_up_routes()
     assert!(!panel.pending);
     Ok(())
 }
+
+#[test]
+fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::container_tree::{
+        ContainerView, ContainerViews, encode_container_views_with_house_capacity,
+    };
+    let views = ContainerViews {
+        views: vec![ContainerView {
+            view_id: 0,
+            container_handle: 1_u64.try_into()?,
+            parent_handle: None,
+            capacity: 25,
+            entries: (2_u64..=26)
+                .map(|id| {
+                    Ok(oteryn_session::ItemEntry {
+                        handle: id.try_into()?,
+                        item_definition_ref: 2854_u32.try_into()?,
+                        count: 1_u32.try_into()?,
+                        sub_type: 0,
+                    })
+                })
+                .collect::<Result<_, Box<dyn std::error::Error>>>()?,
+            browse: None,
+        }],
+    };
+    let bytes = encode_container_views_with_house_capacity(&views, true, true)
+        .map_err(|e| format!("{e:?}"))?;
+    for selected in [false, true] {
+        let (link, _, outbox) = play_channel();
+        outbox.container_initialize_with_house_capacity(None, selected);
+        outbox.browse_field_initialize(true);
+        outbox.browse_field_views(&bytes);
+        let panel = link.browse_field_panel();
+        if selected {
+            assert_eq!(panel.views, views);
+            assert!(panel.feedback.is_none());
+        } else {
+            assert!(panel.views.views.is_empty());
+            assert_eq!(panel.feedback.as_deref(), Some("Invalid container view"));
+        }
+    }
+    Ok(())
+}

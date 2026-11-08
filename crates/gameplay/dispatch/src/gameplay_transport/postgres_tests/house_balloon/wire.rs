@@ -1,13 +1,13 @@
 use super::*;
 
-pub(super) struct HouseExchange<'a> {
-    pub(super) current: Option<std::num::NonZeroU32>,
-    pub(super) after: Option<std::num::NonZeroU32>,
-    pub(super) nested: Option<std::num::NonZeroU32>,
-    pub(super) foreign_after_snapshot: Option<&'a Harness>,
+pub(in super::super) struct HouseExchange<'a> {
+    pub(in super::super) current: Option<std::num::NonZeroU32>,
+    pub(in super::super) after: Option<std::num::NonZeroU32>,
+    pub(in super::super) nested: Option<std::num::NonZeroU32>,
+    pub(in super::super) foreign_after_snapshot: Option<&'a Harness>,
 }
 
-pub(super) async fn exchange(
+pub(in super::super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     command: u64,

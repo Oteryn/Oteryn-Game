@@ -526,6 +526,16 @@ pub(super) async fn move_loop_item(
     command: UseCommand,
     request: LoopMove,
 ) -> LoopMoveResult {
+    move_loop_item_with_house_capacity(admission, actor, command, request, false).await
+}
+
+pub(super) async fn move_loop_item_with_house_capacity(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    request: LoopMove,
+    house_capacity_v2: bool,
+) -> LoopMoveResult {
     let refused = LoopMoveResult::Refused;
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
@@ -540,6 +550,28 @@ pub(super) async fn move_loop_item(
         },
     ) {
         return refused(LoopMoveRefusal::Rejected);
+    }
+    let named_house = command.item_fence.is_some_and(|fence| {
+        matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        )
+    }) && admission
+        .runtime
+        .lock()
+        .await
+        .house_actor_state(actor, command.game_session_id)
+        .is_ok();
+    if named_house {
+        return house_container::move_item(
+            admission,
+            actor,
+            command,
+            request,
+            &permit,
+            house_capacity_v2,
+        )
+        .await;
     }
     if matches!(request.item, ItemKey::MapBase { .. } | ItemKey::MapAdded(_)) {
         let result =
@@ -939,13 +971,33 @@ pub(super) async fn observe_container(
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
-    if fence.is_some_and(|current| {
+    observe_container_with_house_capacity(admission, actor, fence, target, false).await
+}
+
+pub(super) async fn observe_container_with_house_capacity(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: ItemKey,
+    house_capacity_v2: bool,
+) -> Option<ContainerObservation> {
+    let named_house = if let Some(current) = fence.filter(|current| {
         matches!(
             current.runtime_scope,
             crate::foundation::RuntimeScopeRefV1::Instance { .. }
         )
     }) {
-        return house_container::observe(admission, actor, fence, target).await;
+        admission
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, current.game_session_id)
+            .is_ok()
+    } else {
+        false
+    };
+    if named_house {
+        return house_container::observe(admission, actor, fence, target, house_capacity_v2).await;
     }
     if matches!(target, ItemKey::BrowseField { .. }) {
         return super::browse_field::observe(admission, actor, fence, target).await;

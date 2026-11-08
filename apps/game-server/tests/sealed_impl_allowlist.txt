@@ -107,6 +107,9 @@ crates/gameplay/entities/src/carrier/continuity.rs | owner_cycle_grant_seal::Sea
 crates/gameplay/entities/src/carrier/house_custody.rs | owner_cycle_grant_seal::Sealed | HouseOwnerGrant
 crates/gameplay/entities/src/carrier/native_summon_reconciliation_tests.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
+# W05d CP review: this second private cfg(test) fixture belongs to entities,
+# the seal owner; retain exact multiplicity, without a wildcard implementer.
+crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | direct_companion_source_seal::Sealed | DirectCompanionReservation
@@ -115,6 +118,11 @@ crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/bed_sleep_fixture
 apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs | house_presence_seal::Sealed | FixturePresence
 crates/gameplay/spell/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
 crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
+# W05d CP review: World owns the actual 8886 machine step. Private proof fields
+# and current construction require live canonical Cake, raid identity, exact
+# machine coordinates, scope generation and position; dispatch only resumes that
+# frozen identity. This adds no arbitrary Item or actor mint authority.
+crates/gameplay/world/src/movement/cake_extraction.rs | source_reservation_seal::Sealed | CakeMachineEntry
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
 crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed | CallbackTeleport<'_>
 # World qualifies rope origin and landing and revalidates them at commit;

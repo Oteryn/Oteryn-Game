@@ -9,6 +9,7 @@ import compose_monster_current_sources as compose
 import import_current_spell_sources as current
 import import_spell_families as importer
 import monster_seven_spell_overlay as overlay
+from bind_monster_source_definitions import bind_definitions
 
 
 class ComposeTests(unittest.TestCase):
@@ -22,12 +23,17 @@ class ComposeTests(unittest.TestCase):
     def test_actual1351_source_changes_preserve_all1870_adopted_rows(self):
         before = copy.deepcopy(self.adopted)
         result = compose.compose(self.root, self.base, self.current)
-        adopted = compose.indexed(json.loads(self.adopted[compose.CREATURES]))
+        # The pre-existing final binder supplies canonical attack closures and
+        # explicit nullable MRL defaults. Preserve the entire qualified record.
+        expected_adopted = json.loads(bind_definitions(self.root, self.adopted)[compose.CREATURES])
+        adopted = compose.indexed(expected_adopted)
         incoming = compose.indexed(json.loads(self.current[compose.CREATURES]))
         baseline = compose.indexed(json.loads(self.base[compose.CREATURES]))
         combined = compose.indexed(json.loads(result[compose.CREATURES]))
-        self.assertEqual(len(combined), 1870)
-        self.assertEqual(combined.keys(), adopted.keys())
+        self.assertEqual(len(combined), 1871)
+        self.assertEqual(set(combined) - set(adopted), {importer.canonical_bytes({
+            "family": "Creature", "key": "oteryn:creature.cake_golem", "revision": "definition-r1"})})
+        self.assertTrue(adopted.keys() <= combined.keys())
         changed = 0
         for key, retained in adopted.items():
             self.assertEqual(
@@ -41,8 +47,15 @@ class ComposeTests(unittest.TestCase):
             self.assertEqual(combined[key].get("monster_melee"), expected)
         self.assertEqual(changed, 1351)
         self.assertEqual(self.adopted, before)
-        for path in overlay.ALLOWED_PATHS - {compose.CREATURES, current.MANIFEST}:
+        for path in overlay.ALLOWED_PATHS - {compose.CREATURES, current.MANIFEST,
+                                              "content/presentations/definitions/spell-native-profiles.json"}:
             self.assertEqual(result[path], self.adopted[path])
+        presentation_path = "content/presentations/definitions/spell-native-profiles.json"
+        old_presentations = json.loads(self.adopted[presentation_path])["records"]
+        new_presentations = json.loads(result[presentation_path])["records"]
+        self.assertEqual(new_presentations[:len(old_presentations)], old_presentations)
+        self.assertEqual([r["target"]["key"] for r in new_presentations[len(old_presentations):]],
+                         ["oteryn:presentation.creature.cake_golem"])
         for section in ("catalog", "source_selection"):
             self.assertEqual(
                 json.loads(result[current.MANIFEST])[section],

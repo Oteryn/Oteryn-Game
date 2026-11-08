@@ -4,14 +4,27 @@ use oteryn_client_runtime::container_tree::{ContainerViewOutcome, ContainerViews
 use oteryn_session::SessionEvent;
 
 impl Outbox {
+    #[cfg(test)]
     pub(in crate::play) fn container_initialize(&self, views: Option<ContainerViews>) {
-        lock(&self.0).containers.apply(views);
+        self.container_initialize_with_house_capacity(views, false);
+    }
+    pub(in crate::play) fn container_initialize_with_house_capacity(
+        &self,
+        views: Option<ContainerViews>,
+        selected: bool,
+    ) {
+        let mut mailbox = lock(&self.0);
+        mailbox.containers.house_capacity_v2 = selected;
+        oteryn_client_ui::house_container_capacity::project(&mut mailbox.containers, views);
     }
     pub(in crate::play) fn container_events(&self, events: &[SessionEvent]) {
         let mut mailbox = lock(&self.0);
         for event in events {
             if let SessionEvent::ContainerViews(delta) = event {
-                mailbox.containers.apply(Some(delta.value.clone()));
+                oteryn_client_ui::house_container_capacity::project(
+                    &mut mailbox.containers,
+                    Some(delta.value.clone()),
+                );
             }
         }
     }
