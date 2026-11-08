@@ -41,6 +41,13 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
+struct ArenaCaller {
+    actor: ExactActorRef,
+    supplied: crate::durability::item_transfer::CurrentCharacterItemFence,
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+}
+
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct Matches {
     command: tokio::sync::Mutex<()>,
@@ -242,18 +249,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        self.arena_match_native(
+            ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
+            command.into(), action, payload, None,
+        ).await
+    }
+
+    async fn arena_match_native(
+        &self,
+        caller: ArenaCaller,
+        cause: durable::MatchCause,
+        action: A,
+        payload: &[u8],
+        expected: Option<crate::foundation::MovementPositionSnapshot>,
+    ) -> Option<Vec<u8>> {
+        let actor = caller.actor;
+        let supplied = caller.supplied;
+        let command = cause.command();
+        let session = command.game_session_id();
+        // Native STEP already holds the spell lane. Arena metadata and pending
+        // combat settlement serialize on the same Character revision slot.
+        if matches!(cause, durable::MatchCause::Command(_)) && !matches!(
+            self.drain_kill_rewards(session).await,
+            super::kill_reward::DrainOutcome::Drained
+        ) {
+            return None;
+        }
         let _gate = self.states.arena_matches.command.lock().await;
         let mut fence = self
-            .current_quest_fence(admitted.game_session_id)
+            .current_quest_fence(session)
             .await
             .ok()??;
         if fence.item_fence() != supplied {
-            return None;
-        }
-        if !matches!(
-            self.drain_kill_rewards(admitted.game_session_id).await,
-            super::kill_reward::DrainOutcome::Drained
-        ) {
             return None;
         }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
@@ -261,18 +288,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let mut runtime = self.runtime.lock().await;
             let binding = runtime.binding();
-            if binding.world_id() != admitted.world_id
-                || binding.channel_id() != Some(admitted.channel_id)
+            if binding.world_id() != caller.world
+                || binding.channel_id() != Some(caller.channel)
                 || binding.runtime_scope() != fence.runtime_scope
                 || binding.scope_generation() != fence.scope_ownership_generation
                 || runtime.owner_fence().is_err()
                 || runtime
-                    .player_control_facts(actor, admitted.game_session_id)
+                    .player_control_facts(actor, session)
                     .ok()?
                     .control_loss
                     .is_some()
                 || !runtime
-                    .bound_attacker_lease(actor, admitted.game_session_id)
+                    .bound_attacker_lease(actor, session)
                     .is_ok_and(|lease| {
                         lease.character_id().as_bytes() == fence.character_id.as_bytes()
                             && lease.generation() == fence.character_lease_generation
@@ -281,20 +308,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
             tick(self, &mut runtime);
+            if let Some(expected) = expected
+                && (runtime.read_actor_position(actor) != Ok(expected)
+                    || !pit_exit::owns_exit(self, actor, session, expected.position()))
+            { return None; }
         }
         let read = self
             .root
-            .read_arena_match(self.character, self.holder, fence, command, payload)
+            .read_arena_match(self.character, self.holder, fence, cause, payload)
             .await
             .ok()?;
         if !read.dead
             && (read.state.rank == 0
-                || (read.state.session == *admitted.game_session_id.as_bytes()
+                || (read.state.session == *session.as_bytes()
                     && read.state.scope_generation == fence.scope_ownership_generation.get()))
         {
             self.restore_arena_projection(
                 actor,
-                admitted.game_session_id,
+                session,
                 &read.state,
                 read.now_ms,
             )
@@ -313,10 +344,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .live
             .lock()
             .ok()?
-            .get(&admitted.game_session_id)
+            .get(&session)
             .cloned();
         let stale = after.rank > 0
-            && (after.session != *admitted.game_session_id.as_bytes()
+            && (after.session != *session.as_bytes()
                 || after.scope_generation != fence.scope_ownership_generation.get()
                 || (read.dead && matches!(after.phase, 1 | 2)));
         let expired = matches!(after.phase, 1 | 2) && after.deadline_ms <= read.now_ms;
@@ -345,7 +376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let at = runtime.read_actor_position(actor).ok()?.position();
                     if !at_entrance(at) {
                         disposition = D::WrongState;
-                    } else if !self.arena_pit_ready(&runtime, rank, 1, admitted.game_session_id) {
+                    } else if !self.arena_pit_ready(&runtime, rank, 1, session) {
                         disposition = D::Busy;
                     } else {
                         after = MatchState {
@@ -358,7 +389,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             pit: 1,
                             phase: 1,
                             deadline_ms: read.now_ms + i64::from(donor::PIT_SECONDS) * 1000,
-                            session: *admitted.game_session_id.as_bytes(),
+                            session: *session.as_bytes(),
                             scope_generation: fence.scope_ownership_generation.get(),
                             run: durable::identity(command, b"run"),
                         };
@@ -388,7 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &runtime,
                         after.rank,
                         after.pit + 1,
-                        admitted.game_session_id,
+                        session,
                     ) {
                         after.pit += 1;
                         after.phase = 1;
@@ -486,7 +517,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 MatchTransition {
-                    command,
+                    cause,
                     payload: payload.to_vec(),
                     before: before.clone(),
                     after: after.clone(),
@@ -529,7 +560,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(bytes);
         }
-        self.restore_arena_projection(actor, admitted.game_session_id, &after, read.now_ms)
+        self.restore_arena_projection(actor, session, &after, read.now_ms)
             .await?;
         Some(bytes)
     }

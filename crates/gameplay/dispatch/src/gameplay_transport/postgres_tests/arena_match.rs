@@ -284,6 +284,7 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 "credited death opens the source pit without another client command"
             );
             let (x, y) = crate::durability::arena_match::donor::CENTERS[usize::from(pit - 1)];
+            owner.clock_origin -= std::time::Duration::from_secs(3);
             let map = owner.bundle_map().ok_or("arena map")?;
             let pos = crate::map::overlay::TilePos { x: (x - 6) as u16, y: y as u16, floor: -7 };
             let mut projected = Vec::new();
@@ -306,7 +307,16 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
                 assert!(!projected.iter().any(|entry| entry.facts.appearance_id == 5022));
                 return Ok(());
             }
-            let advanced = command(&owner, &mut admitted, A::Advance).await?;
+            let start = {
+                let mut runtime = deps.runtime.lock().await;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime.relocate_arena_player(deps.actor, admitted.game_session_id, before,
+                    crate::foundation::MovementLocalPosition { x: x - 5, y, floor: 7 }).map_err(debug)?;
+                runtime.read_actor_position(deps.actor).map_err(debug)?
+            };
+            let _ = owner.ordinary_paced_step(deps.actor, admitted.game_session_id,
+                oteryn_protocol_oteryn::world_spatial::StepDirection::West, Some(start), None).await;
+            let advanced = command(&owner, &mut admitted, A::Status).await?;
             assert_eq!(advanced.disposition, D::Applied, "pit {pit}: {advanced:?}");
             assert_eq!(advanced.state.pit, if pit == 10 { 0 } else { pit + 1 });
             projected.clear();
@@ -319,6 +329,9 @@ fn scenario(funded: bool, expire: bool) -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(victories, 10);
+        let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE command_id > 18446744073709551615")
+            .fetch_one(&harness.pool).await?;
+        assert_eq!(steps, 10, "native steps have their own durable receipt namespace");
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;
         assert_eq!(achievements, 1);
         let status = command(&owner, &mut admitted, A::Status).await?;

@@ -4,8 +4,8 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
-mod conditional_cells;
 mod admission;
+mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
@@ -280,7 +280,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                 })))
 }
 
-fn step_command(
+pub(super) fn step_command(
     actor: ExactActorRef,
     session: GameSessionId,
     revision: u64,
@@ -869,6 +869,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             entered
         };
+        let entered = self.step_arena_exit(actor, session, entered).await;
         let entered = self
             .step_dynamic_quest_portal(permit, actor, session, entered)
             .await;
