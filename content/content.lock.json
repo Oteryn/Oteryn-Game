@@ -19,7 +19,7 @@
     "Behavior": 3145,
     "Charm": 25,
     "Creature": 1863,
-    "Dialogue": 839,
+    "Dialogue": 836,
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
@@ -28,7 +28,7 @@
     "Item": 34111,
     "Loot": 1290,
     "Mount": 252,
-    "NPC": 1290,
+    "NPC": 1282,
     "Presentation": 3145,
     "Proficiency": 443,
     "Quest": 352,
@@ -36,8 +36,8 @@
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
-    "Service.Trade": 327,
-    "Service.Travel": 59,
+    "Service.Trade": 324,
+    "Service.Travel": 56,
     "StarterKit": 1,
     "item_conversion": 129
   },
@@ -47,10 +47,10 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "ee44f92ecedd67d7379087da848101e80cc2ba75",
+    "declarations": "1539c94d007a965f7c013b486c88aca2b4443991",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "d8b4494706de894558d959d4321e619affa53c04",
-    "reference": "cb4363a29f724318b3d5b2cc77119bd04db52b8c",
+    "imports": "ff16932786c5189e02e11b08456f09f87eaa6565",
+    "reference": "45d4938e30c6b19bd9e29e6b9f2aa387596524bd",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3780,
+          "record_count": 3791,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ca33ea07ce00c58c9bacca8ad1b760a29a90b04036fa21a213822b60c11cbf3c"
+          "sha256": "89bf51735d658417ec8448a24dfc9f0389e55ee5210bfb9d003fdba0ec15029f"
         },
         {
           "creates_canonical_identities": false,

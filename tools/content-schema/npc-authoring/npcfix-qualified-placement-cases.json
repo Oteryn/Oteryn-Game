@@ -3063,7 +3063,7 @@
     {
       "id": "npcfix-bank-postal-anchor-qualification-47",
       "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
-      "source": "Frozen retail placements; all five identities absent in historical placement tree. Rashid preserves all seven existing exact UTC weekday destinations. No terrain or service authoring change.",
+      "source": "Frozen retail placements; all five identities absent in historical placement tree. Rashid preserves all seven existing exact UTC weekday destinations. No terrain or service authoring change. Wally source anchor32566,32019,7 is BlockSolid; strict compiler selected32568,32019,7 within captured walk radius2, recorded in placement scope. Preserve original source coordinates in normalized packet; promotion capture unchanged.",
       "cases": [
         {
           "npc": "oteryn:npc.muzir",
@@ -3099,7 +3099,7 @@
           "npc": "oteryn:npc.wally",
           "name": "Wally",
           "expected": {
-            "x": 32566,
+            "x": 32568,
             "y": 32019,
             "floor": -7
           },

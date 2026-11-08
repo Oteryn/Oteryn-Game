@@ -4024,13 +4024,39 @@
     {
       "npc": "oteryn:npc.wally",
       "position": {
-        "x": 32566,
+        "x": 32568,
         "y": 32019,
         "z": 7
       },
       "wiki": {
         "title": "Wally",
         "revid": 908738
+      },
+      "captured_spawn_anchor": {
+        "x": 32566,
+        "y": 32019,
+        "z": 7
+      },
+      "walk_radius": 2,
+      "origin": "native",
+      "native_source": {
+        "repository": "Oteryn/Oteryn-Game",
+        "revision": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+        "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+        "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+        "record_pointer": "/candidates/1056/placements/0/position",
+        "donor_npc_sha256": "2213e5232c085d80b81b7833aa9f643092d436ab04e201159c6b8f02f5e1b78c",
+        "note": "Captured anchor is BlockSolid; existing strict npc-anchors compiler selects nearest admitted cell within captured walk radius two. No terrain or compiler admission changes.",
+        "audited_roaming_position": {
+          "x": 32566,
+          "y": 32019,
+          "z": 7
+        }
+      },
+      "audited_roaming_position": {
+        "x": 32566,
+        "y": 32019,
+        "z": 7
       }
     },
     {

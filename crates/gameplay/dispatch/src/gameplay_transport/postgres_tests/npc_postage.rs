@@ -234,7 +234,7 @@ fn scenario(keys: &[&str]) -> TestResult {
                     item_fence: Some(fence),
                 };
                 if matches!(key, "muzir" | "murim" | "lokur") {
-                    bank_services::run(&h, &owner, deps.actor, npc, command,
+                    bank_services::run(&h, &mut owner, deps.actor, npc, command,
                         "Yes? What may I do for you, Fixture Hero? Bank business, perhaps?").await?;
                     if key == "muzir" { return Ok(()); }
                 }

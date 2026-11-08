@@ -2,7 +2,7 @@
 use super::*;
 pub(super) async fn run(
     h: &Harness,
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
     npc: EntityRef,
     command: impl Fn(u64) -> UseCommand,
@@ -23,6 +23,7 @@ pub(super) async fn run(
         (8, "balance", "Your account balance is 5 gold."),
     ];
     for (ordinal, text, expected) in rows {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
         let outcome = owner.npc_talk(actor, command(ordinal), NpcTalkIntent {
             npc_actor: npc, text: text.into(),
         }).await;

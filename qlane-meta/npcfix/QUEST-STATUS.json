@@ -10952,7 +10952,7 @@
       "Wally",
       "Rashid"
     ],
-    "state": "COMPILES; current one-job unit and own PostgreSQL cases pending",
+    "state": "COMPILES; Wally physical admission GREEN; fresh Bank pacing PostgreSQL and current-crate units pending",
     "source_base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
     "anchors": 11,
     "postgres_red": {
@@ -10964,8 +10964,8 @@
       "binary_sha256": "89c0a3253bb1080f674ee151c41c1c045930e202990c9b1b4320b115bc54858c"
     },
     "source_cases": {
-      "state": "SCRATCH_ONLY; current six-entry publication first",
-      "source_sha256": "3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd",
+      "state": "AUTHORED; frozen source packet unchanged, Wally source-bounded roaming resolution",
+      "source_sha256": "28239be1a5cd8cb4cad639735547d9897af6f6695234567ea35cb00240a8de1c",
       "cases": [
         {
           "npc": "oteryn:npc.muzir",
@@ -11001,7 +11001,7 @@
           "npc": "oteryn:npc.wally",
           "name": "Wally",
           "expected": {
-            "x": 32566,
+            "x": 32568,
             "y": 32019,
             "floor": -7
           },
@@ -11050,12 +11050,14 @@
           ]
         }
       ],
-      "total_anchors": 11
+      "total_anchors": 11,
+      "original_source_sha256": "3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd",
+      "normalization": "Only Wally normalized point changed; original captured and audited positions retained; promotion capture unchanged."
     },
     "bank_contract": "initial0, deposit10, exact confirmation replay, balance10, withdraw5, exact replay, balance5;2 operations/2 audits; money conserved; exact source greeting",
     "postal_contract": "Murim/Lokur/Wally reuse unchanged ordinary/discount/stale-price/replay assertions; bank ordinals1..8, postal101..107",
     "rashid_contract": "all7 frozen weekday destinations; one selected anchor and refusal at stale weekday, existing exact trade/replay caller reused",
-    "unit_retry": "jobs1; fresh build/run follows compiling checkpoint to avoid Git-HEAD provenance rebuild",
+    "unit_retry": "Current Main integration changed Rust crates client-assets/dispatch; fresh two-package unit run and three PG groups follow this checkpoint. Prior interrupted six other crate units remain unclaimed.",
     "generation": [
       {
         "name": "stats",
@@ -11064,7 +11066,7 @@
           "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
         ],
         "exit": 0,
-        "seconds": 4.096
+        "seconds": 4.028
       },
       {
         "name": "stats-pin",
@@ -11073,7 +11075,7 @@
           "tools/contracts/refresh_item_stats_promotion_pin.py"
         ],
         "exit": 0,
-        "seconds": 0.107
+        "seconds": 0.113
       },
       {
         "name": "native",
@@ -11084,7 +11086,7 @@
           "--skip-checks"
         ],
         "exit": 0,
-        "seconds": 125.066
+        "seconds": 128.177
       },
       {
         "name": "audit",
@@ -11098,7 +11100,7 @@
           "tools/contracts/update_item_audit_tags.py"
         ],
         "exit": 0,
-        "seconds": 0.068
+        "seconds": 0.096
       },
       {
         "name": "matrix",
@@ -11107,7 +11109,7 @@
           "tools/content-schema/quest-authoring/quest_completion_matrix.py"
         ],
         "exit": 0,
-        "seconds": 1.046
+        "seconds": 1.079
       },
       {
         "name": "bindings",
@@ -11116,7 +11118,7 @@
           "tools/content-schema/quest-authoring/quest_binding_authoring.py"
         ],
         "exit": 0,
-        "seconds": 23.264
+        "seconds": 52.298
       },
       {
         "name": "raid_catalogue",
@@ -11126,7 +11128,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 1.003
+        "seconds": 2.6
       },
       {
         "name": "craft_authoring",
@@ -11136,7 +11138,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 0.777
+        "seconds": 1.717
       },
       {
         "name": "imbuement_content",
@@ -11146,7 +11148,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 5.67
+        "seconds": 14.004
       },
       {
         "name": "charm_authoring",
@@ -11156,7 +11158,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 0.197
+        "seconds": 0.175
       },
       {
         "name": "proficiency_authoring",
@@ -11166,7 +11168,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 4.476
+        "seconds": 4.977
       },
       {
         "name": "reward_claim_authoring",
@@ -11176,7 +11178,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 4.69
+        "seconds": 4.428
       },
       {
         "name": "starter_kit_authoring",
@@ -11186,7 +11188,7 @@
           "content"
         ],
         "exit": 0,
-        "seconds": 0.609
+        "seconds": 0.545
       },
       {
         "name": "weapon",
@@ -11195,7 +11197,7 @@
           "tools/content-schema/item-authoring/item_weapon_proficiency.py"
         ],
         "exit": 0,
-        "seconds": 0.785
+        "seconds": 0.59
       },
       {
         "name": "crystal",
@@ -11204,7 +11206,7 @@
           "tools/content-census/g4_item_crystal_binding_generator.py"
         ],
         "exit": 0,
-        "seconds": 2.635
+        "seconds": 2.687
       },
       {
         "name": "pins",
@@ -11220,7 +11222,7 @@
           "."
         ],
         "exit": 0,
-        "seconds": 42.69
+        "seconds": 59.377
       },
       {
         "name": "native-check",
@@ -11230,7 +11232,7 @@
           "--check"
         ],
         "exit": 0,
-        "seconds": 110.933
+        "seconds": 147.329
       },
       {
         "name": "duplicates",
@@ -11239,25 +11241,383 @@
           ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
         ],
         "exit": 0,
-        "seconds": 0.618
+        "seconds": 0.549
       }
     ],
     "publication_gates": [
       {
         "name": "check",
         "exit": 0,
-        "seconds": 989.18
+        "seconds": 405.008
       },
       {
         "name": "fmt",
         "exit": 0,
-        "seconds": 23.989
+        "seconds": 21.364
       },
       {
         "name": "clippy",
         "exit": 0,
-        "seconds": 445.658
+        "seconds": 187.977
       }
-    ]
+    ],
+    "first_run_postgres": [
+      {
+        "name": "physical",
+        "filter": "npcfix_fading_and_retained_placements_postgres",
+        "exit": 101,
+        "seconds": 73.889,
+        "log": "/tmp/npcfix-evidence/bank-postal-pg-physical.log",
+        "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+      },
+      {
+        "name": "bank-services",
+        "filter": "npcfix_postgres_captured_bank_and_postal_services_and_replay",
+        "exit": 101,
+        "seconds": 145.844,
+        "log": "/tmp/npcfix-evidence/bank-postal-pg-bank-services.log",
+        "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+      },
+      {
+        "name": "rashid-trade",
+        "filter": "npcfix_postgres_rashid_current_weekday_exact_trade_and_replay",
+        "exit": 0,
+        "seconds": 133.011,
+        "log": "/tmp/npcfix-evidence/bank-postal-pg-rashid-trade.log",
+        "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48"
+      }
+    ],
+    "wally_roaming_resolution": {
+      "captured_spawn_anchor": {
+        "x": 32566,
+        "y": 32019,
+        "z": 7
+      },
+      "npc": "oteryn:npc.wally",
+      "position": {
+        "x": 32568,
+        "y": 32019,
+        "z": 7
+      },
+      "rejected_candidates": 20,
+      "walk_radius": 2
+    },
+    "physical_repair_green": {
+      "exit": 0,
+      "seconds": 109.647,
+      "binary": {
+        "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4457d29e431128b9",
+        "binary_sha256": "f1465b49ab162dc425dd01d037dd31da15bc14c2399adf05a6e6c9b005ef491c",
+        "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+        "source_build": {
+          "base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "runtime_diff_sha256": "351285d2b8ed0e82cd5d4062d5520623c9b7e35f503b60ee2029fd087db091b4",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ],
+          "build_jobs": 1
+        },
+        "postgres_configuration": "present; URL never printed"
+      },
+      "test_body_unchanged_since": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+      "scope": "Existing physical admission caller against newly regenerated runtime content; bank helper repair not covered",
+      "log": "/tmp/npcfix-evidence/qready-merge-fixed-physical-pg.log"
+    },
+    "physical_repair_log_sha256": "f38ab0abe8881c3d16df61bc688eb5d95b054ebd798dafedeed073b5e54bae1f"
+  },
+  "qready_main_integration": {
+    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+    "conflicts": "11 generated files resolved using incoming generated seeds, then repository producers restore lane admissions; no unresolved paths",
+    "generation": [
+      {
+        "name": "stats",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/lower_wiki_stats_packet.py"
+        ],
+        "exit": 0,
+        "seconds": 4.028
+      },
+      {
+        "name": "stats-pin",
+        "command": [
+          "python3",
+          "tools/contracts/refresh_item_stats_promotion_pin.py"
+        ],
+        "exit": 0,
+        "seconds": 0.113
+      },
+      {
+        "name": "native",
+        "command": [
+          "python3",
+          "tools/content-migration/regenerate_content.py",
+          "--native-only",
+          "--skip-checks"
+        ],
+        "exit": 0,
+        "seconds": 128.177
+      },
+      {
+        "name": "audit",
+        "command": [
+          "python3",
+          "/tmp/npcfix-evidence/preserve-unchanged-output-times.py",
+          "crates/gameplay/durability/src/durability/item_mint_audit.tags",
+          "crates/gameplay/durability/src/durability/item_mint_audit/tests/write_once_wire.hex",
+          "--",
+          "python3",
+          "tools/contracts/update_item_audit_tags.py"
+        ],
+        "exit": 0,
+        "seconds": 0.096
+      },
+      {
+        "name": "matrix",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_completion_matrix.py"
+        ],
+        "exit": 0,
+        "seconds": 1.079
+      },
+      {
+        "name": "bindings",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 52.298
+      },
+      {
+        "name": "raid_catalogue",
+        "command": [
+          "python3",
+          "tools/content-migration/raid_catalogue.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 2.6
+      },
+      {
+        "name": "craft_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/craft-authoring/craft_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 1.717
+      },
+      {
+        "name": "imbuement_content",
+        "command": [
+          "python3",
+          "tools/content-schema/imbuement-authoring/imbuement_content.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 14.004
+      },
+      {
+        "name": "charm_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/charm-authoring/charm_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.175
+      },
+      {
+        "name": "proficiency_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.977
+      },
+      {
+        "name": "reward_claim_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 4.428
+      },
+      {
+        "name": "starter_kit_authoring",
+        "command": [
+          "python3",
+          "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
+          "content"
+        ],
+        "exit": 0,
+        "seconds": 0.545
+      },
+      {
+        "name": "weapon",
+        "command": [
+          "python3",
+          "tools/content-schema/item-authoring/item_weapon_proficiency.py"
+        ],
+        "exit": 0,
+        "seconds": 0.59
+      },
+      {
+        "name": "crystal",
+        "command": [
+          "python3",
+          "tools/content-census/g4_item_crystal_binding_generator.py"
+        ],
+        "exit": 0,
+        "seconds": 2.687
+      },
+      {
+        "name": "pins",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "--release",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "exit": 0,
+        "seconds": 59.377
+      },
+      {
+        "name": "native-check",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 147.329
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.549
+      }
+    ],
+    "world_metadata": [
+      {
+        "name": "convert_hunting_places",
+        "exit": 0,
+        "seconds": 0.18
+      },
+      {
+        "name": "convert_islands",
+        "exit": 0,
+        "seconds": 24.121
+      },
+      {
+        "name": "validate_islands",
+        "exit": 0,
+        "seconds": 0.315
+      },
+      {
+        "name": "validate_world_metadata",
+        "exit": 0,
+        "seconds": 2.588
+      },
+      {
+        "name": "validate_world_base",
+        "exit": 0,
+        "seconds": 67.772
+      },
+      {
+        "name": "convert_world_record",
+        "exit": 0,
+        "seconds": 0.65
+      },
+      {
+        "name": "validate_world_record",
+        "exit": 0,
+        "seconds": 1.312
+      },
+      {
+        "name": "validate_materialized_game_tree",
+        "exit": 0,
+        "seconds": 0.132
+      }
+    ],
+    "gates": [
+      {
+        "name": "check",
+        "exit": 0,
+        "seconds": 405.008
+      },
+      {
+        "name": "fmt",
+        "exit": 0,
+        "seconds": 21.364
+      },
+      {
+        "name": "clippy",
+        "exit": 0,
+        "seconds": 187.977
+      }
+    ],
+    "placement_units": "16 passed /0.918s",
+    "physical_pg": {
+      "exit": 0,
+      "seconds": 109.647,
+      "binary": {
+        "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-4457d29e431128b9",
+        "binary_sha256": "f1465b49ab162dc425dd01d037dd31da15bc14c2399adf05a6e6c9b005ef491c",
+        "source_head": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+        "source_build": {
+          "base": "1ac76eb4a72bbb4f3159a6bfa4831964d66a3040",
+          "runtime_diff_sha256": "351285d2b8ed0e82cd5d4062d5520623c9b7e35f503b60ee2029fd087db091b4",
+          "packages": [
+            "oteryn-client-assets",
+            "oteryn-game-server",
+            "oteryn-gameplay-content",
+            "oteryn-gameplay-content-promotion",
+            "oteryn-gameplay-dispatch",
+            "oteryn-gameplay-durability",
+            "oteryn-gameplay-npc",
+            "oteryn-world-bundle-compiler"
+          ],
+          "build_jobs": 1
+        },
+        "postgres_configuration": "present; URL never printed"
+      },
+      "test_body_unchanged_since": "aef677a7f5a53a67825b45cad5616804cd6ecf48",
+      "scope": "Existing physical admission caller against newly regenerated runtime content; bank helper repair not covered",
+      "log": "/tmp/npcfix-evidence/qready-merge-fixed-physical-pg.log"
+    },
+    "unit_status": "Pending; no skipped PG case counted as execution",
+    "qualification_counts_unchanged": {
+      "QUALIFIED": 267,
+      "EXCLUDED": 24,
+      "PENDING": 7,
+      "AUTHORED; QUALIFICATION PENDING": 19,
+      "SUPERSEDED": 2,
+      "QUALIFIED_OTHER_LANE": 1
+    },
+    "binary_map_changes_authored": false
   }
 }

@@ -56,6 +56,19 @@ class ConvertPlacementsTest(unittest.TestCase):
                 checked.add(key.removeprefix('oteryn:npc.'))
         self.assertEqual(checked, names)
 
+    def test_wally_roaming_cell_preserves_the_blocked_source_anchor(self):
+        raw = cp.CANDIDATES.read_bytes()
+        capture = next(r for r in json.loads(raw)['candidates']
+                       if r['identity']['key'] == 'oteryn:npc.wally')
+        row = next(r for r in json.loads(cp.SCOPE.read_text())['retail_placements']
+                   if r['npc'] == 'oteryn:npc.wally')
+        self.assertEqual(row['captured_spawn_anchor'], capture['placements'][0]['position'])
+        self.assertEqual(row['captured_spawn_anchor'], {'x': 32566, 'y': 32019, 'z': 7})
+        self.assertEqual(row['position'], {'x': 32568, 'y': 32019, 'z': 7})
+        self.assertEqual(capture['movement']['walk_radius'], 2)
+        self.assertEqual(row['native_source']['sha256'], hashlib.sha256(raw).hexdigest())
+        self.assertEqual(row['origin'], 'native')
+
     def test_workshop_anchors_keep_exact_captured_sources(self):
         scope=json.loads(cp.SCOPE.read_text())
         rows={r['npc']:r for r in scope['retail_placements']}
