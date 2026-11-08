@@ -118,7 +118,9 @@
       "threshold_effect_reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7",
       "burst_guard_reuse": "existing main 6738c1da7ad5cf35110145fe33dfa9ea377ab0d7 writer.rs:709-710",
       "whole_quest_qualification_changed": false,
-      "post_main_pg_refresh": "PENDING after main b3864f14a clean merge; retain premerge proof only"
+      "post_main_pg_refresh": "PASS3 real-dispatch PostgreSQL cases322.908s",
+      "tested_source_sha": "c218a9ddccd7b4eadb35782b1ea646a20cc2337f",
+      "merged_main_sha": "b3864f14a0035a582ef80f1da7d2a931691dd035"
     }
   ]
 }

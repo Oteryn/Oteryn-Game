@@ -3413,7 +3413,6 @@
     },
     "whole_quest_qualification_changed": false,
     "pending": [
-      "post-b3864f14a own sequential/burst PostgreSQL refresh",
       "full durability/dispatch crate suites (PREPUSH-2 budget exception)"
     ],
     "first_green_attempt": {
@@ -3445,7 +3444,7 @@
       "scope": "all-features lib, -D warnings",
       "log": "/tmp/qengine2-kill-qualified-clippy.log"
     },
-    "publication": "Merged compilation/lint/fmt/generation GREEN; own merged PG and full units pending under PREPUSH-2 budget exception",
+    "publication": "Merged own PG GREEN and final publication gates PASS",
     "existing_burst_guard": {
       "sha": "6738c1da7ad5cf35110145fe33dfa9ea377ab0d7",
       "file": "crates/gameplay/durability/src/durability/quest_state/writer.rs:709",
@@ -3486,16 +3485,60 @@
       "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
       "merge": "4ea7a667824ba02ba5826428487d395804e4eb8d",
       "conflicts": 0,
-      "pg": "PENDING after compiling merge push under PREPUSH-2 step-3 budget exception",
+      "pg": "PASS3 real PG cases322.908s on c218a9ddc",
       "reason": "main changed native lethal statistics capture; do not relabel premerge PG as merged proof",
       "publication_gates": {
-        "workspace": "PASS6m38s",
-        "clippy": "PASS5m31s all-feature engine libs -Dwarnings",
+        "workspace": "PASS7m33s",
+        "clippy": "PASS2m49s all-feature engine libs -Dwarnings",
         "fmt": "PASS",
-        "native_regeneration": "PASS44 imports/30rooms/equipment60",
+        "generated_outputs": "PASS8standard authorers, native44, qengine callbacks, Grizzly30, NPC310/6628 binding evidence, item audit byte reproduction",
+        "item_mount_equivalence": "PASS34111Items/252Mounts",
+        "world_metadata": "PASS",
         "registry_and_duplicate_migrations": "PASS",
-        "logs_prefix": "/tmp/qengine2-pubproj-"
+        "logs_prefix": "/tmp/qengine2-merged-kill-proof-"
       }
+    },
+    "merged_pg_green": {
+      "source_commit": "c218a9ddccd7b4eadb35782b1ea646a20cc2337f",
+      "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+      "passed": 3,
+      "failed": 0,
+      "seconds": 322.908,
+      "cases": [
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::authored_kill_bindings::authored_bindings_queued_kill_burst_postgres",
+          "seconds": 163.651,
+          "result": "PASS"
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::authored_kill_bindings::authored_bindings_native_kill_threshold_completion_postgres",
+          "seconds": 172.165,
+          "result": "PASS"
+        },
+        {
+          "test": "gameplay_transport::monk_save::postgres_tests::qengine_kill_stories::qengine_l12_dragon_slayer_native_trial_story",
+          "seconds": 159.243,
+          "result": "PASS"
+        }
+      ],
+      "markers": [
+        {
+          "case": "qengine-rewards-authored-kills-burst",
+          "seconds": 163.586836699,
+          "success": true
+        },
+        {
+          "case": "qengine-rewards-authored-kills",
+          "seconds": 172.088109427,
+          "success": true
+        },
+        {
+          "case": "qengine-rewards-l12-dragon-slayer-story",
+          "seconds": 159.106475821,
+          "success": true
+        }
+      ],
+      "log": "/tmp/qengine2-pubproj-own-pg.log"
     }
   }
 }

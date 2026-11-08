@@ -1098,3 +1098,24 @@ migrations. Push merge+premerge qualified proof+this checkpoint immediately.
 Post-b386 own PG is explicitly pending under PREPUSH-2 step-3 budget exception;
 next action after push is focused sequential/burst real PG build with debug0,j2,
 keep HEAD stable, testthreads2. No ENGINE-DONE on merged source before actual PG.
+
+02:46UTC actual merged sourcec218a9ddc PG GREEN: all3 selected cases passed in
+322.908s. Burst163.651s, sequential172.165s, retained Dragon Slayer159.243s;
+three POSTGRES_CASE_COMPLETED success markers163.5868/172.0881/159.1065s. Logs
+/tmp/qengine2-pubproj-own-pg.log and /tmp/qengine2-pubproj-own-pg-proof.json. HEAD/source stayed unchanged through
+build and execution; no SQL quest-state seeding. All3 now qualify against main
+b3864f14a, not merely premerge. Workspace refresh PASS7m33s, strict engine clippy
+and generator freshness checks still running. Push once they finish; then
+ENGINE-DONE authored_native_kill_counters with API names. Larger68binding feature
+remains IN_PROGRESS. Next world-delivery plan in/tmp/qengine2-world-delivery-next-plan.txt;
+peer653feac45 code reuse, new migration only1550–1569. Packet44/66 unchanged.
+
+02:50UTC merged kill slice final gates PASS: workspace7m33s, strict engine lib
+clippy2m49s, fmt,8authorer/native/qengine/Grizzly/NPC binding evidence checks,
+item audit generator exact-byte reproduction,34111Item/252Mount equivalence,
+worldmetadata, registry generation and no duplicate migrations. Publish proof
+now; ENGINE-DONE authored_native_kill_counters. Full dispatch/durability unit
+completion remains pending under PREPUSH-2 budget exception; no full-suite claim.
+Continue world item delivery using peer653feac45 and current effects shape;
+explicit native admission + world PG qualification remain for68-binding feature,
+then definition_ready claim/use42 and queued requests. Own packet44/66 unchanged.
