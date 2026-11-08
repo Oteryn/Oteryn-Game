@@ -17,7 +17,7 @@
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
 | Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none | Nomads Land Quest | RELEASED: questpc5 claimed first during push race; no code written |
-| NPC carried/bank payment composed atomically with amulet-piece hand-in and quest progress (reuse existing fee-burn owner) | QNPCFX | none planned; reserved 1310-1319 only | Koshei the Deathless Quest (paid amulet assembly step) | CLAIMED |
+| M10: NPC carried/bank payment + item hand-in + magic effect (reuse existing value owners) | qnpcfx | none planned; reserved 2120-2129 only | Koshei the Deathless Quest; The Demon Oak Quest; The Inquisition Quest | CLAIMED |
 | Source NPC quest teleport composed with fenced dialogue progress, admitted destination and command replay | PGSPEED | 2220 reserved; own QMECH range 2220–2229 | The Paradox Tower Quest (Riddler); In Service of Yalahar Quest (NPC teleport steps only; other blockers remain) | CLAIMED |
 # QMECH claims
 
@@ -59,5 +59,11 @@
 | M01c imported-route: native USE / COLLECT / KILL stage bindings | questpc3 | 2030–2039 reserved; none allocated yet | Ancient Aucar Outfits Quest; Black Knight Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Draconia Quest; Dreamer's Challenge Quest; Falconer Outfits Quest; Fanfare Quest; Feral Trappers Quest; Grimvale Quest; Illuminator Outfits Quest | CLAIMED |
 
 | M31 — native world-change activation, thresholds, raid bindings and journal/recipe lowering | engworldchg | 1840 reserved; explicit task allocation1840–1859 retained | All10 quests in MISSING-engworldchg.md | CLAIMED |
+
+| M30 — native spear/magic-missile hit events and participant-scoped defender death/door progression | engenc | 2240 reserved; only 2240–2249 for this assignment | Child of Destiny; Asura Palace | CLAIMED |
+
+| M21 — nested map containers: pickup/reset and captured key provenance | npcfix2 | 2150 reserved if required; assigned range2150–2159 only | Outlaw Camp; Skeleton Decoration; Small Ruby | CLAIMED |
+
+| M25 — BossLever Ahau configured exit teleporter and Mitmah Vanguard callback closure | boss2 (SRX3-BOSS2) | none planned; 2171–2172 reserved within 2170–2179; 2170 is the existing boss2 cleanup | Adventures of Galthen (s5 Ahau; s8 Mitmah Vanguard) | CLAIMED |
 
 | M18: timed player-admitting encounter with personal cooldown and cleanup | SEASON | 2210 reserved if schema work is needed; coordinator range2210–2219 | The First Dragon Quest (selected final encounter) | CLAIMED |
