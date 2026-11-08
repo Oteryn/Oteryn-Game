@@ -2062,6 +2062,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
                 // W19 map harvest binds the caller's fenced Type2Transaction tuple.
                 "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
+                // SRV9 marriage item debits bind the caller's fenced Type2 tuple.
+                "crates/gameplay/durability/src/durability/item_craft/marriage.rs",
                 // Soul Core conversion and the shared-transaction entry debit both bind
                 // their existing CRAFT audit envelope to the caller's Type2 transaction.
                 "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
@@ -2071,6 +2073,10 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
                 // P18 zero-gold Forge events use the fenced transaction's selected tuple.
                 "crates/gameplay/durability/src/durability/item_forge_live/actions.rs",
+                // Quest floor assembly and timed transforms retain the caller's
+                // fenced Type2Transaction and bind its selected audit tuple.
+                "crates/gameplay/durability/src/durability/item_loop_move/floor_assembly.rs",
+                "crates/gameplay/durability/src/durability/item_loop_move/floor_transform.rs",
                 // W19 seed drops share the move owner's Type2 transaction and tuple.
                 "crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
@@ -2089,6 +2095,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs",
                 // W03 collection keeps the caller's Type2Transaction through delivery
                 // and binds its selected tuple in both the envelope and outbox.
+                // Carried STEP consumes the fenced transaction tuple unchanged.
+                "crates/gameplay/durability/src/durability/quest_world_callback/carried_step.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
                 // W15b container children bind the root transaction's selected Type2 tuple.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",

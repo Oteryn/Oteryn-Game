@@ -88,6 +88,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut tx, owner.holder, step, owner.world_id, owner.reset_epoch,
                     index.map().overlay.base().digest(),
                 ).await? { return Err(DurabilityError::Unavailable); }
+                // Identity comes from the currently locked firing, never a creature name
+                // or a retained proposal. The existing owner already proved this effect's
+                // world, reset, content, Channel generation and native action body above.
+                let raid_key: String = sqlx::query_scalar("SELECT raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid")
+                    .bind(step.identity.firing_id.as_slice()).fetch_one(&mut *tx).await?;
+                let grimvale = raid_key == "raid:edron.feroxa";
+                if grimvale && !crate::durability::world_event::changes::callbacks::require(
+                    &mut tx, owner.world_id, owner.reset_epoch,
+                    "oteryn:quest-callback/grimvale-full-moon-entry",
+                ).await? {
+                    // Refusal is denial-only: revoke a retained local entry too.
+                    let _ = project_grimvale_portal(index.map(), false);
+                    return Err(DurabilityError::Unavailable);
+                }
                 let objects = owner.door.lock().await;
                 let mut map = CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 let random = RaidRandom::new(seed, step.identity.firing_id);
@@ -134,11 +148,84 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Every live consumer finished while the physical Item lock
                 // was held. This transaction only read current world facts.
                 drop(map);
+                if grimvale && final_wave_placed(selected, match &step.action { CommittedRaidAction::Wave { wave, .. } => *wave, _ => return Err(DurabilityError::InvalidStoredState) }, &outcomes)
+                    && !project_grimvale_portal(index.map(), true)
+                {
+                    return Err(DurabilityError::Unavailable);
+                }
                 tx.rollback().await.map_err(|_| DurabilityError::Unavailable)?;
                 Ok(outcomes)
             })
         }).await.map_err(|_| ())
     }
+}
+
+/// The admitted XML variant opens after its final successful native wave (61s),
+/// not the donor Lua's separate random/15+30-minute sequence. Until-reset completion
+/// retains this projection; revocation restores the original1949 native travel.
+fn final_wave_placed(
+    selected: &SelectedRaid,
+    wave: u16,
+    outcomes: &[RaidPlacementOutcome],
+) -> bool {
+    usize::from(wave).checked_add(1) == Some(selected.definition.waves.len())
+        && !outcomes.is_empty()
+        && outcomes.iter().all(|outcome| outcome.placed)
+}
+
+pub(super) fn project_grimvale_portal(bundle: &crate::map::boot::BundleMap, open: bool) -> bool {
+    use crate::map::view::placement_key;
+    let at = crate::map::overlay::TilePos {
+        x: 33430,
+        y: 31537,
+        floor: -11,
+    };
+    if bundle.facts.house_tile(at) {
+        return false;
+    }
+    let Some(tile) = bundle.overlay.base().tile(at.x, at.y, at.floor) else {
+        return false;
+    };
+    // Native B3: ground11038, then the bound1949 source teleport at ordinal1.
+    let ordinal = 1;
+    let Some((&id, _)) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))
+    else {
+        return false;
+    };
+    let Some(key) = placement_key(at, ordinal) else {
+        return false;
+    };
+    if bundle.facts.base_hidden(key) {
+        return false;
+    }
+    let Some(before) = bundle.facts.base_entry(at, ordinal, id) else {
+        return false;
+    };
+    if !matches!(before.appearance_id, 1949 | 22761) {
+        return false;
+    }
+    let appearance = if open { 22761 } else { 1949 };
+    if before.appearance_id == appearance {
+        return true;
+    }
+    let Some(mut after) = bundle.facts.movement_item_facts(appearance) else {
+        return false;
+    };
+    after.bound = before.bound;
+    bundle.facts.apply_quest_callback(
+        key,
+        bundle.facts.object_revision(key),
+        after,
+        &[],
+        &[],
+        false,
+        None,
+    )
 }
 
 fn local(at: RaidPosition) -> MovementLocalPosition {

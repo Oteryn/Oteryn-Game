@@ -242,6 +242,7 @@ pub(super) async fn apply(
             };
             contents.push(RewardClaimMintContent {
                 item,
+                fluid_subtype: None,
                 quantity,
                 key_number: None,
                 text: None,

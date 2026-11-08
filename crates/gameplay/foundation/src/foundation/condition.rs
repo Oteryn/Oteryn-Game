@@ -10,6 +10,10 @@
 //! the families, conflict keys and policies. Every draw is one `oteryn_simulation_determinism`
 //! decision bound to the caller's `(GameplayDecisionRoot, DecisionOccurrenceId)`.
 
+#[path = "condition_historical_source.rs"]
+mod historical_source;
+pub use historical_source::ConditionHistoricalSource;
+
 type ConditionApplicationSource<'a, S> = dyn Fn(&ConditionProvenance<S>) -> bool + 'a;
 
 use oteryn_simulation_determinism::{
@@ -419,6 +423,10 @@ pub enum ConditionSourceKind {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConditionProvenance<S> {
+    /// Frozen display/identity facts, never a source or authority grant. At most
+    /// COND0_RL_01_INSTANCES_PER_ACTOR (32) bounded records can exist per actor.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub historical_source: Option<ConditionHistoricalSource>,
     pub source: Option<S>,
     pub source_kind: ConditionSourceKind,
     pub definition_key: String,
@@ -433,6 +441,7 @@ impl<S> ConditionProvenance<S> {
         self.source_kind == ConditionSourceKind::Restored
             && self.source.is_none()
             && self.lineage.is_none()
+            && self.historical_source.is_none()
     }
 }
 
@@ -768,6 +777,37 @@ impl<S> Default for ConditionStore<S> {
 }
 
 impl<S: Clone> ConditionStore<S> {
+    /// The existing condition owner freezes descriptive source facts atomically
+    /// with the accepted application. Rejected/replaced/expired conditions keep
+    /// their normal semantics; this evidence grants no liveness or combat rights.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing apply inputs plus bounded descriptive provenance"
+    )]
+    pub fn apply_with_historical_source(
+        &mut self,
+        definition: &ConditionDefinition,
+        source: Option<S>,
+        source_kind: ConditionSourceKind,
+        immunities: &[ConditionType],
+        facts: &ApplicationFacts<'_>,
+        historical: &ConditionHistoricalSource,
+    ) -> Result<Applied, ConditionRefusal> {
+        if source_kind != ConditionSourceKind::Creature || source.is_none() || !historical.valid() {
+            return Err(ConditionRefusal::ArithmeticBounds);
+        }
+        let mut staged = self.clone();
+        let applied = staged.apply(definition, source, source_kind, immunities, facts)?;
+        let instance = staged
+            .instances
+            .iter_mut()
+            .find(|i| i.sequence == applied.sequence)
+            .ok_or(ConditionRefusal::ArithmeticBounds)?;
+        instance.provenance.historical_source = Some(historical.clone());
+        *self = staged;
+        Ok(applied)
+    }
+
     /// The real application owner supplies historical field receipt lineage.
     /// Primitive lineage data is evidence only; it never grants tick authority.
     pub fn apply_with_lineage(
@@ -1026,6 +1066,7 @@ impl<S: Clone> ConditionStore<S> {
         let mut instance = ConditionInstance {
             definition: definition.clone(),
             provenance: ConditionProvenance {
+                historical_source: None,
                 source,
                 source_kind,
                 definition_key: definition.key.clone(),

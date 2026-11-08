@@ -1,0 +1,279 @@
+{
+  "schema": 1,
+  "quest_directory": "waterfall",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/waterfall-cliff",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32966,
+          "y": 32626,
+          "floor": -5
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32968,
+        "y": 32626,
+        "floor": -5
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "effects": [
+        {
+          "position": {
+            "x": 32968,
+            "y": 32626,
+            "floor": -5
+          },
+          "effect": 54
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-entry",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 32629,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32968,
+        "y": 32631,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:23-25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "facing": 2
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-exit",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32967,
+          "y": 32630,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32971,
+        "y": 32620,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:27-29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "facing": 1
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-splash",
+      "quest": "oteryn:quest.waterfall_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 32630,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50022,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:20-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ],
+      "effects": [
+        {
+          "position": {
+            "x": 32968,
+            "y": 32630,
+            "floor": -7
+          },
+          "effect": 54
+        }
+      ]
+    }
+  ],
+  "runtime_exclusions": [
+    {
+      "key": "oteryn:quest-callback/waterfall-cliff",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-entry",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-cave-exit",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    },
+    {
+      "key": "oteryn:quest-callback/waterfall-splash",
+      "reason": "Superseded by main PR3020 canonical shared-access callback; source capture retained for audit only.",
+      "question": "Resolved: use content/quests/shared-access-callbacks.json as the sole runtime owner."
+    }
+  ],
+  "npc_source": {
+    "quest": "waterfall",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "oteryn:quest-callback/waterfall-cliff",
+      "trigger": "STEP aid50022 at exact source position",
+      "condition": "player",
+      "effect": {
+        "teleport": {
+          "x": 32968,
+          "y": 32626,
+          "floor": -5
+        },
+        "effects": [
+          {
+            "position": {
+              "x": 32968,
+              "y": 32626,
+              "floor": -5
+            },
+            "effect": 54
+          }
+        ]
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:16-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ]
+    },
+    {
+      "element": "oteryn:quest-callback/waterfall-cave-entry",
+      "trigger": "STEP aid50022 at exact source position",
+      "condition": "player",
+      "effect": {
+        "teleport": {
+          "x": 32968,
+          "y": 32631,
+          "floor": -8
+        },
+        "facing": 2
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:23-25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ]
+    },
+    {
+      "element": "oteryn:quest-callback/waterfall-cave-exit",
+      "trigger": "STEP aid50022 at exact source position",
+      "condition": "player",
+      "effect": {
+        "teleport": {
+          "x": 32971,
+          "y": 32620,
+          "floor": -8
+        },
+        "facing": 1
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:27-29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ]
+    },
+    {
+      "element": "oteryn:quest-callback/waterfall-splash",
+      "trigger": "STEP aid50022 at exact source position",
+      "condition": "player",
+      "effect": {
+        "effects": [
+          {
+            "position": {
+              "x": 32968,
+              "y": 32630,
+              "floor": -7
+            },
+            "effect": 54
+          }
+        ]
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:1-5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:20-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/waterfall/movements_waterfall.lua:34-36"
+      ]
+    }
+  ],
+  "preserved_claims": [
+    {
+      "key": "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+      "policy": "Existing once-only reward and complete native bag are unchanged."
+    }
+  ]
+}

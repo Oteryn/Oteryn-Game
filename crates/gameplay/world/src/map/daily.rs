@@ -11,6 +11,8 @@ pub struct DailyMap {
     pub seed: [u8; 32],
     pub fungus: bool,
     pub grimvale_full_moon: bool,
+    /// Reset-selected map Items appended to existing non-House source tiles.
+    pub items: Vec<(u16, (u16, u16, i8))>,
     /// One of the three committed `oriental_trader/<town>` layer keys.
     pub trader: Option<&'static str>,
 }
@@ -61,6 +63,26 @@ impl Projection {
         item: &impl Fn(&str) -> Option<super::facts::ItemDefinition>,
     ) -> Result<Self, Error> {
         let mut needed = BTreeMap::new();
+        let positions: std::collections::BTreeSet<_> =
+            daily.items.iter().map(|(_, p)| *p).collect();
+        if daily.items.len() > 14 || positions.len() != daily.items.len() {
+            return Err(refusal("daily item bounds or duplicate placement"));
+        }
+        for (appearance, (x, y, z)) in &daily.items {
+            if *appearance != 13842
+                || !(0..=15).contains(z)
+                || *x < manifest.world.min_x
+                || *x >= manifest.world.max_x
+                || *y < manifest.world.min_y
+                || *y >= manifest.world.max_y
+                || !manifest.world.floors.contains(&-*z)
+            {
+                return Err(refusal("invalid Thawing source placement"));
+            }
+            // Both harvest states must be served, even though neither is in the base bundle.
+            needed.insert(13842, None);
+            needed.insert(13843, None);
+        }
         if daily.fungus
             && let Some(ground) = manifest
                 .palette
@@ -68,8 +90,18 @@ impl Projection {
                 .find(|p| palette_appearance(&p.key) == Some(12065))
                 .and_then(|p| p.terrain)
         {
-            for appearance in 12059..=12063 {
-                needed.insert(appearance, Some(ground));
+            // Pinned Crystal items.xml / official appearance source: preserve each
+            // fungus's native ground speed, independently of the cleared ground's100.
+            for (appearance, speed) in [
+                (12059, 110),
+                (12060, 130),
+                (12061, 150),
+                (12062, 150),
+                (12063, 130),
+            ] {
+                let mut fungus = ground;
+                fungus.ground_speed = Some(speed);
+                needed.insert(appearance, Some(fungus));
             }
         }
         if let Some(town) = daily.trader {
@@ -286,6 +318,7 @@ fn project(
 ) -> Result<(), Error> {
     let daily = &projection.daily;
     let mut pending = None;
+    let mut placed = std::collections::BTreeSet::new();
     stream(&mut |_, mut sector| {
         let manifest = &projection.manifest;
         let pending = match &mut pending {
@@ -339,8 +372,37 @@ fn project(
             sector.tiles = tiles.into_values().collect();
         }
         fungus(manifest, &mut sector, daily)?;
+        for (appearance, (x, y, z)) in &daily.items {
+            if sector.floor != -*z || sector.sx != x / 32 || sector.sy != y / 32 {
+                continue;
+            }
+            let tile = sector
+                .tiles
+                .iter_mut()
+                .find(|tile| tile.x == *x && tile.y == *y)
+                .ok_or_else(|| refusal("Thawing source ground missing"))?;
+            if tile.house != 0 {
+                return Err(refusal("Thawing source overlaps a house"));
+            }
+            let palette = index(manifest, *appearance)?;
+            if !tile
+                .items
+                .iter()
+                .any(|item| item.depth == 0 && item.palette == palette)
+            {
+                tile.items.push(Item {
+                    palette,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                });
+            }
+            placed.insert((*x, *y, *z));
+        }
         visitor(manifest, sector)
     })?;
+    if placed.len() != daily.items.len() {
+        return Err(refusal("Thawing source sector missing"));
+    }
     if let Some(pending) = pending {
         for sector in pending.into_values() {
             visitor(&projection.manifest, sector)?;

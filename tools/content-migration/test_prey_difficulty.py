@@ -96,12 +96,16 @@ class PreyDifficultyTests(unittest.TestCase):
                 generated = binding.bind_definitions(task_root, {
                     prey.PROFILES: original,
                     "content/spells.manifest.json": prey.encoded({"creature_profiles": {}}),
+                    prey.LOOT: prey.encoded({"tables": [], "items": [],
+                        "creature_loot": [{"creature": {"key": key}, "loot": None}]}),
                 })
                 generated[prey.LOOT] = prey.encoded({"tables": [], "creature_loot": [
                     {"creature": {"key": key}, "loot": None}]})
                 return generated
 
             def model(task_root, profiles):
+                self.assertEqual(prey.read(task_root, prey.LOOT)["items"], [],
+                                 "model input must observe the generated loot closure")
                 rows = prey.classify(profiles, prey.authoring(task_root))["records"]
                 return {"input_sha256": prey.digest(profiles), "tiers": {row["creature"]: row["tier"] for row in rows}}
 

@@ -1101,3 +1101,28 @@ changes are authorized until the owner supplies the CI failure list.
 Final publication gates after charm-inventory regeneration: workspace/all-targets
 check passed370.565s; fmt --all --check passed20.524s. Staged-tree duplicate
 migration check passed; no own migration renumbering was needed.
+
+### Owner-requested pre-PR integration with main6f61ac15d
+
+The owner lifted freeze for one integration step, then one push. Fetched main
+6f61ac15d93bbda9f9d718721233c0d067f40530 and the actual open PR heads:
+3034=3a3066edd52bbf6e17b7f18cfdc95bed046b3daa;
+3036=8167756115a4ff0834a014496ceed56604e4820e;
+3037=ad3a63611138b8949ea6303cb2798d9a0bf5123a.
+Enumerated every migration at all four commits: none occupies any of this
+lane's1160,1161,1162,1164,1165,1166,1167,1168,1169 numbers. No renumbering
+is necessary.1163 remains unused by the committed lane.
+
+Merge compatibility retains the upstream floor-assembly ground path with an
+explicit absent House-loop context and initializes Santa's newly required
+non-fluid child subtype to None. Neither widens House authority or gift sets.
+Native generation composes the fresh Cake/native loot closure with WORLDCHG's
+closed admission update before final repository pinning, preserving source
+drop tables and both owner cohorts. Derived captures and pins are regenerated
+through the normal merge driver, not edited by hand.
+
+The previous frozen-head unit run eventually completed1605 cases:1604passed,
+1failed, execution1567.052s/build+run1923.212s. Its sole stale823-vs824 charm
+pin was already fixed by the normal inventory generator before publication;
+those historical results are diagnostic, not claimed as green for this merge.
+Fresh validation for this integration follows below.

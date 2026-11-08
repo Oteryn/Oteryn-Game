@@ -58,6 +58,7 @@ tokio.workspace = true
 tokio-rustls.workspace = true
 
 [dev-dependencies]
+prost.workspace = true
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters", features = ["test-support"] }
 ed25519-dalek.workspace = true
 oteryn-dev-client = { version = "=0.1.0", path = "../../../tools/dev-client" }
@@ -74,7 +75,7 @@ oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/worl
 rcgen.workspace = true
 rustls = { workspace = true, features = ["tls12"] }
 syn.workspace = true
-tokio = { workspace = true, features = ["test-util"] }
+tokio = { workspace = true, features = ["test-util", "macros"] }
 
 [lints]
 workspace = true

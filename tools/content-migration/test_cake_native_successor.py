@@ -1,6 +1,9 @@
 """Cake's committed canonical source must reach the actual composed provider."""
 import copy
 import json
+import hashlib
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import cake_native_successor as successor
@@ -12,6 +15,40 @@ import import_spell_families as importer
 
 
 class CakeNativeSuccessorTests(unittest.TestCase):
+    def test_generated_project_pin_accepts_new_revision_but_rejects_tampering(self):
+        for mutation in [None, 'bytes', 'length', 'hash', 'membership', 'root', 'revision', 'schema', 'bound']:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                world = root / 'content/world'
+                path = world / 'definitions/declarations.json'
+                path.parent.mkdir(parents=True)
+                document = {'schema': 'OTERYN_WORLD_PROJECT_DECLARATIONS/v2', 'authoring_profiles': []}
+                raw = json.dumps(document).encode()
+                member = {'locator': 'definitions/declarations.json', 'schema': document['schema'],
+                          'byte_length': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+                manifest = {'schema': 'OTERYN_WORLD_PROJECT_MANIFEST/v2',
+                            'package_key': 'oteryn:content.world-project',
+                            'package_revision': 'merged-revision', 'documents': [member]}
+                if mutation == 'length': member['byte_length'] += 1
+                if mutation == 'hash': member['sha256'] = '0' * 64
+                if mutation == 'membership': manifest['documents'].append(dict(member))
+                if mutation == 'schema': member['schema'] = 'unqualified'
+                if mutation == 'bound': member['byte_length'] = 96_000_001
+                manifest_raw = json.dumps(manifest).encode()
+                project = {'schema': 'OTERYN_WORLD_PROJECT_ROOT/v2', 'project_revision': 'merged-revision',
+                           'manifest_locator': 'manifest.json',
+                           'manifest_sha256': hashlib.sha256(manifest_raw).hexdigest()}
+                if mutation == 'root': project['manifest_sha256'] = '0' * 64
+                if mutation == 'revision': project['project_revision'] = 'another-revision'
+                path.write_bytes(raw + (b' ' if mutation == 'bytes' else b''))
+                (world / 'manifest.json').write_text(manifest_raw.decode())
+                (world / 'project.json').write_text(json.dumps(project))
+                if mutation is None:
+                    self.assertEqual(successor.read_project_document(root, member['locator']), document)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'CAKE_NATIVE_PROJECT_'):
+                        successor.read_project_document(root, member['locator'])
+
     def test_actual_generated_provider_contains_complete_canonical_cake(self):
         baseline = importer.baseline_outputs(importer.ROOT)
         result = compose.compose(importer.ROOT, baseline, current.outputs(importer.ROOT, baseline))
@@ -103,6 +140,16 @@ class CakeNativeSuccessorTests(unittest.TestCase):
                 changed['sources'][0]['sha256'] = '0' * 64
             with self.subTest(operator=operator), self.assertRaisesRegex(ValueError, 'PARTIAL_OR_SUBSTITUTED'):
                 successor.qualify(rows, declarations, reference, changed, bindings)
+        changed = copy.deepcopy(declarations)
+        attack = next(row for row in changed['authoring_profiles']
+                      if row['target']['key'] == 'oteryn:effect.creature.cake_golem.attack-2')
+        attack['data']['profile']['damage_type'] = 'earth'
+        with self.assertRaisesRegex(ValueError, 'CANONICAL_SOURCE_PROFILE_MISMATCH'):
+            successor.qualify(rows, changed, reference, packet, bindings)
+        duplicated = copy.deepcopy(reference)
+        duplicated['records'].append(copy.deepcopy(duplicated['records'][0]))
+        with self.assertRaisesRegex(ValueError, 'CANONICAL_IDENTITY_DUPLICATE'):
+            successor.qualify(rows, declarations, duplicated, packet, bindings)
         # Exercise the exporter's actual HEAD fence, without changing shared input.
         path = root / successor.PACKET
         with patch.object(type(path), 'read_bytes', return_value=b'{}'):

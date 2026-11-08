@@ -43,14 +43,14 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the43 SEASON outputs.
         self.assertEqual(len(actual.keys() - {qengine.PROOF}),43)
         self.assertIn(qengine.PROOF,actual)
-        # Independently rebuild the complete pinned53-identity packet; a count
+        # Independently rebuild the complete pinned60-identity packet; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)
         expected_raw=(json.dumps(expected_packet,ensure_ascii=False,indent=2)+'\n').encode()
         self.assertEqual(actual[qengine.PROOF],expected_raw)
         packet=json.loads(actual[qengine.PROOF])
         keys=[row['production_definition']['production_key'] for row in packet['records']]
-        self.assertEqual(len(keys),53)
+        self.assertEqual(len(keys),60)
         self.assertEqual(len(set(keys)),53)
         self.assertEqual(set(keys),{f'oteryn:item.tibia.i{item}' for item in qengine.IDS})
         native=json.loads(actual[producer.PROVIDER_DESTINATIONS['item_profiles']])
@@ -62,6 +62,7 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(by_key[key]['semantics'],row['semantics'])
             for field,value in row['attributes'].items():
                 self.assertEqual(by_key[key]['attributes'][field],value,(key,field))
+        self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)

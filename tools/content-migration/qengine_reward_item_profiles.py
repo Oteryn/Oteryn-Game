@@ -16,6 +16,8 @@ import grizzly_shop_profiles as accepted
 
 IDS = {30168, 30169, 37002, 37003, 768, 769, 770, 3723, 15698, 16103, 16165, 16167, 16242, 12517, 12413, 16128, 16129, 20275, 20276, 5903, 5947, 133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
        4867, 5886, 5924, 5937, 5938, 5939, 5940, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
+# Retain questpc4's qualified native offerings and source tool through this owner.
+IDS |= {3537, 3543, 3587, 3589, 3590, 3593, 11544}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -68,6 +70,33 @@ def capture(root=ROOT):
         'records':records}
 
 
+def reconcile(existing, observed):
+    """Join pinned physical facts without replacing an established owner's identity."""
+    for field in ('production_definition', 'production_binding', 'admission'):
+        if existing.get(field) != observed.get(field):
+            raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + field)
+    merged = dict(existing)
+    semantics = accepted.accepted_first(existing['semantics'], observed['semantics'])
+    if (accepted.known_conflict(existing['semantics'], semantics)
+            or accepted.known_conflict(observed['semantics'], semantics)):
+        raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics')
+    merged['semantics'] = semantics
+    attributes = dict(existing['attributes'])
+    for key, value in observed['attributes'].items():
+        previous = attributes.get(key)
+        if previous is not None and value is not None and previous != value:
+            raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.' + key)
+        if previous is None:
+            attributes[key] = value
+    merged['attributes'] = attributes
+    if existing.keys() != observed.keys():
+        raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape')
+    for key in existing.keys() - {'authoring', 'attributes', 'semantics'}:
+        if existing[key] != observed[key]:
+            raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + key)
+    return merged
+
+
 def admit(root,generated,profile_path,manifest_path,order,canonical):
     packet=capture(root)
     generated[PROOF]=(json.dumps(packet,ensure_ascii=False,indent=2)+'\n').encode()
@@ -81,8 +110,9 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
     for record in records:
         key=record['production_definition']['production_key']
         if key in present:
-            if present[key]!=record:
-                raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:'+key)
+            merged = reconcile(present[key], record)
+            present[key].clear()
+            present[key].update(merged)
         else:
             document['records'].append(record)
     document['records'].sort(key=order)

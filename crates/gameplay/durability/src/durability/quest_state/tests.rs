@@ -72,6 +72,12 @@ fn the_binding_covers_the_request_only() {
         request(QuestCause::Step(command(2, 7)), "oteryn:t/1"),
         request(QuestCause::ClaimObligation(command(2, 7)), "oteryn:t/1"),
         request(QuestCause::CreatureDeath(death), "oteryn:t/1"),
+        request(
+            QuestCause::ServerTimer(
+                server_timer::QuestTimerOccurrence::from_bytes(id(2)).expect("timer"),
+            ),
+            "oteryn:t/1",
+        ),
         request(QuestCause::Command(command(2, 8)), "oteryn:t/1"),
         request(QuestCause::Command(command(3, 7)), "oteryn:t/1"),
         request(QuestCause::Command(command(2, 7)), "oteryn:t/2"),
@@ -91,6 +97,9 @@ fn a_cause_round_trips_through_its_stored_shape() {
         QuestCause::Step(command(2, u64::MAX)),
         QuestCause::ClaimObligation(command(3, 1)),
         QuestCause::CreatureDeath(death),
+        QuestCause::ServerTimer(
+            server_timer::QuestTimerOccurrence::from_bytes(id(4)).expect("timer"),
+        ),
     ] {
         let (stored_id, ordinal) = cause.key();
         assert_eq!(
@@ -100,6 +109,7 @@ fn a_cause_round_trips_through_its_stored_shape() {
     }
     assert!(QuestCause::stored("command", id(2), 0).is_err());
     assert!(QuestCause::stored("creature_death", id(2), 1).is_err());
+    assert!(QuestCause::stored("server_timer", id(2), 1).is_err());
     assert!(QuestCause::stored("npc", id(2), 1).is_err());
 }
 

@@ -1,0 +1,360 @@
+{
+  "schema": "OTERYN_NPC_HEALING/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "wiki": "wiki-pending",
+  "decision": "Use paired pinned donor free healing thresholds and ordered cures. Hairycles and Chester Kahs are quest/reward gated and excluded; Oressa is Dawnport and excluded. Preserve canonical condition owner and current vitals bounds. No spell is cast.",
+  "healers": [
+    {
+      "npc": "oteryn:npc.alia",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/alia.lua",
+        "line": 91,
+        "sha256": "e691290bdb551db333b7c6d51a163c9728d53e254fb4e5d636ca9c97ff6c5f46"
+      }
+    },
+    {
+      "npc": "oteryn:npc.amanda",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/amanda.lua",
+        "line": 143,
+        "sha256": "ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
+      }
+    },
+    {
+      "npc": "oteryn:npc.azalea",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/azalea.lua",
+        "line": 364,
+        "sha256": "f17c1f3e096fabb39f9c2c4689dc65e6c408e1dd536ece13373c3ed507ed8d15"
+      }
+    },
+    {
+      "npc": "oteryn:npc.brewster",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/brewster.lua",
+        "line": 128,
+        "sha256": "87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4"
+      }
+    },
+    {
+      "npc": "oteryn:npc.cedrik",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/cedrik.lua",
+        "line": 91,
+        "sha256": "ee2d54d29e989b707745d7501cda44867eb220c81ba660a1e304653eb36bf8d5"
+      }
+    },
+    {
+      "npc": "oteryn:npc.edala",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/edala.lua",
+        "line": 58,
+        "sha256": "3be11d553dd42e4abc8d70c8b2bc1b5bb9995b8e9ba5f62dbbd5dc9dec9d5d18"
+      }
+    },
+    {
+      "npc": "oteryn:npc.eremo",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/eremo.lua",
+        "line": 92,
+        "sha256": "132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d"
+      }
+    },
+    {
+      "npc": "oteryn:npc.ferus",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/ferus.lua",
+        "line": 91,
+        "sha256": "d792ac90c443b8c92289d61e12b518e324ba75adf979e99e1a40457208122ee0"
+      }
+    },
+    {
+      "npc": "oteryn:npc.humphrey",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/humphrey.lua",
+        "line": 58,
+        "sha256": "7e2d71541d51451cbca533b2f01c2560395a368096ee0af7300b845c84c3c47b"
+      }
+    },
+    {
+      "npc": "oteryn:npc.iptar_sin",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/iptar-sin.lua",
+        "line": 127,
+        "sha256": "73b75d68bf683ef20d3a5beda462a9f0912fb2c3c9400da8b7356334ca92cc21"
+      }
+    },
+    {
+      "npc": "oteryn:npc.isimov",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/isimov.lua",
+        "line": 112,
+        "sha256": "83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
+      }
+    },
+    {
+      "npc": "oteryn:npc.kais",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/kais.lua",
+        "line": 53,
+        "sha256": "24b6bf51f87a32ffee0cc8a31d4151ad3b9c102d0489b0d38b7bdaeebf9a29c1"
+      }
+    },
+    {
+      "npc": "oteryn:npc.kasmir",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/kasmir.lua",
+        "line": 113,
+        "sha256": "9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62"
+      }
+    },
+    {
+      "npc": "oteryn:npc.kjesse",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/kjesse.lua",
+        "line": 364,
+        "sha256": "8e289646e19f2fc893f155fc9ff89e6df3bcba1ea26e402e3e190988ef11dfdb"
+      }
+    },
+    {
+      "npc": "oteryn:npc.lorietta",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/lorietta.lua",
+        "line": 91,
+        "sha256": "8ce5e890ad29e844ebc80b76fae169478b4d94efe00b205ba897b1d02fa82a10"
+      }
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/maealil.lua",
+        "line": 108,
+        "sha256": "5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
+      }
+    },
+    {
+      "npc": "oteryn:npc.ninev",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/ninev.lua",
+        "line": 127,
+        "sha256": "c17fd5d7651677134d2f745c3bee8f7b5a9bbf5a51bb0b04ae0cc3f4a72866c1"
+      }
+    },
+    {
+      "npc": "oteryn:npc.nomad",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/nomad.lua",
+        "line": 57,
+        "sha256": "e5442533abc1315c33b7471dcca3719d49206180945f538c32671ff439485e28"
+      }
+    },
+    {
+      "npc": "oteryn:npc.norf",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/norf.lua",
+        "line": 54,
+        "sha256": "3e85f0fddde51d6e35320b3941ef43bdf9adfa3049d8612def7e65a86c30754e"
+      }
+    },
+    {
+      "npc": "oteryn:npc.prezil",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/prezil.lua",
+        "line": 86,
+        "sha256": "5565b3505211f7fc0700fecb662d5cb399c0ff6910a216b07700c927fd768089"
+      }
+    },
+    {
+      "npc": "oteryn:npc.quentin",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/quentin.lua",
+        "line": 122,
+        "sha256": "ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
+      }
+    },
+    {
+      "npc": "oteryn:npc.rahkem",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/rahkem.lua",
+        "line": 97,
+        "sha256": "5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174"
+      }
+    },
+    {
+      "npc": "oteryn:npc.rock_with_a_soft_spot",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/rock_with_a_soft_spot.lua",
+        "line": 86,
+        "sha256": "a1311724b2bf94ea250fb3ad2a0b89257e3eea01dd6feebd4e483a9c7099e7e8"
+      }
+    },
+    {
+      "npc": "oteryn:npc.tibra",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/tibra.lua",
+        "line": 75,
+        "sha256": "ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f"
+      }
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/tyrias.lua",
+        "line": 116,
+        "sha256": "d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
+      }
+    },
+    {
+      "npc": "oteryn:npc.yberius",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/yberius.lua",
+        "line": 112,
+        "sha256": "6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
+      }
+    },
+    {
+      "npc": "oteryn:npc.zedrulon_the_fallen",
+      "profile": "standard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/zedrulon_the_fallen.lua",
+        "line": 91,
+        "sha256": "816ffda7f3222b110aedb8f761fedcbfcf6c0f22cdba07af85f8ff1c0ed7ccdd"
+      }
+    },
+    {
+      "npc": "oteryn:npc.cipfried",
+      "profile": "rook_priest",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/cipfried.lua",
+        "line": 57,
+        "sha256": "5cdff90c23b1ca65218e2489aec0a1ebf3362fbaf748f69e6156c3388eea9f6b"
+      }
+    },
+    {
+      "npc": "oteryn:npc.dallheim",
+      "profile": "rook_guard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/dallheim.lua",
+        "line": 64,
+        "sha256": "23436aa2a2ee8ba3dd37c797e0a884de31919d17eaff95565b36aa2512ebf3b7"
+      }
+    },
+    {
+      "npc": "oteryn:npc.zerbrus",
+      "profile": "rook_guard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/zerbrus.lua",
+        "line": 64,
+        "sha256": "5c3024827ac5ff7a5a539bd45942f6f63e0ebc8fbff6f34d53bb7721872802b4"
+      }
+    },
+    {
+      "npc": "oteryn:npc.hector_the_mentor",
+      "profile": "poison_guard",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/hector_the_mentor.lua",
+        "line": 86,
+        "sha256": "6c1f4ce63e418fbe5a90a27a666ab5eeb76b7b1138dc03e1639dcc3d2aa74109"
+      }
+    },
+    {
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "profile": "full",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/enpa_deia_pema.lua",
+        "line": 103,
+        "sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5"
+      }
+    }
+  ]
+}

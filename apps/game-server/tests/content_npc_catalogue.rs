@@ -30,11 +30,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "3eea4f01ce620ceb8db0c07a066e1941e2f2f1ace3cf2fe03daab043bbdbd7a9"
+        "4b9b7cbf9926e013f9682be56675dfd0d0cc027c6c3d4586215a9d74bcf29adf"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);
-    assert_eq!(catalogue.service_count(), 389);
+    assert_eq!(catalogue.service_count(), 399);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);
     let (reference, imported) = catalogue

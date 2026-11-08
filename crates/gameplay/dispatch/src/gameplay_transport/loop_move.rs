@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -266,6 +267,14 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.inner.movement_item(id)
+    }
+
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
+
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }
@@ -577,7 +586,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, seed_target) = {
+    let (native, pins, index, mailbox, seed_target, assembly_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -591,6 +600,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
         let mut seed_target = None;
+        let mut assembly_target = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
@@ -604,6 +614,8 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
                     seed_target =
                         seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
+                    assembly_target =
+                        floor_assembly::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
                 (
                     at.map.overlay.base().clone(),
@@ -612,7 +624,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     placement_context,
                 )
             });
-        (native, pins, index, mailbox, seed_target)
+        (native, pins, index, mailbox, seed_target, assembly_target)
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -722,6 +734,25 @@ pub(super) async fn move_loop_item_with_house_capacity(
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
+        Ok(None) if assembly_target.is_some() => {
+            let Some(target) = assembly_target else {
+                return refused(LoopMoveRefusal::Rejected);
+            };
+            admission
+                .root
+                .commit_item_loop_floor_assembly(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    native,
+                    loop_request,
+                    target,
+                )
+                .await
+        }
         Ok(None) => {
             admission
                 .root
@@ -738,6 +769,22 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
         Err(error) => Err(error),
     };
+    // Consequence metadata is returned only after the physical transaction commits.
+    // Replay and ordinary drops carry none, so neither can repeat source presentation.
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && let Some(effect) = receipt.floor_effect
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(map) = admission.bundle_map()
+        && let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(to.x),
+            u16::try_from(to.y),
+            i8::try_from(to.floor),
+        )
+    {
+        map.facts
+            .emit_movement_effect(TilePos { x, y, floor }, effect);
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {

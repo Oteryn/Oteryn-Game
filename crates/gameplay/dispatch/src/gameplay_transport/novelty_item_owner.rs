@@ -134,6 +134,7 @@ impl ChannelSpellStates {
                 .try_reserve(1)
                 .map_err(|_| UseDisposition::NotPossible)?;
             Some(PlayerDeath {
+                public_cause: None,
                 occurrence: (self.mint_death)().ok_or(UseDisposition::NotPossible)?,
                 cell: runtime
                     .read_actor_position(actor)

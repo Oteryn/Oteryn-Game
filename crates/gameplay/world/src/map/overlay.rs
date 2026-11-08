@@ -40,10 +40,16 @@ pub use oteryn_gameplay_domain::domain::map_position::TilePos;
 pub struct EntryId(u64);
 
 impl EntryId {
-    /// The callback overlay uses the upper half; the ordinary overlay allocates from 1.
+    /// Ordinary callbacks use prefix10; prefix11 is reserved for stable world-change objects.
     pub(crate) fn callback(sequence: u64) -> Option<Self> {
-        (sequence > 0 && sequence < (1 << 63)).then_some(Self((1 << 63) | sequence))
+        (sequence > 0 && sequence < (1 << 62)).then_some(Self((1 << 63) | sequence))
     }
+    pub(crate) fn world_change(pos: TilePos, appearance: u16) -> Option<Self> {
+        let z = u8::try_from(-i16::from(pos.floor)).ok()?;
+        oteryn_gameplay_items::event_planting::world_change_item_key(appearance, pos.x, pos.y, z)
+            .map(Self)
+    }
+
     pub fn get(self) -> u64 {
         self.0
     }

@@ -31,6 +31,53 @@ def source_profile(row):
     return result
 
 
+
+def read_project_document(root, locator):
+    """Read a generated package member through its current, hash-bound manifest.
+
+    Merge regeneration legitimately changes the package around the unchanged
+    Cake packet. qualify() still checks every admitted Cake row against that
+    complete, HEAD-pinned donor packet; the generic immutable reader stays intact.
+    """
+    schemas = {
+        'definitions/declarations.json': 'OTERYN_WORLD_PROJECT_DECLARATIONS/v2',
+        'definitions/reference.json': 'OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1',
+    }
+    if locator not in schemas:
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_LOCATOR')
+    world = root / 'content/world'
+    project = json.loads((world / 'project.json').read_bytes())
+    raw_manifest = (world / 'manifest.json').read_bytes()
+    if (project.get('schema') != 'OTERYN_WORLD_PROJECT_ROOT/v2'
+            or project.get('manifest_locator') != 'manifest.json'
+            or project.get('manifest_sha256') != hashlib.sha256(raw_manifest).hexdigest()):
+        raise ValueError('CAKE_NATIVE_PROJECT_MANIFEST_PIN')
+    manifest = json.loads(raw_manifest)
+    if (manifest.get('schema') != 'OTERYN_WORLD_PROJECT_MANIFEST/v2'
+            or manifest.get('package_key') != 'oteryn:content.world-project'
+            or manifest.get('package_revision') != project.get('project_revision')):
+        raise ValueError('CAKE_NATIVE_PROJECT_MANIFEST_SCHEMA')
+    members = [row for row in manifest['documents'] if row.get('locator') == locator]
+    if len(members) != 1:
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_MEMBERSHIP')
+    member = members[0]
+    size = member.get('byte_length')
+    # Existing canonical ProjectEvidenceLimits permit 96MB per document.
+    if type(size) is not int or not 0 < size <= 96_000_000:
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_BOUND')
+    path = world / locator
+    if path.stat().st_size != size:
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_PIN')
+    raw = path.read_bytes()
+    if (len(raw) != size or member.get('sha256') != hashlib.sha256(raw).hexdigest()
+            or member.get('schema') != schemas[locator]):
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_PIN')
+    document = json.loads(raw)
+    if document.get('schema') != schemas[locator]:
+        raise ValueError('CAKE_NATIVE_PROJECT_DOCUMENT_SCHEMA')
+    return document
+
+
 def qualify(rows, declarations, reference, packet, item_bindings):
     # Crystal cake_golem.lua:79 retains the previously omitted source attack;
     # monsters.hpp:244 defaults the omitted attack family to Undefined.
@@ -53,6 +100,8 @@ def qualify(rows, declarations, reference, packet, item_bindings):
     staged = packet['staged']
     records = {identity(r['identity']): r for r in reference['records']}
     profiles = {identity(r['target']): r for r in declarations['authoring_profiles']}
+    if len(records) != len(reference['records']) or len(profiles) != len(declarations['authoring_profiles']):
+        raise ValueError('CAKE_NATIVE_CANONICAL_IDENTITY_DUPLICATE')
     for row in staged['records']:
         if records.get(identity(row['identity'])) != row:
             raise ValueError('CAKE_NATIVE_CANONICAL_SOURCE_RECORD_MISMATCH')
@@ -92,8 +141,8 @@ def loot_successor(root, creatures, native_item_profiles=None):
 def admit(root, generated):
     """Use the normal canonical union, restricted to this lane's one Creature."""
     packet, _ = read_canonical(root / PACKET)
-    declarations, _ = read_canonical(root / 'content/world/definitions/declarations.json')
-    reference, _ = read_canonical(root / 'content/world/definitions/reference.json')
+    declarations = read_project_document(root, 'definitions/declarations.json')
+    reference = read_project_document(root, 'definitions/reference.json')
     rows = []
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
         document, _ = read_canonical(path)

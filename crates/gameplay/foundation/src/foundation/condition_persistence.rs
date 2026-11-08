@@ -42,6 +42,9 @@ impl ConditionStore<String> {
             saved.provenance.source_kind = ConditionSourceKind::Restored;
             saved.provenance.source = None;
             saved.provenance.lineage = None;
+            // Logout deliberately drops historical attacker display as well as
+            // authority. Old schema1 snapshots omit this optional field unchanged.
+            saved.provenance.historical_source = None;
             conditions.push(saved);
         }
         serde_json::to_value(SavedConditions {
