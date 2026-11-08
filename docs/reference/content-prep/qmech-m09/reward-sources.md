@@ -37,3 +37,11 @@ zero alias. The source item XML names 12785 “special flask”, description
 profile must be qualified through the existing pinned importer before runtime
 activation. The grant reply intentionally omits the unimplemented map-marker
 claim; the separate source map-mark effect remains outside M09's item scope.
+
+Vascalir's donor greeting is conditional (`greetCallback`); its catalogue has no
+literal fallback. The reward adapter therefore admits the pinned NPC handler's
+neutral default salutation/farewell/walkaway (Crystal 9f5a72c, npc_handler.lua
+81–83, SHA256 8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a).
+This is the selected Oteryn opening for the M09 reward adapter, not a claim that
+the other conditional Rookie greetings or journey steps have been implemented.
+The reward remains guarded by the canonical Mission10=3 and Mission11=-1 state.

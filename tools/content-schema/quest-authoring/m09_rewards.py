@@ -58,6 +58,13 @@ def outputs():
         'content/quests/npc-offers/m09-rookie.json': dict(schema=1, offers=[offer]),
         'content/quests/world-callbacks/m09-treasure.json':
             dict(schema=1, callbacks=chests),
+        'content/dialogues/quests/m09-rookie-greetings.json': dict(schema=1, npcs=[dict(
+            npc='oteryn:npc.vascalir', greet='Greetings, |PLAYERNAME|.',
+            farewell='Good bye, |PLAYERNAME|.', walkaway='Good bye.',
+            sources=[f'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:'
+                     f'data/npclib/npc_system/npc_handler.lua:{line}:sha256:'
+                     '8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a'
+                     for line in (81, 82, 83)])]),
     }
 
 

@@ -58,7 +58,7 @@ class M09Rewards(unittest.TestCase):
             'content/items/definitions/spell-native-profiles.json').read_bytes())
         keys = {r['production_definition']['production_key'] for r in profiles['records']}
         for path, document in m.outputs().items():
-            if 'offers' in path:
+            if 'callbacks' not in document:
                 continue
             for callback in document['callbacks']:
                 gift = callback.get('give') or callback['effects']['item_reward']
