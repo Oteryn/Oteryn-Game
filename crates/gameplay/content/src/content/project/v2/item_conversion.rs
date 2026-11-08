@@ -48,6 +48,9 @@ pub struct ProjectV2ConversionOperand {
     pub role: ProjectV2ConversionRole,
     pub item_id: ProjectV2DefinitionRef,
     pub count: u16,
+    /// Capture the locked carried target quantity for its debit and replacement output.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub capture_target_stack: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sub_type: Option<u16>,
     pub effect: ProjectV2ConversionEffect,
@@ -272,6 +275,11 @@ impl ProjectV2ItemConversion {
         for operand in &self.operands {
             let transform = operand.effect == TransformTo;
             if !(1..=100).contains(&operand.count)
+                || (operand.capture_target_stack
+                    && (operand.role != Target
+                        || operand.count != 1
+                        || !matches!(operand.effect, Consume | TransformTo)
+                        || operand.sub_type.is_some()))
                 || (operand.role == Ingredient) != operand.consume_on.is_some()
                 || (operand.role == Ingredient && operand.effect != Consume)
                 || transform != operand.output_item_id.is_some()
