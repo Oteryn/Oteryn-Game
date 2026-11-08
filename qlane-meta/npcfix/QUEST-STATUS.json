@@ -1,0 +1,33 @@
+{
+  "lane": "npcfix",
+  "target_branch": "claude/happy-davinci-ijz3wy-qmech",
+  "assignment": "M38",
+  "state": "IN_PROGRESS",
+  "new_migration_range": "2140-2149",
+  "current_slice": {
+    "name": "Exact-occurrence conditional NPC actor projection",
+    "state": "GREEN",
+    "production_api": "oteryn_gameplay_entities::ConditionalNpcActor",
+    "red": {
+      "unit": "another quest's copy must survive",
+      "pg_seconds": 0.233288979,
+      "pg_marker": "POSTGRES_STARTED NPCFIX_M38 conditional NPC occurrence projection"
+    },
+    "green": {
+      "unit_tests": 259,
+      "integration_tests": 2,
+      "doctests": 4,
+      "pg_seconds": 0.355733197,
+      "clippy": "cargo clippy -p oteryn-gameplay-entities --all-targets -- -D warnings",
+      "fmt": "cargo fmt --all --check"
+    },
+    "migration": "none",
+    "scope": "One admitted occurrence reconciles committed availability, with replay and generation-safe cleanup. Content/event bindings and other M38 rows remain unfinished."
+  },
+  "legacy_handoff": {
+    "local_branch": "claude/happy-davinci-ijz3wy-npcfix",
+    "saved_head": "9bacece303995f3f70fdc1dd6a1b882f58a0cd76",
+    "stash": "npcfix retained legacy handoff and M38 Mistrock PG source before isolated mechanic slice",
+    "state": "retained locally; not claimed delivered to qmech"
+  }
+}
