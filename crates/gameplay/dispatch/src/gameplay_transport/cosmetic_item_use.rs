@@ -519,6 +519,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let use_ = QuestCarriedUse {
             source,
+            recipe_target: None,
             intent: encoded,
         };
         let result = self

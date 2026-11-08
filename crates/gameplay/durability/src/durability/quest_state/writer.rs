@@ -987,9 +987,22 @@ impl DurabilityRoot {
                         let configured = clock.load(std::sync::atomic::Ordering::Acquire);
                         if configured >= 0 { configured } else { now }
                     });
+                    // M47: historical receipts returned above. Draw only in this fenced
+                    // transaction; the resulting complete snapshot is persisted in its
+                    // existing Quest receipt, atomically with all four source tracks.
+                    let roll = if transition.effects.iter().any(|effect| matches!(
+                        effect.effect,
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
+                            oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
+                        )
+                    )) {
+                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
+                            .fetch_one(&mut *tx).await?;
+                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
-                            || catalogue.evaluate(transition, &stored, now),
+                            || catalogue.evaluate_with_roll(transition, &stored, now, roll),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {
