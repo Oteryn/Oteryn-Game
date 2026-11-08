@@ -94,10 +94,10 @@ fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs(
     }
     Ok(())
 }
-use super::*;
 
 #[test]
-fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target() -> Result<(), String> {
+fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target_coordinator()
+-> Result<(), String> {
     let mut document: serde_json::Value =
         serde_json::from_str(DOCUMENTS[0]).map_err(|e| e.to_string())?;
     let row = document["callbacks"]
@@ -135,7 +135,7 @@ fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target() -> Result<
 }
 
 #[test]
-fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs()
+fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs_coordinator()
 -> Result<(), String> {
     let callbacks = load()?;
     let recipes: Vec<_> = callbacks
