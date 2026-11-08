@@ -171,3 +171,50 @@ fn container_tree_join_refuses_missing_malformed_and_unknown_snapshots() -> Resu
     assert!(crate::container_tree::initial(&[14], &[snapshot]).is_err());
     Ok(())
 }
+
+#[test]
+fn house_capacity_maximum_crosses_real_session_snapshot_and_delta_frames() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        let selected: &[u32] = &[4, 6, 12, 14, 49, 446];
+        let mut views = ContainerViews::default();
+        for id in 0..16_u8 {
+            let base = u64::from(id) * 100;
+            let entries = (0..25_u64).map(|n| Ok(ItemEntry {
+                handle: ItemHandle::new(u64::MAX-base-n).ok_or("maximum entry handle")?,
+                item_definition_ref:std::num::NonZeroU32::MAX,
+                count:std::num::NonZeroU32::MAX,sub_type:u32::MAX,
+            })).collect::<Result<_,BoxError>>()?;
+            views.views.push(ContainerView {
+                view_id:id,container_handle:ItemHandle::new(u64::MAX-base-98).ok_or("container handle")?,
+                parent_handle:Some(ItemHandle::new(u64::MAX-base-99).ok_or("parent handle")?),
+                capacity:25,entries,browse:None,
+            });
+        }
+        let payload = encode_container_views_with_house_capacity(&views,false,true).map_err(|e|format!("{e:?}"))?;
+        assert_eq!(payload.len(),MAX_HOUSE_CONTAINER_VIEWS_BYTES);
+        assert_eq!(payload.len(),12862);
+        assert!(decode_container_views_for(&payload,false).is_err());
+        let (client,mut server)=tokio::io::duplex(256*1024);
+        let peer_payload=payload.clone();
+        let peer=tokio::spawn(async move {
+            join_peer_with(&mut server,selected,selected,&[],item_snapshot(vec![])?,&[(14,1,1,peer_payload.clone())]).await?;
+            let frame=read_frame(&mut server).await?;
+            let envelope=decode_wire_envelope(&frame)?;
+            let command=envelope.client_command(1)?;
+            assert_eq!(command.command_type,21);
+            write_frame(&mut server,&encode_state_delta(1,41,14,1,2,1,&peer_payload)?).await?;
+            write_frame(&mut server,&encode_command_result(1,42,command.command_id,CommandStatus::Accepted,
+                &encode_container_view_result(ContainerViewOutcome::Opened))?).await?;
+            Ok::<(),BoxError>(())
+        });
+        let mut admission=item_admission()?;
+        admission.supported_capabilities=selected;
+        let mut session=Session::admit(client,admission).await?;
+        assert_eq!(session.container_views(),Some(&views));
+        assert_eq!(session.container_view(ContainerViewIntent::Up {view_id:0}).await?,Some(ContainerViewOutcome::Opened));
+        assert_eq!(session.container_views(),Some(&views));
+        assert!(session.take_events().iter().any(|event| matches!(event,SessionEvent::ContainerViews(delta) if delta.value==views)));
+        peer.await??;
+        Ok(())
+    }))?.join().map_err(|_|"House capacity session test panicked")??
+}

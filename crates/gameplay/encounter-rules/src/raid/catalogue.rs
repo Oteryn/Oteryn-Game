@@ -161,6 +161,8 @@ pub struct CatalogueEntry {
     pub amount: CatalogueAmount,
     pub area_anchor: String,
     pub area: CatalogueArea,
+    #[serde(default)]
+    pub area_choices: Vec<CatalogueArea>,
     pub boss: bool,
     pub spawn_mode: CatalogueSpawnMode,
 }
@@ -441,7 +443,33 @@ impl CatalogueRaid {
                     .map_err(|_| RaidError::InvalidDefinition)?;
                 let anchor = ProductionKey::new(&entry.area_anchor)
                     .map_err(|_| RaidError::InvalidDefinition)?;
-                let area = entry.area.bound()?;
+                // Crystal a_piece_of_cake_config.lua:394-400 independently selects
+                // one of two city bases for each golem, then draws its +/-3 tile.
+                // A bounding rectangle joining both bases would admit invented tiles.
+                // The primary source area must remain valid even when the
+                // source's city-base choices determine the selected area.
+                let primary_area = entry.area.bound()?;
+                let area = if entry.area_choices.is_empty() {
+                    primary_area
+                } else {
+                    if self.key != "oteryn:raid.piece_of_cake"
+                        || entry.creature != "oteryn:creature.cake_golem"
+                        || entry.area_choices.len() != 2
+                        || entry.amount.min != 1
+                        || entry.amount.max != 1
+                    {
+                        return Err(RaidError::InvalidDefinition);
+                    }
+                    for choice in &entry.area_choices {
+                        choice.bound()?;
+                    }
+                    let selected = if let Some(random) = random {
+                        random.area_choice(wave_index, entry_index, entry.area_choices.len())?
+                    } else {
+                        0
+                    };
+                    entry.area_choices[selected].bound()?
+                };
                 if areas
                     .insert(anchor.clone(), area)
                     .is_some_and(|existing| existing != area)
@@ -523,9 +551,11 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
         // RAIDS-GLOBAL 2026-11-01 replaces the former single-Badger catalogue:
-        // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities.
-        assert_eq!(catalogue.records().len(), 239);
-        assert_eq!(catalogue.active().count(), 136);
+        // 160 Crystal XML definitions + Sugar Mommy + 78 unresolved wiki identities,
+        // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
+        // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
+        assert_eq!(catalogue.records().len(), 240);
+        assert_eq!(catalogue.active().count(), 137);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0446-house-container-capacity",
+  "kind": "panels",
+  "id": "0446-house-container-capacity-browser",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

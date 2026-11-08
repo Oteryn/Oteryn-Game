@@ -221,6 +221,30 @@ impl ChannelRuntimeV1 {
 
     /// Current liveness joins retained raid identities to the actual actor
     /// carrier; recycled slots never make an old raid creature alive again.
+    /// Read the existing ledger's stable identity for one exact live actor.
+    /// This immutable binding never grants a placement or a world contribution.
+    pub fn raid_identity_for_actor(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<RaidSpawnIdentity>, CarrierError> {
+        self.owner_fence()?;
+        if !self.contains_live_creature(actor) {
+            return Ok(None);
+        }
+        let mut rows = self
+            .raid_spawns
+            .receipts
+            .iter()
+            .filter_map(|(identity, receipt)| {
+                (receipt.outcome == RaidSpawnOutcome::Placed(actor)).then_some(*identity)
+            });
+        let first = rows.next();
+        if rows.next().is_some() {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        Ok(first)
+    }
+
     pub fn raid_creatures(
         &self,
         firing_id: [u8; 16],

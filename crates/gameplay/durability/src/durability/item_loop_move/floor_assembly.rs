@@ -110,7 +110,7 @@ impl DurabilityRoot {
                         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&ground.spatial_position)
                         .fetch_all(&mut **tx).await?;
                 }
-                let mut moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None).await?;
+                let mut moved = apply_loop_move(&mut tx, permit, &record, &node, &fence, command, content, &request, &intent, None, None, None, None).await?;
                 if let Some(recipe) = transform {
                     if super::floor_transform::apply(&mut tx, permit, &fence, command, native, &moved, &target, ground, recipe).await? {
                         moved.floor_effect = recipe.effect;
