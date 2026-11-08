@@ -74,6 +74,7 @@ impl Application {
                 || play.link.depot_search_input(events)
                 || play.link.mail_input(events)
                 || play.link.house_podium_input(events)
+                || play.link.house_rotation_input(events)
                 || play.link.house_furniture_input(events)
                 || play.link.appearance_input(events)
                 || play.link.charm_progression_input(events)
