@@ -1120,9 +1120,10 @@
   "src": "TIBAUD-1",
   "area": "Tutorial",
   "feature": "Hints/markers/mouse trail i server-save notice",
-  "status": "PARTIAL",
-  "gap": "Notice panel jest; brak kontekstowego overlay, markerów i mouse trail.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Ctrl+Alt+Shift+N włącza renderowane wskazówki kontekstowe, marker kursora i ograniczony czasem/rozmiarem mouse trail; server-save notice jest dostępny (`d2241ea6c`).",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0023-presentation/view/tutorial.rs:4 + tutorial_toggle_projects_context_marker_and_mouse_trail"
  },
  {
   "id": "T156",
