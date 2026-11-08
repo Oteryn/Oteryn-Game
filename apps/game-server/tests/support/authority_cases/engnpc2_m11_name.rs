@@ -132,6 +132,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         &tracks,
         &catalog,
         0,
+        &crate::durability::quest_state::npc_program::NpcEligibility::default(),
         Some("Another Hero"),
     )
     .map_err(fixture::debug)?
