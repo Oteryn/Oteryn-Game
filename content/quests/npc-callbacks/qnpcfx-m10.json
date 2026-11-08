@@ -303,7 +303,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress",
           "minimum": 0,
-          "maximum": 3,
+          "maximum": 1,
           "set": 2
         }
       ],

@@ -18,6 +18,7 @@ fn m09_tower_reward_plan_admits_all_four_literal_arrow_outputs() -> Result<(), N
             tracks: &tracks,
             inventory: &inventory,
             now_epoch_seconds: 1_700_000_000,
+            premium_current: false,
             calendar_month: 11,
             level: 50,
             vocation: "oteryn:vocation.none",

@@ -42,7 +42,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/hot_cuisine.json",
-      "sha256": "0db245ea075d9c2d721948b717b41e8fdd339424c3ed1df000af78fe86b117c6"
+      "sha256": "85c0aacf53b84026771216441bf596b1e592ba4bad18299ea8a28b1d09aed0b6"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/in_service_of_yalahar.json",
@@ -54,7 +54,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_hidden_city_of_beregar.json",
-      "sha256": "c91ea5245afd922aae7a22c8bb8a24613a32def50c738ed5b9f94c4117c81c15"
+      "sha256": "18cba8039698b0b35c4411c6b4217d662e47f44cf3c1d587e25fceacabe36248"
     },
     {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/the_way_of_the_monk.json",
@@ -214,7 +214,7 @@
     },
     {
       "path": "content/quests/npc-callbacks/qnpcfx-m10.json",
-      "sha256": "bdc8bb5ee743e076487f9adbdfabaeef9a11f178d0cce1d2b2a7072596f48f3f"
+      "sha256": "8fe7afdc08567d21ddb3b268444f2059bcf648f369ba765e613a960fdf3d7db7"
     }
   ],
   "canonical_inputs": [
@@ -366,7 +366,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "ccdb4acd0ee196be40ea84266a18d207982b1daf70597d989bb8a97d32c17545"
+      "sha256": "5a815878dbbf6bd4f6f9768b4710b6209b52570589b44e330829f754ec0f1954"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
