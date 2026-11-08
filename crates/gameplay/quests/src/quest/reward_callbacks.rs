@@ -279,6 +279,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    // Appended: tests index the shared document as DOCUMENTS[0].
+    include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -802,7 +804,12 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 mod tests {
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
-        let mut callback = super::load()?.into_iter().next().ok_or("callback")?;
+        let mut callback = super::parse(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))?
+        .into_iter()
+        .next()
+        .ok_or("callback")?;
         callback.storage = (0..16)
             .map(|i| super::Storage {
                 track: format!("oteryn:quest-progress/atomic/{i}"),
