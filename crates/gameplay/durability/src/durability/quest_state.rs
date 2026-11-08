@@ -63,6 +63,8 @@ use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
 
+mod map_marks;
+pub use map_marks::{PersonalQuestMapMark, QuestMapMarksSnapshot};
 pub mod npc_program;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
@@ -554,6 +556,7 @@ pub mod grizzly_boss;
 mod hero_of_bounac;
 mod planegazer_finale;
 pub mod native_kills;
+pub mod source_deaths;
 pub mod rotten_blood;
 pub mod rotten_blood_access;
 pub mod soul_war;

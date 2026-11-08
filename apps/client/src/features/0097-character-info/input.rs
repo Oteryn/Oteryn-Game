@@ -51,7 +51,29 @@ impl PlayLink {
             lock(&self.mailbox).properties.character_info.open = true;
         }
     }
+    pub fn character_titles_open(&self) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.properties.character_info;
+            if !panel.pending {
+                panel.fields[0] = "0".into();
+                panel.fields[1] = "1".into();
+                panel.fields[2].clear();
+                submit(&mut mailbox, &self.commands, Intent::Query);
+            }
+        }
+        #[cfg(windows)]
+        super::view::open_titles(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).properties.character_info.titles_open = true;
+        }
+    }
     pub fn character_info_input(&self, events: &[NormalizedInputEvent]) -> bool {
+        if oteryn_client_ui::character_info::titles_key(events) {
+            self.character_titles_open();
+            return true;
+        }
         if !oteryn_client_ui::character_info::open_key(events) {
             return false;
         }

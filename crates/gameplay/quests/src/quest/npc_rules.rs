@@ -1,14 +1,20 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+#[cfg(test)]
+mod achievement_tests;
 mod admission;
 mod bounds;
+mod calendar;
 mod equipped_storage;
+pub use calendar::NpcUtcCalendar;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod player_name;
+pub mod teleport;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -148,6 +154,14 @@ pub enum NpcRuleGuard {
     CalendarMonth {
         value: u8,
     },
+    /// Inclusive, annually repeating UTC dates; the durable owner supplies epoch time.
+    CalendarWindow {
+        start_month: u8,
+        start_day: u8,
+        end_month: u8,
+        end_day: u8,
+        within: bool,
+    },
     Vocation {
         value: String,
     },
@@ -250,6 +264,10 @@ pub struct NpcRule {
     pub trigger: NpcRuleTrigger,
     #[serde(default)]
     pub keywords: Vec<String>,
+    /// Match the current Character owner's name instead of a source literal.
+    /// Omit false to preserve existing programme digests byte for byte.
+    #[serde(default, skip_serializing_if = "player_name::is_false")]
+    pub match_player_name: bool,
     #[serde(default)]
     pub exclude_keywords: Vec<String>,
     #[serde(default)]
@@ -268,7 +286,14 @@ pub struct NpcRule {
     pub continue_matching: bool,
     #[serde(default)]
     pub inventory_failure_reply: Vec<String>,
+    /// Canonical personal completion, committed with this selected source branch.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -325,6 +350,7 @@ pub struct NpcRuleInput<'a> {
     pub npc: &'a str,
     pub trigger: NpcRuleTrigger,
     pub message: &'a str,
+    pub player_name: Option<&'a str>,
     pub topic: i32,
     pub tracks: &'a BTreeMap<String, i64>,
     pub inventory: &'a NpcInventorySnapshot,
@@ -337,6 +363,13 @@ pub struct NpcRuleInput<'a> {
     pub outfits: &'a BTreeMap<u16, u8>,
 }
 
+impl NpcRuleInput<'_> {
+    /// M17: preview and commit project the epoch supplied by their existing owners.
+    pub fn utc_calendar(&self) -> Result<NpcUtcCalendar, NpcRuleError> {
+        NpcUtcCalendar::from_epoch(self.now_epoch_seconds)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTrackChange {
     pub key: String,
@@ -347,6 +380,7 @@ pub struct NpcTrackChange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRulePlan {
     pub quest: String,
+    pub completes: bool,
     pub program_digest: [u8; 32],
     pub selected_rule_keys: Vec<String>,
     pub reply: Vec<String>,
@@ -450,6 +484,8 @@ impl NpcRuleCatalog {
                 catalogue.programs.retain(|p| {
                     p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
                         || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.first-dragon-calendar")
+                        || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
                         || matches!(
                             p.document.quest.as_str(),
@@ -461,6 +497,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.hot_cuisine_quest"
                                 | "oteryn:quest.in_service_of_yalahar_quest"
                                 | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                         )
@@ -688,7 +725,13 @@ pub fn legacy_defaults<'a>(
 }
 
 #[cfg(test)]
+mod multiple_item_rewards_tests;
+
+#[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod calendar_window_tests;
 
 #[cfg(test)]
 mod draconia_source_tests {
