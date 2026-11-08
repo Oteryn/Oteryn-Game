@@ -410,3 +410,106 @@ fn help_navigation_opens_existing_report_without_submitting() {
     assert!(!link.player_report_panel().pending);
     assert!(commands.try_recv().is_err());
 }
+
+#[test]
+fn general_controls_transform_real_inputs_and_preserve_releases()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{MousePreset, MovementKeys, RotationModifier, SettingsState};
+    use oteryn_input_actions::{
+        ButtonState, KeyCode, Modifier, Modifiers, MouseButton, NormalizedInputEvent,
+    };
+    use std::time::Duration;
+    let mut settings = SettingsState::new(None);
+    let mut prefs = settings.preferences.clone();
+    prefs.controls.mouse = MousePreset::LeftHanded;
+    prefs.controls.movement = MovementKeys::ArrowsAndWasd;
+    prefs.controls.rotation = RotationModifier::Shift;
+    prefs.controls.keyboard_delay_ms = 250;
+    settings.apply(prefs.clone());
+    let key = |code,
+               modifiers,
+               state,
+               repeat|
+     -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(code)?,
+            modifiers,
+            state,
+            repeat,
+        })
+    };
+    let none = Modifiers::NONE;
+    let w = key(26, none, ButtonState::Pressed, false)?;
+    let mapped = settings.control_events_at(std::slice::from_ref(&w), false, Duration::ZERO);
+    assert_eq!(
+        crate::input::arrow_step(&mapped),
+        Some(crate::input::StepDir::North)
+    );
+    let repeat = key(26, none, ButtonState::Pressed, true)?;
+    assert!(
+        settings
+            .control_events_at(
+                std::slice::from_ref(&repeat),
+                false,
+                Duration::from_millis(249)
+            )
+            .is_empty()
+    );
+    assert_eq!(
+        settings
+            .control_events_at(&[repeat], false, Duration::from_millis(250))
+            .len(),
+        1
+    );
+    prefs.controls.movement = MovementKeys::Arrows;
+    settings.apply(prefs.clone());
+    let released = key(26, none, ButtonState::Released, false)?;
+    // A chat/context/settings change while held cannot strand the translated key.
+    assert_eq!(
+        settings.control_events_at(&[released], true, Duration::from_millis(251)),
+        vec![key(82, none, ButtonState::Released, false)?]
+    );
+    assert_eq!(
+        settings.control_events_at(std::slice::from_ref(&w), true, Duration::from_millis(260)),
+        vec![w]
+    );
+    settings.control_events_at(
+        &[NormalizedInputEvent::DeviceLost],
+        false,
+        Duration::from_millis(270),
+    );
+    let shift = Modifiers::one(Modifier::Shift);
+    let rotation = settings.control_events_at(
+        &[key(79, shift, ButtonState::Pressed, false)?],
+        false,
+        Duration::from_millis(300),
+    );
+    assert!(
+        matches!(rotation.as_slice(),[NormalizedInputEvent::Key { code,modifiers,.. }] if *code == KeyCode::ARROW_RIGHT && *modifiers == Modifiers::one(Modifier::Control))
+    );
+    let mouse = |state| NormalizedInputEvent::MouseButton {
+        button: MouseButton::PRIMARY,
+        state,
+        modifiers: none,
+    };
+    assert!(
+        matches!(settings.control_events_at(&[mouse(ButtonState::Pressed)],false,Duration::ZERO).as_slice(),[NormalizedInputEvent::MouseButton { button,.. }] if *button == MouseButton::SECONDARY)
+    );
+    prefs.controls.mouse = MousePreset::Standard;
+    settings.apply(prefs.clone());
+    assert!(
+        matches!(settings.control_events_at(&[mouse(ButtonState::Released)],false,Duration::ZERO).as_slice(),[NormalizedInputEvent::MouseButton { button,.. }] if *button == MouseButton::SECONDARY)
+    );
+    let good = settings.preferences.clone();
+    prefs.controls.keyboard_delay_ms = 1001;
+    settings.apply(prefs);
+    assert_eq!(settings.preferences, good);
+    let path = std::env::temp_dir().join(format!("clientgap-controls-{}.json", std::process::id()));
+    crate::play::PreferenceStore::export_to(&good, &path)?;
+    assert_eq!(
+        crate::play::PreferenceStore::read_transfer(&path)?.controls,
+        good.controls
+    );
+    std::fs::remove_file(path)?;
+    Ok(())
+}

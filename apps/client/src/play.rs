@@ -122,8 +122,9 @@ include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 #[cfg(windows)]
 pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 pub use feature_local_reference_preferences::settings::{
-    HelpTopic, PreferenceBinding, PreferenceInput, PreferenceStore, ReferencePreferences,
-    SettingsState, help_text, preference_bindings,
+    ControlPreferences, HelpTopic, MousePreset, MovementKeys, PreferenceBinding, PreferenceInput,
+    PreferenceStore, ReferencePreferences, RotationModifier, SettingsState, help_text,
+    preference_bindings,
 };
 
 pub use feature_0004_item_view_move::state::GroundItem;

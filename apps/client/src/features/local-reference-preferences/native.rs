@@ -21,6 +21,8 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "controls_native.rs"]
+mod controls_window;
 #[path = "help_native.rs"]
 mod help_window;
 #[path = "profiles_native.rs"]
@@ -76,6 +78,14 @@ impl Settings {
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
         }
+    }
+    pub(super) fn control_events(
+        &self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+        link: Option<&oteryn_client::play::PlayLink>,
+    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        lock(&self.shared)
+            .control_events(events, link.is_some_and(|link| link.preference_chat_open()))
     }
     pub(super) fn input(
         &mut self,
@@ -176,7 +186,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120 | 121)
+                && matches!(id, 103 | 106 | 110..=113 | 120..=122)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -361,6 +371,14 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [10, 310, 210, 30],
             0,
         );
+        let controls_page = control(
+            hwnd,
+            "BUTTON",
+            "Mouse and movement...",
+            122,
+            [250, 310, 240, 30],
+            0,
+        );
         let feedback = control(hwnd, "STATIC", "", 0, [10, 350, 710, 120], 0);
         if [
             help,
@@ -374,6 +392,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             apply,
             profiles,
             help_page,
+            controls_page,
             feedback,
             transfer_label,
             transfer_path,
@@ -418,6 +437,12 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 122 {
+                    drop(state);
+                    controls_window::open(Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if action == 121 {
                     drop(state);
                     help_window::open(Arc::clone(&shared), hwnd);

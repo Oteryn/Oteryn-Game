@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "controls.rs"]
+mod controls;
 #[path = "help.rs"]
 mod help;
 #[path = "profiles.rs"]
@@ -19,6 +21,7 @@ mod store;
 #[path = "sync.rs"]
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
 pub use profiles::HotkeyProfiles;
 pub use store::PreferenceStore;
@@ -60,6 +63,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub controls: ControlPreferences,
+    #[serde(default)]
     pub skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout,
     #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
     pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
@@ -83,6 +88,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            controls: ControlPreferences::default(),
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             skills_layout: crate::play::feature_0274_loyalty_skills::view::SkillsLayout::default(),
             audio: crate::play::AudioSettings::default(),
@@ -100,6 +106,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || !self.controls.valid()
             || !self.skills_layout.valid()
             || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)

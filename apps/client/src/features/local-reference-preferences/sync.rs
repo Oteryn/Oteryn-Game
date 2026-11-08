@@ -15,6 +15,8 @@ pub struct SettingsState {
     skills_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
+    control_input: super::controls::ControlInput,
+    control_epoch: std::time::Instant,
     pub preferences: ReferencePreferences,
     pub feedback: String,
     pub open: bool,
@@ -119,6 +121,8 @@ impl SettingsState {
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
             help_report_pending: false,
+            control_input: super::controls::ControlInput::default(),
+            control_epoch: std::time::Instant::now(),
             base_path,
             character: None,
             battle_edit: 0,
@@ -138,6 +142,24 @@ impl SettingsState {
         }
         self.open = true;
         true
+    }
+
+    pub fn control_events(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_open: bool,
+    ) -> Vec<NormalizedInputEvent> {
+        self.control_events_at(events, chat_open, self.control_epoch.elapsed())
+    }
+
+    pub fn control_events_at(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_open: bool,
+        now: std::time::Duration,
+    ) -> Vec<NormalizedInputEvent> {
+        self.control_input
+            .route(&self.preferences.controls, events, chat_open, now)
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
