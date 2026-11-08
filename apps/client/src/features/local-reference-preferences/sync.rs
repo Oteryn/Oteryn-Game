@@ -15,6 +15,7 @@ pub struct SettingsState {
     skills_edit: u64,
     minimap_edit: u64,
     spellbook_edit: u64,
+    archive_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
@@ -70,6 +71,7 @@ impl SettingsState {
         self.skills_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
+        self.archive_edit = self.battle_edit;
     }
 
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
@@ -104,6 +106,7 @@ impl SettingsState {
         self.skills_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
         self.spellbook_edit = self.battle_edit;
+        self.archive_edit = self.battle_edit;
         Ok(())
     }
 
@@ -135,6 +138,7 @@ impl SettingsState {
             skills_edit: 0,
             minimap_edit: 0,
             spellbook_edit: 0,
+            archive_edit: 0,
             store,
             preferences,
             feedback,
@@ -212,6 +216,9 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.archive_bindings != preferences.archive_bindings {
+            self.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.spellbook_filter != preferences.spellbook_filter {
             self.spellbook_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -226,6 +233,16 @@ impl SettingsState {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
+    }
+
+    pub fn sync_archive_bindings(&mut self, link: &crate::play::PlayLink) {
+        let mut prefs = self.preferences.clone();
+        if let Some(edit) =
+            link.sync_archive_bindings(&mut prefs.archive_bindings, self.archive_edit)
+        {
+            self.apply(prefs);
+            self.archive_edit = edit;
+        }
     }
 
     pub fn sync_spellbook_filter(&mut self, link: &crate::play::PlayLink) {

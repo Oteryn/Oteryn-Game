@@ -3,6 +3,8 @@ use crate::play::{Outbox, PlayLink, mailbox::lock};
 use oteryn_client_runtime::spell_catalog::spellbook_details::{PAGE_SIZE, Page, Query};
 #[derive(Debug, Clone, Default)]
 pub struct SpellbookState {
+    pub archive: super::archive::ArchiveBindings,
+    pub archive_edit: u64,
     pub selected: bool,
     pub open: bool,
     pub native_open: bool,

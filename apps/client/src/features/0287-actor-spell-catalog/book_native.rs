@@ -20,7 +20,7 @@ use windows_sys::Win32::{
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
-        if msg == WM_COMMAND && matches!(w & 0xffff, 1108..=1111) && w >> 16 == BN_CLICKED as usize
+        if msg == WM_COMMAND && matches!(w & 0xffff, 1108..=1115) && w >> 16 == BN_CLICKED as usize
         {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             if !actions.is_null() && (*actions).0.len() < 16 {
@@ -209,7 +209,37 @@ fn run(
         );
         let previous = control(hwnd, "BUTTON", "Previous page", 1110, [16, 600, 220, 30], 0);
         let next = control(hwnd, "BUTTON", "Next page", 1111, [250, 600, 230, 30], 0);
+        let archive = control(
+            hwnd,
+            "BUTTON",
+            "Magical Archive",
+            1113,
+            [500, 600, 190, 30],
+            0,
+        );
+        let slot = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            1116,
+            [700, 600, 95, 180],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        for label in ["Slot 1", "Slot 2", "Slot 3", "Slot 4"] {
+            SendMessageW(slot, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+        }
+        SendMessageW(slot, CB_SETCURSEL, 0, 0);
+        let assign = control(hwnd, "BUTTON", "Assign", 1114, [805, 600, 90, 30], 0);
+        let clear = control(hwnd, "BUTTON", "Clear", 1115, [905, 600, 90, 30], 0);
+        for control in [slot, assign, clear] {
+            ShowWindow(control, SW_HIDE);
+        }
+        let mut archive_mode = false;
         if [
+            archive,
+            slot,
+            assign,
+            clear,
             labels,
             search,
             vocation,
@@ -278,6 +308,47 @@ fn run(
                 actions.0.clear();
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 1113 {
+                    archive_mode = !archive_mode;
+                    SetWindowTextW(
+                        hwnd,
+                        wide(if archive_mode {
+                            "Oteryn Magical Archive"
+                        } else {
+                            "Oteryn Spellbook"
+                        })
+                        .as_ptr(),
+                    );
+                    SetWindowTextW(
+                        archive,
+                        wide(if archive_mode {
+                            "Back to Spellbook"
+                        } else {
+                            "Magical Archive"
+                        })
+                        .as_ptr(),
+                    );
+                    for control in [slot, assign, clear] {
+                        ShowWindow(control, if archive_mode { SW_SHOW } else { SW_HIDE });
+                    }
+                    continue;
+                }
+                if matches!(action, 1114 | 1115) {
+                    if archive_mode {
+                        let selected_slot = usize::try_from(SendMessageW(slot, CB_GETCURSEL, 0, 0))
+                            .unwrap_or(usize::MAX);
+                        if action == 1114 {
+                            let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
+                                .unwrap_or(usize::MAX);
+                            if !super::archive::assign(&shared, row, selected_slot) {
+                                lock(&shared).spellbook_details.feedback = "Select a spell from the confirmed current page before assigning.".into();
+                            }
+                        } else {
+                            super::archive::clear(&shared, selected_slot);
+                        }
+                    }
+                    continue;
+                }
                 let filter = match (text(min).parse::<u32>(), text(max).parse::<u32>()) {
                     (Ok(min_level), Ok(max_level)) => SpellbookFilter {
                         search: text(search),
@@ -333,7 +404,22 @@ fn run(
                 held_page = Some(state.page.clone());
             }
             let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).unwrap_or(0);
-            let detail_text = state.text(row);
+            let mut detail_text = state.text(row);
+            if archive_mode {
+                detail_text.push_str("\r\n\r\nSaved action bindings (resolved against the current server catalog):\r\n");
+                detail_text.push_str(&state.archive.labels().join("\r\n"));
+            }
+            EnableWindow(
+                assign,
+                i32::from(
+                    state.pending.is_none()
+                        && state.confirmed_filter.as_ref() == Some(&state.filter)
+                        && state
+                            .page
+                            .as_ref()
+                            .is_some_and(|page| row < page.entries.len()),
+                ),
+            );
             if held_text != detail_text {
                 SetWindowTextW(details, wide(&detail_text).as_ptr());
                 held_text = detail_text;

@@ -1,3 +1,9 @@
+#[path = "archive.rs"]
+mod archive;
+pub use archive::ArchiveBindings;
+pub(in crate::play) use archive::{
+    manual as manual_archive_bindings, resolve as resolve_archive_bindings,
+};
 #[path = "book.rs"]
 mod book;
 #[path = "preferences.rs"]
@@ -44,3 +50,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(test)]
+#[path = "archive_tests.rs"]
+mod archive_tests;

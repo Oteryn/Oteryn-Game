@@ -15,7 +15,11 @@ impl PlayView {
 
 pub(in crate::play) fn send_cast(link: &crate::play::PlayLink, spell: NonZeroU32) {
     use crate::play::mailbox::lock;
-    let bound = lock(&link.mailbox).spell_bar.bar.spell(spell);
+    let bound = {
+        let mut mailbox = lock(&link.mailbox);
+        crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
+        mailbox.spell_bar.bar.spell(spell)
+    };
     if let Some(bound) = bound {
         link.request_combat(crate::combat_input::CombatCommand::Cast(bound));
     }
@@ -35,10 +39,14 @@ impl crate::play::PlayLink {
         true
     }
     pub fn spell_bar_bind(&self, fields: &[String]) -> bool {
-        configure(
-            &mut crate::play::mailbox::lock(&self.mailbox).spell_bar,
-            fields,
-        )
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let applied = configure(&mut mailbox.spell_bar, fields);
+        if applied {
+            crate::play::feature_0287_actor_spell_catalog::view::manual_archive_bindings(
+                &mut mailbox,
+            );
+        }
+        applied
     }
 }
 pub(in crate::play) fn configure(
@@ -77,7 +85,9 @@ pub(in crate::play) fn submit(
     fields: &[String],
 ) {
     if action == 0 {
-        configure(&mut mailbox.spell_bar, fields);
+        if configure(&mut mailbox.spell_bar, fields) {
+            crate::play::feature_0287_actor_spell_catalog::view::manual_archive_bindings(mailbox);
+        }
         return;
     }
     if mailbox.world_input_blocked() {
@@ -86,6 +96,7 @@ pub(in crate::play) fn submit(
     let Some(slot) = u32::try_from(action).ok().and_then(NonZeroU32::new) else {
         return;
     };
+    crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(mailbox);
     if let Some(spell) = mailbox.spell_bar.bar.spell(slot) {
         let _ = commands.send(crate::combat_input::PlayCommand::Combat(
             crate::combat_input::CombatCommand::Cast(spell),
