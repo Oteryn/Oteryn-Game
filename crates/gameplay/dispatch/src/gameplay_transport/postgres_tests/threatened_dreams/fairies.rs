@@ -77,6 +77,11 @@ fn scenario()->TestResult{
         let fresh=super::super::fresh_fixture::fresh::Source::new(0)?.request()?;
         super::super::maintain_ready(&h.root).await?;
         h.root.initialize_admission_equipment(&authority,&h.node,&fence.item_fence(),generation.identity().server_artifact_digest(),fresh.operation()).await.map_err(|error|format!("fairy admission equipment: {error:?}"))?;
+        let character_lease = crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?;
+        owner.runtime.lock().await.bind_attacker_lease(deps.actor, admitted.game_session_id, character_lease).map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
@@ -100,6 +105,12 @@ fn scenario()->TestResult{
         let appearance_fence = crate::gameplay_transport::character_gameplay_fence::current(&owner, admitted.game_session_id, false).await.ok_or("appearance fence")?;
         let (_, cosmetics) = owner.appearance_context().ok_or("appearance content")?;
         h.root.read_current_character_appearance_state(&authority, &h.node, appearance_fence, cosmetics.earned_grant_keys()).await.map_err(|error|format!("fairy appearance read: {error:?}"))?;
+        let entity = oteryn_protocol_oteryn::appearance::EntityRef {
+            identity: deps.actor.placement_identity(),
+            generation: deps.actor.actor_local_generation(),
+        };
+        let observed = owner.appearance_observation(deps.actor, admitted.game_session_id, vec![entity]).await.ok_or("fairy first-entry appearance observation")?;
+        assert_eq!(observed.bindings.len(), 1, "the admitted player must have its native appearance binding before wire USE");
         let command=admitted.continuity.next_command_id;
         use_source(&mut owner,&mut admitted,command,target_for(TARGETS[0])?).await?;
         assert_ne!(progress(&owner,&admitted,&authority,&flag(0)).await?,1,"wrong mission stage cannot release a fairy");
