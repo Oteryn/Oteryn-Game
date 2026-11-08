@@ -417,8 +417,8 @@ fn scenario_in_world(
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
-                world_change: None,
                 admission: None,
+                world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
                 requires_world_admission: false,
@@ -438,7 +438,8 @@ fn scenario_in_world(
                 teleport: Some(position(destination)),
                 facing: None,
                 effects: Default::default(),
-                state_ops: Vec::new(), world_requirements: vec![],
+                state_ops: Vec::new(),
+                world_requirements: vec![],
                 storage: if refused {
                     vec![Storage {
                         track: "fixture:unknown-track".into(),
