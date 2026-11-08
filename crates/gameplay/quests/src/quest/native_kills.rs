@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Counter {
     pub transition: &'static str,
     pub creature: &'static str,
@@ -13,12 +14,13 @@ pub struct Counter {
     pub track: &'static str,
     pub gate: &'static str,
     pub maximum: i64,
+    pub world_change: Option<&'static str>,
 }
 
 impl Counter {
     pub(crate) fn transition(self) -> QuestTransition {
         QuestTransition {
-            world_change: None,
+            world_change: self.world_change.map(str::to_owned),
             key: self.transition.into(),
             quest: self.quest.into(),
             effects: vec![
@@ -39,6 +41,9 @@ impl Counter {
     }
 }
 
+#[path = "native_kills/qworld.rs"]
+mod qworld;
+
 pub const COUNTERS: &[Counter] = &[
     Counter {
         transition: "oteryn:quest-transition/native-kills/dragon-slayer-dragon",
@@ -47,6 +52,7 @@ pub const COUNTERS: &[Counter] = &[
         track: "oteryn:quest-progress/chosen-trial/dragon_slayer/dragons",
         gate: "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
         maximum: 20,
+        world_change: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/dragon-slayer-lord",
@@ -55,6 +61,7 @@ pub const COUNTERS: &[Counter] = &[
         track: "oteryn:quest-progress/chosen-trial/dragon_slayer/dragon_lords",
         gate: "oteryn:quest-progress/chosen-trial/dragon_slayer/phase",
         maximum: 20,
+        world_change: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/cave-explorer",
@@ -63,6 +70,7 @@ pub const COUNTERS: &[Counter] = &[
         track: "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
         gate: "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
         maximum: 20,
+        world_change: None,
     },
     Counter {
         transition: "oteryn:quest-transition/native-kills/fire-fighter",
@@ -71,25 +79,23 @@ pub const COUNTERS: &[Counter] = &[
         track: "oteryn:quest-progress/chosen-trial/fire_fighter/kills",
         gate: "oteryn:quest-progress/chosen-trial/fire_fighter/phase",
         maximum: 10,
+        world_change: None,
     },
 ];
 
 #[must_use]
 pub fn counter(transition: &str) -> Option<&'static Counter> {
-    COUNTERS
-        .iter()
-        .find(|counter| counter.transition == transition)
+    counters().find(|counter| counter.transition == transition)
 }
 
 #[must_use]
 pub fn tracks_creature(creature: &str) -> bool {
-    COUNTERS.iter().any(|counter| counter.creature == creature)
+    counters().any(|counter| counter.creature == creature)
 }
 
 #[must_use]
 pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
-    COUNTERS
-        .iter()
+    counters()
         .filter(|counter| {
             tracks.get(counter.gate) == Some(&1)
                 && (0..counter.maximum).contains(&tracks.get(counter.track).copied().unwrap_or(0))
@@ -98,17 +104,21 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
         .collect()
 }
 
+fn counters() -> impl Iterator<Item = &'static Counter> {
+    COUNTERS
+        .iter()
+        .chain(qworld::counters().unwrap_or_default())
+}
+
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
+    qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
-    for counter in COUNTERS {
+    for counter in counters() {
         transitions.push(counter.transition());
     }
-    QuestStateCatalogue::new(
-        catalogue.content_revision,
-        catalogue.tracks.into_values().collect(),
-        transitions,
-    )
-    .map_err(|error| format!("{error:?}"))
+    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|error| format!("{error:?}"))
 }
 #[cfg(test)]
 mod tests {
@@ -128,5 +138,24 @@ mod tests {
         tracks.insert(counter.gate.into(), 2);
         assert!(active(&tracks).is_empty());
         assert!(!tracks_creature("oteryn:creature.rat"));
+    }
+}
+
+#[cfg(test)]
+mod qworld_tests {
+    use super::*;
+    #[test]
+    fn qworld_death_objectives_bind_their_native_world_condition() -> Result<(), String> {
+        for (creature, world, maximum) in [
+            ("oteryn:creature.fury", "fury_gates", 10),
+            ("oteryn:creature.werewolf", "grimvale", 10),
+        ] {
+            let counter = counters()
+                .find(|c| c.creature == creature)
+                .ok_or_else(|| format!("missing native objective {creature}"))?;
+            assert_eq!(counter.maximum, maximum);
+            assert_eq!(counter.transition().world_change.as_deref(), Some(world));
+        }
+        Ok(())
     }
 }
