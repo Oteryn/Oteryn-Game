@@ -85,6 +85,10 @@ pub struct ReferencePreferences {
     #[serde(default = "enabled")]
     pub show_serene: bool,
     #[serde(default)]
+    pub creature_bars: bool,
+    #[serde(default)]
+    pub health_circle: bool,
+    #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
@@ -109,6 +113,8 @@ impl Default for ReferencePreferences {
             show_lights: true,
             show_harmony: true,
             show_serene: true,
+            creature_bars: false,
+            health_circle: false,
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,

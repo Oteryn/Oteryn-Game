@@ -14,3 +14,7 @@ pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
+
+#[path = "state/returner.rs"]
+mod returner;
+pub use returner::{ReturnerOffer, ReturnerRewardPanel};

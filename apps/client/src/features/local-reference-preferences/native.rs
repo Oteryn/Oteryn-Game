@@ -423,6 +423,8 @@ fn run(shared: Arc<Mutex<Shared>>) {
             "Serene",
             "Light effects",
             "Combat effects",
+            "Creature health / icons",
+            "HP / MP circle",
         ]
         .into_iter()
         .enumerate()
@@ -433,9 +435,9 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 label,
                 120 + index,
                 [
-                    10 + (index % 3) as i32 * 230,
-                    310 + (index / 3) as i32 * 30,
-                    220,
+                    10 + (index % 4) as i32 * 175,
+                    310 + (index / 4) as i32 * 30,
+                    170,
                     26,
                 ],
                 BS_AUTOCHECKBOX as u32,
@@ -633,6 +635,10 @@ fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(hud_checks[3], BM_GETCHECK, 0, 0) == 1;
                             preferences.show_effects =
                                 SendMessageW(hud_checks[4], BM_GETCHECK, 0, 0) == 1;
+                            preferences.creature_bars =
+                                SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
+                            preferences.health_circle =
+                                SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -671,6 +677,8 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     state.preferences.show_serene,
                     state.preferences.show_lights,
                     state.preferences.show_effects,
+                    state.preferences.creature_bars,
+                    state.preferences.health_circle,
                 ]) {
                     SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
                 }
