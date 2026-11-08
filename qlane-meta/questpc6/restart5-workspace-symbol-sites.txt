@@ -1,0 +1,1 @@
+All workspace rg matches processed; counts and complete-output digest are in restart5-workspace-symbol-sites.json. No type/API was added in this continuation.

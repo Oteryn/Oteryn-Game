@@ -858,6 +858,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/zoltan.lua:161:sha256:c184ead30d167e379ccd628713028fd9cc8acc24713bb7c6943deefce14032d1",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "greet": "Hello, traveller |PLAYERNAME|. How can I help you?",
+      "farewell": "See you again.",
+      "walkaway": "See you again.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:100:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:101:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dermot.lua:102:sha256:efde10f4a2a2418f4b22881cf90c747571f4a184abae44d391d622b1e70006ec"
+      ]
     }
   ]
 }

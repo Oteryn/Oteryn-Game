@@ -72,7 +72,8 @@ pub(super) async fn input_item(
         production_key: offering.item.clone(),
         revision_ref: "definition-r1".into(),
     };
-    let facts = generation_item_facts(native, &definition).map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
+    let facts = generation_item_facts(native, &definition)
+        .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
     let map = owner.bundle_map().ok_or("map")?;
     let (digest, frame) = {
         let r = owner.runtime.lock().await;
@@ -141,7 +142,8 @@ pub(super) async fn input_item(
     let command = |offset| -> TestResult<_> {
         Ok(crate::foundation::CommandRef::new(
             fence.game_session_id,
-            crate::foundation::CommandId::new(1000 + n * 10 + offset).map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?,
+            crate::foundation::CommandId::new(1000 + n * 10 + offset)
+                .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?,
         ))
     };
     let mut transfer = owner
@@ -226,27 +228,63 @@ pub(super) fn world(
     callback: &Callback,
     trigger: Position,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_ordinal(callback, trigger, callback.selector.appearance.unwrap_or(100), 1)
+    world_ordinal(
+        callback,
+        trigger,
+        callback
+            .selector
+            .appearance
+            .unwrap_or(if callback.key.ends_with("deeper-fibula-well") {
+                if trigger.x == 32171 { 1930 } else { 1931 }
+            } else {
+                100
+            }),
+        1,
+    )
 }
 
 pub(super) fn world_with_objects(
     callback: &Callback,
     trigger: Position,
-    objects: &[(Position,u16)],
+    objects: &[(Position, u16)],
     appearances: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_with_extra(callback, trigger, callback.selector.appearance.unwrap_or(100), 1, objects, appearances, None)
+    world_with_extra(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        objects,
+        appearances,
+        None,
+    )
 }
 
-fn world_ordinal(callback: &Callback, trigger: Position, appearance:u16, ordinal:u8) -> TestResult<crate::map::boot::BundleWorld> {
-    world_with_extra(callback,trigger,appearance,ordinal,&[],&[],None)
+fn world_ordinal(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_extra(callback, trigger, appearance, ordinal, &[], &[], None)
 }
 
 pub(super) fn world_with_native_items(
-    callback:&Callback,trigger:Position,objects:&[(Position,u16)],
-    native:&crate::content::native_gameplay::NativeGameplayState,items:&[(Position,u32)],
-)->TestResult<crate::map::boot::BundleWorld>{
-    world_with_extra(callback,trigger,callback.selector.appearance.unwrap_or(100),1,objects,&[],Some((native,items)))
+    callback: &Callback,
+    trigger: Position,
+    objects: &[(Position, u16)],
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    items: &[(Position, u32)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_extra(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        objects,
+        &[],
+        Some((native, items)),
+    )
 }
 
 fn world_with_extra(
@@ -254,9 +292,58 @@ fn world_with_extra(
     trigger: Position,
     appearance: u16,
     ordinal: u8,
-    objects: &[(Position,u16)],
+    objects: &[(Position, u16)],
     appearances: &[u16],
-    native_items: Option<(&crate::content::native_gameplay::NativeGameplayState,&[(Position,u32)])>,
+    native_items: Option<(
+        &crate::content::native_gameplay::NativeGameplayState,
+        &[(Position, u32)],
+    )>,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback,
+        trigger,
+        appearance,
+        ordinal,
+        objects,
+        appearances,
+        native_items,
+        &[],
+    )
+}
+
+pub(super) fn world_with_cells(
+    callback: &Callback,
+    trigger: Position,
+    cells: &[Position],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    world_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        &[],
+        &[],
+        None,
+        cells,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "combines existing object and native item fixtures with explicit extra cells"
+)]
+fn world_cells(
+    callback: &Callback,
+    trigger: Position,
+    appearance: u16,
+    ordinal: u8,
+    objects: &[(Position, u16)],
+    appearances: &[u16],
+    native_items: Option<(
+        &crate::content::native_gameplay::NativeGameplayState,
+        &[(Position, u32)],
+    )>,
+    extra: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -274,12 +361,50 @@ fn world_with_extra(
         .map(|p| p.position)
         .chain(callback.offerings.iter().map(|p| p.position))
         .chain(callback.teleport)
-        .chain(callback.remote_teleport.iter().flat_map(|remote| [remote.position, remote.destination]))
+        .chain(
+            callback
+                .remote_teleport
+                .iter()
+                .flat_map(|remote| [remote.position, remote.destination]),
+        )
     {
         cells
             .entry((position.floor, position.x, position.y))
             .or_default();
     }
+    if callback.key.contains("devil-helmet-sewer-use") && !callback.key.ends_with("blocked") {
+        cells.entry((-15, 32482, 32170)).or_default();
+    }
+    for passage in &callback.passages {
+        if passage.replacement == Some(7767) {
+            let p = passage.position;
+            cells.entry((p.floor, p.x, p.y - 1)).or_default();
+            cells.entry((p.floor - 1, p.x, p.y)).or_default();
+        }
+    }
+    let mut effect_positions = extra.to_vec();
+    if let Some(pair) = &callback.effects.portals {
+        for portal in &pair.portals {
+            effect_positions.extend([portal.position, portal.destination]);
+        }
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_positions.push(cycle.position);
+    }
+    if let Some(encounter) = &callback.effects.encounter {
+        for player in &encounter.players {
+            effect_positions.extend([player.from, player.to]);
+        }
+        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+    }
+    for p in effect_positions {
+        for x in p.x - 1..=p.x + 1 {
+            for y in p.y - 1..=p.y + 1 {
+                cells.entry((p.floor, x, y)).or_default();
+            }
+        }
+    }
+    let appearance = callback.selector.appearance.unwrap_or(appearance);
     for passage in &callback.passages {
         if passage.replacement == Some(7767) {
             let p = passage.position;
@@ -369,14 +494,21 @@ fn world_with_extra(
             key: format!("oteryn:terrain.tibia.i{}", remote.appearance),
             family: bundle::Family::Terrain,
             id: palette,
-            terrain: Some(bundle::Terrain { blocks_projectile: None,
+            terrain: Some(bundle::Terrain {
+                blocks_projectile: None,
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
             }),
         });
-        cells.entry((remote.position.floor, remote.position.x, remote.position.y))
-            .or_default().push(sector::Item { palette, depth: 0, attrs: Default::default() });
+        cells
+            .entry((remote.position.floor, remote.position.x, remote.position.y))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     if let Some(appearance) = callback
         .item_on_target
@@ -396,9 +528,14 @@ fn world_with_extra(
         });
     }
     for _ in 1..ordinal {
-        cells.entry((trigger.floor, trigger.x, trigger.y)).or_default().push(sector::Item {
-            palette: 0, depth: 0, attrs: Default::default(),
-        });
+        cells
+            .entry((trigger.floor, trigger.x, trigger.y))
+            .or_default()
+            .push(sector::Item {
+                palette: 0,
+                depth: 0,
+                attrs: Default::default(),
+            });
     }
     cells
         .entry((trigger.floor, trigger.x, trigger.y))
@@ -407,8 +544,18 @@ fn world_with_extra(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: callback.selector.unique,
-                action: callback.selector.action,
+                // The source plate starts without its startup UID in the binary map.
+                // Require the production source-binding projection instead of seeding it.
+                unique: if callback.key.ends_with("/thais-lighthouse-plate") {
+                    None
+                } else {
+                    callback.selector.unique
+                },
+                action: if callback.key.ends_with("deeper-fibula-well") {
+                    None
+                } else {
+                    callback.selector.action
+                },
                 ..Default::default()
             },
         });
@@ -536,11 +683,21 @@ fn world_with_extra(
                 family: bundle::Family::Terrain,
                 id: index,
                 terrain: Some(bundle::Terrain {
-                    kind: if callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464 {
+                    kind: if callback.key == "oteryn:quest-callback/questpc7-formal-display"
+                        && passage.appearance == 464
+                    {
                         bundle::TerrainKind::Ground
-                    } else { bundle::TerrainKind::Wall },
-                    walkable: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(true),
-                    ground_speed: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(150),
+                    } else if callback.key.starts_with("fixture:devil-helmet-sewer") {
+                        bundle::TerrainKind::Common
+                    } else {
+                        bundle::TerrainKind::Wall
+                    },
+                    walkable: (callback.key == "oteryn:quest-callback/questpc7-formal-display"
+                        && passage.appearance == 464)
+                        .then_some(true),
+                    ground_speed: (callback.key == "oteryn:quest-callback/questpc7-formal-display"
+                        && passage.appearance == 464)
+                        .then_some(150),
                     blocks_projectile: None,
                 }),
             });
@@ -580,6 +737,13 @@ fn world_with_extra(
                 });
             }
         }
+        // The source creates this sewer on StepIn; initially only its served
+        // definition and destination tile exist, with no physical sewer item.
+        if callback.key.starts_with("fixture:devil-helmet-sewer")
+            && !callback.key.ends_with("existing")
+        {
+            continue;
+        }
         cells
             .entry((
                 passage.position.floor,
@@ -589,6 +753,56 @@ fn world_with_extra(
             .or_default()
             .push(sector::Item {
                 palette: index,
+                depth: 0,
+                attrs: Default::default(),
+            });
+    }
+    let mut effect_appearances = Vec::new();
+    effect_appearances.extend(callback.effects.transform);
+    if callback.effects.transform.is_some() {
+        effect_appearances.extend([430, 431]);
+    }
+    if let Some(pair) = &callback.effects.portals {
+        effect_appearances.push(pair.appearance);
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_appearances.extend([cycle.remove, cycle.create]);
+    }
+    for appearance in effect_appearances {
+        let key = format!("oteryn:terrain.tibia.i{appearance}");
+        if data.manifest.palette.iter().any(|entry| entry.key == key) {
+            continue;
+        }
+        let id = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key,
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                blocks_projectile: None,
+                kind: if [1270, 1025].contains(&appearance) {
+                    bundle::TerrainKind::Wall
+                } else {
+                    bundle::TerrainKind::Common
+                },
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        let index = data
+            .manifest
+            .palette
+            .iter()
+            .position(|p| p.key == format!("oteryn:terrain.tibia.i{}", cycle.remove))
+            .ok_or("cycle palette")?;
+        let p = cycle.position;
+        cells
+            .entry((p.floor, p.x, p.y))
+            .or_default()
+            .push(sector::Item {
+                palette: u32::try_from(index)?,
                 depth: 0,
                 attrs: Default::default(),
             });
@@ -708,30 +922,73 @@ fn world_with_extra(
     }
     // Explicit test objects add physical hit targets, without inventing donor attributes.
     // Existing callers retain the original blocked-passage fixture behavior.
-    for appearance in objects.iter().map(|(_,id)|*id).chain(appearances.iter().copied()) {
-        let key=format!("oteryn:terrain.tibia.i{appearance}");
-        if !data.manifest.palette.iter().any(|entry|entry.key==key) {
-            let id=u32::try_from(data.manifest.palette.len())?;
-            data.manifest.palette.push(bundle::PaletteEntry {key,family:bundle::Family::Terrain,id,
-                terrain:Some(bundle::Terrain{ blocks_projectile: None,kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
+    for appearance in objects
+        .iter()
+        .map(|(_, id)| *id)
+        .chain(appearances.iter().copied())
+    {
+        let key = format!("oteryn:terrain.tibia.i{appearance}");
+        if !data.manifest.palette.iter().any(|entry| entry.key == key) {
+            let id = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key,
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    blocks_projectile: None,
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
         }
     }
-    for (position,appearance) in objects {
-        let key=format!("oteryn:terrain.tibia.i{appearance}");
-        let palette=u32::try_from(data.manifest.palette.iter().position(|entry|entry.key==key).ok_or("palette")?)?;
-        let entries=cells.entry((position.floor,position.x,position.y)).or_default();
-        if !entries.iter().any(|entry|entry.palette==palette) {
-            entries.push(sector::Item{palette,depth:0,attrs:Default::default()});
+    for (position, appearance) in objects {
+        let key = format!("oteryn:terrain.tibia.i{appearance}");
+        let palette = u32::try_from(
+            data.manifest
+                .palette
+                .iter()
+                .position(|entry| entry.key == key)
+                .ok_or("palette")?,
+        )?;
+        let entries = cells
+            .entry((position.floor, position.x, position.y))
+            .or_default();
+        if !entries.iter().any(|entry| entry.palette == palette) {
+            entries.push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
         }
     }
-    if let Some((native,items)) = native_items {
-        for (position,source_id) in items {
-            let key=format!("oteryn:item.tibia.i{source_id}");
-            let reference=native.item_index().and_then(|index|index.definition_ref("Item",&key,"definition-r1")).ok_or("admitted native map item")?;
-            let palette=u32::try_from(data.manifest.palette.len())?;
-            data.manifest.palette.push(bundle::PaletteEntry{key,family:bundle::Family::Item,id:reference.get()-1,terrain:None});
-            cells.entry((position.floor,position.x,position.y)).or_default().push(sector::Item{palette,depth:0,
-                attrs:sector::Attrs{count:Some(0),..Default::default()}.with_legacy_default_item_count()});
+    if let Some((native, items)) = native_items {
+        for (position, source_id) in items {
+            let key = format!("oteryn:item.tibia.i{source_id}");
+            let reference = native
+                .item_index()
+                .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
+                .ok_or("admitted native map item")?;
+            let palette = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key,
+                family: bundle::Family::Item,
+                id: reference.get() - 1,
+                terrain: None,
+            });
+            cells
+                .entry((position.floor, position.x, position.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: sector::Attrs {
+                        count: Some(0),
+                        ..Default::default()
+                    }
+                    .with_legacy_default_item_count(),
+                });
         }
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
@@ -794,10 +1051,15 @@ fn world_with_extra(
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
         |key| {
-            let (native,_)=native_items?;
-            Some(crate::map::facts::ItemDefinition{
-                reference:native.item_index()?.definition_ref("Item",key,"definition-r1")?,
-                solid:Some(false),blocks_projectile:false,pickupable:true,door:false,
+            let (native, _) = native_items?;
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: Some(false),
+                blocks_projectile: false,
+                pickupable: true,
+                door: false,
             })
         },
     )

@@ -23,7 +23,13 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+            if name.starts_with("qengine-rewards-fibula-completion") {
+                Position {
+                    x: 32219,
+                    y: 32401,
+                    floor: -10,
+                }
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
                 super::l6_paradox_story::start()
@@ -153,6 +159,8 @@ pub(super) async fn talk(
 
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
+        "fibula-key-first" | "fibula-key-repeat" => &["key"],
+        "fibula-complete" => &["expedition"],
         "knight-sword" => &["forge"],
         "questpc7-golden-base" => &["base outfit"],
         "questpc7-golden-gloves" => &["boots and gloves"],
@@ -761,6 +769,15 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-fibula-completion") {
+        return super::questpc6_fibula_completion::exercise(owner, admitted, h, name).await;
+    }
+    if name == "qengine-rewards-fibula-native-goals" {
+        return super::questpc6_native_goals::exercise(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-fibula-key-") {
+        return super::questpc6_fibula_purchase::exercise(owner, admitted, h, name).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }
@@ -846,7 +863,10 @@ pub(super) async fn exercise(
         setup
             .storage
             .push(oteryn_gameplay_quests::quest::world_callbacks::Storage {
-                at_least: false, add: None, read_only: false,
+                set_if: None,
+                at_least: false,
+                add: None,
+                read_only: false,
                 increment: false,
 
                 track: "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision"

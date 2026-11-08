@@ -9,6 +9,52 @@ COHORTS = ROOT / 'tools/content-schema/quest-authoring/samples/native-kill-goal-
 OUTPUT = ROOT / 'tools/content-schema/quest-authoring/samples/native-kill-goals.json'
 
 
+SPAWNS = 'content/world/spawns/spawns-34000-35999.json'
+RECIPE = 'tools/content-schema/quest-authoring/samples/completion242/recipes.json'
+CENTRES = ((32278,32467),(32282,32469),(32282,32473),(32235,32474),
+           (32273,32476),(32255,32477),(32238,32479),(32278,32479),
+           (32266,32480),(32233,32482),(32270,32485),(32242,32487),
+           (32235,32488),(32247,32490),(32256,32490),(32266,32493),
+           (32278,32494),(32237,32495),(32248,32495),(32256,32498),
+           (32273,32498))
+
+
+def fibula_document():
+    raw = (ROOT / SPAWNS).read_bytes()
+    records = json.loads(raw)['records']
+    # Explicit source declarations select the final cavern; no rectangle is invented.
+    wanted = {f'oteryn:spawn.x{x}_y{y}_z10' for x,y in CENTRES}
+    origins = []
+    found = set()
+    for index, row in enumerate(records):
+        declaration = row['declaration']
+        key = declaration['identity']['key']
+        if key not in wanted:
+            continue
+        found.add(key)
+        for ordinal, point in enumerate(declaration['points']):
+            if point['creature'] not in ('oteryn:creature.dragon','oteryn:creature.dragon_lord'):
+                raise ValueError('chosen cavern species drift')
+            cell=point['cell']
+            origins.append(dict(creature=point['creature'],x=cell['x'],y=cell['y'],floor=cell['floor'],
+                                source_pointer=f'/records/{index}/declaration/points/{ordinal}'))
+    if found != wanted:
+        raise ValueError('chosen native spawn declarations missing: '+str(sorted(wanted-found)))
+    recipe_raw=(ROOT/RECIPE).read_bytes()
+    recipe,=[row['recipe'] for row in json.loads(recipe_raw)['records']
+             if row['identity']['key']=='oteryn:quest.deeper_fibula_quest']
+    stage,=[stage for stage in recipe['stages'] if stage['key']=='s4']
+    if stage['targets']!=['Dragon','Dragon Lord'] or stage['count']!=8:
+        raise ValueError('chosen Fibula goal drift')
+    return dict(schema=1,goals=[dict(key='oteryn:quest-transition/native-kill/fibula-cavern',
+        quest='oteryn:quest.deeper_fibula_quest',phase='oteryn:quest-progress/fibula/supplement',
+        counter='oteryn:quest-progress/fibula/cavern_kills',
+        activation='oteryn:quest-reward/fibula-key-first',count=stage['count'],
+        origins=sorted(origins,key=lambda row:(row['x'],row['y'],row['creature'])),
+        sources=[dict(path=SPAWNS,sha256=hashlib.sha256(raw).hexdigest()),
+                 dict(path=RECIPE,sha256=hashlib.sha256(recipe_raw).hexdigest(),lines='6863-7011')])])
+
+
 def document():
     goals, keys = [], set()
     for path in sorted(COHORTS.glob('*.json')):
@@ -45,8 +91,10 @@ def document():
                 if matches != 1:
                     raise ValueError('NATIVE_GOAL_EXACT_ORIGIN')
             goals.append(goal)
-    if not 1 <= len(goals) <= 16:
+    fibula_goals = fibula_document()['goals']
+    if not goals or len(goals) + len(fibula_goals) > 16:
         raise ValueError('NATIVE_GOAL_BOUND')
+    goals.extend(fibula_goals)
     return dict(schema=1, goals=sorted(goals, key=lambda g: g['key']))
 
 

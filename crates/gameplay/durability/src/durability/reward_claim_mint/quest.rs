@@ -175,6 +175,16 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
+    if !callback.required_claims.is_empty() {
+        let earned: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claims c JOIN game_reward_claim_mint_receipts r ON r.transaction_id=c.claimed_transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.claim_family='RewardClaim' AND c.claim_production_key=ANY($2::text[]) AND r.character_id=c.character_id AND r.claim_family=c.claim_family AND r.claim_production_key=c.claim_production_key")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.required_claims).fetch_one(&mut **tx).await?;
+        if earned
+            != i64::try_from(callback.required_claims.len())
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(false);
+        }
+    }
     if !callback.forbids_addons.is_empty() || !callback.forbids_outfits.is_empty() {
         // Keep a negative ownership predicate stable through costs and grant.
         // Reuse the account grant owner's lock; another character cannot win
@@ -365,7 +375,7 @@ pub(crate) async fn apply(
             command,
             &callback.key,
             callback.counter.is_some(),
-            callback.is_paid_exchange(),
+            callback.repeatable || callback.is_paid_exchange(),
             reward,
             admission,
         )
@@ -462,17 +472,35 @@ pub(crate) async fn mint(
     } else {
         callback_key.to_owned()
     };
-    mint_with_claim_key(tx,tuple,node,fence,command,callback_key,claim_key,reward,admission).await
+    mint_with_claim_key(
+        tx,
+        tuple,
+        node,
+        fence,
+        command,
+        callback_key,
+        claim_key,
+        reward,
+        admission,
+    )
+    .await
 }
 
-#[allow(clippy::too_many_arguments, reason = "one existing fenced MINT owner receives the complete source claim binding")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one existing fenced MINT owner receives the complete source claim binding"
+)]
 async fn mint_with_claim_key(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>, tuple: SelectedType2Tuple,
-    node: &NodeIncarnationProof, fence: CurrentCharacterGameplayFence, command: CommandRef,
-    source_placement: &str, claim_key: String,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
+    source_placement: &str,
+    claim_key: String,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
-) -> std::result::Result<Option<[u8;16]>,DurabilityError> {
+) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
     let resolve = |key: &str| {
         let id = key
             .strip_prefix("oteryn:item.tibia.i")
@@ -493,6 +521,24 @@ async fn mint_with_claim_key(
         )
         .map_err(|_| DurabilityError::InvalidStoredState)
     };
+    if reward.key_number.is_some() {
+        use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemType};
+        let id = reward
+            .item
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let policy = admission
+            .native
+            .item_policy_for_source_id(id)
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .record();
+        if !matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+            if c.item_type == ReferenceItemField::Known(ReferenceItemType::Key))
+        {
+            return Ok(None);
+        }
+    }
     let backpack:Option<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF s,i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(backpack) = backpack else {
         return Ok(None);
@@ -520,36 +566,38 @@ async fn mint_with_claim_key(
         source_placement: source_placement.to_owned(),
         item: resolve(&reward.item)?,
         quantity: u32::from(reward.count),
-        contents: (if reward.backpack_outputs.is_empty() { &reward.contents } else { &reward.backpack_outputs })
-            .iter()
-            .map(|i| {
-                if i.fluid_subtype.is_some() {
-                    use oteryn_gameplay_content::content::{
-                        ReferenceItemField, ReferenceItemFluid,
-                    };
-                    let policy = admission
-                        .native
-                        .item_policy(&i.item, "definition-r1")
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    if !matches!(
-                        &policy.record().semantics.fluid,
-                        ReferenceItemField::Known(ReferenceItemFluid {
-                            fluid_type: ReferenceItemField::NotApplicable
-                        })
-                    ) {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
+        contents: (if reward.backpack_outputs.is_empty() {
+            &reward.contents
+        } else {
+            &reward.backpack_outputs
+        })
+        .iter()
+        .map(|i| {
+            if i.fluid_subtype.is_some() {
+                use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceItemFluid};
+                let policy = admission
+                    .native
+                    .item_policy(&i.item, "definition-r1")
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                if !matches!(
+                    &policy.record().semantics.fluid,
+                    ReferenceItemField::Known(ReferenceItemFluid {
+                        fluid_type: ReferenceItemField::NotApplicable
+                    })
+                ) {
+                    return Err(DurabilityError::InvalidStoredState);
                 }
-                Ok(RewardClaimMintContent {
-                    fluid_subtype: i.fluid_subtype,
-                    item: resolve(&i.item)?,
-                    quantity: u32::from(i.count),
-                    key_number: None,
-                    text: None,
-                    charges_remaining: None,
-                })
+            }
+            Ok(RewardClaimMintContent {
+                fluid_subtype: i.fluid_subtype,
+                item: resolve(&i.item)?,
+                quantity: u32::from(i.count),
+                key_number: reward.key_number,
+                text: None,
+                charges_remaining: None,
             })
-            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
+        })
+        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         backpack_outputs: !reward.backpack_outputs.is_empty(),
         root_charges_remaining: None,
         root_fluid_subtype: None,

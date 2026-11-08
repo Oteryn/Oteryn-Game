@@ -26,6 +26,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
 
 pub(crate) fn callbacks() -> Vec<Callback> {
     let storage = |track: &str, from, to, preserve| Storage {
+        set_if: None,
         track: track.into(),
         minimum: from,
         maximum: from,
@@ -42,6 +43,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
         (DRAGON_FLOOR, Position {x:32588, y:31642, floor:-5},
             vec![storage(rules::PHASE,1,2,false),storage(POISON,1,1,true)]),
     ].into_iter().map(|(key, position, storage)| Callback {
+        failure_teleport: None,
         world_change: None,
         remote_teleport: None,
         item_reward: None,

@@ -80,7 +80,8 @@
     "oteryn:npc.razan",
     "oteryn:npc.the_first_dragon",
     "oteryn:npc.yalahari",
-    "oteryn:npc.rafzan"
+    "oteryn:npc.rafzan",
+    "oteryn:npc.dermot"
   ],
   "position_conflicts": [],
   "authored_placements": {
@@ -145,6 +146,13 @@
       {
         "x": 32801,
         "y": 31188,
+        "z": 7
+      }
+    ],
+    "oteryn:npc.dermot": [
+      {
+        "x": 32165,
+        "y": 32437,
         "z": 7
       }
     ]

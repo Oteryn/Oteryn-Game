@@ -552,6 +552,7 @@ impl BundleFacts {
     }
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
+    /// Effect zero creates a silent source object, such as the Devil Helmet sewer.
     pub fn create_movement_item(
         &self,
         pos: TilePos,
@@ -571,7 +572,7 @@ impl BundleFacts {
         let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
             return false;
         };
-        if !states.has_capacity(2) {
+        if !states.has_capacity(1 + usize::from(effect != 0)) {
             return false;
         }
         let entry = view::ComposedEntry {
@@ -584,10 +585,12 @@ impl BundleFacts {
         }
         states.movement_sequence = sequence;
         states.movement_items.entry(pos).or_default().push(entry);
-        if states.movement_effects.len() == 512 {
-            states.movement_effects.pop_front();
+        if effect != 0 {
+            if states.movement_effects.len() == 512 {
+                states.movement_effects.pop_front();
+            }
+            states.movement_effects.push_back((sequence, pos, effect));
         }
-        states.movement_effects.push_back((sequence, pos, effect));
         true
     }
 

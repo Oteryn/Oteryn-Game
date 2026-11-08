@@ -1,0 +1,28 @@
+{
+  "task_id": "questpc6",
+  "base_sha": "28e4313e177c035c28c3c6c61a4577cb5f8058e0",
+  "counts": {
+    "BLOCKED": 32,
+    "QUALIFIED": 1
+  },
+  "qualification": {
+    "test": "questpc6_source_deeper_fibula_well_and_complete_reward_inventory",
+    "marker": "POSTGRES_CASE_COMPLETED questpc6_source_deeper_fibula_well_and_complete_reward_inventory",
+    "duration_seconds": 85.824043755,
+    "log": ".questpc6/source-final.log",
+    "log_sha256": "04a10b3e5bd60f56081ac7d49ef789f97ed8c9f443c7f534201fd38c304abb57",
+    "dispatch": "literal framed USE through serve_admitted, source callback and every native source chest placement; stale well target, replay, unchanged quest state, exact items and refusal"
+  },
+  "file_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc6_access.rs": "986a6bd27fc484e984c835ffffd4c2399826073163e102e1781442936ad3fce3",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs": "70c07573b689afd7e05c76a02895d467b1825b2bf499fc2eb595e49bf1a8f01c",
+    "crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs": "db33c17352de67d1aa8d0bf48eaa2c9f9859651a8100987a68f2296c98742c34",
+    "crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs": "c856628936c8f7d261843ed96c3ed08e0d17083fea521dda94114c8bc2fe6d6e",
+    "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs": "90b01a7ce50bd0151227fab6793eba9f13553669733750f39215b0d84f81a2a7",
+    "content/quests/definitions/quests-00000-00099.json": "0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json": "a79a16f57ee52ee8927d79fe2768e9899717ecf56284de84912de8c96cecdd55",
+    ".questpc6/QUEST-STATUS.json": "06b641109683831f54a42b97792d0979a0a65be459a541e2c86cfa2bcf889b4d"
+  },
+  "no_full_chosen_recipe_claim": true,
+  "no_publication_or_index_mutation": true
+}

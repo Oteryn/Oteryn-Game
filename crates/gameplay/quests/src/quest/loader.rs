@@ -262,6 +262,7 @@ pub fn load_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
     // This tool-owned auxiliary flag is outside the captured NPC track inventory.
     lowered.source_tracks.insert(
@@ -491,6 +492,28 @@ mod tests {
                     .ok_or("callback key")
             })
             .collect::<Result<_, _>>()?;
+        // The runtime admits all three explicit registries, not only the original
+        // source capture. Keep exact-set coverage and exclude Dawnport in each.
+        for raw in [
+            include_str!("../../../../../content/quests/shared-access-callbacks.json"),
+            include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
+        ] {
+            let registry: serde_json::Value =
+                serde_json::from_str(raw).map_err(|e| e.to_string())?;
+            for callback in registry["callbacks"]
+                .as_array()
+                .ok_or("shared callback registry")?
+            {
+                if callback["quest"] != "oteryn:quest.dawnport_quest" {
+                    expected.insert(
+                        callback["key"]
+                            .as_str()
+                            .ok_or("shared callback key")?
+                            .to_owned(),
+                    );
+                }
+            }
+        }
         // These independently authored callback inputs extend the original donor file.
         // Keep exact inventory equality and apply the same owner exclusion to each input.
         for source in [

@@ -25,6 +25,7 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
@@ -338,6 +339,16 @@ impl NpcTalkBook {
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let reward_messages = reward_messages(&reference.key);
+            let stag = matches!(
+                reference.key.as_str(),
+                "oteryn:npc.captain_marie_denise_banner"
+                    | "oteryn:npc.eldoran_the_ambitious"
+                    | "oteryn:npc.guard_captain_hartford"
+                    | "oteryn:npc.kesar_the_younger_day"
+                    | "oteryn:npc.lieutenant_harlan"
+                    | "oteryn:npc.second_in_command_demeron"
+            );
+            let native_quest = stag || native_npcs.contains(&reference.key.as_str());
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -590,7 +601,7 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+            } else if native_quest && npc.dialogue.is_some() {
                 // Conditional native greeting rules own the text. An absent literal
                 // greeting still admits focus so that their reply or dismissal runs.
                 let greeting = npc
@@ -637,7 +648,7 @@ impl NpcTalkBook {
                             reference.key.as_str(),
                             "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
                         )
-                        || native_npcs.contains(&reference.key.as_str()),
+                        || native_quest,
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
@@ -840,6 +851,33 @@ mod tests {
 
     #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        for name in ["morgan", "navigator", "costello", "budrik", "sam"] {
+            let key = format!("oteryn:npc.{name}");
+            let entry = book
+                .get(&key)
+                .ok_or_else(|| format!("missing reward conversation {key}"))?;
+            assert!(!entry.greeting_reply.is_empty());
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "no scripted reward branch opens through talk rules"
+            );
+        }
+        assert!(!reward_callback_npc("oteryn:npc.unqualified"));
+        Ok(())
+    }
+
+    #[test]
+    fn native_quest_book_admits_only_requested_source_greetings() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),

@@ -499,6 +499,7 @@ mod reward_door_tests {
                 2 => invalid.selector.action = None,
                 3 => invalid.effects.transform = Some(5114),
                 _ => invalid.storage.push(Storage {
+                    set_if: None,
                     track: "oteryn:quest.shadow".into(),
                     minimum: 0,
                     maximum: 1,

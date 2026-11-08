@@ -1,0 +1,46 @@
+{
+  "source": {
+    "byte_count": 835,
+    "cache_path": "blobs/6226a5f27ae0be27c2a4f62910f90594f2a65def",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/devil_helmet/movements_sewer.lua",
+    "git_blob_sha1": "6226a5f27ae0be27c2a4f62910f90594f2a65def",
+    "path": "data-global/scripts/quests/devil_helmet/movements_sewer.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "71542a6acba0cd100b6f2d86339473e86781c777fa10aa339a62ea02d54e1e84",
+    "source": "crystalserver"
+  },
+  "values": {
+    "sewer_position": {
+      "value": [
+        32482,
+        32170,
+        14
+      ],
+      "lines": "1"
+    },
+    "selector": {
+      "value": 25030,
+      "lines": "21-23,43-45"
+    },
+    "appearance": {
+      "value": 435,
+      "lines": "13-16,35-37"
+    },
+    "entry": {
+      "lines": "5-18",
+      "behavior": "current player; create only when no sewer exists"
+    },
+    "exit": {
+      "lines": "27-40",
+      "behavior": "current player; remove one existing sewer"
+    }
+  },
+  "test_fixture_plate_position": [
+    32480,
+    32170,
+    14
+  ],
+  "fixture_position_is_not_source_placement_evidence": true
+}

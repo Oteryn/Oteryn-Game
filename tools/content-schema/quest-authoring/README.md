@@ -451,6 +451,10 @@ native triggers or reward delivery. Regenerate with the tree command above;
 check reproducibility with `--check`. Resolver tests run with
 `python -m unittest discover -s . -p test_quest_item_keys.py`.
 
+Shared atomic NPC item exchanges and outfit/addon grants are described in
+[shared-reward-callbacks.md](shared-reward-callbacks.md), with the closed callback
+schema and offline donor catalogue producer beside it.
+
 Item or RewardClaim promotions also change the Rust chest witness inventory.
 Regenerate `quest_callback_coverage.py --canary <pinned-root> --crystal <pinned-root>`
 and verify the same command with `--check`; this tool verifies the retained

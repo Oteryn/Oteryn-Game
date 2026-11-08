@@ -164,7 +164,12 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if native_signs || diprath_room {
+    let sewer = name.starts_with("devil-helmet-sewer");
+    let failure_landing = name.starts_with("conditional-failure-");
+    let draconia_escape = name.starts_with("draconia-escape-");
+    let mut callback = if draconia_escape {
+        super::super::draconia_escape::authored_callback()?
+    } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
     } else if native_flames {
         callback("ancient-tombs-morguthis-seven-flame-gate")?
@@ -209,8 +214,10 @@ fn scenario_case(
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
-        } else if classic_npc || small_ruby || reward_fluids {
+        } else if classic_npc || small_ruby || reward_fluids || sewer {
             "behemoth"
+        } else if failure_landing {
+            "liquid-black-shortcut"
         } else if rotten_purchase {
             "rotten-blood/sacrifice"
         } else if monk {
@@ -229,6 +236,40 @@ fn scenario_case(
             name.strip_suffix("-expiry").unwrap_or(name)
         })?
     };
+    if failure_landing {
+        callback.selector.position = Some(trigger);
+        callback.failure_teleport = Some(Position {
+            x: 32818,
+            y: 31599,
+            floor: if name.ends_with("blocked") { -10 } else { -9 },
+        });
+    }
+    if sewer {
+        callback.key = format!("fixture:{name}");
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(if name.ends_with("unrelated") {
+            25031
+        } else {
+            25030
+        });
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.storage.clear();
+        callback.teleport = None;
+        callback.offerings.clear();
+        callback.passages = vec![oteryn_gameplay_quests::quest::world_callbacks::Passage {
+            position: Position {
+                x: 32482,
+                y: 32170,
+                floor: -14,
+            },
+            appearance: 435,
+            replacement: None,
+            create_on_close: None,
+            require_state: false,
+        }];
+    }
     if shared_gate {
         let unique = name.rsplit('-').next().ok_or("gate UID")?.parse()?;
         callback.key = "oteryn:quest-callback/l6-shared-gate-fixture".into();
@@ -351,7 +392,27 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    let world = if matches!(
+    let world = if name.starts_with("qengine-rewards-fibula-completion") {
+        super::super::questpc6_fibula_completion::world()?
+    } else if name == "qengine-rewards-fibula-native-goals" {
+        let mut cells: Vec<_> = oteryn_gameplay_quests::quest::native_kill_goals::load()?
+            .iter()
+            .flat_map(|g| g.origins.iter())
+            .map(|p| {
+                i8::try_from(p.floor).map(|floor| Position {
+                    x: p.x,
+                    y: p.y,
+                    floor: -floor,
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        cells.push(Position {
+            x: 32200,
+            y: 32474,
+            floor: -10,
+        });
+        super::world_with_cells(&callback, trigger, &cells)?
+    } else if matches!(
         name,
         "qengine-rewards-goblin-stalkers" | "qengine-rewards-goblin-slug"
     ) {
@@ -1000,6 +1061,11 @@ fn scenario_case(
             crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
+        if draconia_escape {
+            owner.quest_catalogue =
+                Some(super::super::draconia_escape::catalogue(&callback, name)?);
+        }
+
         if mead {
             owner.premium_coordinator = Some(&mead_premium);
         }
@@ -1035,6 +1101,7 @@ fn scenario_case(
             || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
             || target_swap
+            || failure_landing
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"
         {
@@ -1096,7 +1163,43 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if elvenbane {
+        if draconia_escape {
+            super::super::draconia_escape::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                name,
+            )
+            .await?;
+        } else if failure_landing {
+            super::super::conditional_callback_failure::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                if name.ends_with("blocked") {
+                    trigger
+                } else {
+                    callback.failure_teleport.ok_or("failure landing")?
+                },
+            )
+            .await?;
+        } else if sewer {
+            super::super::pressure_plate_sewer::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if elvenbane {
             super::super::elvenbane_native_goals::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc2-rotten-source-items" {
             super::super::questpc2_rotten_source_items::exercise(&mut owner, &mut admitted, &h)

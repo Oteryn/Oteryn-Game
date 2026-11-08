@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-content --lib equipment_projection_tests",
+  "exit": 0,
+  "duration_seconds": 27.057
+}

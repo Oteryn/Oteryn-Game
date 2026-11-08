@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'dermot')]
     paths += ['data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -903,9 +903,12 @@ def build():
             callbacks[-1]['sources'].append(provenance)
     lane=load_module('questpc7_integration','tools/content-schema/quest-authoring/questpc7_integration.py')
     lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
+    fibula_callbacks = []
+    load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
+    validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -915,6 +918,7 @@ def build():
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
+            'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     # Preserve the source's complete contiguous 1..10001 supply-package table.
     random_path='data-global/scripts/actions/valuables/random_items.lua'
@@ -1045,7 +1049,12 @@ def validate_callbacks(document):
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)
-            or (not value_guard and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (not value_guard and not callback.get('repeatable',False) and all(s.get('preserve',False) or s['minimum']<=s['set']<=s['maximum'] for s in storage))
+            or (callback.get('repeatable',False) and (not callback.get('fee') or not callback.get('give')
+                or callback.get('outfit') or callback.get('achievement') or callback.get('completes',False)
+                or any(not s.get('preserve',False) for s in storage)))
+            or ((callback.get('give') or {}).get('key_number') is not None
+                and (callback['give']['count']!=1 or callback['give'].get('contents')))
             or any(k!=k.lower() or not k.isascii() for k in callback['keywords'])
             or any(len(line.encode('utf-8'))>512 or any(ord(c)<32 or 127<=ord(c)<=159 for c in line) for line in callback['reply'])
             or any(len(source.encode('utf-8'))>1024 for source in callback['sources'])):

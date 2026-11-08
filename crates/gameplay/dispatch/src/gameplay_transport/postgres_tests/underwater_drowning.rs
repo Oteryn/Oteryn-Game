@@ -417,14 +417,15 @@ fn scenario_in_world(
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
             let fixture = Callback {
-world_change: None,
+                world_change: None,
                 actor_kind: Default::default(),
                 opening_only: false,
                 requires_world_admission: false,
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
-                selector: Selector { position_aliases: Vec::new(),
+                selector: Selector {
+                    position_aliases: Vec::new(),
                     native: None,
                     position: Some(position(trigger)),
                     unique: None,
@@ -436,22 +437,26 @@ world_change: None,
                 passages: vec![],
                 teleport: Some(position(destination)),
                 facing: None,
-                effects: Default::default(),
                 world_requirements: vec![],
                 remote_teleport: None,
-        item_reward: None, reward_bundle: false, achievements: vec![],
-        activation: None, completes: false, requirements: None,
+                item_reward: None,
+                reward_bundle: false,
+                achievements: vec![],
+                activation: None,
+                completes: false,
+                requirements: None,
                 storage: if refused {
                     vec![Storage {
                         track: "fixture:unknown-track".into(),
                         minimum: 0,
                         maximum: 0,
                         set: 1,
+                        set_if: None,
                         preserve: false,
                         increment: false,
                         at_least: false,
                         read_only: false,
-            add: None,
+                        add: None,
                     }]
                 } else {
                     vec![]
@@ -462,9 +467,11 @@ world_change: None,
                 monk_reward: None,
                 item_on_target: None,
                 return_on_failure: refused,
+                failure_teleport: None,
                 failure_message: None,
                 success_message: None,
                 native_rule: None,
+                effects: Default::default(),
                 sources: vec![],
             };
             install(&owner, actor, session, false).await?;

@@ -36,6 +36,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key_number: Option<u16>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub backpack_outputs: Vec<ItemAmount>,
 }
@@ -124,6 +126,10 @@ pub struct AchievementProgress {
 pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub completes: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub repeatable: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub required_claims: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub counter: Option<RewardCounter>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -250,6 +256,7 @@ struct Document {
 
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
 ];
 
@@ -415,7 +422,32 @@ fn validate_document(document: Document, maximum: usize) -> Result<Document, Str
         let inputs: BTreeSet<_> = c.take.iter().map(|s| &s.item).collect();
         let evidence: BTreeSet<_> = c.present.iter().map(|s| &s.item).collect();
         let requires: BTreeSet<_> = c.requires.iter().map(|s| &s.track).collect();
-        if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+        if c.required_claims.len() > 8
+            || c.required_claims.iter().collect::<BTreeSet<_>>().len() != c.required_claims.len()
+            || c.required_claims
+                .iter()
+                .any(|key| !slug(key, "oteryn:reward-claim.", b"._/:-", 128))
+            || (c.repeatable
+                && (c.fee.is_none()
+                    || c.give.is_none()
+                    || c.outfit.is_some()
+                    || !c.outfits.is_empty()
+                    || c.achievement.is_some()
+                    || c.completes
+                    || !c.state_ops.is_empty()
+                    || !c.participants.is_empty()
+                    || c.counter.is_some()
+                    || !c.achievement_progress.is_empty()
+                    || c.storage.iter().any(|s| !s.preserve)))
+            || c.give.as_ref().is_some_and(|r| {
+                r.key_number.is_some_and(|key| {
+                    key == 0
+                        || r.count != 1
+                        || !r.contents.is_empty()
+                        || !r.backpack_outputs.is_empty()
+                })
+            })
+            || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
             || !slug(&c.npc, "oteryn:npc.", b"_", 128)
@@ -489,7 +521,8 @@ fn validate_document(document: Document, maximum: usize) -> Result<Document, Str
                     || participant_keys.contains(&counter.track)
                     || requires.contains(&counter.track)
             })
-            || (c.counter.is_none()
+            || (!c.repeatable
+                && c.counter.is_none()
                 && !c.value_only_guarded()
                 && c.storage
                     .iter()
@@ -830,6 +863,47 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn paid_repeatable_key_sales_require_price_preserved_guards_and_one_key() -> Result<(), String>
+    {
+        let source = include_str!("../../../../../content/quests/npc-callbacks/fibula.json");
+        let mut value: serde_json::Value =
+            serde_json::from_str(source).map_err(|e| e.to_string())?;
+        let index = value["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .position(|c| c["key"] == "oteryn:quest-reward/fibula-key-repeat")
+            .ok_or("key sale")?;
+        assert!(parse(&value.to_string()).is_ok());
+        for edit in 0..7 {
+            let mut invalid = value.clone();
+            let c = &mut invalid["callbacks"][index];
+            match edit {
+                0 => c["fee"] = serde_json::Value::Null,
+                1 => c["fee"]["gold"] = 0.into(),
+                2 => c["give"]["key_number"] = 0.into(),
+                3 => c["give"]["count"] = 2.into(),
+                4 => {
+                    c["give"]["contents"] =
+                        serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1}])
+                }
+                5 => c["storage"][0]["preserve"] = false.into(),
+                _ => c["achievement"] = "oteryn:achievement/backpack_tourist".into(),
+            }
+            assert!(
+                parse(&invalid.to_string()).is_err(),
+                "invalid paid sale {edit}"
+            );
+        }
+        value["callbacks"][index]["repeatable"] = false.into();
+        assert!(
+            parse(&value.to_string()).is_err(),
+            "ordinary rewards still need a once-only guard"
+        );
+        Ok(())
+    }
+
     #[test]
     fn level_and_positive_addon_guards_preserve_one_shot_bases() -> Result<(), String> {
         let original = super::load()?
@@ -1261,7 +1335,7 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        assert_eq!(load()?.len(), 254 + 7);
+        assert_eq!(load()?.len(), 254 + 7 + 3);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -1274,7 +1348,7 @@ mod tests {
             Some("reward callback bounds")
         );
         assert_eq!(
-            parse_documents(&[DOCUMENTS[0], DOCUMENTS[1], DOCUMENTS[1]])
+            parse_documents(&[DOCUMENTS[0], DOCUMENTS[1], DOCUMENTS[1], DOCUMENTS[1]])
                 .err()
                 .as_deref(),
             Some("reward callback document bounds")

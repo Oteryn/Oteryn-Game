@@ -141,7 +141,7 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
-    RECIPES.iter().map(|recipe| Callback { achievements: Vec::new(), activation: None, completes: false, item_reward: None, remote_teleport: None, requirements: None, reward_bundle: false,
+    RECIPES.iter().map(|recipe| Callback { failure_teleport: None, achievements: Vec::new(), activation: None, completes: false, item_reward: None, remote_teleport: None, requirements: None, reward_bundle: false,
 world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
         world_requirements: Vec::new(),

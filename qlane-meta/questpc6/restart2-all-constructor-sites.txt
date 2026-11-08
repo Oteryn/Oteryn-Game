@@ -1,0 +1,191 @@
+apps/game-server/src/node/serve/qualification_fixture.rs:114:    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+apps/game-server/src/node/serve/qualification_fixture.rs:154:        let request = RewardClaimMintRequest {
+apps/game-server/src/node/serve/bundle_npcs.rs:354:            talk: Arc::new(NpcTalkBook::from_model_with_native_quests(
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:35:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:582:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:596:        request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:805:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:806:    RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:826:fn coins(command: CommandRef, claim_key: &str, quantity: u32) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1081:        let cases: Vec<(RewardClaimMintRequest, RewardClaimRefusal)> = vec![
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:1717:        let key = RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2182:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2184:) -> RewardClaimMintRequest {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2361:        let request = || -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:2847:    ) -> TestResult<RewardClaimMintRequest> {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:2:use crate::durability::reward_claim_mint::RewardClaimMintContent;
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:7:    mut request: RewardClaimMintRequest,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:71:            bag.contents = vec![RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:88:            present.contents = [Some(1), None, Some(1), None].into_iter().map(|fluid_subtype| RewardClaimMintContent {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:113:                    bad.contents = vec![RewardClaimMintContent {
+crates/gameplay/content/src/content/world_reward_claims.rs:104:pub struct BoundPlacement {
+crates/gameplay/content/src/content/world_reward_claims.rs:113:    pub contents: Vec<RewardContainerItem>,
+crates/gameplay/content/src/content/world_reward_claims.rs:121:pub struct RewardContainerItem {
+crates/gameplay/content/src/content/world_reward_claims.rs:135:    pub placements: Vec<BoundPlacement>,
+crates/gameplay/content/src/content/world_reward_claims.rs:243:    contents: Vec<RewardContainerItem>,
+crates/gameplay/content/src/content/world_reward_claims.rs:762:        result.contents.push(RewardContainerItem {
+crates/gameplay/content/src/content/world_reward_claims.rs:1002:            Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:153:pub struct RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:167:pub struct RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:181:    pub contents: Vec<RewardClaimMintContent>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:361:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:465:    request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:511:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:524:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:539:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1028:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1385:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1466:fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1557:fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1847:    fn request(achievement: Option<(&str, AchievementCatalogueLookup)>) -> RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1849:        RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1882:        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1896:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1918:        let key = |number: Option<u16>| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1928:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1932:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1936:            RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1950:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1951:        let with_quest = |number| RewardClaimMintRequest {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2000:            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2055:        bag.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2080:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2088:            RewardClaimMintContent {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2148:        container.contents = vec![RewardClaimMintContent {
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:2:use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:11:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:13:    ) -> Result<NpcProgramCommit, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:32:impl SequencedOutcome for NpcProgramCommit {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:21:pub enum ViolaAction {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:25:impl ViolaAction {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:34:pub enum ViolaReply {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:43:impl ViolaReply {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:76:    ) -> Result<Option<ViolaReply>, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:105:        action: ViolaAction,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:110:    ) -> Result<ViolaReply, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:134:                (2,_)=>ViolaReply::AlreadyCompleted,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:135:                (0,ViolaAction::Mission)=>ViolaReply::Offer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:136:                (0,ViolaAction::Accept)=>{sqlx::query("INSERT INTO game_character_viola(character_id,stage) VALUES(encode($1,'hex')::uuid,1)").bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;ViolaReply::Accepted},
+crates/gameplay/durability/src/durability/tutorial_viola.rs:137:                (1,ViolaAction::Mission)=>ViolaReply::ReturnOffer,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:138:                (1,ViolaAction::Accept)=>{
+crates/gameplay/durability/src/durability/tutorial_viola.rs:146:                        Exchange::Missing=>ViolaReply::MissingBook,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:147:                        Exchange::NoRoom=>ViolaReply::NoRoom,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:154:                            craft=Some(transaction);xp=Some(occurrence.as_bytes().to_vec());ViolaReply::Completed
+crates/gameplay/durability/src/durability/tutorial_viola.rs:171:    action: Option<ViolaAction>,
+crates/gameplay/durability/src/durability/tutorial_viola.rs:172:) -> Result<Option<ViolaReply>, DurabilityError> {
+crates/gameplay/durability/src/durability/tutorial_viola.rs:178:            ViolaReply::stored(reply)
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:17:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/arena.rs:102:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/monk.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:12:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:111:fn validate_soul_war_request(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/soul_war.rs:130:        character: CharacterId, request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:14:        requests: [RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:107:    requests: &[RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:109:) -> std::result::Result<RewardClaimMintRequest, DurabilityError> {
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:132:    requests: &[RewardClaimMintRequest; 7],
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:11:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:25:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:80:pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:122:pub(super) fn plan(request: &RewardClaimMintRequest, reservation: &Reservation) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:126:fn plan_for_transaction(request: &RewardClaimMintRequest, transaction: &[u8; 16]) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:153:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs:173:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:23:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/reward_claim_mint/viola_book.rs:12:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/viola_book.rs:89:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/viola_book.rs:91:) -> std::result::Result<RewardClaimMintRequest, DurabilityError> {
+crates/gameplay/durability/src/durability/reward_claim_mint/viola_book.rs:101:    request: &RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:13:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/grizzly.rs:46:        request: RewardClaimMintRequest,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:6:pub(super) fn plan(request: &RewardClaimMintRequest) -> Value {
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:19:pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:8:pub struct NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:18:pub struct NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:24:impl NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:58:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:72:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:124:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:125:    ) -> Result<Option<NpcProgramCommit>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:149:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:151:    ) -> Result<NpcProgramCommit> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:258:            Ok(Ok(NpcProgramCommit{transition:QuestTransitionOutcome::Committed(receipt),reply:plan.reply,next_topic:plan.next_topic}))
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:263:fn refused(refusal: QuestRefusal) -> NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:264:    NpcProgramCommit {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:274:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:275:) -> StoredResult<Result<Option<NpcProgramCommit>>> {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:284:    Ok(Ok(Some(NpcProgramCommit {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:623:    ) -> Option<crate::durability::reward_claim_mint::RewardClaimMintRequest> {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:626:            RewardClaimMintContent, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:661:            contents.push(RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:678:        Some(RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:7:    npc_program::{self, NpcProgramRequest},
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:26:        request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:29:        fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:42:    request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:43:    fallback_lines: Vec<String>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:111:    let mut request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:160:    let fallback_lines = if greeting && plan.reply.is_empty() {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:174:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:229:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:297:            fallback_lines: fallback_lines.clone(),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:334:                    fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:368:        fallback_lines,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:404:                        fallback_lines
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:4:use crate::durability::tutorial_viola::{ViolaAction, ViolaReply};
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:24:    action: Option<ViolaAction>,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:58:        "mission" | "task" | "book" => Some(ViolaAction::Mission),
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:74:                Some(ViolaAction::Accept)
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:97:fn line(reply: ViolaReply) -> &'static str {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:99:        ViolaReply::ReturnOffer => "Glad to see you are back. Did you find my book? Say yes or no.",
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:100:        ViolaReply::Offer => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:103:        ViolaReply::Accepted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:106:        ViolaReply::MissingBook => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:109:        ViolaReply::Completed => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:112:        ViolaReply::AlreadyCompleted => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:115:        ViolaReply::NoRoom => {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:125:    reply: ViolaReply,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:130:        state.viola = if matches!(reply, ViolaReply::Offer | ViolaReply::ReturnOffer) {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:143:    if reply == ViolaReply::Completed
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs:149:        inventory_changed: reply == ViolaReply::Completed,
+crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs:8:use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimMintRequest};
+crates/gameplay/dispatch/src/gameplay_transport/viola_book.rs:151:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:105:        let request = RewardClaimMintRequest {
+crates/gameplay/social/src/interaction/chest_use.rs:67:    RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/social/src/interaction/chest_use.rs:296:) -> Result<(ChildOccurrenceRef, RewardClaimMintRequest), ChestUseError> {
+crates/gameplay/social/src/interaction/chest_use.rs:311:    let mint_request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:11:    RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:164:                            RewardClaimMintContent {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:178:                let request = RewardClaimMintRequest {
+crates/gameplay/npc/src/npc_talk.rs:135:        Self::from_model_with_native_quests(model, &[])
+crates/gameplay/npc/src/npc_talk.rs:140:    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+crates/gameplay/npc/src/npc_talk.rs:573:        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:8:use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimMintRequest};
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:159:                    .map(|(item, quantity)| RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:6:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:67:        let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:9:    RewardClaimMintError, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:15:    request: RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:203:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola_book.rs:7:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola_book.rs:167:            let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs:220:            super::super::npc_program::exercise_scoped(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:70:        NpcTalkBook::from_model_with_native_quests(&model, &native_npcs),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:42:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:198:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:7:    RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:248:    let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:5:use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:113:    let request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:399:    let request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:641:pub(super) async fn exercise_scoped(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:403:            Some(crate::durability::tutorial_viola::ViolaReply::Completed)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:469:        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:570:        item_mint::TypedDefinitionRef, reward_claim_mint::RewardClaimMintRequest,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs:582:    let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:8:use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:458:                let request = RewardClaimMintRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:600:    use crate::durability::reward_claim_mint::{RewardClaimMintRequest, RewardClaimMintError, RewardClaimRefusal};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:637:    let mut request = RewardClaimMintRequest {

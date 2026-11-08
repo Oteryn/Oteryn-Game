@@ -670,6 +670,7 @@ fn scenario() -> TestResult {
         };
         let world = super::quest_world_callbacks::world(
             &Callback {
+                failure_teleport: None,
                 effects: Default::default(),
                 actor_kind: Default::default(),
                 facing: None,
