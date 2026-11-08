@@ -1,0 +1,13 @@
+# Targuna continuation decisions
+
+Morla's map is item53158, one nonstackable portable Old Treasure Map weighing400. Source: the retained donor corpus at tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz, Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data/items/items.xml:88034, SHA256c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb; served appearances2dfa943b independently has flags.take=true. The exact existing Crystal identity binding is reused; canonical facts and materializable=false admission record remain untouched by native physical qualification.
+
+Map grant source: same corpus/revision data-global/npc/morla.lua:58,110-114, SHA2566d4996501d42f7750acf94e99f8e9b6fc36e65d88d77ae190f5d73875b5b62ec. URL https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/morla.lua#L110 . The source's20pirates/10eggs are source facts, not requirements in the explicitly selected nine-stage Oteryn approximation. They remain preserved in the source corpus. No Premium, level10 travel restriction, fee or extra mission is inferred.
+
+Chosen recipe evidence: content/quests/definitions/quests-00200-00299.json:1 /records/79/definition/oteryn_recipe/payload/recipe/stages/1. Its explore objective combines Morla/Aragonia map acquisition and returning to Sterling. This batch only grants the map at Morla after first-contact progress0, moving the intermediate progress to1 once. It does not complete chosen s2, infer the travel route or mark the quest completed. Return to Sterling is a separate later contact. Dialogue is authored Oteryn text, not a donor quote.
+
+The isolated Morla PG witness arranges its explicit prerequisite stage through the existing shared reward fixture. It proves the reward boundary, source cell, custody and replay; it does not claim a played-through prerequisite or whole quest. Sterling's unseeded first-contact proof is separately committed at406d93309. Never count this isolated reward proof as whole-quest qualification.
+
+The equipment cohort generator initially rejected the new union3793 against independently declared3792. The repository regeneration tool now declares the finite, source-qualified one-map cohort, verifies its exact identity and disjoint membership, and preserves all existing count/raw-attribute assertions. Generated Rust cohort output is written only through that tool. Six regression tests cover missing profile, wrong identity, wrong declared count and idempotence.
+
+The Native hook is an existing authoring producer path; its output reports activation=false. No node boot, serve or runtime content activation-controller logic changes in this batch.

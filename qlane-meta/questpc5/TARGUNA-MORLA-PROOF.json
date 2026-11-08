@@ -1,0 +1,60 @@
+{
+  "quest": "oteryn:quest.targuna_quest",
+  "scope": "Isolated Morla map reward after an arranged stage0 prerequisite; no travel, return-to-Sterling, chosen s2 completion or whole-quest completion claimed.",
+  "decision": "CONTRACT-NOTES.md",
+  "red": {
+    "postgres": "18.6",
+    "seconds": 47.965954115,
+    "error": "callback",
+    "log": "/tmp/questpc5-n2-morla-red-pg.log"
+  },
+  "green": {
+    "postgres": "18.6 (Debian18.6-1.pgdg13+2)",
+    "seconds": 96.253608336,
+    "success": true,
+    "case": "questpc5_targuna_morla_commits_exact_old_treasure_map_reward_and_replay",
+    "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc5-targuna-morla-map success=true",
+    "log": "/tmp/questpc5-n2-morla-green-pg.log",
+    "proven": [
+      "Morla actual cell33514,32748,legacy-z8",
+      "stage0->1 via native NPC wire",
+      "one exact item53158 quantity1 mint receipt",
+      "literal committed-command replay leaves counts unchanged"
+    ]
+  },
+  "source": {
+    "npc": "Retained corpus Crystal9f5a72c6 data-global/npc/morla.lua:58,110-114 SHA2566d4996501d42f7750acf94e99f8e9b6fc36e65d88d77ae190f5d73875b5b62ec",
+    "item": "Retained same corpus/revision data/items/items.xml:88034 SHA256c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+    "appearance": "Served2dfa943b flags.take=true; no canonical record overwritten",
+    "placement": "Existing reviewed Morla promotion candidate; same LuaSHA and retained BR coordinate"
+  },
+  "authoring": {
+    "physical_profile": "2PASS5.943s after missing-module RED; portable nonstackable weight400, canonical files unchanged",
+    "callback_and_preservation": "4PASS25.295s after absent-callback RED",
+    "placement": "RED0versus1 then1PASS0.101s",
+    "equipment_tool": "6PASS0.002s; Native generator RED3793versusdeclared3792 repaired by independent exact-map cohort declaration through repository tooling",
+    "ci_checks": "PASS exact quest-authoring checks",
+    "ci_units": "PASS105modules1122tests0failures",
+    "tree": "PASS97/97; Item34111 Mount252 equivalence preserved"
+  },
+  "validation_pending": [],
+  "previous_broader_units": "Previous-step dispatch/content run stopped at new content batch boundary:1056passed;2running cases interrupted; no pre-interruption assertion failure. Restarted for current dispatch/content/quests data.",
+  "activation_scope": "Only existing authoring producer/profile data and quest callback data changed; generator activation=false. No boot/serve/runtime activation-controller change.",
+  "whole_quest_qualified": false,
+  "qualification": "QUALIFIED isolated Morla map reward boundary only; whole quest UNFINISHED",
+  "shipping_checks": {
+    "workspace": "PASS cargo check --workspace --all-targets8m30s including build-lock wait",
+    "clippy": "PASS dispatch/content all-targets -Dwarnings4m38s including build-lock wait",
+    "fmt": "PASS cargo fmt --all --check and explicit new PG-file rustfmt",
+    "pins": "PASS current compiler serial pin-refresh and pin-check",
+    "equipment": "PASS independent3793 union; six tool tests; generated cohort declaration only through repository tooling",
+    "generated": "Native45 outputs, dialogue/placement/callback registries, item audit, binding evidence, completion matrix and talk packets refreshed",
+    "main": "Fetched main107625470 again before publication; no new commits to merge",
+    "crate_units": "PASS all2261 dispatch/content/quests unit cases3466.760s; zero failures. PG cases filtered from this unit run; own Morla PG18.6 case separately PASS96.253608336s."
+  },
+  "n3_evidence_context": {
+    "historical_implementation_branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+    "pushed_head": "5a6807859d3238c1133fca7eab705a2b3bd5906c",
+    "scope": "Historical partial-boundary validation. These tests/code are awaiting collector integration and are not an n3/main whole-quest qualification."
+  }
+}
