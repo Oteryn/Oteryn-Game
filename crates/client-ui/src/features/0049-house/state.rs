@@ -37,7 +37,12 @@ impl Panel {
         } else {
             house::result(&reply.payload).and_then(|(d, revision)| {
                 if d != 1 && d != 11 {
-                    return Err("The server refused the action");
+                    return Err(match d {
+                        3 => "The server refused the action: catalogue changed; refresh before retrying",
+                        8 => "The server refused the action: insufficient funds",
+                        9 => "The server refused the action: balance limit reached",
+                        _ => "The server refused the action",
+                    });
                 }
                 if let Some(row) = self.page.rows.get_mut(self.pending_index)
                     && self.pending_acl
