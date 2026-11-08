@@ -8,6 +8,7 @@ use std::{
 };
 
 pub struct SettingsState {
+    pub(super) help_report_pending: bool,
     base_path: Option<PathBuf>,
     character: Option<[u8; 16]>,
     battle_edit: u64,
@@ -56,6 +57,7 @@ impl SettingsState {
                 }
             }
         }
+        self.help_report_pending = false;
         self.store = selected.store;
         self.preferences = selected.preferences;
         self.feedback = selected.feedback;
@@ -116,6 +118,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            help_report_pending: false,
             base_path,
             character: None,
             battle_edit: 0,

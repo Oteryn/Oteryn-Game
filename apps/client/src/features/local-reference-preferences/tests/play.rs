@@ -388,3 +388,25 @@ fn moved_logout_suppresses_all_original_modifier_variants() -> Result<(), Box<dy
     }
     Ok(())
 }
+
+#[test]
+fn help_navigation_opens_existing_report_without_submitting() {
+    use crate::play::{HelpTopic, SettingsState, help_text};
+    for topic in [HelpTopic::Questions, HelpTopic::Manual, HelpTopic::Client] {
+        let text = help_text(topic);
+        assert!(text.len() > 200);
+        assert!(!text.contains("https://"));
+    }
+    let mut settings = SettingsState::new(None);
+    settings.request_help_report();
+    settings.open_help_report(None);
+    assert!(settings.feedback.contains("Join a game session"));
+    let (link, mut commands, _) = crate::play::play_channel();
+    settings.open_help_report(Some(&link));
+    assert!(!link.player_report_panel().open);
+    settings.request_help_report();
+    settings.open_help_report(Some(&link));
+    assert!(link.player_report_panel().open);
+    assert!(!link.player_report_panel().pending);
+    assert!(commands.try_recv().is_err());
+}

@@ -21,6 +21,8 @@ use winit::{
 };
 
 type Shared = SettingsState;
+#[path = "help_native.rs"]
+mod help_window;
 #[path = "profiles_native.rs"]
 mod profile_window;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
@@ -81,6 +83,7 @@ impl Settings {
         link: Option<&oteryn_client::play::PlayLink>,
     ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
         let mut state = lock(&self.shared);
+        state.open_help_report(link);
         let (events, requested) = match link {
             Some(link) => state.input_from_play(events, link),
             None => state.input_in_context(events, false),
@@ -101,6 +104,7 @@ impl Settings {
         }
         let mut state = lock(&self.shared);
         state.select_character(view.preference_character());
+        state.open_help_report(Some(link));
         state.sync_battle_lists(link);
         state.sync_skills_layout(link);
         if let Err(error) = state.restore(view, viewport) {
@@ -172,7 +176,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 120)
+                && matches!(id, 103 | 106 | 110..=113 | 120 | 121)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -349,7 +353,15 @@ fn run(shared: Arc<Mutex<Shared>>) {
             [535, 265, 185, 30],
             0,
         );
-        let feedback = control(hwnd, "STATIC", "", 0, [10, 320, 710, 150], 0);
+        let help_page = control(
+            hwnd,
+            "BUTTON",
+            "Help and reports...",
+            121,
+            [10, 310, 210, 30],
+            0,
+        );
+        let feedback = control(hwnd, "STATIC", "", 0, [10, 350, 710, 120], 0);
         if [
             help,
             list,
@@ -361,6 +373,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             mute,
             apply,
             profiles,
+            help_page,
             feedback,
             transfer_label,
             transfer_path,
@@ -405,6 +418,12 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if action == 121 {
+                    drop(state);
+                    help_window::open(Arc::clone(&shared), hwnd);
+                    state = lock(&shared);
+                    continue;
+                }
                 if action == 120 {
                     drop(state);
                     profile_window::open(Arc::clone(&shared), hwnd);

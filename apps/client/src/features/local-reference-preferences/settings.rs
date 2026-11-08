@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "help.rs"]
+mod help;
 #[path = "profiles.rs"]
 mod profiles;
 #[path = "store.rs"]
@@ -17,6 +19,7 @@ mod store;
 #[path = "sync.rs"]
 mod sync;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
+pub use help::{HelpTopic, help_text};
 pub use profiles::HotkeyProfiles;
 pub use store::PreferenceStore;
 pub use sync::SettingsState;
