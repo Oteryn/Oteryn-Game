@@ -66,7 +66,7 @@ Zasady przeciw dublowaniu:
 | T082 | Cyclopedia | Bosstiary: kategorie/points/progress | PARTIAL | Jest postęp i boss key; brak galerii, filtrów kategorii i pełnej prezentacji etapów. |
 | T083 | Cyclopedia | Boss Slots: equip/remove/bonus | PARTIAL | Komendy są; brak pełnego selektora bossów i prezentacji bonusów. |
 | T084 | Cyclopedia | Houses: browse/details/auction/map | DONE | apps/client/src/features/0049-house/view.rs:11 + house_catalogue_details_reach_production_panel; crates/gameplay/dispatch/src/gameplay_transport/house_query.rs:79 + house_query_dispatch_preserves_metadata_opt_in |
-| T085 | Cyclopedia | Analytics selector | PARTIAL | Jeden panel zbiorczy zamiast selektora i osobnych narzędzi. |
+| T085 | Cyclopedia | Analytics selector | DONE | apps/client/src/features/0057-cyclopedia-map/view/analytics.rs:5 + analytics_direct_selector_uses_live_facts_and_keeps_tools_separate |
 | O022 | Cyclopedia | Cyklopedia: nawigacja między działami | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | O072 | Cyclopedia | Cyklopedia: bestiariusz i charmy | PARTIAL | Brakuje przeglądarki kategorii i kart potworów ze statystykami, odpornościami i łupem; formularz pokazuje indeksy ras, zabicia i progi. |
 | O077 | Cyclopedia | Cyklopedia: katalog przedmiotów | PARTIAL | Brakuje katalogu przedmiotów z kategoriami i wyszukiwaniem oraz powiązanych ofert/dropów; istnieje inspekcja wybranego przedmiotu i osobny rynek. |

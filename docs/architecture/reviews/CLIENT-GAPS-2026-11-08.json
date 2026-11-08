@@ -575,9 +575,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Analytics selector",
-  "status": "PARTIAL",
-  "gap": "Jeden panel zbiorczy zamiast selektora i osobnych narzędzi.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/analytics.rs:5 + analytics_direct_selector_uses_live_facts_and_keeps_tools_separate"
  },
  {
   "id": "T086",
