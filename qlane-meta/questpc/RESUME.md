@@ -34,19 +34,20 @@ pin refresh PASS, digest unchanged b79b1d74. PG proof scope remains explicit
 in QUEST-STATUS.json. Active owner assignment is M01b only:46 routes/56
 EXPLORE stages; CLAIMED on qmech a17567dbf. Only2000-2009 if SQL is needed.
 
-M01b first code slice is on owned qm-questpc branch (not shared qmech).
-Longsword s1 reuses native STEP_IN and atomically writes visited+counter.
-329 quest units,2 focused tests,107 authoring modules/checks/tree and strict
-quests+dispatch Clippy pass. Native catalogue PG passes7.422s. Corrected
-immediate-replay PG test is running; never claim that case green yet.
-M01b remains IN_PROGRESS (46 routes/56 stages); CLAIMS belongs to coordinator.
+M01b continues on claude/happy-davinci-ijz3wy-qm-questpc only.
+Longsword and Geomancer s1 are wired:2/56 EXPLORE stages,2/46 routes.
+Geomancer code is316cc6842; qmech41edb50ef is merged in d8aba5866.
+The generator rejects unknown/non-explore stages and foreign counter owners;
+retained B3 tiles prove both exact canonical Area anchors without map changes.
 
-M01b continuation: merged qmech4bed43770 in87eeaa719; generated native
-registries and actual World pin7b680a60 with repository tools. Longsword and
-Geomancer s1 are wired,2/56 assigned EXPLORE stages;44/46 routes remain.
-The new Geomancer catalogue check was RED without its callback, then GREEN.
-342 quest units/109 authoring modules/checks/content-tree pass. Three real
-PostgreSQL18.6 cases pass128.51s (Geomancer59.238595156s), proving native entry,
-once-only storage and immediate replay. Finish workspace/clippy/fmt and push
-to qm-questpc only. Next: authoritative Premium/level, then per-visit and
-predecessor guards. Never mark the whole M01b DONE from these two stages.
+Post-merge356 quest units/111 authoring modules/checks/content-tree PASS.
+Workspace alltargets PASS7m59s after fixing the collected map-mark fixture's
+missing creature_use:None; strict quests+dispatch Clippy PASS4m40s and fmt PASS.
+Current locked World compiler pin-check PASS. Authority-target strict Clippy PASS3m02s.
+PG3/3 PASS128.51s on the316cc6842 source tree before the package merge:
+catalogue8.222271585s,Longsword61.045918893s,Geomancer59.238595156s.
+Post-merge PG rerun is pending under the PREPUSH-2 cadence exception (no lane SQL
+changes); rerun all M01b native cases with the next entry batch. This is stage
+credit, never whole-quest completion. Next: authoritative Premium/level, then
+visit/predecessor guards for the remaining44 routes/54 stages. CLAIMS is owned
+by the coordinator; M01b remains IN_PROGRESS. Only2000-2009 if SQL is needed.

@@ -1,6 +1,6 @@
 {
   "task_id": "questpc-n3",
-  "branch": "claude/happy-davinci-ijz3wy-questpc-pc2-n2-n3",
+  "branch": "claude/happy-davinci-ijz3wy-qm-questpc",
   "base_main": "e9276ad7e",
   "historical_packet_commit": "b22d52b5b18267a2a454f94372d476e214573c1e",
   "packet_rows": 178,
@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b second tested slice: Geomancer s1 and canonical stage/counter-owner validation; awaiting final compile/lint gates before owned-branch publication.",
+  "batch_state": "M01b Geomancer entry slice validated for publication; qmech41edb50ef merged and one missing creature_use initializer repaired; whole M01b remains IN_PROGRESS.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [
@@ -1098,7 +1098,7 @@
       "Longsword Quest",
       "Geomancer Quest"
     ],
-    "validation": "3 real PG cases pass128.51s;342 quest units;109 authoring modules/checks/tree pass; workspace/clippy/fmt finishing"
+    "validation": "Post-merge356 quest units,111 authoring modules/checks/tree,workspace/fmt and changed-target Clippy PASS;PG3/3 before package merge128.51s;post-merge PG pending cadence exception"
   },
   "publication_validation": {
     "postgres_cases": 17,
