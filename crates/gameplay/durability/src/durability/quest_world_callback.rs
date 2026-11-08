@@ -515,16 +515,21 @@ async fn lock_location(
     Ok(())
 }
 
-mod input_authority;
-
-async fn apply_input<'a>(
+async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: impl Into<input_authority::InputPermit<'a>>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    permit.into().check(fence)?;
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    permit.check_channel(world_id, channel_id)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
@@ -557,7 +562,7 @@ async fn apply_input<'a>(
 
 pub(super) async fn consume_npc_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &super::quest_state::npc_program::NpcItemPermit,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
