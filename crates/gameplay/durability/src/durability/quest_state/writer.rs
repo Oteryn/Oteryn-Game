@@ -81,6 +81,46 @@ impl DurabilityRoot {
         .await
     }
 
+    /// The same immutable fixture resolution as NPC rewards, retaining every World fence.
+    #[cfg(feature = "test-support")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "fixture retains the complete production World admission tuple"
+    )]
+    pub async fn commit_fixture_world_admission<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        gate: &G,
+        callback: oteryn_gameplay_quests::quest::world_callbacks::Callback,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner_resolved::<_, 0>(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            Some((permit, context, None)),
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Vec::new(),
+            vec![callback],
+        )
+        .await
+    }
+
     /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
     /// under the current recovery fence without session authority; another cause kind on the
     /// same key conflicts. A new request is fenced like an XP award, refused while a death's
@@ -152,7 +192,7 @@ impl DurabilityRoot {
 
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_items(
+    pub async fn commit_character_world_callback_with_items<G: grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -163,6 +203,7 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
         admission: Option<QuestRewardAdmission<'_>>,
+        gate: &G,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -174,7 +215,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            gate,
             None,
             None,
             admission,
@@ -523,6 +564,7 @@ impl DurabilityRoot {
                             || c.item_on_target.is_some()
                             || c.world_change.is_some()
                             || c.minimum_level.is_some()
+                            || c.admission.is_some()
                             || c.experience.is_some()
                             || c.monk_reward.is_some()
                             || c.native_rule.is_some()
@@ -660,6 +702,16 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    // Premium's shared latch precedes the Character root lock. Historical
+                    // receipts above replay without evaluating current entrance eligibility.
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                        let account: String = sqlx::query_scalar(
+                            "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
+                        ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+                        if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
@@ -804,6 +856,7 @@ impl DurabilityRoot {
                         .iter()
                         .map(|effect| effect.track.as_str())
                         .collect();
+                    keys.extend(catalogue.completion_tracks(quest));
                     let grizzly_keys = grizzly_action.as_ref().map(|_| {
                         oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
                     }).unwrap_or_default();
@@ -886,7 +939,9 @@ impl DurabilityRoot {
                     // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
                     let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
                         || keys.iter().copied().filter(|key| reward_callback.as_ref().is_none_or(|c|
-                            !c.requires.iter().any(|r| r.track == *key))).collect(),
+                            !c.requires.iter().any(|r| r.track == *key)))
+                            .filter(|key| transition.effects.iter().any(|effect| effect.track.as_str() == *key)
+                                || !catalogue.completion_tracks(quest).any(|read| read == *key)).collect(),
                         |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
                     );
                     let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
@@ -932,9 +987,22 @@ impl DurabilityRoot {
                         let configured = clock.load(std::sync::atomic::Ordering::Acquire);
                         if configured >= 0 { configured } else { now }
                     });
+                    // M47: historical receipts returned above. Draw only in this fenced
+                    // transaction; the resulting complete snapshot is persisted in its
+                    // existing Quest receipt, atomically with all four source tracks.
+                    let roll = if transition.effects.iter().any(|effect| matches!(
+                        effect.effect,
+                        oteryn_gameplay_quests::quest::QuestEffectKind::Native(
+                            oteryn_gameplay_quests::quest::native_rules::NativeRule::BarbarianMead
+                        )
+                    )) {
+                        let draw: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 5))::smallint")
+                            .fetch_one(&mut *tx).await?;
+                        Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else { None };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
-                            || catalogue.evaluate(transition, &stored, now),
+                            || catalogue.evaluate_with_roll(transition, &stored, now, roll),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {
@@ -1128,6 +1196,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
+                    let completes = catalogue.completes_after_claim_sets(transition, &stored, &changes);
                     let (cause_id, ordinal) = request.cause.key();
                     let track_keys: Vec<&str> =
                         changes.iter().map(|change| change.track.as_str()).collect();
@@ -1163,7 +1232,7 @@ impl DurabilityRoot {
                     .bind(binding.as_slice())
                     .bind(&pin)
                     .bind(hash.as_slice())
-                    .bind(catalogue.completes_after(transition,&changes))
+                    .bind(completes)
                     .bind(&track_keys)
                     .bind(&before)
                     .bind(&after)
@@ -1207,7 +1276,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completed = catalogue.completes_after(transition,&changes).then_some(committed.as_str());
+                    let completed = completes.then_some(committed.as_str());
                     let written = if stored_state.is_some() {
                         sqlx::query(
                             "UPDATE game_character_quest_states \
@@ -1324,7 +1393,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         pinned_content_revision: pin,
                         definition_hash: hash,
-                        completes: catalogue.completes_after(transition,&changes),
+                        completes,
                         changes,
                         experience,
                     };
