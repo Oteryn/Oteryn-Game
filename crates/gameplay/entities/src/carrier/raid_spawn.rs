@@ -2,6 +2,7 @@
 //! A durable raid claim supplies identities; the current owner still proves
 //! its generation, active creature revision and present map/occupancy facts.
 use super::*;
+use crate::CompanionSnapshot;
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use std::collections::BTreeMap;
 
@@ -66,6 +67,9 @@ pub struct RaidCreatureStatus {
 #[derive(Debug, Default)]
 pub(super) struct RaidSpawnLedger {
     receipts: BTreeMap<RaidSpawnIdentity, RaidSpawnReceipt>,
+    // Keys are a subset of receipts: one current body per admitted identity,
+    // regardless of form count. Original placement receipts remain immutable.
+    bodies: BTreeMap<RaidSpawnIdentity, (ExactActorRef, NativeRaidSpawnSpec)>,
     shared_attempts: BTreeMap<([u8; 16], u16), u8>,
     // A closing marker is reserved before the first actor admission. Closing
     // an existing run never needs more capacity than that run already owns.
@@ -92,6 +96,101 @@ impl RaidSpawnLedger {
 }
 
 impl ChannelRuntimeV1 {
+    /// Source create/remove at the exact current subject position. The new body
+    /// starts with its own full policy and actor generation; the raid stays open.
+    pub fn replace_raid_body(
+        &mut self,
+        stamp: RuntimeWorkStamp,
+        identity: RaidSpawnIdentity,
+        expected: &CompanionSnapshot,
+        next: &NativeRaidSpawnSpec,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        use EncounterSpawnError as E;
+        self.check_raid_stamp(stamp).map_err(E::Native)?;
+        if self.raid_spawns.runs.get(&identity.firing_id) != Some(&false) {
+            return Err(E::Native(CarrierError::PlanConflict));
+        }
+        let receipt = self
+            .raid_spawns
+            .receipts
+            .get(&identity)
+            .ok_or(E::Native(CarrierError::InvalidSpawnDefinition))?;
+        let (actor, current) = if let Some(body) = self.raid_spawns.bodies.get(&identity) {
+            body.clone()
+        } else {
+            let RaidSpawnOutcome::Placed(actor) = receipt.outcome else {
+                return Err(E::Native(CarrierError::PlanConflict));
+            };
+            (actor, receipt.spec.clone())
+        };
+        if actor != expected.actor
+            || expected.health <= 0
+            || expected.state.master.is_some()
+            || expected.state.policy.is_familiar
+            || expected.forge.is_some()
+            || current.creature.as_ref() != expected.state.policy.definition_key
+            || next.content != current.content
+            || next.boss != current.boss
+        {
+            return Err(E::Native(CarrierError::CreatureTargetMismatch));
+        }
+        self.validate_companion_snapshot(expected)
+            .map_err(E::Native)?;
+        let index = self
+            .preflight_native_masterless_removal(actor, &current.creature, current.content)
+            .map_err(E::Native)?;
+        let policy = self.companion_policy(&next.creature).map_err(E::Native)?;
+        if policy.definition_revision.as_str() != next.revision.as_ref() || policy.is_familiar {
+            return Err(E::Native(CarrierError::CreatureTargetMismatch));
+        }
+        let replacement = next.clone();
+        let new_body = !self.raid_spawns.bodies.contains_key(&identity);
+        // Reserve the bounded identity entry before either physical body changes.
+        self.raid_spawns
+            .bodies
+            .entry(identity)
+            .or_insert((actor, current.clone()));
+        let position = match &mut self.carrier.slots[index] {
+            Slot::CreatureOccupied { position, .. } => position.take(),
+            _ => None,
+        };
+        // This exclusive, synchronous turn replaces only the current subject's
+        // occupancy. Native admission still refuses every other occupant and
+        // rolls its free slot back on failure; the old position is always restored.
+        let result = self.admit_native_masterless_at(
+            &next.creature,
+            &next.revision,
+            next.content,
+            expected.position,
+            |_, _| Some(true),
+        );
+        if let Slot::CreatureOccupied { position: old, .. } = &mut self.carrier.slots[index] {
+            *old = position;
+        }
+        let successor = match result {
+            Ok(successor) => successor,
+            Err(error) => {
+                if new_body {
+                    self.raid_spawns.bodies.remove(&identity);
+                }
+                return Err(error);
+            }
+        };
+        if let Err(error) =
+            self.remove_native_masterless_subject(actor, &current.creature, current.content)
+        {
+            let _ = self.remove_native_masterless_subject(successor, &next.creature, next.content);
+            if new_body {
+                self.raid_spawns.bodies.remove(&identity);
+            }
+            return Err(E::Native(error));
+        }
+        self.raid_spawns
+            .bodies
+            .insert(identity, (successor, replacement));
+        Ok(successor)
+    }
+
     fn check_raid_stamp(&self, stamp: RuntimeWorkStamp) -> Result<(), CarrierError> {
         if !self.owner_fence()?.accepts_stamp(stamp) {
             return Err(CarrierError::WrongScope);
@@ -236,7 +335,12 @@ impl ChannelRuntimeV1 {
             .receipts
             .iter()
             .filter_map(|(identity, receipt)| {
-                (receipt.outcome == RaidSpawnOutcome::Placed(actor)).then_some(*identity)
+                let current = self
+                    .raid_spawns
+                    .bodies
+                    .get(identity)
+                    .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.0));
+                (current == RaidSpawnOutcome::Placed(actor)).then_some(*identity)
             });
         let first = rows.next();
         if rows.next().is_some() {
@@ -263,10 +367,12 @@ impl ChannelRuntimeV1 {
             index: u16::MAX,
         };
         Ok(self.raid_spawns.receipts.range(first..=last).map(|(_, receipt)| {
+            let outcome = self.raid_spawns.bodies.get(&receipt.identity)
+                .map_or(receipt.outcome, |body| RaidSpawnOutcome::Placed(body.0));
             RaidCreatureStatus {
                 identity: receipt.identity,
-                outcome: receipt.outcome,
-                alive: matches!(receipt.outcome, RaidSpawnOutcome::Placed(actor) if self.contains_live_creature(actor)),
+                outcome,
+                alive: matches!(outcome, RaidSpawnOutcome::Placed(actor) if self.contains_live_creature(actor)),
                 boss: receipt.spec.boss,
             }
         }).collect())
@@ -319,11 +425,14 @@ impl ChannelRuntimeV1 {
                 .receipts
                 .remove(&status.identity)
                 .ok_or(CarrierError::InvalidSpawnDefinition)?;
-            let result = self.remove_native_masterless_subject(
-                actor,
-                &receipt.spec.creature,
-                receipt.spec.content,
-            );
+            let current = self
+                .raid_spawns
+                .bodies
+                .get(&status.identity)
+                .map_or(&receipt.spec, |body| &body.1)
+                .clone();
+            let result =
+                self.remove_native_masterless_subject(actor, &current.creature, current.content);
             self.raid_spawns.receipts.insert(status.identity, receipt);
             result?;
             removed += 1;
@@ -357,6 +466,7 @@ impl ChannelRuntimeV1 {
             .collect::<Vec<_>>();
         for identity in &terminal {
             self.raid_spawns.receipts.remove(identity);
+            self.raid_spawns.bodies.remove(identity);
         }
         Ok(terminal.len())
     }

@@ -290,9 +290,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await?,
         );
         let statuses = {
-            let runtime = self.runtime.lock().await;
+            let mut runtime = self.runtime.lock().await;
             if runtime.binding().scope_generation() != identity.generation {
                 return Err(());
+            }
+            // Crystal 9f5a72c creaturescripts/quests/grimvale/feroxa.lua:
+            // create Feroxa2 at <=50k, then remove the first body. Keep the
+            // admitted raid identity alive across the physical actor handoff.
+            if selected.definition.waves.iter().any(|wave| {
+                wave.entries
+                    .iter()
+                    .any(|entry| entry.creature.as_str() == "oteryn:creature.feroxa")
+            }) {
+                for status in runtime.raid_creatures(identity.firing_id).map_err(|_| ())? {
+                    let RaidSpawnOutcome::Placed(actor) = status.outcome else {
+                        continue;
+                    };
+                    if !status.alive || !status.boss {
+                        continue;
+                    }
+                    let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+                        continue;
+                    };
+                    if snapshot.state.policy.definition_key != "oteryn:creature.feroxa"
+                        || snapshot.maximum_health != 100_000
+                        || snapshot.health > 50_000
+                    {
+                        continue;
+                    }
+                    let Ok(policy) = runtime.companion_policy("oteryn:creature.feroxa2") else {
+                        continue;
+                    };
+                    let Ok(next) =
+                        oteryn_gameplay_entities::carrier::NativeRaidSpawnSpec::qualified(
+                            "oteryn:creature.feroxa2",
+                            &policy.definition_revision,
+                            runtime.content_pin().server_artifact_digest(),
+                            true,
+                        )
+                    else {
+                        continue;
+                    };
+                    let Ok(stamp) = runtime.issue_owner_work() else {
+                        continue;
+                    };
+                    // Capacity/reservation refusals leave the old body intact;
+                    // they cannot obstruct the existing lifetime cleanup path.
+                    let _ = runtime.replace_raid_body(stamp, status.identity, &snapshot, &next);
+                }
             }
             runtime.raid_creatures(identity.firing_id).map_err(|_| ())?
         };
