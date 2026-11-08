@@ -3,6 +3,7 @@ use super::*;
 pub struct QuestPanel {
     pub state: QuestState,
     pub open: bool,
+    pub tracker_open: bool,
     pub mission: Option<u32>,
     pub list_search: String,
     pub list_sort: QuestSort,

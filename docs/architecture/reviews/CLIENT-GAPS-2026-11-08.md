@@ -177,11 +177,11 @@ Zasady przeciw dublowaniu:
 | O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
 | O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |
 | T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | PARTIAL | Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa. |
-| T002 | Login | Połączenie, re-entry i logout | PARTIAL | Obsługa sesji jest; brak pełnego zestawu okien kolejki i ponawiania jak w referencji. |
-| T003 | Login | Pozycja kolejki i odliczanie | MISSING | Brak ekranu kolejki i ponownej próby po jej odliczeniu. |
-| T004 | Login | News i kalendarz zdarzeń | PARTIAL | Raid schedule i world events są; brak news feed oraz kalendarza z opisami wydarzeń. |
-| T005 | Login | Launcher, wersja, kontrola/aktualizacja pakietów | PARTIAL | Launcher i wersja są; brak dowodu równoważnego UI aktualizacji/naprawy pakietów. |
-| O002 | Login | Kalendarz wydarzeń i ekran nowości | PARTIAL | Brakuje przeglądanego miesiącami kalendarza zaplanowanych wydarzeń i ekranu nowości; dostępny jest tylko bieżący komunikat wydarzenia. |
+| T002 | Login | Połączenie, re-entry i logout | DONE | Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`). |
+| T003 | Login | Pozycja kolejki i odliczanie | PARTIAL | Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`). |
+| T004 | Login | News i kalendarz zdarzeń | PARTIAL | Jest ograniczony rozmiarem feed pakietu `bulletin.json`, news i kalendarz z opisami; brak żywego feedu i publikacji przyszłych wydarzeń przez usługę operatora (`8ba0c9983`, `f86998757`). |
+| T005 | Login | Launcher, wersja, kontrola/aktualizacja pakietów | PARTIAL | Jest ekran `--check-install` z aktywnym wydaniem i instrukcją naprawy; brak kontroli integralności pakietów oraz wykonania aktualizacji/naprawy (`5a41232a7`). |
+| O002 | Login | Kalendarz wydarzeń i ekran nowości | PARTIAL | Jest news feed z pakietu oraz kalendarz z opisami i nawigacją miesiąc/rok; brak żywego producenta harmonogramu wydarzeń (`f86998757`). |
 | T124 | Market | Browse/buy/sell/create/cancel/history | PARTIAL | Dodano statystyki loaded item page oddzielnie buy/sell (min/max/weighted average); brak pełnych filtrów i globalnych statystyk/historii cen. |
 | T125 | Market | Coin market / transaction details | PARTIAL | Dodano order id/revision/debit w historii zakupów za coins; brak dedykowanego coin market i wire tej funkcji. |
 | T158 | Modal dialogs | Amount/text/edit/confirm/dont-show-again | PARTIAL | Są count confirmation/formularze; brak pełnego wspólnego zestawu text editor i trwałego dont-show-again.<br>evidence: crates/client-ui/src/modal_dialogs.rs:4 + editor_preserves_multiline_text_and_checks_byte_limit; PARTIAL: native editor and dismissal wiring remain |
@@ -199,14 +199,14 @@ Zasady przeciw dublowaniu:
 | T130 | Store | Katalog/search/buy/confirmation/result | PARTIAL | Natywne search/sort strony i preview oferty zachowują server quote; brak pełnej nawigacji kategorii i graficznego preview. |
 | T131 | Store | Purchase history i coins history | PARTIAL | Filtry offer/time strony, szczegóły i sumy per currency są; brak pełnej historii ledger monet i typów top-up/transfer (Platform). |
 | T132 | Store | Transfer/gift monet w grze | PARTIAL | Dodano natywne recipient/amount/review/confirm w trybie disabled, bez komend i debit; transfer wymaga kontraktu i endpointu Platform, którego STORE_V1 nie definiuje. |
-| T151 | Support | Bug report map/technical/typo/other | PARTIAL | Komenda bug i pozycja są; brak pełnego prowadzenia po kategoriach/diagnostyce. |
-| T152 | Support | Violation name/statement/bot/reasons | PARTIAL | Komenda jest; brak pełnego wyboru powodów/examples/translation/confirmation. |
-| T153 | Support | Crash report i zgoda | MISSING | Brak lokalnego workflow raportu awarii; nie wymaga kontaktu z CipSoft. |
-| T154 | Support | About/version i survey invitation | PARTIAL | Jest wersja; brak pełnego About i własnego workflow ankiety/zgody. |
-| O071 | Support | Zrzuty ekranu i automatyczne wyzwalacze | MISSING | Brakuje zapisu zrzutu ekranu, wyboru zakresu przechwytywania i automatycznych wyzwalaczy zdarzeń; same nazwy preferencji nie mają implementacji. |
-| T155 | Tutorial | Hints/markers/mouse trail i server-save notice | PARTIAL | Notice panel jest; brak kontekstowego overlay, markerów i mouse trail. |
-| T156 | Tutorial | Player Guide / compendium / recommendations | MISSING | Brak Player Guide i zakładek zaleceń w grze. |
-| O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | MISSING | Brakuje okna kompendium z kategoriami poradnika, aktualizacji, informacji o funkcjach i pomocy. |
+| T151 | Support | Bug report map/technical/typo/other | DONE | Istniejący formularz kategorii/preview/zgody na build rozszerzono o wskazówki map/typo/technical/other; używa istniejącej komendy raportu (`a8040346e`). |
+| T152 | Support | Violation name/statement/bot/reasons | DONE | Są wybór name/statement/bot, nazwany selektor 21 powodów ze wskazówkami dowodowymi, opcjonalna oznaczona translacja i confirmation wiązane z dokładnym payloadem (`55eddb04c`, `6433921fb`). |
+| T153 | Support | Crash report i zgoda | DONE | Lokalny hook zachowuje ograniczone dane build/OS/architektury i nazwę pliku źródła; następny start pokazuje preview i wymaga zgody na zapis bez uploadu (`fae511e6e`). |
+| T154 | Support | About/version i survey invitation | DONE | Okno logowania udostępnia About (wydanie/build/platforma/licencja) i własną opcjonalną ankietę z preview oraz zgodą na lokalny zapis (`1697f40d5`). |
+| O071 | Support | Zrzuty ekranu i automatyczne wyzwalacze | PARTIAL | Jest zapis BMP z walidacją klatki/wycinka i logika opt-in/deduplikacji; brak przechwytywania klatki renderera, UI zakresu oraz podłączenia zdarzeń runtime (`fb89d1fa9`). |
+| T155 | Tutorial | Hints/markers/mouse trail i server-save notice | DONE | Ctrl+Alt+Shift+N włącza renderowane wskazówki kontekstowe, marker kursora i ograniczony czasem/rozmiarem mouse trail; server-save notice jest dostępny (`d2241ea6c`). |
+| T156 | Tutorial | Player Guide / compendium / recommendations | DONE | Zakładki Player Guide i Recommendations są w oknie Ctrl+Shift+N, obok komunikatów samouczka i server-save (`0ef49c5a8`). |
+| O017 | Tutorial | Kompendium: poradnik, aktualizacje i pomoc | DONE | Kompendium ma kategorie Guide, Recommendations, Updates (feed pakietu), Features i Help z informacjami o raportach i zgodzie (`dc3a78120`). |
 | T119 | Wheel | Punkty, slots/perks i reset | PARTIAL | Lista slotów/save/reset są; brak diagramu koła i równoważnych podglądów perków. |
 | T120 | Wheel | Presets i copy/import code/URL | PARTIAL | Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL. |
 
