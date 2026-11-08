@@ -96,6 +96,12 @@
     },
     "settings_envelope": {
       "type": "object"
+    },
+    "entry_owner": {
+      "enum": [
+        "feature",
+        "session"
+      ]
     }
   },
   "$defs": {

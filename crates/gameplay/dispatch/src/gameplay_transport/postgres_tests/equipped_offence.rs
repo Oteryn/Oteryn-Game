@@ -63,7 +63,7 @@ pub(super) async fn qualify(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),
@@ -249,7 +249,7 @@ async fn qualify_global_baseline(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),

@@ -177,6 +177,7 @@ pub mod spell_data;
 mod timed_item_definition;
 
 pub mod bosses;
+pub mod soulpit_activity;
 
 // Private artifact tests need adapters built against this unit-test crate's own types.
 #[cfg(test)]

@@ -73,7 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn drain_auto_attacks_at_time(&self, now: Option<SemanticTimeMicros>) {
-        let Some(room) = self.rooms.gate_auto_attack() else {
+        let Some(room) = self.rooms().gate_auto_attack() else {
             return;
         };
         let Some(content) = self

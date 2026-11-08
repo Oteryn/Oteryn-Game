@@ -10999,7 +10999,7 @@
   },
   "current_main_integration": {
     "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
-    "state": "published30e2ff3b7; scoped PostgreSQL completed8PASS2FAIL, both Carlos trade continuation",
+    "state": "Soulpit merge conflicts resolved, Carlos registry/compatibility fixes348unitGREEN; generation and current compile/PG gates pending",
     "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
     "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
     "decisions": [
@@ -11009,7 +11009,7 @@
       "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
     ],
     "checks": "Final workspace all-targets PASS6m29s; final five-crate Clippy-Dwarnings PASS; final fmt-all-check PASS. Quest units346/346 PASS66.40s; profiles19/19 PASS155.444s; reward variants13/13 PASS32.642s; complete central regeneration and official world pin refresh PASSded9bb42; equipment3792 exact cohort union; world base and metadata PASS; duplicate migrations CLEAR; shared0999-1008 match main10/10. Own10PG compiling after gate marker; other changed-crate units pending under explicit PREPUSH-2 step3 cadence exception. No merged-PG or new wholequest qualification claim.",
-    "latest_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "latest_main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
     "local_merge_commits": [
       "4933f9bbd",
       "5b9b2b2f8"
@@ -11045,6 +11045,17 @@
       "failed": 2,
       "postgres": "18.6",
       "red_point": "Carlos real food sale commits gold/items but admission_binding registry omits its existing canonical trade continuation, leaving Greet6 rather than7. Both Carlos scenarios fail this assertion."
+    },
+    "trade_repair": {
+      "root": "canonical trade transitions missing from bound registry",
+      "red_logs": [
+        "/tmp/questpc3b-carlos-trade-registry-unit-red.log",
+        "/tmp/questpc3b-trade-encoding-unit-red.log"
+      ],
+      "unit_green": "/tmp/questpc3b-carlos-trade-registry-units-green.log",
+      "unit_count": 348,
+      "unit_duration_seconds": 72.73,
+      "pg": "pending after regeneration and compile gates"
     }
   }
 }

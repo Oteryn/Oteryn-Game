@@ -4,6 +4,7 @@ use super::{QuestEffect, QuestEffectKind};
 pub(super) fn applies(key: &str, effects: &[QuestEffect]) -> bool {
     key.starts_with("oteryn:quest-reward/questpc3/")
         || key.starts_with("oteryn:quest-transition/questpc3/")
+        || key.starts_with("oteryn:quest-trade/questpc3/")
         || key == "oteryn:quest-transition/native-kills/beginning"
         || effects
             .iter()
@@ -13,6 +14,15 @@ pub(super) fn applies(key: &str, effects: &[QuestEffect]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn pc3_trade_namespace_keeps_published_effect_tags() {
+        assert!(applies(
+            "oteryn:quest-trade/questpc3/beginning/carlos-food-sale",
+            &[]
+        ));
+        assert!(!applies("oteryn:quest-trade/other/food-sale", &[]));
+    }
+
     #[test]
     fn published_tags_survive_and_each_dialect_remains_injective() {
         let set = QuestEffectKind::SetWithBinding {

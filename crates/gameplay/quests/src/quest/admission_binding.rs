@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
 mod shared_world;
+mod trade;
 
 struct Owner {
     transition: QuestTransition,
@@ -52,6 +53,9 @@ fn registry() -> Result<&'static Registry, String> {
                     false,
                     protect,
                 )?;
+            }
+            for transition in trade::catalogue()?.transitions.values() {
+                add(transition.clone(), false, true)?;
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
@@ -297,3 +301,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod trade_tests;

@@ -321,7 +321,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-            self.movement_cells.index()
+            self.movement_cells().index()
         else {
             return Err(());
         };

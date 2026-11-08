@@ -497,7 +497,7 @@ async fn kill_rat(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 other.runtime_actor.ok_or("peer actor")?,
                 other.game_session_id,
                 owner.owner_now(),
@@ -532,7 +532,7 @@ async fn kill_rat(
         let mut runtime = owner.runtime.lock().await;
         owner.states.attack.lock().await.set_target(
             &runtime,
-            owner.rooms.gate_auto_attack(),
+            owner.rooms().gate_auto_attack(),
             other.runtime_actor.ok_or("peer")?,
             other.game_session_id,
             owner.owner_now(),
@@ -548,7 +548,7 @@ async fn kill_rat(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 admitted.game_session_id,
                 owner.owner_now(),

@@ -657,10 +657,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             }
             let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
             let east_enterable = east.is_some_and(|east| {
-                self.movement_cells
+                self.movement_cells()
                     .index()
                     .lookup(
-                        self.movement_cells.scope(),
+                        self.movement_cells().scope(),
                         crate::content::LogicalCell {
                             x: i32::from(east.x),
                             y: i32::from(east.y),
