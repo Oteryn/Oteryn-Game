@@ -423,7 +423,7 @@ impl DurabilityRoot {
                                 || !c.offerings.is_empty()
                                 || c.item_on_target.is_some()
                                 || c.world_change.is_some()
-                                || c.minimum_level.is_some()
+                                || c.minimum_level.is_some() || c.requires_premium
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
@@ -569,7 +569,8 @@ impl DurabilityRoot {
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium) {
+                    if reward_callback.as_ref().is_some_and(|c| c.requires_premium)
+                        || callback.as_ref().is_some_and(|c| c.requires_premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;

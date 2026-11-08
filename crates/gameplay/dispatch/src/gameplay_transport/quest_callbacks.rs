@@ -10,6 +10,7 @@ mod effects;
 mod encounter;
 mod execute;
 pub(super) mod monsters;
+mod phase;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -883,7 +884,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
             return entered;
         };
-        let selected = (0..base.depths().iter().filter(|d| **d == 0).count())
+        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
+        else {
+            return entered;
+        };
+        let cause = QuestCause::Step(command);
+        let mut selected = (0..base.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|o| {
                 let key = placement_key(at, u8::try_from(o).ok()?)?;
                 if map.facts.base_hidden(key) {
@@ -902,20 +908,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        let had_callbacks = !selected.is_empty();
+        self.select_step_phase(&mut selected, actor, session, entered, &cause);
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() && trigger == Trigger::StepIn {
+            if !had_callbacks && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
             }
             return entered;
         };
-        let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
-        else {
-            return entered;
-        };
-        let cause = QuestCause::Step(command);
         let operation = async {
             let fence = if !callback.has_personal_state()
                 && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()

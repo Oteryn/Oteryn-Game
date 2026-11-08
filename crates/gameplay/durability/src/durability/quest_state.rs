@@ -565,6 +565,7 @@ mod tests;
 #[path = "quest_state/wrath_sleeping_dragon.rs"]
 mod wrath_sleeping_dragon;
 
+mod world_callback_gate;
 mod writer;
 use storage::*;
 
