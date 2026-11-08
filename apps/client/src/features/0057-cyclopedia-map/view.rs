@@ -7,6 +7,7 @@ impl PlayLink {
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     use crate::play::feature_0115_mail::view::native::{Form, open};
+    atlas_native::open(link);
     open(
         link,
         Form {
@@ -53,6 +54,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Loot sources",
                 "Next loot sources",
                 "Next market offers",
+                "Load region atlas",
+                "Next atlas page",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -71,6 +74,22 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
+                if action == 34 || action == 35 {
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Map);
+                    super::input::submit(
+                        mailbox,
+                        commands,
+                        if action == 34 {
+                            oteryn_client_ui::cyclopedia_map::Intent::Atlas
+                        } else {
+                            oteryn_client_ui::cyclopedia_map::Intent::AtlasNext
+                        },
+                    );
+                    return;
+                }
                 if actions::navigate_section(mailbox, action, &values) {
                     return;
                 }
@@ -242,3 +261,7 @@ mod items;
 #[cfg(test)]
 #[path = "view/item_tests.rs"]
 mod item_tests;
+
+#[cfg(windows)]
+#[path = "view/atlas_native.rs"]
+mod atlas_native;

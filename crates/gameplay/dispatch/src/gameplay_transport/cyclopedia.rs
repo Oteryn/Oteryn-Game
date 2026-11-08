@@ -13,6 +13,8 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::cyclopedia as wire;
 use sha2::{Digest, Sha256};
 
+#[path = "cyclopedia/atlas.rs"]
+mod atlas;
 #[path = "cyclopedia/content.rs"]
 mod content;
 #[path = "cyclopedia/respawn.rs"]
@@ -145,6 +147,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: position.at.y,
             floor: position.at.floor,
         };
+        if intent.operation == 5 {
+            return self
+                .bundle_map()
+                .and_then(|map| atlas::page(&map.overlay.base().subareas, intent.amount))
+                .map(GuildReply::Payload)
+                .unwrap_or(GuildReply::Rejected);
+        }
         // Membership is resolved from the server-owned position, never the legacy wire alias.
         let Some(area) = content::admit_at(self, at) else {
             return GuildReply::Rejected;
@@ -250,13 +259,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !runtime
                     .player_control_facts(actor, admitted.game_session_id)
                     .is_ok_and(|facts| facts.control_loss.is_none())
-                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor).is_none_or(
-                    |position| {
+                || super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                    .is_none_or(|position| {
                         position.at.x != at.x
                             || position.at.y != at.y
                             || position.at.floor != at.floor
-                    },
-                )
+                    })
             {
                 return GuildReply::Rejected;
             }

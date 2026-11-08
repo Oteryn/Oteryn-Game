@@ -9,3 +9,7 @@ pub use protocol::request;
 
 #[cfg(test)]
 mod tests;
+
+#[path = "view/atlas.rs"]
+mod atlas;
+pub use atlas::{AtlasRun, atlas_pois, atlas_runs};

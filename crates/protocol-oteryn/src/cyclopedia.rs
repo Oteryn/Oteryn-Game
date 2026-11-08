@@ -42,8 +42,8 @@ pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError
     let area = u32::from_le_bytes(bytes[1..5].try_into().map_err(|_| MapWireError)?);
     let amount = u32::from_le_bytes(bytes[5..9].try_into().map_err(|_| MapWireError)?);
     if area != 1
-        || !(1..=4).contains(&bytes[0])
-        || (bytes[0] != 4 && amount != 0)
+        || !(1..=5).contains(&bytes[0])
+        || (!matches!(bytes[0], 4 | 5) && amount != 0)
         || (bytes[0] == 4 && !(1..=10_000_000).contains(&amount))
     {
         return Err(MapWireError);
@@ -194,3 +194,5 @@ mod tests {
         assert!(encode_result(&r).is_err());
     }
 }
+
+pub mod atlas;

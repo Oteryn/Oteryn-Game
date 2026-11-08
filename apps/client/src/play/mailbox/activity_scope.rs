@@ -54,6 +54,10 @@ impl Mailbox {
         self.discovery.loot.pending = Default::default();
         self.discovery.inspection.pending = Default::default();
         self.discovery.inspection.invalidate_catalogue();
+        self.properties.cyclopedia_map.atlas = None;
+        self.properties.cyclopedia_map.atlas_after = 0;
+        self.properties.cyclopedia_map.map = None;
+        self.properties.cyclopedia_map.summary.clear();
         self.discovery.leader.pending = Default::default();
         self.discovery.teams.pending = Default::default();
         self.discovery.history.pending = Default::default();

@@ -520,8 +520,9 @@
   "area": "Cyclopedia",
   "feature": "Map: areas/subareas/passages/PoI/NPC",
   "status": "PARTIAL",
-  "gap": "Query/start/shuffle/find/donate przez formularz; brak dużej mapy z regionami i NPC.",
-  "lane": "cg_cyclo"
+  "gap": "Duża mapa renderuje dokładne regiony i podregiony z serwerowego atlasu oraz widoczne POI; brak warstw przejść i NPC.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/atlas_native.rs:29 + pc06_cyclopedia_map_scenario; crates/gameplay/dispatch/src/gameplay_transport/cyclopedia/atlas.rs:49 + atlas_pages_preserve_native_region_names_and_exact_sparse_coverage; atlas_projection_preserves_gaps_and_selected_floor_at_coordinate_limits; atlas_activity_scope_clears_geometry_and_visible_exploration_points; PARTIAL: passage and NPC layers remain."
  },
  {
   "id": "T080",
