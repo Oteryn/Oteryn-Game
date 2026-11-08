@@ -7,6 +7,9 @@ mod lua;
 mod scheduler;
 mod storage;
 
+// Grimvale owns an independent encounter lifetime, despite retaining XML waves.
+pub(super) const FEROXA_KEY: &str = "raid:edron.feroxa";
+
 pub use activity::{MAX_RAID_ACTIVITY_PLAYERS, RaidActivityPlayer, RaidActivitySnapshot};
 pub use calendar::CalendarRaidScheduleCandidate;
 pub use lua::LuaRaidScheduleCandidate;
