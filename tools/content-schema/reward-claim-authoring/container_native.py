@@ -148,7 +148,7 @@ def derive(definition, items, stack_problem):
     achievements = {row['unique_id']: row['name'] for row in evidence['achievement_entries']}
     texts = {row['unique_id']: row for row in evidence['text_entries']}
     result = []
-    for placement in definition['placements']:
+    for placement_index, placement in enumerate(definition['placements']):
         reward = placement['reward']
         if set(reward) - {'container', 'items', 'key_binding', 'written_text'}:
             return None
@@ -156,6 +156,9 @@ def derive(definition, items, stack_problem):
         if len(ids) != 1 or ids[0] not in entries:
             return None
         entry = entries[ids[0]]; setting = entry['setting']
+        from container_source_identity import matches
+        if not matches(definition, placement_index, entry):
+            return None
         text = texts.get(ids[0])
         written = reward.get('written_text')
         if (written is None) != (text is None):
@@ -250,6 +253,14 @@ def derive(definition, items, stack_problem):
                 # A non-stackable charged item is one instance. Its absent native
                 # timed row means full definition values (item_timed_state.rs).
                 return None
+            charges = fact(item, 'charges', 'count')
+            if (item.get('stack_class') == 'NonStackable'
+                    and type(charges) is int and charges > 0 and charges != raw_count):
+                from itemhold_charge_precedence import qualifies
+                if not qualifies(item, definition['provenance']['pilot_key'],
+                                 placement['source_binding']['project_position'],
+                                 quantity['item']['key'], raw_count):
+                    return None
             child_capacity = fact(item, 'container', 'capacity')
             if child_capacity is not None and (type(child_capacity) is not int or not 1 <= child_capacity <= 65535 or count != 1):
                 return None

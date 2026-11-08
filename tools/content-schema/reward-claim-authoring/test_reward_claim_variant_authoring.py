@@ -34,15 +34,41 @@ class CanonicalVariantTests(unittest.TestCase):
     def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 228)
+        self.assertEqual(index['record_count'], 337)
+        plain_rows = [row for path in index['shards'][:3]
+                      for row in json.loads(outputs[path])['records']]
+        self.assertEqual(len(plain_rows), 231)
+        self.assertEqual(sum(row['definition']['readiness'] == 'ready' for row in plain_rows), 228)
+        self.assertEqual(sum(row['definition']['readiness'] == 'waiting_item_semantics'
+                             for row in plain_rows), 3)
+        self.assertEqual(index['readiness']['ready'], 229)  # Plus the one admitted source leaf.
         self.assertEqual(index['readiness']['waiting_item_semantics'], 3)
-    def test_plain_231_definition_records_remain_exact_and_readiness_221_10(self):
+    def test_seven_plain_charge_admissions_need_exact_source_witnesses(self):
+        # Preserve the former 221/10 boundary as a negative fixture. The seven
+        # newly proved claims cannot become ready when their source proof is absent.
+        omitted = {'canary:reward-claim/kv/' + key for key in (
+            'edrongoblin1', 'ghoulroom1', 'silveramulet', 'stealhring1',
+            'timering3', 'trollcave1', 'weddingring1')}
+        evidence = plain.load_source_charge_evidence()
+        self.assertEqual(sum(row['pilot_key'] in omitted for row in evidence), 7)
+        claims = plain.load_json(self.root / plain.CLAIMS_REL)
+        claims = claims.get('claims', claims) if isinstance(claims, dict) else claims
+        records, checks = plain.build_records(
+            claims, plain.load_json(self.root / plain.MANIFEST_REL), self.items,
+            charge_evidence=[row for row in evidence if row['pilot_key'] not in omitted])
+        self.assertEqual(len(records), 231)
+        self.assertEqual(sum(row['definition']['readiness'] == 'ready' for row in records), 221)
+        self.assertEqual(sum(row['definition']['readiness'] == 'waiting_item_semantics'
+                             for row in records), 10)
+        for row in records:
+            if row['definition']['provenance']['pilot_key'] in omitted:
+                self.assertEqual(row['definition']['readiness'], 'waiting_item_semantics')
+                self.assertTrue(any(check.get('claim') == row['definition']['identity']['key']
+                                    and check['reason'] == 'SOURCE_CHARGE_ARGUMENT_UNKNOWN'
+                                    for check in checks))
         outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
         self.assertEqual(index['plain_record_count'], 231)
-        self.assertEqual(index['record_count'], 336)
-        self.assertEqual(index['readiness']['ready'], 221)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 10)
+        self.assertEqual(index['record_count'], 337)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
@@ -142,8 +168,6 @@ class CanonicalVariantTests(unittest.TestCase):
 
     def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
         errors = variants.native_lowering_errors(self.records)
-    records = derive_definitions(packet, items, stack_problem, root)
-    quest_claim_progress.apply_claims(root, records)
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

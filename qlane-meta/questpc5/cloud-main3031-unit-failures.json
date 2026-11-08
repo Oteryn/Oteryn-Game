@@ -55,5 +55,13 @@
       "oteryn-gameplay-quests quest::loader::tests::owner_scope_excludes_dawnport_from_runtime_state_and_callbacks"
     ]
   },
-  "decision": "Repair all groups together. Provisioning data was temporarily merge-mutated during the run; regenerate and rerun every failed case against stable final inputs. Exact native inventory must include all existing native registries, without relaxing set equality or Dawnport exclusion."
+  "decision": "Repair all groups together. Provisioning data was temporarily merge-mutated during the run; regenerate and rerun every failed case against stable final inputs. Exact native inventory must include all existing native registries, without relaxing set equality or Dawnport exclusion.",
+  "rerun": {
+    "selected": 2253,
+    "passed": 2253,
+    "failed": 0,
+    "duration_seconds": 1706.639,
+    "log": "/tmp/questpc5-trashcan-crate-units.log",
+    "note": "Same source held stable throughout. Provisioning failures from the earlier in-flight merge did not recur. The exact native callback inventory is repaired."
+  }
 }

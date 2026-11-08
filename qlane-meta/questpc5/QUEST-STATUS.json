@@ -512,6 +512,11 @@
       "reason": "Existing native_selected_leaf_v1 accepts only plain original reward amounts, not the source bag with eight children at UID6062. The selected quest requires only shield3424 and excludes key3702/extras. No parallel MINT or copied migration will be introduced.",
       "reported": "2026-11-07",
       "state": "REQUESTED"
+    },
+    "source_admission_guard_repair": {
+      "proof": "cloud-container-source-guards-proof.json",
+      "state": "GREEN:71 authoring tests,2253 crate units; freshCookPG18.6 155.631002405s; workspace205s/fmt/native48/binding/matrix/equipment/worldpin/duplicate migration checks PASS.",
+      "scope": "Shared source admission only. KV6063 full-default bag is distinct from the owned quest6062 route; no whole Ornamented qualification inferred."
     }
   },
   {

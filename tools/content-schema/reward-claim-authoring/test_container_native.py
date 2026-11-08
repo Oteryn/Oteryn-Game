@@ -183,6 +183,17 @@ class ContainerNativeTests(unittest.TestCase):
         changed['placements'][3].pop('achievement_grant')
         self.assertIsNone(container_native.derive(changed, self.items, plain.stack_problem))
 
+    def test_stackable_runes_keep_source_quantities_not_charge_arguments(self):
+        definition = next(d for d in self.rows if d['identity']['key'].endswith('corpse_pirate_bp'))
+        native = container_native.derive(definition, self.items, plain.stack_problem)
+        self.assertIsNotNone(native)
+        contents = native['placements'][0]['contents']
+        for number, expected in [(3160, 3), (3155, 2)]:
+            key = f'oteryn:item.tibia.i{number}'
+            self.assertEqual(self.items[key]['stack_class'], 'StackCapable')
+            child, = [child for child in contents if child['item']['key'] == key]
+            self.assertEqual(child['count'], expected)
+
     def test_definition_capacity_is_preserved_with_existing_direct_child_bound(self):
         for suffix in ('the_pits_of_inferno.reward_chest_bp', 'wrath_of_the_emperor.chest_bag'):
             d = next(d for d in self.rows if d['identity']['key'].endswith(suffix))
@@ -191,12 +202,14 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
-    from itemhold_charge_precedence import qualifies
-    if qualifies(item, pilot_key, position, key, raw_count):
-        return True
-        self.assertEqual(len(native), 76)  # Includes the milk, wine and Present fluid recipes.
+        full_default = [d for d in native if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield']
+        self.assertEqual(len(full_default), 1)
+        self.assertEqual(len([d for d in native if d not in full_default]), 76)
+        self.assertEqual(len(native), 77)  # Prior cohort plus exact ITEMHOLD full-default bag.
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
-                             for d in native), 63)
+                             for d in native if d not in full_default), 63)
+        self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
+                             for d in native), 64)
 
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()

@@ -37,7 +37,8 @@ class VariantStackSerializationTests(unittest.TestCase):
         self.assertEqual(len(changed), 2)
         # W15b and QUEST-FINISH implement 78 exact container/leaf recipes, including
         # these two selected native stack normalizations (PR2770 Q4/A).
-        self.assertEqual(len(variants.native_lowering_errors(self.records)), 27)
+        errors = variants.native_lowering_errors(self.records)
+        self.assertEqual(len(errors), 27)
         qualified = {'oteryn:reward-claim.kv.ornamentedshield',
                      'oteryn:reward-claim.kv.triangletower'}
         self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))

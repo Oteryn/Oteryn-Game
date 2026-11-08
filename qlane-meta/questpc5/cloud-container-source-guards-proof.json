@@ -1,0 +1,54 @@
+{
+  "scope": "Exact container source admission and inherited Python regression repairs; no whole-quest promotion",
+  "red": {
+    "import_errors": [
+      "IndentationError at test_reward_claim_variant_authoring.py:147",
+      "return outside function at test_container_native.py:196"
+    ],
+    "initial_full_run": "53 tests,2failures2errors,138.215s",
+    "guard_red": "Renamed canonical identity, changed full-charge default, and changed source charge-disposition argument were accepted by container_native.derive; captured in /tmp/questpc5-reward-authoring-regressions2.log."
+  },
+  "green": {
+    "tests": 71,
+    "duration_seconds": 107.619,
+    "log": "/tmp/questpc5-reward-authoring-regressions6.log",
+    "checks": [
+      "Exact canonical identity must match pinned pilot key",
+      "Charge-disposition arguments match pinned source entries",
+      "Non-stackable full-charge overrides require existing exact ITEMHOLD source consensus",
+      "All source siblings and quantities preserved",
+      "Stackable rune quantities remain ordinary counts",
+      "Seven removed source proofs reproduce221ready10held; current plain228ready3held preserved",
+      "One separately admitted source leaf explains aggregate229ready and337records; old cohort counts remain asserted"
+    ]
+  },
+  "stable_rust_units": {
+    "tests": 2253,
+    "passed": 2253,
+    "duration_seconds": 1706.639
+  },
+  "shipping_checks": {
+    "workspace_seconds": 205,
+    "fmt": "PASS",
+    "native_generated_48_outputs": "PASS unchanged",
+    "bindings_matrix_equipment": "PASS",
+    "fresh_cook_pg": {
+      "postgres": "18.6",
+      "duration_seconds": 155.631002405,
+      "contact_body_seconds": 39.658207142,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-cook-contacts duration=155.631002405s success=true",
+      "log": "/tmp/questpc5-source-guards-cook-pg.log",
+      "execution": "Fresh real PG run of the existing Cargo-built dispatch test binary; Rust source and generated native48 outputs unchanged."
+    },
+    "world_pin_and_duplicate_migrations": "PASS"
+  },
+  "migration_files": [
+    "1270_spell_static_map_fields.sql",
+    "1271_quest_world_reward_sources.sql",
+    "1272_quest_finish.sql",
+    "1273_corruptor_lifecycle.sql",
+    "1274_questpc_npc_revision.sql",
+    "1275_questpc_viola.sql",
+    "1276_questpc_viola_book.sql"
+  ]
+}

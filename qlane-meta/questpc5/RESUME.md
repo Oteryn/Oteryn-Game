@@ -1,3 +1,11 @@
+## Stable unit run and source guards green — 2026-11-08 04:46 UTC
+
+All 2253 selected crate units passed in 1706.639 seconds. The earlier provisioning failures came from my merge attempt changing live test data; they did not recur with stable inputs. Keep future test inputs stable.
+
+The focused reward-authoring suite now passes all 71 tests (107.619 seconds). Recovered misplaced production statements from two test files; retained their assertions. Historical221/10 is now a meaningful missing-charge-proof negative fixture, while current plain228/3 and aggregate229/337 have separate checks. Exact source identity and charge-default guards reject the previously accepted mutations. Stackable rune quantities remain quantities. See `cloud-container-source-guards-proof.json`.
+
+Workspace check passed in205seconds, formatting and generated native48/binding/matrix/equipment checks passed unchanged. Fresh Cook PG18.6 passed in155.631002405seconds (contact body39.658207142seconds); pin and duplicate-migration checks passed. Main integration is prepared in `/tmp/questpc5-main3029-resolution` and scripts `/tmp/questpc5-main-*.py`; shared reward paths are consolidated there, not yet applied to the checkout. The temporary sparse authoring worktree was removed to recover2GB. Whole qualifications remain13/23.
+
 ## Cook contact proof ready to push — 2026-11-08 04:16 UTC
 
 The fresh workspace check passed in 340 seconds. Formatting, strict Clippy (433 seconds), generated binding/matrix/geometry/equipment checks, and the World pin checks passed. All 13 focused tests passed, including the real Cook contact case on PostgreSQL 18.6 in 188.228502994 seconds. See `cloud-cook-contacts-proof.json`.
