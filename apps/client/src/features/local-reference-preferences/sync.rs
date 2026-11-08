@@ -14,6 +14,7 @@ pub struct SettingsState {
     battle_edit: u64,
     skills_edit: u64,
     minimap_edit: u64,
+    spellbook_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,
@@ -68,6 +69,7 @@ impl SettingsState {
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
+        self.spellbook_edit = self.battle_edit;
     }
 
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
@@ -101,6 +103,7 @@ impl SettingsState {
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
         self.minimap_edit = self.battle_edit;
+        self.spellbook_edit = self.battle_edit;
         Ok(())
     }
 
@@ -131,6 +134,7 @@ impl SettingsState {
             battle_edit: 0,
             skills_edit: 0,
             minimap_edit: 0,
+            spellbook_edit: 0,
             store,
             preferences,
             feedback,
@@ -208,6 +212,9 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.spellbook_filter != preferences.spellbook_filter {
+            self.spellbook_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         if self.preferences.minimap != preferences.minimap {
             self.minimap_edit = crate::play::feature_0017_attack::view::next_edit();
         }
@@ -219,6 +226,16 @@ impl SettingsState {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
+    }
+
+    pub fn sync_spellbook_filter(&mut self, link: &crate::play::PlayLink) {
+        let mut prefs = self.preferences.clone();
+        if let Some(edit) =
+            link.sync_spellbook_filter(&mut prefs.spellbook_filter, self.spellbook_edit)
+        {
+            self.apply(prefs);
+            self.spellbook_edit = edit;
+        }
     }
 
     pub fn sync_skills_layout(&mut self, link: &crate::play::PlayLink) {

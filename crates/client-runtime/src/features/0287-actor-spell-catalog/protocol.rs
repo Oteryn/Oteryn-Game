@@ -1,6 +1,7 @@
 //! Read the latest catalogue from the session owner, including after reconnect.
 #[path = "state.rs"]
 mod state;
+pub use oteryn_session::spell_catalog::spellbook_details;
 pub use oteryn_session::spell_catalog::{SpellCatalog, SpellCatalogEntry};
 use oteryn_session::{Session, SessionError, SessionEvent, SessionStream};
 pub use state::CatalogState;

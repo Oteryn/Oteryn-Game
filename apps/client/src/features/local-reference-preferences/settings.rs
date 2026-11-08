@@ -66,6 +66,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub spellbook_filter: crate::play::feature_0287_actor_spell_catalog::view::SpellbookFilter,
+    #[serde(default)]
     pub minimap: crate::play::feature_local_minimap::view::MinimapMemory,
     #[serde(default = "shortcuts::default_shortcuts")]
     pub shortcuts: Vec<String>,
@@ -95,6 +97,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            spellbook_filter: Default::default(),
             minimap: Default::default(),
             shortcuts: shortcuts::default_shortcuts(),
             controls: ControlPreferences::default(),
@@ -115,6 +118,7 @@ impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || !self.spellbook_filter.valid()
             || !self.minimap.valid()
             || !shortcuts::valid(&self.shortcuts)
             || !self.controls.valid()

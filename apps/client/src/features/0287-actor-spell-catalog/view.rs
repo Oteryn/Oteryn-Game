@@ -1,3 +1,11 @@
+#[path = "book.rs"]
+mod book;
+#[path = "preferences.rs"]
+mod preferences;
+pub use book::{SpellbookFilter, SpellbookState};
+#[cfg(windows)]
+#[path = "book_native.rs"]
+mod book_native;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn spell_catalog_panel(&self) -> oteryn_client_ui::spell_catalog::Panel {
