@@ -131,7 +131,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     }
                     continue;
                 }
-                if action == 117 { analytics = true; continue; }
+                if action == 117 {
+                    analytics = true;
+                    continue;
+                }
                 if action == 140 {
                     browse_achievements = true;
                     continue;
@@ -352,7 +355,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             drop(mailbox);
-            if analytics { crate::play::feature_0010_analyser::view::open_shared(&shared, &commands); }
+            if analytics {
+                crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
+            }
             if browse_achievements {
                 crate::play::feature_local_account_achievements::view::open_character(
                     weak.clone(),

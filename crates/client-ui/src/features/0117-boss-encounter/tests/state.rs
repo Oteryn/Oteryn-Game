@@ -333,6 +333,3 @@ fn hazard_panel_shows_unlocked_levels_and_blocks_locked_selection() {
     p.fields[2] = "5".into();
     assert!(request(&mut p, Intent::HazardSelect).is_some());
 }
-
-#[path = "browser.rs"]
-mod browser;

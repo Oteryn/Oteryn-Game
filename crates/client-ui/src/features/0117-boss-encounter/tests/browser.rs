@@ -1,5 +1,6 @@
 use super::*;
 use oteryn_client_runtime::boss_encounter::Snapshot;
+use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
 #[test]
 fn boss_browser_search_categories_and_detail_selection_use_server_records() {
     let mut p = BossEncounterPanel {
@@ -24,7 +25,6 @@ fn boss_browser_search_categories_and_detail_selection_use_server_records() {
     p.pending = true;
     assert!(!select_boss(&mut p, false));
 }
-use super::*;
 
 #[test]
 fn bosstiary_browser_filters_and_selects_confirmed_bosses() {
