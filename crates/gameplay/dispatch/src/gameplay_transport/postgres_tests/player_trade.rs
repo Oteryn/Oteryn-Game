@@ -244,10 +244,38 @@ async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> Test
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
-    assert!(
-        owner.ensure_source_map_initialized().await,
-        "real source-map initialization"
+    // This is the ordinary idempotent admission step: temporary holder/commit
+    // unavailability must reach real readiness under the existing entry budget.
+    let map_budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
+        &admitted[0].game_session_id,
+        &h.root,
     );
+    let initialize = async {
+        map_budget
+            .retry_until(async || owner.ensure_source_map_initialized().await)
+            .await
+    };
+    let initialized = if offer_contention {
+        use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
+        let held = read_retry(&h.root, async || {
+            h.root.try_acquire_ready().map_err(CheckError::from)
+        })
+        .await
+        .map_err(debug)?;
+        assert!(
+            !owner.ensure_source_map_initialized().await,
+            "the held root must prevent the initial map commit"
+        );
+        let (initialized, ()) = join_two(initialize, async move {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            drop(held);
+        })
+        .await;
+        initialized
+    } else {
+        initialize.await
+    };
+    assert!(initialized, "real source-map initialization");
     for a in &mut admitted {
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
