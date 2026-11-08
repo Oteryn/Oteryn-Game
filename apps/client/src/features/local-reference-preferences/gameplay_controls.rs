@@ -2,10 +2,10 @@
 use super::*;
 use oteryn_client::play::ReferencePreferences;
 
-pub(super) struct GameplayControls([HWND; 3]);
+pub(crate) struct GameplayControls([HWND; 3]);
 
 impl GameplayControls {
-    pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
+    pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         let handles = [
             "Show inspection actions in the context menu",
             "Switch chase off when walking manually",
@@ -30,7 +30,7 @@ impl GameplayControls {
         Some(Self([handles[0], handles[1], handles[2]]))
     }
 
-    pub(super) unsafe fn show(&self, visible: bool) {
+    pub(crate) unsafe fn show(&self, visible: bool) {
         for handle in self.0 {
             unsafe {
                 ShowWindow(handle, if visible { SW_SHOW } else { SW_HIDE });
@@ -38,7 +38,7 @@ impl GameplayControls {
         }
     }
 
-    pub(super) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
+    pub(crate) unsafe fn refresh(&self, preferences: &ReferencePreferences) {
         for (handle, checked) in self.0.into_iter().zip([
             preferences.gameplay.inspect_context_menu,
             preferences.gameplay.cancel_chase_on_walk,
@@ -50,7 +50,7 @@ impl GameplayControls {
         }
     }
 
-    pub(super) unsafe fn read(&self, preferences: &mut ReferencePreferences) {
+    pub(crate) unsafe fn read(&self, preferences: &mut ReferencePreferences) {
         let values = self
             .0
             .map(|handle| unsafe { SendMessageW(handle, BM_GETCHECK, 0, 0) == 1 });
