@@ -1,3 +1,33 @@
+## Publish latest-main compiling checkpoint now
+Main3209d3d61 is integrated cleanly after c77 conflict reconciliation855c8dca6.
+FINAL workspace all-targets PASS4m40s after all generation/latest main; strict
+updated-crate Clippy PASS8m11s incl lock wait; expanded six-crate Clippy PASS6m11s;
+fmt and duplicate migrations PASS. Full repo-tool generation and rebuilt compiler
+pin-refresh PASS, World digest6e61347f4d2baf4e781c90ee31e4d80181b4741e991596ff6317e558bcd61e7b.
+Fresh authoring57/57 and pattern regressions9/9 PASS. Counts63/114/1 unchanged.
+This is the owner's PREPUSH-2 compiling checkpoint, not a new quest qualification.
+Own six PG cases are building in session14681, log/tmp/questpc-main-integrated-pg.log.
+NEXT: collect all six PG results/markers, run/tmp/questpc-run-integrated-units.sh,
+then official pin-check (avoid overlap with dispatch codegen for memory). Record
+all failures together and fix/rerun the whole affected set, then push once.
+No tests/assertions are weakened, deleted or ignored. Full proof and exact own
+migration list: cloud-main-integration-validation.json. Retain all older proof.
+
+## Latest main update: 3209d3d61 merged cleanly
+The required pre-push fetch advanced main by five Soulpit/NPC test files.
+The c77 reconciliation is local commit855c8dca6; latest-main merge is clean.
+Complete current final check and strict Clippy, record exact results, then push
+this compiling checkpoint under the owner's PREPUSH-2 pending-test exception.
+Fresh authoring57/57 and profile regressions9/9 pass; regeneration and official
+rebuilt compiler pin-refresh pass (6e61347f4d2baf4e...). The last workspace run
+passed7m52s before final generation/latest-main update; confirmation is queued.
+Own six PG cases and six changed-crate unit suites remain pending. They must
+run next, with PG markers and nonzero durations, before declaring integration
+qualified. No quest status/count is increased by this checkpoint.
+Logs and commands are in cloud-main-integration-validation.json and
+/tmp/questpc-run-integrated-{pg,units}.sh. Avoid parallel PG codegen and pin-check
+(memory); pin-check follows the tests. Keep every original assertion intact.
+
 ## Main c77 integration: resolved, verification running
 All 74 conflicts are resolved against main c77d436d8. Published a34256fa1
 PG target-guard fix and all lane proof history are preserved. No quest counts

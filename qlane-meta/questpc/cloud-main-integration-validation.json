@@ -1,0 +1,79 @@
+{
+  "kind": "compiling main integration checkpoint; no new quest qualification",
+  "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "prior_main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+  "first_merge_commit": "855c8dca6",
+  "conflicts_resolved": 74,
+  "new_main_merge": "clean, five files; no content inputs changed",
+  "world_digest": "6e61347f4d2baf4e781c90ee31e4d80181b4741e991596ff6317e558bcd61e7b",
+  "counts_unchanged": {
+    "qualified": 63,
+    "unfinished": 114,
+    "owner_excluded": 1
+  },
+  "own_migrations": [
+    "1290_questpc_source_contracts.sql",
+    "1292_raid_token_exchange.sql",
+    "1293_map_key_binding.sql",
+    "1295_quest_stateless_paid_receipts.sql",
+    "1296_quest_paid_sale_mint_occurrences.sql"
+  ],
+  "checks": {
+    "workspace_before_final_generation": {
+      "result": "PASS 7m52s",
+      "log": "/tmp/questpc-main-integrated-workspace-check.log",
+      "sha256": "9f74cb83700507e8a49136d386ffe6d922182a13295a3cdcfe87c429b58a7049"
+    },
+    "authoring": {
+      "result": "57/57 PASS 271.766s",
+      "log": "/tmp/questpc-main-integrated-authoring-tests.log",
+      "sha256": "7aa6681e5d2f2e4457c955eaae0587f00c672ead4cc349ce855b6dd52c11b383"
+    },
+    "profile_regressions": {
+      "result": "9/9 PASS 4.233s",
+      "log": "/tmp/questpc-main-integrated-profile-regressions.log",
+      "sha256": "ba1f4efa10ec6fde9ea126a8caf3c5b0d696f22c0c81ff9158830445f656e925"
+    },
+    "regeneration": {
+      "result": "PASS native, source packets, central lists and content tree",
+      "log": "/tmp/questpc-main-integrated-regeneration.log",
+      "sha256": "25d37f68527cb9c2a2b70267338bbd705284709749d3148b977ae1d8d7c50412"
+    },
+    "pin_refresh": {
+      "result": "PASS rebuilt compiler; deterministic World build",
+      "log": "/tmp/questpc-main-integrated-pin.log",
+      "sha256": "630ae3a60d2a5f57685f46ca37a04c6d5b972b22aebacc9f255d43ede12760e9"
+    },
+    "fmt": {
+      "result": "PASS",
+      "log": "/tmp/questpc-main-integrated-final-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "duplicate_migrations": {
+      "result": "PASS",
+      "log": "/tmp/questpc-main-integrated-final-dup.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "workspace_final": {
+      "result": "PASS 4m40s on latest main 3209d3d61 after final regeneration",
+      "log": "/tmp/questpc-main-latest-final-check.log",
+      "sha256": "af57dd6be747e5f01cd2a94962d88d1a3dec3351db7a1e3b7e7024d6611c61c8"
+    },
+    "expanded_clippy": {
+      "result": "PASS 6m11s; final two updated main crates being confirmed separately",
+      "log": "/tmp/questpc-main-integrated-clippy.log",
+      "sha256": "8fd0faa1d911fa9a509e281acb7b1573864fbb17d200c7c20c4b7f04a07ef6c4"
+    },
+    "latest_main_clippy": {
+      "result": "PASS strict all-target/all-feature durability and dispatch; 8m11s including lock wait",
+      "log": "/tmp/questpc-main-latest-clippy.log",
+      "sha256": "a763be447f97fbe8d89d6e7d03466c950159a2010703f81a2433e82a79312d52"
+    }
+  },
+  "pending": [
+    "six focused merged-tree PG cases (building now)",
+    "unit tests in dispatch, durability, quests, npc, world and client-assets",
+    "pin-check gate after regeneration"
+  ],
+  "publication_rule": "Owner PREPUSH-2 cadence exception: publish after main, regeneration, workspace all-targets and fmt; list pending tests explicitly"
+}

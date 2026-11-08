@@ -11373,8 +11373,8 @@
     "carried_target_checkpoint": "Runtime PUSHED47b3bb0f0; PG4/4 and1600dispatchunits GREEN"
   },
   "main_integration": {
-    "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
-    "state": "resolved; integrated checks running",
+    "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+    "state": "compiling checkpoint; final workspace, strict clippy, fmt and regeneration PASS; merged-tree tests pending",
     "conflicts_resolved": 74,
     "scope": "Reuse published main mechanics and preserve lane mechanics; no new quest qualification",
     "repairs": [
@@ -11389,10 +11389,21 @@
       "integrated_profile_regressions": "9/9 passed in 4.233s"
     },
     "pending": [
-      "integrated workspace check",
-      "integrated changed-crate units and focused PG",
-      "strict clippy",
-      "final pin regeneration and fmt"
-    ]
+      "six focused merged-tree PG cases (building now)",
+      "unit tests in dispatch, durability, quests, npc, world and client-assets",
+      "pin-check gate after regeneration"
+    ],
+    "world_digest": "6e61347f4d2baf4e781c90ee31e4d80181b4741e991596ff6317e558bcd61e7b",
+    "proof": "qlane-meta/questpc/cloud-main-integration-validation.json",
+    "workspace_final": {
+      "result": "PASS 4m40s on latest main 3209d3d61 after final regeneration",
+      "log": "/tmp/questpc-main-latest-final-check.log",
+      "sha256": "af57dd6be747e5f01cd2a94962d88d1a3dec3351db7a1e3b7e7024d6611c61c8"
+    },
+    "clippy": {
+      "result": "PASS strict all-target/all-feature durability and dispatch; 8m11s including lock wait",
+      "log": "/tmp/questpc-main-latest-clippy.log",
+      "sha256": "a763be447f97fbe8d89d6e7d03466c950159a2010703f81a2433e82a79312d52"
+    }
   }
 }
