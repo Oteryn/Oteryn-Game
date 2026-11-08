@@ -249,10 +249,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        self.arena_match_native(
+        let bytes = self.arena_match_native(
             ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
             command.into(), action, payload, None,
-        ).await
+        ).await?;
+        let result = wire::decode_match_result(&bytes).ok()?;
+        if result.state.completed_rank == 3 && result.state.claimed_masks.iter().all(|mask| mask & 8 != 0) {
+            self.finish_arena_quest(supplied, command).await?;
+        }
+        Some(bytes)
+    }
+
+    async fn finish_arena_quest(
+        &self,
+        supplied: crate::durability::item_transfer::CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> Option<()> {
+        use crate::durability::quest_state::QuestTransitionOutcome;
+        use oteryn_gameplay_quests::quest::{arena_completion, QuestRefusal};
+        let fence = self.current_quest_fence(command.game_session_id()).await.ok()??;
+        if fence.item_fence() != supplied { return None; }
+        let copy = self.root.read_character_quest_state(self.character, fence.character_id).await.ok()?;
+        if copy.states().get(arena_completion::QUEST).is_some_and(|state| state.completed) { return Some(()); }
+        let catalogue = self.quest_catalogue.as_ref()?;
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let outcome = slot.commit_arena_quest_completion(self.root, self.character, self.holder, fence, command,
+            std::sync::Arc::clone(catalogue), &self.premium_coordinator).await.ok()?;
+        drop(slot);
+        match outcome {
+            QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_) => {
+                self.refresh_quest_session(command.game_session_id(), false).await;
+                Some(())
+            }
+            // Earned trophies remain claimed while a required current admission is absent.
+            QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch) => Some(()),
+            _ => None,
+        }
     }
 
     async fn arena_match_native(

@@ -412,3 +412,40 @@ fn valid_transition(
             || (now_ms < after.deadline_ms
                 && after.deadline_ms <= now_ms + i64::from(donor::PIT_SECONDS) * 1000))
 }
+
+impl DurabilityRoot {
+    /// The native arena uses the existing Quest writer and its current Premium authority.
+    pub async fn commit_arena_quest_completion<
+        G: super::quest_state::grizzly::GrizzlyPremiumGate,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<super::quest_state::QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_quest_inner::<G, 0>(
+            authority,
+            node,
+            fence,
+            super::quest_state::QuestTransitionRequest {
+                transition_key: oteryn_gameplay_quests::quest::arena_completion::COMPLETE.into(),
+                cause: super::quest_state::QuestCause::Command(command),
+            },
+            catalogue,
+            None,
+            None,
+            None,
+            None,
+            gate,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+    }
+}

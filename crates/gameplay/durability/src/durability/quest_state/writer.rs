@@ -702,9 +702,13 @@ impl DurabilityRoot {
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
+                    let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
+                        Some(oteryn_gameplay_quests::quest::arena_completion::rule().map_err(|_| DurabilityError::InvalidStoredState)?)
+                    } else { None };
                     // Premium's shared latch precedes the Character root lock. Historical
                     // receipts above replay without evaluating current entrance eligibility.
-                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium) {
+                    if callback.as_ref().and_then(|c| c.admission.as_ref()).is_some_and(|a| a.premium)
+                        || arena.is_some_and(|rule| rule.requires_premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -716,6 +720,17 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(rule) = arena {
+                        // Root lock serializes the arena owner, prerequisite and claim writers.
+                        // All three fixed trophy identities use the existing Character claim index.
+                        let ready: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_arena_matches WHERE character_id=encode($1,'hex')::uuid AND (body->>'completed')::int >= $2) AND (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=ANY($3::text[]))=3 AND EXISTS(SELECT 1 FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$4 AND completed_character_revision IS NOT NULL)")
+                            .bind(character.as_bytes().as_slice()).bind(i32::from(rule.completed_rank)).bind(&rule.trophy_claims).bind(&rule.prerequisite)
+                            .fetch_one(&mut *tx).await?;
+                        if !ready {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if let Some(recipe) = timer_recipe
                         && !server_timer::admit(&mut tx,fence,&request,recipe).await? {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
