@@ -47,4 +47,13 @@
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
+| M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
+
+| M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
+
+| M39: NPC any_topic offers and inventory quantity/absence predicates with refusal dialogue | questl2 | none planned; owner allocation 2020–2029 reserved | Tomes of Knowledge; Into The Bone Pit | CLAIMED |
+
+| M01b: imported-route EXPLORE native stage binding | questpc | none planned; only 2000–2009 if required by this assignment | 46 explore routes in MISSING-questpc-pc2.md, per ASSIGN.md | CLAIMED |
+| M08 — fenced live level/vocation/Premium predicates in source NPC programs | questpc2 | none planned; owner-assigned QMECH range 2050–2059 only | Elemental Spheres; Hot Cuisine; The Hidden City of Beregar | CLAIMED |
+
 | M01c imported-route: native USE / COLLECT / KILL stage bindings | questpc3 | 2030–2039 reserved; none allocated yet | Ancient Aucar Outfits Quest; Black Knight Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Draconia Quest; Dreamer's Challenge Quest; Falconer Outfits Quest; Fanfare Quest; Feral Trappers Quest; Grimvale Quest; Illuminator Outfits Quest | CLAIMED |
