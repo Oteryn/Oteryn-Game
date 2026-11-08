@@ -1,6 +1,3 @@
-#[cfg(feature = "test-support")]
-mod world_fixture;
-
 use super::super::db::begin_type2_transaction;
 use super::super::reward_claim_mint::quest::QuestRewardAdmission;
 use super::*;
@@ -337,10 +334,9 @@ impl DurabilityRoot {
             .find(|c| c.key == request.transition_key);
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
-            oteryn_gameplay_quests::quest::admission_binding::validate_resolved_world(
+            oteryn_gameplay_quests::quest::admission_binding::validate(
                 transition,
                 context.is_some(),
-                &world_callbacks,
             )
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
@@ -440,7 +436,6 @@ impl DurabilityRoot {
                     .any(|c| {
                         c.key == request.transition_key
                             && (!c.state_ops.is_empty()
-                                || c.world_requirements.iter().any(|r| r.ground_stack.is_some())
                                 || !c.offerings.is_empty()
                                 || c.item_on_target.is_some()
                                 || c.world_change.is_some()
@@ -925,7 +920,7 @@ impl DurabilityRoot {
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
-                        && !super::super::quest_world_callback::consume(&mut tx, permit, &recovery, &node, fence, &request, callback, context).await?
+                        && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?

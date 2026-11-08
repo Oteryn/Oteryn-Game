@@ -1,7 +1,6 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
 pub mod carried_step;
 pub(super) mod completion;
-mod ground_stack;
 pub mod shared_count;
 pub mod shared_switch;
 use super::{
@@ -141,15 +140,9 @@ pub(super) async fn consume_reward_inputs(
     reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Ground admission retains the current recovery, node and physical lane proofs"
-)]
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
-    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
-    node: &super::runtime_scope_assignment::NodeIncarnationProof,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
@@ -196,9 +189,6 @@ pub(super) async fn consume(
         if level.is_none_or(|level| level < i64::from(minimum)) {
             return Ok(false);
         }
-    }
-    if !ground_stack::admit(tx, permit, recovery, node, fence, context, callback).await? {
-        return Ok(false);
     }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);

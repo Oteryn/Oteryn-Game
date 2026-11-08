@@ -1160,10 +1160,6 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
 
 fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
     callback.world_requirements.iter().all(|requirement| {
-        // Mutable Ground is checked under the durable physical owner lock.
-        if requirement.ground_stack.is_some() {
-            return true;
-        }
         let position = tile(requirement.position);
         !map.facts.house_tile(position)
             && map
