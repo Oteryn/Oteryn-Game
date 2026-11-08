@@ -1,4 +1,4 @@
-# PGSPEED checked mechanics
+# PGSPEED checked mechanics — PARTIAL
 
 **none** in the three server reward steps inspected below. This is a bounded
 code check, not a claim that the complete quests or their native client flows
@@ -25,3 +25,11 @@ pending the owner's direction on whether it belongs in this package.
 No migrations are allocated by this report. At initial inspection the package
 contained `PACKAGE.md` only: no `MISSING-*.md` queue items or `CLAIMS.md` existed,
 so there was no reported mechanic to claim yet.
+
+## PARTIAL follow-up
+
+The NPC teleport adapter is claimed by PGSPEED in `CLAIMS.md`; the missing
+source-plan boundary was reproduced by a failing Rust unit test and the bounded
+planner now passes both positive and fail-closed cases. Production/durable
+wiring and its real-PG qualification remain in progress. This report does not
+count that mechanic or either complete quest as DONE.
