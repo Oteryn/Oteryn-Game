@@ -1002,8 +1002,9 @@
   "src": "TIBAUD-1",
   "area": "NPC",
   "feature": "Buy/sell/amount/backpack/capacity/filters",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji.",
+  "evidence": "crates/client-ui/src/features/0081-npc-shop/state/options.rs:5 + npc_shop_options_filter_owned_quotes_and_open_the_live_backpack",
   "lane": "cg_analytics"
  },
  {

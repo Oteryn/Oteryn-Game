@@ -44,7 +44,7 @@ Zasady przeciw dublowaniu:
 | T023 | Chat | Save / append channel log | MISSING | Brak zapisu i dopisywania treści kanału do pliku. |
 | T024 | Chat | Ignore / whitelist / blacklist | MISSING | Brak dedykowanych list komunikacji i wyjątków. |
 | T038 | Containers | Managed containers i loot destinations | DONE | Menu ustawień i otwierania kontenerów; przenoszenie całej zawartości do wybranego kontenera, z potwierdzeniami i zatrzymaniem po odmowie. evidence: apps/client/src/features/0014-container-tree/state.rs:13 + managed_container_session_sends_in_order_and_keeps_remaining_items_after_refusal |
-| T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
+| T139 | NPC | Buy/sell/amount/backpack/capacity/filters | DONE | Opcje capacity preview / equipped counts / owned sell offers, nawigacja do głównego plecaka, filtrowane oferty zachowują tożsamość serwera. evidence: crates/client-ui/src/features/0081-npc-shop/state/options.rs:5 + npc_shop_options_filter_owned_quotes_and_open_the_live_backpack |
 | T029 | Party | Team Finder assemble/join | DONE | Social Join/Assemble, filtrowana lista i operacje na uchwycie widocznego lidera. evidence: crates/client-ui/src/features/0232-team-finder-members/view.rs:10 + social_team_filters_join_the_visible_leader |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |
 | T027 | Social | Badges: widoczność i filtry | PARTIAL | Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public. |
