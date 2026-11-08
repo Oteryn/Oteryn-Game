@@ -53,7 +53,7 @@ fn scenario()->TestResult{
         geometry.selector.position=Some(TARGETS[0]);
         geometry.selector.action=Some(40016); geometry.selector.unique=None;geometry.selector.appearance=Some(25796);
         geometry.lever=None;geometry.teleport=None;geometry.item_on_target=None;geometry.carried_use=None;geometry.offerings.clear();geometry.effects=Default::default();
-        geometry.passages=vec![Passage{position:Position{y:TARGETS[0].y+1,..TARGETS[0]},appearance:25797,replacement:None}];
+        geometry.passages=vec![Passage{position:Position{y:TARGETS[0].y+1,..TARGETS[0]},appearance:25797,create_on_close:None,replacement:None}];
         let additional=TARGETS.iter().enumerate().skip(1).map(|(i,at)|{let mut c=geometry.clone();c.selector.position=Some(*at);c.selector.action=Some(40016+u16::try_from(i).unwrap_or(0));c.passages.clear();c}).collect::<Vec<_>>();
         let world=super::super::quest_world_callbacks::world_with_triggers(&geometry,TARGETS[0],&additional)?;
         let cells=world.movement_cells(activated.qualified_room().movement_cells()).map_err(debug)?;

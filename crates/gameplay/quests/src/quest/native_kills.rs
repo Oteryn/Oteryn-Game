@@ -20,6 +20,38 @@ pub struct Counter {
     pub maximum: i64,
 }
 
+impl Counter {
+    pub(crate) fn transition(self) -> QuestTransition {
+        QuestTransition {
+            world_change: None,
+            key: self.transition.into(),
+            quest: self.quest.into(),
+            effects: vec![
+                QuestEffect {
+                    track: self.gate.into(),
+                    from: QuestComparison::Eq(self.gate_value),
+                    effect: self
+                        .advance_gate_to
+                        .map_or(QuestEffectKind::Add(0), |value| {
+                            QuestEffectKind::SetWhenAtLeast {
+                                other_effect: 1,
+                                minimum: self.maximum - 1,
+                                value,
+                            }
+                        }),
+                },
+                QuestEffect {
+                    track: self.track.into(),
+                    from: QuestComparison::Between(0, self.maximum - 1),
+                    effect: QuestEffectKind::Add(1),
+                },
+            ],
+            completes: false,
+            experience: None,
+        }
+    }
+}
+
 pub const COUNTERS: &[Counter] = &[
     Counter {
         transition: "oteryn:quest-transition/native-kills/dragon-slayer-dragon",
@@ -146,7 +178,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     let mut tracks = catalogue.tracks;
     for counter in COUNTERS {
-        let ceiling = counter
+        let _ceiling = counter
             .maximum
             .checked_sub(1)
             .filter(|_| counter.maximum > 0)
@@ -163,33 +195,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
         if track.quest != counter.quest {
             return Err(format!("foreign native counter {}", counter.track));
         }
-        transitions.push(QuestTransition {
-            world_change: None,
-            key: counter.transition.into(),
-            quest: counter.quest.into(),
-            effects: vec![
-                QuestEffect {
-                    track: counter.gate.into(),
-                    from: QuestComparison::Eq(counter.gate_value),
-                    effect: counter
-                        .advance_gate_to
-                        .map_or(QuestEffectKind::Add(0), |value| {
-                            QuestEffectKind::SetWhenAtLeast {
-                                other_effect: 1,
-                                minimum: ceiling,
-                                value,
-                            }
-                        }),
-                },
-                QuestEffect {
-                    track: counter.track.into(),
-                    from: QuestComparison::Between(0, ceiling),
-                    effect: QuestEffectKind::Add(1),
-                },
-            ],
-            completes: false,
-            experience: None,
-        });
+        transitions.push(counter.transition());
     }
     QuestStateCatalogue::new(
         catalogue.content_revision,

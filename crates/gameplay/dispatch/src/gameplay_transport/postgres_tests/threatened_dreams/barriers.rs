@@ -230,7 +230,7 @@ fn scenario() -> TestResult {
             .map(|target| Passage {
                 position: position(target),
                 appearance: 100,
-                replacement: None,
+                create_on_close: None, replacement: None,
             })
             .collect();
         geometry.offerings = FAMILIES

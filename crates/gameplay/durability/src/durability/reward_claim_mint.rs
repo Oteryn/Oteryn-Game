@@ -118,13 +118,14 @@ mod arena;
 mod backpack_outputs;
 pub mod boss_reward;
 mod contents;
+mod fluid;
 mod grizzly;
 mod monk;
 pub(crate) mod quest;
-mod quest_participants;
 mod quest_actor_conditions;
-pub use quest_actor_conditions::QuestActorConditionProof;
+mod quest_participants;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
+pub use quest_actor_conditions::QuestActorConditionProof;
 mod soul_war;
 mod tibiadrome;
 
@@ -154,6 +155,8 @@ pub struct RewardClaimAchievement {
 /// Nested container items may be empty; this shape never recursively expands them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewardClaimMintContent {
+    /// Source-authored initial fluid, bound to the complete MINT plan.
+    pub fluid_subtype: Option<u8>,
     pub item: ItemDefinitionFacts,
     pub quantity: u32,
     pub key_number: Option<u16>,
@@ -1602,6 +1605,19 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             }
         }
     }
+    if request
+        .contents
+        .iter()
+        .any(|child| child.fluid_subtype.is_some())
+    {
+        canonical.push(0x46);
+        for (index, child) in request.contents.iter().enumerate() {
+            if let Some(fluid) = child.fluid_subtype {
+                canonical.extend_from_slice(&(index as u32 + 1).to_be_bytes());
+                canonical.push(fluid);
+            }
+        }
+    }
     if request.backpack_outputs {
         canonical.push(0x42);
     }
@@ -2007,18 +2023,55 @@ mod tests {
     }
 
     #[test]
+    fn reward_fluid_is_bound_and_rejects_non_vessel_shapes() {
+        let mut filled = request(None);
+        filled.item = backpack_facts(8);
+        filled.quantity = 1;
+        filled.contents = vec![RewardClaimMintContent {
+            item: facts("fixture:waterskin", ItemStackClass::NonStackable),
+            quantity: 1,
+            key_number: None,
+            text: None,
+            fluid_subtype: Some(16),
+        }];
+        assert!(validate_request(&filled).is_ok());
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let bound = intent_binding(&filled, character).expect("filled intent");
+        for fluid in [None, Some(17)] {
+            let mut changed = filled.clone();
+            changed.contents[0].fluid_subtype = fluid;
+            assert_ne!(intent_binding(&changed, character).expect("intent"), bound);
+        }
+        for shape in ["zero", "quantity", "stack", "container", "key", "text"] {
+            let mut changed = filled.clone();
+            let child = &mut changed.contents[0];
+            match shape {
+                "zero" => child.fluid_subtype = Some(0),
+                "quantity" => child.quantity = 2,
+                "stack" => child.item.stack = COIN,
+                "container" => child.item.container_capacity = Some(8),
+                "key" => child.key_number = Some(3801),
+                _ => child.text = Some("source text".into()),
+            }
+            assert!(validate_request(&changed).is_err(), "{shape}");
+        }
+    }
+
+    #[test]
     fn container_contents_are_complete_bounded_and_part_of_the_frozen_intent() {
         let mut container = request(None);
         container.item = backpack_facts(24);
         container.quantity = 1;
         container.contents = vec![
             RewardClaimMintContent {
+                fluid_subtype: None,
                 item: facts("fixture:coin", COIN),
                 quantity: 100,
                 key_number: None,
                 text: None,
             },
             RewardClaimMintContent {
+                fluid_subtype: None,
                 item: facts("fixture:key", ItemStackClass::NonStackable),
                 quantity: 1,
                 key_number: Some(3801),
@@ -2077,6 +2130,7 @@ mod tests {
         container.item = backpack_facts(20);
         container.quantity = 1;
         container.contents = vec![RewardClaimMintContent {
+            fluid_subtype: None,
             item: facts("fixture:book", ItemStackClass::NonStackable),
             quantity: 1,
             key_number: None,
@@ -2200,6 +2254,7 @@ mod tests {
     fn backpack_output_layout_is_bound_and_counts_the_root_entry() {
         let mut nested = request(None);
         let child = RewardClaimMintContent {
+            fluid_subtype: None,
             item: nested.item.clone(),
             quantity: 3,
             key_number: None,

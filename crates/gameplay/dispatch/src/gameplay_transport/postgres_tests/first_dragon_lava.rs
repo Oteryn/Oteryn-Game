@@ -135,7 +135,7 @@ fn scenario() -> TestResult {
             .map(|(at, appearance)| Passage {
                 position: position(at),
                 appearance,
-                replacement: None,
+                create_on_close: None, replacement: None,
             })
             .collect();
         // Offering coordinates add empty walkable geometry; no Item is minted.

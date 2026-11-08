@@ -366,11 +366,13 @@ fn scenario() -> TestResult {
         use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position, Selector, Trigger};
         use crate::gameplay_transport::connection::FirstEntryOutcome;
         let trigger = Position { x: 33620, y: 31400, floor: -10 };
-        let world = super::quest_world_callbacks::world(&Callback { repeatable_reward: false, effects: Default::default(), carried_use: None,
-            world_change: None,
-        key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
-            trigger: Trigger::Use, selector: Selector { position: Some(trigger), unique: None, action: None, appearance: None },
-            lever: None, reversible: false, passages: vec![], teleport: None, storage: vec![],
+        let world = super::quest_world_callbacks::world(&Callback {
+carried_use: None, repeatable_reward: false,
+world_change: None,
+            actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
+            key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
+            trigger: Trigger::Use, selector: Selector { native: None, position: Some(trigger), unique: None, action: None, appearance: None },
+            lever: None, reversible: false, passages: vec![], teleport: None, facing: None, effects: Default::default(), world_requirements: vec![], storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, sources: vec![],

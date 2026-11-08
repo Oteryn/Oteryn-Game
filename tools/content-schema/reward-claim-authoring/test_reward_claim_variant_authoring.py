@@ -36,8 +36,8 @@ class CanonicalVariantTests(unittest.TestCase):
         self.assertEqual(index['plain_record_count'], 231)
         self.assertEqual(index['record_count'], 339)
         self.assertEqual(index['scripted_rs_record_count'], 3)
-        self.assertEqual(index['readiness']['ready'], 226)
-        self.assertEqual(index['readiness']['waiting_item_semantics'], 8)
+        self.assertEqual(index['readiness']['ready'], 229)
+        self.assertEqual(index['readiness']['waiting_item_semantics'], 5)
         for path in index['shards'][:3]:
             self.assertEqual(outputs[path], (self.root / path).read_text())
         self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')

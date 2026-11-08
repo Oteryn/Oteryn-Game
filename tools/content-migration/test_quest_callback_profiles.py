@@ -159,7 +159,12 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.admit()
         rows = {r['production_definition']['production_key']: r
                 for r in json.loads(self.generated[PROFILE])['records']}
-        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019'):
+        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019',
+                    'oteryn:item.tibia.i2971', 'oteryn:item.tibia.i3249',
+                    'oteryn:item.tibia.i3341', 'oteryn:item.tibia.i5803',
+                    'oteryn:item.tibia.i6527', 'oteryn:item.tibia.i235',
+                    'oteryn:item.tibia.i7870', 'oteryn:item.tibia.i7935',
+                    'oteryn:item.tibia.i8021', 'oteryn:item.tibia.i12510'):
             row = rows[key]
             self.assertEqual(row['admission'], {'materializable': True,
                              'stack_class': 'NonStackable',
@@ -195,7 +200,7 @@ class QuestCallbackProfiles(unittest.TestCase):
     def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
         from questpc3_item_admission import apply_admissions
         key = 'oteryn:item.tibia.i3272'
-        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953, 25975, 25976, 25977, 25295, 3452)}
+        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779, 3270, 3562, 10196, 10275, 22052, 22649, 5893, 25730, 25732, 25734, 25780, 25782, 5953, 25975, 25976, 25977, 25295, 3452, 24939, 24940, 24941, 24942)}
         canonical_items = [row['definition']
                            for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
                            for row in json.loads(path.read_bytes())['records']
@@ -295,6 +300,11 @@ class QuestCallbackProfiles(unittest.TestCase):
         # current item admissions qualify a complete closure of139 identities.
         self.assertEqual(len(expected), 139)
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
+        # Full-charge bags add Triangle Tower's Garlic Necklace and Desert's
+        # Protection Amulet, Ring of Healing and Magic Light Wand.
+        self.assertIn('oteryn:item.tibia.i3083', expected)
+        self.assertTrue({'oteryn:item.tibia.i3084', 'oteryn:item.tibia.i3098',
+                         'oteryn:item.tibia.i3077'} <= expected)
         for key in expected:
             row = rows[key]
             self.assertTrue(row['admission']['materializable'], key)

@@ -134,7 +134,7 @@ fn scenario() -> TestResult {
             .map(|(at, appearance)| Passage {
                 position: position(at),
                 appearance,
-                replacement: None,
+                create_on_close: None, replacement: None,
             })
             .collect();
         geometry.offerings = PALLETS

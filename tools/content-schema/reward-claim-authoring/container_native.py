@@ -18,6 +18,76 @@ MAX_CONTENTS = 20  # Existing BAGS-0 direct-container admission, not a donor cap
 # Their source total remains 200; this deliberately preserves the accepted
 # native two-stack recipe over Container:addItem's donor clamp to one stack.
 ACCEPTED_TWO_STACKS = {6218: 3031, 6226: 3450}
+# These Item profiles already have native charged-instance custody. The
+# historical canonical hold predates that owner. Scope the admission to these
+# exact quest claims; neither global Item definitions nor other quests change.
+CHARGED_QUEST_CLAIMS = {
+    'canary:reward-claim/kv/desert2': 3084,
+    'canary:reward-claim/kv/timering3': 3082,
+    'canary:reward-claim/kv/triangletower': 3083,
+    'canary:reward-claim/kv/trollcave1': 3083,
+    'canary:reward-claim/kv/weddingring1': 3085,
+}
+FULL_CHARGE_LEAVES = {
+    'canary:reward-claim/kv/madmageroom3': (6082, 3081, 5),
+    'canary:reward-claim/kv/silveramulet': (6154, 3054, 200),
+    'canary:reward-claim/kv/stealhring1': (6174, 3084, 250),
+    'canary:reward-claim/kv/timering3': (6051, 3082, 50),
+    'canary:reward-claim/kv/trollcave1': (6039, 3083, 150),
+    'canary:reward-claim/kv/weddingring1': (6043, 3085, 200),
+}
+CHARGE_SOURCE_SHA256 = 'b1c6603253e04042c113a8e5c69bff2b58b4f61f94f03ffdf4df6a07906c7dec'
+
+
+def native_charge_item(item, profile):
+    """Use existing native custody only when canonical physical/custody facts agree."""
+    if item is None or profile is None:
+        return item
+    identity = item['identity']
+    key = identity['key']
+    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200}.get(item_id(identity))
+    semantics = profile['semantics']
+    binding = profile['production_binding']
+    if (charges is None or profile['production_definition'] != {
+            'family': 'Item', 'production_key': key, 'revision_ref': identity['revision']}
+            or binding['target'] != identity or binding['disposition'] != 'EXACT'
+            or profile['admission'] != {'materializable': True, 'stack_class': 'NonStackable',
+                                        'legal_destinations': ['CharacterInventory', 'Ground']}
+            or item.get('stack_class') != 'NonStackable'
+            or fact(item, 'charges', 'count') != charges
+            or fact({'semantics': semantics}, 'charges', 'count') != charges
+            or semantics['container'] != {'state': 'NOT_APPLICABLE'}
+            or semantics['temporal'] != {'state': 'NOT_APPLICABLE'}):
+        return item
+
+    def agrees(accepted, observed):
+        if isinstance(accepted, dict):
+            return accepted.get('state') == 'UNKNOWN' or isinstance(observed, dict) and all(
+                field in observed and agrees(value, observed[field]) for field, value in accepted.items())
+        return accepted == observed
+
+    if (not all(agrees(item['semantics'][field], semantics[field]) for field in
+                ('physical', 'stack', 'container', 'charges', 'fluid', 'temporal'))
+            or any(fact({'semantics': semantics}, 'physical', field) is not True
+                   for field in ('movable', 'pickupable'))
+            or type(fact({'semantics': semantics}, 'physical', 'weight')) is not int):
+        return item
+    qualified = copy.deepcopy(item)
+    qualified['materializable'] = True
+    return qualified
+
+
+def claim_items(pilot_key, items):
+    item = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    if item is None:
+        return items
+    key = f'oteryn:item.tibia.i{item}'
+    root = Path(__file__).resolve().parents[3]
+    profiles = json.loads((root / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+    matches = [p for p in profiles['records'] if p['production_definition']['production_key'] == key]
+    if len(matches) != 1:
+        return items
+    return {**items, key: native_charge_item(items.get(key), matches[0])}
 
 
 def source():
@@ -54,7 +124,7 @@ def item_id(ref):
 
 
 def full_charge_leaf(item, pilot_key, position, key, raw_count):
-    """The closed source leaves produce one Item at its exact definition charges.
+    """A pinned leaf is one already-admitted Item at its exact definition charges.
 
     Missing native timed state means full definition values; this does not
     authorize partial source charges or make a held Item materializable.
@@ -62,23 +132,32 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
     from itemhold_charge_precedence import qualifies
     if qualifies(item, pilot_key, position, key, raw_count):
         return True
-    permitted = {
-        'canary:reward-claim/kv/madmageroom3': (6082, 'oteryn:item.tibia.i3081', 5),
-        'canary:reward-claim/kv/silveramulet': (6154, 'oteryn:item.tibia.i3054', 200),
-        'canary:reward-claim/kv/stealhring1': (6174, 'oteryn:item.tibia.i3084', 250),
-    }
-    selected = permitted.get(pilot_key)
-    if (selected is None or (key, raw_count) != selected[1:]
+    binding = FULL_CHARGE_LEAVES.get(pilot_key)
+    if binding is None:
+        return False
+    unique, source_id, charges = binding
+    if (key != f'oteryn:item.tibia.i{source_id}' or raw_count != charges
             or not item or item.get('identity', {}).get('key') != key
             or not item.get('materializable') or item.get('stack_class') != 'NonStackable'
             or fact(item, 'charges', 'count') != raw_count):
         return False
-    _, entries = source()
-    setting = entries[selected[0]]['setting']
-    return (setting.get('useKV') is True
-            and setting.get('questName') == pilot_key.rsplit('/', 1)[1]
-            and setting.get('itemPos') == position
-            and setting.get('reward') == [[item_id(item['identity']), raw_count]])
+    if unique in (6082, 6154, 6174):
+        _, entries = source()
+    else:
+        raw = SOURCE.with_name('questpc4_charge_source.json').read_bytes()
+        if hashlib.sha256(raw).hexdigest() != CHARGE_SOURCE_SHA256:
+            raise ValueError('QUESTPC4_CHARGE_SOURCE_CHANGED')
+        evidence = json.loads(raw)
+        original, _ = source()
+        if (evidence['schema'] != 'OTERYN_QUESTPC4_FULL_CHARGE_SOURCE/v1'
+                or any(evidence[field] != original[field] for field in
+                       ('revision', 'source_path', 'source_blob_sha1', 'source_sha256'))
+                or [row['unique_id'] for row in evidence['entries']] != [6039, 6043, 6051]):
+            raise ValueError('QUESTPC4_CHARGE_SOURCE_CHANGED')
+        entries = {row['unique_id']: row for row in evidence['entries']}
+    setting = entries[unique]['setting']
+    return (setting.get('useKV') is True and setting.get('questName', '').lower() == pilot_key.rsplit('/', 1)[1]
+            and setting.get('itemPos') == position and setting.get('reward') == [[source_id, charges]])
 
 
 def derive(definition, items, stack_problem):

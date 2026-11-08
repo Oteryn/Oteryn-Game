@@ -1,3 +1,5 @@
+CURRENT AUTHORING: successor questpc3b at published bdb7ce79b, integrating main83acbdac in an uncommitted merge. All41 textual conflicts resolved; workspace check still qualifying constructor/API compatibility. Canonical0999-1008 and incoming1250-1258 retained, own1220-1229 unchanged; duplicate checker passes. Current generated outputs/pins, focusedPG and unit tests NOT YET qualified. Preserve numeric/bool increments, both published effect-tag dialects and exact historical native-death double-binding replay. Frozen original questpc3 at09c26dcee must remain unchanged. Older notes below are history, not current check claims.
+
 # QUESTPC3 current handoff
 
 Branch claude/happy-davinci-ijz3wy-questpc3. Work at medium effort. Fetch this exact branch before every push, merge remote movement, never force/rebase/main/PR. Commit as blakinio with the required coauthor/session trailers. wpkg collects green lane branches; merge main after coordinator announces collector PR merge.

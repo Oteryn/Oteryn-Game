@@ -9,8 +9,11 @@ mod daily_world_gates;
 mod effects;
 mod encounter;
 mod execute;
+pub(super) mod monsters;
 mod rewards;
+mod shared_gate;
 mod soul_war_reward;
+mod timed_encounter;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -60,6 +63,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     pub(in crate::gameplay_transport) carried: std::sync::Mutex<
         std::collections::HashMap<GameSessionId, super::item_use::carried::Pending>,
     >,
@@ -72,6 +76,19 @@ pub(super) struct PendingCallbacks {
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
+}
+
+impl PendingCallbacks {
+    pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
+        self.timed
+            .lock()
+            .ok()?
+            .iter()
+            .map(|pending| pending.next_due_us())
+            .min()
+    }
 }
 
 pub(super) fn callbacks() -> &'static [Callback] {
@@ -165,6 +182,65 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if source_ordinal.is_some_and(|source| source != ordinal) {
         return false;
     }
+    if let Some(binding) = &callback.selector.native
+        && tile(binding.position) == pos
+        && ordinal == binding.ordinal
+        && map
+            .overlay
+            .base()
+            .tile(pos.x, pos.y, pos.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(usize::from(ordinal))
+                    .map(|(id, _)| *id)
+            })
+            .is_some_and(|id| {
+                map.facts
+                    .quest_callback_native_object(key, id, binding.appearance)
+            })
+    {
+        return true;
+    }
+    if oteryn_gameplay_quests::quest::shared_switches::native::bindings(&callback.key)
+        .iter()
+        .any(|binding| {
+            tile(binding.position) == pos
+                && ordinal == binding.ordinal
+                && map
+                    .overlay
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .and_then(|base| {
+                        base.ids()
+                            .iter()
+                            .zip(base.depths())
+                            .filter(|(_, depth)| **depth == 0)
+                            .nth(usize::from(ordinal))
+                            .map(|(id, _)| *id)
+                    })
+                    .is_some_and(|id| {
+                        map.facts
+                            .quest_callback_native_object(key, id, binding.appearance)
+                    })
+        })
+    {
+        return true;
+    }
+    if let Some(binding) =
+        oteryn_gameplay_quests::quest::carried_step::native_binding(&callback.key)
+        && tile(binding.position) == pos
+        && ordinal == binding.ordinal
+        && map.facts.quest_callback_native_teleport(
+            key,
+            binding.appearance,
+            tile(binding.raw_destination),
+        )
+    {
+        return true;
+    }
     let selector = &callback.selector;
     selector.position.is_none_or(|p| tile(p) == pos)
         && (selector.position.is_none()
@@ -197,8 +273,14 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                                 .filter(|(_, depth)| **depth == 0)
                                 .nth(usize::from(ordinal))
                         })
-                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                        .is_some_and(|(id, _)| {
+                            map.facts.quest_callback_base_appearance(pos, ordinal, *id)
+                                == Some(appearance)
+                                || map
+                                    .facts
+                                    .base_entry(pos, ordinal, *id)
+                                    .is_some_and(|facts| facts.appearance_id == appearance)
+                        })
                 })))
 }
 
@@ -246,6 +328,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.is_empty() {
             return true;
         }
+        if pending.iter().any(|pending| {
+            callbacks().iter().any(|callback| {
+                callback.key == pending.callback
+                    && callback
+                        .effects
+                        .item_reward
+                        .as_ref()
+                        .is_some_and(|reward| reward.premium)
+            })
+        }) {
+            // Settle delivery before channel locks. A historical receipt still
+            // replays when the current account gate is closed.
+            let _ = self.session_premium_gate(session).await;
+        }
         let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
@@ -261,10 +357,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
+            let native = self.active_generation.and_then(|g| g.native_gameplay());
+            let weights = native.map(|n| {
+                crate::gameplay_transport::item_ref_admission::NativeItemWeights(n)
+                    .with_wheel(self.premium_coordinator)
+            });
+            let admission = callbacks()
+                .iter()
+                .find(|c| c.key == pending.callback)
+                .filter(|c| c.effects.item_reward.is_some())
+                .and_then(|_| native.zip(weights.as_ref()))
+                .map(|(native, weights)| {
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        actor_conditions: None,
+                        carried_use: None,
+
+                        native,
+                        weights,
+                        fee_payment: None,
+                    }
+                });
+            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
+                admission,
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
@@ -318,7 +435,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_or(true, |p| p.contains_key(&session))
     }
 
-    fn callback_content(&self) -> &[Callback] {
+    pub(super) fn callback_content(&self) -> &[Callback] {
         #[cfg(test)]
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
@@ -617,18 +734,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let selected = self
             .callback_content()
             .iter()
-            .filter(|c| c.trigger == Trigger::Use && matches(map, c, resolved.placement_key))
+            .filter(|c| {
+                c.actor_kind == world_callbacks::ActorKind::Player
+                    && c.trigger == Trigger::Use
+                    && matches(map, c, resolved.placement_key)
+            })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {
             return None;
         };
+        if callback
+            .effects
+            .item_reward
+            .as_ref()
+            .is_some_and(|reward| reward.premium)
+        {
+            // The synchronous live view used by MINT needs delivery settled;
+            // await that read before taking the spell lane and Channel guards.
+            // Do not refuse here: exact historical receipts remain replayable.
+            let _ = self.session_premium_gate(command.game_session_id).await;
+        }
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if callback.storage.is_empty()
-                && world_callbacks::world_change_requirement(&callback.key).is_none()
-            {
+            let fence = if callback.storage.is_empty() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
+                && world_callbacks::world_change_requirement(&callback.key).is_none() {
                 None
             } else {
                 self.current_quest_fence(command.game_session_id)
@@ -780,7 +913,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
+                        .filter(move |c| {
+                            c.actor_kind == world_callbacks::ActorKind::Player
+                                && c.trigger == trigger
+                                && matches(map, c, key)
+                        })
                         .map(move |c| (c, key)),
                 )
             })
@@ -802,6 +939,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let cause = QuestCause::Step(command);
         let operation = async {
             let fence = if callback.storage.is_empty()
+                && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
+                && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none()
             {
                 None
@@ -926,7 +1066,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(map.facts.doors());
         let blocked = super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,
             self.movement_cells,
             actor,
@@ -935,6 +1075,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin.position(),
             blocked,
             &closed,
+            None,
         ) && let Ok(snapshot) = runtime.commit_source_step(proof)
         {
             states.stage_special_movement_step(
@@ -955,6 +1096,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, entered.position()),
                 underwater(map, snapshot.position()),
             );
+            if let Some(effect) = callback.effects.teleport_effect.or_else(|| {
+                oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key)
+                    .map(|gate| gate.effect)
+            }) && let Some(at) = native(snapshot.position())
+            {
+                let _ = map.facts.emit_movement_effect(at, effect);
+            }
         }
         if let Some(message) = &callback.failure_message {
             self.states.chat.push_quest_feedback(session, message);
@@ -964,4 +1112,102 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// A conditional source callback owns the portal only when its full native binding
+/// matches and callback selection at this tile is unambiguous. Ordinary step proofs
+/// still enforce entry collision, doors, pacing, occupancy and protection-zone rules.
+pub(super) struct CallbackPortals<'a> {
+    pub inner: &'a dyn crate::map::floor::CellBlocker,
+    pub map: Option<&'a BundleMap>,
+    pub callbacks: &'a [Callback],
+}
+impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.blocks(cell)
+    }
+    fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
+        let Some(map) = self.map else {
+            return false;
+        };
+        let Some(at) = native(MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor: match i16::try_from(cell.z) {
+                Ok(z) => z,
+                Err(_) => return false,
+            },
+        }) else {
+            return false;
+        };
+        if !self.callbacks.iter().any(|c| {
+            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
+                .is_some_and(|b| tile(b.position) == at)
+        }) {
+            return false;
+        }
+        let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
+            return false;
+        };
+        let mut selected = None;
+        for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
+            let Some(key) = u8::try_from(ordinal)
+                .ok()
+                .and_then(|o| placement_key(at, o))
+            else {
+                return false;
+            };
+            if map.facts.base_hidden(key) {
+                continue;
+            }
+            for callback in self
+                .callbacks
+                .iter()
+                .filter(|c| c.trigger == Trigger::StepIn && matches(map, c, key))
+            {
+                if selected.replace((callback, key)).is_some() {
+                    return false;
+                }
+            }
+        }
+        selected.is_some_and(|(c, key)| {
+            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
+                map.facts
+                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
+            })
+        })
+    }
+}
+
+fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
+    callback.world_requirements.iter().all(|requirement| {
+        let position = tile(requirement.position);
+        !map.facts.house_tile(position)
+            && map
+                .overlay
+                .base()
+                .tile(position.x, position.y, position.floor)
+                .is_some_and(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .enumerate()
+                        .any(|(ordinal, (id, _))| {
+                            let Ok(ordinal) = u8::try_from(ordinal) else {
+                                return false;
+                            };
+                            let Some(key) = placement_key(position, ordinal) else {
+                                return false;
+                            };
+                            !map.facts.base_hidden(key)
+                                && map.facts.base_entry(position, ordinal, *id).is_some_and(
+                                    |entry| {
+                                        !entry.pickupable
+                                            && entry.appearance_id == requirement.appearance
+                                    },
+                                )
+                        })
+                })
+    })
 }

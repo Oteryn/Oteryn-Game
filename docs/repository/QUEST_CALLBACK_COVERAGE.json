@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 34,
-    "not_playable": 25,
-    "supported_unqualified": 282
+    "dispatch_pg_qualified": 16,
+    "not_playable": 21,
+    "supported_unqualified": 299
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -2046,8 +2046,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "source_quest_rewards::the_desert_dungeon_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/desert_dungeon_quest"
@@ -5594,8 +5594,8 @@
               ]
             }
           ],
-          "reason": "questpc3_ring_time_ring_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.ringquest2",
@@ -5622,8 +5622,8 @@
               ]
             }
           ],
-          "reason": "questpc3_ring_sword_ring_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/ring_quest"
@@ -5655,8 +5655,8 @@
               ]
             }
           ],
-          "reason": "questpc3_scale_armor_bag_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/scale_armor_quest"
@@ -6233,8 +6233,8 @@
               ]
             }
           ],
-          "reason": "questpc3_shaman_treasure_bag_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/shaman_treasure_quest"
@@ -6267,8 +6267,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "questpc3_short_sword_notebook_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/short_sword_quest"
@@ -6300,8 +6300,8 @@
               ]
             }
           ],
-          "reason": "questpc3_charged_amulet_cohort_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "waiting_item_semantics",
+          "status": "not_playable"
         }
       ],
       "quest": "canary:quest/silver_amulet_quest"
@@ -6333,8 +6333,8 @@
               ]
             }
           ],
-          "reason": "questpc3_silver_brooch_full_bag_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/silver_brooch_quest"
@@ -6366,8 +6366,8 @@
               ]
             }
           ],
-          "reason": "questpc3_six_rubies_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/six_rubies_quest"
@@ -6399,8 +6399,8 @@
               ]
             }
           ],
-          "reason": "questpc3_spike_sword_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/spike_sword_quest"
@@ -6432,8 +6432,8 @@
               ]
             }
           ],
-          "reason": "questpc3_charged_amulet_cohort_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "waiting_item_semantics",
+          "status": "not_playable"
         },
         {
           "claim": "oteryn:reward-claim.kv.stealhring2",
@@ -6460,8 +6460,8 @@
               ]
             }
           ],
-          "reason": "questpc3_stealth_ring_ring_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/stealth_ring_quest"
@@ -6521,8 +6521,8 @@
               ]
             }
           ],
-          "reason": "questpc3_steel_helmet_second_coins_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.steelhelmet3",
@@ -6549,8 +6549,8 @@
               ]
             }
           ],
-          "reason": "questpc3_steel_helmet_helmet_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.steelhelmet4",
@@ -6578,8 +6578,8 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "questpc3_steel_helmet_letter_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/steel_helmet_quest"
@@ -6611,8 +6611,8 @@
               ]
             }
           ],
-          "reason": "questpc3_strong_potions_full_bag_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/strong_potions_quest"
@@ -6644,8 +6644,8 @@
               ]
             }
           ],
-          "reason": "questpc3_studded_shield_free_banana_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.bananapremium",
@@ -6672,8 +6672,8 @@
               ]
             }
           ],
-          "reason": "questpc3_studded_shield_premium_banana_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/studded_shield_quest"
@@ -7065,8 +7065,8 @@
               ]
             }
           ],
-          "reason": "questpc3_skull_of_ratha_skull_and_pearl_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
@@ -7093,8 +7093,8 @@
               ]
             }
           ],
-          "reason": "questpc3_skull_of_ratha_chain_and_ring_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "canary:quest/the_explorer_society_quest"
@@ -9413,8 +9413,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::time_ring_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/time_ring_quest"
@@ -9741,8 +9741,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "source_quest_rewards::triangle_tower_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/triangle_tower_quest"
@@ -9795,8 +9795,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::troll_cave_rewards",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/troll_cave_quest"
@@ -9983,8 +9983,8 @@
               ]
             }
           ],
-          "reason": "waiting_item_semantics",
-          "status": "not_playable"
+          "reason": "source_quest_rewards::wedding_ring_rewards",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.weddingring2",
@@ -10366,8 +10366,8 @@
               ]
             }
           ],
-          "reason": "questpc3_studded_legs_honey_flower_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         }
       ],
       "quest": "crystalserver:quest/studded_legs_quest"
@@ -10476,8 +10476,8 @@
               ]
             }
           ],
-          "reason": "questpc3_skull_of_ratha_witch_house_full_bag_once_and_replay",
-          "status": "dispatch_pg_qualified"
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id3620",
@@ -10509,54 +10509,6 @@
         }
       ],
       "quest": "unlinked"
-    },
-    {
-      "chests": [
-        {
-          "claim": "oteryn:reward-claim.kv.rapier",
-          "placements": [
-            {
-              "position": {
-                "x": 32099,
-                "y": 32198,
-                "z": 9
-              },
-              "sources": [
-                {
-                  "citation": "crystal:data-global/startup/tables/chest.lua:3454",
-                  "reward_matches_current_source": false,
-                  "server": "crystalserver",
-                  "unique_id": 14042
-                }
-              ]
-            }
-          ],
-          "reason": "questpc3_rapier_claim_once_and_replay",
-          "status": "dispatch_pg_qualified"
-        }
-      ],
-      "quest": "canary:quest/rapier_quest"
-    },
-    {
-      "chests": [
-        {
-          "claim": "oteryn:reward-claim.kv.smallsapphire",
-          "placements": [
-            {
-              "position": {
-                "x": 32962,
-                "y": 32429,
-                "z": 7
-              },
-              "sources": []
-            }
-          ],
-          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "questpc3_small_sapphire_full_recipe_once_and_replay",
-          "status": "dispatch_pg_qualified"
-        }
-      ],
-      "quest": "oteryn:quest.authored.small_sapphire_quest"
     }
   ],
   "scope": "Once-only leaf/key/text chests and exact filled-container/shared-storage-choice recipes; levers and step-in scripts are separate owners.",

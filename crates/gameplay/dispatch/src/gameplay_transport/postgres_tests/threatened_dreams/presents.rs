@@ -141,7 +141,7 @@ fn scenario() -> TestResult {
             .map(|at| Passage {
                 position: position(at),
                 appearance: 100,
-                replacement: None,
+                create_on_close: None, replacement: None,
             })
             .collect();
         geometry.offerings = BEDS

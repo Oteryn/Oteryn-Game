@@ -75,7 +75,7 @@ fn scenario() -> TestResult {
         geometry.item_on_target=None;
         geometry.carried_use=None;
         geometry.offerings.clear();
-        geometry.passages=vec![Passage { position:WRONG,appearance:100,replacement:None }];
+        geometry.passages=vec![Passage { position:WRONG,appearance:100,create_on_close:None,replacement:None }];
         let world=super::super::quest_world_callbacks::world(&geometry,AT)?;
         let cells=world.movement_cells(activated.qualified_room().movement_cells()).map_err(debug)?;
         let start=neighbor(AT);

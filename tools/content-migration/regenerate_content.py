@@ -90,6 +90,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -543,6 +544,7 @@ def main() -> int:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         run(["python3", "tools/content-migration/questpc3_blessing_registration.py"])
         if not args.skip_checks:
@@ -575,6 +577,7 @@ def main() -> int:
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+    run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

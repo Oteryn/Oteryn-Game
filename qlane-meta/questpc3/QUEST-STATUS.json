@@ -10996,5 +10996,18 @@
         "result": "PASS"
       }
     }
+  },
+  "current_main_integration": {
+    "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "state": "merge in progress; all 41 textual conflicts resolved; compiler qualification pending",
+    "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
+    "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
+    "decisions": [
+      "Preserve numeric PC3 and boolean main storage increment wire encodings.",
+      "Preserve published PC3 effect tags while using main tags for main transitions.",
+      "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
+      "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
+    ],
+    "checks": "workspace compiler RED collected; current rerun pending. Current merge PG/unit proof and generated pins pending; previous fairy PG73979ms applies only to published parent."
   }
 }

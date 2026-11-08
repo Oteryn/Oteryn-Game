@@ -24,9 +24,15 @@ struct DynamicPortal {
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
+    /// Restore exactly this revision at an original source deadline.
+    TimedTransform { due: u64, restore: EntryFacts },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
+    },
+    ItemPresence {
+        position: TilePos,
+        entry: EntryFacts,
     },
     ItemCycle {
         position: TilePos,
@@ -47,6 +53,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    presences: BTreeMap<u64, (TilePos, EntryId)>,
 }
 
 impl CallbackStates {
@@ -67,6 +74,24 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedTransform { due, restore } => {
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(r, _)| *r)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.movement_decays.insert(
+                    (*due, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                        matching_appearance: None,
+                    },
+                );
+            }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
                     if endpoints
@@ -108,6 +133,45 @@ impl CallbackStates {
                             expires: *expires,
                         },
                     );
+                }
+            }
+            QuestCallbackProjection::ItemPresence {
+                position,
+                entry: facts,
+            } => {
+                if let Some((pos, id)) = self.presences.get(&owner).copied() {
+                    if pos != *position {
+                        return false;
+                    }
+                    if !close {
+                        return true;
+                    }
+                    if let Some(entries) = self.movement_items.get_mut(&pos) {
+                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                        if entries.is_empty() {
+                            self.movement_items.remove(&pos);
+                        }
+                    }
+                    self.presences.remove(&owner);
+                } else if !close {
+                    if facts.pickupable || self.presences.values().any(|(pos, _)| pos == position) {
+                        return false;
+                    }
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(entry) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(*position)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(entry),
+                            facts: *facts,
+                        });
+                    self.presences.insert(owner, (*position, entry));
                 }
             }
             QuestCallbackProjection::ItemCycle {
@@ -699,6 +763,62 @@ impl BundleFacts {
             })
     }
 
+    /// Match an exact authored counterpart only while the retained base object is bare.
+    /// Sparse placements and plain palette entries share the same original appearance proof.
+    pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) || self.base_hidden(key) {
+            return false;
+        }
+        let index = match self.placements.binary_search_by_key(&key, |(k, _)| *k) {
+            Ok(at) => {
+                let placement = &self.placements[at].1;
+                if placement.attrs != Attrs::default() || placement.dropped {
+                    return false;
+                }
+                placement.palette
+            }
+            Err(_) => {
+                let Some(index) = self.unique_index(id) else {
+                    return false;
+                };
+                index
+            }
+        };
+        self.palette
+            .get(index as usize)
+            .is_some_and(|p| p.facts.appearance_id == appearance)
+    }
+
+    /// Match a source-selected native portal against its original bound attributes.
+    /// A legacy unique/action binding or a hidden placement cannot become this alias.
+    pub fn quest_callback_native_teleport(
+        &self,
+        key: u64,
+        appearance: u16,
+        destination: TilePos,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) || self.base_hidden(key) {
+            return false;
+        }
+        self.placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .is_some_and(|i| {
+                let p = &self.placements[i].1;
+                p.attrs.unique.is_none()
+                    && p.attrs.action.is_none()
+                    && self.palette[p.palette as usize].facts.appearance_id == appearance
+                    && p.attrs.teleport
+                        == Some((destination.x, destination.y, destination.floor as u8))
+            })
+    }
+
     /// Reserve no durable inputs unless the bounded local projection can be installed.
     pub fn quest_callback_capacity(&self, key: u64, expected: u64, passages: usize) -> bool {
         self.callbacks.lock().is_ok_and(|s| {
@@ -707,6 +827,23 @@ impl BundleFacts {
                 && passages <= 8
                 && s.has_capacity(passages)
         })
+    }
+
+    /// The authored base appearance is stable across Channel callback transformations.
+    /// Sparse attributes select the palette exactly; plain entries require an unambiguous id.
+    pub fn quest_callback_base_appearance(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+    ) -> Option<u16> {
+        let key = view::placement_key(pos, ordinal)?;
+        let index = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+            Ok(found) => self.placements[found].1.palette,
+            Err(_) => self.unique_index(id)?,
+        };
+        let palette = self.palette.get(index as usize)?;
+        (palette.id == id).then_some(palette.facts.appearance_id)
     }
 
     /// A bridge replacement must already have unambiguous facts in the bundle palette.
@@ -807,6 +944,68 @@ impl BundleFacts {
         true
     }
 
+    /// Crystal Triangle Tower removes1270 but creates1025. The first created wall
+    /// reuses the removed base slot; subsequent source creates retain distinct entries.
+    pub fn apply_quest_wall_cycle(
+        &self,
+        key: u64,
+        expected: u64,
+        lever: EntryFacts,
+        wall: u64,
+        created: EntryFacts,
+        remove: bool,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(wall) else {
+            return false;
+        };
+        if self.house_tile(pos) {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let revision = states.changed.get(&wall).map_or(0, |(r, _)| *r);
+        if states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+            || expected == u64::MAX
+            || revision == u64::MAX
+            || !states.has_capacity(3)
+        {
+            return false;
+        }
+        let added = if !remove && !states.hidden.contains(&wall) {
+            let Some(sequence) = states.movement_sequence.checked_add(1) else {
+                return false;
+            };
+            let Some(id) = super::super::overlay::EntryId::callback(sequence) else {
+                return false;
+            };
+            Some((
+                sequence,
+                view::ComposedEntry {
+                    source: view::EntrySource::Added(id),
+                    facts: created,
+                },
+            ))
+        } else {
+            None
+        };
+        let states = Arc::make_mut(&mut states);
+        if remove {
+            states.hidden.insert(wall);
+        } else {
+            if let Some((sequence, entry)) = added {
+                states.movement_sequence = sequence;
+                states.movement_items.entry(pos).or_default().push(entry);
+            } else {
+                states.hidden.remove(&wall);
+                states.changed.insert(wall, (revision + 1, created));
+            }
+            states.passable.insert(wall, false);
+        }
+        states.changed.insert(key, (expected + 1, lever));
+        true
+    }
+
     /// Removing a wall must alter the collision index as well as its visible stack.
     pub fn quest_callback_blocked(
         &self,
@@ -814,6 +1013,9 @@ impl BundleFacts {
         pos: TilePos,
         baseline: bool,
     ) -> bool {
+        let Ok(rotations) = self.rotations.lock().map(|states| Arc::clone(&states)) else {
+            return true;
+        };
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
@@ -828,6 +1030,7 @@ impl BundleFacts {
         };
         if states.hidden.range(first..=first + 63).next().is_none()
             && states.passable.range(first..=first + 63).next().is_none()
+            && rotations.range(first..=first + 63).next().is_none()
         {
             return !tile.walkable() || baseline;
         }
@@ -852,6 +1055,13 @@ impl BundleFacts {
                 continue;
             }
             if self.doors.contains(key) {
+                continue;
+            }
+            if let Some((_, after)) = rotations.get(&key)
+                && let Some(after_blocked) = self.override_blocks(*after)
+            {
+                changed = true;
+                blocked |= after_blocked;
                 continue;
             }
             let palette = self
