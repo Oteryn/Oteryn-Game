@@ -162,7 +162,7 @@
       "scope": "Boss Thaian is distinct from existing NPC The Thaian; no live corpse/XP or exact combat-source claim."
     },
     "thaian_progress": {
-      "state": "COMPILING_WIP_PG_RED_PROFILE_ENUM_ORDER",
+      "state": "NATIVE_ACTOR_ADMISSION_PG_QUALIFIED",
       "red_seconds": 81.509290862,
       "red_error": "missing first-party Thaian native profile after real Para Norbert introduction",
       "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
@@ -171,10 +171,14 @@
       "reuse": "normal Converter and Stage/Mapper; exact existing Ghost melee ability/attestation and visual48 as documented approximations",
       "whole_quest": "ACTIVE",
       "loader_correction": "Measured reference inventory62869+3 and sources29+1, derived by inventory tooling; no runtime capacity changes.",
-      "workspace_all_targets": "PASS 3m37s",
-      "unit_failures": "Six collected; ordering and exact count source fixes applied, rerun pending",
-      "current_red": "Project(InvalidProject(\"v2 authoring profiles are not target sorted and unique\"))",
-      "red_seconds_latest": 44.285881391
+      "workspace_all_targets": "PASS final pin",
+      "unit_failures": "All six fixed together; full content330pass/0fail/1existingignore354.66s",
+      "current_red": null,
+      "red_seconds_latest": 44.285881391,
+      "green_seconds": 67.368691913,
+      "postgres": "18.6",
+      "proof": "qlane-meta/questpc7/THAIAN-PG-PROOF.json",
+      "crate_units": "Content330pass and game-server577pass; dispatch running, pending PREPUSH2 budget"
     }
   },
   {

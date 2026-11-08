@@ -24,7 +24,13 @@
       "repair": "Owned authoring merge sorts all records/profiles by family,key,revision; canonical Creature index stays sorted."
     }
   ],
-  "green": "PENDING; do not claim qualification",
+  "green": {
+    "duration_seconds": 67.368691913,
+    "postgres_version": "18.6",
+    "marker": "QUESTPC7_THAIAN POSTGRES_CASE_COMPLETED duration=67.368691913s success=true",
+    "command": "cargo nextest run -p oteryn-gameplay-dispatch -E 'test(questpc7_feaster_thaian_native_admission_preserves_source_facts)' --success-output immediate",
+    "log": "/workspace/scratch/questpc7-thaian-green5.log"
+  },
   "assertions": [
     "real Para Norbert introduction and bell grant",
     "canonical Thaian HP50000, chosen zeroXP, noillusion, two source immunities and invisibility sensing",
@@ -37,20 +43,23 @@
     "duration_seconds": 1.511
   },
   "validation": {
-    "workspace_all_targets": "PASS 3m37s on corrected source",
-    "fmt": "PASS",
-    "duplicate_migrations": "PASS",
-    "source_stage_tests": "9 passed 1.511s",
-    "crate_units": "Game-server577pass/3existingignores; content324pass/6fail/1existingignore. All six root causes fixed in source; corrected full rerun pending; dispatch not reached.",
+    "workspace_all_targets": "PASS final enum-order source and pin;9m05s including queued build lock",
+    "fmt": "PASS final enum-order source",
+    "duplicate_migrations": "PASS final enum-order source",
+    "source_stage_tests": "9 passed2.061s; installer/reseal byte-idempotent",
+    "crate_units": "Content330passed/0failed/1existingignore354.66s; game-server577passed/0failed/3existingignores182.47s. Dispatch full unit run executing, pending PREPUSH-2 budget.",
     "pg_rerun": "green4 currently compiling; no GREEN claim",
-    "publication": "Compiling WIP under owner PREPUSH-2 cadence exception; final pin refresh required before push"
+    "publication": "Compiling WIP under owner PREPUSH-2 cadence exception; final pin refresh required before push",
+    "completion_matrix": "Freshness PASS; no quest completion implied",
+    "world_metadata": "PASS",
+    "clippy": "PASS strict content/dispatch/game-server all-targets,10m28s including queued lock"
   },
-  "current_red": {
+  "publication": "Native actor-admission slice QUALIFIED; whole Feaster ACTIVE; dispatch full units pending under owner PREPUSH-2 budget",
+  "final_bundle_digest": "8e4be229276fd4fe4898ae301a0557bd9df8c000be99a1ec508c3dd46008a053",
+  "last_red_before_enum_fix": {
     "duration_seconds": 44.285881391,
     "error": "Project(InvalidProject(\"v2 authoring profiles are not target sorted and unique\"))",
     "root_cause": "Authoring profile target family is Rust enum order, not lexical; canonical reference identity remains lexical.",
     "next_fix": "Sort profiles with ProjectV2Family order, regenerate and rerun."
-  },
-  "publication": "Compiling WIP; PG remains RED, no qualification claim",
-  "final_bundle_digest": "68af40f4420f59cd459f6b0c15455a1bbf6251c81639a22ad6e8eb3485938564"
+  }
 }

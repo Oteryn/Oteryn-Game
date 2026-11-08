@@ -1,3 +1,50 @@
+# PUSH qualified Thaian admission now — 2026-11-08 08:28 UTC
+
+All fast gatesPASS: actualPG18.6 GREEN67.368691913s, full content330pass354.66s,
+full game-server577pass182.47s, workspace alltargets, strictchangedcrate clippy
+10m28s including queue, fmt, dupmigrations, stage9tests, metadata/matrix freshness.
+Finalpin8e4be229... Dispatch fullunit run stillrunning/0reportedfailures; pending
+under PREPUSH2 budget, no fullrun claim. No more verification before publication.
+Whole21QUALIFIED/4ACTIVE. Currentmain3209 conflictAPIunchanged; retain documented
+actualmergeabort exception pendingqengine2 sharedAPIconvergence. Next freshSlug
+nativecorpse RED while fullunits retain frozen productiondata; do not seedodour.
+
+# Final publication gates — 2026-11-08 08:25 UTC
+
+ThaianPGGREEN67.368691913s; full content330pass/0fail/1existingignore354.66s;
+full game-server577pass/0fail/3existingignores182.47s on finalpin8e4be229...
+Workspace all-targetcheckPASS9m05s including queued lock; fmt/dups/metadata/
+matrix freshnessPASS. Strictclippy running; dispatch full unit run executing,
+pending PREPUSH2 budget. Do not wait beyond owner30minute cadence for that run.
+Latestmain3209d3d61 fetched (#3040). Three sharedCallback conflict blobs are
+byte-unchanged from actuallyabortedc77merge69conflicts. Retain exception; source
+API convergence stillqengine2 request, no unsafe merge while unit snapshot runs.
+
+# Thaian native admission PG QUALIFIED — 2026-11-08 08:15 UTC
+
+PushedWIP50f2e4f59e7d7f29b0d9170ec287775d45555598 at07:57. Corrected actualPG
+GREEN67.368691913s, PostgreSQL18.6, final bundle8e4be229276fd4fe4898ae301a0557bd9df8c000be99a1ec508c3dd46008a053.
+Real Norbert introduction gives bell, then nativeThaian50000HP actor admitted;
+programme0 and bell1 preserved. BaselineRED81.509290862s missingnativeprofile.
+Loader repairs: document seal, measured inventory, reference ordering and Rust
+profile-enum ordering; all fixed in small source tools, never weakened parsers.
+Derive family enum order from current Rust vocabulary; sort sources/bindings and
+import batches using actual validator keys. Install/reseal byte-idempotent.
+Full content unit330passed/0failed/1existingignore354.66s, all six collected
+failures fixed together. Stage9testsPASS2.061s; matrix freshness/world metadata,
+fmt and duplicate migrationPASS. Workspace+strictclippy finalsource running.
+Dispatch/game-server unit reruns running; earlier server577pass/3existingignores.
+Publish qualified admission slice when remaining fast gates pass; PREPUSH2 unit
+budget exception allows those broad unit runs pending, recorded honestly.
+Whole scope21QUALIFIED/4ACTIVE, no Feaster boss-clear or full quest claim.
+Next independent Goblin support: freshSlugcorpse12526->12533->12534->12535,
+10/300/300/60seconds, XML30254/30290/30296/30301. Source profiles missing. Author
+focusedactualPG RED first, no productiondata mutation while frozen units run.
+Mainc77d436d8 actual merge attempted after WIPcommit,69conflicts; aborted under
+owner bounded merge exception. New qengine2head3babb30bd and peerquestpc3/5/8/4b
+reviewed: no sharedCallbackEffectSet/oldCallbackEffects compatibility fix found.
+Eight engine requests remain; do not fork a new generic engine in this lane.
+
 # CURRENT EXACT RED before compiling WIP push — 2026-11-08 07:56 UTC
 
 PG18.6 green4 actuallyRED44.285881391s: Project(InvalidProject("v2 authoring

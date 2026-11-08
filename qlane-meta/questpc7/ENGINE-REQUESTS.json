@@ -157,7 +157,8 @@
         "specific_collision": "main places CallbackEffectSet in effects; retained API has CallbackEffects plus top-level item_reward/reward_bundle/activation and read_only storage. Blind union duplicates effects and dropping either side loses established behavior.",
         "preview": "/tmp/questpc7-main3029-preview/index.json"
       },
-      "boundary": "Owner assigns large shared engine changes to qengine2. Preserve coherent lane source under the explicit15-minute merge-abort exception; continue independent quest-owned data and PG qualification."
+      "boundary": "Owner assigns large shared engine changes to qengine2. Preserve coherent lane source under the explicit15-minute merge-abort exception; continue independent quest-owned data and PG qualification.",
+      "latest_reuse_check": "2026-11-08: qengine2 3babb30bd plus questpc3 09c26dcee, questpc5 5ee913340, questpc8 8639b16b1, questpc4b0457bc5f7. No compatibility implementation; current mainc77d436d8 merge actually attempted69conflicts and aborted."
     },
     {
       "id": "goblin-fresh-slug-corpse-use",
