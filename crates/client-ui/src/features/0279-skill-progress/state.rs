@@ -1,7 +1,18 @@
 use super::SkillProgressSnapshot;
+pub const SKILL_LABELS: [&str; 8] = [
+    "Magic",
+    "Fist",
+    "Club",
+    "Sword",
+    "Axe",
+    "Distance",
+    "Shielding",
+    "Fishing",
+];
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SkillProgressPanel {
+    pub hidden_skills: u8,
     pub selected: bool,
     pub complete_selected: bool,
     pub complete: Option<oteryn_client_runtime::skill_display::SkillDisplay>,
@@ -12,6 +23,29 @@ pub struct SkillProgressPanel {
 }
 
 impl SkillProgressPanel {
+    pub fn toggle_skill(&mut self, index: usize) {
+        if index < 8 {
+            self.hidden_skills ^= 1 << index;
+        }
+    }
+    #[must_use]
+    pub fn gauges(&self) -> Vec<(&'static str, u16, bool)> {
+        self.snapshot.map_or_else(Vec::new, |snapshot| {
+            SKILL_LABELS
+                .into_iter()
+                .zip(snapshot.skills)
+                .enumerate()
+                .map(|(index, (label, skill))| {
+                    (
+                        label,
+                        skill.percent.min(10000),
+                        self.hidden_skills & (1 << index) == 0,
+                    )
+                })
+                .collect()
+        })
+    }
+
     pub fn finish(&mut self, accepted: bool, payload: &[u8]) -> bool {
         self.pending = false;
         if self.complete_selected {
