@@ -37,7 +37,7 @@ fn questpc2_oldrak_source_confirmation_decline_and_finish_are_durable() -> TestR
     result
 }
 
-async fn unoffered_yes(
+pub(super) async fn unoffered_yes(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,

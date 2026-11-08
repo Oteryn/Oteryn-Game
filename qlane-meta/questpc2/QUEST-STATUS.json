@@ -801,7 +801,7 @@
       "canonical": "oteryn:quest.the_inquisition_quest",
       "title": "The Inquisition Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Interrogation, holy-water use and Shadow Nexus boss completion lack native event-to-quest composition.",
       "source_lane_checks": [
         {
@@ -813,7 +813,8 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "active_slice": "Henricus source recruitment, two-track first mission, and unearned-report refusal; PG RED65.812s, source program not authored yet."
     },
     {
       "canonical": "oteryn:quest.the_order_of_the_lion_quest",
@@ -1758,7 +1759,7 @@
       "zero_test_results_accepted": false
     }
   },
-  "current_batch": "main-6f-postgres-green",
+  "current_batch": "henricus-recruitment-red-scaffold",
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
     "BATCH-instance-corpse-root-2026-11-06.json",
@@ -2207,20 +2208,18 @@
     "unit_and_pg": "pending current merge build; prior pushed receipts remain valid for prior source only"
   },
   "current_validation": {
-    "batch": "main-6f61ac15d-integration",
-    "quest_units": "316PASS51.22s",
-    "clippy": "quests/durability/dispatch alltargets allfeatures PASS7m18s",
-    "generated": "PASS all applicable tools, equipment3820 and ledger283, pins refreshed",
-    "workspace": "PASS current-head workspace alltargets2m56s; prior postpin3m29s",
-    "fresh_pg": {
-      "passed": 8,
-      "failed": 0,
+    "red_pg": {
+      "test": "questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic",
       "server_version": 180006,
-      "total_focused_cases": 10,
-      "all_passed": true,
-      "total_seconds": 286.300574,
-      "receipt": "BATCH-main-6f-postgres-green-2026-11-08.json"
-    }
+      "duration_seconds": 65.812208608,
+      "error": "missing source recruitment offer: []",
+      "log": "/tmp/questpc2b-henricus-red-pg.log"
+    },
+    "workspace": "PASS5m03s",
+    "clippy": "PASS8m17s dispatch alltargets/allfeatures -Dwarnings; includes queue wait",
+    "runtime_gameplay_source": "unchanged from last pushed b33d0c985; only test scaffold and task notes added",
+    "generated": "PASS applicable central lists/pins, unchanged runtime content",
+    "publication": "compiling WIP red regression; implement source program immediately next"
   },
   "engine_requests": [
     {
@@ -2354,7 +2353,7 @@
       "The Demon Oak Quest"
     ]
   },
-  "last_pushed_sha": "ac543a383ed8b055f53588ee01af5179a8e1d6a6",
+  "last_pushed_sha": "b33d0c985c4088285f7f8ce273183a87fce49541",
   "prepush_pending_tests": [
     "Full crate suites remain CI pending; own eight PG regressions and two focused unit assertions all PASS."
   ],
@@ -2368,5 +2367,18 @@
     "disk_recovery": "Removed inactive aborted caches and older duplicate lane libraries; no active compiler state or source data removed.",
     "ownership_check": "2026-11-08: qbind1/2 and qdata1-8 remote heads remain1ae39c7f; qready refs inspected separately. No named ownership transfer received; original packet remains scope.",
     "runtime_receipt": "Merged mainb386:7/7focusedPASS215.213458s,5PG on180006; exact sourcebook speed fixed, no new wholequest qualification."
+  },
+  "oldrak_paid_followon": {
+    "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/oldrak.lua:126-149",
+    "source_sha256": "dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40",
+    "engine_request": "Atomic repeatable item+inventory/bank-money exchanges inside source NPC programs with the same conversation topic",
+    "decision": "Do not compose the separate reward_callback topic with the source Oldrak topic; rejected stale-confirmation trace is in CONTRACT-NOTES. No new gameplay code was written.",
+    "checked_qengine2": "aa85b2500"
+  },
+  "active_henricus": {
+    "source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "source": "data-global/npc/henricus.lua:65-102,204-225,286-290",
+    "source_sha256": "1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d",
+    "next": "Author bounded source program using existing storage/topic owner; add exact custody helper and focused guards, then PG GREEN. Do not SQL-seed quest progress."
   }
 }

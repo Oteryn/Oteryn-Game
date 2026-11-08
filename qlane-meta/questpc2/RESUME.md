@@ -50,3 +50,19 @@ no test code removed. Never mutate runtime content while PG cases execute.
 Fetch main and explicitlane ref before everypush; merge movement, neverforce.
 Author/committer blakinio <75369544+blakinio@users.noreply.github.com>;
 required Claude coauthor/session trailers in every commit. No agents.
+
+## Active continuation: Henricus recruitment RED
+
+A new mounted PG case `questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic`
+and scenario route now exist. Test-only unoffered_yes helper is reused from
+Oldrak. RED actually ran on PostgreSQL180006 for65.812s, failing exactly
+`missing source recruitment offer: []`. Current gameplay logic is stillb33.
+Compile/check/clippy the scaffold and publish WIP under cadence if needed;
+then immediately implement the bounded source program and prove GREEN.
+Pinned source SHA/path and exact lines are in QUEST-STATUS/CONTRACT-NOTES.
+Only source storage/topic capability is needed. Do not invent a generic engine.
+The Inquisition is now IN_PROGRESS (5active owned entries,21notstarted;
+3wholequests qualified,29owned,6excluded). Five guard interviews/whole quest
+completion are not yet qualified. Other lane refs checked05:10: qdata1-8 and
+qbind1-2 still1ae39c7f; qready1b39a47f16e/qready2a9f723152 contain chest work,
+not Henricus recruitment. Respect exact packet/QSPLIT ownership.

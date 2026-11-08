@@ -944,3 +944,51 @@ Crystal201189f data/items/items.xml:3935 (1948) and:3873 (1791),
 SHA2568a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509.
 The helper preserves the positive classification and conservative false
 materializable admission; every remaining field must match exactly.
+
+### Oldrak paid axe follow-on: reuse audit 2026-11-08
+
+Pinned Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+`data-global/npc/oldrak.lua:126-149`, SHA256
+dc124275de082d9f39bc2f802b31f823646548153fe0e248417dc54f7b0eba40:
+Progress2 offers an axe blessing; success consumes3274x1 and1000 gold across
+inventory+bank, then gives919x1. The source also emits yellow energy at the NPC.
+Canary XML:3150-3153, SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+has no decay/duration on919; the NPC's warning is not evidence of a timed Item.
+Canonical919 is materializable but lacks native admission. Canonical3274 is
+held/stack-unknown, while an existing native profile admits its carried intake.
+
+Main's paid RewardCallback can consume a fee and items without a storage write.
+It cannot safely be appended beside the current source Oldrak program: source
+catalogue topics and quest_dialogue topics are distinct. A proposed axe offer
+would retain quest_dialogue topic2 across a source `mission` offer (catalogue
+topic1); the next `yes` is selected by reward_callbacks BEFORE catalogue, so it
+would buy an axe instead of accepting the mission. Routing evidence:
+`npc_command.rs:788,834`, `npc_command/quest_dialogue.rs:27-69`,
+`npc_command/catalogue.rs:91-108`. This is a rejected composition, not a claim
+that the current (non-selling) Oldrak program has this bug.
+
+The generic source item owner excludes TakeMoney, and storage-free item plans
+are refused at `durability/quest_state/npc_program.rs:278-279`. Latest qengine2
+aa85b2500 was checked; no compatible source-money/topic bridge was found.
+Request sent to QENGINE2 for repeatable atomic source item+bank-money exchanges
+under one NPC topic. Do not invent a shadow progress counter or patch a second
+confirmation owner into this lane. Continue another supported packet entry.
+
+Halvar was inspected for the owned Barbarian Arena packet entry. Exact source
+Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+`data-global/npc/halvar.lua:74-114`, SHA256
+10ac5f7b7e7c58e6406112bc8a3eaae9c0704dbcc25473fb567fc31aa99f51eb,
+requires a bank-capable fee, PitDoor and per-tier questlog writes, plus topic
+reset on every non-yes fallback. Source NPC money ownership remains closed;
+request forwarded to QENGINE2. No Halvar gameplay implementation was started.
+Sven's Barbarian Test is a different, unowned quest; no Sven work was authored.
+
+Next supported slice: Henricus recruitment and first mission in The Inquisition.
+Exact Crystal9f5a72c source `data-global/npc/henricus.lua:65-102,204-225,286-290`,
+SHA2561b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d.
+These paths need only existing storage/topic writes. The unconditional blessing
+price query at:63 contributes no state effects to these selected branches.
+New PG regression RED on180006 after65.812208608s: missing source recruitment
+offer: []. No direct quest-state SQL seed, fabricated guard credits or mission
+completion. Implement the missing source program next.
