@@ -118,6 +118,50 @@ class NativeTalkBindingEvidenceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_talk_binding(self.root, self.definition, "s1", self.reference)
 
+    def test_runtime_flags_refuse_operations_the_engine_cannot_admit(self):
+        quest = self.document['quests'][0]
+        callback = quest['stages'][0]['trigger']['callback']
+        track = 'oteryn:quest-progress/example/counter'
+        quest['tracks'].append({'key': track, 'initial': 0, 'minimum': 0, 'maximum': 2})
+        stage = {'stage_key': 's1', 'runtime_enabled': True,
+                 'event_identity_associations': {'kind': 'talk'},
+                 'native_dispatch_binding': self.reference}
+        for condition, effect in [
+            ({'kind': 'between', 'minimum': 0, 'maximum': 2}, {'kind': 'add', 'value': 1}),
+            ({'kind': 'any'}, {'kind': 'add', 'value': 1}),
+            ({'kind': 'any'}, {'kind': 'set_now'}),
+            ({'kind': 'elapsed_at_least', 'seconds': 1.0}, {'kind': 'add', 'value': 0}),
+            ({'kind': 'between', 'minimum': 2, 'maximum': 0}, {'kind': 'add', 'value': 0}),
+        ]:
+            callback['state_ops'] = [{'track': track, 'from': condition, 'effect': effect}]
+            self.write()
+            with self.subTest(condition=condition, effect=effect), self.assertRaises(ValueError):
+                verify_stage_runtime(self.root, self.definition, stage)
+        quest['tracks'][-1].update(minimum=-(2 ** 63), maximum=2 ** 63 - 1)
+        callback['state_ops'] = [{'track': track,
+            'from': {'kind': 'between', 'minimum': -(2 ** 63), 'maximum': -(2 ** 63)},
+            'effect': {'kind': 'add', 'value': 2 ** 63}}]
+        self.write()
+        with self.assertRaises(ValueError):
+            verify_stage_runtime(self.root, self.definition, stage)
+        quest['tracks'][-1].update(minimum=0, maximum=2)
+        callback['state_ops'] = [{'track': track,
+            'from': {'kind': 'between', 'minimum': 0, 'maximum': 1},
+            'effect': {'kind': 'add', 'value': 1.0}}]
+        self.write()
+        with self.assertRaises(ValueError):
+            verify_stage_runtime(self.root, self.definition, stage)
+        callback['state_ops'][0]['effect']['value'] = 1
+        self.write()
+        verify_stage_runtime(self.root, self.definition, stage)
+        callback['state_ops'] = []
+        for flag in ['increment', 'at_least']:
+            callback['storage'][0][flag] = True
+            self.write()
+            with self.subTest(flag=flag), self.assertRaises(ValueError):
+                verify_stage_runtime(self.root, self.definition, stage)
+            del callback['storage'][0][flag]
+
     def test_registered_stage_is_activated_by_the_producer_and_unknown_stage_refuses(self):
         from native_talk_binding_evidence import apply_native_talk_bindings
         plan = {"records": [{"quest": "oteryn:quest.example", "runtime_enabled": False,

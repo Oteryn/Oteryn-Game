@@ -40,7 +40,48 @@ def verify_stage_runtime(root, definition, stage):
         check(not stage.get("runtime_enabled"), "Runtime TALK stage has no native binding")
         return
     check(stage.get("runtime_enabled") is True, "Registered TALK binding is not marked enabled")
-    verify_talk_binding(root, definition, stage["stage_key"], reference)
+    callbacks = verify_talk_binding(root, definition, stage["stage_key"], reference)
+    document = read(root, reference["document"])
+    quest = next(q for q in document["quests"] if q["quest"] == definition["identity"]["key"])
+    verify_talk_state_bounds(quest, callbacks)
+
+
+
+def verify_talk_state_bounds(quest, callbacks):
+    """Mirror authored_bindings/state_operations.rs without granting write authority."""
+    native_i64 = lambda value: type(value) is int and -(2 ** 63) <= value < 2 ** 63
+    tracks = {track['key']: track for track in quest['tracks']}
+    for track in tracks.values():
+        check(all(native_i64(track.get(field)) for field in ['minimum', 'initial', 'maximum'])
+              and -(2 ** 63) <= track['minimum'] <= track['initial'] <= track['maximum'] < 2 ** 63,
+              'Native TALK track has invalid signed bounds')
+    for callback in callbacks:
+        check(all(all(native_i64(state[field]) for field in ['minimum', 'maximum', 'set'])
+                  and not state.get('increment') and not state.get('at_least')
+                  for state in callback['storage']), 'Native TALK has unsupported storage mutation')
+        for operation in callback.get('state_ops', []):
+            track = tracks[operation['track']]
+            condition, effect = operation['from'], operation['effect']
+            bounds = None
+            if condition['kind'] == 'between':
+                bounds = (condition['minimum'], condition['maximum'])
+                check(all(native_i64(value) for value in bounds)
+                      and track['minimum'] <= bounds[0] <= bounds[1] <= track['maximum'],
+                      'Native TALK condition is outside its owned track')
+            elif condition['kind'] == 'elapsed_at_least':
+                check(type(condition['seconds']) is int and track['minimum'] >= 0
+                      and condition['seconds'] <= 366 * 24 * 60 * 60,
+                      'Native TALK elapsed condition is outside engine bounds')
+            if effect['kind'] == 'add':
+                delta = effect['value']
+                check(native_i64(delta) and ((bounds is None and delta == 0)
+                      or (bounds is not None and all(track['minimum'] <= value + delta <= track['maximum']
+                                                    for value in bounds))),
+                      'Native TALK mutation can overflow its owned track')
+            else:
+                check(effect['kind'] == 'set_now' and track['minimum'] == 0
+                      and track['maximum'] == 2 ** 63 - 1,
+                      'Native TALK timestamp needs the engine timestamp bounds')
 
 
 def counter(value: Counter):
