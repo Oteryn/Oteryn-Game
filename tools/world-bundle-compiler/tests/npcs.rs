@@ -640,5 +640,8 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     Ok(())
 }
 
+#[path = "npcs/m38_mistrock.rs"]
+mod m38_mistrock;
+
 #[path = "npcs/m38_stationary.rs"]
 mod m38_stationary;
