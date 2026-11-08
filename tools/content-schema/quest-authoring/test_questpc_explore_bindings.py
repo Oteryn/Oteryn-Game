@@ -10,7 +10,41 @@ import questpc_explore_bindings as explore
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def canonical_recipe(quest):
+    for path in (ROOT / 'content/quests/definitions').glob('quests-*.json'):
+        for row in json.loads(path.read_text())['records']:
+            definition = row['definition']
+            if definition['identity']['key'] == quest:
+                return (definition.get('recipe')
+                        or definition['oteryn_recipe']['payload']['recipe'])
+    raise AssertionError('Missing canonical quest: ' + quest)
+
+
 class ExploreBindingsTests(unittest.TestCase):
+    def test_later_explore_preserves_each_preceding_chosen_stage(self):
+        quest = 'oteryn:quest.dragon_corpse_quest'
+        storage = explore.stage_storage(quest, 's3', canonical_recipe(quest),
+                                        'chosen-source/dragon_corpse_quest', 'corridor')
+        prefix = 'oteryn:quest-progress/chosen-source/dragon_corpse_quest/'
+        self.assertEqual(storage[2:], [
+            dict(track=prefix + stage, minimum=1, maximum=1, set=1, preserve=True)
+            for stage in ('s1', 's2')])
+        self.assertEqual(storage[0]['track'], prefix + 's3/visited/corridor')
+
+    def test_distinct_koshei_visits_share_a_bounded_counter(self):
+        quest = 'oteryn:quest.koshei_the_deathless_quest'
+        recipe = canonical_recipe(quest)
+        first = explore.stage_storage(quest, 's1', recipe,
+                                      'chosen-source/koshei_the_deathless_quest', 'fragment-1')
+        second = explore.stage_storage(quest, 's1', recipe,
+                                       'chosen-source/koshei_the_deathless_quest', 'fragment-2')
+        self.assertNotEqual(first[0]['track'], second[0]['track'])
+        self.assertEqual(first[1], second[1])
+        self.assertEqual((first[1]['minimum'], first[1]['maximum'], first[1]['set']),
+                         (0, 3, 1))
+        self.assertTrue(first[1]['increment'])
+        self.assertEqual(len(first), 2)
+
     def test_premium_and_level_requirements_reach_the_fenced_callback(self):
         cases = (
             ('oteryn:quest.authored.asura_palace_quest', 'oteryn:area.hunting_place.asura_palace',

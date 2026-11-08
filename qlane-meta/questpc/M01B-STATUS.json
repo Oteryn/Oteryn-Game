@@ -32,12 +32,13 @@
     "world_pin_verify": "pending after coordinator merge",
     "postgres_scope": "316cc6842 source tree before qmech41edb50ef merge; no lane SQL changes",
     "post_merge_postgres": "PENDING under PREPUSH-2 cadence exception; rerun all M01b native cases with the next entry batch",
-    "postgres_asura": "PENDING: all4 M01b PG cases are building/running; no current-Premium PG success claimed",
+    "postgres_asura": "PENDING: first link hit disk full;stale lane binaries/examples removed,3.2GiB freed;four-case PG retry is compiling",
     "focused_authoring_tests": "7passed2.975s",
     "own_files_fmt": "PASS explicit rustfmt check",
-    "merge_policy": "0326dc2e5 merge ABORTED by owner; no further qmech/main merges"
+    "merge_policy": "0326dc2e5 merge ABORTED by owner; no further qmech/main merges",
+    "stage_planner": "RED2missing-helper errors -> GREEN9Python tests2.865s; qengine_access --check PASS;active callback JSON unchanged"
   },
   "migration_range": "2000-2009",
   "migrations_used": [],
-  "continuation": "Finish current4-case PG run,fix failures if any,continue43 routes/53 stages. Push mechanic slices only; no merges. Entire M01b remains PARTIAL."
+  "continuation": "Finish PG retry,then wire remaining43 routes/53 stages with planner support. No qmech/main merges. No M01b DONE claim."
 }

@@ -73,3 +73,15 @@ only the older already committed base is retained. Quest prerequisites still
 fail closed in the producer. Existing minimum_level is
 emitted for eligible recipes and remains owned by the locked progression read;
 Fire Axe's level60 mapping is tested, but its physical anchor is not activated.
+
+## Ordered and distinct-visit storage planner
+
+The chosen finite programme is conservative: every preceding selected stage
+must have reached its declared count before a later EXPLORE stage can credit.
+Those predicates preserve storage; they never manufacture predecessor credit.
+Each named visit has a separate once-only flag and shares the stage's bounded
+incrementing counter. Koshei's declared four visits produce counter range0..3
+before increment; distinct fragment names cannot reuse the same visited flag.
+A single-Area declaration still refuses a multi-visit stage until a complete
+physical anchor set is supplied. These planner tests activate no additional
+quest or guessed coordinate. Existing callback output remains byte-identical.

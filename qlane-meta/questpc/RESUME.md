@@ -69,3 +69,10 @@ WIP publication is explicit:Asura PG is not yet qualified. Four real PG cases
 are building/running via cargo test -p oteryn-gameplay-dispatch --lib m01b_
 -- --nocapture --test-threads=1. Finish them before any DONE claim;continue
 43routes/53stages afterwards. Push every10-15min,no subagents,no merges.
+
+Planner slice:stage_storage uses the canonical selected counts,distinct visit
+flags and read-only guards for preceding chosen stages. RED2missing-helper
+errors -> GREEN9Python tests2.865s;qengine_access --check proves active JSON
+unchanged. Complete multi-visit anchor sets still required before activation.
+PG link first hit disk full;stale own binaries/examples removed. Retry all4
+PGcases now running/building. No successful Asura PG claim yet. No merges.

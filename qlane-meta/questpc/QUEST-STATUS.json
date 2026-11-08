@@ -12,7 +12,7 @@
     "BLOCKED": 51,
     "TODO": 12
   },
-  "batch_state": "M01b compiled WIP publication under owner cadence:0326 merge aborted;Premium latch precedes Character lock;own profile rejects unsupported predicates;PG still pending.",
+  "batch_state": "M01b ordered-stage/distinct-visit storage planner tested and ready to push;9Python tests and unchanged-output check pass;PG retry compiling after disk cleanup.",
   "qualification_boundary": "Historical63 scoped qualifications are retained on the frozen packaged branch. Only full current continuation cases become DONE here. BLOCKED rows are explicit ownership/exclusion holds, not missing implementation excuses.",
   "local_ledger": ".lane/rows.md (not committed)",
   "quests": [

@@ -1,5 +1,6 @@
 """M01b: explicit chosen EXPLORE anchors, executed by the existing STEP_IN owner."""
 import json
+import re
 from pathlib import Path
 
 AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
@@ -19,6 +20,36 @@ ANCHORS = {
 }
 
 
+
+def stage_storage(quest, stage, recipe, track_tail, visit='entry'):
+    """A visit is once-only; each preceding selected stage must already be complete."""
+    matches = [(index, row) for index, row in enumerate(recipe['stages'])
+               if row['key'] == stage and row['kind'] == 'explore']
+    if len(matches) != 1:
+        raise ValueError('Explore binding needs one EXPLORE stage: ' + quest + '/' + stage)
+    index, bound = matches[0]
+    tail = quest.removeprefix('oteryn:quest.')
+    expected = ('authored/' + tail.removeprefix('authored.')
+                if tail.startswith('authored.') else 'chosen-source/' + tail)
+    if track_tail != expected:
+        raise ValueError('Explore counter owner differs from canonical quest: ' + quest)
+    if not re.fullmatch(r'[a-z0-9_-]{1,64}', visit):
+        raise ValueError('Explore visit needs a bounded stable identifier')
+    count = bound['count']
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        raise ValueError('Explore stage needs a positive integral visit count')
+    prefix = 'oteryn:quest-progress/' + track_tail + '/'
+    track = prefix + stage
+    result = [dict(track=track + '/visited/' + visit, minimum=0, maximum=0, set=1),
+              dict(track=track, minimum=0, maximum=count - 1, set=1, increment=True)]
+    # The chosen programme selects an ordered finite sequence. Read guards never
+    # manufacture predecessor credit or reserve mutable storage for another stage.
+    for previous in recipe['stages'][:index]:
+        result.append(dict(track=prefix + previous['key'], minimum=previous['count'],
+                           maximum=previous['count'], set=previous['count'], preserve=True))
+    return result
+
+
 def callbacks(root):
     areas = json.loads((Path(root) / AREA).read_text())['records']
     result = []
@@ -33,17 +64,11 @@ def callbacks(root):
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
-        stages = [s for s in recipe['stages'] if s['key'] == stage and s['kind'] == 'explore']
-        if len(stages) != 1:
-            raise ValueError('Explore binding needs one EXPLORE stage: ' + quest + '/' + stage)
-        # Additional visits and preceding objectives need their own explicit guards.
-        if stages[0]['count'] != 1 or recipe['stages'][0]['key'] != stage:
-            raise ValueError('Explore binding needs explicit visit and predecessor guards: ' + quest)
+        storage = stage_storage(quest, stage, recipe, track_tail)
+        # A one-Area declaration cannot stand in for a complete multi-visit anchor set.
+        if storage[1]['maximum'] != 0:
+            raise ValueError('Explore binding needs an explicit complete visit anchor set: ' + quest)
         tail = quest.removeprefix('oteryn:quest.')
-        expected_tail = ('authored/' + tail.removeprefix('authored.')
-                         if tail.startswith('authored.') else 'chosen-source/' + tail)
-        if track_tail != expected_tail:
-            raise ValueError('Explore counter owner differs from canonical quest: ' + quest)
         requirements = recipe['requirements']
         if requirements['prerequisites']:
             raise ValueError('Explore route requires additional authoritative guards: ' + quest)
@@ -67,14 +92,12 @@ def callbacks(root):
         url = ('https://tibia.fandom.com/index.php?curid=' + binding['external_id']
                + '&oldid=' + binding['source_revision'])
         slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
-        track = 'oteryn:quest-progress/' + track_tail + '/' + stage
         result.append(dict(
             key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/entry', quest=quest,
             trigger='step_in', selector=dict(position=at, unique=None, action=None,
                 appearance=appearance, native=dict(position=at, ordinal=0, appearance=appearance)),
             lever=None, reversible=False, passages=[], teleport=None,
-            storage=[dict(track=track + '/visited/entry', minimum=0, maximum=0, set=1),
-                     dict(track=track, minimum=0, maximum=0, set=1, increment=True)],
+            storage=storage,
             offerings=[], return_on_failure=False, failure_message=None,
             requires_world_admission=True,
             sources=[AREA + '#/records/' + str(index),
