@@ -308,3 +308,23 @@ fn cooldown_widget_lists_the_next_available_boss_first() {
     let text = cooldown_text(&panel, 0);
     assert!(text.find("b:b:") < text.find("a:a:"));
 }
+
+#[test]
+fn bosstiary_browser_filters_and_selects_confirmed_bosses() {
+    let mut panel = BossEncounterPanel {
+        snapshot: Some(oteryn_client_runtime::boss_encounter::Snapshot {
+            progress: vec![("boss:dragon".into(), 12), ("boss:rat".into(), 2)],
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    panel.boss_search = "DRAGON".into();
+    panel.select_boss(false);
+    assert_eq!(panel.fields[0], "boss:dragon");
+    assert!(panel_text(&panel).contains("boss:dragon: 12 kills"));
+    assert!(!panel_text(&panel).contains("boss:rat: 2 kills"));
+    panel.pending = true;
+    panel.boss_search = "rat".into();
+    panel.select_boss(false);
+    assert_eq!(panel.fields[0], "boss:dragon");
+}

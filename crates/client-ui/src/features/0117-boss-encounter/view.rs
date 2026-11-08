@@ -12,7 +12,7 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
         for (key, at) in &page.cooldowns {
             let _ = writeln!(text, "{key}: {} ms remaining", at.saturating_sub(page.now));
         }
-        for (key, kills) in &page.progress {
+        for (key, kills) in panel.visible_bosses() {
             let _ = writeln!(text, "{key}: {kills} kills");
         }
         if let Some(taints) = page.taints {

@@ -6,7 +6,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         link,
         Form {
             title: "Boss encounter / Bosstiary",
-            labels: &["Boss key", "Slot (1-2)", "Hazard level (1-12)"],
+            labels: &[
+                "Boss key",
+                "Slot (1-2)",
+                "Hazard level (1-12)",
+                "Boss search",
+            ],
             buttons: &[
                 "Refresh",
                 "Next page",
@@ -20,13 +25,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Remove slot",
                 "Rewards",
                 "Next rewards",
+                "Previous boss",
+                "Next boss",
+                "Apply search",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
                 (
                     panel.open,
                     panel.pending,
-                    panel.fields.to_vec(),
+                    [panel.fields.to_vec(), vec![panel.boss_search.clone()]].concat(),
                     oteryn_client_ui::boss_encounter::panel_text(panel)
                         .replace("\r\n", "\n")
                         .replace('\n', "\r\n"),
@@ -37,7 +45,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if mailbox.boss_encounter.pending {
                     return;
                 }
-                for (index, value) in values.into_iter().enumerate() {
+                if let Some(search) = values.get(3) {
+                    mailbox.boss_encounter.boss_search = search.clone();
+                }
+                if action >= 12 {
+                    if action <= 13 {
+                        mailbox.boss_encounter.select_boss(action == 12);
+                    }
+                    return;
+                }
+                for (index, value) in values.into_iter().take(3).enumerate() {
                     super::super::input::edit(&mut mailbox.boss_encounter, index, value);
                 }
                 let intent = match action {
