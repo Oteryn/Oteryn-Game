@@ -9,4 +9,4 @@ Identity/source references retained by those selected recipes:
 
 M31's personal journal lowering may open the `qworld/fury/hunt` and `qworld/grimvale/hunt` tracks only after the preceding selected stages; both default to0. Native death increments the corresponding `/kills` track, capped at10. This bounded adapter does not declare the exploration, seal/survey or final completion stages qualified.
 
-Status: M32 remains CLAIMED; the complete content/PG batch is still undergoing validation.
+M32 engine proof: `qworld_native_fury_death_requires_active_world_and_credits_once` executed in150.93681868s and `qworld_native_werewolf_death_requires_full_moon_and_credits_once` in150.9516698s. Both use real reset, native death capture/settlement and the fenced quest writer. Quest unit tests314/314 passed; quest-authoring checks, its105-module unit runner, content-tree validation, fmt and changed-crate clippy passed. This is stage/engine evidence, not whole-journey qualification.
