@@ -355,3 +355,6 @@ mod controls;
 
 #[path = "tree.rs"]
 mod tree;
+
+#[path = "soulseals.rs"]
+mod soulseals;

@@ -823,8 +823,9 @@
   "area": "Hunting tasks",
   "feature": "Soul Seals fight dialog",
   "status": "PARTIAL",
-  "gap": "Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia.",
-  "lane": "cg_cyclo"
+  "gap": "BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores.",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/view.rs:24 + soulseal_dialog_refreshes_confirmed_balance_without_inventing_fight_offers; remaining: BLOCKED: missing accepted Soulseal fight catalogue, costs, and entry contract; existing Task Board supplies balances only and Soulpit requires physical Soul Cores."
  },
  {
   "id": "T115",
