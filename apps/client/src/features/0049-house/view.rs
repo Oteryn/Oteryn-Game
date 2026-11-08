@@ -1,3 +1,6 @@
+#[cfg(windows)]
+#[path = "view/map_window.rs"]
+mod map_window;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_panel(&self) -> super::state::Panel {
@@ -20,7 +23,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Door: x y floor (uses current house ACL revision)",
                 "Type CONFIRM for changes",
             ],
-            buttons: super::input::controller::BUTTONS,
+            buttons: &[
+                "Query",
+                "Next",
+                "Bid",
+                "Guests",
+                "Subowners",
+                "Door",
+                "Kick",
+                "Leave",
+                "Notice",
+                "Cancel notice",
+                "Show entrance map",
+            ],
             snapshot: |mailbox| {
                 let p = &mailbox.properties.house;
                 (
@@ -38,7 +53,26 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (slot, value) in mailbox.properties.house.fields.iter_mut().zip(fields) {
                     *slot = value;
                 }
-                super::input::submit(mailbox, commands, selection);
+                if selection == 10 {
+                    let panel = &mut mailbox.properties.house;
+                    if let Some(index) = panel.fields[2]
+                        .trim()
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(|n| n.checked_sub(1))
+                    {
+                        panel.model.index = index;
+                    }
+                    let houses = oteryn_client_ui::house::map_houses(&panel.model);
+                    if houses.is_empty() {
+                        panel.model.feedback =
+                            "Query houses and select a row to view its floor".into();
+                    } else {
+                        map_window::open(mailbox, commands, houses);
+                    }
+                } else {
+                    super::input::submit(mailbox, commands, selection);
+                }
             },
         },
     );

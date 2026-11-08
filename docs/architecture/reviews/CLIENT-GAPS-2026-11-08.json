@@ -565,9 +565,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Houses: browse/details/auction/map",
-  "status": "PARTIAL",
-  "gap": "Są wire/state i osobny transfer; house/controller.rs jest montowany tylko w teście, bez play.json i produkcyjnego okna Houses/mapy.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0049-house/view.rs:11 + house_catalogue_details_reach_production_panel; crates/gameplay/dispatch/src/gameplay_transport/house_query.rs:79 + house_query_dispatch_preserves_metadata_opt_in"
  },
  {
   "id": "T085",
