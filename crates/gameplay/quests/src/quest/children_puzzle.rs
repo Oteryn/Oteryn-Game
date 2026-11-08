@@ -66,6 +66,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
                 if solved { "solved" } else { "ordinary" }
             );
             callback.quest = "oteryn:quest.children_of_the_revolution_quest".into();
+            callback.selector.native = None;
             callback.selector.action = None;
             callback.selector.appearance = Some(9125);
             callback.selector.position = Some(Position {
@@ -88,6 +89,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
                 at_least: false,
             }];
             if solved {
+                callback.effects.player_speech = Some(SPEECH.into());
                 callback.storage.push(Storage {
                     track: "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission04"
                         .into(),

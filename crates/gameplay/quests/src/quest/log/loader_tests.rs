@@ -21,8 +21,18 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
             .iter()
             .all(|entry| entry.mission.as_deref() != Some("paw_and_fur_hunting_elite"))
     );
-    let first = &loaded.content.active().quests()[0];
-    assert_eq!(first.key, "oteryn:quest.a_father_s_burden_quest");
+    // M03 admits the anniversary journal ahead of the existing alphabetical entries.
+    assert_eq!(
+        loaded.content.active().quests()[0].key,
+        "oteryn:quest.25_years_of_tibia_quest"
+    );
+    let first = loaded
+        .content
+        .active()
+        .quests()
+        .iter()
+        .find(|quest| quest.key == "oteryn:quest.a_father_s_burden_quest")
+        .expect("existing birthday journal");
     assert_eq!(first.missions[0].name, "The Birthday Presents");
     assert!(
         matches!(&first.missions[0].journal, super::super::QuestJournal::PerStage(entries) if entries.len() == 2)

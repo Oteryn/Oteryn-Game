@@ -25,6 +25,15 @@ pub struct CookingConversion {
 pub struct CarriedCookingConversion {
     pub conversion: CookingConversion,
     pub target_debit: u32,
+    /// The caller must have observed the target quantity, including when it is one.
+    pub requires_quantity_witness: bool,
+}
+
+impl CarriedCookingConversion {
+    /// Compatibility boundary for owners which cannot supply a locked quantity.
+    pub fn into_quantity_blind_conversion(self) -> Option<CookingConversion> {
+        (!self.requires_quantity_witness && self.target_debit == 1).then_some(self.conversion)
+    }
 }
 
 /// Resolve Crystal's two-carried-item food preparation rows. Both operands are consumed by the
@@ -45,7 +54,7 @@ pub fn carried_cooking_conversion_with_sub_type(
     target_sub_type: Option<u32>,
 ) -> Option<CookingConversion> {
     carried_cooking_conversion_with_quantity(native, used, target, target_sub_type, 1)
-        .map(|resolved| resolved.conversion)
+        .and_then(CarriedCookingConversion::into_quantity_blind_conversion)
 }
 
 /// Resolve capture from the durable owner's locked quantity, never a client count.
@@ -63,6 +72,7 @@ pub fn carried_cooking_conversion_with_quantity(
         return Some(CarriedCookingConversion {
             conversion,
             target_debit: 1,
+            requires_quantity_witness: false,
         });
     }
     let rows = catalogue_rows()?;
@@ -251,6 +261,7 @@ fn carried_row(
             outputs,
         },
         target_debit,
+        requires_quantity_witness: target_operand.capture_target_stack,
     })
 }
 
