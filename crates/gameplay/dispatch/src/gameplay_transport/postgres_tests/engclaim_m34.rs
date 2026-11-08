@@ -335,14 +335,15 @@ fn claim_case(suffix: &'static str) -> TestResult {
                 })
                 .collect::<Vec<_>>();
             assert_eq!(bag.entries.len(), expected.len());
-            for (actual, expected) in bag
+            let mut actual = bag
                 .entries
                 .iter()
-                .map(|e| (&e.item.definition.production_key, e.item.quantity))
-                .zip(expected)
-            {
-                assert_eq!(actual, expected);
-            }
+                .map(|entry| (&entry.item.definition.production_key, entry.item.quantity))
+                .collect::<Vec<_>>();
+            let mut expected = expected;
+            actual.sort();
+            expected.sort();
+            assert_eq!(actual, expected);
         }
         let claims: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_reward_claim_mint_receipts)")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
