@@ -41,7 +41,10 @@ mod tests {
     fn srv7_ram_binds_source_earned_turnips_and_map_target() -> Result<(), String> {
         let callback = callback()?;
         assert_eq!(callback.selector.appearance, Some(53439));
-        assert_eq!(callback.effects.magic.as_ref().map(|effect| effect.effect), Some(36));
+        assert_eq!(
+            callback.effects.magic.as_ref().map(|effect| effect.effect),
+            Some(36)
+        );
         assert_eq!(callback.storage[0].track, TURNIPS);
         assert!(callback.storage[0].preserve);
         assert_eq!(

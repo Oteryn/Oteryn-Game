@@ -1,6 +1,8 @@
 //! Real framed carried USE on the source Ram map object, with atomic PG state.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::{CharacterId, CharacterLease};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_protocol_oteryn::world_object::{
@@ -9,8 +11,11 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[test]
 fn srv7_quest_turnips_never_enter_the_unguarded_generic_taming_owner() {
-    assert!(crate::content::native_gameplay::mount_taming::rules().iter()
-        .all(|rule| rule.item_key != "oteryn:item.tibia.i53073"));
+    assert!(
+        crate::content::native_gameplay::mount_taming::rules()
+            .iter()
+            .all(|rule| rule.item_key != "oteryn:item.tibia.i53073")
+    );
 }
 
 #[test]
@@ -51,6 +56,27 @@ pub(super) async fn exercise(
         .await
         .map_err(|_| "fence")?
         .ok_or("fence")?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            CharacterLease::new(
+                CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("capabilities")?;
     let source = callback.item_on_target.as_ref().ok_or("turnips")?;
     super::quest_world_callbacks::input_item(
         owner,
@@ -113,11 +139,85 @@ pub(super) async fn exercise(
     );
     // Source state after Emiliana's real reward is the fixture boundary. The
     // final action itself uses the production framed command and receipt owner.
-    let seed = serde_json::from_value(serde_json::json!({
-        "key":callback.key,"quest":callback.quest,"npc":"oteryn:npc.emiliana","keywords":["fixture"],"topic":0,"next_topic":0,
-        "storage":callback.storage,"take":[],"give":null,"outfit":null,"achievement":null,"reply":["fixture"],"sources":["fixture"]
-    }))?;
-    super::qengine_rewards::seed(owner, admitted, &seed, 902).await?;
+    // Seed only the persisted predecessor snapshot, as the established Grizzly
+    // fixtures do. The protected world transition is never replaced or bypassed.
+    {
+        use crate::durability::quest_state::{
+            QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+        };
+        use crate::foundation::{CommandId, CommandRef};
+        use oteryn_gameplay_quests::quest::{
+            QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+            QuestTransition,
+        };
+        let key = "oteryn:quest-transition/srv7-fixture-prior-journey";
+        let track = "oteryn:quest-progress/srv7-fixture-prior-journey";
+        let quest = "oteryn:quest.srv7_fixture_prior_journey";
+        let setup = std::sync::Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: track.into(),
+                    quest: quest.into(),
+                    initial: 0,
+                    min: 0,
+                    max: 1,
+                }],
+                vec![QuestTransition {
+                    key: key.into(),
+                    quest: quest.into(),
+                    world_change: None,
+                    effects: vec![QuestEffect {
+                        track: track.into(),
+                        from: QuestComparison::Any,
+                        effect: QuestEffectKind::Set(1),
+                    }],
+                    completes: false,
+                    experience: None,
+                }],
+            )
+            .map_err(debug)?,
+        );
+        let current = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                current,
+                QuestTransitionRequest {
+                    transition_key: key.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(902).map_err(debug)?,
+                    )),
+                },
+                setup,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    }
+    let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for storage in &callback.storage {
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value,committed_character_revision=EXCLUDED.committed_character_revision")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&storage.track).bind(&callback.quest).bind(storage.minimum).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,quest_key) DO UPDATE SET pinned_content_revision=EXCLUDED.pinned_content_revision,definition_hash=EXCLUDED.definition_hash")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest).bind(catalogue.content_revision()).bind(catalogue.definition_hash(&callback.quest).ok_or("quest hash")?.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
