@@ -37,6 +37,7 @@ impl PlayView {
         let atlas = self.local.world();
         let atlas = atlas.atlas();
         let bars = self.preferences().hud_bars;
+        let effects = self.preferences().show_effects;
         let (view, batch) = self.scene.presentation_base()?;
         if bars && let Some(vitals) = &self.vitals {
             for (row, value, max, color) in [
@@ -69,6 +70,9 @@ impl PlayView {
                     color,
                 )?;
             }
+        }
+        if !effects {
+            return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
         for cue in &self.visuals {
