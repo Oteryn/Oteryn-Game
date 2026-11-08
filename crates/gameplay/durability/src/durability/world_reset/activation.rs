@@ -64,6 +64,9 @@ async fn activate(
                 census::WorldResetDrain::CapacityExceeded => return Err(DurabilityError::InvalidStoredState),
             }
         }
+        if phase.as_deref()!=Some("ACTIVATED") {
+            crate::durability::cake_event::before_reset(&mut tx,reset.world).await?;
+        }
         let fact = node.fact();
         let outcome: Option<String> = sqlx::query_scalar("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3,$4,$5,$6,$7,$8,encode($9,'hex')::uuid,$10::text::numeric)")
             .bind(reset.world.as_bytes().as_slice()).bind(reset.epoch.to_string())
@@ -80,6 +83,7 @@ async fn activate(
             // Same transaction as epoch, calendar and content issuance. Historical
             // replay verifies the immutable decision; it never redraws at channel boot.
             crate::durability::world_event::record_reset(&mut tx, reset.world, epoch, outcome.as_deref() == Some("NEW_EPOCH"), &world_changes).await?;
+            crate::durability::cake_event::after_reset(&mut tx,reset.world,epoch).await?;
         }
         commit_semantic_transaction(tx, deadline).await?;
         Ok(epoch)

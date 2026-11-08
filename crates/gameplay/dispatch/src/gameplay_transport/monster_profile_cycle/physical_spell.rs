@@ -1014,7 +1014,8 @@ fn current_player_combat_facts(
         Some("life_drain") => Some(Kind::LifeDrain),
         Some("mana_drain") => Some(Kind::ManaDrain),
         Some("drowning") => Some(Kind::Drown),
-        None => None,
+        // Undefined has no source-specific or absorbpercentall protection.
+        Some("undefined") | None => None,
         _ => return None,
     };
     let facts = SpellCombatFacts {

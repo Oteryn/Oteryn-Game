@@ -23,6 +23,8 @@ pub struct ChannelSessionStates {
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
     /// Shared weak browse containers live only while a connection holds a view.
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
+    /// Immutable Cake source geometry derived from the active bundle, never custody.
+    pub(super) cake_sources: super::cake_event::SourceCache,
     pub casts: std::sync::OnceLock<super::cast::CastNode>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,

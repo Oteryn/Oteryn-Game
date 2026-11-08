@@ -715,9 +715,13 @@ mod tests {
             monster_record_for_name(&profiles, "rat").map(|(key, _)| key),
             Some("oteryn:creature.rat")
         );
-        // Cake Golem is a source conversion target/candidate, while entry still needs
-        // the native Creature owner. Metadata capture cannot authorize a new actor.
-        assert!(monster_record_for_name(&profiles, "Cake Golem").is_none());
+        // Crystal201189f data-global/monster/quests/a_piece_of_cake/cake_golem.lua:1:
+        // the qualified native Creature admission now owns this exact identity.
+        assert_eq!(
+            monster_record_for_name(&profiles, "Cake Golem").map(|(key, _)| key),
+            Some("oteryn:creature.cake_golem")
+        );
+        assert!(monster_record_for_name(&profiles, "Unqualified Cake Golem").is_none());
         assert_eq!(
             monster_for_core(47_691).map(|monster| monster.stars),
             Some(2)

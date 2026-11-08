@@ -24,7 +24,8 @@ FORMAL = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 VOCATIONS = ('druid', 'knight', 'monk', 'paladin', 'sorcerer')
 LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'creature_profiles': 8 * 1024**2, 'presentation_profiles': 8 * 1024**2,
-          'item_profiles': 8 * 1024**2, 'spell_appearances': 8 * 1024**2,
+          # Match existing production MAX_ITEM_PROFILES (native_gameplay.rs:73).
+          'item_profiles': 16 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
           'source_world': 8 * 1024**2, 'progression': 256 * 1024,
@@ -452,8 +453,10 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
                 stack = definition.get('semantics', {}).get('stack', {})
                 stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
-                if stackable.get('state') == 'KNOWN' and stackable['value'] is True:
-                    facts[definition['identity']['key']]['stackable'] = True
+                if stackable.get('state') == 'KNOWN' and type(stackable.get('value')) is bool:
+                    # Preserve the exact known false fact as well as true; the
+                    # serialized default must not hide a qualified predecessor.
+                    facts[definition['identity']['key']]['stackable'] = stackable['value']
             client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
             if client is not None and int(client.group(1)) in products:
                 facts[definition['identity']['key']]['creature_product'] = True
@@ -552,7 +555,8 @@ def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
 
 
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
-                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
+                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
+                native_item_profiles: dict | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
@@ -575,7 +579,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     profile_path = item_definitions / 'spell-native-profiles.json'
-    _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+    if native_item_profiles is None:
+        _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+    else:
+        native_profiles = native_item_profiles
     native_by_key = {}
     for profile in native_profiles['records']:
         native_by_key.setdefault(profile['production_definition']['production_key'], []).append(profile)
@@ -648,7 +655,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     if sliver is not None:
         # FORGECREATURE admits this resource through its native Item profile;
         # the legacy definition deliberately remains reference-only.
-        _, profiles = read(item_definitions / 'spell-native-profiles.json')
+        profiles = native_profiles
         ref = sliver['item']
         exact = {'family': ref['family'], 'production_key': ref['key'],
                  'revision_ref': ref['revision']}

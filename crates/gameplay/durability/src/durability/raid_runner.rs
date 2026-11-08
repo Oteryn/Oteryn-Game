@@ -1,4 +1,5 @@
 //! Fenced durable execution of a channel raid run and its acknowledged live effects.
+pub mod cake;
 mod claustrophobic;
 mod effects;
 pub use claustrophobic::{ClaustrophobicRaidCue, claustrophobic_cue_pending_in_transaction};

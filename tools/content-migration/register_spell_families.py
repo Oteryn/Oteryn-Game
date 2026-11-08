@@ -97,10 +97,16 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     if actual!={'schema':'OTERYN_NATIVE_ITEM_KEYS/v1','records':expected}:
         raise ValueError('NATIVE_ITEM_KEYS_STALE: run build_full_spell_artifact.py --refresh-item-keys')
     manifest = json.loads(generated[NATIVE_MANIFEST])
+    # W05d: pin the same fresh Creature/Item candidate's canonical loot closure,
+    # rather than a previous generation's on-disk Creature binding census.
+    from cake_native_successor import loot_successor
+    loot_path = REPOSITORY_PINS['loot_tables']
+    generated[loot_path] = loot_successor(root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]),
+                                        json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']]))
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
-            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(generated[path] if path in generated else (root / path).read_bytes()).hexdigest(),
         }
     cosmetics = "content/cosmetics/outfits/native-cosmetics.json"
     if (root / cosmetics).is_file():
@@ -110,6 +116,10 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
             "sha256": hashlib.sha256((root / cosmetics).read_bytes()).hexdigest(),
         }
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
+    # The fresh Cake/native closure is pinned before WORLDCHG refines only its
+    # closed source admission facts and re-pins that same final loot document.
+    import world_change_loot_inputs
+    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
 
 
 GENERIC_ITEM = 40450
@@ -441,8 +451,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     forge_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # Retain established native owners while admitting every shop and chest Item.
     import grizzly_shop_profiles
-    import quests_2_emperor_item_profiles
     import quest_callback_profiles
+    import quests_2_emperor_item_profiles
     grizzly_shop_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     quests_2_emperor_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qready2_native_profiles
@@ -464,6 +474,14 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # the bounded yield overlay fills only proven UNKNOWN custody fields.
     import boss_reward_yield_profiles
     boss_reward_yield_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Crystal santa_claus.lua:111-119 places these gifts through the ordinary
+    # admitted container and stack owners, rather than a seasonal Item alias.
+    import seasonal_item_profiles
+    seasonal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # W18 source recipes use admitted Item identities and retain earlier owners'
+    # policies; only qualified rotation/USE and top-order facts are enriched.
+    import house_decoration_actions
+    house_decoration_actions.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
     # Complete their existing source authoring too before pinning the provider.
     ranged_item_profiles.apply_native(root, generated)
@@ -486,11 +504,6 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     import soul_war_appearance_profiles
     soul_war_appearance_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS["spell_appearances"], NATIVE_MANIFEST)
-    pin_repository_inputs(root, generated)
-    # Refresh only the three admitted World-change input sources after repository pins.
-    # Probabilities/quantities stay byte-semantically pinned; Item policies own admission.
-    import world_change_loot_inputs
-    world_change_loot_inputs.apply(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, spell_import.canonical_bytes)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
@@ -526,6 +539,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
         native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+
+    pin_repository_inputs(root, generated)
 
     # The model bootstraps from this same fresh provider without recursively
     # requiring the very Prey results it is about to produce.

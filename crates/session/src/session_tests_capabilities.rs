@@ -206,6 +206,9 @@ fn derived_gated_routes_match_previous_table() {
         (382, &[664], &[]),
         (383, &[], &[]),
         (384, &[669], &[]),
+        (207, &[402], &[]),
+        (445, &[730], &[]),
+        (446, &[], &[]),
         // Native cue basis and object appearance add no command or domain owner.
         (385, &[], &[]),
         (386, &[], &[]),

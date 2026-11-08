@@ -120,10 +120,17 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
     extra = re.search(r"cohorts add (\d+) \+ (\d+) keys", source)
     if extra is None:
         raise ValueError("missing independently declared floor/callback cohorts")
+    registered_engine = counts.get("QENGINE-REWARDS", 0)
+    if registered_engine:
+        subtraction = re.search(r"additions\.len\(\)\s*-\s*([0-9_]+)", source)
+        if (subtraction is None
+                or int(subtraction[1].replace("_", "")) != registered_engine
+                or registered_engine > len(qengine["records"])):
+            raise ValueError("registered QENGINE cohort differs from its explicit subtraction")
     declared = (
         original
         + sum(counts.values())
-        + len(qengine["records"])
+        + len(qengine["records"]) - registered_engine
         + sum(map(int, extra.groups()))
     )
     actual = keys(base) | keys(updates) | keys(starting or {"records": []})

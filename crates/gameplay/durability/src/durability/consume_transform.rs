@@ -18,6 +18,8 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 use super::consume_transform_audit as audit;
+mod cake;
+pub use cake::CakeBakerContext;
 mod dispenser;
 #[path = "consume_transform_ground.rs"]
 mod ground;
@@ -26,7 +28,7 @@ mod planting;
 pub use ground::{GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
-pub use house::HouseActionContext;
+pub use house::{HouseActionContext, HouseDecorationBaseItem};
 
 #[derive(Debug, Clone)]
 pub struct ConsumeTransformRequest {
@@ -83,6 +85,7 @@ pub(super) struct ExtraInput {
 enum ActionContext<'a> {
     #[default]
     Carried,
+    CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
     DispenserHouseTarget(&'a HouseActionContext),
@@ -203,11 +206,22 @@ impl DurabilityRoot {
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:consume-transform:' || encode($1,'hex') || ':' || $2,0))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .execute(&mut **tx).await?;
+            if matches!(context.3, ActionContext::CakeBaker(_)) &&
+                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.command),context.1.loop_content_digest()).await.is_err() {
+                return Ok(Some(ConsumeTransformResult::refused(UseDisposition::Rejected)));
+            }
             let previous: Option<(Vec<u8>, Vec<u8>, Value, String)> = sqlx::query_as("SELECT intent,uuid_send(character_id),effects,recipe FROM game_item_consume_transform_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;
             if let Some((intent, character, effects, recipe)) = previous {
-                let result = if intent == request.intent && character == fence.character_id.as_bytes() {
+                let caller_matches = match context.3 {
+                    ActionContext::CakeBaker(caller) => recipe==cake::RECIPE
+                        && cake::is_baker(&caller.npc_key)
+                        && effects.get("npc_key").and_then(Value::as_str)==Some(caller.npc_key.as_str())
+                        && effects.get("reset_epoch").and_then(Value::as_str)==Some(caller.expected_epoch.to_string().as_str()),
+                    _ => recipe!=cake::RECIPE,
+                };
+                let result = if caller_matches && intent == request.intent && character == fence.character_id.as_bytes() {
                     ConsumeTransformResult { disposition: UseDisposition::Committed, fresh: false, effects, recipe: Some(recipe.clone()) }
                 } else { ConsumeTransformResult { recipe: Some(recipe), ..ConsumeTransformResult::refused(UseDisposition::Rejected) } };
                 tx.commit(deadline).await?;
@@ -262,8 +276,8 @@ async fn write<C: ItemLoopContent>(
     let world = fence.runtime_scope.world_id();
     // The full Character fence/root lock precedes item locks. The only equipment
     // source admitted here is the unchanged party hat in the actual head slot.
-    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND h.slot=1 AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
-        .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal,h.slot,1)::text AS ordinal,CASE WHEN h.item_instance_id IS NOT NULL THEN 2 WHEN n.item_instance_id IS NOT NULL THEN 4 ELSE 1 END AS custody,CASE WHEN h.item_instance_id IS NOT NULL THEN to_jsonb(h) WHEN n.item_instance_id IS NOT NULL THEN to_jsonb(n) ELSE to_jsonb(e) END AS source_location FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL LEFT JOIN game_character_equipment_slots h ON h.item_instance_id=i.item_instance_id AND h.character_id=encode($2,'hex')::uuid AND (h.slot=1 OR $4) AND h.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR h.item_instance_id IS NOT NULL OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
+        .bind(request.source.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(matches!(ground, ActionContext::CakeBaker(_))).fetch_optional(&mut ***tx).await?;
     let Some(source) = source else {
         return Ok(ConsumeTransformResult::refused(UseDisposition::StaleState));
     };
@@ -274,29 +288,55 @@ async fn write<C: ItemLoopContent>(
     };
     // Seed use keeps its exact operand in the already proven extra-input slot, so
     // main and nested leaves share the same custody proof without widening rust.
-    let planting_plan = match dispenser::prepare(
-        tx,
-        fence,
-        request,
-        &definition,
-        source.try_get("quantity")?,
-        native,
-        ground,
-        ground_fences.node,
-    )
-    .await?
-    {
-        Some(plan) => Some(plan),
-        None if matches!(
-            ground,
-            ActionContext::DispenserTarget(_) | ActionContext::DispenserHouseTarget(_)
-        ) =>
+    let cake_plan = if let ActionContext::CakeBaker(context) = ground {
+        match cake::prepare(
+            tx,
+            fence,
+            request,
+            &definition,
+            source.try_get("quantity")?,
+            context,
+            source.try_get::<i32, _>("custody")? == 2,
+        )
+        .await?
         {
-            return Ok(ConsumeTransformResult::refused(
-                UseDisposition::NothingToUse,
-            ));
+            Some(plan) => Some(plan),
+            None => {
+                return Ok(ConsumeTransformResult::refused(
+                    UseDisposition::NothingToUse,
+                ));
+            }
         }
-        None => planting::prepare_carried(tx, fence, request, &definition, native).await?,
+    } else {
+        None
+    };
+    let planting_plan = if cake_plan.is_some() {
+        cake_plan
+    } else {
+        match dispenser::prepare(
+            tx,
+            fence,
+            request,
+            &definition,
+            source.try_get("quantity")?,
+            native,
+            ground,
+            ground_fences.node,
+        )
+        .await?
+        {
+            Some(plan) => Some(plan),
+            None if matches!(
+                ground,
+                ActionContext::DispenserTarget(_) | ActionContext::DispenserHouseTarget(_)
+            ) =>
+            {
+                return Ok(ConsumeTransformResult::refused(
+                    UseDisposition::NothingToUse,
+                ));
+            }
+            None => planting::prepare_carried(tx, fence, request, &definition, native).await?,
+        }
     };
     let mut planting_request = request.clone();
     if planting_plan.is_some() {
@@ -421,13 +461,50 @@ async fn write<C: ItemLoopContent>(
         .get("require_head")
         .and_then(Value::as_bool)
         .unwrap_or(false);
-    if require_head != (source_kind == 2) || (source_kind == 2 && conversion.consume_source) {
+    if conversion.recipe != cake::RECIPE
+        && (require_head != (source_kind == 2) || (source_kind == 2 && conversion.consume_source))
+    {
         return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
     }
     let before: Value = source.try_get("before_item")?;
     let source_ordinal: String = source.try_get("ordinal")?;
     let source_location: Value = source.try_get("source_location")?;
     let parent: Option<Vec<u8>> = source.try_get("parent")?;
+    if conversion.recipe == cake::RECIPE {
+        let capacity = if let Some(parent) = &parent {
+            let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+                .bind(parent).fetch_one(&mut ***tx).await?;
+            let definition = TypedDefinitionRef {
+                family: bag.try_get("definition_family")?,
+                production_key: bag.try_get("definition_production_key")?,
+                revision_ref: bag.try_get("definition_revision_ref")?,
+            };
+            content
+                .loop_facts(&definition)
+                .and_then(|facts| facts.container_capacity)
+                .ok_or(DurabilityError::InvalidStoredState)?
+        } else {
+            0
+        };
+        return persist_action(
+            permit,
+            tx,
+            fence,
+            request,
+            native,
+            &conversion,
+            &before,
+            None,
+            parent.as_deref(),
+            source_kind,
+            &source_ordinal,
+            capacity,
+            &[],
+            &source_location,
+            None,
+        )
+        .await;
+    }
     if !conversion.consume_source {
         if !conversion.outputs.is_empty()
             || secondary.is_some()
@@ -517,6 +594,7 @@ async fn write<C: ItemLoopContent>(
         .and_then(|f| f.container_capacity)
         .unwrap_or(0);
     let capacity = if event_reward
+        || conversion.recipe == cake::RECIPE
         || conversion.recipe.starts_with("oteryn:novelty-item.")
         || conversion.recipe.starts_with("oteryn:item-cosmetic.")
     {
@@ -734,13 +812,16 @@ async fn persist_action(
     if ground_admission.is_some() != ground_reward {
         return Err(DurabilityError::InvalidStoredState);
     }
-    if plan.consume_source != (plan.source_count > 0)
-        || plan.source_count > 100
-        || plan.extra_inputs.len() > 6
-        || plan.extra_inputs.iter().any(|input| {
-            input.count == 0 || input.count != 1 || !matches!(input.source_kind, 1 | 3 | 4 | 5)
-        })
-    {
+    if if plan.recipe == cake::RECIPE {
+        !cake::valid_shape(plan)
+    } else {
+        plan.consume_source != (plan.source_count > 0)
+            || plan.source_count > 100
+            || plan.extra_inputs.len() > 6
+            || plan.extra_inputs.iter().any(|input| {
+                input.count == 0 || input.count != 1 || !matches!(input.source_kind, 1 | 3 | 4 | 5)
+            })
+    } {
         return Err(DurabilityError::InvalidStoredState);
     }
     let world = fence.runtime_scope.world_id();
@@ -842,7 +923,10 @@ async fn persist_action(
     if source_kind == 5 {
         house::apply_in_transaction(tx, &transaction).await?;
     }
-    if plan.consume_source {
+    if plan.consume_source
+        && !(source_kind == 5
+            && plan.effects.get("kind").and_then(Value::as_str) == Some("house_decoration"))
+    {
         consume_count(
             permit,
             tx,
@@ -883,6 +967,7 @@ async fn persist_action(
             .await?;
         }
     }
+    cake::apply_equipment(tx, fence, plan, &transaction).await?;
     for (ordinal, output) in outputs.iter().enumerate() {
         if let Some((fences, context)) = ground_admission {
             // Actual source consumption above determines whether its root remains.
@@ -977,7 +1062,7 @@ async fn consume_count(
         .get("quantity")
         .and_then(Value::as_i64)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1 | 3 | 4 | 5) {
+    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1..=5) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let changed = sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -994,6 +1079,9 @@ async fn consume_count(
             return Ok(());
         }
         let sql = match source_kind {
+            2 => {
+                "DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid"
+            }
             3 => {
                 "DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid"
             }
@@ -1023,6 +1111,33 @@ async fn apply_achievements(
     effects: &Value,
     event: &str,
 ) -> Result<(), DurabilityError> {
+    if effects.get("kind").and_then(Value::as_str) == Some("house_decoration") {
+        let event = super::item_mint::uuid_text(event)?;
+        let progress = effects
+            .get("achievement_progress")
+            .and_then(Value::as_array)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        // Crystal data-global/scripts/actions/other/music.lua:65-66: each use
+        // advances the existing Rockstar achievement; no alternate achievement writer.
+        for row in progress {
+            if effects.get("decoration_family").and_then(Value::as_str) != Some("music")
+                || row.get("key").and_then(Value::as_str) != Some("oteryn:achievement/rockstar")
+                || row.get("target").and_then(Value::as_u64) != Some(10000)
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            super::account_achievement::add_progress(
+                tx,
+                fence.character_id,
+                "oteryn:achievement/rockstar",
+                10000,
+                oteryn_gameplay_progression::item_use_achievement::SOURCE_KIND,
+                &event,
+            )
+            .await?;
+        }
+        return Ok(());
+    }
     let Ok(effects) = serde_json::from_value::<oteryn_gameplay_items::novelty_items::NoveltyEffects>(
         effects.clone(),
     ) else {

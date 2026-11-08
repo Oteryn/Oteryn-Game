@@ -243,7 +243,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // This scenario boots its genuine bounded BundleWorld separately.
     input.source_world = None;
     if matches!(case, Case::BedRest) {
-        super::bed_sleep_fixture::bed_profiles(&mut input)?;
+        super::bed_sleep_fixture::bed_profiles(&input)?;
     }
     if matches!(
         case,

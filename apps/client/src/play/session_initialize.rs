@@ -17,7 +17,10 @@ pub(super) fn initialize<T: Stepper>(
     outbox.targeting_initialize(session.feature_selected(15));
     // Publish sources only after their equipment, movement and targeting routes are ready.
     outbox.inventory_initialize(session.inventory(), session.item_count_selected());
-    outbox.container_initialize(session.container_views());
+    outbox.container_initialize_with_house_capacity(
+        session.container_views(),
+        session.feature_selected(446),
+    );
     outbox.target_walk_initialize(session.feature_selected(64));
     outbox.vitals(session.actor_vitals());
     outbox.channel_list_initialize(session.feature_snapshot(48));

@@ -29,6 +29,7 @@ mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod bundle_map_position;
+mod cake_event;
 mod capabilities;
 mod cast_observer;
 mod channel_states;
@@ -84,6 +85,7 @@ mod guild_chat;
 mod guild_war;
 mod highscores;
 mod hive_shared_kills;
+mod house_base_decorations;
 mod house_destroy;
 mod house_furnishing;
 mod house_item_use;

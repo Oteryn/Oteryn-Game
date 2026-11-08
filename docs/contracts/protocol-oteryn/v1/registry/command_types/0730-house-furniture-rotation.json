@@ -1,0 +1,10 @@
+{
+  "id": 730,
+  "name": "HOUSE_FURNITURE_ROTATION",
+  "owner_decision": "W18-HOUSE-ROTATION-1",
+  "capability": 445,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house-furniture-rotation-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house-furniture-rotation-v1.md#result",
+  "max_payload_bytes": 50,
+  "max_result_payload_bytes": 4096
+}

@@ -24,6 +24,11 @@ impl State {
                     .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
         {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(
+                oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+            ) {
+                view = view.with_house_container_capacity();
+            }
             if selected.contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1) {
                 view = view.with_map_view();
             }
@@ -53,7 +58,8 @@ impl State {
             );
             if selected.contains(CAPABILITY_CONTAINER_TREE_V1) {
                 payloads.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
-                containers = Some(ContainerViewState::default());
+                let views = ContainerViewState::default();
+                containers = Some(if selected.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2) { views.with_house_container_capacity() } else { views });
             }
             if let Some(map) = world_map.as_mut() {
                 match authority

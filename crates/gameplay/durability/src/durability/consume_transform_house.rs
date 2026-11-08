@@ -8,6 +8,11 @@ use crate::durability::runtime_scope_assignment::prove_current_incarnation;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_gameplay_items::novelty_items::{self, GroundEffect};
 
+#[path = "consume_transform_house/decorations.rs"]
+mod decorations;
+#[path = "consume_transform_house/timed_decorations.rs"]
+mod timed_decorations;
+
 /// The actual House actor owner constructs this context. Neither wire positions nor
 /// a Channel equipment fence can stand in for the current named-House lease.
 #[derive(Clone, Debug)]
@@ -15,6 +20,18 @@ pub struct HouseActionContext {
     house: HouseId,
     position: [i32; 3],
     fence: CurrentCharacterItemFence,
+    occupied: Vec<[i32; 3]>,
+    base_items: Vec<HouseDecorationBaseItem>,
+    bed_target: Option<Value>,
+    rotation: Option<u64>,
+}
+
+/// Immutable native base facts captured by the current House command owner.
+#[derive(Clone, Debug)]
+pub struct HouseDecorationBaseItem {
+    pub position: [i32; 3],
+    pub ordinal: u64,
+    pub definition: TypedDefinitionRef,
 }
 
 impl HouseActionContext {
@@ -24,6 +41,12 @@ impl HouseActionContext {
         session: GameSessionId,
         fence: CurrentCharacterItemFence,
     ) -> Result<Self, &'static str> {
+        if !runtime
+            .house_player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return Err("House actor control is lost");
+        }
         let state = runtime
             .house_actor_state(actor, session)
             .map_err(|_| "House actor missing")?;
@@ -40,14 +63,41 @@ impl HouseActionContext {
         if house.runtime_scope().map_err(|_| "House scope")? != fence.runtime_scope {
             return Err("House scope differs");
         }
+        let position = [
+            state.position.x,
+            state.position.y,
+            i32::from(state.position.floor),
+        ];
+        let mut occupied = vec![position];
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                let Some(x) = position[0].checked_add(dx) else {
+                    continue;
+                };
+                let Some(y) = position[1].checked_add(dy) else {
+                    continue;
+                };
+                let candidate = crate::foundation::LocalPosition {
+                    x,
+                    y,
+                    floor: state.position.floor,
+                };
+                if runtime
+                    .house_cell_occupied_except(actor, session, candidate)
+                    .map_err(|_| "House occupancy missing")?
+                {
+                    occupied.push([x, y, position[2]]);
+                }
+            }
+        }
         Ok(Self {
             house,
-            position: [
-                state.position.x,
-                state.position.y,
-                i32::from(state.position.floor),
-            ],
+            position,
             fence,
+            occupied,
+            base_items: Vec::new(),
+            bed_target: None,
+            rotation: None,
         })
     }
     /// Decode the existing named-House custody format: three big-endian i32s.
@@ -106,6 +156,23 @@ impl HouseActionContext {
     pub fn house(&self) -> &HouseId {
         &self.house
     }
+    pub fn fence(&self) -> CurrentCharacterItemFence {
+        self.fence
+    }
+    pub fn with_rotation(mut self, expected_revision: u64) -> Self {
+        self.rotation = Some(expected_revision);
+        self.bed_target = None;
+        self
+    }
+    pub fn with_bed_target(mut self, target: Value) -> Self {
+        self.rotation = None;
+        self.bed_target = Some(target);
+        self
+    }
+    pub fn with_decoration_base_items(mut self, items: Vec<HouseDecorationBaseItem>) -> Self {
+        self.base_items = items;
+        self
+    }
 }
 
 fn fenced(
@@ -130,6 +197,88 @@ const CURRENT: &str = "SELECT game_item_action_house_current(encode($1,'hex')::u
 const SOURCE: &str = "SELECT * FROM game_item_action_house_source(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,$9,encode($10,'hex')::uuid)";
 
 impl DurabilityRoot {
+    /// Probe an immutable House USE receipt before resolving a consumed kit or
+    /// a bed whose base revision changed in the original atomic operation.
+    pub async fn replay_house_item_action(
+        &self,
+        node: &NodeIncarnationProof,
+        context: &HouseActionContext,
+        request: &ConsumeTransformRequest,
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        if request.command.game_session_id() != context.fence.game_session_id
+            || request.intent.is_empty()
+            || request.intent.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
+        {
+            return Ok(Some(ConsumeTransformResult::refused(
+                UseDisposition::Rejected,
+            )));
+        }
+        let node = node.clone();
+        let context = context.clone();
+        let request = request.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = crate::durability::db::begin_semantic_transaction(holder, deadline).await?;
+            if !prove_current_incarnation(&mut tx, &node).await?
+                || !fenced(CURRENT, &node, &context).fetch_one(&mut *tx).await?.try_get::<bool,_>(0)? {
+                return Ok(Some(ConsumeTransformResult::refused(UseDisposition::StaleState)));
+            }
+            let previous: Option<(Vec<u8>,Vec<u8>,Value,String)> = sqlx::query_as("SELECT intent,uuid_send(character_id),effects,recipe FROM game_item_consume_transform_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+                .bind(context.fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
+                .fetch_optional(&mut *tx).await?;
+            let result = previous.map(|(intent, character, effects, recipe)| {
+                if intent == request.intent && character == context.fence.character_id.as_bytes() {
+                    ConsumeTransformResult {disposition:UseDisposition::Committed,fresh:false,effects,recipe:Some(recipe)}
+                } else {ConsumeTransformResult::refused(UseDisposition::Rejected)}
+            });
+            crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+            Ok(result)
+        })).await
+    }
+
+    /// Classification only: the committing owner re-reads and locks this source.
+    /// A normal key or fluid must retain its own USE_WITH route inside a House.
+    pub async fn house_source_is_bed_kit(
+        &self,
+        node: &NodeIncarnationProof,
+        context: &HouseActionContext,
+        source: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        let node = node.clone();
+        let context = context.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        crate::durability::db::begin_semantic_transaction(holder, deadline).await?;
+                    if !prove_current_incarnation(&mut tx, &node).await?
+                        || !fenced(CURRENT, &node, &context)
+                            .fetch_one(&mut *tx)
+                            .await?
+                            .try_get::<bool, _>(0)?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let row = fenced(SOURCE, &node, &context)
+                        .bind(source.to_vec())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                    let result = if let Some(row) = row {
+                        let before: Value = row.try_get("before_item")?;
+                        let key = before
+                            .get("definition_production_key")
+                            .and_then(Value::as_str)
+                            .ok_or(DurabilityError::InvalidStoredState)?;
+                        decorations::is_bed_kit(key)?
+                    } else {
+                        false
+                    };
+                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn consume_dispenser_in_house<C: ItemLoopContent>(
         &self,
@@ -232,7 +381,8 @@ impl DurabilityRoot {
         request: ConsumeTransformRequest,
         native: &NativeGameplayState,
     ) -> Result<ConsumeTransformResult, DurabilityError> {
-        if request.command.game_session_id() != context.fence.game_session_id
+        if !rotation_binding_valid(&context, &request)
+            || request.command.game_session_id() != context.fence.game_session_id
             || request.target.is_some()
             || request.intent.is_empty()
             || request.intent.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
@@ -275,8 +425,8 @@ impl DurabilityRoot {
                 production_key: before.get("definition_production_key").and_then(Value::as_str).ok_or(DurabilityError::InvalidStoredState)?.into(),
                 revision_ref: before.get("definition_revision_ref").and_then(Value::as_str).ok_or(DurabilityError::InvalidStoredState)?.into(),
             };
-            if novelty_items::house_transform_for_key(&definition.production_key).is_none() {
-                return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse));
+            if context.rotation.is_some_and(|expected| before.get("state_revision").and_then(Value::as_u64)!=Some(expected)) {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::StaleState));
             }
             if before.get("quantity").and_then(Value::as_i64) != Some(1) {
                 return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
@@ -284,6 +434,7 @@ impl DurabilityRoot {
             // Crystal Item::getTile follows carried/nested parents to the actor's
             // tile. HouseInterior sources retain their own actual placement.
             let position: Option<Vec<u8>> = source.try_get("spatial_position")?;
+            let placed = position.is_some();
             let at = if let Some(position) = position {
                 HouseActionContext::decode_spatial_position(&position)
                     .ok_or(DurabilityError::InvalidStoredState)?
@@ -292,7 +443,14 @@ impl DurabilityRoot {
                 || (i64::from(at[1]) - i64::from(context.position[1])).abs() > 1 {
                 return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
             }
-            let Some(mut selected) = novelty_items::plan_ground(native, &definition,
+            let plan = match decorations::plan(&mut tx, &context, &request, native, &definition, at, placed).await? {
+                Some(Ok(plan)) => plan,
+                Some(Err(disposition)) => return Ok(ConsumeTransformResult::refused(disposition)),
+                None => {
+                if novelty_items::house_transform_for_key(&definition.production_key).is_none() {
+                    return Ok(ConsumeTransformResult::refused(UseDisposition::NothingToUse));
+                }
+                let Some(mut selected) = novelty_items::plan_ground(native, &definition,
                 *fence.game_session_id.as_bytes(), request.command.command_id().get(), request.source,
                 GroundEffect { x: at[0], y: at[1], floor: i16::try_from(at[2]).map_err(|_| DurabilityError::InvalidStoredState)? }, true)
             else { return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible)); };
@@ -306,8 +464,10 @@ impl DurabilityRoot {
                 return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
             }
             selected.effects["house_after"] = json!({"key": after.production_key, "revision": after.revision_ref});
-            let plan = ActionPlan { recipe: selected.recipe, outputs: Vec::new(), consume_source: false,
-                source_count: 0, effects: selected.effects, extra_inputs: Vec::new() };
+                ActionPlan { recipe: selected.recipe, outputs: Vec::new(), consume_source: false,
+                    source_count: 0, effects: selected.effects, extra_inputs: Vec::new() }
+                }
+            };
             let mut source_location = location;
             let location = source_location.as_object_mut().ok_or(DurabilityError::InvalidStoredState)?;
             location.insert("provenance".into(), provenance);
@@ -332,4 +492,17 @@ pub(super) async fn apply_in_transaction(
         .execute(&mut ***tx)
         .await?;
     Ok(())
+}
+
+fn rotation_binding_valid(context: &HouseActionContext, request: &ConsumeTransformRequest) -> bool {
+    use oteryn_protocol_oteryn::house_rotation as wire;
+    let prefix = wire::COMMAND.to_be_bytes();
+    let encoded = request.intent.strip_prefix(prefix.as_slice());
+    match (context.rotation, encoded) {
+        (None, None) => true,
+        (Some(expected), Some(bytes)) => {
+            matches!(wire::Request::decode(bytes),Some(wire::Request::Rotate(wire::Target::Item{item,expected_revision})) if item==request.source&&expected_revision==expected)
+        }
+        _ => false,
+    }
 }

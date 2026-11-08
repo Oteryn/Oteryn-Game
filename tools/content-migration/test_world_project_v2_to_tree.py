@@ -150,7 +150,7 @@ from primal_reference_overlay import apply_reference
 apply_reference(reference['records'], ROOT)
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
-assert family_counts['Creature'] == 1863
+assert family_counts['Creature'] == 1_864
 assert lock["family_counts"] == {
     "Item": len(expected_items), "Mount": 252,  # Exact source-qualified extensions above.
     **family_counts, "Document": 1609,
@@ -159,7 +159,7 @@ assert lock["family_counts"] == {
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1, "item_conversion": 129,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}
+assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_864, "Encounter": 108, "NPC": 2747}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]

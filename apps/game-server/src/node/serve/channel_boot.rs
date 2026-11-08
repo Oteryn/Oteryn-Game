@@ -315,6 +315,15 @@ pub(super) async fn prepare_channel(
             .install_world_change_cycles(daily.reset_epoch, cycles)
             .map_err(|_| BootError::Readiness("world change counter projection"))?;
     }
+    // W05d: only the reset owner's immutable annual decision activates actors.
+    // A later process restart cannot move the holiday or substitute a new clock.
+    let seasonal = root
+        .active_world_seasonal_events(material.world, reset_epoch)
+        .await
+        .map_err(|_| BootError::Readiness("seasonal calendar binding"))?;
+    event(&format!(
+        "event=seasonal_calendar reset_epoch={reset_epoch} active={seasonal:?}"
+    ));
     // W05b: the server save's daily world changes, rolled once per reset epoch.
     let daily_npcs =
         daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
@@ -338,7 +347,33 @@ pub(super) async fn prepare_channel(
         daily.grimvale_full_moon,
         daily.flower_month,
     ));
-    let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    let mut timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot).with_seasonal(
+        npc_boot,
+        &seasonal,
+        |position| {
+            bundle.as_ref().is_some_and(|world| {
+                if (position.x, position.y, position.floor) == (33303, 32064, -7) {
+                    // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:470 force=true bypasses collision on
+                    // this exact source tile. A plain captured tile needs no
+                    // floor/teleport redirection; unresolved redirects refuse
+                    // qualification rather than silently placing incorrectly.
+                    world
+                        .base()
+                        .tile(position.x, position.y, position.floor)
+                        .is_some()
+                        && !world.floors().contains(position)
+                        && world.floors().teleport(position).is_none()
+                } else {
+                    world.enterable(position)
+                }
+            })
+        },
+    );
+    timed_npcs.set_brutus_present(
+        root.cake_brutus_present(material.world)
+            .await
+            .map_err(|_| BootError::Readiness("Cake Brutus projection"))?,
+    );
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).
     if let Some(Err(error)) =
