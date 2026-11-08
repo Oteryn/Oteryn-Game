@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.a_father_s_burden_quest";
 const KEY: &str = "oteryn:quest-transition/npcfix/fathers-burden/accept";
+const NPC_ACCEPT: &str = "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept";
 
 fn acceptance(failure: Option<QuestRefusal>) -> TestResult<Arc<QuestStateCatalogue>> {
     // Existing normalized source, Crystal 201189f, tereban_functions.lua:173-184.
@@ -110,13 +111,32 @@ fn scenario() -> TestResult {
                     .map_err(|()| "fence")?.ok_or("live fence")?;
                 let catalogue = if failure.is_none() {
                     let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
-                    assert!(loaded.catalogue().transition(KEY).is_some(), "production acceptance transition");
+                    let source = oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
+                    assert!(source.admitted_for_npc("oteryn:npc.tereban", loaded.catalogue()).map_err(debug)?.is_some(), "production acceptance programme");
                     Arc::new(loaded.catalogue().clone())
                 } else { acceptance(failure)? };
                 let request = QuestTransitionRequest { transition_key: KEY.into(), cause: QuestCause::Command(
                     CommandRef::new(deps.admitted.game_session_id, CommandId::new(1).map_err(debug)?)) };
-                let outcome = h.root.commit_character_quest_transition(&authority, &h.node, fence,
-                    request.clone(), Arc::clone(&catalogue)).await.map_err(debug)?;
+                let npc_request = crate::durability::quest_state::npc_program::NpcProgramRequest {
+                    command: CommandRef::new(deps.admitted.game_session_id, CommandId::new(1).map_err(debug)?),
+                    npc: "oteryn:npc.tereban".into(),
+                    trigger: oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger::Say,
+                    message: "yes".into(), topic: 1, transition_key: NPC_ACCEPT.into(),
+                };
+                let outcome = if failure.is_none() {
+                    // Main1314 admits precisely this immutable source acceptance.
+                    let world = crate::foundation::WorldId::decode(&super::fixture::id(42)).map_err(debug)?;
+                    let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+                    let active = controller.active().ok_or("active acceptance generation")?;
+                    let native = active.native_gameplay().ok_or("native acceptance content")?;
+                    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                    slot.commit_npc_program(&h.root, &authority, &h.node, fence, npc_request.clone(), Arc::clone(&catalogue),
+                        &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native))
+                        .await.map_err(debug)?.transition
+                } else {
+                    h.root.commit_character_quest_transition(&authority, &h.node, fence,
+                        request.clone(), Arc::clone(&catalogue)).await.map_err(debug)?
+                };
                 if let Some(refusal) = failure {
                     assert!(matches!(outcome, QuestTransitionOutcome::Refused(actual) if actual == refusal));
                     let copy = h.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
@@ -132,8 +152,8 @@ fn scenario() -> TestResult {
                     let QuestTransitionOutcome::Committed(receipt) = outcome else { return Err("one committed receipt".into()); };
                     assert_eq!(receipt.changes.len(), 11);
                     assert_eq!(receipt.committed_character_revision.get(), receipt.original_character_revision.get() + 1);
-                    let replay = h.root.commit_character_quest_transition(&authority, &h.node, fence,
-                        request, Arc::clone(&catalogue)).await.map_err(debug)?;
+                    let replay = h.root.reconcile_npc_program(&authority, fence.character_id, npc_request)
+                        .await.map_err(debug)?.ok_or("canonical acceptance replay")?.transition;
                     assert!(matches!(replay, QuestTransitionOutcome::AlreadyCommitted(replayed) if replayed == receipt));
                     let copy = h.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
                     assert_eq!(copy.tracks().len(), 11);

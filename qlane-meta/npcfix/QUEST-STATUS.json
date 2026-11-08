@@ -9370,5 +9370,17 @@
       "Anna: retail Targuna continuation/destination admission alongside existing owner-selected tutorial landing; existing Main and qengine2 route checked, request sent. Other event/travel requests retained."
     ],
     "pending": "Full10-crate cargo-test unit replacement and actual current5PG cases pending under PREPUSH-2 cadence exception. Earlier Clippy interrupted for Main3032 merge, rerun pending."
+  },
+  "planner_bound_reconciliation": {
+    "predecessor_pushed": "17756bc97c5e510b79ff261a1961aa386fea66cf",
+    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05; freshly fetched, already ancestor",
+    "red": "Complete quest unit binary:282PASS/1FAIL99.989s; Main storage-owner assertion16!=8. quest-unit-snapshot-red.log",
+    "green": "cargo test -p oteryn-gameplay-quests --lib -- --test-threads=1:283PASS90.92s; planner-bounds-quest-unit-green.log; tests unchanged",
+    "repair": "Main source storage/item planner cap8; immutable canonical Father exception11 unchanged. Restore published generic pure preview16 using new25-line preview.rs; each executor selects its own existing bounded budget. No durable authority from preview.",
+    "atomic_red": "Actual PG marker and11.20s, legacy private acceptance returns Unavailable(Database(Database(None))) under Main1314. main1314-legacy-atomic-pg-red.log",
+    "atomic_reuse": "Positive atomic fixture now uses Main sequenced NPC programme writer and retained reconciliation; all11-track, one revision/receipt, exact replay and persisted values assertions remain. Guard/range rollback cases unchanged. No schema workaround.",
+    "nested_store": "Verified item_loop_move.rs:752,1408 writes nested rows to game_item_nested_entries. Assert direct-root0, exact live nested UUID/quantity1, recursive carried ownership1 and unchanged money.",
+    "gates": "PASS:283 unchanged quest units90.92s; final current-source workspace all-target check5m30s; final fmt; audit/matrix regeneration, native44 freshness, double-build world pin check, duplicate migrations. Full10-crate units59146 now compiling; current6PG scheduler69240 and Clippy85125 pending under PREPUSH-2 cadence exception.",
+    "pending": "Full10-crate unfiltered cargo-test unit run59146 queued behind final check; PG scheduler69240 covers state3, five shops, Guardian, atomic eleven (6 tests) after new binary. Clippy rerun pending. No promotion;37 owned entries remain."
   }
 }

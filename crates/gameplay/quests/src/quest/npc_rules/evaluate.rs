@@ -292,8 +292,14 @@ pub(super) fn plan(
     resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     storage_only: bool,
     state_only: bool,
+    track_limit: usize,
 ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-    if input.topic < 0 || input.message.len() > 4096 || input.inventory.items.len() > 4096 {
+    if track_limit == 0
+        || track_limit > super::super::QUESTSTATE0_RL_02
+        || input.topic < 0
+        || input.message.len() > 4096
+        || input.inventory.items.len() > 4096
+    {
         return Err(NpcRuleError::Invalid("invalid NPC input".into()));
     }
     for program in &catalogue.programs {
@@ -306,6 +312,7 @@ pub(super) fn plan(
             continue;
         }
         let mut state = Staged::new(program, input);
+        state.track_limit = track_limit;
         let mut selected_rule_keys = Vec::new();
         let mut reply = Vec::new();
         let mut effects = Vec::new();

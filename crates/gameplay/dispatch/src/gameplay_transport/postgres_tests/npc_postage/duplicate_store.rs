@@ -20,9 +20,12 @@ pub(super) async fn apply(
     };
     assert_eq!(owner.move_loop_item(actor, command, request).await,
         LoopMoveResult::Committed, "retain duplicate: {definition}");
-    assert_eq!(exact_shops::quantity(h, definition).await?, 1);
-    let preserved: i64 = sqlx::query_scalar("SELECT i.quantity::bigint FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) WHERE i.item_instance_id=$1 AND i.lifecycle=1 AND e.character_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=$3")
-        .bind(item).bind(id(41).as_slice()).bind(bag).fetch_one(&h.pool).await?;
+    assert_eq!(exact_shops::quantity(h, definition).await?, 0);
+    let preserved: i64 = sqlx::query_scalar("SELECT i.quantity::bigint FROM game_item_instances i JOIN game_item_nested_entries e USING(item_instance_id,world_id) WHERE i.item_instance_id=$1 AND i.lifecycle=1 AND e.parent_item_instance_id=$2")
+        .bind(item).bind(bag).fetch_one(&h.pool).await?;
     assert_eq!(preserved, 1, "the unsold duplicate stays live in its carried bag");
+    let carried: i64 = sqlx::query_scalar("SELECT COALESCE(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key=$3")
+        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(definition).fetch_one(&h.pool).await?;
+    assert_eq!(carried, 1, "the unsold duplicate remains in the owned carried tree");
     Ok(())
 }

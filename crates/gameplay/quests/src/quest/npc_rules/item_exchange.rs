@@ -94,9 +94,14 @@ impl NpcRuleCatalog {
         // exact eleven-track Father acceptance. Only inventory-owned guards
         // and effects select the plain item planner with its ordinary cap.
         match self.plan_storage(input) {
-            Err(NpcRuleError::MissingNativeResolution(_)) => {
-                evaluate::plan(self, input, &BTreeMap::new(), false, false)
-            }
+            Err(NpcRuleError::MissingNativeResolution(_)) => evaluate::plan(
+                self,
+                input,
+                &BTreeMap::new(),
+                false,
+                false,
+                MAX_NPC_TRACK_CHANGES,
+            ),
             result => result,
         }
     }

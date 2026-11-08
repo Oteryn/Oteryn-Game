@@ -8,6 +8,7 @@ mod hidden_threats;
 mod item_exchange;
 mod keyword;
 mod marlin_trophy;
+mod preview;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -21,7 +22,7 @@ use sha2::{Digest, Sha256};
 
 /// The NPC planner and durable receipt admit the same bounded, atomic write set.
 /// Owner amendment, 2026-11-06: Father's Burden's eleven writes must not be split.
-pub const MAX_NPC_TRACK_CHANGES: usize = super::QUESTSTATE0_RL_02;
+pub const MAX_NPC_TRACK_CHANGES: usize = 8;
 pub const MAX_NPC_EFFECTS: usize = 128;
 const SOURCE_PIN: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:";
 
@@ -508,15 +509,8 @@ impl NpcRuleCatalog {
             &BTreeMap::new(),
             false,
             true,
+            super::QUESTSTATE0_RL_02,
         )
-    }
-
-    #[cfg(test)]
-    pub(super) fn plan(
-        &self,
-        input: &NpcRuleInput<'_>,
-    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        self.plan_with_native(input, &BTreeMap::new())
     }
 
     /// Storage-only owner: every reached guard must be storage-owned, including
@@ -525,7 +519,14 @@ impl NpcRuleCatalog {
         &self,
         input: &NpcRuleInput<'_>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        evaluate::plan(self, input, &BTreeMap::new(), true, false)
+        evaluate::plan(
+            self,
+            input,
+            &BTreeMap::new(),
+            true,
+            false,
+            MAX_NPC_TRACK_CHANGES,
+        )
     }
 
     /// Tereban's fixed material hand-ins have an inventory and quest-XP owner.
@@ -557,7 +558,14 @@ impl NpcRuleCatalog {
                 "Tereban guard".into(),
             ));
         }
-        let plan = evaluate::plan(self, input, &BTreeMap::new(), false, false)?;
+        let plan = evaluate::plan(
+            self,
+            input,
+            &BTreeMap::new(),
+            false,
+            false,
+            MAX_NPC_TRACK_CHANGES,
+        )?;
         if plan.as_ref().is_some_and(|plan| {
             plan.quest != "oteryn:quest.a_father_s_burden_quest"
                 || plan.effects.iter().any(|effect| {
@@ -588,7 +596,7 @@ impl NpcRuleCatalog {
         input: &NpcRuleInput<'_>,
         resolutions: &BTreeMap<String, Vec<NpcRuleEffect>>,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        evaluate::plan(self, input, resolutions, false, false)
+        preview::plan_with_native(self, input, resolutions)
     }
 }
 

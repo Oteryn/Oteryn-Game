@@ -30,7 +30,14 @@ impl NpcRuleCatalog {
                 "Pemaret guard".into(),
             ));
         }
-        let plan = evaluate::plan(self, input, &BTreeMap::new(), false, false)?;
+        let plan = evaluate::plan(
+            self,
+            input,
+            &BTreeMap::new(),
+            false,
+            false,
+            MAX_NPC_TRACK_CHANGES,
+        )?;
         if plan.as_ref().is_some_and(|plan| {
             plan.quest != "oteryn:quest.marlin_trophy_quest"
                 || plan.effects.iter().any(|effect| {
