@@ -1,6 +1,6 @@
 # QMECH missing-mechanics index
 
-**65 unique mechanics: 3 DONE, 38 CLAIMED, 23 OPEN, 1 OWNER. OPEN rows block 68 distinct named quests. Four additional NPC interaction groups have unmapped quest identities; all four are CLAIMED and are excluded from quest counts.**
+**65 unique mechanics: 3 DONE, 39 CLAIMED, 22 OPEN, 1 OWNER. OPEN rows block 67 distinct named quests. Four additional NPC interaction groups have unmapped quest identities; all four are CLAIMED and are excluded from quest counts.**
 
 Indexed all **32** `MISSING-*.md` reports and `CLAIMS.md` against qmech `84cbdfb9f6c6f7f1a68ade136a53d4b93cbb4cd3`. Counts describe reported stage/route blockers, not whole quests newly playable after a fix. Quest names are unioned across OPEN rows, never summed. Multiple engine capabilities can block one quest.
 
@@ -78,7 +78,7 @@ Deduplication and status decisions:
 | M50 | Cross-floor elevator batch Item movement and displacement of every platform occupant | 1 — Goblin Merchant Quest | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
 | M51 | Credited arena deaths compose source pillar removal/next-pit portal with exclusive pit lease and kick/reset | 1 — Barbarian Arena Quest | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
 | M52 | Source Feroxa occurrence selection/RNG and boss lifecycle (full-moon gate alone is insufficient) | 1 — Grimvale Mini World Change | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
-| M53 | Locked live necklace-slot prerequisite in source NPC dialogue | 1 — Blood Brothers Quest | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
+| M53 | Locked live necklace-slot prerequisite in source NPC dialogue | 1 — Blood Brothers Quest | [questpc-pc2](MISSING-questpc-pc2.md) | ENGNPC2 | CLAIMED |
 | M54 | Source-saga completion scoped to mainland/Rook/source aliases under a shared canonical quest | 1 — Citizen Outfits Quest | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
 | M55 | Occurrence-scoped personal quest progress/completion for repeatable world events (distinct from reward-MINT epochs) | 18 — Awash World Change; Bank Robbery Mini World Change; Bored Mini World Change; Chakoya Iceberg Mini World Change; Chyllfroest Mini World Change; Deeplings World Change; Demon Wars World Change; Devovorga's Essence Mini World Change; Down the Drain Mini World Change; Fire from the Earth Mini World Change; Fury Gates Mini World Change; Hive Born World Change; Hive Outpost Mini World Change; Horse Station World Change; Insectoid Invasion World Change; Jungle Camp Mini World Change; Kingsday Mini World Change; Lumberjack Mini World Change | [questpc-pc2](MISSING-questpc-pc2.md) | none | OPEN |
 | M56 | Exact self-target quest Item consumption and protective condition consequence | 1 — The Cursed Crystal Quest | [questpc4](MISSING-questpc4.md) | none | OPEN |
