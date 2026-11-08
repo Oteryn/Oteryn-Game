@@ -1655,3 +1655,25 @@ Keep HEAD and source stable during PG build/run. All old public lane commits
 are retained; reused main83 canonical World APIs plus6f physicalItem lane fix.
 After PG proof, finish explicit native bindings boot admission, then42claim/use.
 Next-plan facts in/tmp/qengine2-next-native-admission-plan.md. Packet44/66 unchanged.
+
+04:47UTC merged ownPG GREEN:6/6 PASS364.679s; build10m33s, all6 realPG markers
+>1second. World normal65.492766496s/full66.639098846s/NPC-carried121.746132478s;
+sequential kill122.94132645s/burst118.672859553s/DragonSlayer123.873045429s.
+Proof PG-WORLD-DELIVERY-2026-11-08.json againstaa85b2500/main6f61ac15d. World
+item-delivery slice QUALIFIED;68binding feature remains IN_PROGRESS only for
+explicit native content admission.320questunits40.75s also green. No Rust or
+content behavior changed after that push. Prepush generation/fmt/workspace
+refresh session97763; Main fetched unchanged. Publish proof once mandatory
+checks finish, announce ENGINE-DONE authored_world_item_delivery with canonical
+APIs. Remaining3crate unit suites pending under PREPUSH2; no full-suite claim.
+Next admission draft/plan are ONLY in/tmp/qengine2-native-admission and
+/tmp/qengine2-next-native-admission-plan.md. Packet44/66 unchanged. Continue
+admission immediately after proof push; then42definition-ready claim/use.
+
+04:58UTC qualification publication gates complete: fresh workspace all-target
+check PASS6m08s, fmt, native generation/freshness, registry/itemaudit and official
+World pin-refresh PASS (unchanged37f50ed7). Main6f still current on finalfetch.
+Publish merged6PG proof now; shared authored_world_item_delivery QUALIFIED.
+Next: native boot recipe admission; scratch drafts already available. No code
+change in this proof batch; Rust clippy from tested merged source remains green.
+Packet44/66 unchanged; no whole-quest qualification claimed by shared fixture.

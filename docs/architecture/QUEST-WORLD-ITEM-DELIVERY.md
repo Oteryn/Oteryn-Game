@@ -24,7 +24,14 @@ Reuse: main `83acbdac3` (QUESTPC4), questpc3
 migration1553 are removed in favor of main's existing transaction owner.
 
 Synthetic real-dispatch cases live in `postgres_tests/authored_world_rewards.rs`.
-The original PostgreSQL RED ran49.876s; the premerge GREEN run passed all three
-selected cases in113.478s (normal gift56.625s, full backpack56.737s, retained
-NPC/carried delivery98.925s). Merged-main PostgreSQL refresh is pending; this
-checkpoint does not qualify a production quest or claim that refresh passed.
+The original PostgreSQL RED ran for 49.876s. After merging main `6f61ac15d`, all six
+selected real-dispatch PostgreSQL cases passed in 364.679s on `aa85b2500`:
+world delivery/replay 65.493s, full-backpack rollback 66.639s, NPC/carried
+exchange 121.746s, sequential kills 122.941s, queued burst 118.673s, and retained
+Dragon Slayer 123.873s (completion-marker durations). The normal world case also
+proves the completed USE and MINT receipts share one database transaction.
+All 320 quest unit tests passed in 40.75s, including distinct definition encoding
+for authored kill thresholds (tag `11`) and main's bound-set operation (tag `7`).
+
+This qualifies the shared delivery mechanic. It does not qualify a production
+quest or complete the separate native authored-binding boot admission feature.

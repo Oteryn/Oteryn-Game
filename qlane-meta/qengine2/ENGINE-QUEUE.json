@@ -8,10 +8,20 @@
       "state": "IN_PROGRESS",
       "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
       "remaining": [
-        "world item delivery",
-        "explicit native content admission",
-        "real-dispatch world qualification"
-      ]
+        "explicit native content admission"
+      ],
+      "world_delivery_qualification": {
+        "state": "QUALIFIED",
+        "source_sha": "aa85b250027fa68c88c391f6cda490f0764dbf02",
+        "proof": "PG-WORLD-DELIVERY-2026-11-08.json",
+        "api": [
+          "Trigger::MapUse",
+          "Bindings::attach",
+          "world_callbacks::CallbackEffects::item_reward",
+          "RevisionSlot::commit_world_callback_with_items",
+          "DurabilityRoot::commit_character_world_callback_with_items"
+        ]
+      }
     },
     {
       "feature": "definition_ready_reward_claim_use",

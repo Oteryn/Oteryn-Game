@@ -40,3 +40,9 @@ real deaths are captured before settlement, then credited exactly once each.
 Main commit `6738c1da7ad5cf35110145fe33dfa9ea377ab0d7` already preserves the mission epoch by removing unchanged
 native effects before receipt/track writes (`quest_state/writer.rs:709–710`).
 Ordinary mission and reset writes continue to advance the gate revision.
+
+After merging main `6f61ac15d`, the authored threshold operation uses definition
+encoding tag `11`, preserving main's published bound-set tag `7`. The merged
+sequential/burst and retained Dragon Slayer PostgreSQL cases passed on `aa85b2500`
+with completion markers of 122.941s, 118.673s, and 123.873s. No production quest binding
+was added by these shared-engine tests.
