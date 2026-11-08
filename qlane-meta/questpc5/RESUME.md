@@ -15,3 +15,6 @@ World pin-refresh and pin-check PASS; pinned digest unchanged. Final origin/main
 
 Continuation recheck: ENGNPC3423ac56e adds sixteen-track reward guards/proofs, not the missing personal marker or guarded taming. Main and the other checked engine heads remain unchanged; all ten WAITING-ENGINE rows remain current.
 Final continuation validation after main6ef6b0cad merge: workspace all-targets PASS (4m00s), fmt PASS, generation no changes, rebuilt world pin tool and pin-refresh/pin-check PASS, duplicate migrations PASS. No new gameplay or PG qualification.
+
+Continuation: merged main e9276ad7e (login challenge/client settings); checked ENGNPC e22dff551 (paid travel confirmation ownership). These changes supply none of the ten waiting contracts. Historical thirteen qualifications remain historical.
+Validation on main e9276ad7e: workspace all-targets PASS (3m48s), fmt PASS, generation no changes, world pin-refresh/pin-check PASS, duplicate migrations PASS. No new gameplay/PG qualification.

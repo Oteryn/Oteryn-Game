@@ -418,19 +418,19 @@
     "world_pins": "PASS pin-refresh and pin-check; existing digest unchanged"
   },
   "continuation_engine_recheck": {
-    "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf",
-    "main_unchanged": true,
+    "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf",
+    "main_unchanged": false,
     "other_engine_heads_unchanged": true,
-    "result": "ENGNPC adds atomic sixteen-track reward guards; no personal map-marker delivery or quest-guarded taming. All ten waiting rows retain their missing contract.",
+    "result": "ENGNPC adds paid travel confirmation ownership; main adds login challenge and client settings. Neither adds any of the ten missing quest contracts.",
     "post_merge_validation": {
-      "main": "6ef6b0cad",
-      "workspace_all_targets": "PASS 4m00s",
+      "main": "e9276ad7e",
+      "workspace_all_targets": "PASS 3m48s",
       "fmt": "PASS",
       "generation": "PASS no changes",
-      "pin_tool": "rebuilt from merged source",
       "pin_refresh_and_check": "PASS",
       "duplicate_migrations": "PASS",
       "unit_and_pg": "No authored crate, content or PG changes; no new gameplay qualification"
-    }
+    },
+    "latest_main": "e9276ad7e"
   }
 }

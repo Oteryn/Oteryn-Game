@@ -130,12 +130,12 @@
       "owner": "ENGENC / QENGINE2",
       "feature": "Fenced item-on-world-target relocation of one exact live Creature with quest progress.",
       "evidence": "CallbackEffectSet supports player teleport; live Creature relocation is still a separate engine request.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -191,12 +191,12 @@
       "owner": "ENGITEM / QENGINE2",
       "feature": "Claimant-fenced credit for actual loot pickup from the exact killed Creature.",
       "evidence": "ENGENC4ffd19f3 changes private boss-loot admission, not the quest pickup/provenance bridge. Kill alone or inventory presence is insufficient.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -512,12 +512,12 @@
       "owner": "ENGITEM / QENGINE2",
       "feature": "Literal readable reward text and fenced mutable Ground stack/order predicates.",
       "evidence": "ItemReward exposes item/count/contents; WorldRequirement exposes only position/immovable appearance. Preserve existing pickup/drop ownership.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -723,12 +723,12 @@
       "owner": "QENGINE2",
       "feature": "Read-only Bigfoot rank>=2 prerequisite alongside a local World quest transition.",
       "evidence": "Existing preserve is not an arbitrary foreign quest read; do not write/fabricate the Bigfoot rank.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -788,12 +788,12 @@
       "owner": "QENGINE2 / ENGITEM",
       "feature": "Quest-cycle-scoped repeatable World MINT and authored World transaction-clock integration.",
       "evidence": "QENGINE2 world_callback_transaction_clock_operations is IN_PROGRESS with post-merge validation pending; fixture-only ENGITEM clock is not delivery of the authored World API.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -858,12 +858,12 @@
       "owner": "ENGITEM / QENGINE2",
       "feature": "Exact nested native reward leaf selection under the original once-only chest ledger.",
       "evidence": "Need shield3424 from UID6062 source bag while retaining the source claim and excluding key3702/extras; no parallel MINT.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -928,12 +928,12 @@
       "owner": "ENGENC / ENGITEM / QENGINE2",
       "feature": "Claimant-attributed real capture/pickup credit and personal daily quest clock/cycle integration.",
       "evidence": "Reuse existing wolf trap and World contribution owner; do not add a second global counter or substitute a presence check.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -1141,12 +1141,12 @@
       "owner": "ENGNPC / ENGITEM / QENGINE2",
       "feature": "Fenced personal NPC map marker plus quest-guarded object taming with atomic progress.",
       "evidence": "NpcRuleEffect::MapMark is a source-rule no-op, RewardCallback has no native marker delivery, and TamingRule has no quest progress transaction. Two earlier contact boundaries are pushed, not whole-quest qualification.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -1194,12 +1194,12 @@
       "owner": "ENGITEM",
       "feature": "Recipe-scoped nondecaying specimen variant preserving the original timed Item.",
       "evidence": "Selected course removes decay; original specimen4837 has600000ms lifetime. Do not overwrite its known temporal semantics globally.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
@@ -1593,12 +1593,12 @@
       "owner": "ENGNPC / QENGINE2",
       "feature": "Observed temporary disguise, matching portal predicate, restoration on exit.",
       "evidence": "QENGINE2 item_look_disguise_restore remains QUEUED; preserve questpc8 reusable groundwork without declaring the complete eight-disguise route playable.",
-      "checked_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "checked_main": "e9276ad7e",
       "checked_engine_heads": {
         "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
         "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
         "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
-        "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf"
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
       },
       "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
     }
