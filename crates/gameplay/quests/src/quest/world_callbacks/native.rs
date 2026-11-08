@@ -1,12 +1,12 @@
-//! Closed source bindings and committed feedback for batch four's two native rules.
+//! Closed source bindings and committed feedback for native world rules.
 use super::{Callback, NativeRule, Position, Trigger};
 use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
     let (trigger, position, action, ranges, source) = match rule {
-        // The progress planner is usable by the fenced owner, but no authored
-        // callback is admitted until its map identity and paint custody are bound.
-        NativeRule::IceSealPaint { .. } => return false,
+        NativeRule::IceSealPaint { seal } => {
+            return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
+        }
         NativeRule::CultsSymbol { symbol } => {
             let Some(position) = cults::SYMBOL_POSITIONS.get(usize::from(symbol)).copied() else {
                 return false;

@@ -6,6 +6,7 @@
 //! changes progress only; its caller owns tool custody and map-object authority.
 use super::{QuestRefusal, distinct_targets};
 
+pub mod callbacks;
 mod custody;
 pub use custody::consumes_paint;
 pub mod targets;
