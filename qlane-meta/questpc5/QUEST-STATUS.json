@@ -876,7 +876,7 @@
     "title": "Targuna Quest",
     "mechanism": "native_item_identity_charges_lifetime",
     "status": "UNFINISHED",
-    "blocker": "Exact Ram object53439, turnip53073, mount identity and source rule are resolved. Author personal errands and reuse requested guarded object taming; no Creature substitution.",
+    "blocker": "Sterling acceptance and isolated Morla map grant are qualified. Remaining: return to Sterling/chest, Lizzie/Lizard Commander, Emiliana/Herald/turnips and guarded Ram object taming; selected s2 and whole quest remain unfinished.",
     "from_lanes": [
       "questpc4"
     ],
@@ -943,6 +943,15 @@
         "marker": "TARGUNA_FIRST_CONTACT_PROVEN stage=0 receipts=1 rewards=0 completes=false",
         "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log"
       }
+    },
+    "n2_map_batch": {
+      "state": "QUALIFIED isolated Morla map reward; whole quest UNFINISHED",
+      "scope": "Isolated Morla map reward after an arranged stage0 prerequisite; no travel, return-to-Sterling, chosen s2 completion or whole-quest completion claimed.",
+      "proof": "TARGUNA-MORLA-PROOF.json",
+      "red_pg_seconds": 47.965954115,
+      "green_pg_seconds": 96.253608336,
+      "progress": "Intermediate map acquisition0->1; chosen explore s2 still requires returning to Sterling.",
+      "shipping_checks": "PASS ownPG18.6 96.253608336s, authoring105modules1122tests, tree/equivalence, all generated files/pins, workspacealltargets8m30s, clippy4m38s, fmt. Broader3-crate units pending under PREPUSH-2 cadence exception."
     }
   },
   {

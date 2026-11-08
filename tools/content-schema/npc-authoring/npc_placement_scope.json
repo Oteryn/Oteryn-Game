@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. QUESTPC5-N2: Sterling first Targuna contact at the exact agreeing Crystal/retained BR cell; no other Targuna quest stage is activated.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. QUESTPC5-N2: Sterling first Targuna contact at the exact agreeing Crystal/retained BR cell; no other Targuna quest stage is activated. QUESTPC5-N2-MAP: Morla chosen map contact at the exact agreeing retained Crystal/BR cell; no later Targuna objective or completion is activated.",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.al_dee",
@@ -36,6 +36,7 @@
     "oteryn:npc.mayor_pocaro",
     "oteryn:npc.miraia",
     "oteryn:npc.morgan",
+    "oteryn:npc.morla",
     "oteryn:npc.muriel",
     "oteryn:npc.norma",
     "oteryn:npc.obi",
@@ -78,6 +79,13 @@
         "x": 31928,
         "y": 31903,
         "z": 7
+      }
+    ],
+    "oteryn:npc.morla": [
+      {
+        "x": 33514,
+        "y": 32748,
+        "z": 8
       }
     ]
   }

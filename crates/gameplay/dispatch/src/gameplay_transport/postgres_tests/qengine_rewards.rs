@@ -23,7 +23,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name == "qengine-rewards-questpc5-targuna-sterling" {
+            if name == "qengine-rewards-questpc5-targuna-morla-map" {
+                Position { x: 33515, y: 32747, floor: -8 }
+            } else if name == "qengine-rewards-questpc5-targuna-sterling" {
                 Position { x: 31929, y: 31902, floor: -7 }
             } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
@@ -811,6 +813,10 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
     }
+    if name == "qengine-rewards-questpc5-targuna-morla-map" {
+        let server: String = sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+        eprintln!("POSTGRES_CASE_STARTED questpc5_targuna_morla_map server_version={server}");
+    }
     let key = match name {
         "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
@@ -827,6 +833,7 @@ pub(super) async fn exercise(
         "qengine-rewards-hallowed" => "hallowed-holy-water",
         "qengine-rewards-outfox" => "outfox-helmet",
         "qengine-rewards-backpack" => "sam-backpack",
+        "qengine-rewards-questpc5-targuna-morla-map" => "questpc5-targuna-morla-map",
         _ => return Err("unknown reward scenario".into()),
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
@@ -861,6 +868,11 @@ pub(super) async fn exercise(
     }
     seed(owner, admitted, &setup, 9000).await?;
     let [npc] = super::classic_quests::install(owner, admitted, [callback.npc.as_str()]).await?;
+    if name == "qengine-rewards-questpc5-targuna-morla-map" {
+        let at = owner.runtime.lock().await.visible_entities().npcs.into_iter()
+            .find(|entry| entry.actor.placement_identity() == npc.identity).ok_or("Morla actor")?.position;
+        assert_eq!((at.x, at.y, at.floor), (33514, 32748, 8));
+    }
     let mut selected = admitted
         .continuity
         .selected_capabilities

@@ -59,6 +59,25 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         )
         self.assertEqual(count, 6)
 
+    def test_targuna_declares_only_the_exact_new_map_without_dropping_guards(self):
+        proof = document("oteryn:item.tibia.i53158")
+        fixed, count = regenerate(self.SOURCE, document(0, 1, 2, 3), document(4),
+                                  document(0), document(1), proof, proof)
+        self.assertEqual(count, 6)
+        self.assertIn('("QUESTPC5-TARGUNA-MAP", 1)', fixed)
+        self.assertIn("assert_eq!(venison.attributes.speed_bonus, Some(0))", fixed)
+        self.assertEqual(regenerate(fixed, document(0, 1, 2, 3), document(4),
+                                   document(0), document(1), proof, proof), (fixed, 6))
+        with self.assertRaisesRegex(ValueError, "Targuna source proof keys"):
+            regenerate(self.SOURCE, document(0, 1, 2, 3), document(4),
+                       document(0), document(1), None, proof)
+        with self.assertRaisesRegex(ValueError, "TARGUNA_MAP_COHORT_IDENTITY"):
+            regenerate(self.SOURCE, document(0, 1, 2, 3), document(4),
+                       document(0), document(1), document(5), document(5))
+        with self.assertRaisesRegex(ValueError, "Targuna source proof differs"):
+            regenerate(fixed.replace('("QUESTPC5-TARGUNA-MAP", 1)', '("QUESTPC5-TARGUNA-MAP", 2)'),
+                       document(0, 1, 2, 3), document(4), document(0), document(1), proof, proof)
+
     def test_duplicate_profile_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate production key"):
             self.generate(base=document(0, 0, 1, 2, 3))

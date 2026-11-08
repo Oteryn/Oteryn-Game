@@ -25,7 +25,10 @@ def keys(document):
     return set(rows)
 
 
-def regenerate(source, base, updates, qengine, npc, starting=None):
+def regenerate(source, base, updates, qengine, npc, starting=None, targuna=None):
+    if targuna is not None:
+        from questpc5_targuna_profile_cohort import declare
+        source = declare(source, targuna)
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
             "_", ""
@@ -39,6 +42,8 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
     counts = {name: int(count.replace("_", "")) for name, count in cohorts}
     if counts.get("QNPCFX") != len(npc["records"]):
         raise ValueError("NPC source proof differs from the declared cohort")
+    if targuna is not None and counts.get("QUESTPC5-TARGUNA-MAP") != 1:
+        raise ValueError("Targuna source proof differs from the declared cohort")
     extra = re.search(r"cohorts add (\d+) \+ (\d+) keys", source)
     if extra is None:
         raise ValueError("missing independently declared floor/callback cohorts")
@@ -52,6 +57,10 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
     engine_keys, npc_keys = keys(qengine), keys(npc)
     if engine_keys & npc_keys or not (engine_keys | npc_keys) <= actual:
         raise ValueError("source proof keys are overlapping or absent")
+    if targuna is not None:
+        map_keys = keys(targuna)
+        if map_keys & (engine_keys | npc_keys) or not map_keys <= actual:
+            raise ValueError("Targuna source proof keys overlap or are absent")
     if declared != len(actual):
         raise ValueError(
             f"declared cohorts={declared}, generated profile union={len(actual)}"
@@ -77,6 +86,7 @@ def main():
         "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json",
         "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
         "content/items/definitions/starting-loadout-profiles.json",
+        "tools/content-schema/native-gameplay/questpc5-targuna-map-profile.json",
     )
     source = TEST.read_text()
     generated, count = regenerate(

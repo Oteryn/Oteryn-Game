@@ -376,6 +376,16 @@
       ]
     },
     {
+      "npc": "oteryn:npc.morla",
+      "greet": "Welcome to Aragonia. Ask about the old treasure map.",
+      "farewell": "Safe travels.",
+      "walkaway": "Return when you are ready.",
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/79/definition:sha256:359681e392e0588e5f76ef80af7ff6f780550271da2bdacfa0f32f5754f84c02",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/morla.lua:58,110-114:sha256:6d4996501d42f7750acf94e99f8e9b6fc36e65d88d77ae190f5d73875b5b62ec"
+      ]
+    },
+    {
       "npc": "oteryn:npc.muriel",
       "greet": "Greetings, |PLAYERNAME|! Looking for wisdom and power, eh?",
       "farewell": "Farewell.",

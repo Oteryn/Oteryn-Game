@@ -30,3 +30,6 @@ def extend_rewards(callbacks, greetings):
         take=[], give=None, outfit=None, achievement=None,
         reply=['Ask Morla on Aragonia about the old treasure map, then return to me.'],
         sources=[source]))
+
+    import targuna_morla_contact
+    targuna_morla_contact.extend_rewards(callbacks, greetings, recipe, source)

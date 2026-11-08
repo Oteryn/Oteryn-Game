@@ -308,7 +308,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/qready2_native_profiles.py
     // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
     ("QREADY2", 5),
-    // END GENERATED QREADY PROFILE ADDITIONS
+    // END GENERATED QREADY PROFILE ADDITIONS,
+    ("QUESTPC5-TARGUNA-MAP", 1),
 ];
 
 #[test]
