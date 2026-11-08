@@ -459,7 +459,7 @@ fn producer_world(
             blocks_projectile: None,
         }),
     });
-    for (floor, x, y) in [(-11, 33389, 31539), (-11, 33457, 31531)] {
+    for (floor, x, y) in [(-11, 33380, 31537), (-11, 33457, 31531)] {
         cells.entry((floor, x, y)).or_default();
     }
     cells
@@ -663,7 +663,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         .select(bundle_digest, firing)
         .map_err(debug)?;
     assert_eq!(selected.definition.waves.len(), 1);
-    assert_eq!(selected.definition.waves[0].delay_ms, 61_000);
+    assert_eq!(selected.definition.waves[0].delay_ms, 75 * 60_000);
     let first_area = selected
         .areas
         .get(&selected.definition.waves[0].entries[0].area_anchor)
@@ -671,8 +671,8 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     assert_eq!(
         first_area.from,
         RaidPosition {
-            x: 33389,
-            y: 31539,
+            x: 33380,
+            y: 31537,
             floor: 11
         }
     );
@@ -749,7 +749,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
     ));
     let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
     let now = i64::from(selected.definition.waves.first().ok_or("wave")?.delay_ms);
-    for announcement_at in [1_000, 30_000, 60_000] {
+    for announcement_at in selected.definition.announcements.iter().map(|notice| i64::from(notice.delay_ms)) {
         let announcement = harness
             .root
             .advance_raid_run(
@@ -996,7 +996,7 @@ async fn producer_scenario(harness: &Harness) -> TestResult {
         "PG execution duration must exceed1s"
     );
     eprintln!(
-        "WORLDCHG-Q PG EXECUTED: Grimvale native61s final wave, source Feroxa form handoffs, exact1949/22761 ingress, replay and close; elapsed={:?}",
+        "WORLDCHG-Q PG EXECUTED: Grimvale native75min source wave, source Feroxa form handoffs, exact1949/22761 ingress, replay and close; elapsed={:?}",
         start.elapsed()
     );
     Ok(())

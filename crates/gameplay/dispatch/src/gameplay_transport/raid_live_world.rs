@@ -160,8 +160,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// The admitted XML variant opens after its final successful native wave (61s),
-/// not the donor Lua's separate random/15+30-minute sequence. Until-reset completion
+/// The source Lua occurrence opens after its final successful native wave (75 minutes).
+/// Until-reset completion
 /// retains this projection; revocation restores the original1949 native travel.
 fn final_wave_placed(
     selected: &SelectedRaid,

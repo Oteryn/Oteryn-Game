@@ -23442,63 +23442,71 @@
         {
           "announcements": [
             {
-              "delay_ms": 1000,
+              "delay_ms": 0,
               "kind": "advance",
-              "raw_delay_ms": 1000,
+              "raw_delay_ms": 0,
               "source": {
                 "evidence": "OTS_HYPOTHESIS_ONLY",
-                "line": 4,
-                "path": "data-global/raids/edron/feroxa.xml",
+                "line": 21,
+                "path": "data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua",
                 "repository": "zimbadev/crystalserver",
-                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-                "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1"
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "sha256": "391ab1225bd3ca4a777b897779fa209b23f4221d17c427fadbf5fe25fc9a3934"
               },
-              "text": "An ancient evil is awakening in the grimvale mines."
+              "text": "Grimvale drowns in werecreatures as the full moon reaches its apex and ancient evil returns."
             },
             {
-              "delay_ms": 30000,
+              "delay_ms": 2700000,
               "kind": "advance",
-              "raw_delay_ms": 30000,
+              "raw_delay_ms": 2700000,
               "source": {
                 "evidence": "OTS_HYPOTHESIS_ONLY",
-                "line": 5,
-                "path": "data-global/raids/edron/feroxa.xml",
+                "line": 93,
+                "path": "data-global/lib/quests/grimvale.lua",
                 "repository": "zimbadev/crystalserver",
-                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-                "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1"
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "sha256": "b615f42cf2c41d1c7d2479c3037192d9bbab412fd0e1b63348982067ac1969bc"
               },
-              "text": "Werewolfs entities are entering the  mortal realm in the grimvale mines."
+              "text": "Half of the current full moon is visible now, there are still a lot of clouds in front of it."
             },
             {
-              "delay_ms": 60000,
+              "delay_ms": 3600000,
               "kind": "advance",
-              "raw_delay_ms": 60000,
+              "raw_delay_ms": 3600000,
               "source": {
                 "evidence": "OTS_HYPOTHESIS_ONLY",
-                "line": 7,
-                "path": "data-global/raids/edron/feroxa.xml",
+                "line": 86,
+                "path": "data-global/lib/quests/grimvale.lua",
                 "repository": "zimbadev/crystalserver",
-                "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-                "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1"
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "sha256": "b615f42cf2c41d1c7d2479c3037192d9bbab412fd0e1b63348982067ac1969bc"
               },
-              "text": "The Feroxa master has revealed itself in the mines of grimvale."
+              "text": "The full moon is completely exposed: Feroxa awaits!"
             }
           ],
-          "key": "data-global/raids/edron/feroxa.xml",
+          "key": "data-global/lib/quests/grimvale.lua#full-moon-occurrence",
           "sources": [
             {
               "evidence": "OTS_HYPOTHESIS_ONLY",
-              "line": 1,
-              "path": "data-global/raids/edron/feroxa.xml",
+              "line": 7,
+              "path": "data-global/scripts/quests/grimvale/globalevents_grimvale_feroxa.lua",
               "repository": "zimbadev/crystalserver",
-              "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-              "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1"
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "391ab1225bd3ca4a777b897779fa209b23f4221d17c427fadbf5fe25fc9a3934"
+            },
+            {
+              "evidence": "OTS_HYPOTHESIS_ONLY",
+              "line": 25,
+              "path": "data-global/lib/quests/grimvale.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+              "sha256": "b615f42cf2c41d1c7d2479c3037192d9bbab412fd0e1b63348982067ac1969bc"
             }
           ],
           "unresolved": [],
           "waves": [
             {
-              "delay_ms": 61000,
+              "delay_ms": 4500000,
               "entries": [
                 {
                   "amount": {
@@ -23510,8 +23518,8 @@
                     "coordinate_frame": "global-target-2026-09-27",
                     "from": {
                       "floor": 11,
-                      "x": 33389,
-                      "y": 31539
+                      "x": 33380,
+                      "y": 31537
                     },
                     "regions": [
                       {
@@ -23521,28 +23529,27 @@
                     ],
                     "to": {
                       "floor": 11,
-                      "x": 33389,
-                      "y": 31539
+                      "x": 33380,
+                      "y": 31537
                     },
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
-                  "area_anchor": "raid-anchor:33389_31539_11-33389_31539_11",
+                  "area_anchor": "raid-anchor:33380_31537_11-33380_31537_11",
                   "boss": true,
-                  "boss_source": null,
                   "creature": "oteryn:creature.feroxa",
                   "source": {
                     "evidence": "OTS_HYPOTHESIS_ONLY",
-                    "line": 9,
-                    "path": "data-global/raids/edron/feroxa.xml",
+                    "line": 45,
+                    "path": "data-global/lib/quests/grimvale.lua",
                     "repository": "zimbadev/crystalserver",
-                    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-                    "sha256": "ff9e7f1c8cba5ba5c6d8cb20093f647d2badeb6e5a2c795e17a6f2ec7e12faa1"
+                    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                    "sha256": "b615f42cf2c41d1c7d2479c3037192d9bbab412fd0e1b63348982067ac1969bc"
                   },
                   "source_name": "Feroxa",
                   "spawn_mode": "single"
                 }
               ],
-              "raw_delay_ms": 60000
+              "raw_delay_ms": 4500000
             }
           ]
         }
