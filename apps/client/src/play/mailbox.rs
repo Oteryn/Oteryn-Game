@@ -163,6 +163,7 @@ pub(super) struct Mailbox {
     pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
+    pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
     pub(super) weapon_proficiency: oteryn_client_ui::weapon_proficiency::WeaponProficiencyPanel,
 
@@ -375,6 +376,9 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
@@ -420,6 +424,9 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.arena.end();
         mailbox.properties.end();
         mailbox.weapon_proficiency = Default::default();
@@ -537,6 +544,9 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 impl Drop for PlayLink {
     fn drop(&mut self) {
         let mut mailbox = lock(&self.mailbox);
+        if let Some(launcher) = &mailbox.coin_shop {
+            launcher.end();
+        }
         mailbox.properties.end();
         mailbox.weapon_proficiency = Default::default();
         mailbox.imbue = Default::default();

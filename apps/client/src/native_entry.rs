@@ -1,8 +1,13 @@
 //! Native login composition: Platform credentials, runtime retry and TCP transport adapters.
+#[cfg(test)]
+#[path = "features/local-account-services/tests/entry.rs"]
+mod account_services_tests;
 mod admitted;
 mod authorize;
 mod challenge;
+mod coin_shop_entry;
 mod config;
+pub(crate) use coin_shop_entry::open as open_coin_shop;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -137,6 +142,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         )
         .await?;
         Ok(AdmittedSession {
+            character_id: self.login.character_id.to_owned(),
             character_name: self.character_name.clone(),
             session,
             world_id: self.grant.world_id.clone(),
@@ -161,3 +167,11 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         rejected(admission_class(class))
     }
 }
+
+#[cfg(test)]
+#[path = "features/local-coin-shop/tests/entry.rs"]
+mod coin_shop_tests;
+
+#[cfg(test)]
+#[path = "features/local-premium/entry_tests.rs"]
+mod premium_tests;

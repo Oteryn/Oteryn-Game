@@ -175,6 +175,9 @@ impl Stack {
             callback_timeout: Duration::from_secs(10),
             retry_unit: Duration::from_millis(10),
             open_browser: Arc::new(complete_browser_sign_in),
+            account_services: Arc::new(crate::account_services::present),
+            coin_shop: Arc::new(crate::coin_shop::present),
+            premium: Arc::new(crate::premium::present),
             select_character: Arc::new(|rows, _, _| {
                 crate::character_selection::SelectionAction::Play {
                     character_id: rows[0].character.character_id.clone(),

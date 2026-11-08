@@ -1,3 +1,5 @@
+#[path = "bazaar_tests.rs"]
+mod bazaar;
 #[path = "challenge_tests.rs"]
 mod challenge;
 
@@ -514,3 +516,6 @@ fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
     assert!(requests[6].starts_with("POST /api/v1/game-auth/tickets "));
     Ok(())
 }
+
+#[path = "coin_purchase_tests.rs"]
+mod coin_purchase_tests;

@@ -9,6 +9,7 @@ use oteryn_client_runtime::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Badges,
+    MiscResources,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
     Next,
@@ -23,6 +24,16 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Waiting for the server");
         return None;
     }
+    let auxiliary = matches!(intent, Intent::MiscResources);
+    if auxiliary && (p.tab != cyclopedia_character::CharacterTab::Misc || !p.misc_resources_due) {
+        return None;
+    }
+    if !auxiliary {
+        p.misc_resources_due = false;
+        if matches!(intent, Intent::Tab | Intent::SelectTab(_) | Intent::Badges) {
+            p.misc_general = None;
+        }
+    }
     match intent {
         Intent::SelectTab(tab) => {
             p.tab = tab;
@@ -34,8 +45,17 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     }
     let (kind, payload) = match intent {
         Intent::Badges => (387, Vec::new()),
-        Intent::Tab | Intent::SelectTab(_) | Intent::Next | Intent::Previous => {
-            let mut v = vec![p.tab as u8];
+        Intent::Tab
+        | Intent::SelectTab(_)
+        | Intent::Next
+        | Intent::Previous
+        | Intent::MiscResources => {
+            let requested = if auxiliary {
+                cyclopedia_character::CharacterTab::GeneralStats
+            } else {
+                p.tab
+            };
+            let mut v = vec![requested as u8];
             v.extend_from_slice(&p.offset.to_le_bytes());
             v.push(p.limit);
             if let Some(target) = p.target {
@@ -43,7 +63,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             }
             if cyclopedia_character::decode_tab_request(&v)
                 != Ok(TabRequest {
-                    tab: p.tab,
+                    tab: requested,
                     page: oteryn_client_runtime::character_info::PageRequest::new(
                         p.offset, p.limit,
                     )?,
@@ -56,7 +76,15 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             (388, v)
         }
     };
-    p.requested_tab = (kind == 388).then_some(p.tab);
+    p.auxiliary_pending = auxiliary;
+    if auxiliary {
+        p.misc_resources_due = false;
+    }
+    p.requested_tab = (kind == 388).then_some(if auxiliary {
+        cyclopedia_character::CharacterTab::GeneralStats
+    } else {
+        p.tab
+    });
     p.pending = true;
     p.command_kind = kind;
     p.feedback = None;
@@ -70,6 +98,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     let pending = p.pending;
     p.pending = false;
     let tab = p.requested_tab.take();
+    let auxiliary = std::mem::take(&mut p.auxiliary_pending);
     if !pending {
         return false;
     }
@@ -80,6 +109,15 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
         p.feedback = Some("The server refused the character query");
         return false;
     }
+    if auxiliary {
+        let Some(stats) = decode_general(&r.payload) else {
+            p.feedback = Some("The server returned invalid resource statistics");
+            return false;
+        };
+        p.misc_general = Some(stats);
+        p.feedback = None;
+        return true;
+    }
     let text = if p.command_kind == 387 {
         decode_badges(&r.payload)
     } else {
@@ -87,6 +125,52 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     };
     match text {
         Some(v) => {
+            let general = if tab == Some(cyclopedia_character::CharacterTab::GeneralStats) {
+                let Some(stats) = decode_general(&r.payload) else {
+                    p.feedback = Some("The server returned invalid general statistics");
+                    return false;
+                };
+                Some(stats)
+            } else {
+                None
+            };
+            p.combat = if matches!(
+                tab,
+                Some(
+                    cyclopedia_character::CharacterTab::Defence
+                        | cyclopedia_character::CharacterTab::Misc
+                )
+            ) {
+                cyclopedia_character::combat::CombatStats::decode(&r.payload).ok()
+            } else {
+                None
+            };
+            p.store = if tab == Some(cyclopedia_character::CharacterTab::StoreSummary) {
+                decode_store(&r.payload)
+            } else {
+                None
+            };
+            p.general = general;
+            if tab == Some(cyclopedia_character::CharacterTab::Misc) {
+                p.misc_resources_due = true;
+            }
+            if let Some(tab) = tab.filter(|t| {
+                matches!(
+                    t,
+                    cyclopedia_character::CharacterTab::RecentDeaths
+                        | cyclopedia_character::CharacterTab::RecentPvpKills
+                )
+            }) {
+                let Some(rows) = decode_history(&r.payload, tab, p.limit) else {
+                    p.feedback = Some("The server returned invalid character history");
+                    return false;
+                };
+                p.history = rows;
+                p.history_tab = Some(tab);
+            } else {
+                p.history.clear();
+                p.history_tab = None;
+            }
             p.result = Some(v);
             p.feedback = None;
             true
@@ -277,4 +361,91 @@ impl<'a> Reader<'a> {
         self.0 = &self.0[len..];
         Some(text)
     }
+}
+
+fn decode_history(
+    b: &[u8],
+    tab: cyclopedia_character::CharacterTab,
+    limit: u8,
+) -> Option<Vec<super::HistoryRow>> {
+    use cyclopedia_character::{CharacterTab, KillStatus};
+    if b.first() != Some(&(tab as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let count = r.count(limit)?;
+    let mut rows = Vec::with_capacity(usize::from(count));
+    for _ in 0..count {
+        let at = i64::from_le_bytes(r.bytes()?);
+        let status = if tab == CharacterTab::RecentPvpKills {
+            Some(match r.u8()? {
+                1 => KillStatus::Unjustified,
+                2 => KillStatus::GuildWar,
+                _ => return None,
+            })
+        } else {
+            None
+        };
+        rows.push(super::HistoryRow {
+            at,
+            status,
+            description: r.text()?.into(),
+        });
+    }
+    r.0.is_empty().then_some(rows)
+}
+
+fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralStats> {
+    if b.first() != Some(&(cyclopedia_character::CharacterTab::GeneralStats as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let experience = r.u64()?;
+    let level = r.u32()?;
+    let magic_level = r.u16()?;
+    let mut skills = [0; 7];
+    for skill in &mut skills {
+        *skill = r.u16()?;
+    }
+    let stamina_minutes = r.u16()?;
+    let offline_training_minutes = r.u16()?;
+    let known = r.u8()?;
+    let (health, mana) = (r.u32()?, r.u32()?);
+    let last_vitals = match known {
+        0 if health == 0 && mana == 0 => None,
+        1 => Some((health, mana)),
+        _ => return None,
+    };
+    r.0.is_empty()
+        .then_some(cyclopedia_character::GeneralStats {
+            experience,
+            level,
+            magic_level,
+            skills,
+            stamina_minutes,
+            offline_training_minutes,
+            last_vitals,
+        })
+}
+
+fn decode_store(b: &[u8]) -> Option<cyclopedia_character::StoreSummary> {
+    if b.first() != Some(&(cyclopedia_character::CharacterTab::StoreSummary as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let count = r.u8()?;
+    let mut blessings = Vec::with_capacity(usize::from(count));
+    for _ in 0..count {
+        blessings.push(r.text()?.into());
+    }
+    let permanent_prey_slots = r.u8()?;
+    let prey_wildcards = r.u8()?;
+    let hirelings = r.u8()?;
+    r.0.is_empty()
+        .then_some(cyclopedia_character::StoreSummary {
+            blessings,
+            permanent_prey_slots,
+            prey_wildcards,
+            hirelings,
+        })
 }

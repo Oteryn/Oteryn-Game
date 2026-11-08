@@ -3,5 +3,8 @@ use super::*;
 pub fn request(panel: &mut QuestPanel, query: &QuestLogQuery) -> Result<Vec<u8>, QuestRefusal> {
     let result = panel.state.command(query);
     panel.state.refusal = result.as_ref().err().copied();
+    if result.is_ok() {
+        panel.pending_query = Some(query.clone());
+    }
     result
 }
