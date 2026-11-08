@@ -13,6 +13,20 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
+
+fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    super::session_initialize::initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     mut session: T,
@@ -21,7 +35,7 @@ pub async fn run_session<T: Stepper>(
 ) {
     let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
     outbox.scope_receiver(&commands);
-    if let Err(error) = super::session_initialize::initialize(&session, &outbox) {
+    if let Err(error) = initialize(&session, &outbox) {
         #[cfg(test)]
         eprintln!("native initial projection failed: {error:?}");
         outbox.end(public_class(&error));
@@ -30,7 +44,7 @@ pub async fn run_session<T: Stepper>(
     let mut held = Vec::new();
     loop {
         if outbox.scope_needs_initialize()
-            && let Err(error) = super::session_initialize::initialize(&session, &outbox)
+            && let Err(error) = initialize(&session, &outbox)
         {
             #[cfg(test)]
             eprintln!("native successor projection failed: {error:?}");
@@ -88,6 +102,10 @@ pub async fn run_session<T: Stepper>(
                 match session.server_mechanic(&request).await {
                     Ok(response) => {
                         match request.capability {
+                            290 if request.command_type==505 => outbox.cast_chat_result(&response),
+                            290 => outbox.cast_control_result(&response),
+                            291 => outbox.cast_chat_result(&response),
+                            292 => outbox.cast_consent_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),

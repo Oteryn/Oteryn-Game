@@ -68,7 +68,7 @@ pub fn essence(item: &str) -> Option<&'static EssenceSource> {
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
-        key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
+        world_change: None,        key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None,
@@ -185,6 +185,7 @@ pub(super) fn extend(
         ),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: key.into(),
             quest: QUEST.into(),
             effects,
@@ -221,6 +222,7 @@ pub(super) fn extend(
             });
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: source.transition.into(),
             quest: QUEST.into(),
             effects: vec![effect(

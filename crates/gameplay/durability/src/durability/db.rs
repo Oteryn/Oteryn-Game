@@ -969,6 +969,23 @@ impl DurabilityRoot {
         self.ready_demand.store(true, Ordering::Release);
     }
 
+    /// Observe a real ready holder before continuing a multi-pass owner operation.
+    /// A completed pass can retire its holder while returning a valid result. Blind
+    /// backoff cannot replenish that connection in an owner without a node pump.
+    /// Reuse the root's coalesced, bounded maintenance window and observed pool
+    /// return; this neither authorizes a semantic pass nor reserves the holder.
+    pub async fn await_ready(&self) -> Result<(), DurabilityError> {
+        if self.is_ready() {
+            return Ok(());
+        }
+        self.request_ready();
+        if self.maintain_ready_once().await? {
+            Ok(())
+        } else {
+            Err(DurabilityError::RootUnavailable)
+        }
+    }
+
     /// Checkout only an already-idle holder. This method never establishes a connection.
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
         if let Some(holder) = self.pool.try_acquire() {

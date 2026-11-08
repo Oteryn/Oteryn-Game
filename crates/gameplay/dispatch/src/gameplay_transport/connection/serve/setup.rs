@@ -45,7 +45,12 @@ where
     if let Some(payload) = authority
         .activity_scope_snapshot(*admitted)
         .await
-        .map_err(|_| ServeEnd::Disconnected)?
+        .map_err(|_| {
+            failed(
+                "event=join_prepare_failed phase=activity_scope",
+                ServeEnd::Disconnected,
+            )
+        })?
     {
         // Initial/recovery projection is in the already admitted destination
         // stream. Its receipt binding precedes spatial and item state atomically.
@@ -58,7 +63,9 @@ where
             },
         );
     }
-    let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads).await?;
+    let mut initial = snapshot::initial(authority, actor, admitted, &mut payloads)
+        .await
+        .map_err(|end| failed("event=join_prepare_failed phase=initial", end))?;
     let mut items = snapshot::items(
         authority,
         actor,
@@ -67,7 +74,8 @@ where
         baseline,
         revision,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=items", end))?;
     if let Some((notice_revision, payload)) = initial.notices.take() {
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
@@ -85,7 +93,8 @@ where
         &mut payloads,
         &mut items.item_view,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=sessions", end))?;
     let world = snapshot::world(
         authority,
         actor,
@@ -95,7 +104,8 @@ where
         items.selected_capabilities,
         baseline,
     )
-    .await?;
+    .await
+    .map_err(|end| failed("event=join_prepare_failed phase=world", end))?;
     if admitted
         .continuity
         .selected_capabilities
@@ -104,11 +114,21 @@ where
         authority
             .player_trade_open(*admitted)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| {
+                failed(
+                    "event=join_prepare_failed phase=trade_open",
+                    ServeEnd::Disconnected,
+                )
+            })?;
         let (revision, state, _) = authority
             .player_trade_observation(admitted.game_session_id)
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .ok_or_else(|| {
+                failed(
+                    "event=join_prepare_failed phase=trade_observation",
+                    ServeEnd::Disconnected,
+                )
+            })?;
         payloads.push(
             crate::gameplay_transport::item_view::ItemViewSnapshotDomain {
                 domain_id: oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE,
@@ -180,6 +200,11 @@ where
         },
     )
     .await
+}
+
+fn failed(event: &'static str, end: ServeEnd) -> ServeEnd {
+    crate::gameplay_transport::operator_event(event);
+    end
 }
 
 async fn live<A: FreshAdmissionAuthority>(

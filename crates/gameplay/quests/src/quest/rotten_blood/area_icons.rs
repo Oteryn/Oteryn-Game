@@ -61,6 +61,7 @@ pub(crate) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             return Err(format!("duplicate Rotten area source transition {key}"));
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key,
             quest: QUEST.into(),
             effects: TRACKS

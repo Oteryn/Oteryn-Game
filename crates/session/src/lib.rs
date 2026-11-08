@@ -24,6 +24,12 @@ pub mod test_support {
 
 /// Account achievement query and typed result.
 pub mod account_achievements;
+/// Account-only observer transport; separate from the player Session.
+pub mod cast_chat;
+pub mod cast_viewer;
+
+/// Display and control vocabulary for S17.
+pub use oteryn_protocol_oteryn::cast;
 /// Typed fresh-session activity barriers and their scope namespace.
 pub mod activity_scope;
 

@@ -37,3 +37,20 @@ Fresh migration and own PostgreSQL mechanic cases remain pending.
 The owner-directed checkpoint also defers PREPUSH-2 regeneration and complete
 changed-crate unit runs. The interrupted focused run passed seven cases,
 interrupted two, and did not run nine; it is not a full passing test result.
+
+## Superseded by the final shipment instruction
+
+The owner subsequently authorized renumbering this branch's own unmerged
+migrations while merging main `47db34f09d760b2f435860c2f8d4ddf12a893e05`.
+The next-free-number tool included main and every open PR and reported 1357.
+The original 0984/0985 files are now 1357/1358, with their SQL unchanged;
+1420 remains the forward grant. No merged migration was edited. This removes
+the problematic grant from before 0996 without an extra cleanup migration.
+
+PROVEN: an isolated fresh database applied all 338 current migration bodies
+in numeric order, each in its own transaction, in 4.879 seconds. Versions
+996, 1357, 1358 and 1420 all completed. A subsequent actual SELECT under
+`oteryn_game_highscore_job` succeeded. This direct psql probe also populated
+migration checksums; the separate production-harness cases validate the
+SQLx migration path. The earlier rollback-only reproduction remains historical
+evidence of the original ordering defect, not the current migration layout.

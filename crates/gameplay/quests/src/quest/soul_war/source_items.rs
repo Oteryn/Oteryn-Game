@@ -128,6 +128,7 @@ pub(crate) fn extend(
         ("energy", NativeRule::SoulWarEnergy),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: format!("{TRANSITION_PREFIX}{name}"),
             quest: QUEST.into(),
             effects: rule
@@ -156,6 +157,7 @@ pub(crate) fn extend(
         ("cleansed-sanity", SANITY, SOURCE_USE_COOLDOWN_SECONDS),
     ] {
         transitions.push(QuestTransition {
+            world_change: None,
             key: format!("{TRANSITION_PREFIX}{name}"),
             quest: QUEST.into(),
             effects: vec![QuestEffect {

@@ -44,11 +44,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return Err(Rejected);
         }
-        if self
-            .root
-            .staff_account_banned(self.character, record.account_id)
-            .await
-            .map_err(|_| Unavailable)?
+        // This read follows another durable pass, which may retire the holder.
+        // Resolve the ban from current truth within the same admission budget;
+        // transient holder absence is not an authenticated grant verdict.
+        if budget
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(|_| Unavailable)?;
+                self.root
+                    .staff_account_banned(self.character, record.account_id)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?
         {
             return Err(Rejected);
         }

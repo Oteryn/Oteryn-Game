@@ -1380,8 +1380,22 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
         match self.root {
             Some(root) => {
-                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + self.backoff)
-                    .await;
+                let earliest = now + HOLDER_RETRY_FLOOR;
+                let latest = now + self.backoff;
+                if root.is_ready() {
+                    root.wait_holder_retry(earliest, latest).await;
+                } else {
+                    // A retired holder cannot emit a return notification. Service
+                    // real readiness within this same retry window, then retry on
+                    // its observed return; neither deadline nor refusal changes.
+                    let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
+                    let retry_at = if matches!(ready, Ok(Ok(()))) {
+                        earliest.min(latest)
+                    } else {
+                        latest
+                    };
+                    tokio::time::sleep_until(retry_at).await;
+                }
             }
             None => tokio::time::sleep(self.backoff).await,
         }
