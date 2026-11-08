@@ -1,4 +1,11 @@
 import unittest
+import copy
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import refresh_equipment_profile_pin as refresh
 
 from refresh_equipment_profile_pin import regenerate
 
@@ -86,6 +93,19 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
         self.assertIn('assert_eq!(venison.attributes.speed_bonus, Some(0))', fixed)
         self.assertEqual(regenerate(fixed, document(0, 1, 2, 3, 5), document(4),
                                     document(0), document(1), srx3=proof), (fixed, 6))
+
+    def test_registered_engine_subtraction_composes_with_source_cohorts(self):
+        source = self.srx3_source().replace(
+            '("QNPCFX", 1)', '("QNPCFX", 1), ("QENGINE-REWARDS", 1)'
+        ).replace('+ additions.len()', '+ (additions.len() - 1)')
+        proof = [("SRX3-TEST", document(2, 5), {"2"})]
+        args = (document(0, 1, 2, 3, 5), document(4), document(0), document(1))
+        fixed, count = regenerate(source, *args, srx3=proof)
+        self.assertEqual(count, 6)
+        self.assertIn('+ (additions.len() - 1)', fixed)
+        self.assertIn('+ SRX3_SOURCE_COHORTS.iter()', fixed)
+        self.assertIn('assert_eq!(venison.attributes.speed_bonus, Some(0))', fixed)
+        self.assertEqual(regenerate(fixed, *args, srx3=proof), (fixed, 6))
 
     def test_missing_new_source_profile_is_not_replaced_by_a_lower_count(self):
         with self.assertRaisesRegex(ValueError, "SRX3 source profile differs"):
@@ -177,6 +197,68 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
             self.coowned(proof=document(2))
 
 
+
+
+class M25SourceCohortTests(unittest.TestCase):
+    def test_primal_pod_replays_the_authoritative_registration_top_order(self):
+        cohorts = refresh.source_cohorts(refresh.ROOT)
+        document = next(document for name, document, _ in cohorts
+                        if name == "SRX3-PRIMAL-POD")
+        row = next(row for row in document["records"]
+                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i39176")
+        house = refresh.importlib.import_module("house_decoration_actions")
+        overlay = json.loads((refresh.ROOT / house.PROFILES).read_bytes())
+        self.assertEqual(overlay["always_on_top"]["39176"], 3)
+        self.assertIs(row["attributes"].get("always_on_top"), True)
+        self.assertEqual(row["attributes"].get("always_on_top_order"), 3)
+        # Registration adds source order, never a new identity or custody rule.
+        self.assertEqual(refresh.keys(document), {"oteryn:item.tibia.i39176"})
+        self.assertEqual(row["admission"], {"materializable": True,
+            "stack_class": "NonStackable", "legal_destinations": ["Ground"]})
+
+    def test_m25_records_are_independently_qualified_before_counting(self):
+        declaration = ("M25-GALTHEN-CORPSES", "m25_corpse_items", ())
+        self.assertIn(declaration, refresh.SRX3_SOURCES)
+        cohorts = refresh.source_cohorts(refresh.ROOT)
+        selected = [row for row in cohorts if row[0] == declaration[0]]
+        self.assertEqual(len(selected), 1)
+        _, document, previous = selected[0]
+        self.assertEqual(previous, set())
+        self.assertEqual(refresh.keys(document), {
+            f"oteryn:item.tibia.i{item}" for item in
+            (42069, 42070, 42071, 42072, 44684, 44685, 44686, 44687)
+        })
+        owner = refresh.importlib.import_module("m25_corpse_items")
+        proven, _ = owner.checked_packet(refresh.ROOT)
+        taxonomy = {row["target"]["key"]: row["source_taxonomy"]
+                    for row in json.loads((refresh.ROOT / "content/items/taxonomy/items.json").read_bytes())["records"]}
+        expected = copy.deepcopy(proven)
+        for row in expected["records"]:
+            key = row["production_definition"]["production_key"]
+            if key in taxonomy and "taxonomy" not in row["authoring"]:
+                row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
+        house = refresh.importlib.import_module("house_decoration_actions")
+        overlay = json.loads((refresh.ROOT / house.PROFILES).read_bytes())
+        house.apply_top_order(expected["records"], overlay)
+        self.assertEqual(document, {"records": sorted(expected["records"], key=lambda row: row["production_definition"]["production_key"])})
+
+    def test_m25_corrupt_source_packet_never_becomes_a_count_only_cohort(self):
+        # Load the ordinary owner chain first, as the production helper does.
+        refresh.source_cohorts(refresh.ROOT)
+        owner = refresh.importlib.import_module("m25_corpse_items")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in (owner.PATH, owner.PACKET, owner.PIN_PATH,
+                         "content/items/taxonomy/items.json"):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes((refresh.ROOT / name).read_bytes())
+            data = json.loads((root / owner.PATH).read_bytes())
+            data["records"].pop()
+            (root / owner.PATH).write_bytes(owner.encode(data))
+            with patch.object(refresh, "SRX3_SOURCES", (("M25-GALTHEN-CORPSES", "m25_corpse_items", ()),)):
+                with self.assertRaisesRegex(ValueError, "M25_CAPTURE_DRIFT"):
+                    refresh.source_cohorts(root)
 
 if __name__ == "__main__":
     unittest.main()

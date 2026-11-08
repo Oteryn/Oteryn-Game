@@ -11,12 +11,15 @@ import world_objects
 
 ROOT = Path(__file__).resolve().parents[3]
 IDENTIFIERS = frozenset([20661,33067,33068,34009,39095,23467,23468,33017,42852,42941,42944,42947,42949,42950,42952,42958,42961,42973,42974,42975,42976,42977,42978,42979,42981,42987,42991,42995,42997,42370,42371,42374,42376,42377,42380,42382,42385,42654,42655,42656,42658,42659,42660,42665,42666,42667,42753,42856,42858,42859,42865,43358,43359,43360,43361,43362,43363,43364,43365,43366,33066,33069,10649,10650,10653,10654,10728,10730,10735,10736,10737,10740,10747,33070,25181,42940,42982,42983,43308,43309,43311,43312,43313,43314,43315,43316,43317,32898,42379,42651,42653,43310,42662,42663,42664,42680,42681,42863,42864,43089,43092,11075,11077,11079,11102,11103,11104,11105,34943,34946,34951,34953,42880,42887,42892,42893,42894,42895,42896,42897,42898,42899,42900,42901,42902,42910,42923,42933,43516,46629,46630,46631,46632,46633,46634,46635,46636,46637,46638,46639,46640,46641,46643,46644,46645,46646,48236,32906,43497,43498,43507,43508,43983,43984,43985,43986,43987,43988,43989,42671,23049,33276])
+# Actual M25 room/waiting/exit OTBM closure: all76 source policies are immutable.
+M25_IDENTIFIERS = frozenset([34628, 40242, 40251, 40252, 40282, 40309, 40310, 40311, 40312, 40313, 40314, 40315, 40316, 40317, 40318, 40319, 40320, 40321, 40322, 40323, 40329, 40332, 40333, 40334, 40337, 40338, 40339, 40340, 40341, 40342, 40343, 40344, 40345, 40346, 40347, 40348, 40351, 40352, 40353, 40360, 40361, 40387, 40388, 40391, 40393, 40397, 40400, 40405, 40406, 40414, 40437, 40439, 40449, 40454, 40456, 40471, 40472, 40473, 40474, 40477, 40478, 40479, 40480, 40492, 44481, 44482, 44483, 44485, 44489, 44491, 44493, 44494, 44498, 44499, 44500, 44502])
+IDENTIFIERS = IDENTIFIERS | M25_IDENTIFIERS
 OFFICIAL_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
 PIN = '201189f871d23597b82caf88fd611454a2ddefb8'
-SHARDS = {'Terrain': 'content/world/terrain/terrain-08669-08697.json',
-          'WorldObject': 'content/world/objects/objects-12932-13055.json'}
+SHARDS = {'Terrain': 'content/world/terrain/terrain-08669-08720.json',
+          'WorldObject': 'content/world/objects/objects-12932-13108.json'}
 REGISTRY = 'content/encounters/source-static-definitions.json'
-NOTE = ' Additionally SRX-3 pinned activity static geometry: 38 Terrain and 124 WorldObject records; no Item aliases.'
+NOTE = ' Additionally SRX-3 pinned activity static geometry: 61 Terrain and 177 WorldObject records; no Item aliases.'
 
 def encode(value):
     return (json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)+'\n').encode()
@@ -61,7 +64,8 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows):
 def compose_terrain_notes(notes):
     """Both source publishers use the same two exact, idempotent suffixes."""
     import soulpit_static
-    return notes.replace(NOTE, '').replace(soulpit_static.NOTE, '') + NOTE + soulpit_static.NOTE
+    notes=re.sub(r' Additionally SRX-3 pinned activity static geometry: [0-9]+ Terrain and [0-9]+ WorldObject records; no Item aliases\.', '', notes)
+    return notes.replace(soulpit_static.NOTE, '') + NOTE + soulpit_static.NOTE
 
 @lru_cache(maxsize=4)
 def source_records(root=ROOT):
@@ -157,7 +161,7 @@ def outputs(root=ROOT):
     appended={family:[row for row in rows if row is not restore
                      and not (family == 'Terrain' and row['provenance']['source_item_id'] in soulpit_static.IDS)]
               for family,rows in records.items()}
-    if len(appended['Terrain']) != 29:
+    if len(appended['Terrain']) != 52:
         raise ValueError('activity/Soulpit canonical terrain union changed')
     files={SHARDS[family]:encode({'family':family,'records':rows}) for family,rows in appended.items()}
     files[existing_path]=encode(existing)
@@ -184,6 +188,13 @@ def outputs(root=ROOT):
         raise ValueError('joint static registry shared set changed')
     files[REGISTRY]=encode({'schema':'OTERYN_ACTIVITY_STATIC_DEFINITIONS/v1', 'technical_terrain_keys':sorted(terrain_keys), 'source_revision':PIN,
         'official_appearances_sha256':OFFICIAL_SHA, 'source_closure':captures[0]['source_closure'], 'records':registry})
+    files['crates/gameplay/content/src/content/activity_static_surface_pin.rs']=(
+        '// Generated only by tools/content-schema/world-object-authoring/activity_static.py.\n'
+        'pub(super) const REGISTRY_SHA256: &str =\n    \"'+hashlib.sha256(files[REGISTRY]).hexdigest()+'\";\n'
+        '#[cfg(test)]\n'
+        'pub(super) const M25_SOURCE_IDS: [u16; 76] = [\n'+
+        ''.join('    '+', '.join(str(value) for value in sorted(M25_IDENTIFIERS)[start:start+13])+',\n'
+                for start in range(0,len(M25_IDENTIFIERS),13))+'];\n').encode()
     placement_path='content/world/placements/index.json'; placement=json.loads((root/placement_path).read_bytes())
     compose_placement_palette(placement, registry, soulpit_rows)
     files[placement_path]=encode(placement)
@@ -197,6 +208,7 @@ def outputs(root=ROOT):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument('--check',action='store_true'); args=parser.parse_args()
+    planned=outputs()
     if not args.check:
         previous_terrain=ROOT/'content/world/terrain/terrain-08614-08650.json'
         if not previous_terrain.exists():
@@ -206,14 +218,20 @@ def main():
             if any(row['provenance']['source']['profile'] != 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1' for row in old['records']):
                 raise ValueError('refusing to replace unrelated static terrain shard')
             previous_terrain.unlink()
-        for old_name in ('objects-12932-13052.json','objects-12932-13053.json','objects-12932-13054.json'):
+        old_terrain=ROOT/'content/world/terrain/terrain-08669-08697.json'
+        if old_terrain.exists():
+            old=json.loads(old_terrain.read_bytes())
+            if any(row['provenance']['source']['profile'] != 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1' for row in old['records']):
+                raise ValueError('refusing to replace unrelated pre-M25 terrain shard')
+            old_terrain.unlink()
+        for old_name in ('objects-12932-13055.json','objects-12932-13052.json','objects-12932-13053.json','objects-12932-13054.json'):
             previous = ROOT/'content/world/objects'/old_name
             if previous.exists():
                 old = json.loads(previous.read_bytes())
                 if any(row['provenance']['source']['profile'] != 'OTERYN_ACTIVITY_STATIC_GEOMETRY_201189F/v1' for row in old['records']):
                     raise ValueError('refusing to replace unrelated static geometry shard')
                 previous.unlink()
-    for name,raw in outputs().items():
+    for name,raw in planned.items():
         path=ROOT/name
         if args.check:
             if not path.exists() or path.read_bytes()!=raw: raise SystemExit(f'stale activity static geometry: {name}')

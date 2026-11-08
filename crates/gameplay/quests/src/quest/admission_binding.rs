@@ -69,7 +69,10 @@ fn registry() -> Result<&'static Registry, String> {
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
             for counter in super::native_kills::registered_counters()? {
-                add(counter.transition(), false, true)?;
+                // The complete exact transition still owns the gate proof.
+                // Its EQ1/SET1 authored predecessor is a no-op, not a new
+                // writer authority over the predecessor's own preparation.
+                add(counter.transition(), false, false)?;
             }
             // M24 source deaths may share questline tracks with existing NPC
             // stages. Register the exact canonical operation; the writer also
@@ -80,6 +83,9 @@ fn registry() -> Result<&'static Registry, String> {
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
+            registry.protected_tracks.extend(
+                super::native_kills::registered_counters()?.map(|counter| counter.track.into()),
+            );
             Ok(registry)
         })
         .as_ref()
@@ -194,7 +200,7 @@ mod tests {
 
     #[test]
     fn native_deaths_keep_their_exact_registered_counter_operation() -> Result<(), String> {
-        for counter in super::super::native_kills::COUNTERS {
+        for counter in super::super::native_kills::counters() {
             let original = counter.transition();
             validate(&original, false)?;
             let mut changed = original.clone();
@@ -348,6 +354,39 @@ mod tests {
             .ok_or("fluid source callback")?;
         // Fluid preparation keeps its ordinary Set(0), rather than a specialized increment.
         validate(&world_callbacks::primary_transition(&fluid)?, true)?;
+        Ok(())
+    }
+    #[test]
+    fn galthen_native_targets_stay_protected_without_owning_authored_predecessors()
+    -> Result<(), String> {
+        for stage in ["s5", "s8"] {
+            let key = format!(
+                "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/{stage}"
+            );
+            let counter =
+                super::super::native_kills::counter(&key).ok_or("selected Galthen counter")?;
+            let canonical = counter.transition();
+            super::validate(&canonical, false)?;
+            let mut setup = canonical.clone();
+            setup.key = format!("oteryn:quest-transition/fixture/galthen-predecessor-{stage}");
+            setup.effects = vec![super::super::QuestEffect {
+                track: counter.gate.into(),
+                from: super::super::QuestComparison::Eq(0),
+                effect: super::super::QuestEffectKind::Set(1),
+            }];
+            super::validate(&setup, false)?;
+            setup.effects[0].track = counter.track.into();
+            assert!(
+                super::validate(&setup, false).is_err(),
+                "unbound aliases cannot write a native kill counter"
+            );
+            let mut stripped = canonical;
+            stripped.effects.remove(0);
+            assert!(
+                super::validate(&stripped, false).is_err(),
+                "canonical name cannot strip its predecessor proof"
+            );
+        }
         Ok(())
     }
 }

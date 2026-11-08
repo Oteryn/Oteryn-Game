@@ -9,6 +9,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 class ActivityStaticTests(unittest.TestCase):
+    def test_m25_exact_source_static_cohort_is_registered_without_item_aliases(self):
+        # Actual pinned OTBM room+waiting+exit stacks; each source.policies row
+        # is immutable, nonpickupable and has no dynamic Item owner.
+        expected = frozenset([34628, 40242, 40251, 40252, 40282, 40309, 40310, 40311, 40312, 40313, 40314, 40315, 40316, 40317, 40318, 40319, 40320, 40321, 40322, 40323, 40329, 40332, 40333, 40334, 40337, 40338, 40339, 40340, 40341, 40342, 40343, 40344, 40345, 40346, 40347, 40348, 40351, 40352, 40353, 40360, 40361, 40387, 40388, 40391, 40393, 40397, 40400, 40405, 40406, 40414, 40437, 40439, 40449, 40454, 40456, 40471, 40472, 40473, 40474, 40477, 40478, 40479, 40480, 40492, 44481, 44482, 44483, 44485, 44489, 44491, 44493, 44494, 44498, 44499, 44500, 44502])
+        self.assertTrue(expected <= activity_static.IDENTIFIERS)
+        self.assertEqual(activity_static.M25_IDENTIFIERS, expected)
+        self.assertEqual(len(expected), 76)
+
     def test_all_capture_static_ids_have_non_item_publication(self):
         keys = {row[0] for row in json.loads((ROOT / 'tools/content-schema/native-gameplay/item-keys.json').read_bytes())['records']}
         missing = set()
@@ -24,7 +32,7 @@ class ActivityStaticTests(unittest.TestCase):
         registry = json.loads((ROOT / 'content/encounters/source-static-definitions.json').read_bytes())
         missing.add(33276)
         self.assertEqual({row['source_item_id'] for row in registry['records']}, missing)
-        self.assertEqual(len(missing), 162)
+        self.assertEqual(len(missing), 238)
         for row in registry['records']:
             self.assertIn(row['identity']['family'], ['Terrain', 'WorldObject'])
             self.assertFalse(row['policy']['pickupable'])

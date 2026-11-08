@@ -306,13 +306,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
-                (
-                    StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: self.wire_observation(&runtime, snapshot.position()),
-                    },
-                    Some(duration),
-                )
+                let outcome = StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: self.wire_observation(&runtime, snapshot.position()),
+                };
+                (outcome, Some(duration))
             }
             Err(
                 MovementError::Blocked

@@ -35,6 +35,9 @@ impl DurabilityRoot {
             Some(admission),
             None,
             None,
+            None,
+            None,
+            None,
             vec![callback],
             Vec::new(),
         )
@@ -75,6 +78,9 @@ impl DurabilityRoot {
             Some(admission),
             None,
             None,
+            None,
+            None,
+            None,
             Vec::new(),
             vec![callback],
         )
@@ -110,6 +116,9 @@ impl DurabilityRoot {
             None,
             None,
             gate,
+            None,
+            None,
+            None,
             None,
             None,
             None,
@@ -362,6 +371,9 @@ impl DurabilityRoot {
             reward_admission,
             native,
             benevola,
+            essence,
+            flame,
+            source_action,
             reward_callbacks,
             world_callbacks,
         )
@@ -399,6 +411,9 @@ impl DurabilityRoot {
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::world_event::changes::counters::benevola::BenevolaHandover,
         )>,
+        essence: Option<super::rotten_essence::RottenEssenceUse>,
+        flame: Option<super::rotten_flame::RottenFlameUse>,
+        source_action: Option<super::QuestSourceAction>,
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
@@ -410,6 +425,8 @@ impl DurabilityRoot {
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
+                .is_some()
+            || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
                 .is_some();
         if native_key != native.is_some()
             || native

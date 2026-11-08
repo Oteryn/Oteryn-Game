@@ -172,13 +172,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let digest = runtime.content_pin().server_artifact_digest();
             let mut required = false;
             for entry in &attack.entries {
-                match native_health_swing_targets(
+                // Missing metadata belongs to this entry; the real pass below
+                // retries it without starving unrelated attackers.
+                if let Ok(targets) = native_health_swing_targets(
                     entry, &runtime, &states, room, digest, now, constants,
                 ) {
-                    Ok(targets) => required |= !targets.is_empty(),
-                    // Missing metadata belongs to this entry; the real pass
-                    // below retries it without starving unrelated attackers.
-                    Err(()) => {}
+                    required |= !targets.is_empty();
                 }
             }
             required

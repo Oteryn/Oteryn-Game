@@ -159,7 +159,6 @@ mod marriage;
 pub(crate) use marriage::grant_marriage_outfits;
 pub(crate) mod quest_grants;
 pub use current_appearance::CurrentCharacterAppearance;
-pub(crate) use quest_grants::{QuestOutfitGrant, grant_callback_outfit, grant_quest_outfit};
 pub(crate) use quest_grants::{QuestOutfitGrant, grant_content_outfit, grant_quest_outfit};
 
 impl DurabilityRoot {

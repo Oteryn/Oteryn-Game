@@ -5,6 +5,127 @@ use crate::play::capture_test_support::{self as replay, Capture, Command, Epoch}
 use oteryn_client_ui::boss_encounter::Intent;
 use oteryn_session::world_map::MapDefinition;
 
+async fn m25_gesture(capture: &Capture, entering: bool) -> Result<(), Error> {
+    let (metadata, command, initial, subsequent, destination) = if entering {
+        (
+            capture.value["source_admission"].clone(),
+            Command::read(&capture.value["entry_command"])?,
+            capture.frames("initial_frames")?,
+            capture.frames("entry_frames")?,
+            "entry_position",
+        )
+    } else {
+        (
+            capture.value["exit_admission"].clone(),
+            Command::read(&capture.value["exit_command"])?,
+            capture.frames("before_exit_frames")?,
+            capture.frames("exit_frames")?,
+            "returned_position",
+        )
+    };
+    let epoch = replay::epoch(
+        metadata,
+        capture.character,
+        initial,
+        Some(command.clone()),
+        subsequent,
+    )
+    .await?;
+    let mut view = view(&epoch)?;
+    let (link, commands, outbox) = play_channel();
+    let Epoch {
+        session,
+        trigger,
+        peer,
+    } = epoch;
+    let runner = tokio::spawn(run_session(session, commands, outbox));
+    if entering {
+        let key = oteryn_client_runtime::boss_encounter::decode_boss_key(&command.payload)
+            .map_err(|error| format!("actual Ahau entry command: {error:?}"))?
+            .boss_key;
+        tokio::time::timeout(Duration::from_secs(10), async {
+            while !link.boss_encounter_panel().selected {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await?;
+        link.boss_encounter_edit(0, key);
+        link.boss_encounter_request(Intent::Enter);
+    } else {
+        use crate::input::StepDir;
+        use oteryn_session::test_support::wire::world_spatial::{self, StepDirection};
+        let direction = world_spatial::decode_step_intent(&command.payload)
+            .map_err(|error| format!("actual Ahau paced STEP: {error:?}"))?;
+        let direction = match direction {
+            StepDirection::North => StepDir::North,
+            StepDirection::East => StepDir::East,
+            StepDirection::South => StepDir::South,
+            StepDirection::West => StepDir::West,
+            StepDirection::NorthEast => StepDir::NorthEast,
+            StepDirection::SouthEast => StepDir::SouthEast,
+            StepDirection::SouthWest => StepDir::SouthWest,
+            StepDirection::NorthWest => StepDir::NorthWest,
+        };
+        assert_eq!(
+            capture.value["exit_trigger_source_position"],
+            serde_json::json!([34002, 31706, 10])
+        );
+        assert_eq!(
+            direction.from(view.own()),
+            oteryn_renderer::TileCoord::new(34002, 31706)
+        );
+        view.arrow(direction);
+    }
+    let (at, floor) = replay::position(&capture.value[destination])?;
+    if !entering {
+        assert_eq!(at, oteryn_renderer::TileCoord::new(34036, 31717));
+    }
+    render_until(
+        &mut view,
+        &link,
+        at,
+        floor,
+        if entering {
+            "Entered boss instance"
+        } else {
+            "Returned to channel"
+        },
+    )
+    .await?;
+    assert!(
+        view.scene().native_own_rendered(),
+        "actual scope handoff must retain the player's native appearance pixels"
+    );
+    drop(link);
+    runner.await?;
+    trigger.send(()).await?;
+    peer.await??;
+    Ok(())
+}
+
+#[test]
+fn m25_actual_server_ahau_entry_and_step_exit_render_in_native_client() -> Result<(), Error> {
+    let Some(capture) = Capture::load("SRX3_M25_CAPTURE_PATH")? else {
+        return Ok(());
+    };
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                m25_gesture(&capture, true).await?;
+                m25_gesture(&capture, false).await
+            })?
+        })?
+        .join()
+        .map_err(|_| "actual native Ahau replay panicked")??;
+    eprintln!(
+        "M25_ACTUAL_SERVER_NATIVE_ENTRY_STEP_EXIT_COMPLETED duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
 fn item_reference(capture: &Capture, key: &str) -> Result<u32, Error> {
     capture.value["native_item_refs"][key]
         .as_u64()

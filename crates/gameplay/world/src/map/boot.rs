@@ -752,6 +752,7 @@ impl BundleWorld {
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
             activity_bounds: None,
+            activity_exit: None,
         }));
         Ok(NativeEntryMovementCells::from_bundle(
             entry,
@@ -785,6 +786,7 @@ struct BundleCollisionData {
     blocked: Arc<BTreeSet<TilePos>>,
     map: Arc<BundleMap>,
     activity_bounds: Option<[i32; 6]>,
+    activity_exit: Option<LogicalCell>,
 }
 
 impl PartialEq for BundleCollisionData {
@@ -793,6 +795,7 @@ impl PartialEq for BundleCollisionData {
             && self.base.digest() == other.base.digest()
             && self.blocked == other.blocked
             && self.activity_bounds == other.activity_bounds
+            && self.activity_exit == other.activity_exit
             && self.map.overlay.runtime_scope() == other.map.overlay.runtime_scope()
     }
 }
@@ -809,10 +812,9 @@ impl BundleCollisionData {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
         let pos = tile_pos(cell).ok_or(StaticCellEngineError::Absent)?;
-        if self
-            .activity_bounds
-            .is_some_and(|bounds| !super::activity_contains(bounds, pos))
-        {
+        if self.activity_bounds.is_some_and(|bounds| {
+            !super::activity_footprint_contains(bounds, self.activity_exit, pos)
+        }) {
             return Err(StaticCellEngineError::Absent);
         }
         self.base
@@ -840,66 +842,20 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
         instance: Option<[u8; 16]>,
         start: [i32; 3],
     ) -> Option<BundleCollisionIndex> {
-        if self.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
-            let [x0, y0, x1, y1, z0, z1] = bounds;
-            x0 < a || y0 < b || x1 > c || y1 > d || z0 < e || z1 > f
-        }) {
-            return None;
-        }
-        let runtime_scope = match instance {
-            Some(id) => {
-                crate::foundation::RuntimeScopeRefV1::instance(self.scope.world_id, id).ok()?
-            }
-            None => self.map.overlay.runtime_scope(),
-        };
-        let base = Arc::new(self.base.activity_region(bounds)?);
-        let cell = LogicalCell {
-            x: start[0],
-            y: start[1],
-            z: start[2],
-        };
-        let entry_start = tile_pos(cell)?;
-        let mut tile_shapes = Vec::with_capacity(base.tile_count());
-        for (floor, x, y, _) in base.tiles() {
-            let old = self.map.spell_tiles.base.tile_index(x, y, floor)?;
-            tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
-        }
-        let spell_tiles = Arc::new(BundleSpellTiles {
-            base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
-            tiles: tile_shapes,
-            shapes: self.map.spell_tiles.shapes.clone(),
-        });
-        let map = Arc::new(BundleMap {
-            entry_start,
-            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
-            facts: self.map.facts.activity_region(bounds),
-            floors: self.map.floors.activity_region(bounds),
-            spell_tiles,
-        });
-        let view = Self {
-            // The region retains the same source bases qualified from the
-            // complete compiled Bundle bytes; clipping never invents geometry.
-            source_bases: Arc::clone(&self.source_bases),
-            scope: self.scope.clone(),
-            base,
-            blocked: Arc::new(
-                self.blocked
-                    .iter()
-                    .filter(|pos| super::activity_contains(bounds, **pos))
-                    .copied()
-                    .collect(),
-            ),
-            map,
-            activity_bounds: Some(bounds),
-        };
-        if view.lookup(&self.scope, cell).ok() != Some(CollisionClass::Walkable) {
-            return None;
-        }
-        Some(BundleCollisionIndex(Arc::new(view)))
+        self.activity_region_inner(bounds, instance, start, None)
+    }
+    fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+        exit: LogicalCell,
+    ) -> Option<BundleCollisionIndex> {
+        self.activity_region_inner(bounds, instance, start, Some(exit))
     }
     fn for_activity_instance(&self, instance: [u8; 16]) -> Option<BundleCollisionIndex> {
         let start = self.map.entry_start;
-        self.activity_region(
+        self.activity_region_inner(
             self.activity_bounds?,
             Some(instance),
             [
@@ -907,6 +863,7 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
                 i32::from(start.y),
                 -i32::from(start.floor),
             ],
+            self.activity_exit,
         )
     }
     fn lookup(
@@ -939,6 +896,87 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
         (other as &dyn std::any::Any)
             .downcast_ref::<Self>()
             .is_some_and(|other| self == other)
+    }
+}
+impl BundleCollisionData {
+    fn activity_region_inner(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+        exit: Option<LogicalCell>,
+    ) -> Option<BundleCollisionIndex> {
+        if let Some(exit) = exit
+            && self.lookup(&self.scope, exit).ok() != Some(CollisionClass::Walkable)
+        {
+            return None;
+        }
+        if self.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+            let [x0, y0, x1, y1, z0, z1] = bounds;
+            x0 < a || y0 < b || x1 > c || y1 > d || z0 < e || z1 > f
+        }) {
+            return None;
+        }
+        let runtime_scope = match instance {
+            Some(id) => {
+                crate::foundation::RuntimeScopeRefV1::instance(self.scope.world_id, id).ok()?
+            }
+            None => self.map.overlay.runtime_scope(),
+        };
+        let base = Arc::new(match exit {
+            Some(_) => self.base.activity_region_with_exit(bounds, exit)?,
+            None => self.base.activity_region(bounds)?,
+        });
+        let cell = LogicalCell {
+            x: start[0],
+            y: start[1],
+            z: start[2],
+        };
+        let entry_start = tile_pos(cell)?;
+        let mut tile_shapes = Vec::with_capacity(base.tile_count());
+        for (floor, x, y, _) in base.tiles() {
+            let old = self.map.spell_tiles.base.tile_index(x, y, floor)?;
+            tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
+        }
+        let spell_tiles = Arc::new(BundleSpellTiles {
+            base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
+            tiles: tile_shapes,
+            shapes: self.map.spell_tiles.shapes.clone(),
+        });
+        let map = Arc::new(BundleMap {
+            entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
+            facts: match exit {
+                Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
+                None => self.map.facts.activity_region(bounds),
+            },
+            floors: match exit {
+                Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
+                None => self.map.floors.activity_region(bounds),
+            },
+            spell_tiles,
+        });
+        let view = Self {
+            // The region retains the same source bases qualified from the
+            // complete compiled Bundle bytes; clipping never invents geometry.
+            source_bases: Arc::clone(&self.source_bases),
+            scope: self.scope.clone(),
+            base,
+            blocked: Arc::new(
+                self.blocked
+                    .iter()
+                    .filter(|pos| super::activity_footprint_contains(bounds, exit, **pos))
+                    .copied()
+                    .collect(),
+            ),
+            map,
+            activity_bounds: Some(bounds),
+            activity_exit: exit,
+        };
+        if view.lookup(&self.scope, cell).ok() != Some(CollisionClass::Walkable) {
+            return None;
+        }
+        Some(BundleCollisionIndex(Arc::new(view)))
     }
 }
 
@@ -1001,6 +1039,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             blocked: Arc::clone(&source.blocked),
             map,
             activity_bounds: Some(bounds),
+            activity_exit: None,
         })))
     }
 
@@ -2394,6 +2433,85 @@ pub mod tests {
             source
                 .activity_region([2, 0, 6, 0, 7, 7], None, [6, 0, 7])
                 .is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn boss_activity_exit_footprint_keeps_exact_source_cell_without_widening_rectangle()
+    -> Result<(), Box<dyn Error>> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        let world = door_world()?;
+        let entry = crate::content::qualify_native_entry_room(WorldId::decode(&id(1))?)?;
+        let cells = world.movement_cells(entry.movement_cells())?;
+        let NativeMovementCollisionIndex::Bundle(source) = cells.index() else {
+            return Err("actual bundle index".into());
+        };
+        let exit = LogicalCell { x: 7, y: 0, z: 7 };
+        assert_eq!(
+            source.lookup(cells.scope(), exit),
+            Ok(CollisionClass::Walkable)
+        );
+        let template = source
+            .activity_region_with_exit([2, 0, 3, 0, 7, 7], None, [2, 0, 7], exit)
+            .ok_or("exact source exit footprint")?;
+        let private = template
+            .for_activity_instance(id(87))
+            .ok_or("private source footprint")?;
+        for index in [&template, &private] {
+            assert_eq!(
+                index.lookup(cells.scope(), exit),
+                Ok(CollisionClass::Walkable)
+            );
+            assert!(index.map().overlay.base().tile_index(7, 0, -7).is_some());
+            for x in [4, 5, 6] {
+                assert_eq!(
+                    index.lookup(cells.scope(), LogicalCell { x, y: 0, z: 7 }),
+                    Err(StaticCellEngineError::Absent)
+                );
+                assert!(
+                    index
+                        .map()
+                        .overlay
+                        .base()
+                        .tile_index(x as u16, 0, -7)
+                        .is_none(),
+                    "no intervening source row admitted"
+                );
+            }
+        }
+        assert!(
+            source
+                .activity_region_with_exit(
+                    [2, 0, 3, 0, 7, 7],
+                    None,
+                    [2, 0, 7],
+                    LogicalCell { x: 99, y: 0, z: 7 }
+                )
+                .is_none(),
+            "absent exit never manufactures a tile"
+        );
+        assert!(
+            source
+                .activity_region_with_exit(
+                    [2, 0, 3, 0, 7, 7],
+                    None,
+                    [2, 0, 7],
+                    LogicalCell { x: 6, y: 0, z: 7 }
+                )
+                .is_none(),
+            "closed source exit remains blocked"
+        );
+        assert!(
+            template
+                .activity_region_with_exit(
+                    [2, 0, 3, 0, 7, 7],
+                    None,
+                    [2, 0, 7],
+                    LogicalCell { x: 6, y: 0, z: 7 }
+                )
+                .is_none(),
+            "child cannot widen its sealed footprint"
         );
         Ok(())
     }

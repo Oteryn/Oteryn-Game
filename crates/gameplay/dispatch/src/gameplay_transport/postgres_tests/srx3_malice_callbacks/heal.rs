@@ -87,6 +87,8 @@ fn inside_current_cage_area(
         crate::movement::CardinalStep::East => Facing::East,
         crate::movement::CardinalStep::South => Facing::South,
         crate::movement::CardinalStep::West => Facing::West,
+        crate::movement::CardinalStep::NorthEast | crate::movement::CardinalStep::NorthWest => Facing::North,
+        crate::movement::CardinalStep::SouthEast | crate::movement::CardinalStep::SouthWest => Facing::South,
     };
     let source = runtime.read_actor_position(cage).map_err(debug)?;
     let target = runtime.read_actor_position(target).map_err(debug)?;

@@ -386,7 +386,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             };
             let result = self
                 .root
-                .commit_primal_pod_callback(&permit, self.character, self.holder, &pending, now)
+                .commit_primal_pod_callback(permit, self.character, self.holder, &pending, now)
                 .await;
             if let Err(error) = result {
                 #[cfg(test)]
@@ -485,7 +485,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         if attempted {
             self.root
                 .acknowledge_primal_pod_expiry(
-                    &permit,
+                    permit,
                     self.character,
                     self.holder,
                     scope,
@@ -520,7 +520,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let expired = self
             .root
             .drain_primal_pod_expiry_for_source(
-                &permit,
+                permit,
                 self.character,
                 self.holder,
                 scope,
@@ -1210,10 +1210,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             .kills()
                             .core_head()
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                            && clock.is_none_or(|clock| execution.expiry_us > clock.get())
                         {
-                            if clock.is_none_or(|clock| execution.expiry_us > clock.get()) {
-                                return Err(crate::durability::DurabilityError::Unavailable);
-                            }
+                            return Err(crate::durability::DurabilityError::Unavailable);
                         }
                         let record = native
                             .creature_profiles()

@@ -63,9 +63,10 @@ pub fn by_inactive(id: u16) -> Option<&'static FlameSource> {
 
 pub(crate) fn callbacks() -> Vec<Callback> {
     FLAMES.iter().map(|source| Callback {
+        admission: None,
         world_change: None,
         actor_kind: Default::default(), opening_only: false, requires_world_admission: false,
-        world_requirements: Vec::new(), facing: None,
+        state_ops: Vec::new(), world_requirements: Vec::new(), facing: None,
         key:source.key.into(), quest:QUEST.into(), trigger:Trigger::Use,
         selector:Selector { native: None, position:None, unique:None, action:None, appearance:Some(source.inactive) },
         // Fixed optional source targets are resolved by the sealed current World

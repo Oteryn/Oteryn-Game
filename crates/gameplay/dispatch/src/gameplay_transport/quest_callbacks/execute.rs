@@ -856,7 +856,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     speaker: actor,
                     position: native(expected.position()).unwrap_or(pos),
                     talk_type: 36,
-                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH,
+                    text: oteryn_gameplay_quests::quest::children_puzzle::SPEECH.into(),
+                    captured_name: None,
                 });
         }
         if let Some(proof) = teleport {

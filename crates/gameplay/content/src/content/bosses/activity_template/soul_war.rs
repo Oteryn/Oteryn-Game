@@ -126,6 +126,7 @@ impl ActiveGeneration {
             boss_position: boss,
             source_exit_position: exit,
             exit_position: exit,
+            exit_teleporter: None,
             minimum_players: recipe.minimum_players,
             minimum_level: recipe.minimum_level,
             cooldown_seconds: recipe.cooldown_seconds,

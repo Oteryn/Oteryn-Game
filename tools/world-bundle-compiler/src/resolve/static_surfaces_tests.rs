@@ -5,7 +5,7 @@ fn srx3_source_static_world_objects_compile_without_inventory_identity() -> Resu
     let mut registry = Registry::default();
     registry.add_catalogue(
         "WorldObject",
-        include_bytes!("../../../../content/world/objects/objects-12932-13055.json"),
+        include_bytes!("../../../../content/world/objects/objects-12932-13108.json"),
     )?;
     registry.seal()?;
     let key = "oteryn:world-object.tibia.i10649";

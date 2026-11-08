@@ -297,7 +297,14 @@ impl BundleFacts {
 
     /// Retain static source facts, with fresh Instance-local mutable owners.
     pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
-        let inside = |pos: TilePos| super::activity_contains(bounds, pos);
+        self.activity_region_with_exit(bounds, None)
+    }
+    pub(super) fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        exit: Option<crate::content::LogicalCell>,
+    ) -> Self {
+        let inside = |pos| super::activity_footprint_contains(bounds, exit, pos);
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),

@@ -277,9 +277,11 @@ async fn exchange_capture_goal(
         )
         .await?;
         let mut reply = None;
-        let mut barrier = None;
+        let mut barrier: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot> =
+            None;
         let mut barrier_commits = 0;
         let mut effect_seen = false;
+        let mut acknowledged = false;
         loop {
             let frame = read_frame(&mut client).await?;
             let env = decode_wire_envelope(&frame).map_err(debug)?;
@@ -295,15 +297,18 @@ async fn exchange_capture_goal(
                         .into());
                     }
                     if matches!(goal, CaptureGoal::Effect(_) | CaptureGoal::SwitchEffect(_)) {
-                        let disposition =
-                            oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
-                                .map_err(debug)?;
                         assert_eq!(result.status, CommandStatus::Accepted);
-                        assert_eq!(
-                            disposition,
-                            oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
-                            "the real effect producer must commit before awaiting native egress"
-                        );
+                        if kind == oteryn_protocol_oteryn::world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+                            assert_eq!(
+                                oteryn_protocol_oteryn::world_spatial::decode_step_result(result.payload).map_err(debug)?,
+                                oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved,
+                                "the actual native step commits before awaiting its source exit effect",
+                            );
+                        } else {
+                            let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(result.payload).map_err(debug)?;
+                            assert_eq!(disposition,oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+                                "the real effect producer must commit before awaiting native egress");
+                        }
                     }
                     reply = Some((result.status, result.payload.to_vec()));
                 }
@@ -324,7 +329,12 @@ async fn exchange_capture_goal(
                             let scope = decode_activity_scope(domain.payload).map_err(debug)?;
                             if let Some(previous) = barrier.as_ref() {
                                 assert!(barrier_commits >= 1, "one source-stream switch barrier");
-                                assert_eq!(previous, &scope, "new owner's initial scope agrees");
+                                // The prior source barrier requires ACK; the cold projection
+                                // never requests a second transfer. This is the exact native
+                                // Session::activity_handoff projected-receipt comparison.
+                                let mut projected = previous.clone();
+                                projected.requires_ack = false;
+                                assert_eq!(projected, scope, "new owner's initial scope agrees");
                             } else {
                                 barrier = Some(scope);
                             }
@@ -357,6 +367,13 @@ async fn exchange_capture_goal(
                 _ => {}
             }
             capture.push(frame);
+            if !acknowledged
+                && barrier_commits == 2
+                && let Some(receipt) = barrier.as_ref().filter(|receipt| receipt.requires_ack)
+            {
+                acknowledge_captured_activity(&mut client, receipt, capture).await?;
+                acknowledged = true;
+            }
             if reply.is_some()
                 && match goal {
                     CaptureGoal::Reply => true,
@@ -401,9 +418,75 @@ async fn exchange_capture_goal(
         assert_eq!(scope.source_session, *before.game_session_id.as_bytes());
         assert_eq!(scope.session, *admitted.game_session_id.as_bytes());
         assert_ne!(before.game_session_id, admitted.game_session_id);
+        if scope.requires_ack {
+            assert_eq!(admitted.continuity.next_command_id, 2);
+        }
     }
     Ok(result)
 }
+/// Emit the actual ACK only after the complete destination snapshot, then
+/// retain the untouched server result in the server-frame transcript. Client
+/// command bytes are sent verbatim, never inserted into that server-only stream.
+async fn acknowledge_captured_activity<S>(
+    client: &mut S,
+    receipt: &oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot,
+    capture: &mut Vec<Vec<u8>>,
+) -> TestResult
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+{
+    use oteryn_protocol_oteryn::activity_scope::{
+        ActivityScopeAck, COMMAND_TYPE_ACTIVITY_SCOPE_ACK, encode_activity_scope_ack,
+    };
+    let payload = encode_activity_scope_ack(&ActivityScopeAck {
+        handoff: receipt.handoff,
+        session: receipt.session,
+    })
+    .map_err(debug)?;
+    let ack = oteryn_protocol_oteryn::encode_client_command_for_session(
+        receipt.connection_generation,
+        &ClientCommandValue {
+            command_id: 1,
+            command_type: COMMAND_TYPE_ACTIVITY_SCOPE_ACK,
+            payload: &payload,
+        },
+        &receipt.session,
+    )
+    .map_err(debug)?;
+    let command_envelope = decode_wire_envelope(&ack).map_err(debug)?;
+    assert_eq!(
+        command_envelope
+            .client_command_session_id()
+            .map_err(debug)?,
+        Some(receipt.session.as_slice())
+    );
+    let command = command_envelope
+        .client_command(receipt.connection_generation)
+        .map_err(debug)?;
+    assert_eq!(command.command_id, 1);
+    assert_eq!(command.command_type, COMMAND_TYPE_ACTIVITY_SCOPE_ACK);
+    assert_eq!(command.payload, payload);
+    eprintln!("SRX3_ACTIVITY_ACK actual_client_frame={ack:02x?}");
+    write_frame(client, &ack).await?;
+    let frame = read_frame(client).await?;
+    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+    envelope
+        .validate(crate::foundation::Direction::ServerToClient, true)
+        .map_err(debug)?;
+    assert_eq!(envelope.message_type(), MessageType::CommandResult);
+    assert_eq!(
+        envelope.connection_generation(),
+        receipt.connection_generation
+    );
+    assert_eq!(envelope.server_sequence(), 1);
+    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+    assert_eq!(result.command_id, 1);
+    assert_eq!(result.status, CommandStatus::Accepted);
+    assert!(result.payload.is_empty());
+    capture.push(frame);
+    Ok(())
+}
+
 fn capture_end_kind(end: &crate::gameplay_transport::connection::ConnectionEnd) -> String {
     match end {
         crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenControlLost(_) => {
@@ -447,7 +530,8 @@ pub(super) async fn capture_activity_return(
             }
         }
         action.await?;
-        let mut barrier = None;
+        let mut barrier: Option<oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot> =
+            None;
         let mut commits = 0;
         loop {
             let frame = read_frame(&mut client).await?;
@@ -460,7 +544,12 @@ pub(super) async fn capture_activity_return(
                         let projected = decode_activity_scope(domain.payload).map_err(debug)?;
                         if let Some(previous) = barrier.as_ref() {
                             assert!(commits >= 1, "one autonomous source barrier");
-                            assert_eq!(previous, &projected);
+                            let mut expected = previous.clone();
+                            expected.requires_ack = false;
+                            assert_eq!(
+                                expected, projected,
+                                "autonomous destination projection agrees"
+                            );
                         } else {
                             barrier = Some(projected);
                         }
@@ -471,6 +560,9 @@ pub(super) async fn capture_activity_return(
             }
             capture.push(frame);
             if commits == 2 {
+                if let Some(receipt) = barrier.as_ref().filter(|receipt| receipt.requires_ack) {
+                    acknowledge_captured_activity(&mut client, receipt, capture).await?;
+                }
                 break;
             }
         }
@@ -492,6 +584,9 @@ pub(super) async fn capture_activity_return(
     let barrier = result?;
     assert_eq!(barrier.source_session, *before.game_session_id.as_bytes());
     assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
+    if barrier.requires_ack {
+        assert_eq!(admitted.continuity.next_command_id, 2);
+    }
     Ok(barrier)
 }
 

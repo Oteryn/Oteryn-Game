@@ -769,6 +769,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m25-galthen-native-deaths" {
+        return super::m25_galthen_native_death::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-m09-tower-") {
         return super::m09_multi_rewards::exercise(owner, admitted, h, authority, name).await;
     }

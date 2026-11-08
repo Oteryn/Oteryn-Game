@@ -393,6 +393,19 @@ where
         }
         return Ok(());
     };
+    if outcome.disposition == StepDisposition::Moved {
+        authority
+            .committed_paced_movement(session.admitted, outcome.moved_to)
+            .await;
+    }
+    if authority
+        .pending_activity_switch(session.admitted)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?
+        .is_some()
+    {
+        return Ok(());
+    }
     let Some(observation) = outcome.moved_to else {
         return Ok(());
     };

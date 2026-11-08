@@ -66,6 +66,7 @@ impl ActiveGeneration {
             boss_position: boss,
             source_exit_position: exit,
             exit_position: exit,
+            exit_teleporter: None,
             minimum_players: 1,
             minimum_level: 1,
             cooldown_seconds: 72000,

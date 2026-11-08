@@ -1,7 +1,10 @@
 //! Only the exact, source-published SRX-3 static records get this map-only route.
 //! Their canonical family stays WorldObject; no Item reference is created.
 use super::*;
+use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
+#[path = "../../../../crates/gameplay/content/src/content/activity_static_surface_pin.rs"]
+mod pin;
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct StaticSurface {
@@ -14,10 +17,17 @@ fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
     static RECORDS: OnceLock<Option<BTreeMap<String, (Value, StaticSurface)>>> = OnceLock::new();
     RECORDS
         .get_or_init(|| {
-            let registry: Value = serde_json::from_slice(include_bytes!(
-                "../../../../content/encounters/source-static-definitions.json"
-            ))
-            .ok()?;
+            let bytes =
+                include_bytes!("../../../../content/encounters/source-static-definitions.json");
+            if Sha256::digest(bytes)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+                != pin::REGISTRY_SHA256
+            {
+                return None;
+            }
+            let registry: Value = serde_json::from_slice(bytes).ok()?;
             let mut records = BTreeMap::new();
             for row in registry["records"].as_array()? {
                 let record = row["catalogue_record"].clone();
@@ -37,7 +47,7 @@ fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
                     ),
                 );
             }
-            if records.len() != 162 {
+            if records.len() != 238 {
                 return None;
             }
             Some(records)
@@ -71,4 +81,23 @@ pub(super) fn qualify(
         qualified.insert(key.to_owned(), *facts);
     }
     Ok(qualified)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn m25_source_static_registry_includes_exact_donor_cohort() -> Result<(), Error> {
+        let records = expected().ok_or_else(|| format("source-pinned static registry"))?;
+        assert_eq!(records.len(), 238);
+        for id in pin::M25_SOURCE_IDS {
+            let terrain = format!("oteryn:terrain.tibia.i{id}");
+            let object = format!("oteryn:world-object.tibia.i{id}");
+            assert_ne!(
+                records.contains_key(&terrain),
+                records.contains_key(&object)
+            );
+        }
+        Ok(())
+    }
 }

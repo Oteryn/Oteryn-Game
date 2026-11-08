@@ -10,6 +10,8 @@ mod boss_corpse_terminal;
 mod boss_movement_bindings;
 #[path = "native_gameplay/boss_reward_bindings.rs"]
 mod boss_reward_bindings;
+#[path = "native_gameplay/m25_corpse_items.rs"]
+mod m25_corpse_items;
 
 use super::character_progression_content::{
     CharacterProgressionContent, MAX_PROGRESSION_SECTION_BYTES,
@@ -1263,6 +1265,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             return Err(invalid("native Elder corpse terminal binding conflict"));
         }
         source_reward_items.push(terminal);
+        let m25_items = m25_corpse_items::qualified_records()?;
+        m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
+        source_reward_items.extend(m25_items);
         for record in &items.records {
             let binding = &record.production_binding;
             let external = binding

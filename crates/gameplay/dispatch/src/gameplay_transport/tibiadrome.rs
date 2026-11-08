@@ -652,7 +652,7 @@ pub(in crate::gameplay_transport) fn tick_at(
         // Manual combat.md:255,264: native victory earns one clear immediately.
         // Corpse effects may await their HP owner, and participant exit must not
         // erase an already completed wave. Keep physical advancement below gated.
-        if defeated_in_time && battle.completed < battle.wave {
+        if defeated_in_time && (battle.clears == 0 || battle.completed < battle.wave) {
             battle.completed = battle.wave;
             battle.clears = battle.clears.saturating_add(1);
         }

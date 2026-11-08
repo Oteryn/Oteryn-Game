@@ -224,7 +224,9 @@ pub(in crate::gameplay_transport) fn qualify(
             kind: bundle::TerrainKind::Wall,
             walkable: None,
             ground_speed: None,
-            blocks_projectile: Some(policies.get(&id).ok_or(())?.block_projectile),
+            // This is a conservative seal for an unknown dynamic source item,
+            // not the raw item's proven projectile policy.
+            blocks_projectile: None,
         });
         closed_palette_ids.insert(id, u32::try_from(palette.len()).map_err(|_| ())?);
         palette.push(closed);

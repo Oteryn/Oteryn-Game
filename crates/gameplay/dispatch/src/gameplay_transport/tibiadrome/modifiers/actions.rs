@@ -56,15 +56,22 @@ pub(super) fn apply(
             let Ok(expected) = runtime.read_actor_position(actor) else {
                 return true;
             };
-            if let Some((_, session)) = players.iter().find(|(target, _)| *target == actor) {
-                runtime
-                    .relocate_arena_player(actor, *session, expected, destination)
-                    .is_ok()
-            } else {
-                runtime
-                    .relocate_tibiadrome_creature(actor, expected, destination)
-                    .is_ok()
+            let committed =
+                if let Some((_, session)) = players.iter().find(|(target, _)| *target == actor) {
+                    runtime
+                        .relocate_arena_player(actor, *session, expected, destination)
+                        .is_ok()
+                } else {
+                    runtime
+                        .relocate_tibiadrome_creature(actor, expected, destination)
+                        .is_ok()
+                };
+            if committed {
+                // The existing effect queue is observation only. A committed
+                // translation must never be replayed because cue publication failed.
+                teleport_cues(owner, runtime, expected.position(), destination);
             }
+            committed
         }
         Effect::Status {
             target,
@@ -150,5 +157,37 @@ pub(super) fn apply(
         // Native mark/seed projection needs its source-qualified visual carrier.
         // Retain it rather than pretending an unqualified effect ID is a native mark.
         Effect::Mark { .. } | Effect::Seed { .. } => false,
+    }
+}
+
+/// Current scoped map, owner-qualified wire coordinate frame, same outbox.
+fn teleport_cues(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    from: MovementLocalPosition,
+    to: MovementLocalPosition,
+) {
+    use crate::map::boot::BundleCollisionIndexExt;
+    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        owner.movement_cells().index()
+    else {
+        return;
+    };
+    if index.map().overlay.runtime_scope() != runtime.binding().runtime_scope() {
+        return;
+    }
+    for at in [from, to] {
+        let Some(observation) = owner.wire_observation(runtime, at) else {
+            continue;
+        };
+        let at = observation.actor_position;
+        let (Ok(x), Ok(y), Ok(floor)) = (at.x.try_into(), at.y.try_into(), at.floor.try_into())
+        else {
+            continue;
+        };
+        let _published = index
+            .map()
+            .facts
+            .emit_movement_effect(crate::map::overlay::TilePos { x, y, floor }, 11);
     }
 }

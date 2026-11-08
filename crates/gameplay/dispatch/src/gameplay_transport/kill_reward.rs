@@ -1469,7 +1469,7 @@ fn refuse(reason: &str, creature: &str) {
 
 /// The real lethal callback freezes the same contributors, equipment and party
 /// dependencies as ordinary XP. Only the source stack-40 non-summon is admitted.
-
+///
 /// Project `target`'s committed death and append its settle (§1.1–§1.3). `lethal` is the
 /// attacker whose committed hit was lethal; it is the principal only when no contributor was
 /// tracked. Runs under the runtime lock and never awaits.

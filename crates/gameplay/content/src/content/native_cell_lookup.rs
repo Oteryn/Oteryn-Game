@@ -127,6 +127,16 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
     ) -> Option<BundleCollisionIndex> {
         None
     }
+    /// Exact already-qualified rectangle plus one independently proven source exit.
+    fn activity_region_with_exit(
+        &self,
+        _bounds: [i32; 6],
+        _instance: Option<[u8; 16]>,
+        _start: [i32; 3],
+        _exit: LogicalCell,
+    ) -> Option<BundleCollisionIndex> {
+        None
+    }
     fn for_activity_instance(&self, _instance: [u8; 16]) -> Option<BundleCollisionIndex> {
         None
     }
@@ -149,6 +159,16 @@ impl BundleCollisionIndex {
         start: [i32; 3],
     ) -> Option<Self> {
         self.0.activity_region(bounds, instance, start)
+    }
+    pub fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+        exit: LogicalCell,
+    ) -> Option<Self> {
+        self.0
+            .activity_region_with_exit(bounds, instance, start, exit)
     }
     pub fn for_activity_instance(&self, instance: [u8; 16]) -> Option<Self> {
         self.0.for_activity_instance(instance)

@@ -203,6 +203,7 @@ impl ActiveGeneration {
             boss_position: boss,
             source_exit_position: source_exit,
             exit_position: exit,
+            exit_teleporter: None,
             minimum_players: 1,
             minimum_level: 250,
             cooldown_seconds: if source == PinnedActivitySourceRoom::Bakragore {

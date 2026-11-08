@@ -805,6 +805,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tutorial_paced_step(actor, session, direction).await
     }
 
+    async fn committed_paced_movement(
+        &self,
+        admitted: AdmittedSession,
+        moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) {
+        if let Some(actor) = admitted.runtime_actor {
+            self.source_boss_exit_after_movement(actor, admitted.game_session_id, moved_to)
+                .await;
+        }
+    }
+
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;

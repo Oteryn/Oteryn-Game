@@ -387,6 +387,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     gathering_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import boss_corpse_profiles
     boss_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # M25 preserves Crystal Ahau and the independently qualified Canary Mitmah
+    # corpse policies; the Crystal room does not select another donor's Items.
+    import m25_corpse_items
+    m25_corpse_items.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import harvest_item_profiles
     harvest_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles

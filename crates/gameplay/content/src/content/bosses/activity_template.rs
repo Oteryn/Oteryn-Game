@@ -9,6 +9,9 @@ use crate::content::{
 };
 use serde::{Deserialize, Serialize};
 
+#[path = "activity_template/galthen.rs"]
+mod galthen;
+pub use galthen::{BossCallbackSourceClosure, QualifiedBossExitTeleporter};
 mod outburst;
 #[path = "activity_template/rotten_blood.rs"]
 mod rotten_blood;
@@ -36,6 +39,10 @@ pub struct BossLeverCandidate {
     pub zone_from: Option<[i32; 3]>,
     pub zone_to: Option<[i32; 3]>,
     pub exit_position: Option<[i32; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_exit_teleporter: Option<[i32; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_callback_closure: Option<BossCallbackSourceClosure>,
     pub blockers: Vec<String>,
     pub required_callbacks: Vec<String>,
     pub callbacks_known: bool,
@@ -138,6 +145,7 @@ pub struct QualifiedActivityRoomTemplate {
     boss_position: LogicalCell,
     source_exit_position: LogicalCell,
     exit_position: LogicalCell,
+    exit_teleporter: Option<QualifiedBossExitTeleporter>,
     minimum_players: u32,
     minimum_level: u32,
     cooldown_seconds: u32,
@@ -191,6 +199,9 @@ impl QualifiedActivityRoomTemplate {
     }
     pub fn exit_position(&self) -> LogicalCell {
         self.exit_position
+    }
+    pub fn exit_teleporter(&self) -> Option<QualifiedBossExitTeleporter> {
+        self.exit_teleporter
     }
     pub fn minimum_players(&self) -> u32 {
         self.minimum_players
@@ -427,6 +438,7 @@ impl ActiveGeneration {
             boss_position: boss,
             source_exit_position: exit,
             exit_position: exit,
+            exit_teleporter: None,
             minimum_players: 1,
             minimum_level: 500,
             cooldown_seconds: 72_000,
@@ -615,6 +627,33 @@ impl ContentActivationController {
         ];
         let boss = project(boss)?;
         let exit = project(exit)?;
+        let galthen = galthen::exact_closure(candidate);
+        if (candidate.source_callback_closure.is_some()
+            || candidate.source_exit_teleporter.is_some())
+            && !galthen
+        {
+            return Err(R::SourceHookUnavailable);
+        }
+        let exit_teleporter = candidate
+            .source_exit_teleporter
+            .map(project)
+            .transpose()?
+            .map(|trigger| QualifiedBossExitTeleporter {
+                trigger,
+                destination: exit,
+            });
+        if let Some(teleporter) = exit_teleporter
+            && (source.is_some()
+                || room
+                    .movement_cells()
+                    .index()
+                    .lookup(room.movement_cells().scope(), teleporter.trigger)
+                    .ok()
+                    != Some(crate::content::CollisionClass::Walkable))
+        {
+            return Err(R::UnknownPlacement);
+        }
+
         let levers = candidate
             .lever_positions
             .iter()
@@ -660,7 +699,11 @@ impl ContentActivationController {
         let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
             .then(|| super::primal_closure::qualify(native))
             .flatten();
-        if !candidate.blockers.is_empty()
+        if (matches!(
+            creature,
+            "oteryn:creature.ahau" | "oteryn:creature.mitmah_vanguard"
+        ) && !galthen)
+            || !candidate.blockers.is_empty()
             || !candidate.callbacks_known
             || unavailable_source_hooks(candidate).any(|hook| {
                 primal
@@ -709,6 +752,8 @@ impl ContentActivationController {
                     .ok_or(R::OutsideQualifiedMap)?,
                 start,
             )
+        } else if let Some(teleporter) = exit_teleporter {
+            room.bundle_activity_view_with_exit(bounds, start, teleporter.trigger())
         } else {
             room.bundle_activity_view(bounds, start)
         }
@@ -730,6 +775,7 @@ impl ContentActivationController {
             boss_position: boss,
             source_exit_position: exit,
             exit_position: exit,
+            exit_teleporter,
             minimum_players: minimum,
             minimum_level: level,
             cooldown_seconds: cooldown,
@@ -1031,6 +1077,48 @@ mod tests {
                 .activity_region([i32::MIN, 0, 0, 0, -5, -5])
                 .is_none()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn m25_exact_crystal_boss_callbacks_and_exit_trigger_are_captured() -> Result<(), String> {
+        let rows = captured_boss_levers().map_err(|e| format!("{e:?}"))?;
+        for key in ["oteryn:creature.ahau", "oteryn:creature.mitmah_vanguard"] {
+            let row = rows
+                .iter()
+                .find(|row| row.creature_key.as_deref() == Some(key))
+                .ok_or("M25 pinned source candidate")?;
+            assert!(row.callbacks_known, "{key} exact Crystal callback closure");
+            assert_eq!(row.required_callbacks, ["BossLeverOnDeath"]);
+            assert!(
+                row.blockers.is_empty(),
+                "{key} typed supported source hooks"
+            );
+            assert!(galthen::exact_closure(row));
+            let mut altered = row.clone();
+            altered
+                .source_callback_closure
+                .as_mut()
+                .ok_or("exact monster source proof")?
+                .monster_sha256 = "0".repeat(64);
+            assert!(!galthen::exact_closure(&altered));
+            altered = row.clone();
+            altered.native_profile_sha256 = Some("0".repeat(64));
+            assert!(!galthen::exact_closure(&altered));
+            altered = row.clone();
+            altered.required_callbacks.push("unimplemented".into());
+            assert!(!galthen::exact_closure(&altered));
+        }
+        let ahau = rows
+            .iter()
+            .find(|row| row.creature_key.as_deref() == Some("oteryn:creature.ahau"))
+            .ok_or("Ahau source")?;
+        assert_eq!(ahau.source_exit_teleporter, Some([34002, 31706, 10]));
+        assert_eq!(ahau.zone_to, Some([34018, 31705, 10]));
+        assert_eq!(ahau.exit_position, Some([34036, 31717, 10]));
+        let mut altered = ahau.clone();
+        altered.source_exit_teleporter = Some([34003, 31706, 10]);
+        assert!(!galthen::exact_closure(&altered));
         Ok(())
     }
 

@@ -153,6 +153,8 @@ def binding_plan(choices, events, npc, event_followup, source_choices, source_ev
             'native_reward_delivery_binding': None,
             'runtime_enabled': False,
         })
+    import galthen_native_kills
+    galthen_native_kills.bind_selected_plan(records)
     return {
         'schema': 'OTERYN_QUEST_COMPLETION_BINDING_PLAN/v1',
         'runtime_enabled': False,
@@ -201,7 +203,7 @@ def expected(root):
     inputs = [BASE, STAGES, SOURCE_STAGES, TERMINAL_REFINEMENTS, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
               EVENTS, event_followup['path'], SOURCE_EVENTS, NPC,
-              TOOL + 'quest_completion_import.py']
+              TOOL + 'quest_completion_import.py', TOOL + 'galthen_native_kills.py']
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
     candidate['classification'] = 'LOCAL_SOURCE_AND_CHOSEN_IMPORT_CANDIDATE_NOT_ACTIVATED'
@@ -230,7 +232,7 @@ def expected(root):
         'production_source_lowering_unchanged': True,
         'canonical_quest_definitions_unchanged': True,
         'runtime_activated': False,
-        'native_event_dispatch_bindings': 0,
+        'native_event_dispatch_bindings': sum(stage['native_dispatch_binding'] is not None for row in plan['records'] for stage in row['stages']),
         'native_NPC_dialogue_bindings': 0,
         'native_reward_delivery_bindings': 0,
         'binding_plan': {'path': PLAN, 'sha256': sha(encode(plan)), 'counts': plan['counts']},

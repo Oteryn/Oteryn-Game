@@ -30,7 +30,26 @@ SRX3_SOURCES = (
      (4026, 4098, 4240, 4241, 4242, 4246, 4247, 4248, 5973, 5995)),
     ("SRX3-BOSS-YIELDS", "boss_reward_yield_profiles",
      (239, 3028, 3081, 3097, 3384, 3583, 3723, 7428, 7642, 7643, 23373, 23374, 23375, 23535)),
+    ("M25-GALTHEN-CORPSES", "m25_corpse_items", ()),
 )
+
+
+def registered_source_document(root, document):
+    """Replay the later guarded House stage, retaining only this owner's keys."""
+    proven = keys(document)
+    generated = {"profiles": json.dumps(document).encode(),
+                 "manifest": b'{"item_profiles":{}}'}
+    owner = importlib.import_module("house_decoration_actions")
+    owner.admit(root, generated, "profiles", "manifest",
+                lambda row: row["production_definition"]["production_key"],
+                lambda value: json.dumps(value, sort_keys=True).encode())
+    # House's own additions belong to its already declared cohort. Only its
+    # authoritative enrichment of these independent source rows composes here.
+    result = {"records": [row for row in json.loads(generated["profiles"])["records"]
+                          if row["production_definition"]["production_key"] in proven]}
+    if keys(result) != proven:
+        raise ValueError("source registration changed the qualified identity set")
+    return result
 
 
 def source_cohorts(root):
@@ -55,7 +74,7 @@ def source_cohorts(root):
             if module_name != "boss_reward_yield_profiles" and key in taxonomy and "taxonomy" not in row["authoring"]:
                 row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
         previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
-        result.append((name, document, previous))
+        result.append((name, registered_source_document(root, document), previous))
     return result
 
 
@@ -66,7 +85,7 @@ def source_coowners(root):
     expected = {f"oteryn:item.tibia.i{item}" for item in owner.IDS}
     if keys(document) != expected:
         raise ValueError("Primal coowner source identity set differs")
-    return [(owner.COHORT_NAME, document, expected)]
+    return [(owner.COHORT_NAME, registered_source_document(root, document), expected)]
 
 
 def coowner_equivalent(source, qualified):
@@ -200,7 +219,13 @@ def regenerate(source, base, updates, qengine, npc, starting=None, srx3=(), coow
             source = source[:position] + cohort_block + source[position:]
         term = "            + SRX3_SOURCE_COHORTS.iter().map(|(_, n)| n).sum::<usize>()\n"
         if term not in source:
-            position = source.index("            + additions.len()\n") + len("            + additions.len()\n")
+            engine_terms = list(re.finditer(
+                r"^            \+ (?:additions\.len\(\)|\(additions\.len\(\) - [0-9_]+\))\n",
+                source, re.M,
+            ))
+            if len(engine_terms) != 1:
+                raise ValueError("ambiguous registered engine contribution")
+            position = engine_terms[0].end()
             source = source[:position] + term + source[position:]
     # The NPC owner is already counted in PROFILE_ADDITIONS. Keep every strict
     # raw-attribute/identity assertion and remove only its duplicate sum term.

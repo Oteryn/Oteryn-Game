@@ -420,20 +420,9 @@ END $$;
 CREATE CONSTRAINT TRIGGER game_instance_ranged_scope_proven AFTER INSERT ON game_spell_item_receipts
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_instance_ranged_scope_proven();
 
--- SRX-3 W17: actual category13 job constraint/grant RED; retain legacy categories.
-ALTER TABLE game_world_highscore_snapshots
-    DROP CONSTRAINT game_world_highscore_snapshots_category_check,
-    ADD CONSTRAINT game_world_highscore_snapshots_category_check
-        CHECK (category BETWEEN 1 AND 13);
-ALTER TABLE game_world_highscore_heads
-    DROP CONSTRAINT game_world_highscore_heads_category_check,
-    ADD CONSTRAINT game_world_highscore_heads_category_check
-        CHECK (category BETWEEN 1 AND 13);
-ALTER TABLE game_public_highscores
-    DROP CONSTRAINT game_public_highscores_category_check,
-    ADD CONSTRAINT game_public_highscores_category_check
-        CHECK (category BETWEEN 1 AND 13);
-GRANT SELECT ON game_character_tibiadrome TO oteryn_game_highscore_job;
+-- SRX-3 W17: canonical job keeps its main grants. Retire any obsolete
+-- Character-projection grant here, before later migration consumers run.
+REVOKE SELECT ON game_character_tibiadrome FROM oteryn_game_highscore_job;
 -- No lifetime counter backfill: a missing legacy JSON field remains explicitly unknown.
 
 -- SRX-3 W11: fixed STEP-triggered Soul War Encounters are not XML chance,

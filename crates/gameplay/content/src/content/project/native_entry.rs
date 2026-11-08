@@ -797,20 +797,45 @@ impl QualifiedNativeEntryRoom {
         bounds: [i32; 6],
         start: NativeEntryStart,
     ) -> Option<Self> {
+        self.bundle_activity_view_inner(bounds, start, None)
+    }
+    /// Preserve the combat rectangle while admitting exactly one source-proven exit tile.
+    pub(in crate::content) fn bundle_activity_view_with_exit(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+        exit: LogicalCell,
+    ) -> Option<Self> {
+        self.bundle_activity_view_inner(bounds, start, Some(exit))
+    }
+    fn bundle_activity_view_inner(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+        exit: Option<LogicalCell>,
+    ) -> Option<Self> {
         let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
             self.movement_cells.index()
         else {
             return None;
         };
         let mut view = self.clone();
+        let start_cell = [start.x, start.y, i32::from(start.floor)];
         view.movement_cells.index =
-            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
-                index.activity_region(bounds, None, [start.x, start.y, i32::from(start.floor)])?,
-            );
-        view.movement_cells.spell_tiles = self
-            .movement_cells
-            .spell_tiles
-            .bundle_activity_region(bounds)?;
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(match exit {
+                Some(exit) => index.activity_region_with_exit(bounds, None, start_cell, exit)?,
+                None => index.activity_region(bounds, None, start_cell)?,
+            });
+        view.movement_cells.spell_tiles = match exit {
+            Some(exit) => self
+                .movement_cells
+                .spell_tiles
+                .bundle_activity_region_with_exit(bounds, exit)?,
+            None => self
+                .movement_cells
+                .spell_tiles
+                .bundle_activity_region(bounds)?,
+        };
         let cell = crate::content::LogicalCell {
             x: start.x,
             y: start.y,

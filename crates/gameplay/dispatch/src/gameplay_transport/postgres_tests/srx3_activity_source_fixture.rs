@@ -92,6 +92,18 @@ pub(super) async fn prepare_player_vocation(
     level: u32,
     vocation: &str,
 ) -> TestResult {
+    let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+    prepare_player_with_operation(h, owner, admitted, level, vocation, fresh.operation()).await
+}
+
+pub(super) async fn prepare_player_with_operation(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    level: u32,
+    vocation: &str,
+    operation: &crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+) -> TestResult {
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildOccurrence, convert_vocation,
     };
@@ -134,14 +146,13 @@ pub(super) async fn prepare_player_vocation(
     // This existing-character fixture skips the transport's first-entry
     // bootstrap. Initialize only its declared empty equipment state through
     // the real committed FreshAdmission owner; infer or mint no starting gear.
-    let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
     h.root
         .initialize_admission_equipment(
             owner.character,
             owner.holder,
             &fence,
             native.source_digest(),
-            fresh.operation(),
+            operation,
         )
         .await
         .map_err(debug)?;

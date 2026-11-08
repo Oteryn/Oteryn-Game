@@ -79,12 +79,15 @@ pub(super) async fn lifetime_highscore_job(
         }
     }
     let started = std::time::Instant::now();
-    let allowed: bool = sqlx::query_scalar("SELECT has_table_privilege('oteryn_game_highscore_job','game_character_tibiadrome','SELECT')")
+    let (allowed, legacy, cleanup): (bool, bool, bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_highscore_job','game_tibiadrome_scores','SELECT'),has_table_privilege('oteryn_game_highscore_job','game_character_tibiadrome','SELECT'),EXISTS(SELECT 1 FROM _sqlx_migrations WHERE version=2170 AND success)")
         .fetch_one(pool).await?;
+    assert!(allowed, "the isolated job can read its actual score source");
+    assert!(!legacy, "the job has no unused legacy-table grant");
+    assert!(cleanup, "the real forward cleanup migration executed");
     let constraints: Vec<String> = sqlx::query_scalar("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid IN ('game_world_highscore_snapshots'::regclass,'game_world_highscore_heads'::regclass,'game_public_highscores'::regclass) AND conname LIKE '%category_check' ORDER BY conname")
         .fetch_all(pool).await?;
     eprintln!(
-        "SRX3_DROME ACTUAL_HIGHSCORE_DATABASE_PROOF source_select={allowed} category_constraints={constraints:?}"
+        "SRX3_DROME ACTUAL_HIGHSCORE_DATABASE_PROOF source_select={allowed} legacy_select={legacy} forward_2170={cleanup} category_constraints={constraints:?}"
     );
     let catalogue = SnapshotCatalogues::activated(std::sync::Arc::new(NoEarnedAchievements))
         .map_err(|error| format!("{error:?}"))?;
@@ -108,7 +111,7 @@ pub(super) async fn lifetime_highscore_job(
     let character = oteryn_protocol_oteryn::CharacterId::decode(character.as_bytes())
         .map_err(|error| format!("{error:?}"))?;
     let page = root
-        .read_highscore_page(world, 13, None, 1, 0, character)
+        .read_highscore_page(world, 14, None, 1, 0, character)
         .await
         .map_err(|error| format!("Drome lifetime job/query: {error:?}"))?;
     assert_eq!(page.rows.len(), 1);

@@ -128,7 +128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match at {
             Target::Creature(_) => {
                 let (none, bundle_doors, legacy);
-                let blocking: &dyn crate::map::floor::CellBlocker = if self.rooms()
+                let blocking: &dyn crate::map::floor::CellBlocker = if self
+                    .rooms()
                     .gate_source_world()
                     .is_some_and(|room| room.source_world().is_some())
                 {
@@ -213,6 +214,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 self.record_actor_step_deadline_now(target, &holder, due)
                     .await;
+                if outcome.disposition == StepDisposition::Moved {
+                    self.source_boss_exit_after_movement(target, target_session, outcome.moved_to)
+                        .await;
+                }
                 disposition
             }
         }

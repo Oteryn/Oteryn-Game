@@ -30,6 +30,12 @@ pub(super) fn publish_native_facing(
         crate::movement::CardinalStep::East => crate::foundation::MovementFacing::East,
         crate::movement::CardinalStep::South => crate::foundation::MovementFacing::South,
         crate::movement::CardinalStep::West => crate::foundation::MovementFacing::West,
+        crate::movement::CardinalStep::NorthEast | crate::movement::CardinalStep::NorthWest => {
+            crate::foundation::MovementFacing::North
+        }
+        crate::movement::CardinalStep::SouthEast | crate::movement::CardinalStep::SouthWest => {
+            crate::foundation::MovementFacing::South
+        }
     };
     if expected.facing() == Some(facing) {
         return;
@@ -255,7 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let published_soul_war_world = owner.active_generation
                     .and_then(|active|active.qualify_published_world_context(room,runtime.content_pin()));
-                if rotten_area::drive(owner, runtime, states, room, native, &batch,
+                if rotten_area::drive(owner, runtime, states, room, native, batch,
                     published_soul_war_world.as_ref(), now)
                     .map_err(|()|crate::durability::DurabilityError::Unavailable)? {
                     // The native occurrence remains reserved until the original

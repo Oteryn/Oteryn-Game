@@ -42,6 +42,24 @@ FILES = {
     "data/items/items.xml": ("items.xml", "ea4196beae8f77be898f05de89db81de134886b6"),
 }
 ROOMS = {
+    # Crystal201189f adventures_of_galthen/actions_ahau.lua:3-23.
+    # The exit teleporter is outside specPos; capture its literal cell without
+    # extending combat bounds or claiming absence across the intervening gap.
+    "galthen-ahau": {
+        "entry": [34008, 31703, 10],
+        "regions": [[33999, 31692, 34018, 31705, 10, 10],
+                    [34002, 31706, 34002, 31706, 10, 10],
+                    [34033, 31714, 34038, 31714, 10, 10],
+                    [34036, 31717, 34036, 31717, 10, 10]],
+    },
+    # actions_mitmah_vanguard.lua:3-23 and its separate exit Action:2-4,16.
+    # The literal USE exit is in the combat rectangle; its destination is not.
+    "galthen-mitmah-vanguard": {
+        "entry": [34067, 31415, 11],
+        "regions": [[34054, 31400, 34081, 31419, 11, 11],
+                    [34047, 31431, 34053, 31431, 11, 11],
+                    [34060, 31432, 34060, 31432, 11, 11]],
+    },
     # W01 fixed-global callback contexts. Literal arrival anchors and room bounds
     # come from pinned Crystal actions_* scripts; callback spectator/ray bounds
     # are the union with their pinned Canary spell literals. These are map

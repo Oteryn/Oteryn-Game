@@ -1,3 +1,3 @@
--- SRX-3 category13 reads its existing Tibiadrome source under the isolated
--- highscore job role. This forward grant does not modify earlier migrations.
-GRANT SELECT ON game_character_tibiadrome TO oteryn_game_highscore_job;
+-- Reserved SRX-3 migration, intentionally no-op. The obsolete category-13
+-- reader was removed before this migration was merged. Main already grants
+-- the canonical job access to game_tibiadrome_scores; do not add legacy access.

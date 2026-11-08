@@ -716,7 +716,7 @@ fn srx3_source_static_bundle_capability_is_required_only_for_used_qualified_surf
     let mut registry = Registry::default();
     registry.add_catalogue(
         "WorldObject",
-        include_bytes!("../../../content/world/objects/objects-12932-13055.json"),
+        include_bytes!("../../../content/world/objects/objects-12932-13108.json"),
     )?;
     registry.add_catalogue(
         "Terrain",

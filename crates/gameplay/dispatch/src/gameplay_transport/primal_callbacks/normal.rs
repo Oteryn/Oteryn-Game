@@ -465,7 +465,7 @@ fn publish_source(
                 floor: center.floor,
             };
             let surface = map.source_spawn_surface_admits(runtime, at).ok_or(())?;
-            let occupied = registered.iter().any(|position| *position == at);
+            let occupied = registered.contains(&at);
             candidate_facts.insert((at.x, at.y, at.floor), surface && !occupied);
         }
     }

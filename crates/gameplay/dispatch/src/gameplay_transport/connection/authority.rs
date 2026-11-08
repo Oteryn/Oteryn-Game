@@ -354,6 +354,16 @@ pub trait FreshAdmissionAuthority {
         async move { (self.step(actor, direction).await, None) }
     }
 
+    /// Physical committed movement observation; it does not grant client input.
+    /// Call after the actor's pace clock and movement guards are settled.
+    fn committed_paced_movement(
+        &self,
+        _admitted: AdmittedSession,
+        _moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) -> impl Future<Output = ()> {
+        async {}
+    }
+
     fn turn_actor_valid(
         &self,
         _actor: ExactActorRef,

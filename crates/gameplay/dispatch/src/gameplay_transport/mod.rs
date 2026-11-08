@@ -191,6 +191,7 @@ mod soul_war_scene;
 mod soul_war_world;
 mod soul_war_world_raid;
 mod soulpit;
+mod source_boss_exit;
 mod source_death;
 mod source_item_cycle;
 mod source_names;
