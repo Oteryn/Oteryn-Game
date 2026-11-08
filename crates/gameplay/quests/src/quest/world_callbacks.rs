@@ -731,6 +731,9 @@ mod clock_tests;
 mod literal_text_tests;
 
 #[cfg(test)]
+mod ground_stack_tests;
+
+#[cfg(test)]
 mod cycle_tests;
 
 #[cfg(test)]
