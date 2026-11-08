@@ -10,6 +10,41 @@ The existing [Bazaar contract](../contracts/OTERYN_GAME_BAZAAR_AUTHORITY_V1.md)
 and Game lock/transfer/receipt implementations are the integration starting point.
 Creating a Game wallet would make a second commercial authority.
 
+## Platform continuation evidence
+
+Read-only continuation check against `Oteryn/Oteryn-Platform` commit
+`a2c93448a24fec7e15630ac1f6707c0d8a43e65f` confirms the following integration
+state. Platform source is readable; it is not an allocated writable repository
+for this Game task. These findings distinguish existing components from missing
+client integration contracts.
+
+- [Payment provider](https://github.com/Oteryn/Oteryn-Platform/blob/a2c93448a24fec7e15630ac1f6707c0d8a43e65f/portal-rs/crates/payments/src/provider.rs):
+  `PaymentProvider` and HMAC-verifying `TestProvider` already exist. The test
+  provider's `create_intent` returns `test:<intent_id>`, a provider reference,
+  rather than a browser checkout URL. Extend that owner instead of adding a
+  second provider/ledger authority in Game. Existing code is not evidence of
+  executed Platform PostgreSQL qualification in this task.
+- [Payment account routes](https://github.com/Oteryn/Oteryn-Platform/blob/a2c93448a24fec7e15630ac1f6707c0d8a43e65f/portal-rs/crates/payments/src/account.rs):
+  the module exposes read-only premium, payment-history and receipt GET pages
+  behind `PANEL_PREMIUM_PAYMENTS`. Those pages do not supply the native client's
+  quoted order-create → checkout-URL → status/balance contract.
+- [Character Bazaar routes](https://github.com/Oteryn/Oteryn-Platform/blob/a2c93448a24fec7e15630ac1f6707c0d8a43e65f/portal-rs/crates/bazaar/src/characters/http.rs):
+  generic listing/bidding handlers exist, but `configured_router` mounts
+  `unavailable_routes(true)`, returning HTTP 503 because custody/signing authority
+  is not activated. Opening those refusal pages would not complete the feature.
+- [Character services proposal](https://github.com/Oteryn/Oteryn-Platform/blob/a2c93448a24fec7e15630ac1f6707c0d8a43e65f/docs/contracts/OTERYN_V2_CHARACTER_SERVICES_COMMAND_CONTRACT_PROPOSAL.md):
+  world transfer remains explicitly outside the slice; reserved command shapes
+  do not authorize issuance or activation. Its coin reservation, eligibility
+  and receipt integration needs a separate owning contract.
+
+The payment provider implementation is **OWNED ELSEWHERE (Platform)**; the Game
+checkout client remains **BLOCKED** on the usable checkout contract. Bazaar and
+world-transfer client completion remain **BLOCKED** on the integrations above.
+Missing live keys do not block sandbox development; sandbox integration work
+belongs to Platform and is not supplied by an invented Game payment endpoint.
+The owner's task already authorizes Oteryn implementation. These are concrete
+cross-repository integration gaps, not a request to approve that implementation again.
+
 ## Payments before going live
 
 The owner must decide:
