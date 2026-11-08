@@ -124,6 +124,9 @@ impl ClientBootstrap {
         link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
         link.house_world(admitted.world_id());
+        if admitted.training_requested() {
+            link.training_open();
+        }
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;

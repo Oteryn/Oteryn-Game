@@ -5,15 +5,14 @@ pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
         return "Spell catalogue unavailable in this session".into();
     }
-    let filter = panel.filter.to_lowercase();
+    if panel.filter_error {
+        return "Enter a positive maximum level and cooldown group, or leave blank".into();
+    }
     let entries: Vec<_> = panel
         .catalog
         .entries()
         .iter()
-        .filter(|entry| {
-            entry.name.to_lowercase().contains(&filter)
-                || entry.words.to_lowercase().contains(&filter)
-        })
+        .filter(|entry| panel.matches(entry))
         .collect();
     let pages = entries.len().div_ceil(PAGE_SIZE).max(1);
     let page = panel.page.min(pages - 1);

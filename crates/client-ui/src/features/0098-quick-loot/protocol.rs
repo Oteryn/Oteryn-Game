@@ -125,6 +125,13 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
                         panel.skipped.clear();
                     }
                 }
+                Action::Destination { category, .. } => {
+                    panel.destinations.retain(|previous| {
+                        !matches!(previous,
+                        Action::Destination { category: previous, .. } if previous == category)
+                    });
+                    panel.destinations.push(action.clone());
+                }
                 _ => {}
             }
             panel.confirmed.push(action);
