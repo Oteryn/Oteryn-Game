@@ -768,6 +768,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-srvgap-disguise" {
+        return super::srvgap_quest_disguise::exercise(owner, admitted, h).await;
+    }
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
     }

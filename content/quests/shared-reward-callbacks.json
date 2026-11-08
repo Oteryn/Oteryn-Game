@@ -8488,5 +8488,28 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
       ]
     }
+  ],
+  "item_disguises": [
+    {
+      "key": "quest.wrath.crate",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/actions_mission01_crate.lua:sha256:c7633852055fb9535229721cccd9c1b09233780a3bd7f8d5badc02ac5ed15688",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/movements_crate.lua:sha256:b90e05dd645aa6e0e38b12ec51c6c1cf1ce83f8901796441b14d2d30a1b21aa2",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:src/utils/utils_definitions.hpp:sha256:8ca63a90b2d34da65ee94ca0e3134ed05bd021bd20ccfad0ed6210ed7ae116e9"
+      ],
+      "item": "oteryn:item.tibia.i11328",
+      "use_text": "You remove its top and pull the crate over yourself. Inside it is stifling and you can barely see a thing when looking outward.",
+      "restore_text": "On reaching the watchtower you remove your temporary disguise.",
+      "use_effect": 3,
+      "speech_type": 36,
+      "appearance": 11328,
+      "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+      "required": 2,
+      "restore": {
+        "x": 33323,
+        "y": 31080,
+        "floor": -7
+      }
+    }
   ]
 }

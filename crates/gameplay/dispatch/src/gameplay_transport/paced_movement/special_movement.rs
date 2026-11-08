@@ -382,6 +382,26 @@ impl ChannelSpellStates {
             .iter()
             .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let mut next = current.clone();
+        // Crystal movements_crate.lua's final source cell removes CONDITION_OUTFIT
+        // unconditionally, revealing the selected base without changing other families.
+        if let Some(rules) = oteryn_gameplay_quests::quest::item_disguises::rules()
+            && let Some(rule) = rules.iter().find(|rule| {
+                i32::from(rule.restore.x) == destination.x
+                    && i32::from(rule.restore.y) == destination.y
+                    && -i16::from(rule.restore.floor) == destination.floor
+            })
+            && next.conditions.remove_type(ConditionType::Outfit)
+            && let Some(position) = tile_position(destination)
+        {
+            changed |= map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: rule.speech_type,
+                    text: &rule.restore_text,
+                });
+        }
         let from_bath = origin_entries.as_ref().is_some_and(|tile| {
             tile.entries
                 .iter()

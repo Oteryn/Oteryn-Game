@@ -768,6 +768,7 @@
     9642,
     10227,
     10302,
+    11328,
     11588,
     12045,
     12143,
@@ -27164,6 +27165,149 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/11328",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "marked crate"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "This crate has been marked with lizard symbols. It is large enough for a grown person to fit in"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 8000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": true,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "11328",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i11328",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i11328",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/11588",
           "revision": "spell-p2-r21"
         }
@@ -37613,7 +37757,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -37757,7 +37902,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -37901,7 +38047,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38045,7 +38192,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38189,7 +38337,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38333,7 +38482,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38477,7 +38627,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38621,7 +38772,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38765,7 +38917,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -38909,7 +39062,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39053,7 +39207,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39197,7 +39352,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39341,7 +39497,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39485,7 +39642,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39629,7 +39787,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39773,7 +39932,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -39917,7 +40077,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40061,7 +40222,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40205,7 +40367,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40349,7 +40512,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40493,7 +40657,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"
@@ -40637,7 +40802,8 @@
           "state": "KNOWN",
           "value": {
             "item_type": {
-              "state": "NOT_APPLICABLE"
+              "state": "KNOWN",
+              "value": "CARPET"
             },
             "capabilities": {
               "state": "UNKNOWN"

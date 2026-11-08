@@ -104,6 +104,9 @@ def item_action_ids(root):
     # Seed/flower actions still require ordinary native policy for their existing
     # mutation and harvesting owners. The Horse return floor only supplies geometry.
     ids.update(novelty['map_action_item_ids'])
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import quest_item_disguises
+    ids.update(rule['appearance'] for rule in quest_item_disguises.build(root))
     for row in novelty['house_transforms']:
         ids.update((row['item_id'], row['target']))
     return ids

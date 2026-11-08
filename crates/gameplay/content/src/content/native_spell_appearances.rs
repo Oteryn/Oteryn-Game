@@ -453,8 +453,14 @@ pub fn compile(
             return Err(invalid());
         }
     }
+    // Exact additional source captures use this existing owner and proof shape.
+    // They are compiled trust anchors, not permission for arbitrary Item keys.
+    let quest_items: Vec<SpellItemAppearanceRecord> = serde_json::from_slice(include_bytes!(
+        "../../../../../tools/content-schema/native-gameplay/quest-item-disguise-appearances.json"
+    ))
+    .map_err(|_| invalid())?;
     let mut seen_items = BTreeSet::new();
-    if document.item_appearances.len() > 6 {
+    if quest_items.len() > 32 || document.item_appearances.len() > 6 + quest_items.len() {
         return Err(invalid());
     }
     for item in &document.item_appearances {
@@ -463,15 +469,16 @@ pub fn compile(
             || item.source_revision != "47dfd51f45280a59a1d3e50ba7edd573d7234446"
             || item.appearances_sha256
                 != "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
-            || ![
-                "6c4c26d610256cb61a5fce2f3042be1593c1b6417f1b7409ff662e4c137e842e",
-                "9cf7f0137cc286f230db23762fbe6c00d3943b8e097f4a848adb16f7a0f9c47a",
-                "02fd7503257b05572d3039118e15f2d29748296ea1b4275297ba8c73a68cd2e8",
-                "79982193638bc2d037e7edf1d8a6aaa611ba1c8d4aae99ec44bcd1f01d318c36",
-                "c0899ab57dab45595afeb53e828d9f8df221f2dcfce6c8b0fd8812b93eeabe4f",
-                "2c4b59c75e374f9f1aaaa3ded61353859dc2fa25277e08c01ca6cd1e36c38723",
-            ]
-            .contains(&item.qualification_sha256.as_str())
+            || (!quest_items.contains(item)
+                && ![
+                    "6c4c26d610256cb61a5fce2f3042be1593c1b6417f1b7409ff662e4c137e842e",
+                    "9cf7f0137cc286f230db23762fbe6c00d3943b8e097f4a848adb16f7a0f9c47a",
+                    "02fd7503257b05572d3039118e15f2d29748296ea1b4275297ba8c73a68cd2e8",
+                    "79982193638bc2d037e7edf1d8a6aaa611ba1c8d4aae99ec44bcd1f01d318c36",
+                    "c0899ab57dab45595afeb53e828d9f8df221f2dcfce6c8b0fd8812b93eeabe4f",
+                    "2c4b59c75e374f9f1aaaa3ded61353859dc2fa25277e08c01ca6cd1e36c38723",
+                ]
+                .contains(&item.qualification_sha256.as_str()))
         {
             return Err(invalid());
         }
@@ -892,7 +899,16 @@ mod bounded_item_appearance_tests {
         let bytes =
             include_bytes!("../../../../../content/presentations/bindings/spell-appearances.json");
         let registry = compile(bytes, [9; 32]).unwrap();
-        assert_eq!(registry.item_appearances.len(), 6);
+        let quest_items: Vec<SpellItemAppearanceRecord> = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/quest-item-disguise-appearances.json"
+        )).unwrap();
+        assert_eq!(registry.item_appearances.len(), 6 + quest_items.len());
+        for item in quest_items {
+            assert_eq!(
+                registry.for_item(&item.item.key, &item.item.revision),
+                Some(&item.item)
+            );
+        }
         for r in &registry.item_appearances {
             assert_eq!(
                 registry.for_item(&r.item.key, &r.item.revision),

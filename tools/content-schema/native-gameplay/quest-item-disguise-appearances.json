@@ -1,0 +1,14 @@
+[
+  {
+    "item": {
+      "family": "Item",
+      "key": "oteryn:item.tibia.i11328",
+      "revision": "definition-r1"
+    },
+    "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "appearances_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    "canonical_definition_sha256": "07d7f8ce9025ddbf890fceab7cd73661afaf5718e18de8b7e72575a6f5fc4406",
+    "appearance_object_sha256": "8f14bc3968741e4d9d2328d770fe2cb08d91cd16871f04254fe0db535bd1afbe",
+    "qualification_sha256": "3e10ac21367aacbb8fd7c251a0b64e213ddbf35072b834dfaebf9dfd94368d7a"
+  }
+]

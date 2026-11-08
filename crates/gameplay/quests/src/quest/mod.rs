@@ -36,6 +36,7 @@ pub mod ground_stack;
 pub mod hero_of_bounac;
 pub mod hive_access;
 pub mod isle_of_evil;
+pub mod item_disguises;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;

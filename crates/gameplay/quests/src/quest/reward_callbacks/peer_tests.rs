@@ -47,6 +47,7 @@ fn carried_peer_predicate_is_explicit_and_bounded() -> Result<(), String> {
 fn m43_data_attachment_waits_for_separately_packaged_opening() -> Result<(), String> {
     let mut document = Document {
         schema: 1,
+        item_disguises: Vec::new(),
         tracks: Vec::new(),
         callbacks: Vec::new(),
     };

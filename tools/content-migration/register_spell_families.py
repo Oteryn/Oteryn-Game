@@ -6,6 +6,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import sys
 import os
 from pathlib import Path
 
@@ -463,6 +464,11 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # custody; neither the visual pod nor a corpse is an inventory loot yield.
     import primal_item_profiles
     primal_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Retained quest Item looks extend the same exact spell appearance owner;
+    # these records grant visual membership, never Item custody or materialization.
+    sys.path.insert(0, str(root / 'tools/content-schema/quest-authoring'))
+    import quest_item_disguises
+    quest_item_disguises.admit_appearances(root, generated, spell_import.canonical_bytes)
     # Carry the exact explicit-empty Lua witness into the frozen native provider too.
     import primal_reference_overlay
     primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)

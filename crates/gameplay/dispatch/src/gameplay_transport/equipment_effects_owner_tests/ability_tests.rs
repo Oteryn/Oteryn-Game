@@ -289,6 +289,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The pinned dispenser-item-profiles.json adds 22 source-qualified dispenser
     // definitions (25879..=25914, its exact source subset), all with speed_bonus=0.
     ("SRVGAP-DISPENSERS", 22),
+    // Source crate disguise adds one qualified retained portable Item (11328).
+    // Derived from the corpus-backed shared quest disguise descriptor, speed 0.
+    ("SRVGAP-QUEST-DISGUISE", 1),
     // srx1-potion-profiles.json adds 53162..=53164, each with speed_bonus=0.
     // These remain the same original SRX-1 cohorts. SEASON coalesces identical
     // dispenser facts into the base, so the supplement now carries only the
