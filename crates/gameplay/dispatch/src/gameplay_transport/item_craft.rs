@@ -52,7 +52,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
-        if target.is_some() {
+        if matches!(
+            intent.use_with_map_item.as_ref(),
+            Some(MapUseTarget::Item(_))
+        ) {
             match self
                 .use_carried_quest_item_targeted(actor, command, &intent, source, target)
                 .await

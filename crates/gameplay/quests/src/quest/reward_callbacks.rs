@@ -10,9 +10,9 @@ mod colours_peer;
 #[cfg(test)]
 mod peer_tests;
 #[cfg(test)]
-mod recipe_tests;
-#[cfg(test)]
 mod qready1_craft_tests;
+#[cfg(test)]
+mod recipe_tests;
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 

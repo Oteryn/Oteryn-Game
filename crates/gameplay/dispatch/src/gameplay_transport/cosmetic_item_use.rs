@@ -400,6 +400,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             })));
         }
+        // Recipe receipts remain replayable after both inventory handles retire.
+        // Fresh map tools and unowned World targets belong to their existing owner.
+        if matches!(
+            intent.use_with_map_item.as_ref(),
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+        ) && !matches!(target, Some(ItemKey::Instance(_)))
+        {
+            return Ok(None);
+        }
         let Some(ItemKey::Instance(source)) = source else {
             return Ok(None);
         };
@@ -421,7 +430,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let recipe_target = match target {
             Some(ItemKey::Instance(id)) if id != source => Some(id),
-            Some(_) => return Ok(Some(outcome(UseDisposition::Rejected))),
+            Some(_) => return Ok(None),
             None => None,
         };
         let target_item = recipe_target.and_then(|selected| {
@@ -433,7 +442,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .find(|item| item.item_instance_id == selected)
         });
         if recipe_target.is_some() && target_item.is_none() {
-            return Ok(Some(outcome(UseDisposition::Rejected)));
+            return Ok(None);
         }
         let Some(catalogue) = self.quest_catalogue.as_deref() else {
             return Ok(None);

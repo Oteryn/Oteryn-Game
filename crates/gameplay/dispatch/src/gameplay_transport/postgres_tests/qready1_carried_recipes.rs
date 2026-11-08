@@ -77,10 +77,15 @@ pub(super) async fn exercise(
         item_fence: Some(fence),
     };
     let actor = admitted.runtime_actor.ok_or("recipe actor")?;
-    let result =
-        super::super::item_craft::dispatch(owner, actor, command, intent.clone(), Some(&view))
-            .await
-            .ok_or("recipe dispatcher outcome")?;
+    let result = crate::gameplay_transport::item_craft::dispatch(
+        owner,
+        actor,
+        command,
+        intent.clone(),
+        Some(&view),
+    )
+    .await
+    .ok_or("recipe dispatcher outcome")?;
     assert_eq!(result.disposition, UseDisposition::Committed);
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_consumptions WHERE transition_key='oteryn:quest-reward/qready1/cursed-crystal-first-11466'")
         .fetch_one(&h.pool).await?;
@@ -91,12 +96,41 @@ pub(super) async fn exercise(
     let outputs: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21505'")
         .fetch_one(&h.pool).await?;
     assert_eq!(outputs, (1, 1));
-    let replay =
-        super::super::item_craft::dispatch(owner, actor, command, intent.clone(), Some(&view))
-            .await
-            .ok_or("recipe replay")?;
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await
+        .map_err(debug)?;
+    view.inventory_committed(
+        inventory_from_backpack(inventory.backpack.as_ref(), |definition| {
+            index.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )
+        })
+        .ok_or("updated recipe inventory")?,
+    )
+    .map_err(debug)?;
+    let UseTarget::Item(source_handle) = intent.target else {
+        return Err("recipe source handle".into());
+    };
+    let Some(MapUseTarget::Item(target_handle)) = intent.use_with_map_item else {
+        return Err("recipe target handle".into());
+    };
+    assert_eq!(view.resolve(source_handle), None);
+    assert_eq!(view.resolve(target_handle), None);
+    let replay = crate::gameplay_transport::item_craft::dispatch(
+        owner,
+        actor,
+        command,
+        intent.clone(),
+        Some(&view),
+    )
+    .await
+    .ok_or("recipe replay")?;
     assert_eq!(replay.disposition, UseDisposition::Committed);
-    let retry = super::super::item_craft::dispatch(
+    let retry = crate::gameplay_transport::item_craft::dispatch(
         owner,
         actor,
         UseCommand {
@@ -108,7 +142,7 @@ pub(super) async fn exercise(
     )
     .await
     .ok_or("spent operand refusal")?;
-    assert_eq!(retry.disposition, UseDisposition::Rejected);
+    assert_eq!(retry.disposition, UseDisposition::StaleState);
     let after: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i21505'")
         .fetch_one(&h.pool).await?;
     assert_eq!(
