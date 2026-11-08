@@ -37,6 +37,7 @@ fn m41_source_achievement_survives_storage_and_item_planning() -> Result<(), Npc
             calendar_month: 1,
             level: 1,
             vocation: "",
+            premium_current: false,
             sex: 0,
             outfits: &outfits,
         };
@@ -72,6 +73,7 @@ fn m41_stag_authored_finale_preserves_sword_achievement_and_progress() -> Result
         calendar_month: 1,
         level: 1,
         vocation: "",
+        premium_current: false,
         sex: 0,
         outfits: &outfits,
     };
