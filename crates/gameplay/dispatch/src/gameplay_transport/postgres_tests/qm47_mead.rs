@@ -468,7 +468,39 @@ pub(super) async fn exercise(
         admitted.game_session_id,
         CommandId::new(7300).map_err(debug)?,
     );
-
+    let success = catalogue
+        .evaluate_with_roll(
+            catalogue.transition(mead::KEY).ok_or("transition")?,
+            &failed_values,
+            0,
+            Some(5),
+        )
+        .map_err(debug)?;
+    assert!(!owner.project_mead_blackout(&runtime, &mut states, actor, command, &success, map));
+    assert_eq!(
+        states
+            .get(&runtime, actor, admitted.game_session_id)
+            .ok_or("player")?
+            .owned_conditions(),
+        &before
+    );
+    let active = owner.active_generation.take();
+    assert!(!owner.project_mead_blackout(
+        &runtime,
+        &mut states,
+        actor,
+        command,
+        &failed,
+        owner.bundle_map().ok_or("map")?
+    ));
+    assert_eq!(
+        states
+            .get(&runtime, actor, admitted.game_session_id)
+            .ok_or("player")?
+            .owned_conditions(),
+        &before
+    );
+    owner.active_generation = active;
     assert!(
         owner.project_mead_blackout(
             &runtime,
