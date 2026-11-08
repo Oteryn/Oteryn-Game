@@ -1,3 +1,6 @@
+#[path = "build_support/release_identity.rs"]
+mod release_identity;
+
 #[path = "build_support/play_features.rs"]
 mod play_features;
 
@@ -7,6 +10,8 @@ mod preference_bindings;
 fn main() -> Result<(), String> {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?;
     let root = std::path::Path::new(&manifest);
+    release_identity::emit(root)?;
+    println!("cargo:rerun-if-changed=build_support/release_identity.rs");
     println!("cargo:rerun-if-changed=src/features");
     println!("cargo:rerun-if-changed=build_support/play_features.rs");
     println!("cargo:rerun-if-changed=../../crates/protocol-oteryn/capabilities");

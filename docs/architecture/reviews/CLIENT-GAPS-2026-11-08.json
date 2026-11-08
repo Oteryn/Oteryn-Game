@@ -35,8 +35,9 @@
   "area": "Login",
   "feature": "Launcher, wersja, kontrola/aktualizacja pakietów",
   "status": "PARTIAL",
-  "gap": "Launcher i wersja są; brak dowodu równoważnego UI aktualizacji/naprawy pakietów.",
-  "lane": "cg_ui"
+  "gap": "Jest kontrola pięciu pól tożsamości wydania, ścieżek, rozmiaru i SHA-256 pakietów przed loginem oraz rzeczywisty --check-packages wywoływany przez diagnostykę launchera. Pozostaje wykonanie aktualizacji/naprawy: brak zaakceptowanego endpointu Platform channel-pointer; CLIENT-INSTALLER-0 §5.1 nakazuje wyłączony updater i zabrania zastępczego serwera Game.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/tests/package_integrity.rs:90 + executable_verifies_packages_then_rejects_same_size_corruption; apps/client/tests/package_integrity.rs:201 + launcher_diagnosis_runs_the_active_release_verifier; Pozostaje: wykonanie aktualizacji/naprawy po zaakceptowaniu endpointu Platform (CLIENT-INSTALLER-0:155)."
  },
  {
   "id": "T010",
