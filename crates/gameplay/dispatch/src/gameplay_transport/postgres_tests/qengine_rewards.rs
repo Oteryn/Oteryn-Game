@@ -779,6 +779,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
     }
+    if name == "qengine-rewards-authored-imported-talk" {
+        return super::qengine_m01a_imported_talk::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-qnpcfx-m10-") {
         return super::qnpcfx_m10::exercise(owner, admitted, h, authority, name).await;
     }

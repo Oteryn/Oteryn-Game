@@ -366,7 +366,7 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .and_then(|callbacks| {
             callbacks

@@ -17,6 +17,7 @@ fn eligible(catalog: &NpcRuleCatalog, epoch: i64) -> Result<bool, NpcRuleError> 
     let outfits = BTreeMap::new();
     Ok(catalog
         .plan_storage(&NpcRuleInput {
+            player_name: None,
             npc: "oteryn:npc.strange_pipe",
             trigger: NpcRuleTrigger::Greet,
             message: "hi",
@@ -97,6 +98,7 @@ fn calendar_window_tamoril_preserves_acceptance_resets_and_blocks_every_outside_
     let inventory = NpcInventorySnapshot::default();
     let outfits = BTreeMap::new();
     let input = |epoch, topic| NpcRuleInput {
+        player_name: None,
         npc: "oteryn:npc.tamoril",
         trigger: NpcRuleTrigger::Say,
         message: "yes",
@@ -149,6 +151,7 @@ fn calendar_window_tamoril_preserves_acceptance_resets_and_blocks_every_outside_
         .collect();
     let plan = catalogue
         .plan_storage(&NpcRuleInput {
+            player_name: None,
             tracks: &initial,
             ..input(1_705_190_400, 6)
         })?

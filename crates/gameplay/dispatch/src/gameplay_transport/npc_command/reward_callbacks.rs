@@ -52,7 +52,8 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
-    let callbacks = reward_callbacks::load().ok()?;
+    let catalogue = admission.quest_catalogue.as_deref()?;
+    let callbacks = reward_callbacks::load_for(catalogue).ok()?;
     #[cfg(test)]
     let callbacks = admission
         .states
@@ -98,7 +99,6 @@ pub(super) fn prepare(
     {
         return None;
     }
-    let catalogue = admission.quest_catalogue.as_deref()?;
     quest_dialogue::prepare(
         admission,
         actor,
