@@ -2,14 +2,21 @@
 use super::*;
 
 pub fn validate_resolved_world(
+    catalogue: &super::super::QuestStateCatalogue,
     transition: &QuestTransition,
     world_context: bool,
     callbacks: &[world_callbacks::Callback],
 ) -> Result<(), String> {
     let published = registry()?;
-    if published.owners.contains_key(&transition.key) {
-        return validate(transition, world_context);
+    let authored_owner = catalogue.authored_bindings.as_ref().is_some_and(|bindings|
+        bindings.source.quests.iter().any(|quest|quest.stages.iter().any(|stage|
+            stage.transition(&quest.quest).is_ok_and(|operation|operation.key==transition.key))));
+    if published.owners.contains_key(&transition.key) || authored_owner {
+        return validate_for_catalogue(catalogue, transition, world_context);
     }
+    let authored_tracks:BTreeSet<_>=catalogue.authored_bindings.as_ref().into_iter()
+        .flat_map(|bindings|&bindings.source.quests).flat_map(|quest|&quest.tracks)
+        .map(|track|&track.key).collect();
     if callbacks.len() > world_callbacks::MAX_CALLBACKS {
         return Err("resolved World source bounds".into());
     }
@@ -39,7 +46,7 @@ pub fn validate_resolved_world(
             || transition
                 .effects
                 .iter()
-                .any(|e| published.protected_tracks.contains(&e.track))
+                .any(|e| (published.protected_tracks.contains(&e.track) || authored_tracks.contains(&e.track)))
         {
             return Err("resolved World operation or context mismatch".into());
         }
@@ -52,7 +59,7 @@ pub fn validate_resolved_world(
     {
         return Err("renamed resolved World owner".into());
     }
-    validate(transition, world_context)
+    validate_for_catalogue(catalogue, transition, world_context)
 }
 
 #[cfg(test)]
@@ -61,6 +68,7 @@ mod tests {
     #[test]
     fn resolved_world_owner_preserves_exact_binding_and_rejects_weaker_aliases()
     -> Result<(), String> {
+        let catalogue=super::super::super::QuestStateCatalogue::new("resolved-fixture",vec![],vec![]).map_err(|e|format!("{e:?}"))?;
         let mut source = world_callbacks::load()?
             .into_iter()
             .find(|c| !c.storage.is_empty())
@@ -84,15 +92,15 @@ mod tests {
             validate(&operation, true).is_err(),
             "unknown bound operations remain closed by default"
         );
-        validate_resolved_world(&operation, true, std::slice::from_ref(&source))?;
-        assert!(validate_resolved_world(&operation, false, std::slice::from_ref(&source)).is_err());
+        validate_resolved_world(&catalogue, &operation, true, std::slice::from_ref(&source))?;
+        assert!(validate_resolved_world(&catalogue, &operation, false, std::slice::from_ref(&source)).is_err());
         let mut stripped = operation.clone();
         stripped.effects[0].effect = QuestEffectKind::Set(1);
-        assert!(validate_resolved_world(&stripped, true, std::slice::from_ref(&source)).is_err());
+        assert!(validate_resolved_world(&catalogue, &stripped, true, std::slice::from_ref(&source)).is_err());
         stripped.key.push_str("-alias");
-        assert!(validate_resolved_world(&stripped, true, std::slice::from_ref(&source)).is_err());
+        assert!(validate_resolved_world(&catalogue, &stripped, true, std::slice::from_ref(&source)).is_err());
         assert!(
-            validate_resolved_world(&operation, true, &[source.clone(), source.clone()]).is_err()
+            validate_resolved_world(&catalogue, &operation, true, &[source.clone(), source.clone()]).is_err()
         );
         let published = registry()?;
         let protected = published
@@ -102,7 +110,7 @@ mod tests {
             .ok_or("published protected track")?;
         source.storage[0].track = protected.clone();
         assert!(
-            validate_resolved_world(
+            validate_resolved_world(&catalogue, 
                 &world_callbacks::primary_transition(&source)?,
                 true,
                 &[source]
