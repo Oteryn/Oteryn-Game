@@ -101,6 +101,11 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             } else {
                 None
             };
+            p.store = if tab == Some(cyclopedia_character::CharacterTab::StoreSummary) {
+                decode_store(&r.payload)
+            } else {
+                None
+            };
             p.general = general;
             if let Some(tab) = tab.filter(|t| {
                 matches!(
@@ -373,5 +378,27 @@ fn decode_general(b: &[u8]) -> Option<cyclopedia_character::GeneralStats> {
             stamina_minutes,
             offline_training_minutes,
             last_vitals,
+        })
+}
+
+fn decode_store(b: &[u8]) -> Option<cyclopedia_character::StoreSummary> {
+    if b.first() != Some(&(cyclopedia_character::CharacterTab::StoreSummary as u8)) {
+        return None;
+    }
+    let mut r = Reader(&b[1..]);
+    let count = r.u8()?;
+    let mut blessings = Vec::with_capacity(usize::from(count));
+    for _ in 0..count {
+        blessings.push(r.text()?.into());
+    }
+    let permanent_prey_slots = r.u8()?;
+    let prey_wildcards = r.u8()?;
+    let hirelings = r.u8()?;
+    r.0.is_empty()
+        .then_some(cyclopedia_character::StoreSummary {
+            blessings,
+            permanent_prey_slots,
+            prey_wildcards,
+            hirelings,
         })
 }

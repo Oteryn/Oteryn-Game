@@ -201,3 +201,25 @@ pub fn combat_detail(
     }
     out
 }
+
+pub fn store_cards(p: &CyclopediaCharacterPanel) -> Vec<(&'static str, String)> {
+    let Some(store) = p.store.as_ref().filter(|_| {
+        p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary
+    }) else {
+        return Vec::new();
+    };
+    vec![
+        (
+            "Permanent prey slots",
+            store.permanent_prey_slots.to_string(),
+        ),
+        ("Prey wildcards", store.prey_wildcards.to_string()),
+        ("Hirelings", store.hirelings.to_string()),
+        ("Blessings", store.blessings.len().to_string()),
+    ]
+}
+pub fn store_blessings(p: &CyclopediaCharacterPanel) -> String {
+    p.store
+        .as_ref()
+        .map_or_else(String::new, |s| s.blessings.join("\r\n"))
+}

@@ -298,6 +298,7 @@ mod window {
             let training_bar = control(hwnd, "msctls_progress32", "", 471, [365, 575, 335, 18], 0);
             let mut held_history = Vec::new();
             let mut held_combat = Vec::new();
+            let mut held_store = String::new();
             let mut painted_tab = None;
             let mut message: MSG = std::mem::zeroed();
             loop {
@@ -350,25 +351,37 @@ mod window {
                     && panel.tab
                         == oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats;
                 let combat = panel.combat.as_ref().is_some_and(|s| s.tab() == panel.tab);
+                let store = panel.store.is_some()
+                    && panel.tab
+                        == oteryn_client_runtime::cyclopedia_character::CharacterTab::StoreSummary;
+                let card_rows = if store {
+                    oteryn_client_ui::cyclopedia_character::store_cards(panel)
+                } else {
+                    oteryn_client_ui::cyclopedia_character::overview_cards(panel)
+                };
                 ShowWindow(
                     output,
-                    if table || overview || combat {
+                    if table || overview || combat || store {
                         SW_HIDE
                     } else {
                         SW_SHOW
                     },
                 );
-                for handle in cards.iter().copied().chain([stamina_bar, training_bar]) {
+                for (i, handle) in cards.iter().enumerate() {
+                    ShowWindow(
+                        *handle,
+                        if (overview || store) && i < card_rows.len() {
+                            SW_SHOW
+                        } else {
+                            SW_HIDE
+                        },
+                    );
+                }
+                for handle in [stamina_bar, training_bar] {
                     ShowWindow(handle, if overview { SW_SHOW } else { SW_HIDE });
                 }
-                if overview {
-                    for (handle, (label, value)) in
-                        cards
-                            .iter()
-                            .zip(oteryn_client_ui::cyclopedia_character::overview_cards(
-                                panel,
-                            ))
-                    {
+                if overview || store {
+                    for (handle, (label, value)) in cards.iter().zip(card_rows) {
                         SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
                     }
                     if let Some(bars) = oteryn_client_ui::cyclopedia_character::overview_bars(panel)
@@ -381,13 +394,31 @@ mod window {
                         }
                     }
                 }
-                for handle in [heading, history, detail] {
+                for handle in [heading, detail] {
                     ShowWindow(handle, if table || combat { SW_SHOW } else { SW_HIDE });
                 }
+                ShowWindow(
+                    history,
+                    if table || combat || store {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+                SetWindowPos(
+                    history,
+                    null_mut(),
+                    10,
+                    if store { 415 } else { 380 },
+                    690,
+                    if store { 180 } else { 155 },
+                    SWP_NOZORDER | SWP_NOACTIVATE,
+                );
                 if painted_tab != Some(panel.tab) {
                     SendMessageW(history, LB_RESETCONTENT, 0, 0);
                     held_history.clear();
                     held_combat.clear();
+                    held_store.clear();
                     painted_tab = Some(panel.tab);
                 }
                 if table {
@@ -448,6 +479,21 @@ mod window {
                         |row| oteryn_client_ui::cyclopedia_character::combat_detail(panel, row.key),
                     );
                     SetWindowTextW(detail, wide(&description).as_ptr());
+                }
+                if store {
+                    let blessings = oteryn_client_ui::cyclopedia_character::store_blessings(panel);
+                    if held_store != blessings {
+                        SendMessageW(history, LB_RESETCONTENT, 0, 0);
+                        for blessing in blessings.lines() {
+                            SendMessageW(
+                                history,
+                                LB_ADDSTRING,
+                                0,
+                                wide(blessing).as_ptr() as isize,
+                            );
+                        }
+                        held_store = blessings;
+                    }
                 }
                 drop(mailbox);
                 std::thread::sleep(Duration::from_millis(25));

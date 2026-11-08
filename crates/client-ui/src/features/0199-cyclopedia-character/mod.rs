@@ -8,6 +8,7 @@ pub use protocol::{Intent, apply_result, request};
 pub use state::{CyclopediaCharacterPanel, HistoryRow};
 pub use view::{
     CombatRow, combat_detail, combat_rows, history_rows, overview_bars, overview_cards, panel_text,
+    store_blessings, store_cards,
 };
 
 #[cfg(test)]
