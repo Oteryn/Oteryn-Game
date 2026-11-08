@@ -16,6 +16,9 @@ mod profiles;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "shortcuts.rs"]
+mod shortcuts;
+pub use shortcuts::ShortcutEdit;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};

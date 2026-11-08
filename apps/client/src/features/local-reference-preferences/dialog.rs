@@ -32,6 +32,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            mut shortcuts,
             arcs,
             interface,
             profile_name,
@@ -124,6 +125,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            shortcuts.show(state.page == SettingsPage::Shortcuts);
             arcs.show(state.page == SettingsPage::Arcs);
             interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
@@ -194,6 +196,9 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             for action in std::mem::take(&mut actions.0) {
+                if shortcuts.handle(action, &mut state) {
+                    continue;
+                }
                 if (110..=113).contains(&action) {
                     drop(state);
                     let confirmed = action == 111
@@ -303,6 +308,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                shortcuts.refresh(&state);
                 arcs.refresh(&state.preferences);
                 interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;

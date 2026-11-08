@@ -16,19 +16,21 @@ pub enum SettingsPage {
     CustomHotkeys,
     Arcs,
     Interface,
+    Shortcuts,
     Graphics,
     Sound,
     Help,
 }
 
 impl SettingsPage {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Gameplay,
         Self::Hotkeys,
         Self::BarHotkeys,
         Self::CustomHotkeys,
         Self::Arcs,
         Self::Interface,
+        Self::Shortcuts,
         Self::Graphics,
         Self::Sound,
         Self::Help,
@@ -42,6 +44,7 @@ impl SettingsPage {
             Self::Arcs => "Interface / HUD Arcs",
             Self::CustomHotkeys => "Controls / Custom Hotkey Profiles",
             Self::Interface => "Interface",
+            Self::Shortcuts => "Interface / Shortcuts",
             Self::Graphics => "Graphics",
             Self::Sound => "Sound",
             Self::Help => "Help / settings transfer",

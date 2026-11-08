@@ -133,7 +133,7 @@ Zasady przeciw dublowaniu:
 | T056 | Options | Interface / Game Window: own/other spells, text, loot messages | PARTIAL | Zdarzenia są; brak przełączników według źródła i klasy tekstu. |
 | T057 | Options | Interface / Game Window: target/PvP frame, banner, loot highlight | PARTIAL | Cel jest wybierany; brak konfiguracji ramek/banerów/kolorowania loot. |
 | T058 | Options | Interface / Action Bars: rows/amounts/labels/tooltips/cooldowns/auto-insert spells | PARTIAL | Brak pełnej strony ustawień barów. |
-| T059 | Options | Interface / Shortcuts: available/displayed, add/remove/order | PARTIAL | Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków. |
+| T059 | Options | Interface / Shortcuts: available/displayed, add/remove/order | DONE | Rejestr akcji i visible_panels są; brak selektora i ustalania kolejności przycisków. Evidence: `apps/client/src/features/local-reference-preferences/shortcuts.rs:26 + apps/client/src/features/local-reference-preferences/shortcut_controls.rs:11 + apps/client/src/features/local-reference-preferences/native.rs:135 + apps/client/src/features/local-reference-preferences/tests/shortcuts.rs:3 t059_settings_selector_persists_order_and_routes_the_selected_shortcut` |
 | T060 | Options | Graphics: engine, AA, fullscreen, VSync, integral scaling | MISSING | Brak strony konfiguracji obsługiwanych parametrów renderera/okna. |
 | T061 | Options | Graphics: foreground/background FPS i FPS/latency indicator | MISSING | Brak równoważnych kontrolek limitów i wskaźników w Settings. |
 | T062 | Options | Graphics / Effects: ambient/separator/indoor/cloud attenuation | PARTIAL | Światło jest; brak grupy ambient/separator/attenuation. |
