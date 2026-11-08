@@ -508,6 +508,15 @@
       ]
     },
     {
+      "npc": "oteryn:npc.sterling",
+      "greet": "Welcome. Ask about the lost treasure.",
+      "farewell": "Farewell.",
+      "walkaway": "Return when you are ready.",
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/79/definition:sha256:359681e392e0588e5f76ef80af7ff6f780550271da2bdacfa0f32f5754f84c02"
+      ]
+    },
+    {
       "npc": "oteryn:npc.the_bone_master",
       "greet": "Welcome to my little realm.",
       "farewell": "We will meet again.",

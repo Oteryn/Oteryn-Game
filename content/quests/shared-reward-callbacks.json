@@ -8223,6 +8223,35 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc5-targuna-sterling-accept",
+      "quest": "oteryn:quest.targuna_quest",
+      "npc": "oteryn:npc.sterling",
+      "keywords": [
+        "mission",
+        "lost treasure"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/targuna/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ask Morla on Aragonia about the old treasure map, then return to me."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/79/definition:sha256:359681e392e0588e5f76ef80af7ff6f780550271da2bdacfa0f32f5754f84c02"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",

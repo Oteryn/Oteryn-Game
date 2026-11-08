@@ -890,6 +890,9 @@ def build():
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    import targuna_contacts
+    targuna_greetings = []
+    targuna_contacts.extend_rewards(callbacks, targuna_greetings)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -920,8 +923,8 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks}):
+    greetings=targuna_greetings.copy()
+    for npc in sorted({c['npc'] for c in callbacks} - {g['npc'] for g in targuna_greetings}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
         messages={}
         citations=[]
@@ -938,6 +941,7 @@ def build():
             line=inputs[origin][:matches[0].start()].count(b'\n')+1
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
+    greetings.sort(key=lambda row: row['npc'])
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]

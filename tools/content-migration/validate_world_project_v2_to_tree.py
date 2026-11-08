@@ -697,6 +697,8 @@ def main() -> int:
     from quest_reward_item_semantics import apply_admissions
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
+    import questpc5_targuna_npc_facts
+    declarations = questpc5_targuna_npc_facts.extend(declarations, ROOT)
     legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
     editor = load(LEGACY / "editor" / "author.json")

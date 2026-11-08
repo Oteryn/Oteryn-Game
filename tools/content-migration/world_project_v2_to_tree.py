@@ -173,6 +173,8 @@ def main() -> int:
     from primal_reference_overlay import apply_reference as apply_primal_reference
     apply_primal_reference(reference["records"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
+    import questpc5_targuna_npc_facts
+    declarations = questpc5_targuna_npc_facts.extend(declarations, ROOT)
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
     imports = load(LEGACY / "provenance" / "imports.json")

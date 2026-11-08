@@ -1,0 +1,17 @@
+# questpc5-n2 continuation
+
+Branch claude/happy-davinci-ijz3wy-questpc5-n2 starts at origin/main f5b584ef1 and is fast-forwarded to 64d8bb8b8. The old questpc5 branch a2564ddc is FROZEN for wpkg3: no more pushes there. Its 13 whole qualifications are historical package input, absent from this main baseline; never redo those quests.
+
+Next owned quest: Targuna. Batch scope is only its free, once-only Sterling first contact plus exact retained names/positions for Sterling, Morla, Lizzie and Emiliana. Preserve both Emiliana positions; only select Sterling for this contact. No reward, Premium/level restriction, completion, later stages or taming is inferred. Oteryn dialogue is authored from the selected recipe, not represented as donor speech.
+
+Source authoring tests: contact test initially RED (missing module), then2PASS; NPC-fact helper2PASS exact/idempotent/conflict refusal. Production PG fixture asserts retained position31928,31903,7, actual NPC placement, native talk, one receipt, same-command replay, new-command refusal, zero rewards/completion. PG RED completed against PostgreSQL: 43.216368381s, exact missing retained-position error. Two PG18.6 fixture runs (120.199762343s,127.427800978s) caught my incorrect assertion: runtime LocalPosition uses legacy z=7, while NpcPlacement uses native -z=-7. The existing classic fixture was correct. The explicit source-cell fixture retains native -7/north; the assertion now expects runtime7, and the progress reader preserves unset -1. Final PG rerun pending.
+
+Frozen branch broad pending unit run completed:2914/2914PASS3256.114s, zero failures; do not mutate frozen records to publish that evidence. No migration1300 or other foreign migration is copied into n2.
+
+Authoring checks PASS. First complete authoring unit run collected two root causes: donor-only exact-cohort assertion included the new authored callback, and talk-NPC candidate packet was stale. Original donor assertions remain intact after separating the exact new callback; packet regenerated with repository producer. Full 104-module runner rerunning. Content-tree materialization and Item/Mount equivalence PASS. Pin generation memory retry pending after Rust build; no hand-edited pins.
+
+Latest main107625470 merged cleanly before regeneration. Postmerge exact CI authoring checks and all104modules/1121tests PASS; content tree97/97 and Item/Mount equivalence PASS; native44/equipment3792/world metadata refreshed; current compiler rebuilt21.50s and pin-refresh PASS. Exact source-cell PG rerun, check/clippy/fmt and pin-check still pending. Whole Targuna remains unfinished; never claim first contact qualifies nine stages.
+
+Cadence checkpoint: if pushed before the queued PG/unit invocations finish, this is explicitly WIP under PREPUSH-2 step3 time-budget exception. Last red is the incorrect runtime-floor assertion, fixed using documented native-to-legacy conversion. Do not collect as qualified. Continue focused PG and changed-crate units after the push. The old questpc5 branch stays frozen.
+
+Checkpoint gates now PASS: merged-main workspacealltargets23m13s, strict dispatch/content Clippy21m43s (both include build-lock wait), fmt, rebuilt-current-compiler pinrefresh and serial pincheck. Own PG rerun and dispatch/content unit runs remain pending under the explicit PREPUSH-2 step3 cadence exception; do not claim qualified. Resume queued Cargo builds701432 and703168 with SIGCONT after the checkpoint push.

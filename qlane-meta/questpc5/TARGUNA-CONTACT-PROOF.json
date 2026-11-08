@@ -1,0 +1,68 @@
+{
+  "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+  "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+  "frozen_previous_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+  "quest": "oteryn:quest.targuna_quest",
+  "whole_quest_qualified": false,
+  "scope": "Only free once-only Sterling acceptance; selected9-stage recipe remains unfinished. Four retained NPC name/position enrichments preserve existing facts; served scope adds only Sterling.",
+  "source_evidence": {
+    "selected_recipe": "content/quests/definitions/quests-00200-00299.json:1 /records/79/definition/oteryn_recipe/payload/recipe",
+    "npc_facts": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json:1 pageids66775-66778, exact revid/sha checks in producer",
+    "placement": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:1 /candidates identity=oteryn:npc.sterling, Crystal definition_sha256=3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9",
+    "placement_cell": [
+      31928,
+      31903,
+      7
+    ]
+  },
+  "decisions": [
+    "Reuse admitted promotion candidate and agreeing retained BR coordinate; no guessed NPC or Item identity.",
+    "Preserve both retained Emiliana positions and all unowned NPC fields; do not activate later Targuna contacts.",
+    "Oteryn first-contact speech derives from selected recipe; not claimed as donor quotations.",
+    "No Premium/level gate, reward, completion or taming inferred by first contact.",
+    "No foreign migration or old frozen-branch engine code is copied."
+  ],
+  "red": {
+    "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+    "duration_seconds": 43.216368381,
+    "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc5-targuna-sterling success=false",
+    "error": "Targuna Sterling retained position absent",
+    "log": "/tmp/questpc5-n2-contact-red-pg.log"
+  },
+  "authoring_tests": {
+    "contact": "RED missing module then2PASS0.215s",
+    "npc_facts": "2PASS exact preservation/idempotence/conflict checks",
+    "placement": "RED0versus1 then1PASS0.118s"
+  },
+  "green_pg": "pending after stable full regeneration",
+  "previous_frozen_validation": "2914/2914RustcrateunitsPASS3256.114s, zero failures; not pushed to frozen branch.",
+  "fixture_correction": {
+    "postgres": "18.6",
+    "red_durations_seconds": [
+      120.199762343,
+      127.427800978
+    ],
+    "error": "Test expected native floor -7 in a runtime LocalPosition that uses legacy z=7. The existing classic fixture was not at fault.",
+    "evidence": "crates/gameplay/entities/src/carrier/npc_actor.rs:96-105 documents and implements native -z to legacy z conversion.",
+    "fix": "Keep explicit exact-source fixture NpcPlacement floor=-7/north and assert runtime cell31928,31903,7. Acceptance and replay use existing wire fixture; own progress reader preserves unset -1.",
+    "rerun": "pending /tmp/questpc5-n2-contact-green-pg-runtime-floor.log"
+  },
+  "review": "Read producers, callback/greeting/placement generated deltas, NPC preservation tests, dispatch hooks and PG test against checklist. No production engine, migrations, value grants, protocol, boot or serve code changed. Donor composition assertions preserved for exact original cohort; new authored callback asserted separately.",
+  "prepush_checks": {
+    "workspace_all_targets": "PASS merged107625470, cargo check --workspace --all-targets23m13s including build-lock wait",
+    "quest_authoring_checks": "PASS exact CI checks on107625470",
+    "content_tree": "PASS postmerge materialized97/97 world_markers10 successor_files1257",
+    "item_mount_equivalence": "PASS postmerge34111Items252Mounts,28759creatures; native44outputs/equipment3792 fresh",
+    "npc_source_units": "2 PASS15.329s",
+    "placement_units": "1 PASS0.261s",
+    "duplicates": "staged-tree duplicate migration check before checkpoint commit",
+    "authoring_unit_rerun": "PASS postmerge104modules1121tests0failures",
+    "pins": "PASS current107625470 release compiler pin-refresh and serial pin-check; concurrent verification attempt137 retried serially",
+    "clippy": "PASS dispatch+content all-targets -D warnings21m43s including build-lock wait",
+    "own_pg": "PENDING corrected runtime-z assertion rerun; no qualification claimed",
+    "fmt": "PASS cargo fmt --all --check and explicit new PG-file rustfmt",
+    "crate_units": "PENDING dispatch/content units under PREPUSH-2 step3 cadence exception; builds paused until serial pin verification then resumed"
+  },
+  "main_sync": "Fast-forward to107625470 (SRVENC/ENCX and node-boot fix), both local producer hooks auto-merged without conflicts; refresh affected providers/pins and rerun merged-tree checks. Pre-merge Rust crate-test invocation cancelled before test execution.",
+  "checkpoint": "Compiling WIP; owner-authorized cadence exception while focused PG and changed-crate unit runs are pending. Do not collect as green."
+}

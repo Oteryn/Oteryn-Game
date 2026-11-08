@@ -306,7 +306,11 @@ class QuestRewards(unittest.TestCase):
                          ['oteryn:item.tibia.i6101','oteryn:item.tibia.i6102','oteryn:item.tibia.i6100','oteryn:item.tibia.i6099'])
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=self.callbacks['callbacks']
+        selected = [c for c in self.callbacks['callbacks'] if c['key'] ==
+                    'oteryn:quest-reward/questpc5-targuna-sterling-accept']
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected[0]['quest'], 'oteryn:quest.targuna_quest')
+        callbacks = [c for c in self.callbacks['callbacks'] if c not in selected]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),81)

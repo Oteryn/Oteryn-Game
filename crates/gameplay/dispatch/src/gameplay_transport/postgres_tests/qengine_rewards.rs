@@ -23,7 +23,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
+            if name == "qengine-rewards-questpc5-targuna-sterling" {
+                Position { x: 31929, y: 31902, floor: -7 }
+            } else if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
                 super::l6_paradox_upper::start(name)
             } else if name.starts_with("qengine-rewards-questpc4-paradox-story-") {
                 super::l6_paradox_story::start()
@@ -758,6 +760,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-questpc5-targuna-sterling" {
+        return super::questpc5_targuna_contacts::exercise(owner, admitted, h, authority).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return super::l6_paradox_upper::exercise(owner, admitted, h, authority, name).await;
     }
