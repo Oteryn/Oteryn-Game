@@ -13,3 +13,6 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+#[path = "presets.rs"]
+pub(in crate::play) mod presets;

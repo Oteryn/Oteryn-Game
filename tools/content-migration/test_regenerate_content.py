@@ -333,8 +333,72 @@ def test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths() -> N
             assert rc.unresolved_worktree_paths() == ["conflict.json", "missing.json"]
 
 
+
+def test_source_cohort_extent_separates_npc_profiles_and_tracks_successors() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        identity = lambda family, key: {"family": family, "key": key, "revision": "r1"}
+        head = identity("Presentation", "oteryn:presentation.npc.one")
+        behavior = identity("Behavior", "oteryn:behavior.npc.one")
+        creature = identity("Creature", "oteryn:creature.one")
+        records = [{"kind": "Generic", "identity": head}, {"kind": "Generic", "identity": behavior}, {"kind": "Creature", "identity": creature}, {"kind": "Item", "identity": identity("Item", "oteryn:item.one")}]
+        document = {"records": [{"kind": "NPC", "presentation": head, "behavior": behavior}], "authoring_profiles": [{"target": row} for row in [head, behavior, creature]]}
+        write(root, "definitions/reference.json", {"records": records})
+        write(root, "definitions/declarations.json", document)
+        write(root, "provenance/sources.json", {"sources": [{"key": "one"}]})
+        write(root, "provenance/imports.json", {"batches": [{"batch_id": "one"}]})
+        write(root, "project.json", {"project_revision": "one"})
+        assert rc.source_cohort_extent(root) == {"references": 4, "sources": 1, "imports": 1, "creatures": 1, "creature_records": 1, "creature_profiles": 1, "npc_records": 2, "project_revision": "one"}
+        successor = identity("Creature", "oteryn:creature.two")
+        records.append({"kind": "Creature", "identity": successor})
+        document["authoring_profiles"].append({"target": successor})
+        write(root, "definitions/reference.json", {"records": records})
+        write(root, "definitions/declarations.json", document)
+        extent = rc.source_cohort_extent(root)
+        assert (extent["references"], extent["creatures"], extent["creature_records"], extent["creature_profiles"], extent["npc_records"]) == (5, 2, 2, 2, 2)
+        # Missing source profiles and duplicate identities cannot silently become
+        # a larger accepted count merely because the file remains valid JSON.
+        document["authoring_profiles"] = document["authoring_profiles"][1:]
+        write(root, "definitions/declarations.json", document)
+        try:
+            rc.source_cohort_extent(root)
+        except SystemExit as error:
+            assert "missing NPC profiles" in str(error)
+        else:
+            raise AssertionError("missing NPC profile admitted as a count")
+        document["authoring_profiles"] = [{"target": row} for row in [head, behavior, creature, successor]]
+        write(root, "definitions/declarations.json", document)
+        records.append(records[0])
+        write(root, "definitions/reference.json", {"records": records})
+        try:
+            rc.source_cohort_extent(root)
+        except SystemExit as error:
+            assert "duplicate references" in str(error)
+        else:
+            raise AssertionError("duplicate reference admitted as a count")
+
+
+def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        world = root / "content/world"
+        write(root, rc.PIN_PATH, PIN_TEST + f'const TREE_SHA256: &str = "{"0" * 64}";\n')
+        write(root, "content/world/definitions/reference.json", {})
+        write(root, "content/world/provenance/imports.json", {"batches": [{"batch_id": key} for key in ["legacy-a", "legacy-b", "g4-item-fx-audio295-raw-evidence-r1", "seasonal-cake-creature-crystal-201189f-r1"]]})
+        write(root, "apps/game-server/tests/content_npc_catalogue.rs", f'assert_eq!(catalogue.source_tree_digest(), "{"0" * 64}");\n')
+        path = root / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
+        write(root, str(path.relative_to(root)), 'assert_eq!(batches.len(), 2);\nassert_eq!(historical.len(), 2);\nassert_eq!(&batches[..prior.len()], prior.as_slice());\n')
+        with patch.object(rc, "ROOT", root), patch.object(rc, "WORLD", world), patch.object(rc, "PIN_TEST", root / rc.PIN_PATH):
+            rc.repin_rust_inventory()
+        text = path.read_text()
+        assert 'assert_eq!(batches.len(), 3);' in text
+        assert 'assert_eq!(historical.len(), 2);' in text
+        assert 'assert_eq!(&batches[..prior.len()], prior.as_slice());' in text
+
 def main() -> None:
     tests = [
+        test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
+        test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,
         test_no_stage_checks_binary_conflicts_without_decoding,
         test_worker_conflict_scan_accepts_binary_and_rejects_unresolved_paths,
         test_import_conflict_fails_closed_and_keeps_both_sides,

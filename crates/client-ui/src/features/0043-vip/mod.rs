@@ -175,3 +175,7 @@ mod tests {
         assert_eq!(panel.revision, 3);
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_s04a.rs"]
+mod e2e_s04a;

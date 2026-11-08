@@ -66,6 +66,20 @@ class CanonicalUnion(unittest.TestCase):
         self.assertEqual(appended, [])
         self.assertEqual(rows[0]['authoring']['profile']['details']['display_name'], 'rAT')
 
+    def test_opt_in_preserves_existing_aliases_but_never_admits_new_alias(self):
+        active, presentations, rows, declarations = fixture()
+        duplicate = copy.deepcopy(active['records'][0])
+        duplicate['profile']['target']['key'] = 'oteryn:creature.legacy_rat'
+        active['records'].append(duplicate)
+        with self.assertRaisesRegex(ValueError, 'duplicate active Creature display name'):
+            union_profiles(active, presentations, rows, declarations)
+        rows[0]['definition']['identity']['key'] = 'oteryn:creature.third_rat'
+        creatures, result_presentations, appended = union_profiles(
+            active, presentations, rows, declarations, preserve_existing_display_aliases=True)
+        self.assertEqual(creatures, active)
+        self.assertEqual(result_presentations, presentations)
+        self.assertEqual(appended, [])
+
     def test_duplicate_active_keys_refuse_even_across_revision(self):
         args = fixture()
         duplicate = copy.deepcopy(args[0]['records'][0])

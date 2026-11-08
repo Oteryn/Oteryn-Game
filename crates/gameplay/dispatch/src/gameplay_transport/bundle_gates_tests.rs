@@ -151,6 +151,10 @@ const INVENTORY: &[Entry] = &[
             ),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
+            // W05d: the existing open monster gate resumes only source-reserved
+            // canonical Cake actors, and its real machine-step PG fixture.
+            ("gameplay_transport/raid_live_world/cake.rs", 1),
+            ("gameplay_transport/postgres_tests/raid_live/cake.rs", 2),
             // W17: the physical Drome regression proves participant-only targeting.
             (
                 "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
@@ -904,6 +908,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
+    // W05d's native Cake tile fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/cake_phases.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
     // W19 fixtures supply only combat; bundle Worlds still have no qualified room.
     (
@@ -1173,5 +1179,31 @@ fn owned_room_parser_rejects_qualification_and_accessor_gate_bypasses()
         )?),
         None
     );
+    Ok(())
+}
+
+#[test]
+fn cake_bundle_fixture_keeps_its_qualified_room_closed() {
+    let fixture = parse_source("src/gameplay_transport/postgres_tests/cake_phases.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&fixture);
+    assert!(matches!(constructions.0.as_slice(), [call]
+        if matches!(call.args.first(), Some(syn::Expr::Path(path)) if path.path.is_ident("None"))));
+}
+
+#[test]
+fn qualification_guard_rejects_unconditional_or_inverted_bundle_room()
+-> Result<(), Box<dyn std::error::Error>> {
+    let correct = syn::parse_str::<syn::Expr>("bundle.is_none().then_some(&qualified_room)")?;
+    assert!(withholds_from_a_bundle(&correct));
+    for wrong in [
+        "Some(&qualified_room)",
+        "bundle.is_some().then_some(&qualified_room)",
+        "bundle.is_none().then_some(&combat_room)",
+        "bundle.is_none().then_some(&mut qualified_room)",
+    ] {
+        let candidate = syn::parse_str::<syn::Expr>(wrong)?;
+        assert!(!withholds_from_a_bundle(&candidate), "{wrong}");
+    }
     Ok(())
 }

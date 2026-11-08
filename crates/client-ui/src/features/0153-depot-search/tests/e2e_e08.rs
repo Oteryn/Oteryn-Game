@@ -102,7 +102,7 @@ fn e08_real_server_payloads_replay_into_depot_search_panel()
     assert_eq!(
         panel_text(&panel),
         format!(
-            "Depot Search\nItem id: {item}\nResult: Found\n\nItem {item}: depot {depot}, stash {stash}, inbox {inbox}; tier {tier_no} x{count}"
+            "Depot Search\nItem id: {item}\nResult: Found\nRetrieved: 0\n\nItem {item}: depot {depot}, stash {stash}, inbox {inbox}; tier {tier_no} x{count}"
         )
     );
     assert_eq!(panel.feedback, None);

@@ -88,5 +88,8 @@ pub(in crate::play) fn reduce(panel: &mut Panel, events: &[oteryn_session::Sessi
     }
 }
 #[cfg(test)]
+#[path = "tests/e2e_s02.rs"]
+mod e2e_s02;
+#[cfg(test)]
 #[path = "tests/e2e_s08.rs"]
 mod e2e_s08;

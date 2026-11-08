@@ -289,8 +289,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // definitions (25879..=25914, its exact source subset), all with speed_bonus=0.
     ("SRVGAP-DISPENSERS", 22),
     // srx1-potion-profiles.json adds 53162..=53164, each with speed_bonus=0.
-    // Both SRX-1 cohorts are merged by the pinned item_profile_updates input;
-    // their keys are disjoint from the base and starting-loadout profiles.
+    // These remain the same original SRX-1 cohorts. SEASON coalesces identical
+    // dispenser facts into the base, so the supplement now carries only the
+    // remaining overrides/new keys; the merged key inventory counts each once.
     ("SRX1-POTIONS", 3),
     // SV16 Echo catalysts 51588, 51589 and 54266, added to the W06/W07 overlay
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
@@ -309,6 +310,19 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Source-qualified zero speed: 2822, 2823, 2848, 3310, 21982.
     ("QREADY2", 5),
     // END GENERATED QREADY PROFILE ADDITIONS
+    // SEASON W18:2126 exact initialized House source profiles. Relative to the
+    // frozen9668e0a04 base (including loadout/SRX updates),1959 keys are new.
+    // Source: house-decoration-profiles.json, Crystal201189f items.xml and
+    // both pinned appearance banks; no original key is removed or relabeled.
+    ("SEASON-W18-HOUSE", 1959),
+    // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
+    // qengine-reward-item-profiles.json (pinned Canary items.xml/appearance).
+    // The exact packet carries speed_bonus=0 for every record, checked below.
+    ("QENGINE-REWARDS", 53),
+    // W05d:48 canonical seasonal profiles;35 further keys are new after the
+    // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
+    // Cake and Halloween donor locators/hashes); all have qualified speed0.
+    ("SEASON-W05D", 35),
 ];
 
 #[test]
@@ -398,10 +412,46 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-            + additions.len()
+            + (additions.len() - 53)
             // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
-            + 26 + 23
+            + 26
+            + 23
     );
+    // Independently replay the closed source packets' zero-speed facts;
+    // the unchanged per-row raw-ability and unknown-speed checks below still
+    // reject loss, invention or accidental overwrite of any prior owner rule.
+    for (path, expected_count) in [
+        ("house-decoration-profiles.json", 2126),
+        ("seasonal-item-profiles.json", 48),
+        ("qengine-reward-item-profiles.json", 60),
+    ] {
+        let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../tools/content-schema/native-gameplay")
+                .join(path),
+        )?)?;
+        let records = source["records"]
+            .as_array()
+            .ok_or("missing source Item profiles")?;
+        assert_eq!(records.len(), expected_count, "{path}");
+        for source in records {
+            let key = source["production_definition"]["production_key"]
+                .as_str()
+                .ok_or("source Item key")?;
+            assert_eq!(
+                source["attributes"]["speed_bonus"],
+                serde_json::json!(0),
+                "source speed {path}:{key}"
+            );
+            let actual = profiles
+                .records
+                .iter()
+                .find(|row| row.production_definition.production_key == key)
+                .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
+            assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
+            assert!(actual.admission.materializable, "{path}:{key}");
+        }
+    }
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");
         let record = profiles
@@ -550,18 +600,18 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         // except 2598/2605 now explicitly qualified by SRX-1 writing above.
         .chain(
             [
-                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2602, 6121, 6122, 10322, 12782, 12783,
+                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2602, 6121, 6122,
+                10322, 12782, 12783,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
         .chain(
             [
-                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835,
-                2842, 3212, 3505, 3507,
-                4100, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150,
-                8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
-                9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
-                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,
+                347, 401, 635, 636, 2815, 2821, 2827, 2833, 2835, 2842, 3212, 3505, 3507, 4100,
+                5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 8150, 8151, 8155, 8156, 8737, 9206,
+                9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214, 9215, 9216, 9217, 9218, 9219, 9220,
+                9221, 9222, 9223, 9224, 9538, 9614, 15276, 15633, 19072, 19073, 19074, 21445,
+                27932, 27933, 27934, 28572, 31266, 31268,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
