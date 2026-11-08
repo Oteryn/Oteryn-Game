@@ -1,4 +1,0 @@
-            } else if native_story
-                || (native_upper && name.ends_with("-complete"))
-                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
-            {

@@ -1,4 +1,0 @@
-    let feaster = matches!(
-        name,
-        "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian"
-    );
