@@ -1,6 +1,9 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
 
+#[path = "elemental_arrival.rs"]
+mod elemental_arrival;
+
 #[path = "quest_item_batch.rs"]
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
