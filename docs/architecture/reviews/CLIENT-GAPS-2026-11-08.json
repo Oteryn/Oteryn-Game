@@ -1030,8 +1030,9 @@
   "area": "Highscores",
   "feature": "Kategorie/world/vocation, paging/show-me",
   "status": "PARTIAL",
-  "gap": "Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone.",
-  "lane": "cg_cyclo"
+  "gap": "Show Me exists; cross-world selection remains blocked: accepted HIGHSCORES0 reserves other-World filters for a separate decision or amendment; command 14 reads the admitted session World only.",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0009-highscores/protocol.rs:21 (ShowMe); crates/gameplay/dispatch/src/gameplay_transport/connection/routing/highscores.rs:18 (admitted.world_id); docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md:39 (owning amendment prerequisite)."
  },
  {
   "id": "T144",
