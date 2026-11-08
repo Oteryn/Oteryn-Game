@@ -67,7 +67,8 @@ def string(text: str) -> bytes:
 # These synthetic maps have no donor startup selectors. Keep their capture
 # explicit so production builds still require every committed row.
 QUEST_ACCESS_INPUT = {
-    "tools/content-schema/world-authoring/samples/quest-access-bindings.json": b'{"bindings": []}\n'
+    "tools/content-schema/world-authoring/samples/quest-access-bindings.json": b'{"bindings": []}\n',
+    "tools/content-schema/world-authoring/samples/qready2-chest-bindings.json": b'{"bindings": []}\n',
 }
 
 

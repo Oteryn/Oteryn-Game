@@ -153,7 +153,7 @@ def grant_semantics(root, definition):
     return semantics
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
@@ -199,6 +199,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
     keys.add('oteryn:item.tibia.i2973')
+    keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
         if item:
