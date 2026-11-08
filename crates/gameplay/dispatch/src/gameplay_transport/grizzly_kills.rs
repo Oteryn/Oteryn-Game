@@ -26,6 +26,7 @@ struct TaskSnapshot {
     observed_revision: u64,
     active_tasks: Vec<u8>,
     native_counters: Vec<&'static str>,
+    source_objectives: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -137,7 +138,10 @@ fn freeze(
                         transition: (*transition).into(),
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source: Arc::clone(&native_source),
+                        source:
+                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
+                                Arc::clone(&native_source),
+                            ),
                     },
                 });
             }
@@ -258,13 +262,26 @@ pub(super) fn capture(
                 })
                 .cloned()
                 .collect();
-            freeze(
+            let mut frozen = freeze(
                 source,
                 *principal.character.as_bytes(),
                 principal_present,
                 &entry.creature,
                 &live,
-            )
+            );
+            frozen.native.extend(super::quest_batch3_c::capture(
+                runtime,
+                entry,
+                live.iter().map(|snapshot| super::quest_batch3_c::Snapshot {
+                    actor: snapshot.actor,
+                    session: snapshot.session,
+                    character: snapshot.character,
+                    lease_generation: snapshot.lease_generation,
+                    observed_revision: snapshot.observed_revision,
+                    objectives: snapshot.source_objectives.clone(),
+                }),
+            ));
+            frozen
         }),
     );
 }
@@ -302,6 +319,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observed_revision: revision,
                         active_tasks,
                         native_counters: oteryn_gameplay_quests::quest::native_kills::active(
+                            copy.tracks(),
+                        ),
+                        source_objectives: oteryn_gameplay_quests::quest::source_deaths::active(
                             copy.tracks(),
                         ),
                     })
@@ -543,7 +563,9 @@ pub(super) fn freeze_encounter_credit(
                     transition: counter.transition.into(),
                     creature: creature.into(),
                     observed_revision: participant.observed_revision,
-                    source: Arc::clone(&source),
+                    source: crate::durability::quest_state::native_kills::NativeDeathSource::Party(
+                        Arc::clone(&source),
+                    ),
                 },
             });
         }

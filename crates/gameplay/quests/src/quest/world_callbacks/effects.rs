@@ -229,6 +229,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.opening_only
             || callback.actor_kind != ActorKind::Player
             || effects.item_reward.is_none()
+            || effects.item_reward_cycle.is_some()
             || callback.storage.iter().all(|s| s.preserve)
     }) {
         return false;
