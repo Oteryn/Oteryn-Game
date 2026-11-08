@@ -75,6 +75,13 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn take_window_selection(&mut self) -> Option<(&'static str, Vec<NormalizedInputEvent>)> {
+        let id = self.window_action.take()?;
+        let raw = super::bindings::window_events(&self.preferences, id);
+        let (events, _) = self.input(&raw);
+        Some((id, events))
+    }
+
     pub fn request_magical_archive(&mut self) {
         self.magical_archive_requested = true;
     }

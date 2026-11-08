@@ -95,11 +95,11 @@ impl Settings {
             self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
                 .iter()
                 .enumerate()
-                .map(|(index, (_, label))| {
+                .map(|(index, (id, label))| {
                     control(
                         self.parent,
                         "BUTTON",
-                        &format!("◆ {label}"),
+                        &format!("{} {label}", oteryn_client::play::window_icon(id)),
                         25100 + index,
                         [8, 94 + index as i32 * 28, 150, 26],
                         0,
@@ -120,7 +120,11 @@ impl Settings {
     pub(super) fn take_window_events(
         &self,
         playing: bool,
-    ) -> Vec<oteryn_input_actions::NormalizedInputEvent> {
+        open_states: &[bool],
+    ) -> Option<(
+        &'static str,
+        Vec<oteryn_input_actions::NormalizedInputEvent>,
+    )> {
         let mut state = lock(&self.shared);
         unsafe {
             let mut rect: RECT = std::mem::zeroed();
@@ -139,6 +143,16 @@ impl Settings {
             );
             for (index, handle) in self.shortcuts.iter().enumerate() {
                 let id = oteryn_client::play::WINDOW_ACTIONS[index].0;
+                let open = open_states.get(index).copied().unwrap_or(false);
+                SendMessageW(*handle, BM_SETSTATE, usize::from(open), 0);
+                let windows = GetSubMenu(GetMenu(self.parent), 1);
+                if !windows.is_null() {
+                    CheckMenuItem(
+                        windows,
+                        (25100 + index) as u32,
+                        MF_BYCOMMAND | if open { MF_CHECKED } else { MF_UNCHECKED },
+                    );
+                }
                 let position = state
                     .preferences
                     .shortcut_order
@@ -157,7 +171,7 @@ impl Settings {
                 );
             }
         }
-        state.take_window_events()
+        state.take_window_selection()
     }
     pub(super) fn input(
         &mut self,

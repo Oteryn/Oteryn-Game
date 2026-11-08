@@ -125,6 +125,8 @@ mod session_stepper;
 mod status_window;
 mod stepper;
 mod tick;
+mod window_controls;
+pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 

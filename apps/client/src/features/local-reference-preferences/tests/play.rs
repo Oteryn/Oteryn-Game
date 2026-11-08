@@ -240,3 +240,5 @@ fn unregistered_and_sibling_chords_are_reserved() -> Result<(), Box<dyn std::err
 mod presentation;
 
 include!("health_circle.rs");
+
+include!("window_buttons.rs");

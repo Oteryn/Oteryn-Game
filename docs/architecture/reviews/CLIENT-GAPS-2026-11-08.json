@@ -1238,9 +1238,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Górne menu i przyciski okien",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego paska przycisków otwierających okna i zarządzającego ich stanem; Oteryn udostępnia okna przez skróty.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Wspólne menu i przyciski otwierają/zamykają rzeczywiste panele przez ich wejścia, respektują skróty i pokazują stan otwarcia.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/play/window_controls.rs:28 + o010_o037_window_buttons_toggle_real_panels_and_have_distinct_icons"
  },
  {
   "id": "O011",
@@ -1313,7 +1314,7 @@
   "status": "DONE",
   "gap": "Zapisane opcje okręgów HP/MP; projekcja potwierdzonych zasobów i status mnicha są podłączone do widoku świata.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/0023-presentation/view/methods.rs:101 + o025_session_vitals_drive_health_circle_in_live_tick"
+  "evidence": "apps/client/src/features/0023-presentation/resources.rs:26 + o025_session_vitals_drive_health_circle_in_live_tick"
  },
  {
   "id": "O028",
@@ -1365,9 +1366,10 @@
   "src": "OTCAUD1108",
   "area": "Game window",
   "feature": "Główny panel skrótów funkcji",
-  "status": "PARTIAL",
-  "gap": "Brakuje zwijanego głównego panelu ikon funkcji gry z utrwalonym układem; funkcje są otwierane skrótami.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Zwijany panel różnych ikon funkcji ma zapisany stan i kolejność; przyciski przełączają rzeczywiste okna.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/play/window_controls.rs:54 + o010_o037_window_buttons_toggle_real_panels_and_have_distinct_icons + o037_shortcut_panel_collapse_and_order_survive_restart"
  },
  {
   "id": "O039",
