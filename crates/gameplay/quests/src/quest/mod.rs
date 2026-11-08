@@ -32,6 +32,7 @@ pub mod completion_sets;
 pub mod cults_of_tibia;
 pub mod dark_trails;
 pub mod deepling_boss_access;
+pub mod elemental_spheres;
 pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;

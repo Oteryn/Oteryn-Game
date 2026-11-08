@@ -218,6 +218,16 @@ impl ChannelRuntimeV1 {
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        self.commit_quest_creature_spawn_with_projection(monsters, || true)
+    }
+
+    /// Publish a bounded spawn and its already observed world readset together.
+    /// A stale or refused map projection restores every staged actor and policy.
+    pub fn commit_quest_creature_spawn_with_projection(
+        &mut self,
+        monsters: &[(&str, i64, MovementLocalPosition)],
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
         if monsters.is_empty() || monsters.len() > 8 {
             return Err(CarrierError::PlanConflict);
         }
@@ -231,6 +241,9 @@ impl ChannelRuntimeV1 {
                 let actor = self.admit_encounter_actor(key, *health, *at)?;
                 self.install_creature_policy(actor, key)?;
                 actors.push(actor);
+            }
+            if !project() {
+                return Err(CarrierError::PlanConflict);
             }
             Ok(actors)
         })();
