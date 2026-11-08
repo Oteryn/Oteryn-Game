@@ -313,6 +313,21 @@ impl DurabilityRoot {
         }) {
             return Err(CharacterProgressionError::InvalidInput);
         }
+        if oteryn_gameplay_quests::quest::world_callbacks::load()
+            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .iter()
+            .any(|callback| {
+                // Ownership survives a caller renaming the synthetic transition.
+                callback.effects.quest_completion.as_ref().is_some_and(|quest| {
+                    catalogue.transition(&request.transition_key).is_some_and(|transition| {
+                        transition.completes && transition.quest.as_str() == quest.as_str()
+                    })
+                }) || oteryn_gameplay_quests::quest::world_callbacks::completion_transition(callback)
+                    .is_some_and(|transition| transition.key == request.transition_key)
+            })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callback = reward_callbacks
             .into_iter()
             .find(|c| c.key == request.transition_key);
@@ -1121,6 +1136,14 @@ impl DurabilityRoot {
                     };
                     if written.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if let Some(world) = &callback
+                        && !super::super::quest_world_callback::completion::apply(
+                            &mut tx, fence, &request, world, &catalogue,
+                        ).await?
+                    {
+                        tx.rollback().await?;
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let experience = match reward_experience {
                         Some(amount) => Some(
