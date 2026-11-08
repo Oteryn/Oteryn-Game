@@ -1531,7 +1531,7 @@
   "feature": "Edycja list gości, współwłaścicieli i drzwi",
   "status": "DONE",
   "gap": "Natywny wielowierszowy edytor wczytuje Guest/Subowner/Door z serwera i zapisuje z odczytaną globalną rewizją; odczyt jest session/World/content/access-fenced.",
-  "evidence": "apps/client/src/features/0049-house/input.rs:57 + house_acl_editor_loads_each_server_list_and_saves_its_revision; crates/gameplay/dispatch/src/gameplay_transport/house_query/acl.rs:7 + house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences",
+  "evidence": "apps/client/src/features/0049-house/input.rs:57 + house_acl_editor_loads_each_server_list_and_saves_its_revision; crates/gameplay/dispatch/src/gameplay_transport/house_query/acl.rs:7 + house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences; apps/client/src/play/mailbox/activity_scope.rs:68 + house_acl_handoff_cancels_pending_read_and_ignores_late_snapshot",
   "lane": "cg_ui"
  }
 ]

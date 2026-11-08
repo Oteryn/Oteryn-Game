@@ -32,6 +32,19 @@ impl Panel {
             self.fields[6].clear();
         }
     }
+    pub(in crate::play) fn invalidate(&mut self) {
+        self.model.pending = None;
+        self.model.pending_acl_read = false;
+        self.model.pending_acl = false;
+        self.model.acl_snapshot = None;
+        self.model.page = Default::default();
+        self.model.index = 0;
+        self.model.pending_index = 0;
+        self.model.feedback = "Activity changed; reload houses and access lists".into();
+        for field in [2, 4, 6] {
+            self.fields[field].clear();
+        }
+    }
     pub(in crate::play) fn initialize(&mut self, selected: bool) {
         let world = std::mem::take(&mut self.fields[0]);
         *self = Self::default();

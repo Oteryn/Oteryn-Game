@@ -219,3 +219,52 @@ fn house_acl_editor_loads_each_server_list_and_saves_its_revision()
     }
     Ok(())
 }
+
+#[test]
+fn house_acl_handoff_cancels_pending_read_and_ignores_late_snapshot()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::house::Row;
+    use oteryn_session::property_services::house as wire;
+    let (link, mut receiver, outbox) = play_channel();
+    let world_text = "01010101-0101-7101-8101-010101010101";
+    let world = crate::play::feature_0115_mail::protocol::uuid(world_text)?;
+    {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        let p = &mut m.properties.house;
+        p.initialize(true);
+        p.fields[0] = world_text.into();
+        p.fields[1] = "oteryn:content.area.city.thais".into();
+        p.fields[2] = "1".into();
+        p.fields[6] = "CONFIRM".into();
+        p.model.world = world;
+        p.model.town = p.fields[1].clone();
+        p.model.page.rows.push(Row {
+            house: "oteryn:content.house.test".into(),
+            ..Row::default()
+        });
+    }
+    link.house_request(10);
+    let PlayCommand::Feature(read) = receiver.try_recv()? else {
+        return Err("read missing".into());
+    };
+    crate::play::mailbox::lock(&link.mailbox).cancel_activity_requests();
+    assert!(link.house_panel().model.pending.is_none());
+    assert!(!link.house_panel().model.pending_acl_read);
+    assert!(link.house_panel().fields[6].is_empty());
+    outbox.properties_result(
+        &read,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::encode_house_acl_snapshot(&wire::HouseAclSnapshot {
+                revision: 77,
+                members: vec![world],
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    assert!(link.house_panel().model.acl_snapshot.is_none());
+    assert!(link.house_panel().fields[4].is_empty());
+    Ok(())
+}
