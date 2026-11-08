@@ -88,6 +88,18 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Draconia source custody"));
         }
+        if document.program_key.as_deref() == Some("oteryn:quest-npc-program.m41_kilmaresh_finale")
+            && (document.quest != "oteryn:quest.kilmaresh_quest"
+                || document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                        || file.path != "data-global/npc/alyxo.lua"
+                        || file.sha256
+                            != "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008"
+                }))
+        {
+            return Err(invalid("M41 Alyxo source custody"));
+        }
         // Crystal 201189f data-global/npc/tamoril.lua:45-111: the calendar gate
         // and all unconditional acceptance resets belong to this exact source.
         if document.program_key.as_deref() == Some("oteryn:quest-npc-program.first-dragon-calendar")

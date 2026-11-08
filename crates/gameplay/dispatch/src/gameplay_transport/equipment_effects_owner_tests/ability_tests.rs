@@ -68,6 +68,9 @@ const ORIGINAL_PROFILES: usize = 432;
 /// The item profiles each mechanic adds, one row per mechanic in name order, so a new mechanic
 /// adds its own row instead of rewriting a shared total.
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[
+    // M41 source operands: sculpture 31574, beak 52632 and corpse stages 52677..=52680.
+    // Regenerated from m41_quest_item_profiles.IDS, independently of the profile union.
+    ("M41", 6),
     // C08: Crystal items.xml:75219-75231 admits agony field 43297, with speed_bonus=0.
     ("C08", 1),
     // 22 cooking profiles from Canary items.xml/appearances.dat at

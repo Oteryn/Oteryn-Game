@@ -56,6 +56,7 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     ordinary: &NpcTalkOutcome,
+    stag_beaks: Option<&crate::durability::stag_beaks::StagBeakPreview>,
 ) -> Option<Step> {
     let context = admission.states.npc_conversations.current_npc(
         &admission.states.chat,
@@ -73,7 +74,7 @@ pub(super) fn prepare(
         return None;
     }
     let catalogue = admission.quest_catalogue.as_ref()?;
-    let tracks = {
+    let mut tracks = {
         let sessions = admission.states.quest_sessions.lock().ok()?;
         let copy = sessions.get(&command.game_session_id)?.copy.as_ref()?;
         let mut tracks = copy.tracks().clone();
@@ -90,6 +91,14 @@ pub(super) fn prepare(
         }
         tracks
     };
+    if context.2 == crate::durability::stag_beaks::HARTFORD {
+        tracks.insert(crate::durability::stag_beaks::BEAKS.into(), 0);
+        if let Some(proof) = stag_beaks {
+            proof
+                .overlay(command.item_fence?.character_id, &mut tracks)
+                .ok()?;
+        }
+    }
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
     if matches!(state.catalogue, Some(Pending::Commit { .. })) {

@@ -319,6 +319,9 @@ impl DurabilityRoot {
                     for (key,value) in defaults {effective_tracks.entry(key.clone()).or_insert(*value);}
                 }
             }
+            if request.npc == super::super::stag_beaks::HARTFORD {
+                super::super::stag_beaks::overlay_locked(&mut tx, character, &mut effective_tracks).await?;
+            }
             let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&mut **tx).await?;
             let father_items = fathers_burden::owns(&request);
             let marlin_items = marlin_trophy::owns(&request);

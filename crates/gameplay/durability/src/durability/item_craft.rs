@@ -571,6 +571,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
+    if skinning.is_some() {
+        super::stag_beaks::record(tx, fence, &transaction).await?;
+    }
     // The successful yield, counter and grant share the craft receipt transaction.
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
