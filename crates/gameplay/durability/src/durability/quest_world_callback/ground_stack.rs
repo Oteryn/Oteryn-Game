@@ -16,7 +16,7 @@ pub(crate) async fn matches(
     context: &QuestWorldContext,
     requirements: &[WorldRequirement],
 ) -> Result<bool, DurabilityError> {
-    if requirements.iter().all(|r| r.ground_stack.is_empty()) {
+    if requirements.iter().all(|r| r.ground_stack.is_none()) {
         return Ok(true);
     }
     let crate::foundation::RuntimeScopeRefV1::Channel {
@@ -32,7 +32,7 @@ pub(crate) async fn matches(
     permit.check_channel(world_id, channel_id)?;
     let mut required = requirements
         .iter()
-        .filter(|r| !r.ground_stack.is_empty())
+        .filter(|r| r.ground_stack.is_some())
         .collect::<Vec<_>>();
     required.sort_by_key(|r| r.position);
     let positions = required
@@ -72,6 +72,13 @@ pub(crate) async fn matches(
     .execute(&mut **tx)
     .await?;
     for requirement in required {
+        let stack = requirement
+            .ground_stack
+            .as_deref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if stack.is_empty() {
+            return Ok(false);
+        }
         let spatial = spatial(requirement.position);
         // Separate statement after the owner lock: observe committed custody,
         // not a pre-wait snapshot. Item share locks retain quantities until the
@@ -97,11 +104,11 @@ pub(crate) async fn matches(
         .bind(fence.scope_ownership_generation.get().to_string())
         .fetch_all(&mut **tx)
         .await?;
-        if rows.len() != requirement.ground_stack.len() {
+        if rows.len() != stack.len() {
             return Ok(false);
         }
         let mut previous = 0;
-        for (row, expected) in rows.iter().zip(&requirement.ground_stack) {
+        for (row, expected) in rows.iter().zip(stack) {
             // A root arriving between the preliminary read and the Ground lock
             // was not quantity-locked. Refuse instead of locking out of order.
             if !protected

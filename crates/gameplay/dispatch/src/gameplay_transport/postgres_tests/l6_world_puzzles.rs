@@ -75,7 +75,6 @@ pub(super) fn predicate_fixture(
     callback.teleport = None;
     callback.world_requirements = vec![
         oteryn_gameplay_quests::quest::world_callbacks::WorldRequirement {
-            ground_stack: Vec::new(),
             position: trigger,
             appearance: if refuse { 2773 } else { 2772 },
             ground_stack: None,

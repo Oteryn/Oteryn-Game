@@ -468,7 +468,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         if !stateless_observation_required(callback) {
-
             return Ok(None);
         }
         let Some(fence) = fence else {
@@ -1175,8 +1174,13 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
         // owner and fenced SQL read-set prove their portable roots separately.
         if requirement.appearance == 0 {
             let position = tile(requirement.position);
-            return requirement.ground_stack.is_some() && !map.facts.house_tile(position)
-                && map.overlay.base().tile(position.x,position.y,position.floor).is_some();
+            return requirement.ground_stack.is_some()
+                && !map.facts.house_tile(position)
+                && map
+                    .overlay
+                    .base()
+                    .tile(position.x, position.y, position.floor)
+                    .is_some();
         }
         let position = tile(requirement.position);
         !map.facts.house_tile(position)

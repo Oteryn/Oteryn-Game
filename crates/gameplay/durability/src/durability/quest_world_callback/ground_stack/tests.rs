@@ -150,7 +150,7 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
     let requirement = WorldRequirement {
         position: position(),
         appearance: 0,
-        ground_stack: vec![
+        ground_stack: Some(vec![
             GroundStackItem {
                 item: CRATE.into(),
                 count: 1,
@@ -163,7 +163,7 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
                 item: URN.into(),
                 count: 2,
             },
-        ],
+        ]),
     };
     let before: Vec<(String, i64)> = sqlx::query_as(
         "SELECT item_instance_id::text,quantity FROM game_item_instances ORDER BY item_instance_id",
@@ -172,10 +172,10 @@ async fn exercise(harness: &h::Harness) -> h::TestResult {
     .await?;
     assert!(check(harness, requirement.clone(), context(), 1).await?);
     let mut wrong_order = requirement.clone();
-    wrong_order.ground_stack.swap(0, 2);
+    wrong_order.ground_stack.as_mut().ok_or("stack")?.swap(0, 2);
     assert!(!check(harness, wrong_order, context(), 1).await?);
     let mut wrong_quantity = requirement.clone();
-    wrong_quantity.ground_stack[2].count = 1;
+    wrong_quantity.ground_stack.as_mut().ok_or("stack")?[2].count = 1;
     assert!(!check(harness, wrong_quantity, context(), 1).await?);
     let mut wrong_position = requirement.clone();
     wrong_position.position.x += 1;

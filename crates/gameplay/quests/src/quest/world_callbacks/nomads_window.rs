@@ -20,17 +20,19 @@ pub(super) fn requirements() -> Vec<WorldRequirement> {
                 floor: WINDOW.floor,
             },
             appearance: 0,
-            ground_stack: [
-                "oteryn:item.tibia.i2471",
-                "oteryn:item.tibia.i2471",
-                "oteryn:item.tibia.i2904",
-            ]
-            .into_iter()
-            .map(|item| GroundStackItem {
-                item: item.into(),
-                count: 1,
-            })
-            .collect(),
+            ground_stack: Some(
+                [
+                    "oteryn:item.tibia.i2471",
+                    "oteryn:item.tibia.i2471",
+                    "oteryn:item.tibia.i2904",
+                ]
+                .into_iter()
+                .map(|item| GroundStackItem {
+                    item: item.into(),
+                    count: 1,
+                })
+                .collect(),
+            ),
         })
         .collect()
 }
@@ -78,10 +80,10 @@ mod tests {
         for case in 0..5 {
             let mut bad = window.clone();
             match case {
-                0 => bad.world_requirements[0].ground_stack.swap(0, 2),
+                0 => bad.world_requirements[0].ground_stack.as_mut().ok_or("stack")?.swap(0, 2),
                 1 => bad.world_requirements[1].position.x += 1,
                 2 => bad.selector.appearance = Some(1745),
-                3 => bad.world_requirements[0].ground_stack[0].count = 2,
+                3 => bad.world_requirements[0].ground_stack.as_mut().ok_or("stack")?[0].count = 2,
                 _ => bad.storage = serde_json::from_value(serde_json::json!([{
                     "track":"oteryn:quest-progress/nomads-land/fabricated", "minimum":-1,"maximum":1,"set":1
                 }])).map_err(|error|error.to_string())?,

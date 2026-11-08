@@ -276,6 +276,7 @@ fn asymmetric_wall_rejects_effects_it_cannot_commit() -> Result<(), String> {
 fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
 -> Result<(), String> {
     let mut value = base();
+    value["requires_world_admission"] = true.into();
     value["storage"] = serde_json::json!([
         {"track":dance::QUESTLINE_TRACK,"minimum":-1,"maximum":15,"set":1}
     ]);
@@ -294,7 +295,7 @@ fn m02_ground_stack_requires_exact_ordered_bounded_items_and_durable_admission()
             0 => bad["storage"] = serde_json::json!([]),
             1 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 0.into(),
             2 => bad["world_requirements"][0]["ground_stack"][0]["item"] = "*".into(),
-            3 => bad["world_requirements"][0]["appearance"] = 1739.into(),
+            3 => bad["world_requirements"][0]["ground_stack"][0]["count"] = 101.into(),
             4 => bad["world_requirements"][0]["ground_stack"] = serde_json::json!([]),
             _ => {
                 bad["world_requirements"][0]["ground_stack"] = serde_json::json!(vec![

@@ -10,7 +10,6 @@ fn trial() -> Result<Callback, String> {
     c.effects = Default::default();
     c.requires_world_admission = true;
     c.world_requirements = vec![WorldRequirement {
-        ground_stack: Vec::new(),
         position: c.selector.position.ok_or("sample position")?,
         appearance: 2523,
         ground_stack: None,

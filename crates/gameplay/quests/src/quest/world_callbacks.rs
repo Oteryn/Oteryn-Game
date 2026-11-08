@@ -434,14 +434,15 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback.world_requirements.iter().any(|r| {
                 !valid_pos(r.position)
-                    || (r.appearance == 0 && !(r.ground_stack.is_some()
-                        && ((callback.has_personal_state() && callback.requires_world_admission)
-                            || nomads_window::exact(callback))))
+                    || (r.appearance == 0
+                        && !(r.ground_stack.is_some()
+                            && ((callback.has_personal_state()
+                                && callback.requires_world_admission)
+                                || nomads_window::exact(callback))))
                     || r.ground_stack.as_ref().is_some_and(|stack| {
                         callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
             })
-
             || (!callback.world_requirements.is_empty()
                 && ((callback.has_personal_state() && !callback.requires_world_admission)
                     || !callback.offerings.is_empty()
