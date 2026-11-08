@@ -270,3 +270,22 @@ fn t010_hud_layout_is_validated_and_restored() -> Result<(), Box<dyn std::error:
     assert!(play.set_preferences(serde_json::from_value(json)?).is_err());
     Ok(())
 }
+
+#[test]
+fn t011_vitals_bars_reach_live_scene_and_can_be_hidden() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 20,
+        max_mana: 40,
+        ..Default::default()
+    });
+    play.rebuild()?;
+    let shown = play.scene().sprites().instances().len();
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["hud_bars"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().instances().len() + 4, shown);
+    Ok(())
+}

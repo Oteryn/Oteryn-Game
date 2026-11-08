@@ -38,6 +38,10 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
+fn enabled() -> bool {
+    true
+}
+
 fn default_hud_bounds() -> [u16; 4] {
     [8, 8, 900, 40]
 }
@@ -60,6 +64,8 @@ pub struct ReferencePreferences {
     /// Saved HUD position and size in client pixels; editable through settings transfer.
     #[serde(default = "default_hud_bounds")]
     pub hud_bounds: [u16; 4],
+    #[serde(default = "enabled")]
+    pub hud_bars: bool,
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -77,6 +83,7 @@ impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
             hud_bounds: default_hud_bounds(),
+            hud_bars: true,
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
