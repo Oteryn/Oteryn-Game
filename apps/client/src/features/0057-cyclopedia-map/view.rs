@@ -52,6 +52,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Supplies analyser",
                 "Damage analyser",
                 "Healing analyser",
+                "Browse creature catalogue",
+                "Next creature page",
+                "Creature details",
+                "Next creature loot page",
+                "Previous creature category",
+                "Next creature category",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -70,6 +76,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.cyclopedia_map.open = value,
             submit: |mailbox, commands, action, values| {
+                if (33..39).contains(&action) {
+                    crate::play::feature_0067_bestiary_charm_progression::input::catalogue::submit(mailbox, commands, action - 33);
+                    mailbox.properties.cyclopedia_map.navigate(oteryn_client_ui::cyclopedia_map::Section::Bestiary);
+                    return;
+                }
                 if analytics::select(mailbox, action) { return; }
                 if actions::navigate_section(mailbox, action, &values) {
                     return;
@@ -103,10 +114,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     return;
                 }
                 if action == 18 || action == 19 {
-                    mailbox
-                        .properties
-                        .charm_progression
-                        .select_race(action == 18);
+                    if mailbox.properties.charm_progression.catalogue.page.cards.is_empty() {
+                        mailbox.properties.charm_progression.select_race(action == 18);
+                    } else {
+                        crate::play::feature_0067_bestiary_charm_progression::input::catalogue::submit(mailbox, commands, if action == 18 { 6 } else { 7 });
+                    }
                     mailbox
                         .properties
                         .cyclopedia_map
