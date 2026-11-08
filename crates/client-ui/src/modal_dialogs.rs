@@ -240,3 +240,85 @@ impl NoticeDialog {
         true
     }
 }
+
+#[cfg(test)]
+mod answer_tests {
+    use super::*;
+    #[test]
+    fn modal_handler_rejects_stale_unknown_and_duplicate_answers() {
+        let dialog = ServerDialog {
+            id: 8,
+            title: "Choice".into(),
+            message: String::new(),
+            choices: vec![(42, "Reward".into())],
+            buttons: vec![(3, "OK".into())],
+            image: None,
+        };
+        let mut handler = ServerDialogHandler::default();
+        assert!(handler.show(dialog));
+        assert_eq!(handler.answer(7, 3, Some(42)), None);
+        assert_eq!(handler.answer(8, 9, Some(42)), None);
+        assert_eq!(handler.answer(8, 3, Some(99)), None);
+        assert_eq!(handler.answer(8, 3, None), None);
+        assert_eq!(
+            handler.answer(8, 3, Some(42)),
+            Some(DialogAnswer {
+                dialog_id: 8,
+                button_id: 3,
+                choice_id: Some(42)
+            })
+        );
+        assert!(handler.active().is_none());
+        assert_eq!(handler.answer(8, 3, Some(42)), None);
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DialogAnswer {
+    pub dialog_id: u32,
+    pub button_id: u8,
+    pub choice_id: Option<u8>,
+}
+/// One active server modal; the session owner clears this state on disconnect.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ServerDialogHandler {
+    active: Option<ServerDialog>,
+}
+impl ServerDialogHandler {
+    pub fn active(&self) -> Option<&ServerDialog> {
+        self.active.as_ref()
+    }
+    pub fn show(&mut self, dialog: ServerDialog) -> bool {
+        if !dialog.valid() || self.active.is_some() {
+            return false;
+        }
+        self.active = Some(dialog);
+        true
+    }
+    pub fn clear(&mut self) {
+        self.active = None;
+    }
+    pub fn answer(
+        &mut self,
+        dialog_id: u32,
+        button_id: u8,
+        choice_id: Option<u8>,
+    ) -> Option<DialogAnswer> {
+        let dialog = self.active.as_ref()?;
+        if dialog.id != dialog_id
+            || !dialog.buttons.iter().any(|(id, _)| *id == button_id)
+            || match choice_id {
+                Some(choice) => !dialog.choices.iter().any(|(id, _)| *id == choice),
+                None => !dialog.choices.is_empty(),
+            }
+        {
+            return None;
+        }
+        self.active = None;
+        Some(DialogAnswer {
+            dialog_id,
+            button_id,
+            choice_id,
+        })
+    }
+}
