@@ -662,6 +662,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut contents = Vec::new();
         for (source, quantity) in reward.contents {
             contents.push(RewardClaimMintContent {
+
                 item: facts(source)?,
                 quantity,
                 key_number: None,

@@ -231,6 +231,7 @@ pub fn load_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::kill_callbacks::validate(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
@@ -255,6 +256,12 @@ pub fn load_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
+    // This tool-owned auxiliary flag is outside the captured NPC track inventory.
+    lowered.source_tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
+        "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
+    );
     let source_owners = original_legacy.keys().cloned().collect();
     super::npc_rules::merge_legacy_definitions(&mut lowered.catalogue.npc_legacy, original_legacy)
         .map_err(QuestLoadError::Json)?;
@@ -446,8 +453,17 @@ mod tests {
                 .all(|callback| callback.quest != "oteryn:quest.dawnport_quest")
         );
         let mut expected = std::collections::BTreeSet::new();
+        let mut source_callbacks = Vec::new();
         for document in [
             crate::quest::world_callbacks::EMBEDDED,
+            include_str!("../../../../../content/quests/questl2-djinn-world.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
         ] {
@@ -456,9 +472,23 @@ mod tests {
             for callback in source["callbacks"].as_array().ok_or("source callbacks")? {
                 if callback["quest"] != "oteryn:quest.dawnport_quest" {
                     expected.insert(callback["key"].as_str().ok_or("callback key")?.to_owned());
+                    source_callbacks.push(
+                        serde_json::from_value::<crate::quest::world_callbacks::Callback>(
+                            callback.clone(),
+                        )
+                        .map_err(|e| e.to_string())?,
+                    );
                 }
             }
         }
+        source_callbacks.extend(crate::quest::carried_step::callbacks());
+        source_callbacks.extend(crate::quest::shared_switches::callbacks());
+        source_callbacks.extend(crate::quest::fire_feathered_native::callbacks());
+        source_callbacks.extend(crate::quest::shared_world_progress::callbacks());
+        source_callbacks.extend(crate::quest::hive_access::callbacks());
+        let boss_callbacks = crate::quest::deepling_boss_access::callbacks(&source_callbacks)?;
+        source_callbacks.extend(boss_callbacks);
+        expected.extend(source_callbacks.into_iter().map(|c| c.key));
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(

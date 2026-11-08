@@ -180,10 +180,12 @@ pub(super) async fn exercise(
             } else {
                 vec![
                     oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                        fluid_subtype: None,
+
                         item: "oteryn:item.tibia.i6499".into(),
                         count: price,
 
-fluid_subtype: None,},
+},
                 ]
             }
         );
@@ -200,10 +202,12 @@ fluid_subtype: None,},
                 admitted,
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i6499".into(),
                     count: price,
 
-fluid_subtype: None,},
+},
                 &mut bags,
                 &mut ordinal,
             )

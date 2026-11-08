@@ -154,6 +154,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -288,6 +290,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("WORLDCHG", 40),
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
+    // Published L2 source keys outside the main and QENGINE2 cohorts.
+    ("QUESTL2", 93),
 ];
 
 #[test]
@@ -295,7 +299,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 137 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 144 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
     // data. Item 3079 has source speed 20; all other source records retain zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
@@ -327,7 +331,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         };
         assert_eq!(profile.attributes.speed_bonus, Some(source_speed), "{key}");
     }
-    assert_eq!(added_keys.len(), 137);
+    assert_eq!(added_keys.len(), 144);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -377,6 +381,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
+
     let cohort: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/questl2-equipment-cohort.json"
@@ -391,9 +396,26 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .as_u64()
             .ok_or("baseline source count")?,
     )?;
+    let baseline_cohorts = cohort["baseline_cohorts"]
+        .as_object()
+        .ok_or("baseline cohorts")?;
+    for (name, count) in baseline_cohorts {
+        assert_eq!(
+            PROFILE_ADDITIONS
+                .iter()
+                .find(|(key, _)| *key == name)
+                .and_then(|(_, count)| u64::try_from(*count).ok()),
+            count.as_u64(),
+            "{name}"
+        );
+    }
     assert_eq!(
         ORIGINAL_PROFILES
-            + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
+            + PROFILE_ADDITIONS
+                .iter()
+                .filter(|(name, _)| baseline_cohorts.contains_key(*name))
+                .map(|(_, n)| n)
+                .sum::<usize>()
             + original_qengine,
         usize::try_from(
             cohort["baseline_declared_count"]
@@ -426,7 +448,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for key in extra {
         assert!(actual.contains(key.as_str().ok_or("source key")?), "{key}");
     }
-    assert_eq!(profiles.records.len(), baseline + extra.len());
+    // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+    assert_eq!(
+        profiles.records.len(),
+        baseline + extra.len(),
+        "exact source-qualified composed Item union"
+    );
     use sha2::Digest;
     let identity = actual.into_iter().collect::<Vec<_>>().join("\n") + "\n";
     let identity_hex: String = sha2::Sha256::digest(identity.as_bytes())

@@ -252,9 +252,11 @@ pub(super) async fn exercise(
         assert_eq!(
             trade.take,
             vec![ItemAmount {
+                fluid_subtype: None,
+
                 item: "oteryn:item.tibia.i12517".into(),
                 count: 1,
-fluid_subtype: None,}]
+}]
         );
         assert_eq!(
             trade.give.as_ref().map(|g| g.item.as_str()),
@@ -377,9 +379,11 @@ fluid_subtype: None,}]
             assert_eq!(
                 callback.take,
                 vec![ItemAmount {
+                    fluid_subtype: None,
+
                     item: format!("oteryn:item.tibia.i{token}"),
                     count,
-                fluid_subtype: None,
+
                 }]
             );
             assert_eq!(
@@ -439,9 +443,11 @@ fluid_subtype: None,}]
             assert_eq!(
                 callback.take,
                 vec![ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i16128".into(),
                     count: 2,
-fluid_subtype: None,}]
+}]
             );
             mint(owner, admitted, 16128, 1, &mut ordinal).await?;
             let (result, _, _) =

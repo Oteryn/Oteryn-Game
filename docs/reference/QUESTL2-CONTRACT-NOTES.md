@@ -209,3 +209,19 @@ fountain/lamp use (`NothingToUse`). The current Quest library loads 386 callback
 including all three Djinn callbacks; inspect fixture target resolution next.
 QENGINE2 7019e60a8 retains the callback-only greeting guard; no existing merchant
 helper was available to reuse. No large shared engine feature was added.
+
+Main merge 83acbdac3720d7fe2df6c44d82623b7307806402 preserves both callback
+representations, exact fluid take predicates, and source-bound merchant admission.
+The source cohort union is 3,926 profiles: the immutable collector baseline has
+3,706, with 220 additional identities across the two published parent heads.
+Fourteen newly qualified engine identities already belong to other main cohorts;
+the generator verifies those exact keys against the immutable main source proof
+before subtracting their overlap. Seven generator tests pass; 335 quest unit
+tests pass in 31.45 seconds. Post-merge PostgreSQL journeys remain pending.
+
+Djinn fixture diagnosis: its specialized world was unreachable because the outer
+scenario selector constructed the generic world first. Select the Djinn world
+before that fallback so the physical fountain/lamp donor targets are present.
+This fixture correction still requires fresh PostgreSQL proof; no qualification
+is claimed from the unit tests. The earlier fluid intake engine request is
+withdrawn: existing L2 exact-subtype intake already supplies that mechanism.

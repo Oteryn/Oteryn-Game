@@ -824,6 +824,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
+    // QUESTPC4 source callback and reset fixtures bind their explicit source room.
+    (
+        "gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+        2,
+    ),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
     (
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",

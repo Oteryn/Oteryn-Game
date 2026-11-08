@@ -3795,5 +3795,18 @@
       "head": "7019e60a8",
       "merchant_greeting_helper": "not present; local helper 24 lines retains all trade requirements"
     }
+  },
+  "current_merge_validation": {
+    "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+    "quest_unit_tests": {
+      "passed": 335,
+      "failed": 0,
+      "duration_seconds": 31.45
+    },
+    "equipment_generator_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "post_merge_postgres": "PENDING; pre-merge qualification evidence retained"
   }
 }

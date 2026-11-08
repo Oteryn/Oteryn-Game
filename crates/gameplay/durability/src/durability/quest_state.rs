@@ -72,6 +72,8 @@ const REQUEST_BINDING_VERSION: u8 = 1;
 /// The occurrence a transition request is bound to, 1:1 with its trigger (§4 "Request").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QuestCause {
+    /// A proven original server-owned source lease expiry.
+    ServerTimer(server_timer::QuestTimerOccurrence),
     /// A player command, such as an NPC reply (NPC-0 §5.1): its CommandRef.
     Command(CommandRef),
     /// A USE interaction: its CommandRef.
@@ -87,6 +89,7 @@ pub enum QuestCause {
 impl QuestCause {
     const fn kind(self) -> &'static str {
         match self {
+            Self::ServerTimer(_) => "server_timer",
             Self::Command(_) => "command",
             Self::Use(_) => "use",
             Self::Step(_) => "step",
@@ -106,6 +109,7 @@ impl QuestCause {
                 *command.game_session_id().as_bytes(),
                 command.command_id().get(),
             ),
+            Self::ServerTimer(occurrence) => (*occurrence.as_bytes(), 0),
             Self::CreatureDeath(occurrence) => (*occurrence.as_bytes(), 0),
         }
     }
@@ -119,6 +123,9 @@ impl QuestCause {
             ))
         };
         Ok(match kind {
+            "server_timer" if ordinal == 0 => {
+                Self::ServerTimer(server_timer::QuestTimerOccurrence::from_bytes(id)?)
+            }
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
             "step" => Self::Step(command()?),
@@ -553,3 +560,6 @@ pub(super) async fn inquisition_blessing_eligible(
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
         .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
 }
+
+/// Durable source-expiry admissions and complete immutable proofs.
+pub mod server_timer;

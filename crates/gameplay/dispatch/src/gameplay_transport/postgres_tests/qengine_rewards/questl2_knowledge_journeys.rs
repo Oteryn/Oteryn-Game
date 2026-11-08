@@ -300,7 +300,7 @@ async fn alliance(
     let canonical = Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?);
     let mut prerequisite = start.clone();
     prerequisite.quest = "oteryn:quest.the_new_frontier_quest".into();
-    prerequisite.storage = vec![oteryn_gameplay_quests::quest::world_callbacks::Storage {
+    prerequisite.storage = vec![oteryn_gameplay_quests::quest::world_callbacks::Storage { at_least: false, increment: false,
         track: "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06".into(),
         minimum: 5,
         maximum: 5,

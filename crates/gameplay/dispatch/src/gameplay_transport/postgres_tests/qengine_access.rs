@@ -820,6 +820,7 @@ async fn wardrobe(
         keywords: vec!["fixture".into()],
         topic: 0,
         next_topic: 0,
+        completes: false,
         participants: vec![],
         state_ops: vec![],
         creation_sex: None,

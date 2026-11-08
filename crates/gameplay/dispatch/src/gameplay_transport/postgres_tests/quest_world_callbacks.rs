@@ -11,6 +11,21 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
+    if name == "triangle-tower-lever" {
+        // This source-equivalent adapter is deliberately absent from production:
+        // the established Triangle callback owns the physical lever selector.
+        let fixtures: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../tools/content-schema/quest-authoring/samples/qengine-access-test-fixtures.json"
+        )))?;
+        let row = fixtures["callbacks"]
+            .as_array()
+            .ok_or("access fixtures")?
+            .iter()
+            .find(|row| row["key"].as_str().is_some_and(|key| key.ends_with(name)))
+            .ok_or("item-cycle fixture")?;
+        return Ok(serde_json::from_value(row.clone())?);
+    }
     oteryn_gameplay_quests::quest::world_callbacks::load()?
         .into_iter()
         .find(|c| c.key.ends_with(name))
@@ -59,6 +74,20 @@ pub(super) async fn input_item(
     };
     let facts = generation_item_facts(native, &definition).map_err(debug)?;
     let map = owner.bundle_map().ok_or("map")?;
+    let (digest, frame) = {
+        let r = owner.runtime.lock().await;
+        (
+            r.content_pin().server_artifact_digest(),
+            r.content_pin().frame_binding_digest(),
+        )
+    };
+    let revision = format!(
+        "sha256:{}",
+        digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
+    );
     let mut candidate = owner
         .root
         .freeze_item_mint(
@@ -90,8 +119,8 @@ pub(super) async fn input_item(
                         ),
                     corpse_ref: id(3).to_vec(),
                     map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_revision: "content-1".into(),
-                    native_room_placement_context: vec![1],
+                    content_revision: revision.clone(),
+                    native_room_placement_context: frame.to_vec(),
                 },
                 content_revision: "content-1".into(),
                 ruleset_revision: "ruleset-1".into(),
@@ -161,20 +190,6 @@ pub(super) async fn input_item(
     if carried {
         return Ok(());
     }
-    let (digest, frame) = {
-        let r = owner.runtime.lock().await;
-        (
-            r.content_pin().server_artifact_digest(),
-            r.content_pin().frame_binding_digest(),
-        )
-    };
-    let revision = format!(
-        "sha256:{}",
-        digest
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect::<String>()
-    );
     let moved = owner
         .root
         .commit_item_loop_move(
@@ -310,6 +325,49 @@ pub(super) fn world_remote(
             }
         }
     }
+    if callback.key == "oteryn:quest-callback/l6-carried-step-fixture"
+        && let Some(recipe) = oteryn_gameplay_quests::quest::carried_step::RECIPES
+            .iter()
+            .find(|recipe| Some(recipe.unique) == callback.selector.unique)
+    {
+        for p in [recipe.success, recipe.missing] {
+            cells.entry((p.floor, p.x, p.y)).or_default();
+        }
+    }
+    for passage in &callback.passages {
+        if passage.replacement == Some(7767) {
+            let p = passage.position;
+            cells.entry((p.floor, p.x, p.y - 1)).or_default();
+            cells.entry((p.floor - 1, p.x, p.y)).or_default();
+        }
+    }
+    if let Some(presence) = &callback.effects.item_presence {
+        let p = presence.position;
+        cells.entry((p.floor, p.x, p.y)).or_default();
+        cells.entry((p.floor + 1, p.x, p.y + 1)).or_default();
+    }
+    let mut effect_positions = Vec::new();
+    if let Some(pair) = &callback.effects.portals {
+        for portal in &pair.portals {
+            effect_positions.extend([portal.position, portal.destination]);
+        }
+    }
+    if let Some(cycle) = &callback.effects.item_cycle {
+        effect_positions.push(cycle.position);
+    }
+    if let Some(encounter) = &callback.effects.encounter {
+        for player in &encounter.players {
+            effect_positions.extend([player.from, player.to]);
+        }
+        effect_positions.extend(encounter.monsters.iter().map(|m| m.position));
+    }
+    for p in effect_positions {
+        for x in p.x - 1..=p.x + 1 {
+            for y in p.y - 1..=p.y + 1 {
+                cells.entry((p.floor, x, y)).or_default();
+            }
+        }
+    }
     data.manifest.palette.push(bundle::PaletteEntry {
         key: format!("oteryn:terrain.tibia.i{appearance}"),
         family: bundle::Family::Terrain,
@@ -358,6 +416,72 @@ pub(super) fn world_remote(
                 ..Default::default()
             },
         });
+    if callback.key == "oteryn:quest-callback/l6-shared-gate-fixture" {
+        let (action, _, _) =
+            super::l6_shared_gates::spec(callback.selector.unique.ok_or("gate UID")?)?;
+        for x in trigger.x - 2..=trigger.x + 18 {
+            for y in trigger.y - 1..=trigger.y + 1 {
+                cells.entry((trigger.floor, x, y)).or_default();
+            }
+        }
+        let off = u32::try_from(data.manifest.palette.len())?;
+        for appearance in [2772, 2773] {
+            let index = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id: index,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+        }
+        for n in 0..8 {
+            cells
+                .entry((trigger.floor, trigger.x + 1 + 2 * n, trigger.y + 1))
+                .or_default()
+                .push(sector::Item {
+                    palette: off,
+                    depth: 0,
+                    attrs: sector::Attrs {
+                        action: Some(action),
+                        ..Default::default()
+                    },
+                });
+        }
+    }
+    if callback.key == "oteryn:quest-callback/l6-instrument-fixture" {
+        // A bounded open-room fixture retains the actual B3 instrument positions.
+        // It qualifies the selector and transaction, not the tomb's collision path.
+        for x in 33186..=33193 {
+            for y in 32659..=32670 {
+                cells.entry((-15, x, y)).or_default();
+            }
+        }
+        for (appearance, position) in super::l6_ancient_tombs::INSTRUMENTS.into_iter().skip(1) {
+            let palette = u32::try_from(data.manifest.palette.len())?;
+            data.manifest.palette.push(bundle::PaletteEntry {
+                key: format!("oteryn:terrain.tibia.i{appearance}"),
+                family: bundle::Family::Terrain,
+                id: palette,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
+            });
+            cells
+                .entry((position.floor, position.x, position.y))
+                .or_default()
+                .push(sector::Item {
+                    palette,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+        }
+    }
     if callback.key == "oteryn:quest-callback/monk-guidance" {
         for shrine in oteryn_gameplay_quests::quest::world_callbacks::load()?
             .into_iter()
@@ -377,6 +501,24 @@ pub(super) fn world_remote(
                     depth: 0,
                     attrs: Default::default(),
                 });
+        }
+    }
+    if let Some(pair) = callback.lever {
+        for appearance in pair {
+            let key = format!("oteryn:terrain.tibia.i{appearance}");
+            if !data.manifest.palette.iter().any(|p| p.key == key) {
+                let id = u32::try_from(data.manifest.palette.len())?;
+                data.manifest.palette.push(bundle::PaletteEntry {
+                    key,
+                    family: bundle::Family::Terrain,
+                    id,
+                    terrain: Some(bundle::Terrain {
+                        kind: bundle::TerrainKind::Common,
+                        walkable: None,
+                        ground_speed: None,
+                    }),
+                });
+            }
         }
     }
     for passage in &callback.passages {
@@ -407,7 +549,7 @@ pub(super) fn world_remote(
             });
             index
         };
-        if let Some(replacement) = passage.replacement {
+        if let Some(replacement) = passage.replacement.or(passage.create_on_close) {
             let replacement_key = format!("oteryn:terrain.tibia.i{replacement}");
             if !data
                 .manifest
@@ -421,9 +563,21 @@ pub(super) fn world_remote(
                     family: bundle::Family::Terrain,
                     id,
                     terrain: Some(bundle::Terrain {
-                        kind: bundle::TerrainKind::Ground,
-                        walkable: Some(true),
-                        ground_speed: Some(150),
+                        kind: if passage.create_on_close.is_some() {
+                            bundle::TerrainKind::Wall
+                        } else {
+                            bundle::TerrainKind::Ground
+                        },
+                        walkable: if passage.create_on_close.is_some() {
+                            None
+                        } else {
+                            Some(true)
+                        },
+                        ground_speed: if passage.create_on_close.is_some() {
+                            None
+                        } else {
+                            Some(150)
+                        },
                     }),
                 });
             }
@@ -516,6 +670,9 @@ pub(super) fn world_remote(
     if let Some(pair) = &callback.effects.portals {
         effect_appearances.push(pair.appearance);
     }
+    if let Some(presence) = &callback.effects.item_presence {
+        effect_appearances.push(presence.appearance);
+    }
     if let Some(cycle) = &callback.effects.item_cycle {
         effect_appearances.extend([cycle.remove, cycle.create]);
     }
@@ -556,6 +713,65 @@ pub(super) fn world_remote(
                 depth: 0,
                 attrs: Default::default(),
             });
+    }
+    if callback.key == "oteryn:quest-callback/triangle-tower-lever" {
+        // Preserve the native basement exit rather than authoring a second callback.
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z08-x127-y125.b3"
+            )),
+            bundle::TILE_LIMITS,
+            &mut sector::Budget {
+                tiles: 65536,
+                entries: 1_000_000,
+            },
+        )?;
+        let source = region
+            .sectors
+            .iter()
+            .flat_map(|(_, _, tiles)| tiles)
+            .find(|t| t.x == 32566 && t.y == 32120)
+            .ok_or("basement exit")?;
+        let item = source
+            .items
+            .iter()
+            .find(|i| i.depth == 0 && i.attrs.teleport.is_some())
+            .ok_or("native exit teleport")?;
+        let destination = item.attrs.teleport.ok_or("destination")?;
+        assert_eq!(destination, (32569, 32110, 7));
+        let palette = u32::try_from(data.manifest.palette.len())?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:terrain.tibia.i1949".into(),
+            family: bundle::Family::Terrain,
+            id: palette,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+        cells
+            .entry((-8, 32566, 32120))
+            .or_default()
+            .push(sector::Item {
+                palette,
+                depth: 0,
+                attrs: {
+                    let mut attrs = item.attrs.clone();
+                    // B3 stores legacy z; bundles store the native signed floor byte.
+                    attrs.teleport = Some((
+                        destination.0,
+                        destination.1,
+                        (-i8::try_from(destination.2)?) as u8,
+                    ));
+                    attrs
+                },
+            });
+        cells.entry((-8, 32565, 32120)).or_default();
+        cells
+            .entry((-i8::try_from(destination.2)?, destination.0, destination.1))
+            .or_default();
     }
     let floors: std::collections::BTreeSet<_> = cells.keys().map(|(f, _, _)| *f).collect();
     data.manifest.world = bundle::Extent {

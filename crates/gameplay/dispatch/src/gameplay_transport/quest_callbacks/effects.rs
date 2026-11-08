@@ -24,6 +24,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if let Some(presence) = &callback.effects.item_presence {
+            let pos = tile(presence.position);
+            let facts = map
+                .facts
+                .movement_item_facts(presence.appearance)
+                .ok_or(UseDisposition::Rejected)?;
+            // Initially admit known walkable ladders; projections cannot mint portable value
+            // or introduce collision without an owning collision catalogue.
+            if map.facts.house_tile(pos)
+                || facts.pickupable
+                || !crate::map::floor::is_ladder_appearance(facts.appearance_id)
+                || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
+            {
+                return Err(UseDisposition::Rejected);
+            }
+            return Ok(Some(QuestCallbackProjection::ItemPresence {
+                position: pos,
+                entry: facts,
+            }));
+        }
         if let Some(duration) = callback.effects.transform_duration_us {
             let restore = map
                 .facts
