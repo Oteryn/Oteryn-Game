@@ -542,6 +542,10 @@ async fn prepare_source_reader<'native>(
             crate::movement::CardinalStep::East => Facing::East,
             crate::movement::CardinalStep::South => Facing::South,
             crate::movement::CardinalStep::West => Facing::West,
+            crate::movement::CardinalStep::NorthEast => Facing::North,
+            crate::movement::CardinalStep::SouthEast => Facing::South,
+            crate::movement::CardinalStep::SouthWest => Facing::South,
+            crate::movement::CardinalStep::NorthWest => Facing::North,
         })?;
     let (Ok(center), Ok(mut cast_tiles)) = (
         source.cast_center(from, to, Some(facing)),
