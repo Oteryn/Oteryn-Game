@@ -60,3 +60,7 @@ pub(in crate::play) fn apply(
         }
     }.into();
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_w12.rs"]
+mod e2e_w12;

@@ -7,3 +7,6 @@ pub use input::open_key;
 pub use protocol::{Intent, apply_result, request};
 pub use state::DailyBoostPanel;
 pub use view::panel_text;
+#[cfg(test)]
+#[path = "tests/e2e_w13.rs"]
+mod e2e_w13;
