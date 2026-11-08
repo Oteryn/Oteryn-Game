@@ -1748,9 +1748,9 @@
       "qualification_unchanged": true
     },
     "main_sync": {
-      "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
-      "state": "NATIVE_POSTGRES_GREEN",
-      "proof": "wrath-source-dragon-validation.json"
+      "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b",
+      "state": "GREEN_REMAINDER_TERMINAL_SLICE_DROPPED",
+      "proof": "night-retro-validation.json"
     },
     "dream_slice": {
       "state": "NATIVE_POSTGRES_GREEN",
@@ -1781,6 +1781,14 @@
       "scope": "Chosen s8 four literal native11427 corners, exact retained carried11371, clockwise per-character counter; no donor boss graph or whole completion",
       "red_postgres_seconds": 4.003721107,
       "postgres_seconds": 71.744319386
+    },
+    "collector_batch_exclusion": {
+      "scope": "New terminal outfit/jade reward slice only; previously green opening/hunt/dream/crystal work retained",
+      "state": "DROPPED_FROM_BATCH_BY_COORDINATOR_RULE",
+      "command": "cargo nextest run -p oteryn-gameplay-dispatch --lib --config-file /tmp/questpc8-focused-nextest.toml --profile questpc8_focus --success-output immediate -E 'test(questpc8_wrath_late_journey_final_reward_atomic_outfit_and_jade) or test(questpc8_wrath_four_native_crystals_require_tool_order_and_replay) or test(nx6_wayfarer_real_npc_atomic_finale_replay_and_fences) or test(fathers_burden_eight_handins_cape_experience_and_replay) or test(questpc8_winterlight_native_disguise_four_fires_queen_and_base_outfit) or test(questpc8_venore_native_daily_circuit_and_exact_repeat_boundary)'",
+      "error": "early eof; join_prepare_failed phase=appearances; join_prepare_failed phase=items",
+      "postgres_seconds": 107.911672992,
+      "local_note": "/tmp/questpc8-wrath-finale-dropped.rs; /tmp/questpc8b-wrath-terminal-dropped.patch"
     }
   },
   {

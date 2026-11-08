@@ -29,12 +29,12 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # 172 source claims have focused dispatch PG proof; only the
-        # two Dawnport claims are excluded. Keep exact denominator detection.
-        self.assertEqual(sum(counts.values()), 162)
+        # Keep the exact outstanding denominator; qualified and not-playable
+        # source claims remain in their separate coverage categories.
+        self.assertEqual(sum(counts.values()), 299)
 
     def test_missing_row_is_rejected(self):
-        for key in [next(iter(self.ledger["claims"])), *sorted(qualification.ITEMHOLD_ADMISSIONS)]:
+        for key in sorted(self.ledger["claims"]):
             with self.subTest(claim=key):
                 ledger = copy.deepcopy(self.ledger)
                 del ledger["claims"][key]

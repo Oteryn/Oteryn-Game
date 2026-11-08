@@ -11,12 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COVERAGE = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
-# QUEST-FINISH supports 334 in-scope claims. The 39 previously qualified claims
-# plus 88 Phase A claims, the Mintwallin prison key and 44 further A..M
-# story/outfit reward sources have source-selector dispatch PostgreSQL proof.
-# Every other supported claim keeps its per-World qualification hold; reward
-# qualification does not certify access puzzles or a complete storyline.
-EXPECTED_DENOMINATOR = 162
+# Exact current coverage partition:299 supported-unqualified claims,16 with
+# dispatch PG qualification and21 not playable. The ledger covers every one
+# of the299 outstanding source claims; whole storylines are a separate scope.
+EXPECTED_DENOMINATOR = 299
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

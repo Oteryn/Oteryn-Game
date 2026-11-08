@@ -1,3 +1,31 @@
+# Current checkpoint: coordinator green remainder, terminal slice dropped
+
+Branch claude/happy-davinci-ijz3wy-questpc8b; mainf5b584ef161eb93c951cb8579a1b3e5538935b1b merged.
+All5 retained native PG cases PASS; durations and markers:night-retro-validation.json.
+These include Father hand-ins, Winterlight first reward/full route and Venore final
+report/repeat boundary, plus source-world dream and four native crystal progression.
+Exact CI quest-authoring checks406.675s PASS;
+all103 unit modules459.580s PASS; required content-tree
+validator587.537s PASS; all355 Quest units PASS.
+Workspace451.680s,fmt12.561s,clippy
+500.566s and duplicate migrations PASS. Repository tools regenerated
+stale packets, NPC binding links, completion matrix,pins and all299 qualification rows.
+The135 missing ledger rows were repaired without erasing test/scenario evidence.
+The source-hash-only lowered Quest update leaves runtime graphs identical.
+
+The unpublished Wrath terminal outfit/jade slice is NOT on this branch. Preserved
+locally:/tmp/questpc8-wrath-finale-dropped.rs and /tmp/questpc8b-wrath-terminal-dropped.patch.
+Its exact failing command/error and107.911672992s duration are in QUEST-STATUS
+collector_batch_exclusion. It failed early eof after join_prepare_failed
+phase=appearances and phase=items. Existing published Wrath components remain.
+No existing test was deleted or weakened; affected helpers/callbacks restored exactly.
+The extra migration unit script was stopped; only the required content validator
+is claimed green. No pinned PG file or production boot/serve/activation code changed.
+
+Whole L7 count21/23 qualified:18here +3reused questpc4. Historical Lone Medusa
+is outside this packet. Colours and Wrath remain IN_PROGRESS. No new quests started.
+This remainder is ready for the collector's PR/heavy CI. Original lane branch frozen.
+
 # Current checkpoint: Wrath four-crystal native slice GREEN; coordinator handoff
 
 Continuation branch: claude/happy-davinci-ijz3wy-questpc8b. Original lane branch remains frozen.
