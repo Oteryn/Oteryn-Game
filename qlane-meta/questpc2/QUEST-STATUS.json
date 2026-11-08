@@ -72,7 +72,7 @@
     {
       "quest": "Chakoya Iceberg Mini World Change",
       "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00200-00299.json",
@@ -111,18 +111,25 @@
       "canonical": "oteryn:quest.dangerous_depths_quest",
       "state": "WAITING-ENGINE",
       "engine_owner": "ENGNPC",
-      "feature": "atomic_large_npc_item_clock_receipt",
-      "acceptance": "Commit Gnomus measurements (nine writes) / charting (ten writes) atomically; task reports combine item grant, points and SetNowPlus. Retain Father's Burden eleven-track atomic write unchanged.",
+      "feature": "npc_item_clock_receipt",
+      "acceptance": "Reuse ENGNPC 3423ac56e151843f62652e6bbb45984b05c18aaf for atomic nine-/ten-track measurements/charting. Remaining task reports must combine item grant, points and SetNowPlus in one source NPC receipt; the plain-item planner still rejects SetNowPlus. Whole-quest Warzone encounter closures remain separately unqualified.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00100-00199.json",
         "json_pointer": "/records/27/definition",
         "identity": "oteryn:quest.dangerous_depths_quest"
+      },
+      "available_engine_reuse": {
+        "branch": "claude/happy-davinci-ijz3wy-engnpc",
+        "sha": "3423ac56e151843f62652e6bbb45984b05c18aaf",
+        "capability": "sixteen-track atomic NPC and reward receipts",
+        "migration": "1600_quest_atomic_track_capacity.sql",
+        "integration": "Not merged into main; consume the shared owner when implementing the remaining combined receipt."
       }
     },
     {
       "quest": "Deeplings World Change",
       "canonical": "oteryn:quest.deeplings_worldchange",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00100-00199.json",
@@ -133,7 +140,7 @@
     {
       "quest": "Demon Wars World Change",
       "canonical": "oteryn:quest.authored.demon_wars_world_change",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00200-00299.json",
@@ -144,7 +151,7 @@
     {
       "quest": "Devovorga's Essence Mini World Change",
       "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00200-00299.json",
@@ -155,7 +162,7 @@
     {
       "quest": "Down the Drain Mini World Change",
       "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00200-00299.json",
@@ -275,7 +282,7 @@
     {
       "quest": "Rise of Devovorga",
       "canonical": "oteryn:quest.authored.rise_of_devovorga",
-      "state": "EXCLUDED",
+      "state": "OWNED ELSEWHERE",
       "reason": "Other-lane world-change ownership in QSPLIT-PLAN; no new work here.",
       "current_definition": {
         "path": "content/quests/definitions/quests-00300-00351.json",

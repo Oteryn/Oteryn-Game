@@ -7,8 +7,10 @@ Audited main `1076254706e4ddc05a6d0a1aba0c1777af2038ac`. Scope is the immutable 
 - Fixed party admission, monster lists, occupancy and timed reset already exist in `world_callbacks::Encounter` and dispatch `quest_callbacks/encounter.rs`; they are not missing generic features.
 - W02 catalogue entry and W10 corpse/loot are on main. A component entry/death receipt is not a whole quest fight.
 - QENGINE2 `925d8480ef1cb88b16154a1dbf018a57ac22152a` exposes qualified `authored_bindings::Bindings::attach` (world proof `aa85b250027fa68c88c391f6cda490f0764dbf02`, native-admission proof `c7f9d9ba79ec4a53c4b874af54affe6898780c5a`). Do not request or rewrite that API. Its world-clock slice is compiling WIP with post-merge validation pending in `qlane-meta/qengine2/ENGINE-QUEUE.json` on that branch.
-- ENGITEM `bbe0184821852828c3686d33d936709c9859618f` has sixteen-track durability receipt work but still retains `MAX_NPC_TRACK_CHANGES = 8` in the NPC planner. Large NPC atomic writes therefore remain a distinct request.
+- ENGITEM `bbe0184821852828c3686d33d936709c9859618f` has sixteen-track durability receipt work but still retains `MAX_NPC_TRACK_CHANGES = 8` in the NPC planner. ENGNPC now supplies the larger atomic NPC bound; do not request a second capacity implementation.
 - ENGENC `4ffd19f3ad28778f0bd283c350f27b34eae92d60` extends private boss loot; it does not supply the quest-specific phase controllers below. Reuse that loot owner when those fights land.
+
+- ENGNPC `3423ac56e151843f62652e6bbb45984b05c18aaf` supplies sixteen-track atomic NPC/reward receipts and migration `1600_quest_atomic_track_capacity.sql`. This resolves the capacity portion of Dangerous Depths' dependency. Its `npc_rules/item_exchange.rs` retains the existing guard/effect allowlist, so combined item/points/clock reports still need implementation. This branch is available for reuse, not yet on main.
 
 ## Requests
 
@@ -18,7 +20,7 @@ Audited main `1076254706e4ddc05a6d0a1aba0c1777af2038ac`. Scope is the immutable 
 - **Bewitched** — `QENGINE2: world_callback_transaction_clock_operations`. Daily personal cauldron contribution must reset from the authoritative clock; award the chosen 1000 XP only after Bane-Bringer credit. Reuse the pending world-clock implementation.
 - **Child of Destiny Quest** — `ENGENC: training_target_hit_credit`. Deliver fenced spear-hit and magic-missile-hit training events to quest progress. A USE packet or NPC message must not stand in for a successful target hit.
 - **Cults of Tibia Quest** — `ENGENC: cults_boss_phase_closures`. Execute the Essence of Malice multi-actor encounter and participant settlement; Gerimor's already pushed assignments do not prove boss completion.
-- **Dangerous Depths Quest** — `ENGNPC: atomic_large_npc_item_clock_receipt`. Commit Gnomus measurements (nine writes) / charting (ten writes) atomically; task reports combine item grant, points and SetNowPlus. Retain Father's Burden eleven-track atomic write unchanged.
+- **Dangerous Depths Quest** — `ENGNPC: npc_item_clock_receipt`. Reuse the published sixteen-track ENGNPC receipt for Gnomus measurements/charting. The remaining report transaction combines item grant, points and SetNowPlus, which the plain-item planner still refuses. Keep Father's Burden eleven-track write atomic.
 - **Elemental Spheres Quest** — `ENGNPC: live_level_vocation_npc_item_plan`. Arkulius requires live level/vocation predicates in the same source NPC item/quest receipt. Do not copy these values into ordinary quest tracks.
 - **Forgotten Knowledge Quest** — `ENGENC: halls_of_hope_boss_phase_closures`. Provide encounter-owned Dragon King and Last Lore Keeper phases, vulnerable forms and participant settlement. Albinius's pushed tome and portal donations are only prerequisite slices.
 - **Grimvale Quest** — `ENGENC: feroxa_form_transition_and_reset`. Run the selected full-moon Feroxa form transitions and encounter reset. Maeryn's pushed helmet-choice dialogue neither starts nor completes this fight.
