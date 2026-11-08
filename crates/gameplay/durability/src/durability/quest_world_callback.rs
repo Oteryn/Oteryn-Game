@@ -1,4 +1,5 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
+mod admission;
 pub mod carried_step;
 pub(super) mod completion;
 #[cfg(feature = "test-support")]
@@ -145,13 +146,18 @@ pub(super) async fn consume_reward_inputs(
     reward_inputs::apply(tx, fence, request, callback, carried_use, &inputs).await
 }
 
-pub(super) async fn consume(
+#[allow(
+    clippy::too_many_arguments,
+    reason = "retains source, scope and live eligibility owners in one transaction"
+)]
+pub(super) async fn consume<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
     context: &QuestWorldContext,
+    premium: &G,
     scope_guard: (
         &crate::character_recovery_fence::CharacterRecoveryFenceV1,
         &super::runtime_scope_assignment::NodeIncarnationProof,
@@ -208,6 +214,11 @@ pub(super) async fn consume(
         &callback.world_requirements,
     )
     .await?
+    {
+        return Ok(false);
+    }
+    if let Some(requirements) = &callback.admission
+        && !admission::require(tx, fence, requirements, premium).await?
     {
         return Ok(false);
     }

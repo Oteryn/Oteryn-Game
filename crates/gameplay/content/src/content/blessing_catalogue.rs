@@ -85,6 +85,13 @@ impl BlessingCatalogue {
         Ok(catalogue)
     }
 
+    /// The owner-selected five regular blessings, excluding enhanced and Twist.
+    pub fn regular_blessings(&self) -> impl Iterator<Item = &Blessing> {
+        self.blessings
+            .iter()
+            .filter(|blessing| blessing.price_family == PriceFamily::Regular)
+    }
+
     /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
     /// The durable owner also enforces eligibility and refuses partial regular ownership;
     /// this pure missing-set calculation alone does not authorize a purchase.

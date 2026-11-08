@@ -703,7 +703,8 @@ pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String
 
 /// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
 pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
-    if !callback.requires_world_admission && !callback.opening_only {
+    if !callback.requires_world_admission && !callback.opening_only && callback.admission.is_none()
+    {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};

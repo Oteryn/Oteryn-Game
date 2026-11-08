@@ -25,6 +25,7 @@ mod arena_match;
 mod atelier;
 mod npc_program;
 
+mod world_eligibility;
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;

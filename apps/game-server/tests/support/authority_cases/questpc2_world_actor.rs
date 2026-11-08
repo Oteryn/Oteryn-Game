@@ -5,6 +5,22 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, world_callbacks};
 use std::sync::Arc;
 
+struct LivePremium(std::sync::atomic::AtomicBool);
+impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for LivePremium {
+    async fn task_permitted(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> Result<bool, crate::durability::DurabilityError> {
+        assert_eq!(
+            account,
+            fixture::id(40),
+            "Premium must read the locked Character account"
+        );
+        Ok(self.0.load(std::sync::atomic::Ordering::Acquire))
+    }
+}
+
 fn callback() -> fixture::TestResult<world_callbacks::Callback> {
     let text = serde_json::json!({"schema":1,"callbacks":[{
         "key":"oteryn:quest-callback/m03-ground-fixture", "quest":"oteryn:quest.ground_fixture",
@@ -58,6 +74,40 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     let mut accepted = denied.clone();
     accepted.key.push_str("-accepted");
     accepted.minimum_level = Some(50);
+    accepted.admission = Some(world_callbacks::Admission {
+        regular_blessings: true,
+        promotion: true,
+        premium: true,
+    });
+    let mut guarded = Vec::new();
+    for (suffix, admission) in [
+        (
+            "blessings",
+            world_callbacks::Admission {
+                regular_blessings: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "promotion",
+            world_callbacks::Admission {
+                promotion: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "premium",
+            world_callbacks::Admission {
+                premium: true,
+                ..Default::default()
+            },
+        ),
+    ] {
+        let mut callback = accepted.clone();
+        callback.key.push_str(suffix);
+        callback.admission = Some(admission);
+        guarded.push(callback);
+    }
     let c = denied.clone();
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
@@ -69,10 +119,11 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
                 min: 0,
                 max: 1,
             }],
-            vec![
-                world_callbacks::primary_transition(&denied)?,
-                world_callbacks::primary_transition(&accepted)?,
-            ],
+            std::iter::once(&denied)
+                .chain(std::iter::once(&accepted))
+                .chain(&guarded)
+                .map(world_callbacks::primary_transition)
+                .collect::<Result<Vec<_>, _>>()?,
         )
         .map_err(fixture::debug)?,
     );
@@ -127,6 +178,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(fixture::scope()?)
             .await
             .map_err(fixture::debug)?;
+    let premium = LivePremium(std::sync::atomic::AtomicBool::new(false));
     let invoke = |revision, id, callback: world_callbacks::Callback| -> fixture::TestResult<_> {
         Ok(h.root.commit_fixture_world_callback(
             &authority,
@@ -140,6 +192,7 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
             &lane,
             context.clone(),
             callback,
+            &premium,
         ))
     };
     assert!(matches!(
@@ -147,17 +200,47 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         QuestTransitionOutcome::Refused(_)
     ));
     assert_eq!(h.root_revision().await?, "1");
+    for (index, callback) in guarded.into_iter().enumerate() {
+        assert!(
+            matches!(
+                invoke(1, 9820 + index as u64, callback)?
+                    .await
+                    .map_err(fixture::debug)?,
+                QuestTransitionOutcome::Refused(_)
+            ),
+            "missing live actor prerequisite must refuse without progress"
+        );
+        assert_eq!(h.root_revision().await?, "1");
+    }
+    // Establish promotion through its paid production owner, not a vocation string.
+    crate::character_promotion_fixture::purchase(h, 1).await?;
+    let blessings =
+        oteryn_gameplay_content::content::blessing_catalogue::BlessingCatalogue::load()?;
+    let keys: Vec<_> = blessings
+        .regular_blessings()
+        .map(|b| b.storage_key.as_str())
+        .collect();
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) SELECT encode($1,'hex')::uuid,k,'fixture' FROM unnest($2::text[]) k")
+        .bind(fixture::id(fixture::CHARACTER).as_slice()).bind(&keys).execute(&mut *tx).await?;
+    tx.commit().await?;
+    premium.0.store(true, std::sync::atomic::Ordering::Release);
     assert!(matches!(
-        invoke(1, 9801, accepted.clone())?
+        invoke(2, 9801, accepted.clone())?
             .await
             .map_err(fixture::debug)?,
         QuestTransitionOutcome::Committed(_)
     ));
-    assert_eq!(h.root_revision().await?, "2");
+    assert_eq!(h.root_revision().await?, "3");
+    // Historical replay keeps its original admission after Premium expires.
+    premium.0.store(false, std::sync::atomic::Ordering::Release);
     assert!(matches!(
-        invoke(2, 9801, accepted)?.await.map_err(fixture::debug)?,
+        invoke(3, 9801, accepted)?.await.map_err(fixture::debug)?,
         QuestTransitionOutcome::AlreadyCommitted(_)
     ));
-    assert_eq!(h.root_revision().await?, "2");
+    assert_eq!(h.root_revision().await?, "3");
     Ok(())
 }

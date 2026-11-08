@@ -23,3 +23,34 @@ fn world_admission_predicates_require_personal_fenced_player_callbacks() -> Resu
     );
     Ok(())
 }
+
+#[test]
+fn live_admission_is_bound_even_without_the_optional_world_flag() -> Result<(), String> {
+    let mut callback = load()?
+        .into_iter()
+        .find(|c| !c.storage.is_empty() && c.native_rule.is_none())
+        .ok_or("personal callback")?;
+    callback.requires_world_admission = false;
+    callback.opening_only = false;
+    callback.admission = None;
+    assert_eq!(
+        gated_binding(&callback)?,
+        None,
+        "legacy unguarded bytes keep their binding"
+    );
+    callback.admission = Some(Admission {
+        promotion: true,
+        ..Default::default()
+    });
+    let promoted = gated_binding(&callback)?.ok_or("live admission must bind its predicate")?;
+    callback.admission = Some(Admission {
+        premium: true,
+        ..Default::default()
+    });
+    assert_ne!(
+        Some(promoted),
+        gated_binding(&callback)?,
+        "different live predicates cannot reuse a receipt binding"
+    );
+    Ok(())
+}

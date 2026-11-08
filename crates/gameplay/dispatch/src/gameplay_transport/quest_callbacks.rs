@@ -321,11 +321,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.iter().any(|pending| {
             callbacks().iter().any(|callback| {
                 callback.key == pending.callback
-                    && callback
-                        .effects
-                        .item_reward
-                        .as_ref()
-                        .is_some_and(|reward| reward.premium)
+                    && (callback.admission.as_ref().is_some_and(|a| a.premium)
+                        || callback
+                            .effects
+                            .item_reward
+                            .as_ref()
+                            .is_some_and(|reward| reward.premium))
             })
         }) {
             // Settle delivery before channel locks. A historical receipt still
@@ -369,11 +370,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         fee_payment: None,
                     }
                 });
-            let disposition = match slot.commit_world_callback_with_items(self.root, self.character, self.holder, fence,
+            let disposition = match slot.commit_world_callback_with_eligibility(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
                 std::sync::Arc::clone(catalogue), &permit, context,
                 self.active_generation.and_then(|generation| generation.native_gameplay()),
                 admission,
+                &self.premium_coordinator,
             ).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
@@ -747,11 +749,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let [callback] = selected.as_slice() else {
             return None;
         };
-        if callback
-            .effects
-            .item_reward
-            .as_ref()
-            .is_some_and(|reward| reward.premium)
+        if callback.admission.as_ref().is_some_and(|a| a.premium)
+            || callback
+                .effects
+                .item_reward
+                .as_ref()
+                .is_some_and(|reward| reward.premium)
         {
             // The synchronous live view used by MINT needs delivery settled;
             // await that read before taking the spell lane and Channel guards.
