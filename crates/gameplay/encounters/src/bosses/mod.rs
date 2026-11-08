@@ -9,6 +9,7 @@ pub mod hazard_primal;
 pub mod herald_of_fire;
 pub mod icicle;
 pub mod native_combat;
+pub mod phase_controller;
 pub mod resilience;
 pub mod reward_chest;
 pub mod room;
