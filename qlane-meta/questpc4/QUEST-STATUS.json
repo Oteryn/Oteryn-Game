@@ -11759,6 +11759,15 @@
         "crate_units": "New complete three-crate4008-case suite queued after authoring; pending under PREPUSH-2 cadence exception. Parent b already4002/4002PASS.",
         "pinned_test_files": "No existing reward-use-proof-pinned test file changed; existing assembly assertions untouched.",
         "node_boot": "No node boot, serve or content-activation implementation edit; changes are item data, authoring hooks and PG test routing."
+      },
+      "main_integration": {
+        "main": "f5b584ef1",
+        "conflicts": 0,
+        "scope": "CI partition policy only; no runtime/content/authoring input changed. Main workflow/repository changes reused as-is.",
+        "regeneration": "All native files, equipment pins, NPC/quest binding outputs, completion matrix, variant packet and world pin regenerated after merge; byte-identical to green feature cb88dfed0.",
+        "workspace_check": "Post-merge PASS242s; fmtPASS",
+        "retained_validation": "Same runtime and authoring inputs retain clippy394s,1118authoring-unit PASS,CIchecksPASS,contenttreePASS and thirteen actualPG component/regression passes.",
+        "crate_units": "Compilation paused before tests for final main merge; full three-crate suite resumes after publication. Pending under PREPUSH-2 cadence exception."
       }
     },
     "assembly_owner_recheck": {
