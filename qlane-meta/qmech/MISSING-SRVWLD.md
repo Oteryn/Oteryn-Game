@@ -17,3 +17,7 @@ The Scavenge consumer is present at `crates/gameplay/durability/src/durability/i
 PR #3024 is merged as `e1ca3e003`; this package contains that squash merge, incorporating its earlier tested fixes. Do not replay the pre-squash history at head `648f1bcdaeb8d68fa9fab470ed61f27405fafdb2`. No finished unmerged quest or mechanic is available to transfer. The last Royal Costume planning experiment was explicitly WIP/red and is not submitted as a tested fix. No frozen PR branch is modified.
 
 Migration range retained from the original SRVWLD packet: **1110–1119**, none allocated here. This partial contribution changes documentation only; no content, source code, generated pin or pinned PG test changes. Publication follows the owner's urgent partial-report instruction; the workspace check is running and has no result yet. `git diff --check` is the focused validation for this report.
+
+## Concurrent package update
+
+Before this report could publish, ENGITEM supplied the readable-text adapter on qmech: `ItemReward.text`, the `reward.text` → `root_text` bridge, migration `1641_quest_literal_reward_text.sql`, unit tests and `authority_cases/engitem_reward_text.rs`. The Nomads Land row above records the checked earlier snapshot; that adapter gap is now RESOLVED in the merged package and must not be claimed again. The unresolved book identity remains quest-data work, not evidence of another missing text engine. No mechanic has been claimed by SRVWLD yet.
