@@ -45,3 +45,16 @@ pub(in crate::play) fn reduce(
         }
     }
 }
+
+/// Task progress is copied only from confirmed task replies, never inferred from session kills.
+pub(in crate::play) fn task_progress(mailbox: &mut crate::play::mailbox::Mailbox, confirmed: bool) {
+    if confirmed
+        && let Some(rows) = oteryn_client_ui::analyser::kills::task_rows(&mailbox.task_board)
+    {
+        mailbox.analyser.task_progress = Some(rows);
+        mailbox.analyser.task_feedback = None;
+    } else {
+        mailbox.analyser.task_feedback =
+            Some("Hunting tasks not updated; previous confirmation retained");
+    }
+}

@@ -1,5 +1,7 @@
 //! oteryn-choice: native local view of confirmed server facts, with no gameplay authority.
 mod input;
+#[path = "state/kills.rs"]
+pub mod kills;
 #[path = "state/party.rs"]
 pub mod party;
 pub mod protocol;
@@ -17,3 +19,7 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/loot_tracker.rs"]
 mod loot_tracker_tests;
+
+#[cfg(test)]
+#[path = "tests/kills.rs"]
+mod kill_tracker_tests;

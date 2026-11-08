@@ -13,8 +13,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             title: "Analysers",
             labels: &[
                 "XP still needed for your level goal (blank disables)",
-                "Item number from loot or supply list",
-                "Unit item value (gold)",
+                "Item or creature race number from analyser",
+                "Unit item value (gold) or kill target",
                 "Session export file path",
             ],
             buttons: &[
@@ -41,6 +41,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Track loot item",
                 "Untrack loot item",
                 "Tracked / all loot",
+                "Set race kill target",
+                "Remove race target",
+                "Refresh hunting tasks",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;

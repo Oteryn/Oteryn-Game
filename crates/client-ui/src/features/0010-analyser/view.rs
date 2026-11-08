@@ -20,7 +20,7 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Session => session_text(panel),
         super::Tool::Party => super::party::text(panel),
         super::Tool::LootTracker => super::tracking::text(panel, panel.clock.seconds()),
-        super::Tool::Kills => format!("Kill Tracker\r\nKills: {}", panel.kills),
+        super::Tool::Kills => super::kills::text(panel),
     };
     if panel.dropped != 0 {
         text.push_str(&format!(

@@ -301,3 +301,6 @@ fn analyser_loot_tracking_controls_filter_real_confirmed_drops() {
     );
     assert!(!oteryn_client_ui::analyser::panel_text(&mailbox.analyser).contains("#1"));
 }
+
+#[path = "tasks.rs"]
+mod task_tracker;

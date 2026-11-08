@@ -121,6 +121,16 @@ pub(in crate::play) fn submit(
         );
     } else if action == tools + 9 {
         mailbox.analyser.loot_only_tracked = !mailbox.analyser.loot_only_tracked;
+    } else if action == tools + 10
+        && let [_, race, target, ..] = values.as_slice()
+    {
+        oteryn_client_ui::analyser::kills::goal(&mut mailbox.analyser, race, Some(target));
+    } else if action == tools + 11
+        && let Some(race) = values.get(1)
+    {
+        oteryn_client_ui::analyser::kills::goal(&mut mailbox.analyser, race, None);
+    } else if action == tools + 12 {
+        refresh_tasks(mailbox, commands);
     }
 }
 
@@ -158,5 +168,29 @@ impl PlayLink {
     }
     pub fn analyser_save_session(&self, path: &std::path::Path) -> std::io::Result<()> {
         save_session(&lock(&self.mailbox).analyser, path)
+    }
+}
+
+pub(in crate::play) fn refresh_tasks(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+) {
+    let Some(command) = oteryn_client_ui::task_board::full_request(
+        &mut mailbox.task_board,
+        oteryn_client_ui::task_board::FullIntent::Refresh,
+    ) else {
+        mailbox.analyser.task_feedback =
+            Some("Hunting tasks unavailable or a request is already pending");
+        return;
+    };
+    mailbox.analyser.task_feedback = Some("Reading confirmed hunting tasks");
+    if commands.send(PlayCommand::Feature(command)).is_err() {
+        mailbox.task_board.pending = false;
+        mailbox.analyser.task_feedback = Some("Session ended");
+    }
+}
+impl PlayLink {
+    pub fn analyser_refresh_tasks(&self) {
+        refresh_tasks(&mut lock(&self.mailbox), &self.commands);
     }
 }
