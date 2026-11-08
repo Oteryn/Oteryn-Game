@@ -13,6 +13,10 @@ impl Application {
             .control_events(events, self.play.as_ref().map(|play| &play.link));
         let events = controls.as_slice();
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
+        let routed = self
+            .settings
+            .input(events, self.play.as_ref().map(|play| &play.link));
+        let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
             play.view.observe_creature_pointer(events);
@@ -20,10 +24,7 @@ impl Application {
                 return;
             }
         }
-        let routed = self
-            .settings
-            .input(events, self.play.as_ref().map(|play| &play.link));
-        let events = routed.as_slice();
+
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view, &play.link);
             if play.view.audio_input(events) {

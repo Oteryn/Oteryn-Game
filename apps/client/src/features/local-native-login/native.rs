@@ -77,7 +77,7 @@ fn wide(text: &str) -> Vec<u16> {
 unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if message == WM_COMMAND
-            && (1..=5).contains(&(w & 0xffff))
+            && (1..=7).contains(&(w & 0xffff))
             && (w >> 16) & 0xffff == BN_CLICKED as usize
         {
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (w & 0xffff) as isize);
@@ -95,6 +95,7 @@ fn run(
     requests: Sender<NativeLoginConfig>,
     ready: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
+    crate::crash_report::review_pending();
     let path = settings_path();
     let mut bulletin = crate::bulletin::Browser::default();
     let bulletin_warning = std::env::current_exe()
@@ -160,6 +161,16 @@ fn run(
             [15, 315, 200, 32],
             WS_TABSTOP | BS_DEFPUSHBUTTON as u32,
         );
+        for (id, label, x) in [(6, "About", 235), (7, "Survey", 395)] {
+            controls.push(control(
+                hwnd,
+                "BUTTON",
+                label,
+                id,
+                [x, 315, 140, 32],
+                WS_TABSTOP,
+            ));
+        }
         for (id, label, x) in [
             (2, "News", 15),
             (3, "Previous month", 155),
@@ -224,17 +235,23 @@ fn run(
             let action = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
             if action >= 2 {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-                if action == 3 {
-                    bulletin.previous_month();
-                }
-                if action == 5 {
-                    bulletin.next_month();
-                }
-                form.feedback(if action == 2 {
-                    bulletin.news()
+                if action == 6 {
+                    crate::about::show_information(&crate::about::about_text());
+                } else if action == 7 {
+                    crate::about::run_survey();
                 } else {
-                    bulletin.month()
-                });
+                    if action == 3 {
+                        bulletin.previous_month();
+                    }
+                    if action == 5 {
+                        bulletin.next_month();
+                    }
+                    form.feedback(if action == 2 {
+                        bulletin.news()
+                    } else {
+                        bulletin.month()
+                    });
+                }
             }
             if action == SUBMIT as isize {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);

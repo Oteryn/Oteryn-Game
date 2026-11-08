@@ -17,6 +17,29 @@ pub fn panel_text(panel: &DailyRewardPanel) -> String {
                 "not available"
             }
         ));
+        text.push_str("30-day calendar\n");
+        for day in 1..=30 {
+            let state = if day == w.lane_day {
+                if w.claimed {
+                    "claimed"
+                } else if w.claim_enabled {
+                    "available"
+                } else {
+                    "current"
+                }
+            } else {
+                "unobserved"
+            };
+            text.push_str(&format!(
+                "{day:02}: {state}{}",
+                if day % 5 == 0 { "\n" } else { " | " }
+            ));
+        }
+        for (day, streak) in panel.claim_receipts.iter().flatten() {
+            text.push_str(&format!(
+                "Confirmed this session: day {day}, streak {streak}\n"
+            ));
+        }
     } else {
         text.push_str("No server state loaded\n");
     }
