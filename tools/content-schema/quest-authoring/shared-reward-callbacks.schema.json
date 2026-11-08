@@ -27,6 +27,16 @@
     }
   },
   "$defs": {
+    "selfTargetPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "floor"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "floor": { "type": "integer", "minimum": -15, "maximum": 0 }
+      }
+    },
     "item": {
       "type": "object",
       "additionalProperties": false,
@@ -486,6 +496,15 @@
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
           "maxLength": 256
+        },
+        "self_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minimum", "maximum"],
+          "properties": {
+            "minimum": { "$ref": "#/$defs/selfTargetPosition" },
+            "maximum": { "$ref": "#/$defs/selfTargetPosition" }
+          }
         },
         "forbids_outfits": {
           "type": "array",

@@ -8,6 +8,34 @@ import qengine_rewards
 
 
 class CarriedRecipes(unittest.TestCase):
+    def test_molten_wax_is_exact_self_consumption(self):
+        root = Path(__file__).resolve().parents[3]
+        document = json.loads((root / 'content/quests/npc-callbacks/m20-cursed-crystal-wax.json').read_text())
+        qengine_rewards.validate_callbacks(document)
+        row, = document['callbacks']
+        self.assertEqual(row['take'], [{'item': 'oteryn:item.tibia.i9106', 'count': 1}])
+        self.assertIsNone(row['give'])
+        self.assertEqual(row['self_target'], {
+            'minimum': {'x': 31938, 'y': 32932, 'floor': -10},
+            'maximum': {'x': 31946, 'y': 32940, 'floor': -10},
+        })
+        self.assertEqual((row['storage'][0]['minimum'], row['storage'][0]['maximum'], row['storage'][0]['set']), (-1, 1, 2))
+        for mutation in ('inverted', 'different_floor', 'too_wide', 'no_source', 'recipe'):
+            invalid = copy.deepcopy(document)
+            entry = invalid['callbacks'][0]
+            if mutation == 'inverted':
+                entry['self_target']['maximum']['x'] = 31937
+            elif mutation == 'different_floor':
+                entry['self_target']['maximum']['floor'] = -9
+            elif mutation == 'too_wide':
+                entry['self_target']['maximum']['x'] = 31955
+            elif mutation == 'no_source':
+                entry.pop('carried_item')
+            else:
+                entry['carried_target'] = 'oteryn:item.tibia.i21504'
+            with self.assertRaises((ValueError, ValidationError)):
+                qengine_rewards.validate_callbacks(invalid)
+
     def document(self):
         root = Path(__file__).resolve().parents[3]
         return json.loads((root / 'content/quests/npc-callbacks/m20-cursed-crystal-recipes.json').read_text())

@@ -1018,6 +1018,14 @@ def validate_callbacks(document):
             raise ValueError('literal reward text exceeds UTF-8 byte bound')
         storage=callback['storage']
         source, target = callback.get('carried_item'), callback.get('carried_target')
+        area = callback.get('self_target')
+        if area is not None:
+            low, high = area['minimum'], area['maximum']
+            if (source is None or target is not None or callback.get('peer_requires')
+                    or callback.get('creature_target') or all(s.get('preserve', False) for s in storage)
+                    or low['floor'] != high['floor']
+                    or any(not 0 <= high[axis] - low[axis] <= 16 for axis in ('x', 'y'))):
+                raise ValueError('invalid self-target quest tool '+callback['key'])
         if target is not None:
             if (source is None or source == target or not callback.get('give')
                     or callback.get('peer_requires') or callback.get('creature_target')

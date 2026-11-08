@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn m20_molten_wax_consumes_one_only_in_the_donor_self_target_area() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-reward/m20/cursed-crystal-molten-wax")
+        .ok_or("missing Molten Wax callback")?;
+    assert_eq!(
+        callback.carried_item.as_deref(),
+        Some("oteryn:item.tibia.i9106")
+    );
+    assert_eq!(callback.take.len(), 1);
+    assert_eq!(callback.take[0].item, "oteryn:item.tibia.i9106");
+    assert_eq!(callback.take[0].count, 1);
+    assert!(callback.give.is_none());
+    let area = callback.self_target.as_ref().ok_or("self target")?;
+    for (x, y, floor, allowed) in [
+        (31938, 32932, 10, true),
+        (31946, 32940, 10, true),
+        (31937, 32936, 10, false),
+        (31947, 32936, 10, false),
+        (31942, 32931, 10, false),
+        (31942, 32941, 10, false),
+        (31942, 32936, 9, false),
+    ] {
+        assert_eq!(area.contains(x, y, floor), allowed);
+    }
+    let storage = &callback.storage[0];
+    assert_eq!(storage.minimum, -1);
+    assert_eq!(storage.maximum, 1);
+    assert_eq!(storage.set, 2);
+    assert!(storage.track.ends_with("/oneeyedjoe"));
+    let transition = primary_transition(&callback)?;
+    let catalogue = QuestStateCatalogue::new(
+        "m20-wax",
+        vec![super::super::QuestTrack {
+            key: storage.track.clone(),
+            quest: callback.quest.clone(),
+            initial: -1,
+            min: -1,
+            max: 4,
+        }],
+        vec![transition.clone()],
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    for before in [-1, 0, 1] {
+        let changes = catalogue
+            .evaluate(
+                &transition,
+                &BTreeMap::from([(storage.track.clone(), before)]),
+                0,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(changes[0].after, 2);
+    }
+    assert!(
+        catalogue
+            .evaluate(
+                &transition,
+                &BTreeMap::from([(storage.track.clone(), 2)]),
+                0
+            )
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
 fn m20_carried_recipe_requires_two_explicit_inputs_and_binds_target() -> Result<(), String> {
     let mut document: serde_json::Value =
         serde_json::from_str(DOCUMENTS[0]).map_err(|e| e.to_string())?;
@@ -44,7 +110,10 @@ fn m20_cursed_crystal_final_plans_preserve_higher_progress_and_bind_all_outputs(
     let callbacks = load()?;
     let recipes: Vec<_> = callbacks
         .iter()
-        .filter(|c| c.key.starts_with("oteryn:quest-reward/m20/"))
+        .filter(|c| {
+            c.key
+                .starts_with("oteryn:quest-reward/m20/cursed-crystal-final-")
+        })
         .collect();
     assert_eq!(recipes.len(), 2);
     for recipe in recipes {

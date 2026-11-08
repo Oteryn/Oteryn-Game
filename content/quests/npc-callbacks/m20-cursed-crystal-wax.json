@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "tracks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/m20/cursed-crystal-molten-wax",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.one_eyed_joe",
+      "carried_item": "oteryn:item.tibia.i9106",
+      "keywords": [
+        "wax"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9106",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You use the molten wax to plug your ears."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/actions_MedusaOil.lua:28-43"
+      ],
+      "self_target": {
+        "minimum": {
+          "x": 31938,
+          "y": 32932,
+          "floor": -10
+        },
+        "maximum": {
+          "x": 31946,
+          "y": 32940,
+          "floor": -10
+        }
+      }
+    }
+  ]
+}
