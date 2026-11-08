@@ -381,6 +381,13 @@ impl DurabilityRoot {
         reward_callbacks: Vec<oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback>,
         world_callbacks: Vec<oteryn_gameplay_quests::quest::world_callbacks::Callback>,
     ) -> Result<QuestTransitionOutcome> {
+        let required_mint = oteryn_gameplay_quests::quest::completion_sets::required_mint_claim(
+            &request.transition_key,
+        )
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
             return Err(CharacterProgressionError::InvalidInput);
@@ -511,7 +518,9 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let native_claim = reward_callback.as_ref().is_some_and(|callback| callback.world_claim.is_some());
+        let native_claim = reward_callback
+            .as_ref()
+            .is_some_and(|callback| callback.world_claim.is_some());
         if native_claim && (context.is_none() || !matches!(request.cause, QuestCause::Use(_))) {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -530,7 +539,9 @@ impl DurabilityRoot {
             .as_ref()
             .and_then(|c| c.effects.item_reward.as_ref());
         if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
-            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)) && !native_claim)
+            || (reward_callback.is_some()
+                && !matches!(request.cause, QuestCause::Command(_))
+                && !native_claim)
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -810,6 +821,17 @@ impl DurabilityRoot {
                         if row.try_get::<String, _>("state")? != "PENDING" {
                             return Ok(Ok(QuestTransitionOutcome::ObligationClosed));
                         }
+                        if let Some(required) = required_mint {
+                            // A group's bound flag is written only for this exact durable MINT.
+                            // The existing Character root lock serializes all group observations.
+                            let proven: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_reward_claim_mint_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0) AND character_id=encode($3,'hex')::uuid AND claim_family='RewardClaim' AND claim_production_key=$4)")
+                                .bind(claim.game_session_id().as_bytes().as_slice())
+                                .bind(claim.command_id().get().to_string())
+                                .bind(character.as_bytes().as_slice()).bind(required)
+                                .fetch_one(&mut *tx).await?;
+                            if !proven { return Ok(Err(CharacterProgressionError::InvalidInput)); }
+                        }
+
                     }
 
                     let quest = transition.quest.as_str();

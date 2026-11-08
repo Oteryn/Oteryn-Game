@@ -280,6 +280,7 @@ def chest_transitions() -> set[str]:
     return {
         TRANSITION_PREFIX + marker + "/chest"
         for rule in load_json(ROOT / "content/quests/claim-sets.json").values()
+        if not rule.get("mint_only", False)
         for group in rule["groups"] for marker in group
     } | {
         t["key"]

@@ -53,6 +53,9 @@ fn registry() -> Result<&'static Registry, String> {
                     protect,
                 )?;
             }
+            for transition in super::completion_sets::mint_transitions()? {
+                add(transition, false, true)?;
+            }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
                 let protect = world_callbacks::gated_binding(&callback)?.is_some()
