@@ -56,7 +56,8 @@
     "integration_repair": {
       "cause": "Collector integration retained 34111 native Item keys after adding three Cook definitions; compiler has 34114, shifting compact references for subsequent keys. Existing ItemKeySetTests reproduces the stale generation.",
       "repair": "Native-only repository regeneration now refreshes Item keys before pinning the manifest. No map-reference validation relaxed.",
-      "validation": "Banshee PG18.6 2/2 PASS123.530500246s and162.660560198s; indexPython2PASS; orchestration13PASS; workspace alltargets414s/fmt/equivalence PASS. Pins/clippy finishing; full dispatch unit rerun pending under cadence exception. Cook contacts separate RED155.145328756s source NPC placement absent."
+      "validation": "Banshee PG18.6 2/2 PASS123.530500246s and162.660560198s; indexPython2PASS; orchestration13PASS; workspace alltargets414s/fmt/equivalence PASS. Pins/clippy finishing; full dispatch unit rerun pending under cadence exception. Cook contacts separate RED155.145328756s source NPC placement absent.",
+      "latest_main_merge": "b3864f14a clean merge; workspace237s/fmt/pins/strictClippy218s PASS; postmerge Python3+3+13PASS; actor-offset PG and full unit rerun pending under PREPUSH-2 exception"
     },
     "engine_request": {
       "feature": "Fenced item-on-world-target callback must relocate one exact live creature atomically with selected quest progress and carried-tool validation (Fryclops catapult).",

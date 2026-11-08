@@ -1,3 +1,11 @@
+## Main3031 checkpoint gates PASS — 2026-11-08 03:17 UTC
+
+Mergedmainb3864f14a no conflicts. Pinrefresh/checkPASSunchanged82de459c8fb4c61828fe4561464d8d405b292c65eb1a069446223dfcaa25b9d7; alltargetworkspacecheckPASS3m57s, fmtPASS, strictcontent/dispatch/worldcompilerClippyPASS3m38s. PostmergePythonmtime3/NPCfacts3/orchestrator13PASS. DupmigrationstagedtreePASS. Pushcompiledcheckpointimmediately; ownCookactor-offsetfreshPGstillpending underPREPUSH-2budgetexception, andfourcratefullunitrerunmustfollow. Do not addqualification. Next: cachedfreshfocusedCookPG thenfullfourcrateunitrerun, keepinggenerateddataunchanged.
+
+## Main3031 merged cleanly — 2026-11-08 03:14 UTC
+
+Ownerwatchdog triggeredfreshfetch: mainadvancedfrom78294c081tob3864f14a(PUBPROJV2#3031). Committedcompiledrepairs c4117bdcc, mergedmainwithoutconflict ea6737b22; bothuseridentity/trailerscorrect. Newmainmigrations1350/1351/1352/1354/1355/1356consumedas-is, own1270-1276unchanged, local1300stilluntracked. Mainfixtureproducersandnative/central/auditregenPASS(no byte drift); releasecompilerfresh, pinrefresh/checkPASS82de459c8fb4c61828fe4561464d8d405b292c65eb1a069446223dfcaa25b9d7; mergedworkspacealltargetsPASS3m57s andfmtPASS. Strictcontent/dispatch/compilerClippyrunning. PushimmediatelyafterClippy, thenfreshCookPGcoordfixandfullunitrerun; noadditionalqualificationyet. Removedfiveobsoleteowncachedtestexecutablesfor2.5GBfree; no source/tests deleted.
+
 ## Grouped repair checkpoint — 2026-11-08 02:58 UTC
 
 Completed entirebaseline: dispatch1604run1597PASS7FAIL2178.853s; content/quests/NPC672run632PASS40FAIL1821.991s. Exactlyfourrootgroups:44missingrecipewitness, emptycollectiblefixture1, starterbase/overlayrepartition1, reviewedOrnamentedfullcharges1. Fixedalltogetherwithoutweakeningguards. Freshfocused15:14PASS; CookcontactsRED155.198691592sCellOccupied becausefixtureplayerorigin=trigger.x-1 landedonCheaty. Correctedtrigger32845→player32844, nextPGpending. AllpriorBanshee/materialsPGgreen. FourcontentregressionsPASS. Timestampno-opproducersPython3RED→GREEN; Worldcompilerbinary9PASS149.73s andlibunitspassed; releasecompilerrebuilt. Nextpinrefresh/check, finalworkspace/fmt, compilingcheckpointpush, thenfreshcontactPG/fullunitrerun. NativegeneratorsnowpreserveunchangedRust/JSON/keytimestamps; pinwriterdoeslikewise, preventingneedlessCargo invalidation.
