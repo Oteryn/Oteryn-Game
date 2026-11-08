@@ -17,6 +17,10 @@ use windows_sys::Win32::{
         Controls::EM_SETLIMITTEXT, Input::KeyboardAndMouse::EnableWindow, WindowsAndMessaging::*,
     },
 };
+#[path = "native/projection.rs"]
+mod projection;
+#[path = "native/specs.rs"]
+mod specs;
 #[derive(Default)]
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -85,7 +89,7 @@ fn run(
         let title = match panel {
             98 => "Quick loot — Ctrl+Alt+Q",
             132 => "Inspection — Ctrl+Alt+I",
-            232 => "Team Finder — Ctrl+Alt+T",
+            232 => "Social — Team Finder — Ctrl+Alt+T",
             _ => "Store — Ctrl+Alt+H",
         };
         let hwnd = CreateWindowExW(
@@ -139,103 +143,6 @@ unsafe fn control(
         )
     }
 }
-fn specs(
-    panel: u32,
-) -> (
-    &'static [&'static str],
-    &'static [(&'static str, &'static str)],
-) {
-    match panel {
-        98 => (
-            &[
-                "Loot nearby",
-                "Add item",
-                "Remove item",
-                "Clear list",
-                "Select mode",
-                "Set destination",
-                "Lists / Managed containers",
-                "Reset selected to main",
-            ],
-            &[
-                ("Item type", ""),
-                ("List: 1 skip, 2 accept", "1"),
-                (
-                    "Category: 0 all, 1 gold, 2 products, 3 gear, 4 consumables, 5 other",
-                    "0",
-                ),
-                ("Fallback: 0 off, 1 on", "1"),
-                ("Destination: 1 container, 2 gold pouch, 3 main", "3"),
-                ("Container / pouch ID (if not main)", ""),
-            ],
-        ),
-        132 => (
-            &[
-                "Inspect selected inventory item",
-                "Permission requests",
-                "Grant selected",
-                "Revoke selected",
-                "Allow everyone",
-                "Disable allow everyone",
-                "Inspect catalogue item",
-                "Refresh inspection",
-                "Inspect trade item",
-            ],
-            &[
-                ("Catalogue item type", ""),
-                ("Trade item index", "0"),
-                ("Counter offer: 0 no, 1 yes", "0"),
-            ],
-        ),
-        232 => (
-            &[
-                "Browse teams",
-                "Your applicants",
-                "Next page",
-                "Request to join",
-                "Cancel request",
-                "Invite selected",
-                "Accept selected",
-                "Deny selected",
-                "Publish advertisement",
-                "Remove advertisement",
-                "Apply team filters",
-                "Clear team filters",
-            ],
-            &[
-                ("Minimum level", "1"),
-                ("Maximum level", "1000"),
-                ("Vocations mask", "255"),
-                ("Team slots", "4"),
-                ("Free slots", "3"),
-                ("Party members: 0 no, 1 yes", "0"),
-                ("Target: 1 boss, 2 hunt, 3 quest", "1"),
-                ("Boss / hunt kind / quest", "0"),
-                ("Hunt area", "0"),
-                ("Start time (Unix seconds; 0 now)", "0"),
-                ("Filter leader name", ""),
-                ("Filter level (0 any)", "0"),
-                ("Filter vocations mask (0 any)", "0"),
-                ("Filter target: 0 any/1 boss/2 hunt/3 quest", "0"),
-                ("Filter only open: 0 no/1 yes", "0"),
-            ],
-        ),
-        _ => (
-            &[
-                "Refresh current Store tab",
-                "Next page in current tab",
-                "Catalogue",
-                "Purchase history",
-                "Apply purchase history filters",
-            ],
-            &[
-                ("Offer text (this page)", ""),
-                ("From Unix milliseconds", ""),
-                ("Through Unix milliseconds", ""),
-            ],
-        ),
-    }
-}
 unsafe fn window(
     hwnd: HWND,
     weak: &Weak<Mutex<Mailbox>>,
@@ -266,12 +173,14 @@ unsafe fn window(
             (10, 250, 810, 100),
             WS_BORDER | WS_VSCROLL | WS_TABSTOP,
         );
-        let (buttons, fields) = specs(panel);
+        let (buttons, fields) = specs::specs(panel);
         let mut inputs = Vec::new();
+        let mut labels = Vec::new();
         for (i, (label, initial)) in fields.iter().enumerate() {
-            let x = 10 + (i % 3) as i32 * 270;
-            let y = 360 + (i / 3) as i32 * 60;
-            control(hwnd, "STATIC", label, 200 + i, (x, y, 260, 25), 0);
+            let position = if panel == 232 && i >= 10 { i - 10 } else { i };
+            let x = 10 + (position % 3) as i32 * 270;
+            let y = 360 + (position / 3) as i32 * 60;
+            labels.push(control(hwnd, "STATIC", label, 200 + i, (x, y, 260, 25), 0));
             let input = control(
                 hwnd,
                 "EDIT",
@@ -384,71 +293,18 @@ unsafe fn window(
             }
             let state = link.discovery_panel();
             let store = link.store_panel();
-            let (display, names, available) = match panel {
-                98 => (
-                    oteryn_client_ui::quick_loot::panel_text(&state.loot),
-                    if state.loot.managed {
-                        state
-                            .loot
-                            .destinations
-                            .iter()
-                            .map(|action| format!("{action:?}"))
-                            .collect()
+            if panel == 232 {
+                for (i, (label, input)) in labels.iter().zip(&inputs).enumerate() {
+                    let show = if (i < 10) == state.teams.applicants {
+                        SW_SHOW
                     } else {
-                        state
-                            .loot
-                            .skipped
-                            .iter()
-                            .map(|id| format!("Skip item {id}"))
-                            .chain(
-                                state
-                                    .loot
-                                    .accepted
-                                    .iter()
-                                    .map(|id| format!("Accept item {id}")),
-                            )
-                            .collect()
-                    },
-                    state.loot.selected && state.loot.pending.is_none(),
-                ),
-                132 => (
-                    oteryn_client_ui::inspection::panel_text(&state.inspection),
-                    state
-                        .inspection
-                        .reply
-                        .as_ref()
-                        .map(|r| {
-                            r.requests
-                                .iter()
-                                .enumerate()
-                                .map(|(i, _)| format!("Permission request {}", i + 1))
-                                .collect()
-                        })
-                        .unwrap_or_default(),
-                    state.inspection.selected && !state.inspection.pending,
-                ),
-                232 => {
-                    let names = state.teams.visible_names();
-                    (
-                        format!(
-                            "{}\r\n{}",
-                            oteryn_client_ui::team_finder::panel_text(&state.teams),
-                            oteryn_client_ui::team_finder_leader::view::panel_text(&state.leader)
-                        ),
-                        names,
-                        state.teams.selected && state.teams.pending.is_none(),
-                    )
+                        SW_HIDE
+                    };
+                    ShowWindow(*label, show);
+                    ShowWindow(*input, show);
                 }
-                _ => (
-                    if store.page == oteryn_client_ui::store::StorePage::Catalogue {
-                        oteryn_client_ui::store::panel_text(&store)
-                    } else {
-                        oteryn_client_ui::purchase_history::panel_text(&state.history)
-                    },
-                    Vec::new(),
-                    state.history.selected && !state.history.pending,
-                ),
-            };
+            }
+            let (display, names, available) = projection::project(panel, &state, &store);
             if display != held {
                 SetWindowTextW(text, wide(&display).as_ptr());
                 held = display;
@@ -469,7 +325,13 @@ unsafe fn window(
                 } else if panel == 98 && i == 7 {
                     available && state.loot.managed
                 } else if panel == 232 && (8..10).contains(&i) {
-                    state.leader.selected && !state.leader.pending
+                    state.teams.applicants && state.leader.selected && !state.leader.pending
+                } else if panel == 232 && (3..8).contains(&i) {
+                    available && (i >= 5) == state.teams.applicants
+                } else if panel == 232 && i >= 10 {
+                    available && !state.teams.applicants
+                } else if panel == 232 && i == 2 {
+                    available && state.teams.next().is_some()
                 } else if panel == 285 && i >= 2 {
                     store.selected || state.history.selected
                 } else if panel == 285

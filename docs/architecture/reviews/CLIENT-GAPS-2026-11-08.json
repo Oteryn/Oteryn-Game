@@ -130,8 +130,9 @@
   "src": "TIBAUD-1",
   "area": "Party",
   "feature": "Team Finder assemble/join",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów.",
+  "evidence": "crates/client-ui/src/features/0232-team-finder-members/view.rs:10 + social_team_filters_join_the_visible_leader",
   "lane": "cg_analytics"
  },
  {
