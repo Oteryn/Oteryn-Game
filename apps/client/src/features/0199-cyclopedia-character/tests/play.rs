@@ -175,6 +175,8 @@ fn statistics_reject_malformed_results_and_keep_unknown_distinct_from_zero()
     Ok(())
 }
 
+#[path = "achievements.rs"]
+mod achievements;
 #[path = "misc.rs"]
 mod misc;
 #[path = "navigation.rs"]
