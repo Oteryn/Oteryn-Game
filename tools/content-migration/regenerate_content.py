@@ -66,6 +66,7 @@ EXTRA_DERIVED = (
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
+    "tools/content-schema/native-gameplay/questl2-equipment-cohort.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
 # sources and batches (read back by world_project_v2_to_tree), hand-captured import records, and
@@ -80,6 +81,8 @@ PREPROD_MANIFEST = "deploy/synology-game/preprod-topology.toml"
 SPELLS_MANIFEST = "content/spells.manifest.json"
 
 AUTHORING_TOOLS = (
+    "tools/content-migration/qengine_equipment_audit.py",
+    "tools/content-migration/questl2_equipment_audit.py",
     "tools/content-migration/raid_catalogue.py",
     "tools/content-schema/craft-authoring/craft_authoring.py",
     "tools/content-schema/imbuement-authoring/imbuement_content.py",
@@ -542,6 +545,8 @@ def main() -> int:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
+        run(["python3", "tools/content-migration/questl2_equipment_audit.py", "content"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])

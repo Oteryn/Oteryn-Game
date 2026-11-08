@@ -42,6 +42,10 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(actual),46)
         self.assertIn('tools/content-schema/native-gameplay/quest-creature-item-profiles.json', actual)
         self.assertIn('content/items/definitions/quest-loot-custody.json', actual)
+        proof = json.loads(actual['tools/content-schema/native-gameplay/quest-creature-item-profiles.json'])
+        creature_path = 'content/creatures/definitions/spell-native-profiles.json'
+        source, = [row for row in proof['sources'] if row['path'] == creature_path]
+        self.assertEqual(source['sha256'], overlay.digest(actual[creature_path]))
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual.keys())
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)

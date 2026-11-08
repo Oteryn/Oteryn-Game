@@ -241,6 +241,8 @@ fn scenario_case(
             // These two cases keep five source NPCs and one player alive.
             if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
                 6
+            } else if name.starts_with("qengine-rewards-l2-djinn-") {
+                13 // Twelve distinct source NPCs and the player.
             } else if name == "qengine-rewards-paid-stake-priests" {
                 12
             } else if name == "qengine-rewards-l2-troll" {

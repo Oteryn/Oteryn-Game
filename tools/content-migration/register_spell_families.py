@@ -480,6 +480,7 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     if include_prey:
         import prey_difficulty
         prey_difficulty.apply_native(root, generated, spell_import.canonical_bytes)
+    quest_creature_item_profiles.finalize_creature_source(generated)
 
     descriptors = spell_import.descriptors(root, generated)
     fragment = starting_loadout_profiles.FRAGMENT

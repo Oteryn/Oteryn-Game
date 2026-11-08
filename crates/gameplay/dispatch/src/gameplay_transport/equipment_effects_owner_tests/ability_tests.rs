@@ -295,9 +295,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 53 independently captured physical quest Items.
+    // QENGINE2 adds exactly the 137 independently captured physical quest Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
-    // data. Main d34807f5 has none of these keys; all retain qualified zero speed.
+    // data. Item 3079 has source speed 20; all other source records retain zero.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
@@ -320,9 +320,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             .find(|row| row.production_definition.production_key == key)
             .ok_or_else(|| format!("missing QENGINE2 source profile {key}"))?;
         assert!(profile.admission.materializable, "{key}");
-        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+        let source_speed = if key == "oteryn:item.tibia.i3079" {
+            20
+        } else {
+            0
+        };
+        assert_eq!(profile.attributes.speed_bonus, Some(source_speed), "{key}");
     }
-    assert_eq!(added_keys.len(), 53);
+    assert_eq!(added_keys.len(), 137);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -372,11 +377,65 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
+    let cohort: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/questl2-equipment-cohort.json"
+    )))?;
     assert_eq!(
-        profiles.records.len(),
+        cohort["baseline_commit"],
+        "78294c081a099c96a57948573d5dbf0caf398abf"
+    );
+    let baseline = usize::try_from(cohort["baseline_count"].as_u64().ok_or("baseline count")?)?;
+    let original_qengine = usize::try_from(
+        cohort["baseline_qengine_count"]
+            .as_u64()
+            .ok_or("baseline source count")?,
+    )?;
+    assert_eq!(
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-            + additions.len()
+            + original_qengine,
+        usize::try_from(
+            cohort["baseline_declared_count"]
+                .as_u64()
+                .ok_or("declared baseline")?
+        )?
+    );
+    assert_eq!(
+        baseline
+            + usize::try_from(
+                cohort["baseline_cohort_overlap"]
+                    .as_u64()
+                    .ok_or("baseline cohort overlap")?
+            )?,
+        usize::try_from(
+            cohort["baseline_declared_count"]
+                .as_u64()
+                .ok_or("declared baseline")?
+        )?
+    );
+    let extra = cohort["additional_keys"]
+        .as_array()
+        .ok_or("additional source keys")?;
+    let actual: std::collections::BTreeSet<_> = profiles
+        .records
+        .iter()
+        .map(|row| row.production_definition.production_key.as_str())
+        .collect();
+    assert_eq!(actual.len(), profiles.records.len(), "duplicate native key");
+    for key in extra {
+        assert!(actual.contains(key.as_str().ok_or("source key")?), "{key}");
+    }
+    assert_eq!(profiles.records.len(), baseline + extra.len());
+    use sha2::Digest;
+    let identity = actual.into_iter().collect::<Vec<_>>().join("\n") + "\n";
+    let identity_hex: String = sha2::Sha256::digest(identity.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    assert_eq!(
+        identity_hex,
+        cohort["identity_sha256"].as_str().ok_or("identity pin")?
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");

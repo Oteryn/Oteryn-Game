@@ -1107,7 +1107,6 @@ mod container_tests {
             "quest.u7_2.the_queen_of_the_banshees.reward.stone_skin_amulet",
             "quest.u15_24.targuna.silver_amulet_chest",
             "quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield",
-            "kv.ornamentedshield",
             "kv.goblintemple2",
             "quest.u7_9.dreamers_challenge.chests_wine",
             "kv.present_box",
@@ -1149,6 +1148,53 @@ mod container_tests {
                     "{suffix}: invalid {field} must not fall back to default state"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn ornamented_shield_keeps_main_full_charge_choice_and_refuses_partial_override() {
+        // Main's itemhold_charge_precedence.py selects one full 150-charge
+        // Garlic Necklace; the raw donor argument 1 remains a source witness.
+        let source = authored("kv.ornamentedshield").expect("source recipe");
+        let parsed = candidate(source.as_object().expect("definition"), &|_| true)
+            .expect("decoded")
+            .expect("main full-charge choice");
+        let child = &parsed.placements[0].contents[2];
+        assert_eq!(child.item.key().as_str(), "oteryn:item.tibia.i3083");
+        assert_eq!(child.count, 1);
+        assert_eq!(
+            child.charges_remaining, None,
+            "use the full native definition"
+        );
+        let charge = &source["source_variant"]["charge_dispositions"][0];
+        assert_eq!(charge["source_raw_argument"], 1);
+        assert_eq!(charge["definition_charges"]["value"], 150);
+        for remaining in [1, 149, 150, 151] {
+            for forged_choice in [false, true] {
+                let mut changed = source.clone();
+                changed["native_contents"]["placements"][0]["contents"][2]["charges_remaining"] =
+                    remaining.into();
+                if forged_choice {
+                    changed["native_contents"]["source_difference"] =
+                        "EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS".into();
+                }
+                assert!(
+                    candidate(changed.as_object().expect("definition"), &|_| true)
+                        .expect("decoded")
+                        .is_err(),
+                    "partial override {remaining}/{forged_choice}"
+                );
+            }
+        }
+        for field in ["schema", "source_sha256"] {
+            let mut changed = source.clone();
+            changed["native_contents"][field] = "invalid".into();
+            assert!(
+                candidate(changed.as_object().expect("definition"), &|_| true)
+                    .expect("decoded")
+                    .is_err(),
+                "invalid {field}"
+            );
         }
     }
 

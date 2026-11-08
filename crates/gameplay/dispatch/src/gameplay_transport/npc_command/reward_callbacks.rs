@@ -213,6 +213,9 @@ pub(super) fn unhandled_confirmation(
     ) else {
         return false;
     };
+    if admission.has_pending_paid_confirmation(command, intent, &context) {
+        return false;
+    }
     reward_callbacks::load().is_ok_and(|callbacks| {
         callbacks
             .iter()

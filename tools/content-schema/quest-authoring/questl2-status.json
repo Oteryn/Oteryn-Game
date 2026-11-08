@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "lane": "L2",
-  "branch": "claude/happy-davinci-ijz3wy-questl2",
+  "branch": "claude/happy-davinci-ijz3wy-questl2b",
   "start_head": "2927da8aa2b4c72c271e7d2d5594fea833a2aa8d",
   "qualification_rule": "Server mechanics and a complete real PostgreSQL player journey; stage-only tests do not qualify an entry.",
   "generic_mechanisms": [
@@ -3646,5 +3646,87 @@
       "djinn_after_fixture_fix": "RUNNING focused nextest rebuild and both PostgreSQL journeys; not QUALIFIED until green"
     },
     "engine_request": "Compose generic L2 eleven-track receipts with main migration 1349 without changing the exact Father eleven-track exception; requires the shared engine owner and a migration after 1349."
+  },
+  "continuation": {
+    "base": "a16e1e9b0435dec39b8638c53bd093a0c247f0fb",
+    "frozen_branch": "claude/happy-davinci-ijz3wy-questl2",
+    "qengine_inspected": "dd35529b6",
+    "reused": [
+      "qengine2 tools/content-migration/qengine_equipment_audit.py"
+    ],
+    "changes": [
+      "48-line paid-quote routing helper retains native NPC/context/fence/expiry checks",
+      "Djinn fixture has twelve distinct NPC cells and thirteen actor slots",
+      "Preserve main full-charge choice and reject forged partial-charge override",
+      "Exact source-qualified Dalbrect route inventory",
+      "Finalize custody source digest after Prey embeds rules",
+      "Regenerate equipment cohort from immutable collector baseline and source IDs"
+    ],
+    "content_regressions": {
+      "state": "PASS",
+      "tests": 3,
+      "seconds": 49.63245245800499
+    },
+    "equipment_union": {
+      "baseline_items": 3668,
+      "historical_overlaps": 38,
+      "new_items": 185,
+      "total_items": 3853,
+      "source_reward_items": 137,
+      "state": "GENERATED_PENDING_RUST_TEST"
+    },
+    "white_raven_red": {
+      "postgres": "18.6",
+      "seconds": 93.91692787200009,
+      "expected_travel_receipts": 1,
+      "actual_travel_receipts": 0
+    },
+    "djinn_red": {
+      "postgres": "18.6",
+      "efreet_seconds": 105.768800891,
+      "marid_seconds": 106.121182864,
+      "error": "Carrier(CapacityExceeded)",
+      "root_cause": "Five fixture actor slots cannot hold twelve NPCs plus the player",
+      "corrected_actor_slots": 13
+    },
+    "qualification": "No quest newly qualified before the fresh full journeys pass.",
+    "checks": {
+      "workspace": {
+        "state": "PASS",
+        "seconds": 141.3747490809983
+      },
+      "clippy": {
+        "state": "PASS",
+        "seconds": 99.78173819099902
+      },
+      "pins": {
+        "state": "PASS",
+        "seconds": 24.467642223004077
+      },
+      "registration_unit": {
+        "state": "PASS",
+        "seconds": 107.49766609800281
+      },
+      "fmt": "PASS",
+      "regeneration_workflow_units": "PASS 12 checks",
+      "source_regeneration": "PASS qengine --check, native registration and source-derived equipment audits"
+    },
+    "baseline_unit_run": {
+      "source": "a16e1e9b0",
+      "state": "RETIRED_AFTER_SOURCE_FIXES",
+      "failures": [
+        "paid-travel inventory count",
+        "one-charge choice contradicts main full-charge ruling",
+        "equipment cohort/speed pin"
+      ],
+      "note": "The three failures are preserved; rerun the two changed crates on the final source. No complete baseline-green claim."
+    },
+    "pending_checks": [
+      "Fresh full White Raven and both Djinn PostgreSQL journeys",
+      "Native paid-travel fence/fee/replay PostgreSQL regression",
+      "Equipment runtime source-audit regression",
+      "Complete unit runs of content and dispatch"
+    ],
+    "cadence_exception": "Publish compiling checkpoint under PREPUSH-2 after the unit/PG verification budget; no new quest qualification until full player journeys pass."
   }
 }

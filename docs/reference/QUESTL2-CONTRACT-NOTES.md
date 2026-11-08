@@ -152,3 +152,38 @@ build was stopped to prioritize mandatory pre-push checks and remains pending.
 PREPUSH-2 permits a compiling checkpoint when the changed-crate unit run exceeds
 the cadence budget; the status JSON records the outstanding checks explicitly.
 After the handoff push this branch is frozen; follow-up work belongs on questl2b.
+
+
+Continuation questl2b starts at a16e1e9b0; the collector branch remains frozen.
+The paid-travel correction is a 48-line local routing helper, not a new reward
+or trigger capability. It shares the native quote predicate and allows only an
+existing yes confirmation with the same NPC, conversation, item fence and
+unexpired 60-second quote. Existing missing-item and stale-confirmation refusals
+remain owned by their original handlers. White Raven reproduced the missing
+travel receipt on real PostgreSQL 18.6 in 93.92 seconds before this correction.
+
+The Djinn fixture needs twelve distinct actor cells and exactly thirteen slots
+including the player. Its previous five-slot default caused both real PG cases
+to fail before mission execution (105.77s/106.12s); production limits are intact.
+Neither faction is qualified until its complete post-correction journey passes.
+
+Main's itemhold_charge_precedence.py:12-15 selects the full 150-charge Item3083
+for UID6063, preserving the donor raw argument1 as a witness (file sha256
+7706d1fb2a71e0918c52d0ee835bb4fa1e0ee9f2a6f318de18cb7067c893e730). Preserve that canonical native default and reject the stale L2
+partial-charge override, including forged source-choice tags. The dedicated
+regression now checks that choice and all schema/hash and charge tampering.
+No other quest's authored reward data was changed.
+
+Equipment audit decision: reuse qengine2 dd35529b6's source-ID audit generator.
+The immutable collector baseline has3668 profiles; historical cohort totals
+contain38 overlaps. L2's source union adds185 distinct identities, for3853.
+The separate137-Item reward source packet overlaps existing cohorts; Item3079
+has captured speed20. Preserve every raw-ability and unknown-speed assertion,
+and additionally pin the exact sorted identity-set SHA through the new audit
+generator. Both audit generators are registered in the repository regeneration
+workflow. This replaces an incorrect disjoint-count assumption with an exact
+source identity check; no cardinality is edited by hand.
+
+Custody evidence must hash the final Creature provider after Prey embeds its
+rules, rather than the intermediate provider. Finalize that source binding in
+the native generator, retaining the exact same gameplay profiles and loot.

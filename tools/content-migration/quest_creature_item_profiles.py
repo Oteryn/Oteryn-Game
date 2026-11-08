@@ -75,3 +75,12 @@ def admit(root, generated, profile_path, order):
         'sources':[{'path':shared.XML,'sha256':shared.XML_SHA},{'path':shared.CLIENT,'sha256':shared.CLIENT_SHA},
                    {'path':creature_path,'sha256':hashlib.sha256(creature_raw).hexdigest()}],
         'creatures':sorted(creatures),'records':packet['records']},ensure_ascii=False,indent=2)+'\n').encode()
+
+
+def finalize_creature_source(generated):
+    """Bind custody evidence after Prey embeds rules in the Creature provider."""
+    path = 'content/creatures/definitions/spell-native-profiles.json'
+    packet = json.loads(generated[PROOF])
+    source, = [row for row in packet['sources'] if row['path'] == path]
+    source['sha256'] = hashlib.sha256(generated[path]).hexdigest()
+    generated[PROOF] = (json.dumps(packet, ensure_ascii=False, indent=2) + '\n').encode()

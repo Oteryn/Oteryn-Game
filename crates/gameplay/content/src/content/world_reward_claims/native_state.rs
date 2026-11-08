@@ -47,10 +47,6 @@ pub(super) fn reconciled(definition: &serde_json::Map<String, Value>) -> bool {
             Some("oteryn:reward-claim.quest.pre_u6_0.ornamented_shield.rewards.ornamented_shield"),
             Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
         ) => (&[6062], &[], &[(6, 3085), (7, 3048)], None),
-        (
-            Some("oteryn:reward-claim.kv.ornamentedshield"),
-            Some("EXACT_SOURCE_CHARGES_NOT_DEFINITION_DEFAULTS"),
-        ) => (&[6063], &[], &[(2, 3083)], None),
         _ => return false,
     };
     let Some(placements) = definition.get("placements").and_then(Value::as_array) else {
