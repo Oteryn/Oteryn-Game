@@ -48,3 +48,5 @@
 | M36 — NPC outfit/addon grants and real outfit snapshot | engoutfit | none planned; 1820–1829 reserved | In Service of Yalahar; Rock Steady / Deepling | CLAIMED |
 
 | M19 — authoritative transaction clock in world callbacks (reuse existing quest clock) | qready1 | none planned; QMECH range 2090–2099 only | Bewitched; Threatened Dreams | CLAIMED |
+
+| M01b: imported-route EXPLORE native stage binding | questpc | none planned; only 2000–2009 if required by this assignment | 46 explore routes in MISSING-questpc-pc2.md, per ASSIGN.md | CLAIMED |
