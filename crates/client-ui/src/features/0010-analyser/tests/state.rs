@@ -189,3 +189,89 @@ fn analyser_metadata_reply_is_matched_and_coin_prices_cannot_duplicate_gold()
     assert!(panel.item_info.is_empty());
     Ok(())
 }
+
+#[test]
+fn supply_counts_costs_rates_and_charts_revalue_real_consumption() -> Result<(), &'static str> {
+    use oteryn_client_runtime::analyser::{AnalyserItemCount, ItemInfo};
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Supply,
+        ..Default::default()
+    };
+    panel.item_info.insert(
+        6,
+        ItemInfo {
+            item_type: 6,
+            name: "Supply".into(),
+            coin_worth: 0,
+        },
+    );
+    let item = AnalyserItemCount {
+        item_type: std::num::NonZeroU32::new(6).ok_or("item")?,
+        count: std::num::NonZeroU16::new(3).ok_or("count")?,
+    };
+    apply_at(&mut panel, &[AnalyserFact::SupplyUsed(item)], 0);
+    assert!(super::set_item_price(&mut panel, "6", "7"));
+    assert_eq!(panel.supply_cost(), 21);
+    assert_eq!(panel.supply_values(60), vec![21, 0]);
+    let text = super::view::supply_text(&panel, 60);
+    assert!(text.contains("Supply cost/h: 1260"));
+    assert!(text.contains("Item 6: 3 | 180/h | unit 7 | cost 21"));
+    assert!(super::set_item_price(&mut panel, "6", "11"));
+    assert_eq!(panel.supply_cost(), 33);
+    reset(&mut panel);
+    assert_eq!(panel.supply_cost(), 0);
+    assert_eq!(panel.supply_prices.get(&6), Some(&11));
+    Ok(())
+}
+
+#[test]
+fn every_analyser_tool_marks_a_dropped_server_feed_incomplete() {
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    apply(
+        &mut panel,
+        &[AnalyserFact::Dropped(std::num::NonZeroU32::MIN)],
+    );
+    for tool in Tool::ALL {
+        panel.tool = tool;
+        assert!(
+            panel_text(&panel).contains("Session feed incomplete: 1 fact(s) dropped"),
+            "{}",
+            tool.key()
+        );
+    }
+}
+
+#[test]
+fn analyser_recovery_discards_generation_scoped_item_settings() {
+    let mut panel = Panel {
+        selected: true,
+        open: true,
+        tool: Tool::Supply,
+        ..Default::default()
+    };
+    assert!(super::set_item_price(&mut panel, "6", "7"));
+    assert!(super::set_xp_goal(&mut panel, "100"));
+    panel.item_info.insert(
+        6,
+        oteryn_client_runtime::analyser::ItemInfo {
+            item_type: 6,
+            name: "Old generation".into(),
+            coin_worth: 0,
+        },
+    );
+    panel.catalogue_pending.push(6);
+    recover(&mut panel);
+    assert!(panel.item_info.is_empty());
+    assert!(panel.loot_prices.is_empty());
+    assert!(panel.supply_prices.is_empty());
+    assert!(panel.catalogue_pending.is_empty());
+    assert!(panel.goal_xp.is_none());
+    assert_eq!(
+        (panel.selected, panel.open, panel.tool),
+        (true, true, Tool::Supply)
+    );
+}

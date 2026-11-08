@@ -4,11 +4,11 @@ pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
         return "Analysers unavailable in this session".into();
     }
-    match panel.tool {
+    let mut text = match panel.tool {
         super::Tool::Overview => overview(panel),
         super::Tool::Xp => xp_text(panel, panel.clock.seconds()),
         super::Tool::Loot => loot_text(panel, panel.clock.seconds()),
-        super::Tool::Supply => format!("Supply Analyser\r\nSupplies used: {}", panel.supplies),
+        super::Tool::Supply => supply_text(panel, panel.clock.seconds()),
         super::Tool::Impact => format!(
             "Impact Analyser\r\nDamage: {} | Healing: {}",
             panel.damage, panel.healing
@@ -18,7 +18,14 @@ pub fn panel_text(panel: &Panel) -> String {
         super::Tool::Party => "Party Hunt\r\nNo party accounting received".into(),
         super::Tool::LootTracker => format!("Loot Tracker\r\nLoot: {} items", panel.loot_items),
         super::Tool::Kills => format!("Kill Tracker\r\nKills: {}", panel.kills),
+    };
+    if panel.dropped != 0 {
+        text.push_str(&format!(
+            "\r\nSession feed incomplete: {} fact(s) dropped",
+            panel.dropped
+        ));
     }
+    text
 }
 fn overview(panel: &Panel) -> String {
     format!(
@@ -99,6 +106,44 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
                     )
                 }
             },
+        );
+        let _ = writeln!(
+            text,
+            "Item {item}: {} | {}/h | {price} | {}\r",
+            row.count,
+            per_hour(row.count, seconds),
+            panel
+                .item_info
+                .get(item)
+                .map_or("", |info| info.name.as_str())
+        );
+    }
+    if let Some(feedback) = panel.feedback {
+        text.push_str(feedback);
+    }
+    text
+}
+
+pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
+    use super::state::{chart_values, per_hour};
+    use std::fmt::Write;
+    let unpriced = panel
+        .supply
+        .iter()
+        .filter(|(item, _)| panel.supply_unit_cost(**item).is_none())
+        .fold(0u64, |total, (_, row)| total.saturating_add(row.count));
+    let mut text = format!(
+        "Supply Analyser\r\nSupplies used: {}\r\nSupply cost: {} (priced entries)\r\nSupply cost/h: {}\r\nUnpriced supply units: {unpriced} | Unlisted units: {}\r\n{}\r\n",
+        panel.supplies,
+        panel.supply_cost(),
+        per_hour(panel.supply_cost(), seconds),
+        panel.omitted_supplies,
+        chart_values(&panel.supply_values(seconds))
+    );
+    for (item, row) in &panel.supply {
+        let price = panel.supply_unit_cost(*item).map_or_else(
+            || "unpriced or unresolved identity".into(),
+            |price| format!("unit {price} | cost {}", row.count.saturating_mul(price)),
         );
         let _ = writeln!(
             text,

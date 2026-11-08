@@ -27,7 +27,7 @@ pub(in crate::play) fn reduce(
             }
             SessionEvent::GatedSnapshotReplaced(delta) if delta.value.domain_id == 15 => {
                 // oteryn-choice: recovery cannot replay facts. Start a fresh measurement interval.
-                oteryn_client_ui::analyser::protocol::reset(&mut mailbox.analyser);
+                oteryn_client_ui::analyser::protocol::recover(&mut mailbox.analyser);
             }
             _ => {}
         }

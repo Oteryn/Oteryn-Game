@@ -38,7 +38,16 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 }
             }
             AnalyserFact::SupplyUsed(item) => {
-                panel.supplies = panel.supplies.saturating_add(u64::from(item.count.get()))
+                let count = u64::from(item.count.get());
+                panel.supplies = panel.supplies.saturating_add(count);
+                if !super::state::items::record_item(
+                    &mut panel.supply,
+                    item.item_type.get(),
+                    count,
+                    seconds,
+                ) {
+                    panel.omitted_supplies = panel.omitted_supplies.saturating_add(count);
+                }
             }
             AnalyserFact::Impact(AnalyserImpact::Damage { value, .. }) => {
                 panel.damage = panel.damage.saturating_add(u64::from(value.get()))
@@ -62,12 +71,26 @@ pub fn reset(panel: &mut Panel) {
     *panel = Panel {
         tool: panel.tool,
         loot_prices: std::mem::take(&mut panel.loot_prices),
+        supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),
         price_input: std::mem::take(&mut panel.price_input),
         goal_xp: remaining,
         goal_input: remaining.map_or_else(String::new, |value| value.to_string()),
         selected: panel.selected,
         open: panel.open,
+        ..Panel::default()
+    };
+}
+
+/// A replaced server snapshot cannot establish that old item references still name the same definitions.
+pub fn recover(panel: &mut Panel) {
+    *panel = Panel {
+        tool: panel.tool,
+        selected: panel.selected,
+        open: panel.open,
+        feedback: Some(
+            "Server state replaced; a fresh measurement interval and item settings were started",
+        ),
         ..Panel::default()
     };
 }
@@ -87,13 +110,15 @@ pub fn catalogue_request(
         panel.feedback = Some("Item identity cache is full; unresolved values remain excluded");
         return None;
     }
-    let ids: Vec<_> = panel
-        .loot
-        .keys()
-        .filter(|id| !panel.item_info.contains_key(id))
-        .take(MAX_ITEMS.min(remaining))
-        .copied()
-        .collect();
+    let mut ids = Vec::new();
+    for id in panel.loot.keys().chain(panel.supply.keys()) {
+        if !panel.item_info.contains_key(id) && !ids.contains(id) {
+            ids.push(*id);
+        }
+        if ids.len() == MAX_ITEMS.min(remaining) {
+            break;
+        }
+    }
     if ids.is_empty() {
         panel.feedback = Some("Item identities are current");
         return None;

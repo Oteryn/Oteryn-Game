@@ -39,6 +39,35 @@ pub fn valued_history(
     values
 }
 impl Panel {
+    pub fn supply_unit_cost(&self, item: u32) -> Option<u64> {
+        let info = self.item_info.get(&item)?;
+        if info.coin_worth != 0 {
+            Some(info.coin_worth)
+        } else {
+            self.supply_prices.get(&item).copied()
+        }
+    }
+    pub fn supply_cost(&self) -> u64 {
+        self.supply.iter().fold(0u64, |total, (item, row)| {
+            total.saturating_add(
+                row.count
+                    .saturating_mul(self.supply_unit_cost(*item).unwrap_or(0)),
+            )
+        })
+    }
+    pub fn supply_values(&self, seconds: u64) -> Vec<u64> {
+        let prices = self
+            .supply
+            .keys()
+            .filter_map(|item| self.supply_unit_cost(*item).map(|price| (*item, price)))
+            .collect();
+        valued_history(
+            &self.supply,
+            &prices,
+            Series::default().values(seconds),
+            seconds,
+        )
+    }
     pub fn loot_value(&self) -> u64 {
         self.loot
             .iter()

@@ -51,13 +51,16 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
         panel.feedback = Some("Enter an item number from the analyser and its unit value");
         return false;
     };
-    if !panel.loot_prices.contains_key(&item)
-        && panel.loot_prices.len() >= super::state::items::MAX_ITEM_DETAILS
-    {
+    let prices = if panel.tool == super::Tool::Supply {
+        &mut panel.supply_prices
+    } else {
+        &mut panel.loot_prices
+    };
+    if !prices.contains_key(&item) && prices.len() >= super::state::items::MAX_ITEM_DETAILS {
         panel.feedback = Some("The item price list is full");
         return false;
     }
-    panel.loot_prices.insert(item, price);
+    prices.insert(item, price);
     panel.price_input = [item.to_string(), price.to_string()];
     panel.feedback = None;
     true
