@@ -7,7 +7,7 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use protocol::request;
-pub use state::{Intent, Panel};
+pub use state::{Intent, Panel, Preview};
 pub use view::panel_text;
 #[cfg(test)]
 mod tests;

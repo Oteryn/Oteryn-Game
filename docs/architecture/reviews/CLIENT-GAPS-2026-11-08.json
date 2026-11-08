@@ -1453,10 +1453,10 @@
   "src": "OTCAUD1108",
   "area": "Appearance",
   "feature": "Wybór stroju, dodatków i kolorów",
-  "status": "PARTIAL",
-  "gap": "Brakuje wizualnego podglądu stroju i selektorów palety/addonów; obecny formularz wymaga klucza stroju, maski dodatków i czterech indeksów kolorów.",
+  "status": "DONE",
+  "gap": "Visual outfit preview, catalogue palette and addon selectors, and server-validated Apply.",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0025-appearance/state.rs:87 + palette_and_addon_selectors_stay_inside_the_server_catalogue; PARTIAL: visual palette and sprite preview remain"
+  "evidence": "apps/client/src/features/0025-appearance/preview.rs:30 + appearance_preview_selectors_reach_the_wire_command; outfit_mask_tints_all_four_parts_without_changing_alpha"
  },
  {
   "id": "O050",
