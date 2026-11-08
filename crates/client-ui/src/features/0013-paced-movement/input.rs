@@ -30,11 +30,19 @@ pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
 #[cfg(test)]
 #[test]
 fn qn6_keypad_diagonal_press_maps_to_one_step() -> Result<(), oteryn_input_actions::InputError> {
-    for (key,direction) in [(95,StepDir::NorthWest),(97,StepDir::NorthEast),
-        (89,StepDir::SouthWest),(91,StepDir::SouthEast)] {
-        let event=NormalizedInputEvent::Key { code:KeyCode::new(key)?,state:ButtonState::Pressed,
-            modifiers:oteryn_input_actions::Modifiers::default(),repeat:false };
-        assert_eq!(arrow_step(&[event]),Some(direction));
+    for (key, direction) in [
+        (95, StepDir::NorthWest),
+        (97, StepDir::NorthEast),
+        (89, StepDir::SouthWest),
+        (91, StepDir::SouthEast),
+    ] {
+        let event = NormalizedInputEvent::Key {
+            code: KeyCode::new(key)?,
+            state: ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::default(),
+            repeat: false,
+        };
+        assert_eq!(arrow_step(&[event]), Some(direction));
     }
     Ok(())
 }

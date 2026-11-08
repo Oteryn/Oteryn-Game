@@ -2380,7 +2380,10 @@ async fn step_creature_on_field(
         .active_generation
         .and_then(|active| active.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
+    let room = owner
+        .rooms()
+        .gate_field_step_ingress()
+        .ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {
@@ -2996,7 +2999,10 @@ async fn qualify_barrier_consumers(
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .ok_or("native content")?;
-    let room = owner.rooms().gate_field_step_ingress().ok_or("field room")?;
+    let room = owner
+        .rooms()
+        .gate_field_step_ingress()
+        .ok_or("field room")?;
     let pass = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             match owner.root.try_issue_semantic_pass() {

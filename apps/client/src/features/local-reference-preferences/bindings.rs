@@ -242,10 +242,15 @@ impl PreferenceInput {
 #[cfg(test)]
 #[test]
 fn qn6_diagonal_default_chords_parse_to_keypad_codes() -> Result<(), &'static str> {
-    for (name,expected) in [("NUMPAD1",89),("NUMPAD3",91),("NUMPAD7",95),("NUMPAD9",97)] {
-        let Chord(code,modifiers)=parse(name).map_err(|_|"diagonal default chord")?;
-        assert_eq!(code.get(),expected);
-        assert_eq!(modifiers,Modifiers::NONE);
+    for (name, expected) in [
+        ("NUMPAD1", 89),
+        ("NUMPAD3", 91),
+        ("NUMPAD7", 95),
+        ("NUMPAD9", 97),
+    ] {
+        let Chord(code, modifiers) = parse(name).map_err(|_| "diagonal default chord")?;
+        assert_eq!(code.get(), expected);
+        assert_eq!(modifiers, Modifiers::NONE);
     }
     Ok(())
 }
