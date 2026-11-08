@@ -158,6 +158,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_batch3_c;
 mod quest_callbacks;
+mod quest_collections;
 mod quest_kills;
 mod quest_log_source;
 mod quest_peer_use;

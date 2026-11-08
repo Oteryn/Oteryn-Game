@@ -12,6 +12,7 @@ fn trial() -> Result<Callback, String> {
     c.world_requirements = vec![WorldRequirement {
         position: c.selector.position.ok_or("sample position")?,
         appearance: 2523,
+        ground_stack: None,
     }];
     Ok(c)
 }

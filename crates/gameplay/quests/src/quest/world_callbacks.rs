@@ -30,8 +30,8 @@ pub enum Trigger {
 mod clock;
 mod counterparts;
 mod effects;
-mod imported_explore;
 mod ground_stack;
+mod imported_explore;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
@@ -245,6 +245,14 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
 }
 
 /// Read the same closed content shape at boot and at the durable mutation boundary.
+/// Read the same catalogue-scoped bindings at dispatch and under the durable writer.
+pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String> {
+    match catalogue.authored_world_callbacks() {
+        Some(callbacks) => Ok(callbacks.to_vec()),
+        None => load(),
+    }
+}
+
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
@@ -295,6 +303,10 @@ pub fn load() -> Result<Vec<Callback>, String> {
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
+}
+
+pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
+    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
