@@ -149,3 +149,7 @@ pub use session_loop::Stepper;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "screenshots_live_tests.rs"]
+mod screenshots_live_tests;

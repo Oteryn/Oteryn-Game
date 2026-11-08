@@ -8,6 +8,9 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        if self.capture_input(events) {
+            return;
+        }
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
         let routed = self.settings.input(events);
         let events = routed.as_slice();

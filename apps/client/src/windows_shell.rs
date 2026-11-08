@@ -1,3 +1,4 @@
+mod capture;
 #[path = "features/local-spell-action-bar/native.rs"]
 mod hud;
 mod input;
@@ -62,6 +63,7 @@ impl Display for ShellError {
 impl std::error::Error for ShellError {}
 
 struct Application {
+    captures: capture::Captures,
     settings: settings::Settings,
     hud: Option<hud::Hud>,
     audio: oteryn_client::play::NativeAudio,
@@ -102,6 +104,7 @@ impl Application {
             Some(LoginWindow::open().map_err(|_| ShellError::LoginInitialization)?)
         };
         Ok(Self {
+            captures: Default::default(),
             settings: settings::Settings::new(),
             hud: None,
             audio: oteryn_client::play::NativeAudio::default(),
@@ -157,6 +160,10 @@ impl Application {
     }
 
     fn leave_play(&mut self, message: &str) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.cancel_capture();
+        }
+        self.captures = Default::default();
         self.audio.stop();
         self.play = None;
         if let Some(entry) = &mut self.entry {
@@ -326,27 +333,7 @@ impl ApplicationHandler for Application {
                     self.fail(event_loop, ShellError::RendererResize);
                 }
             }
-            WindowEvent::RedrawRequested => {
-                let scene = self
-                    .play
-                    .as_ref()
-                    .map(|play| play.view.scene())
-                    .or(self.scene.as_ref());
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
-                    && redraw_eligible(Some(renderer.state().phase()))
-                {
-                    if self.atlas.as_ref() != Some(scene.atlas()) {
-                        renderer.set_atlas(scene.atlas().clone());
-                        self.atlas = Some(scene.atlas().clone());
-                    }
-                    if renderer
-                        .render_batches(self.generation, scene.tiles(), scene.sprites())
-                        .is_err()
-                    {
-                        self.fail(event_loop, ShellError::RendererRender);
-                    }
-                }
-            }
+            WindowEvent::RedrawRequested => self.redraw(event_loop),
             _ => {}
         }
     }
@@ -371,6 +358,7 @@ impl ApplicationHandler for Application {
         if let (Some(play), Some(window)) = (&self.play, &self.window) {
             play.link.item_drag_tick(&play.view, window);
         }
+        self.capture_tick();
         self.update_hud();
         if let Some(window) = &self.window
             && redraw_eligible(
@@ -402,24 +390,4 @@ pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fatal_retention_keeps_the_first_error() {
-        let mut error = None;
-        retain_first_error(&mut error, ShellError::RendererResize);
-        retain_first_error(&mut error, ShellError::RendererRender);
-        assert_eq!(error, Some(ShellError::RendererResize));
-    }
-
-    #[test]
-    fn redraw_requires_a_configured_renderer() {
-        assert!(redraw_eligible(Some(SurfacePhase::Configured)));
-        assert!(!redraw_eligible(None));
-        assert!(!redraw_eligible(Some(SurfacePhase::Unconfigured)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
-        assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
-    }
-}
+mod tests;

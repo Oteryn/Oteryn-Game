@@ -1456,9 +1456,10 @@
   "src": "OTCAUD1108",
   "area": "Support",
   "feature": "Zrzuty ekranu i automatyczne wyzwalacze",
-  "status": "MISSING",
-  "gap": "Brakuje zapisu zrzutu ekranu, wyboru zakresu przechwytywania i automatycznych wyzwalaczy zdarzeń; same nazwy preferencji nie mają implementacji.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "Print Screen zapisuje klatkę renderera BMP; Ctrl+Shift+F10 wybiera zakres i opt-in dla poziomu, śmierci oraz osiągnięcia. Fakty pochodzą z sesji i zapytania skill-display.",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/windows_shell/capture.rs:66 + server_skill_reply_and_achievement_delta_reach_capture_caller + live_death_events_reach_capture_caller_even_when_respawn_is_coalesced + shell_capture_observes_live_facts_and_retries_failed_saves"
  },
  {
   "id": "O072",
