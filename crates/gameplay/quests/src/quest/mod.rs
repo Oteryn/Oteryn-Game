@@ -577,6 +577,17 @@ impl QuestStateCatalogue {
         stored: &BTreeMap<String, i64>,
         now: i64,
     ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
+        self.evaluate_with_roll(transition, stored, now, None)
+    }
+
+    /// Only the fenced writer supplies a fresh database roll after receipt lookup.
+    pub fn evaluate_with_roll(
+        &self,
+        transition: &QuestTransition,
+        stored: &BTreeMap<String, i64>,
+        now: i64,
+        roll: Option<u8>,
+    ) -> Result<Vec<QuestTrackChange>, QuestRefusal> {
         if transition.effects.iter().enumerate().any(|(index,effect)| {
             effect.effect==QuestEffectKind::Computed || matches!(effect.effect,
                 QuestEffectKind::SetWhenAtLeast {other_effect,..}
@@ -612,7 +623,7 @@ impl QuestStateCatalogue {
                 .iter()
                 .map(|(track, value)| (track.key.clone(), *value))
                 .collect();
-            Some(rule.evaluate(&snapshot)?)
+            Some(rule.evaluate_with_roll(&snapshot, roll)?)
         } else {
             None
         };
