@@ -826,3 +826,29 @@ remain from that merge; publish the final receipt with the next green slice.
   damage otherwise. Do not replace this with visual cues or silently bypass
   it. Shared effect requested fromqengine2; no whole-quest qualification and
   no new implementation started from merely inspecting the source.
+
+- Hero of Rathleton continuation: reuse main's active four Strange Pipe NPC
+  programs unchanged. The retained Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d
+  data-global/npc/strange_pipe{,1,2,3}.lua:59-62 sets exactly its own access
+  track on greeting. SHA256 respectively68dd38d00e9e4b2155f998e41f2b51cc7096086a6a36c385fa528bfe3adb572b,
+  7b30d3a0c2d3bb76285fc3039d561947895f8f81b4fc952ac60ca9210378f5dc,
+  e58745d7bf70da2779e2e7b4651db4c204cc5318d5051380c2671cd080874027,
+  f91fc304eeee77003f8db299ed7ba05493da256c943930bf7f3c88981ff0a2d2.
+  Add real command/receipt coverage for existing behavior; do not invent a red
+  defect or claim a new implementation from a passing baseline. Access grants
+  alone do not qualify the quest. Timed waves, room occupancy, cleanup and
+  boss-death portal requested fromqengine2; source movements_professor_maxxen.lua
+  :3-30,56-82 SHA6005aec45eeed29581e0066a8597df22f7957a3a112c1052ed507a14dbb51abf.
+  Counts after starting this owned slice:3qualified,3inprogress,23notstarted,
+  6excluded. No named ownership transfer received.
+
+- Hero PG RED onPostgreSQL180006:8receipts instead of4after repeated hi,
+  duration66.353s, log/tmp/questpc2b-hero-pipes-baseline.log. All four access
+  values and NPC source replies passed first; failure is redundant durable
+  commits from planned Set1->1 writes. qengine2dd35529b6 has the same path.
+  Small local helper catalogue_track_mutation.rs (8lines) detects whether any
+  planned track value differs. Keep the entire original write list when any
+  value differs: Father acceptance must remain one atomic11-track write.
+  No inventory/reward semantics or source rule changes. Re-run Hero plus the
+  existing realPG Father acceptance and XP hand-in checks; retain the RED
+  assertion unchanged. This is a real caller fix, not merely baseline receipt.

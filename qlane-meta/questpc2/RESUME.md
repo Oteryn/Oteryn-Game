@@ -1,3 +1,38 @@
+# PUBLISH compiling Hero pipe repair; then collect all unit failures
+
+Own3PG cases GREEN171.891s onPostgreSQL180006; Hero67.778s, Father104.107s,
+XP108.588s. RED66.353s had8instead of4receipts. Eight-line local helper fixes
+no-op writes while preserving full11-track atomic Father receipt.
+WorkspacealltargetsPASS7m48s,clippyPASS11m11s (both include lock waits),fmtPASS.
+45native outputs exact130.564s; central lists/pins regenerated; dupPASS.
+Full dispatch route-less unit run STILL RUNNING, log/tmp/questpc2b-hero-dispatch-units.log.
+Known failure capability_selection_tests.rs:371, offer_gate lacks expected
+BUNDLE_WORLD_OFFERED_CAPABILITIES for capability371. Collect ALL failures,
+fix root causes together, no test weakening. Publish current compiling state
+under owner cadence exception; do not claim full units green.
+Branch questpc2b only; parent questpc2 frozen0a6d6e208. No new migration.
+Hero wholequest remains unqualified; waves/occupancy/cleanup requestedqengine2.
+Counts3qualified,3inprogress,23notstarted,6excluded. Original packet scope.
+See BATCH-hero-pipe-noop-2026-11-08.json for exact proof and logs.
+
+# ACTIVE: Hero of Rathleton pipe NPC qualification on questpc2b
+
+Last pushed b0e21cbeaadddcd2996a8ef08d2e08e3121b14fa (13realPG collector
+cases PASS471.109s). Frozen parent questpc2 stays0a6d6e208 untouched.
+New mounted questpc2_hero_rathleton.rs drives four genuine pipe NPC greetings
+from fresh quest state, checks isolated access grants and receipt count4.
+Reuses main production rules unchanged; baseline test, no invented RED claim.
+PG log/tmp/questpc2b-hero-pipes-baseline.log; workspacecheck, dispatch route-less
+units and clippy queued. Native45generated outputs reproduced exactly130.564s.
+Do not claim tests passing until observing results. Finish PREPUSH-2 and push
+HEAD:claude/happy-davinci-ijz3wy-questpc2b. Current source/test changes only
+new mounted case plus scenario routing. No migration/content/production changes.
+Source line/hash evidence and shared timed-wave request in CONTRACT-NOTES and
+QUEST-STATUS. Whole Hero quest remains unqualified. Counts3qualified,
+3inprogress (Soul,Rotten,Hero),23notstarted,6excluded. Follow original packet.
+
+Historical notes follow:
+
 # GREEN collector runtime receipt: publish questpc2b
 
 Current branch claude/happy-davinci-ijz3wy-questpc2b. Frozen parent questpc2

@@ -38,6 +38,7 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod catalogue;
+mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;

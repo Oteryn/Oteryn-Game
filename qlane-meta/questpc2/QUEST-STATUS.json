@@ -518,7 +518,7 @@
       "canonical": "oteryn:quest.hero_of_rathleton_quest",
       "title": "Hero of Rathleton Quest",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
+      "status": "IN_PROGRESS",
       "blocker": "Jaccus Maxxen encounter admission and settlement are not composed with the blueprint, bag and access rewards.",
       "source_lane_checks": [
         {
@@ -536,8 +536,9 @@
           ]
         }
       ],
-      "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "qualification_scope": "Four existing pipe access grants qualified on real PG; whole encounter/reward quest remains unqualified.",
+      "external_owner_blocker": false,
+      "pipe_access_proof": "qlane-meta/questpc2/BATCH-hero-pipe-noop-2026-11-08.json"
     },
     {
       "canonical": "oteryn:quest.authored.make_believe_quest",
@@ -1757,9 +1758,9 @@
     }
   },
   "current_batch": {
-    "name": "Collector runtime receipt",
-    "state": "GREEN_RECEIPT_READY_TO_PUSH",
-    "proof": "qlane-meta/questpc2/BATCH-collector-runtime-green-2026-11-08.json"
+    "name": "Hero pipe no-op receipt repair",
+    "state": "FOCUSED_GREEN_COMPILING_CHECKPOINT_UNIT_FAILURE_COLLECTION_PENDING",
+    "proof": "qlane-meta/questpc2/BATCH-hero-pipe-noop-2026-11-08.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1787,12 +1788,13 @@
     "BATCH-soul-entry-source-facts-2026-11-07.json",
     "BATCH-soul-loot-authoring-checkpoint-2026-11-07.json",
     "BATCH-soul-loot-admissions-2026-11-07.json",
-    "BATCH-main-qworld-2026-11-07.json"
+    "BATCH-main-qworld-2026-11-07.json",
+    "BATCH-hero-pipe-noop-2026-11-08.json"
   ],
   "next_batch": {
-    "state": "FROZEN_FOR_COLLECTOR_AFTER_PUBLICATION",
-    "branch_for_new_features": "claude/happy-davinci-ijz3wy-questpc2b",
-    "task": "No new features after this merge push; keep remaining quest counts honest."
+    "state": "AUTHORING_ON_CONTINUATION",
+    "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+    "task": "Qualify existing supported NPC access, request large encounter effects from qengine2; do not edit frozen parent."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
@@ -2391,6 +2393,17 @@
       "source_sha256": "dc674efaebf58f68cf579cad612095e2b7b4af9ea9caec463a3941e3ce41d9d9",
       "decision": "Do not replace source fire/physical damage with cosmetic effects or omit lethal thresholds. Do not mark the whole quest qualified from its chest or throne subset.",
       "qengine_checked": "dd35529b6; boss source hooks and Summer membership remain unavailable."
+    },
+    {
+      "feature": "timed encounter waves with shared room occupancy, cleanup and boss-death portal",
+      "quests": [
+        "Hero of Rathleton Quest"
+      ],
+      "where": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+      "status": "REQUESTED_FROM_QENGINE2",
+      "source": "Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:3-30,56-82",
+      "source_sha256": "6005aec45eeed29581e0066a8597df22f7957a3a112c1052ed507a14dbb51abf",
+      "reuse_check": "Main78294c081 has existing NPC program reused unchanged; qengine2dd35529b6 still rejects non-BossLeverOnDeath source hooks."
     }
   ],
   "active_owned_work": {
@@ -2399,15 +2412,14 @@
       "The Desert Dungeon Quest",
       "Elvenbane Quest",
       "Rotten Blood Quest",
-      "Soul War Quest"
+      "Soul War Quest",
+      "Hero of Rathleton Quest"
     ],
     "done_pushed": 3,
-    "in_progress": 2,
-    "not_started_owned": 24,
+    "in_progress": 3,
+    "not_started_owned": 23,
     "excluded_other_lane": 6,
-    "packet_total": 35,
-    "dedup_reply": "2026-11-07 owner urgent dedup check: only these five actually started; await coordinator reassignment of remaining packet entries.",
-    "count_correction": "Earlier QCOUNT grouped all 27 unfinished authoring records as IN PROGRESS; actual quest implementation started is 3, with 24 owned entries not started."
+    "packet_total": 35
   },
   "prepush_policy": "PREPUSH-2: fetch and merge main; regenerate derived files with repository tooling; changed-crate units plus own PG cases; workspace all-target check and fmt. Unit tests may remain pending at cadence deadline after generation and compile checks pass.",
   "ownership_decision": {
@@ -2415,10 +2427,11 @@
     "reason": "Owner now authorizes deciding open questions; no transfer list has been supplied.",
     "active_quests": [
       "Rotten Blood Quest",
-      "Soul War Quest"
+      "Soul War Quest",
+      "Hero of Rathleton Quest"
     ]
   },
-  "last_pushed_sha": "6758be404bd6d037161c7f224a50c99ed8ab9af7",
+  "last_pushed_sha": "b0e21cbeaadddcd2996a8ef08d2e08e3121b14fa",
   "prepush_pending_tests": {
     "focused_16": "13runtimePG+3pure, recompiling embedded ledger after fixed1333composition; log/tmp/questpc2-collector3030-focused-schema-fixed.log",
     "full_changed_crate_units": [
@@ -2441,7 +2454,16 @@
       "oteryn-session",
       "oteryn-architecture-check"
     ],
-    "proof": "qlane-meta/questpc2/BATCH-collector3030-integration-2026-11-08.json"
+    "proof": "qlane-meta/questpc2/BATCH-collector3030-integration-2026-11-08.json",
+    "current_dispatch_units": {
+      "crate": "oteryn-gameplay-dispatch",
+      "state": "RUNNING_WITH_REPORTED_FAILURE",
+      "postgres_environment": "unset for unit run; focused PG above ran separately",
+      "log": "/tmp/questpc2b-hero-dispatch-units.log",
+      "known_failure": "capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "exact_failure": "capability_selection_tests.rs:371: assert!(gate.contains(\"BUNDLE_WORLD_OFFERED_CAPABILITIES\"), \"{id}\"); id=371",
+      "publication_decision": "Owner PREPUSH-2 cadence exception: publish source with passing own PG and compile checks; collect all unit failures and fix together next. No full unit success claimed."
+    }
   },
   "continuation_branch": {
     "branch": "claude/happy-davinci-ijz3wy-questpc2b",
