@@ -34,3 +34,5 @@
 | Quest item-look disguise and exact exit restoration through the existing condition/appearance owner | srvgap1108 | 1669–1670 reserved if required; retained original range 1660–1679 | Wrath of the Emperor (carried crate USE and restoration step); reusable adapter for Last Creep Standing, whose form/portal identities remain unresolved | CLAIMED |
 
 | Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | CLAIMED |
+
+| Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage; other stages remain separate) | CLAIMED |
