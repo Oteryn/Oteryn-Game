@@ -361,6 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         actor_conditions: None,
                         carried_use: None,
+                        creature_use: None,
                         peer_use: None,
 
                         native,
@@ -421,6 +422,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         #[cfg(test)]
         if let Some(content) = self.states.quest_callbacks.fixture.get() {
             return content;
+        }
+        if let Some(callbacks) = self
+            .quest_catalogue
+            .as_deref()
+            .and_then(|c| c.authored_world_callbacks())
+        {
+            return callbacks;
         }
         callbacks()
     }
