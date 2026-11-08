@@ -4,8 +4,16 @@ use wire::bosstiary_slots::{BossSlotReply, BossSlotRequest};
 pub(super) fn command(panel: &BossEncounterPanel, intent: Intent) -> Option<FeatureCommand> {
     let (kind, payload) = match intent {
         Intent::HazardQuery => (wire::hazard::COMMAND_TYPE_HAZARD, vec![]),
-        Intent::HazardSelect => {
-            let bytes = vec![panel.fields[2].parse::<u8>().ok()?];
+        Intent::HazardSelect | Intent::HazardLower | Intent::HazardRaise => {
+            let level = match intent {
+                Intent::HazardLower => panel.hazard?.1.checked_sub(1)?,
+                Intent::HazardRaise => panel.hazard?.1.checked_add(1)?,
+                _ => panel.fields[2].parse::<u8>().ok()?,
+            };
+            if panel.hazard.is_some_and(|(unlocked, _)| level > unlocked) {
+                return None;
+            }
+            let bytes = vec![level];
             wire::hazard::decode_request(&bytes).ok()?;
             (wire::hazard::COMMAND_TYPE_HAZARD, bytes)
         }
@@ -52,6 +60,7 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
     match panel.pending_kind {
         wire::hazard::COMMAND_TYPE_HAZARD => match bytes {
             [unlocked @ 1..=12, selected @ 1..=12] if selected <= unlocked => {
+                panel.hazard = Some((*unlocked, *selected));
                 Some(format!("Hazard: {selected} | Unlocked: {unlocked}"))
             }
             _ => None,

@@ -17,6 +17,13 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
 pub(super) trait StatusPanel: Clone + PartialEq + Send + 'static {
+    fn skill_widget() -> bool {
+        false
+    }
+    fn gauges(&self) -> Vec<(&'static str, u16, bool)> {
+        Vec::new()
+    }
+    fn toggle_skill(&mut self, _index: usize) {}
     fn open(&self) -> bool;
     fn set_open(&mut self, value: bool);
     fn ready(&self) -> bool;
@@ -58,6 +65,15 @@ panel!(mechanics_status, MechanicsStatusPanel, 384, 669);
 panel!(rest_status, RestStatusPanel, 277, 493);
 panel!(battle_instinct_status, BattleInstinctStatusPanel, 278, 494);
 impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
+    fn skill_widget() -> bool {
+        true
+    }
+    fn gauges(&self) -> Vec<(&'static str, u16, bool)> {
+        self.gauges()
+    }
+    fn toggle_skill(&mut self, index: usize) {
+        self.toggle_skill(index);
+    }
     fn open(&self) -> bool {
         self.open
     }
@@ -85,13 +101,26 @@ impl StatusPanel for oteryn_client_ui::skill_progress::SkillProgressPanel {
 panel!(party_effects, PartyEffectsPanel, 280, 496);
 panel!(potion_durations, PotionDurationsPanel, 381, 662);
 
+#[derive(Default)]
+struct PanelActions {
+    refresh: bool,
+    skills: [bool; 8],
+}
 unsafe extern "system" fn window_proc(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: the window's creating thread owns the refresh flag until DestroyWindow.
     unsafe {
-        if message == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize && w & 0xffff == 1 {
-            let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut bool;
-            if !flag.is_null() {
-                *flag = true;
+        if message == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
+            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut PanelActions;
+            if !actions.is_null() {
+                let id = w & 0xffff;
+                if id == 1 {
+                    (*actions).refresh = true;
+                }
+                if let Some(index) = id.checked_sub(10)
+                    && index < 8
+                {
+                    (*actions).skills[index] = true;
+                }
             }
             return 0;
         }
@@ -162,11 +191,11 @@ fn run<P: StatusPanel>(
             close(&weak, get);
             return;
         }
-        let mut refresh_flag = Box::new(false);
+        let mut refresh_flag = Box::<PanelActions>::default();
         SetWindowLongPtrW(
             hwnd,
             GWLP_USERDATA,
-            (&mut *refresh_flag as *mut bool) as isize,
+            (&mut *refresh_flag as *mut PanelActions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
         let text = CreateWindowExW(
@@ -182,7 +211,7 @@ fn run<P: StatusPanel>(
             16,
             16,
             550,
-            500,
+            if P::skill_widget() { 170 } else { 500 },
             hwnd,
             null_mut(),
             null_mut(),
@@ -206,6 +235,59 @@ fn run<P: StatusPanel>(
             DestroyWindow(hwnd);
             close(&weak, get);
             return;
+        }
+        use windows_sys::Win32::UI::Controls::{
+            ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, PBM_SETPOS,
+            PBM_SETRANGE32,
+        };
+        let mut gauges = Vec::new();
+        if P::skill_widget() {
+            let common = INITCOMMONCONTROLSEX {
+                dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+                dwICC: ICC_PROGRESS_CLASS,
+            };
+            InitCommonControlsEx(&common);
+            for (index, label) in oteryn_client_ui::skill_progress::SKILL_LABELS
+                .iter()
+                .enumerate()
+            {
+                let y = 200 + index as i32 * 34;
+                let check = CreateWindowExW(
+                    0,
+                    wide("BUTTON").as_ptr(),
+                    wide(label).as_ptr(),
+                    WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX as u32,
+                    16,
+                    y,
+                    140,
+                    26,
+                    hwnd,
+                    (10 + index) as _,
+                    null_mut(),
+                    null(),
+                );
+                let progress = CreateWindowExW(
+                    0,
+                    wide("msctls_progress32").as_ptr(),
+                    wide("").as_ptr(),
+                    WS_CHILD | WS_VISIBLE,
+                    160,
+                    y + 4,
+                    380,
+                    18,
+                    hwnd,
+                    null_mut(),
+                    null_mut(),
+                    null(),
+                );
+                if check.is_null() || progress.is_null() {
+                    DestroyWindow(hwnd);
+                    close(&weak, get);
+                    return;
+                }
+                SendMessageW(progress, PBM_SETRANGE32, 0, 10000);
+                gauges.push((check, progress));
+            }
         }
         let mut held = None;
         let mut refreshed = Instant::now();
@@ -235,7 +317,19 @@ fn run<P: StatusPanel>(
                 break;
             }
             let panel = get(&mut mailbox);
-            if std::mem::take(&mut *refresh_flag) || refreshed.elapsed() >= Duration::from_secs(1) {
+            for (index, toggled) in refresh_flag.skills.iter_mut().enumerate() {
+                if std::mem::take(toggled) {
+                    panel.toggle_skill(index);
+                }
+            }
+            for ((check, progress), (_, percent, visible)) in gauges.iter().zip(panel.gauges()) {
+                SendMessageW(*check, BM_SETCHECK, usize::from(visible), 0);
+                SendMessageW(*progress, PBM_SETPOS, usize::from(percent), 0);
+                ShowWindow(*progress, if visible { SW_SHOW } else { SW_HIDE });
+            }
+            if std::mem::take(&mut refresh_flag.refresh)
+                || refreshed.elapsed() >= Duration::from_secs(1)
+            {
                 refreshed = Instant::now();
                 if let Some(command) = panel.request()
                     && commands.send(PlayCommand::Feature(command)).is_err()

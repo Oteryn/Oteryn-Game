@@ -50,6 +50,26 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     } else {
         text.push_str("No server snapshot loaded\n");
     }
+    if let Some((unlocked, selected)) = panel.hazard {
+        let gauge: String = (1..=12)
+            .map(|level| {
+                if level <= selected {
+                    '■'
+                } else if level <= unlocked {
+                    '□'
+                } else {
+                    '×'
+                }
+            })
+            .collect();
+        let _ = writeln!(
+            text,
+            "\nHazard [{gauge}]\nSelected level {selected} of {unlocked} unlocked"
+        );
+        text.push_str("Use Lower/Raise hazard to choose an unlocked level, then Enter for the selected boss.\nEntry and cooldown eligibility are confirmed by the server.\n");
+    } else {
+        text.push_str("Query hazard to load unlocked levels before choosing an encounter.\n");
+    }
     let _ = writeln!(text, "{}", panel.summary);
     if panel.pending {
         text.push_str("Waiting for the server\n");

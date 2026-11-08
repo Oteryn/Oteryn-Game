@@ -28,6 +28,9 @@ pub fn panel_text(panel: &SkillProgressPanel) -> String {
     .zip(snapshot.skills)
     .enumerate()
     {
+        if panel.hidden_skills & (1 << family) != 0 {
+            continue;
+        }
         let filled = usize::from(skill.percent / 1_000);
         let bar = format!("{}{}", "#".repeat(filled), "-".repeat(10 - filled));
         let levels = panel.complete.map_or_else(

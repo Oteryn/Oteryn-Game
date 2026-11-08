@@ -12,6 +12,8 @@ pub enum Intent {
     Timeout,
     HazardQuery,
     HazardSelect,
+    HazardLower,
+    HazardRaise,
     SlotsQuery,
     SlotEquip,
     SlotRemove,
