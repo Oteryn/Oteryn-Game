@@ -782,9 +782,10 @@
   "src": "TIBAUD-1",
   "area": "Analytics",
   "feature": "Party Hunt Analyser",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak tabeli członków i rozliczenia loot/supplies/cost split.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "crates/client-ui/src/features/0010-analyser/state/party.rs:119 + analyser_party_query_and_confirmed_table_use_production_mailbox"
  },
  {
   "id": "T109",
