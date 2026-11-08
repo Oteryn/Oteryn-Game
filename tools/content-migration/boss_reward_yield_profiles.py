@@ -166,6 +166,7 @@ def capture(cache: Path, root: Path = ROOT):
     records = []
     for item in sorted(IDS):
         row = source.profile(item,xml.get(item),objects[item],physics[item],bindings,None)
+        corpses.complete_source_top_order(row, objects[item])
         if item == 3583:
             row['semantics'].update(copy.deepcopy(preserved_ham))
         if item == 43860:

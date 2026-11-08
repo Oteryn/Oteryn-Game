@@ -2091,6 +2091,34 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
+    -> Result<(), ContentError> {
+        let world = test_source(1)?.world_id;
+        let baseline = qualify_native_entry_room(world)
+            .map_err(|_| invalid("M25 native admission fixture"))?;
+        let mut supplied = input();
+        supplied.item_profiles = item_profile_updates::merge(
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/spell-native-profiles.json"
+            ))),
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/srx1-item-updates.json"
+            ))),
+        )?;
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied)?;
+        let admitted = decode(&artifact.server_artifact)?;
+        for corpse in ["oteryn:item.tibia.i42069", "oteryn:item.tibia.i44687"] {
+            assert!(
+                admitted
+                    .state
+                    .item_policy(corpse, "definition-r1")
+                    .is_some()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes() {
         let baseline = qualify_native_entry_room(test_source(1).unwrap().world_id).unwrap();
         let mut supplied = input();

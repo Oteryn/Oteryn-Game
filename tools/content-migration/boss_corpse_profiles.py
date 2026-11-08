@@ -62,6 +62,16 @@ def corpse_admission(item_id):
     return {'materializable':True,'stack_class':'NonStackable','legal_destinations':(['CharacterInventory','Ground'] if item_id in CARRIED_CORPSE_STAGES else ['Ground'])}
 
 
+def complete_source_top_order(record, appearance):
+    # Crystal 201189f items.cpp:203-208; items.hpp:343 defaults to zero.
+    # The pinned DAT flags also own the stack order composed by House.
+    # Capture those facts here so complete-body qualification stays exact.
+    top = next((order for flag, order in [('clip', 1), ('top', 3), ('bottom', 2)]
+                if appearance['flags'].get('flags.' + flag)), 0)
+    record['attributes']['always_on_top'] = top != 0
+    record['attributes']['always_on_top_order'] = top
+
+
 def capture(cache: Path, root: Path = ROOT):
     blobs = load_source_blobs(cache)
     xml = source.xml_index(blobs['data/items/items.xml'])
@@ -91,6 +101,8 @@ def capture(cache: Path, root: Path = ROOT):
     records = []
     for item_id in sorted(wanted):
         record = source.profile(item_id, xml.get(item_id), objects[item_id], physics[item_id], bindings, None)
+        if item_id == 43666:
+            complete_source_top_order(record, objects[item_id])
         if record['admission'] != corpse_admission(item_id):
             raise ValueError(f'BOSS_CORPSE_GROUND_ONLY:{item_id}')
         binding = bindings[str(item_id)]

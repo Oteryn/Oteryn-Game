@@ -120,6 +120,7 @@ def capture(cache):
     rows=[]
     for item in sorted(IDS):
         row=source.profile(item,xml.get(item),objects[item],policies[item],bindings,None)
+        base.complete_source_top_order(row, objects[item])
         if row['admission']!={'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']}:
             raise ValueError('BOSS_MOVEMENT_GROUND_CUSTODY')
         row['authoring']['item']['revision']='srx3-rotten-movement-crystal-201189f'
