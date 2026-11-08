@@ -154,6 +154,11 @@ impl Bindings {
                 }
                 if let Trigger::Kill { counter } = &stage.trigger {
                     counter.validate(quest)?;
+                    if counter.encounter_source.is_some() && stage.completes {
+                        return Err(
+                            "encounter deaths cannot complete before the chamber exit".into()
+                        );
+                    }
                     if !transitions.insert(&counter.key) {
                         return Err("authored kill binding collision".into());
                     }
@@ -191,7 +196,7 @@ impl Bindings {
                 };
                 if owner != &quest.quest
                     || !transitions.insert(key)
-                    || storage.is_empty()
+                    || (storage.is_empty() && !stage.is_native_encounter())
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest
@@ -231,6 +236,9 @@ impl Bindings {
                 });
             }
             for stage in &quest.stages {
+                if stage.is_native_encounter() {
+                    continue;
+                }
                 transitions.push(stage.transition(&quest.quest)?);
             }
         }
@@ -306,6 +314,12 @@ impl Bindings {
 }
 
 impl Stage {
+    /// Native entry mutates the physical owner atomically and grants no quest value.
+    pub(in crate::quest) fn is_native_encounter(&self) -> bool {
+        matches!(&self.trigger, Trigger::MapUse { callback }
+            if !self.completes && callback.storage.is_empty() && callback.state_ops.is_empty()
+                && callback.effects.encounter.as_ref().is_some_and(|encounter| encounter.timing.is_none()))
+    }
     pub(in crate::quest) fn transition(&self, quest: &str) -> Result<QuestTransition, String> {
         let mut transition = match &self.trigger {
             Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
@@ -342,3 +356,6 @@ mod collection_tests;
 
 #[cfg(test)]
 mod composition_tests;
+
+#[cfg(test)]
+mod encounter_source_tests;

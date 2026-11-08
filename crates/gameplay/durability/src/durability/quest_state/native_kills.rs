@@ -34,6 +34,7 @@ impl NativeQuestDeath {
                     )
                     .is_some_and(|counter| {
                         counter.creature == self.creature
+                            && counter.encounter_source.is_none()
                             && if oteryn_gameplay_quests::quest::native_kills::counter(
                                 &self.transition,
                             )

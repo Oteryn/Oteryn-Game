@@ -19,6 +19,9 @@ pub struct KillCounter {
     pub maximum: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advance_gate_to: Option<i64>,
+    /// Exact native encounter callback; absent for ordinary party hunts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_source: Option<String>,
 }
 
 impl KillCounter {
@@ -43,10 +46,47 @@ impl KillCounter {
         {
             return Err("authored kill identity/owner/bounds".into());
         }
+        if let Some(source) = &self.encounter_source {
+            let encounter = quest
+                .stages
+                .iter()
+                .find_map(|stage| match &stage.trigger {
+                    super::Trigger::MapUse { callback } if callback.key == *source => {
+                        callback.effects.encounter.as_ref()
+                    }
+                    _ => None,
+                })
+                .ok_or("authored encounter counter source")?;
+            let defenders = encounter
+                .monsters
+                .iter()
+                .filter(|monster| monster.creature == self.creature)
+                .count();
+            if self.minimum != 0
+                || self.advance_gate_to.is_some()
+                || encounter.timing.is_some()
+                || encounter.players.is_empty()
+                || encounter.players.len() > 8
+                || encounter.monsters.is_empty()
+                || encounter.monsters.len() > 8
+                || i64::try_from(defenders) != Ok(self.maximum)
+            {
+                return Err("authored encounter counter roster/bounds".into());
+            }
+        }
         Ok(())
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
+        if self.encounter_source.is_some() {
+            // The source/epoch owner checks the gate without rewriting its revision
+            // for every death queued from the same admission.
+            return vec![QuestEffect {
+                track: self.track.clone(),
+                from: QuestComparison::Between(self.minimum, self.maximum - 1),
+                effect: QuestEffectKind::Add(1),
+            }];
+        }
         vec![
             QuestEffect {
                 track: self.gate.clone(),
@@ -82,6 +122,7 @@ impl KillCounter {
             gate_value: self.gate_value,
             minimum: self.minimum,
             maximum: self.maximum,
+            encounter_source: self.encounter_source.as_deref(),
         }
     }
 }
