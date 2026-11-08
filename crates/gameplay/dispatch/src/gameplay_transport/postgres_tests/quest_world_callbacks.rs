@@ -360,6 +360,7 @@ fn world_with_extra(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     if let Some(remote) = &callback.remote_teleport {
@@ -368,7 +369,7 @@ fn world_with_extra(
             key: format!("oteryn:terrain.tibia.i{}", remote.appearance),
             family: bundle::Family::Terrain,
             id: palette,
-            terrain: Some(bundle::Terrain {
+            terrain: Some(bundle::Terrain { blocks_projectile: None,
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
@@ -390,6 +391,7 @@ fn world_with_extra(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -429,6 +431,7 @@ fn world_with_extra(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
         }
@@ -464,6 +467,7 @@ fn world_with_extra(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
             cells
@@ -510,6 +514,7 @@ fn world_with_extra(
                         kind: bundle::TerrainKind::Common,
                         walkable: None,
                         ground_speed: None,
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -536,6 +541,7 @@ fn world_with_extra(
                     } else { bundle::TerrainKind::Wall },
                     walkable: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(true),
                     ground_speed: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(150),
+                    blocks_projectile: None,
                 }),
             });
             index
@@ -569,6 +575,7 @@ fn world_with_extra(
                         } else {
                             Some(150)
                         },
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -618,6 +625,7 @@ fn world_with_extra(
                 },
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -673,6 +681,7 @@ fn world_with_extra(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
         cells
@@ -704,7 +713,7 @@ fn world_with_extra(
         if !data.manifest.palette.iter().any(|entry|entry.key==key) {
             let id=u32::try_from(data.manifest.palette.len())?;
             data.manifest.palette.push(bundle::PaletteEntry {key,family:bundle::Family::Terrain,id,
-                terrain:Some(bundle::Terrain{kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
+                terrain:Some(bundle::Terrain{ blocks_projectile: None,kind:bundle::TerrainKind::Common,walkable:None,ground_speed:None})});
         }
     }
     for (position,appearance) in objects {

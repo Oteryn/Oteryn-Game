@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v7; the file name keeps V1)
+# Oteryn World Bundle format (v8; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v7` (v1, v2, v3, v4 and v5 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v8` (v1 through v7 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -34,7 +34,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `7` |
+| 4 | 2 | `format_version` u16 | `8` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -60,8 +60,8 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 |---|---|
 | `layers` | Optional compiled epoch layers (§17), covered by the bundle digest. Omitted when empty. |
 | `subareas` | Typed client-mask admission (§15), covered by the bundle digest. |
-| `format` | `"OTERYN_WORLD_BUNDLE/v7"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `7` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v8"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `8` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -130,7 +130,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v7" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v8" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -676,3 +676,23 @@ selecting intersecting layers is refused. Composition retains the original bundl
 (which covers every layer), and does not modify Channel overlay state. Existing Ground
 retirement and reset admission rules still apply. No source file is opened by the runtime.
 The field is omitted when empty. A v6 reader cannot accept a layer-bearing v7 bundle.
+
+
+## 18. Known Terrain projectile facts (format v8, W02)
+
+Version 8 adds optional `terrain.blocks_projectile`, a boolean when the source
+catalogue supplies a KNOWN fact. The writer omits it for UNKNOWN; the reader
+retains absence as UNKNOWN. A malformed KNOWN nonboolean source value fails
+compilation. The compiler writes only v8 and the reader accepts only v8:
+header `format_version`, manifest `format`, `min_reader_version` and the bundle
+digest domain all name 8. Prior formats are rejected; old bytes are never relabeled.
+Frame layout and sector payload grammar otherwise remain unchanged.
+
+Crystal src/items/items.cpp:234 assigns `blockProjectile` from appearance
+`unsight`, independently of `unpass`. BundleFacts, SpellTiles and native visible
+look-through use the known projectile fact; only absence retains legacy wall
+fallback. Movement solidity is unchanged. This preserves transparent solid
+walls and projectile-blocking unwalkable grounds in the exact Sugar Daddy
+source room. Existing Terrain values without this fact remain byte-equivalent
+inside the manifest apart from the required version changes. Regenerate bundle
+bytes and pins with the owning compiler; no golden/pin digest is hand-edited.

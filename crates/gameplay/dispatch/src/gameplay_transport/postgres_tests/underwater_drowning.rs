@@ -82,6 +82,7 @@ fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)
             kind: TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }),
     };
     let item = |key: &str, id| PaletteEntry {
@@ -375,7 +376,7 @@ fn scenario_in_world(
             .map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime
             .lock()
@@ -949,7 +950,7 @@ fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
                 .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             deps.initialize(&owner).await;
             deps.runtime
                 .lock()

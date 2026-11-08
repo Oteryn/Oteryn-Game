@@ -90,7 +90,7 @@ fn scenario() -> TestResult {
             .shape
             .track_shape();
         let mut owner = deps.owner(&harness, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         owner.proficiency_catalogue = Some(Arc::clone(&catalogue));
         deps.initialize(&owner).await;

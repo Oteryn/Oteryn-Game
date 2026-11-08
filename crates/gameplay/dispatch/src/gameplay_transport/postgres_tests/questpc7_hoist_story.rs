@@ -90,7 +90,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mu
   assert_eq!((expected.position().x,expected.position().y),(32155,31125));
   let map=owner.bundle_map().ok_or("map")?;
   let closed=crate::map::floor::BundleDoors(map.facts.doors());
-  let probe=crate::map::floor::prepare_quest_callback_teleport(&runtime,owner.movement_cells,actor,a.game_session_id,expected,
+  let probe=crate::map::floor::prepare_quest_callback_teleport(&runtime,&owner.movement_cells,actor,a.game_session_id,expected,
    crate::foundation::MovementLocalPosition{x:32157,y:31125,floor:10},false,&closed);
   if let Err(error)=probe{return Err(format!("native destination admission: {error:?}").into());}
  }

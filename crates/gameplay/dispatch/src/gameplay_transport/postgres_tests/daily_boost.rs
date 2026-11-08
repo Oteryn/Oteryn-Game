@@ -91,7 +91,7 @@ fn scenario() -> TestResult {
         let runtime = make_runtime()?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         let current =
@@ -206,7 +206,7 @@ fn scenario() -> TestResult {
         drop(owner);
         deps.runtime = tokio::sync::Mutex::new(make_runtime()?);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")

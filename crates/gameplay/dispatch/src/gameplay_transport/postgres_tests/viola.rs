@@ -90,7 +90,7 @@ fn scenario(nested: bool) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         let mut admitted = deps.admitted;
         admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
@@ -380,7 +380,7 @@ fn scenario(nested: bool) -> TestResult {
         drop(owner);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         let npc = install_source(&owner, &admitted).await?;

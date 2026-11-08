@@ -54,17 +54,18 @@ fn record(digest: &mut Sha256, tag: u8, revision: u64, payload: &[u8]) {
 }
 
 /// Reconstitute v6 identity for a layerless fixture; no legacy reader is admitted.
-/// Empty layers serialize identically to v6; both version tokens have equal length.
+/// No layers or known projectile overrides: both version tokens have equal length.
 pub(super) fn legacy_digest(bytes: &[u8]) -> [u8; 32] {
-    assert_eq!(&bytes[..6], b"OTWB\x07\x00");
+    assert_eq!(&bytes[..6], b"OTWB\x08\x00");
     let size = u32::from_le_bytes(bytes[8..12].try_into().expect("manifest length")) as usize;
     let manifest = std::str::from_utf8(&bytes[16..16 + size]).expect("manifest UTF8");
     assert!(!manifest.contains("\"layers\":"));
-    assert_eq!(manifest.matches("OTERYN_WORLD_BUNDLE/v7").count(), 1);
-    assert_eq!(manifest.matches("\"min_reader_version\":7").count(), 1);
+    assert!(!manifest.contains("\"blocks_projectile\":"));
+    assert_eq!(manifest.matches("OTERYN_WORLD_BUNDLE/v8").count(), 1);
+    assert_eq!(manifest.matches("\"min_reader_version\":8").count(), 1);
     let old = manifest
-        .replace("OTERYN_WORLD_BUNDLE/v7", "OTERYN_WORLD_BUNDLE/v6")
-        .replace("\"min_reader_version\":7", "\"min_reader_version\":6");
+        .replace("OTERYN_WORLD_BUNDLE/v8", "OTERYN_WORLD_BUNDLE/v6")
+        .replace("\"min_reader_version\":8", "\"min_reader_version\":6");
     assert_eq!(old.len(), size);
     let mut body = bytes[..bytes.len() - 32].to_vec();
     body[4..6].copy_from_slice(&6u16.to_le_bytes());

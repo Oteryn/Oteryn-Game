@@ -746,6 +746,7 @@ impl BundleWorld {
             base: Arc::clone(&self.base),
             blocked: Arc::clone(&self.blocked),
             map: Arc::clone(&self.map),
+            activity_bounds: None,
         }));
         Ok(NativeEntryMovementCells::from_bundle(
             entry,
@@ -777,6 +778,7 @@ struct BundleCollisionData {
     base: Arc<WorldBase>,
     blocked: Arc<BTreeSet<TilePos>>,
     map: Arc<BundleMap>,
+    activity_bounds: Option<[i32; 6]>,
 }
 
 impl PartialEq for BundleCollisionData {
@@ -784,6 +786,8 @@ impl PartialEq for BundleCollisionData {
         self.scope == other.scope
             && self.base.digest() == other.base.digest()
             && self.blocked == other.blocked
+            && self.activity_bounds == other.activity_bounds
+            && self.map.overlay.runtime_scope() == other.map.overlay.runtime_scope()
     }
 }
 
@@ -799,6 +803,12 @@ impl BundleCollisionData {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
         let pos = tile_pos(cell).ok_or(StaticCellEngineError::Absent)?;
+        if self
+            .activity_bounds
+            .is_some_and(|bounds| !super::activity_contains(bounds, pos))
+        {
+            return Err(StaticCellEngineError::Absent);
+        }
         self.base
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
@@ -818,6 +828,78 @@ impl BundleCollisionData {
 }
 
 impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisionData {
+    fn activity_region(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+    ) -> Option<BundleCollisionIndex> {
+        if self.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+            let [x0, y0, x1, y1, z0, z1] = bounds;
+            x0 < a || y0 < b || x1 > c || y1 > d || z0 < e || z1 > f
+        }) {
+            return None;
+        }
+        let runtime_scope = match instance {
+            Some(id) => {
+                crate::foundation::RuntimeScopeRefV1::instance(self.scope.world_id, id).ok()?
+            }
+            None => self.map.overlay.runtime_scope(),
+        };
+        let base = Arc::new(self.base.activity_region(bounds)?);
+        let cell = LogicalCell {
+            x: start[0],
+            y: start[1],
+            z: start[2],
+        };
+        let entry_start = tile_pos(cell)?;
+        let mut tile_shapes = Vec::with_capacity(base.tile_count());
+        for (floor, x, y, _) in base.tiles() {
+            let old = self.map.spell_tiles.base.tile_index(x, y, floor)?;
+            tile_shapes.push(*self.map.spell_tiles.tiles.get(old)?);
+        }
+        let spell_tiles = Arc::new(BundleSpellTiles {
+            base: Arc::clone(&base) as Arc<dyn crate::content::bundle_spell_tiles::BundleTileBase>,
+            tiles: tile_shapes,
+            shapes: self.map.spell_tiles.shapes.clone(),
+        });
+        let map = Arc::new(BundleMap {
+            entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
+            facts: self.map.facts.activity_region(bounds),
+            floors: self.map.floors.activity_region(bounds),
+            spell_tiles,
+        });
+        let view = Self {
+            scope: self.scope.clone(),
+            base,
+            blocked: Arc::new(
+                self.blocked
+                    .iter()
+                    .filter(|pos| super::activity_contains(bounds, **pos))
+                    .copied()
+                    .collect(),
+            ),
+            map,
+            activity_bounds: Some(bounds),
+        };
+        if view.lookup(&self.scope, cell).ok() != Some(CollisionClass::Walkable) {
+            return None;
+        }
+        Some(BundleCollisionIndex(Arc::new(view)))
+    }
+    fn for_activity_instance(&self, instance: [u8; 16]) -> Option<BundleCollisionIndex> {
+        let start = self.map.entry_start;
+        self.activity_region(
+            self.activity_bounds?,
+            Some(instance),
+            [
+                i32::from(start.x),
+                i32::from(start.y),
+                -i32::from(start.floor),
+            ],
+        )
+    }
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
@@ -879,6 +961,14 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
                 .is_none_or(|span| span > 255)
             || bounds[4] < 0
             || bounds[5] > 15
+            || source.activity_bounds.is_some_and(|[a, b, c, d, e, f]| {
+                bounds[0] < a
+                    || bounds[1] < b
+                    || bounds[2] > c
+                    || bounds[3] > d
+                    || bounds[4] < e
+                    || bounds[5] > f
+            })
         {
             return None;
         }
@@ -894,6 +984,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             base: Arc::clone(&source.base),
             blocked: Arc::clone(&source.blocked),
             map,
+            activity_bounds: Some(bounds),
         })))
     }
 
@@ -1158,6 +1249,7 @@ pub mod tests {
                 kind,
                 walkable,
                 ground_speed: walkable.map(|_| 150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {
@@ -1283,6 +1375,7 @@ pub mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         };
         let item = |key: &str, id| PaletteEntry {
@@ -2135,6 +2228,7 @@ pub mod tests {
                 kind: oteryn_world_bundle::bundle::TerrainKind::Common,
                 walkable,
                 ground_speed: None,
+                blocks_projectile: None,
             });
             let bytes = oteryn_world_bundle::writer::write(&manifest, &read.sectors, &read.spawns)?;
             load.digest = bundle::read(&bytes)?.digest;
@@ -2177,6 +2271,115 @@ pub mod tests {
 
     pub fn door_key() -> u64 {
         crate::map::view::placement_key(DOOR_AT, 1).unwrap_or(0)
+    }
+
+    #[test]
+    fn boss_activity_bundle_instances_bound_tiles_and_isolate_door_state()
+    -> Result<(), Box<dyn Error>> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        use crate::foundation::RuntimeScopeRefV1;
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let world_id = WorldId::decode(&id(1))?;
+        let entry = crate::content::qualify_native_entry_room(world_id)?;
+        let cells = world.movement_cells(entry.movement_cells())?;
+        let NativeMovementCollisionIndex::Bundle(source) = cells.index() else {
+            return Err("bundle index".into());
+        };
+        let key = door_key();
+        assert!(matches!(
+            world.facts().doors().toggle(key, 0, false, u32::MAX, true),
+            Some(DoorUse::Toggled { open: true, .. })
+        ));
+        let template = source
+            .activity_region([2, 0, 6, 0, 7, 7], None, [2, 0, 7])
+            .ok_or("activity template")?;
+        let first = template
+            .for_activity_instance(id(81))
+            .ok_or("first Instance")?;
+        let second = template
+            .for_activity_instance(id(82))
+            .ok_or("second Instance")?;
+        assert_eq!(
+            first.map().overlay.runtime_scope(),
+            RuntimeScopeRefV1::instance(world_id, id(81)).map_err(|error| format!("{error:?}"))?
+        );
+        assert_eq!(
+            second.map().overlay.runtime_scope(),
+            RuntimeScopeRefV1::instance(world_id, id(82)).map_err(|error| format!("{error:?}"))?
+        );
+        assert_eq!(
+            first.map().entry_start,
+            TilePos {
+                x: 2,
+                y: 0,
+                floor: -7
+            }
+        );
+        assert_eq!(second.map().entry_start, first.map().entry_start);
+        assert!(!std::ptr::eq(first.map(), second.map()));
+        assert!(first.map().overlay.base().tile(1, 0, -7).is_none());
+        assert!(first.map().overlay.base().tile(7, 0, -7).is_none());
+        assert!(first.map().overlay.base().tile(2, 0, -7).is_some());
+        assert_eq!(first.map().overlay.base().digest(), world.base().digest());
+        let at = LogicalCell { x: 6, y: 0, z: 7 };
+        assert_eq!(first.lookup(cells.scope(), at), Ok(CollisionClass::Blocked));
+        assert_eq!(
+            second.lookup(cells.scope(), at),
+            Ok(CollisionClass::Blocked)
+        );
+        assert_eq!(first.map().facts.object_revision(key), 0);
+        assert!(matches!(
+            first
+                .map()
+                .facts
+                .doors()
+                .toggle(key, 0, false, u32::MAX, true),
+            Some(DoorUse::Toggled { open: true, .. })
+        ));
+        assert_eq!(
+            first.lookup(cells.scope(), at),
+            Ok(CollisionClass::Walkable)
+        );
+        assert_eq!(
+            second.lookup(cells.scope(), at),
+            Ok(CollisionClass::Blocked)
+        );
+        assert_eq!(world.facts().object_revision(key), 1);
+        assert_eq!(second.map().facts.object_revision(key), 0);
+        assert_eq!(
+            first.lookup(cells.scope(), LogicalCell { x: 7, y: 0, z: 7 }),
+            Err(StaticCellEngineError::Absent)
+        );
+        let mut stale = cells.scope().clone();
+        stale.generation_digest = [99; 32];
+        assert_eq!(
+            first.lookup(&stale, at),
+            Err(StaticCellEngineError::ScopeMismatch)
+        );
+        assert!(
+            template
+                .activity_region([1, 0, 6, 0, 7, 7], Some(id(83)), [2, 0, 7])
+                .is_none()
+        );
+        assert!(
+            source
+                .activity_region([0, 0, 65535, 65535, 0, 15], None, [2, 0, 7])
+                .is_none()
+        );
+        assert!(template.for_activity_instance([0; 16]).is_none());
+        assert!(
+            source
+                .activity_region([2, 0, 6, 0, 7, 7], None, [1, 0, 7])
+                .is_none()
+        );
+        assert!(
+            source
+                .activity_region([2, 0, 6, 0, 7, 7], None, [6, 0, 7])
+                .is_none()
+        );
+        Ok(())
     }
 
     #[test]

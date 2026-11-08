@@ -65,7 +65,7 @@ fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
         };
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = deps.room.movement_cells();
+        owner.movement_cells = (deps.room.movement_cells()).into();
         owner.clock_origin -= std::time::Duration::from_secs(12);
         {
             let runtime = deps.runtime.lock().await;

@@ -671,7 +671,7 @@ fn scenario_case(
         }
 
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         if let Some(room) = bundle_room.as_ref() {
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
         }
@@ -825,7 +825,7 @@ fn scenario_case(
                 *deps.runtime.lock().await = runtime;
                 let mut owner = deps.owner(&h, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &reset_cells;
+                owner.movement_cells = (&reset_cells).into();
                 owner.rooms =
                     crate::gameplay_transport::SeamRooms::new(Some(&reset_room), Some(&reset_room));
                 owner.reset_epoch = h

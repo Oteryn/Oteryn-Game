@@ -431,25 +431,18 @@ fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
-) -> Result<GroundPlacement, ItemMintError> {
-    let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
+) -> GroundPlacement {
     let mut spatial_position = Vec::with_capacity(10);
     spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
-    let mut corpse_ref = Vec::with_capacity(52);
-    corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(channel_id.as_bytes());
-    corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
-    corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
-    Ok(GroundPlacement {
+    GroundPlacement {
         spatial_position,
-        corpse_ref,
+        corpse_ref: death.native_bytes(),
         map_revision: ground.map_revision.clone(),
         content_revision: ground.content_revision.clone(),
         native_room_placement_context: ground.native_room_placement_context.clone(),
-    })
+    }
 }
 
 /// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan,
@@ -477,13 +470,6 @@ async fn settle_loot(
     corpse_race: Option<BestiaryRace>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
-    // Ground custody has no Instance placement contract. This typed refusal does
-    // not suppress the independent XP path or W03's personal reward entitlements.
-    if death.channel_id().is_none() {
-        return Err(CombatDeathRewardLootError::Corpse(
-            ItemMintError::AuthorityRejected,
-        ));
-    }
     let mut plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
     if let Some(claim) = &tutorial_corruptor {
@@ -580,8 +566,7 @@ async fn settle_loot(
         cause: corpse_cause,
         item: corpse_definition,
         quantity: 1,
-        ground: ground_placement(death, corpse, ground)
-            .map_err(CombatDeathRewardLootError::Corpse)?,
+        ground: ground_placement(death, corpse, ground),
         content_revision: ground.content_revision.clone(),
         ruleset_revision: ground.ruleset_revision.clone(),
         sim_revision: ground.sim_revision.clone(),
@@ -1449,6 +1434,51 @@ mod tests {
     }
 
     #[test]
+    fn instance_ground_placement_preserves_the_native_death_namespace() {
+        use crate::foundation::{
+            ChannelId, CombatDeathFixture, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+        };
+        let id = |seed| {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        };
+        let world = WorldId::decode(&id(1)).expect("world");
+        let instance = RuntimeScopeRefV1::instance(world, id(2)).expect("Instance");
+        let channel =
+            RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(2)).expect("Channel"));
+        let ground = DeathGroundContext {
+            boss_spawn: None,
+            map_revision: "map-1".into(),
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+            native_room_placement_context: b"room".to_vec(),
+        };
+        let placed = |scope| {
+            let mut fixture = CombatDeathFixture::new_for_scope(
+                scope,
+                ScopeOwnershipGeneration::new(1).expect("generation"),
+            )
+            .expect("physical carrier");
+            fixture
+                .strike("fixture:scoped-ground.strike", CombatDeathFixture::HEALTH)
+                .expect("lethal strike");
+            let (death, at) = fixture.project_death().expect("physical death");
+            let placement = ground_placement(death, at, &ground);
+            assert_eq!(placement, ground_placement(death, at, &ground));
+            placement
+        };
+        let instance = placed(instance);
+        let channel = placed(channel);
+        assert_eq!(instance.corpse_ref.len(), 53);
+        assert_eq!(instance.corpse_ref[0], 2);
+        assert_eq!(channel.corpse_ref.len(), 52);
+        assert_eq!(instance.spatial_position, channel.spatial_position);
+        assert_ne!(instance.corpse_ref, channel.corpse_ref);
+    }
+
+    #[test]
     fn ground_placement_differs_between_distinct_deaths_and_matches_for_replay() {
         use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
 
@@ -1489,15 +1519,11 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
-        // This Channel fixture must still preserve its existing replay identity.
-        let placement_a =
-            ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
-        let placement_b =
-            ground_placement(death_b, corpse, &ground).expect("Channel ground placement");
+        // Existing Channel replay identity retains its original byte framing.
+        let placement_a = ground_placement(death_a, corpse, &ground);
+        let placement_b = ground_placement(death_b, corpse, &ground);
         assert_ne!(placement_a.corpse_ref, placement_b.corpse_ref);
-        let replayed =
-            ground_placement(death_a, corpse, &ground).expect("Channel ground placement replay");
+        let replayed = ground_placement(death_a, corpse, &ground);
         assert_eq!(placement_a, replayed);
     }
 }

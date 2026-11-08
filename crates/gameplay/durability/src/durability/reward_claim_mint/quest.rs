@@ -1,5 +1,6 @@
 //! Quest exchanges borrow the existing complete backpack MINT and custody owners.
 use super::*;
+mod questpc7_counter_claim;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantRequest, AchievementSourceEvent,
@@ -363,7 +364,8 @@ pub(crate) async fn apply(
             fence,
             command,
             &callback.key,
-            callback.counter.is_some() || callback.is_paid_exchange(),
+            callback.counter.is_some(),
+            callback.is_paid_exchange(),
             reward,
             admission,
         )
@@ -420,6 +422,7 @@ pub(crate) async fn mint(
     fence: CurrentCharacterGameplayFence,
     command: CommandRef,
     callback_key: &str,
+    counted: bool,
     repeatable: bool,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
@@ -434,7 +437,13 @@ pub(crate) async fn mint(
             return Ok(None);
         }
     }
-    let claim_key = if repeatable {
+    let claim_key = if counted {
+        questpc7_counter_claim::key(
+            callback_key,
+            command.game_session_id().as_bytes(),
+            command.command_id().get(),
+        )
+    } else if repeatable {
         let digest = Sha256::new()
             .chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())

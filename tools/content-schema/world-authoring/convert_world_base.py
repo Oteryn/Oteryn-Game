@@ -1259,17 +1259,85 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     }
 
 
+def palette_summary(root: Path, crystal_root: Path) -> bytes:
+    """Recount an admitted palette without rewriting any placement or source fact."""
+    import validate_world_base as validate
+
+    pin = next(row for row in SOURCE["files"] if row["path"] == ITEMS_XML)
+    xml = (crystal_root / ITEMS_XML).read_bytes()
+    if hashlib.sha256(xml).hexdigest() != pin["sha256"]:
+        raise ConvertError("palette summary: items.xml differs from the pinned source")
+    declared = items_xml_ids(xml)
+    index = json.loads((root / DIRECTORY / "index.json").read_bytes())
+    summary = json.loads((root / SUMMARY.relative_to(ROOT)).read_bytes())
+    palette = index["palette"]
+    validate._init(
+        str(root), (summary["map"]["width"], summary["map"]["height"]), len(palette)
+    )
+    used = Counter()
+    for region in index["regions"]:
+        result = validate.check_region(region)
+        if result["errors"]:
+            raise ConvertError("palette summary: " + "; ".join(result["errors"]))
+        used.update(result["palette"])
+    families = {
+        name: {"entries": 0, "occurrences": 0}
+        for name in ("terrain", "world_object", "item")
+    }
+    provisional = {
+        name: {"entries": 0, "occurrences": 0}
+        for name in ("appearance_only", "in_items_xml")
+    }
+    for i, row in enumerate(palette):
+        family = key_family(row["key"], row["provisional"])
+        if family in families:
+            families[family]["entries"] += 1
+            families[family]["occurrences"] += used[i]
+        if row["provisional"]:
+            kind = (
+                "in_items_xml"
+                if row["source_item_id"] in declared
+                else "appearance_only"
+            )
+            provisional[kind]["entries"] += 1
+            provisional[kind]["occurrences"] += used[i]
+    provisional["entries"] = sum(row["entries"] for row in provisional.values())
+    provisional["occurrences"] = sum(
+        provisional[k]["occurrences"] for k in ("appearance_only", "in_items_xml")
+    )
+    summary["palette"] = {
+        "entries": len(palette),
+        "families": families,
+        "provisional": provisional,
+    }
+    return canonical(summary)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--crystal-root", type=Path, required=True)
     parser.add_argument(
         "--tibiamaps-root",
         type=Path,
-        required=True,
         help="directory holding the pinned tibiamaps files (see edron_rework.py)",
+    )
+    parser.add_argument(
+        "--palette-summary-only",
+        action="store_true",
+        help="recount the committed palette against hash-checked regions and pinned items.xml",
     )
     parser.add_argument("--check", action="store_true", help="fail instead of writing")
     args = parser.parse_args()
+    if args.palette_summary_only:
+        raw = palette_summary(ROOT, args.crystal_root)
+        if args.check:
+            if SUMMARY.read_bytes() != raw:
+                raise SystemExit("stale world-base palette summary")
+        else:
+            SUMMARY.write_bytes(raw)
+        return 0
+    if args.tibiamaps_root is None:
+        parser.error("--tibiamaps-root is required for full map conversion")
     try:
         out = build(
             read_source(args.crystal_root, args.tibiamaps_root),

@@ -71,6 +71,33 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         boss_key: &str,
     ) -> Result<Option<BossRoomDefinition>> {
+        self.read_boss_room_inner(authority, node, fence, boss_key, None)
+            .await
+    }
+
+    /// Production lookup binds the current carrier's actual map/artifact pin.
+    /// Instance returns resolve their frozen origin pin only after proving the
+    /// independently current session fence; that history never grants authority.
+    pub async fn read_boss_room_with_pin(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        boss_key: &str,
+        origin_pin: ActivityContentPin,
+    ) -> Result<Option<BossRoomDefinition>> {
+        self.read_boss_room_inner(authority, node, fence, boss_key, Some(origin_pin))
+            .await
+    }
+
+    async fn read_boss_room_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        boss_key: &str,
+        origin_pin: Option<ActivityContentPin>,
+    ) -> Result<Option<BossRoomDefinition>> {
         if boss_key.is_empty() || boss_key.len() > 512 {
             return Ok(None);
         }
@@ -87,14 +114,27 @@ impl ActivityHandoffOwner {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if retained_participant(&mut tx, &root, fence).await?.is_none()
-                        || assert_item_only_fence(&mut tx, &fence, &node)
-                            .await?
-                            .is_err()
-                    {
+                    if retained_participant(&mut tx, &root, fence).await?.is_none() {
                         return Ok(None);
                     }
-                    let result = read_definition(&mut tx, &key).await?;
+                    let Ok(current) = assert_item_only_fence(&mut tx, &fence, &node).await? else {
+                        return Ok(None);
+                    };
+                    let origin_pin = if origin_pin.is_some()
+                        && let RuntimeScopeRefV1::Instance { instance_id, world_id } = fence.runtime_scope
+                    {
+                        let row = sqlx::query("SELECT p.coordinate_frame_digest,p.map_revision_digest,p.server_artifact_digest FROM game_activity_handoff_groups g JOIN game_activity_handoff_participants p USING(handoff_id,world_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.instance_id=encode($2,'hex')::uuid AND g.activity_key=$3 AND g.content_revision=$4 AND g.state=2 AND p.character_id=encode($5,'hex')::uuid FOR SHARE OF g,p")
+                            .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&key)
+                            .bind(&current.content_revision).bind(fence.character_id.as_bytes().as_slice())
+                            .fetch_optional(&mut *tx).await?;
+                        let Some(row) = row else { return Ok(None); };
+                        Some(ActivityContentPin {
+                            coordinate_frame_digest: bytes32(row.try_get("coordinate_frame_digest")?)?,
+                            map_revision_digest: bytes32(row.try_get("map_revision_digest")?)?,
+                            server_artifact_digest: bytes32(row.try_get("server_artifact_digest")?)?,
+                        })
+                    } else { origin_pin };
+                    let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(result)
                 })
@@ -248,9 +288,26 @@ impl ActivityHandoffOwner {
 async fn read_definition(
     tx: &mut Transaction<'_, Postgres>,
     key: &str,
+    world: crate::foundation::WorldId,
+    content_revision: &str,
+    origin_pin: Option<ActivityContentPin>,
 ) -> Result<Option<BossRoomDefinition>> {
-    let row=sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue WHERE boss_key=$1 AND enabled FOR SHARE")
-        .bind(key).fetch_optional(&mut **tx).await?;
+    // Any production publication closes the legacy fallback for this World/boss,
+    // including when the current revision/frame has no qualified publication.
+    let published: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2)")
+        .bind(world.as_bytes().as_slice()).bind(key).fetch_one(&mut **tx).await?;
+    let row = if published {
+        let Some(pin) = origin_pin else {
+            return Ok(None);
+        };
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2 AND content_revision=$3 AND origin_frame_digest=$4 AND origin_map_digest=$5 AND server_artifact_digest=$6 AND enabled FOR SHARE")
+            .bind(world.as_bytes().as_slice()).bind(key).bind(content_revision)
+            .bind(pin.coordinate_frame_digest.as_slice()).bind(pin.map_revision_digest.as_slice())
+            .bind(pin.server_artifact_digest.as_slice()).fetch_optional(&mut **tx).await?
+    } else {
+        sqlx::query("SELECT boss_key,boss_creature_key,content_revision,room_template_key,template_revision,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,after_kill_seconds,lever_positions,entry_positions,exit_position,boss_position FROM game_boss_room_catalogue c WHERE boss_key=$1 AND enabled AND NOT EXISTS(SELECT 1 FROM game_boss_room_publications p WHERE p.boss_key=c.boss_key) FOR SHARE")
+            .bind(key).fetch_optional(&mut **tx).await?
+    };
     let Some(row) = row else {
         return Ok(None);
     };
@@ -340,7 +397,30 @@ pub(super) async fn prepare_in_transaction(
     r: &ActivityEnterRequest,
     now: i64,
 ) -> Result<std::result::Result<BossAdmissionPlan, ActivityRefusal>> {
-    let Some(definition) = read_definition(tx, &r.activity_key).await? else {
+    let Some(initiator) = r
+        .participants
+        .iter()
+        .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
+    else {
+        return Ok(Err(ActivityRefusal::InvalidInput));
+    };
+    // enter_in_transaction already proved every current participant's revision.
+    // These captured map facts are expected physical bindings, not current-session authority.
+    let source = initiator.source_position;
+    let origin_pin = ActivityContentPin {
+        coordinate_frame_digest: source.coordinate_frame_digest,
+        map_revision_digest: source.map_revision_digest,
+        server_artifact_digest: source.server_artifact_digest,
+    };
+    let Some(definition) = read_definition(
+        tx,
+        &r.activity_key,
+        initiator.source.runtime_scope.world_id(),
+        &r.content_revision,
+        Some(origin_pin),
+    )
+    .await?
+    else {
         return Ok(Err(ActivityRefusal::ContentUnavailable));
     };
     if definition.content_revision != r.content_revision

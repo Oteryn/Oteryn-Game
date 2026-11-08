@@ -143,6 +143,8 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod primal_menace;
+mod primal_pods;
 mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
@@ -177,6 +179,7 @@ pub use soulpit::{
 };
 mod source_item_cycle;
 mod source_pvp_expiry;
+mod source_volatile_items;
 pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;
@@ -555,9 +558,6 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// revalidates all of them.
 #[derive(Clone)]
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
-    /// A private activity retains its own map/fact owners for the full runtime
-    /// lifetime; ordinary Channels use the existing borrowed assets below.
-    pub activity_room: Option<std::sync::Arc<crate::content::QualifiedNativeEntryRoom>>,
     pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
@@ -574,7 +574,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub runtime: activity_runtime::SharedOwner<'a, Mutex<ChannelRuntimeV1>>,
-    pub movement_cells: &'a NativeEntryMovementCells,
+    pub movement_cells: activity_runtime::SharedOwner<'a, NativeEntryMovementCells>,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
@@ -622,15 +622,10 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
-        self.activity_room
-            .as_ref()
-            .map_or(self.movement_cells, |room| room.movement_cells())
+        &self.movement_cells
     }
-
-    pub(super) fn rooms(&self) -> SeamRooms<'_> {
-        self.activity_room
-            .as_ref()
-            .map_or(self.rooms, |room| SeamRooms::new(None, Some(room.as_ref())))
+    pub(super) fn rooms(&self) -> &SeamRooms<'_> {
+        &self.rooms
     }
 }
 
