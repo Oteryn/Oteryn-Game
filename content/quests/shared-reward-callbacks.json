@@ -2954,6 +2954,239 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-wizard-flowers",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5922",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wizard",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/warlock",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-flowers-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-legs",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3382",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-mail",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3386",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-shield",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3436",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-skull",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3006",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wizard",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l3-demon-base",
       "quest": "oteryn:quest.the_annihilator_quest",
       "npc": "oteryn:npc.avar_tar",
