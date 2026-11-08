@@ -50,6 +50,7 @@ pub mod shared_switches;
 pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
+pub mod source_deaths;
 pub mod targuna_ram;
 pub mod task_board;
 pub mod threatened_dreams;

@@ -121,6 +121,7 @@ pub struct QuestRewardAdmission<'a> {
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
     pub actor_conditions: Option<&'a super::QuestActorConditionProof>,
     pub carried_use: Option<&'a QuestCarriedUse>,
+    pub peer_use: Option<&'a super::quest_peer::QuestPeerUseProof>,
 }
 
 #[allow(
@@ -151,6 +152,15 @@ pub(crate) async fn apply(
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {
         return Ok(false);
+    }
+    match (&callback.peer_requires, admission.peer_use, admission.carried_use) {
+        (None, None, _) => {}
+        (Some(requirement), Some(peer), Some(carried)) => {
+            if !super::quest_peer::holds_in_transaction(tx, node, fence, peer, requirement, catalogue, carried).await? {
+                return Ok(false);
+            }
+        }
+        _ => return Ok(false),
     }
     if callback
         .cosmetic_targets()
@@ -474,6 +484,22 @@ pub(crate) async fn mint(
     // Every occurrence still uses the existing MINT once ledger and reservations.
     let claim_key = claim::key(fence.character_id, command, callback_key, claim)?;
     let request = RewardClaimMintRequest {
+        additional_items: reward
+            .additional
+            .iter()
+            .map(|item| {
+                if item.fluid_subtype.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
+                    item: resolve(&item.item)?,
+                    quantity: u32::from(item.count),
+                    key_number: None,
+                    text: None,
+                })
+            })
+            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

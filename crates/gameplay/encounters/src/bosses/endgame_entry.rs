@@ -120,7 +120,8 @@ pub struct SourceEntryPolicy {
     pub retry_seconds: u64,
 }
 
-fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
+/// Pinned source lever and retry policy; this grants no room admission.
+pub fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
     // Crystal 201189f quests/rotten_blood_quest/rotten_{ichgahal,vemiath}.lua:22
     // inherit boss_lever.lua:64 -> config.lua.dist:658 (20h). Murcion:6,30 and
     // Chagorz:6,31 explicitly use 20h. Bakragore:7,23 is the accepted 68h path

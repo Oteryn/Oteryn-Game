@@ -20,7 +20,7 @@ Soulpit W07/W08 already shipped on main in `98d6ae8ce` (#3036), followed by
 `3209d3d61` (#3040); no unmerged Soulpit mechanic is being duplicated here.
 PGSPEED's fixture optimization is test infrastructure with an unfinished full
 performance proof, not a newly completed quest mechanic. It remains isolated
-pending the owner's direction on whether it belongs in this package.
+and is being prepared for the owner-directed QMECH handoff.
 
 No migrations are allocated by this report. At initial inspection the package
 contained `PACKAGE.md` only: no `MISSING-*.md` queue items or `CLAIMS.md` existed,
@@ -39,3 +39,32 @@ Migration **2220** is reserved for the zero-track NPC teleport receipt shape: a
 matching same-transaction NPC receipt and pending-arrival proof is required.
 The existing receipt arms and their bounds remain intact. No migration has
 been applied by this report-only reservation push.
+
+## M37 checkpoint
+
+- The initial durable/dispatch integration passed its all-target compile check
+  (227.538 s); the pure-teleport receipt refinement remains in progress.
+- The generated Riddler programme rebuilds from the pinned donor capture; four
+  focused authoring tests pass. Peter/Riddler placement scope uses only their
+  existing agreeing source candidates.
+- Migration 2220 now preserves **all** existing quest receipt constraints. A pure
+  teleport has a separate source NPC response receipt and no invented personal
+  quest start, track write, CharacterRevision, fare or paid-route receipt. A real
+  progress-changing teleport still composes the quest receipt and arrival.
+- Real-PG M37 cases and package regeneration/gates are pending: M37 is not DONE.
+- Separately, the unchanged PGSPEED fixture checkpoint passed all 4,636 unit
+  cases in 1,791.035 s (PG environment unset); its real-PG performance and full
+  node qualification continue in the isolated measurement worktree.
+
+## Current qualification checkpoint
+
+M37 remains **PARTIAL**. Five focused Riddler authoring tests pass; the final
+workspace compile and quest-unit checks are running before the three new real-PG
+teleport cases. The cases cover atomic progress plus arrival, rollback on receipt
+failure, and Peter's free teleport without quest-state mutation. These PG cases
+have not yet executed; this checkpoint does not claim they pass.
+
+The isolated PGSPEED whole-node run passed the minimal fixture (389.02 s), but
+its physical-World seam failed with transport EOF after the durability root
+became unavailable. The full-manifest variant and exact root-recovery diagnosis
+remain pending; node qualification is not green.
