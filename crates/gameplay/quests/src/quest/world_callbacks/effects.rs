@@ -208,8 +208,10 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 })
                 && (1..=100).contains(&count)
         };
-        callback.trigger != Trigger::Use
-            || callback.storage.is_empty()
+        !matches!(
+            callback.trigger,
+            Trigger::Use | Trigger::StepIn | Trigger::UseCarriedOnTarget
+        ) || callback.storage.is_empty()
             || callback
                 .storage
                 .iter()

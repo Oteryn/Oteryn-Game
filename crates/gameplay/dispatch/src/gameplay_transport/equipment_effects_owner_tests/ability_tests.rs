@@ -154,6 +154,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // PC3 source-qualified callback closure restored after the main merge:
+    // 22649,24943..=24947,25238,25242,25244,25295,25302,25303,
+    // 25730..=25734,25779,25780,25782,25975..=25977,26181,2822,
+    // 3452,3466,5953,7882. These 29 keys are disjoint from main's cohorts;
+    // quest_callback_profiles.py validates each exact binding and native facts.
+    ("QUESTPC3-CALLBACK-CLOSURE", 29),
     // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
     ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).

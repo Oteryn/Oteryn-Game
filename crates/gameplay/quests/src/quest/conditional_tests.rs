@@ -107,12 +107,12 @@ fn conditional_and_bound_reward_effect_tags_are_distinct() {
         minimum: 3,
         value: 7,
     }
-    .encode(&mut conditional);
+    .encode(&mut conditional, true);
     let mut reward = Vec::new();
     QuestEffectKind::SetWithBinding {
         value: 7,
         binding: [0; 32],
     }
-    .encode(&mut reward);
+    .encode(&mut reward, true);
     assert_ne!(conditional.first(), reward.first());
 }

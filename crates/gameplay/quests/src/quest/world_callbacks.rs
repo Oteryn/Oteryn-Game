@@ -7,7 +7,7 @@ use super::{
 pub use carried::{ActorRegion, CarriedUse, TimeWindow};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Static quest batches and the code-built source callbacks share this bound.
@@ -116,6 +116,7 @@ fn is_false(value: &bool) -> bool {
 }
 
 mod carried_binding;
+mod carried_selectors;
 mod storage_increment;
 pub use storage_increment::Increment;
 
@@ -325,16 +326,21 @@ pub fn load() -> Result<Vec<Callback>, String> {
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors: BTreeMap<Vec<u8>, Vec<&Callback>> = BTreeMap::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
         let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
             .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let branches = selectors.entry(selector).or_default();
+        if branches
+            .iter()
+            .any(|other| !carried_selectors::disjoint(callback, other))
+        {
             return Err("duplicate callback selector across registries".into());
         }
+        branches.push(callback);
     }
     Ok(())
 }
@@ -1011,6 +1017,21 @@ mod tests {
     }
 
     #[test]
+    fn registry_refuses_overlapping_carried_branches() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|callback| callback.carried_use.is_some())
+            .ok_or("carried callback")?;
+        let mut alias = original.clone();
+        alias.key = "oteryn:quest-callback/carried-selector-alias".into();
+        assert_eq!(
+            validate_registry(&[original, alias]),
+            Err("duplicate callback selector across registries".into())
+        );
+        Ok(())
+    }
+
+    #[test]
     fn registry_refuses_different_keys_on_the_same_selector() -> Result<(), String> {
         let mut callbacks = load()?;
         let mut alias = callbacks
@@ -1459,6 +1480,8 @@ mod tests {
                     // selected carried inputs still require native USE_WITH.
                     bad.trigger = Trigger::StepIn;
                     bad.item_on_target = Some(ItemOnTarget {
+                        alternatives: Vec::new(),
+                        reusable: false,
                         item: "oteryn:item.tibia.i25244".into(),
                         count: 1,
                         replacement: None,

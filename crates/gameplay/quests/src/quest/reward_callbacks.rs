@@ -1405,15 +1405,37 @@ mod tests {
     fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
     -> Result<(), String> {
         let legacy = parse(DOCUMENTS[0])?;
+        // The merged PC3 cohort already completes Pilgrimage at twelve source guides.
+        // All other legacy programmes must retain their omitted completion field.
+        let pilgrimage_finishes = [
+            "alexena",
+            "behil",
+            "davina",
+            "edna",
+            "elena",
+            "jonathan",
+            "kunibert",
+            "luke",
+            "meruka",
+            "rahlkora",
+            "thelandil",
+            "tiko",
+        ]
+        .map(|guide| format!("oteryn:quest-reward/questpc3/pilgrimage/guide_{guide}-finish"));
+        let mut completion_count = 0;
         for callback in &legacy {
-            assert!(!callback.completes);
-            assert!(
-                serde_json::to_value(callback)
-                    .map_err(|e| e.to_string())?
-                    .get("completes")
-                    .is_none()
-            );
+            let completes = pilgrimage_finishes.contains(&callback.key);
+            assert_eq!(callback.completes, completes, "{}", callback.key);
+            let wire = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+            if completes {
+                assert_eq!(callback.quest, "oteryn:quest.pilgrimage_of_ashes");
+                assert_eq!(wire.get("completes"), Some(&serde_json::Value::Bool(true)));
+                completion_count += 1;
+            } else {
+                assert!(wire.get("completes").is_none());
+            }
         }
+        assert_eq!(completion_count, pilgrimage_finishes.len());
         let callbacks = load()?;
         let completion = callbacks
             .iter()
@@ -1462,10 +1484,12 @@ mod additional_terms_tests {
                 0 => callback.absent.push(callback.absent[0].clone()),
                 1 => callback.absent = vec!["oteryn:item.tibia.i3270".into()],
                 2 => callback.present.push(ItemAmount {
+                    fluid_subtype: None,
                     item: callback.absent[0].clone(),
                     count: 1,
                 }),
                 3 => callback.take.push(ItemAmount {
+                    fluid_subtype: None,
                     item: callback.absent[0].clone(),
                     count: 1,
                 }),
@@ -1580,6 +1604,7 @@ mod additional_terms_tests {
         }
         changed = callback.clone();
         changed.take.push(ItemAmount {
+            fluid_subtype: None,
             item: "oteryn:item.tibia.i3031".into(),
             count: 1,
         });
@@ -1623,6 +1648,7 @@ mod additional_terms_tests {
         assert!(parse(&document(&changed)).is_err());
         changed.present_any = (1..=9)
             .map(|id| ItemAmount {
+                fluid_subtype: None,
                 item: format!("oteryn:item.tibia.i{id}"),
                 count: 1,
             })

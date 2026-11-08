@@ -1068,19 +1068,22 @@ mod tests {
             .service_model_for_project()
             .map_err(|e| format!("{e:?}"))?;
         let book = NpcTalkBook::from_model(&model);
-        let callbacks: serde_json::Value =
-            serde_json::from_str(REWARD_CALLBACKS).map_err(|error| error.to_string())?;
-        let rows = callbacks["callbacks"]
-            .as_array()
-            .ok_or("callback fixture")?;
-        let keys = rows
-            .iter()
-            .filter_map(|row| row["npc"].as_str())
-            .collect::<std::collections::BTreeSet<_>>();
+        let mut keys = std::collections::BTreeSet::new();
+        for source in REWARD_CALLBACKS {
+            let callbacks: serde_json::Value =
+                serde_json::from_str(source).map_err(|error| error.to_string())?;
+            let rows = callbacks["callbacks"]
+                .as_array()
+                .ok_or("callback fixture")?;
+            keys.extend(
+                rows.iter()
+                    .filter_map(|row| row["npc"].as_str().map(str::to_owned)),
+            );
+        }
         assert!(!keys.is_empty());
         for key in keys {
             let entry = book
-                .get(key)
+                .get(&key)
                 .ok_or_else(|| format!("missing reward conversation {key}"))?;
             assert!(!entry.greeting_reply.is_empty());
             assert!(

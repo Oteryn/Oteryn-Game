@@ -259,6 +259,20 @@ pub fn load_embedded_quest_state(
             })
             .ok_or_else(|| QuestLoadError::Json("world callback lacks source authority".into()))?;
         for storage in callback.storage {
+            // Main's registered shared-switch completion uses its existing native
+            // quest-track identity, rather than a donor scalar storage path.
+            if super::shared_switches::GATES.iter().any(|gate| {
+                gate.key == callback.key
+                    && gate
+                        .progress
+                        .is_some_and(|progress| progress.track == storage.track)
+            }) {
+                lowered
+                    .source_tracks
+                    .entry(storage.track)
+                    .or_insert_with(|| callback.sources.join(";"));
+                continue;
+            }
             let path = storage
                 .track
                 .strip_prefix("oteryn:quest-progress/")
