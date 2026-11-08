@@ -188,7 +188,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113 | 123)
+                && matches!(id, 103 | 106 | 110..=113 | 223)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -261,7 +261,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "COMBOBOX",
             "",
-            120,
+            220,
             [10, 10, 720, 240],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
@@ -298,7 +298,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "BUTTON",
             "Swap primary / secondary mouse buttons",
-            121,
+            221,
             [10, 150, 360, 26],
             BS_AUTOCHECKBOX as u32,
         );
@@ -314,7 +314,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "EDIT",
             "",
-            122,
+            222,
             [380, 185, 100, 26],
             WS_BORDER | ES_NUMBER as u32,
         );
@@ -322,7 +322,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "BUTTON",
             "Apply controls",
-            123,
+            223,
             [500, 185, 180, 26],
             0,
         );
@@ -338,7 +338,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "EDIT",
             "",
-            124,
+            224,
             [380, 225, 100, 26],
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
@@ -594,7 +594,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 123 {
+                if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
