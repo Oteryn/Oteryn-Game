@@ -31,7 +31,6 @@ fn plan(
         tracks: &tracks,
         inventory: &inventory,
         now_epoch_seconds: 1_700_000_000,
-        premium_current: false,
         calendar_month: 11,
         level: 100,
         premium_current: false,
