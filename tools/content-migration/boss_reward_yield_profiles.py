@@ -223,6 +223,12 @@ def admit(root, generated, destination, manifest_path, order, canonical):
         seen.add(item)
         if key in existing:
             previous = existing[key]
+            if item == 3583:
+                for part in ('consumption', 'trade_restrictions'):
+                    known = previous['semantics'].get(part, {'state': 'UNKNOWN'})
+                    if known != {'state': 'UNKNOWN'} and known != row['semantics'][part]:
+                        raise ValueError('BOSS_REWARD_HAM_KNOWN_CUSTODY_CONFLICT')
+                    previous['semantics'][part] = copy.deepcopy(row['semantics'][part])
             if item in CLASSIFICATION_ENRICHMENT_IDS:
                 # Only source-proved previously UNKNOWN custody fields may be
                 # completed. Known equipment/rune/fluid bodies remain intact.

@@ -1,5 +1,6 @@
 """Source custody completion cannot overwrite existing equipment or known facts."""
 import copy
+import hashlib
 import json
 import unittest
 import boss_reward_yield_profiles as yields
@@ -7,7 +8,35 @@ import boss_reward_yield_profiles as yields
 
 class ExistingRottenYieldCustodyTests(unittest.TestCase):
     def native(self):
-        return json.loads((yields.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes())
+        raw = (yields.ROOT/'content/items/definitions/spell-native-profiles.json').read_bytes()
+        document = json.loads(raw)
+        updates = json.loads((yields.ROOT/'content/items/definitions/srx1-item-updates.json').read_bytes())
+        self.assertEqual(updates['base_sha256'], hashlib.sha256(raw).hexdigest())
+        by_key = {row['production_definition']['production_key']: row
+                  for row in document['records']}
+        for row in updates['records']:
+            key = row['production_definition']['production_key']
+            if key in by_key:
+                self.assertEqual(by_key[key]['production_definition'], row['production_definition'])
+                document['records'][document['records'].index(by_key[key])] = row
+            else:
+                document['records'].append(row)
+            by_key[key] = row
+        return document
+
+    def test_known_ham_food_or_market_fact_cannot_be_replaced(self):
+        for part in ['consumption', 'trade_restrictions']:
+            document = self.native()
+            row = next(r for r in document['records'] if r['production_binding']['external_id'] == '3583')
+            if part == 'consumption':
+                row['semantics'][part] = {'state': 'KNOWN', 'value': {'kind': 'FOOD', 'value': {'regeneration_seconds': 360}}}
+            else:
+                captured = json.loads((yields.ROOT/yields.PATH).read_bytes())
+                proven = next(r for r in captured['records'] if r['production_binding']['external_id'] == '3583')
+                row['semantics'][part] = copy.deepcopy(proven['semantics'][part])
+                row['semantics'][part]['value']['marketable']['value'] = False
+            with self.assertRaisesRegex(ValueError, 'BOSS_REWARD_HAM_KNOWN_CUSTODY_CONFLICT'):
+                self.apply(document)
 
     def apply(self, document):
         generated={'profiles':yields.corpses.encode(document),
