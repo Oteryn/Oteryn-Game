@@ -254,7 +254,7 @@ fn scenario(case: u8) -> TestResult {
             .await?;
         }
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?;
         let journal =

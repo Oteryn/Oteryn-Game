@@ -696,12 +696,19 @@ async fn qualify_lifecycle(
     h: &Harness,
     corpse: [u8; 16],
 ) -> TestResult {
-    sqlx::raw_sql(sqlx::AssertSqlSafe(
-        include_str!("../../../../../../apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql")
-            .to_owned(),
-    ))
-    .execute(&h.pool)
-    .await?;
+    let migration = include_str!(
+        "../../../../../../apps/game-server/migrations/1300_questpc8_custody_and_npc_proofs.sql"
+    );
+    // Replay the bundled migration's idempotent corpse policy.
+    let (_, lifecycle) = migration
+        .split_once("-- Source prerequisite: corruptor_lifecycle.sql")
+        .ok_or("Corruptor lifecycle migration section")?;
+    let (lifecycle, _) = lifecycle
+        .split_once("-- Source prerequisite: questpc_npc_revision.sql")
+        .ok_or("Corruptor lifecycle migration boundary")?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(lifecycle.to_owned()))
+        .execute(&h.pool)
+        .await?;
     let schedules: Vec<(i32, i64, i64)> = sqlx::query_as("SELECT p.source_stage,p.duration_millis,p.expires_at_unix_ms-m.materialized_at FROM game_spell_field_temporal_schedules p JOIN game_item_mint_receipts m USING(item_instance_id) WHERE p.item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage")
         .bind(corpse.as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(

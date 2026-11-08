@@ -23,6 +23,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         terrain: Some(bundle::Terrain {
             kind: bundle::TerrainKind::Ground,
             walkable: Some(true),
+            blocks_projectile: None,
             ground_speed: Some(130),
         }),
     };
@@ -33,6 +34,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         terrain: Some(bundle::Terrain {
             kind: bundle::TerrainKind::Common,
             walkable: None,
+            blocks_projectile: None,
             ground_speed: None,
         }),
     });

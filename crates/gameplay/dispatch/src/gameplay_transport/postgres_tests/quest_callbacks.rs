@@ -98,6 +98,7 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     for appearance in prefix {
@@ -108,6 +109,7 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
             terrain: Some(bundle::Terrain {
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
+                blocks_projectile: None,
                 ground_speed: None,
             }),
         });
@@ -121,7 +123,7 @@ fn source_world_position_rows(chest: (u16,u16,i8), choices: &[(u16,u16,u16)], ap
             let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
             data.manifest.palette.push(bundle::PaletteEntry {
                 key, family: bundle::Family::Terrain, id,
-                terrain: Some(bundle::Terrain { kind: bundle::TerrainKind::Common, walkable: None, ground_speed: None }),
+                terrain: Some(bundle::Terrain { kind: bundle::TerrainKind::Common, walkable: None, blocks_projectile: None, ground_speed: None }),
             });
             id
         };
@@ -602,7 +604,7 @@ fn scenario(quest: bool) -> TestResult {
             ] {
                 let mut owner = deps.owner(&harness, &authority);
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.quest_catalogue = catalogue;
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
@@ -641,7 +643,7 @@ fn scenario(quest: bool) -> TestResult {
         ] {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             if quest {

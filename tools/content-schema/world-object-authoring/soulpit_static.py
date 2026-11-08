@@ -228,7 +228,8 @@ def outputs(root=ROOT):
         row.update(key=key(row["source_item_id"]), provisional=False)
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
-    marker["notes"] = marker["notes"].removesuffix(NOTE) + NOTE
+    if NOTE not in marker["notes"]:
+        marker["notes"] += NOTE
     encode = lambda value: (
         json.dumps(value, indent=2, ensure_ascii=False) + "\n"
     ).encode()

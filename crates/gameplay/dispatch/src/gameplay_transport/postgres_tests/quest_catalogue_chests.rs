@@ -992,6 +992,7 @@ pub(super) fn catalogue_source_world(
                 terrain: Some(bundle::Terrain {
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
+                    blocks_projectile: None,
                     ground_speed: None,
                 }),
             });

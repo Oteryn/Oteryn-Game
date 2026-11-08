@@ -37,9 +37,10 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // A runtime projection alone never proves a committed Item MINT in
-        // Instance custody. That durable owner is not implemented yet.
-        self.channel_id()?;
+        // Crystal data/libs/functions/boss_lever.lua:241 and boss_lever_death.lua:1-39:
+        // a real isolated boss death retains its physical body. The committed MINT
+        // caller owns durable proof; this projection requires the exact typed owner
+        // scope, generation and retained lethal occurrence below, including Instance.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self

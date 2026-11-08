@@ -19,6 +19,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
                     bundle::TerrainKind::Common
                 },
                 walkable: ground.then_some(true),
+                blocks_projectile: None,
                 ground_speed: ground.then_some(150),
             }),
         });

@@ -66,7 +66,7 @@ fn scenario() -> TestResult {
             crate::spell::SpellBook::new(vec![spell]).map_err(debug)?,
         )?;
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         {
             let mut runtime = deps.runtime.lock().await;
             runtime

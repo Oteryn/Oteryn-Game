@@ -475,7 +475,7 @@ async fn arrive_in_rings(
     rings: std::ops::RangeInclusive<i32>,
 ) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
-    let cells = owner.movement_cells;
+    let cells = &owner.movement_cells;
     let offsets = rings.flat_map(|radius| {
         (-radius..=radius).flat_map(move |dx| {
             (-radius..=radius)

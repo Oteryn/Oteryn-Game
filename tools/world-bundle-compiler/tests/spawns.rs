@@ -40,6 +40,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: walkable.then_some(150).or(Some(0)),
+            blocks_projectile: None,
         }))
     }
 

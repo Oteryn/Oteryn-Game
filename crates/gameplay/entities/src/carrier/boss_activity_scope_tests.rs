@@ -466,25 +466,48 @@ fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_c
             carrier.reward_occurrence_inner(owner, *actor, id(8)),
             Err(CarrierError::RewardPrincipalConflict)
         );
-        if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
-            let before = carrier.clone();
-            assert_eq!(
-                carrier.bind_corpse_item_inner(
-                    ExactActorRef(*actor),
-                    RuntimeCorpseItem {
-                        item_instance_id: id(10),
-                        family: "Item".into(),
-                        production_key: "fixture:corpse".into(),
-                        revision_ref: "r1".into()
-                    }
-                ),
-                Err(CarrierError::WrongScope)
-            );
-            assert_eq!(
-                *carrier, before,
-                "Instance death does not authorize Channel Ground custody"
-            );
-        }
+        let corpse_item = RuntimeCorpseItem {
+            item_instance_id: id(10),
+            family: "Item".into(),
+            production_key: "fixture:corpse".into(),
+            revision_ref: "r1".into(),
+        };
+        carrier
+            .bind_corpse_item_inner(ExactActorRef(*actor), corpse_item.clone())
+            .expect("exact Channel or Instance death binds its committed physical body");
+        assert_eq!(carrier.bound_corpses(None)[0].item, corpse_item);
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), corpse_item.clone()),
+            Ok(())
+        );
+        let mut substituted = corpse_item.clone();
+        substituted.item_instance_id = id(11);
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(*actor), substituted),
+            Err(CarrierError::CorpseProjectionConflict)
+        );
+        let mut foreign_actor = *actor;
+        foreign_actor.runtime_scope = RuntimeScopeRefV1::Channel {
+            world_id: owner.runtime_scope.world_id(),
+            channel_id: ChannelId::decode(&id(99)).expect("foreign channel"),
+        };
+        let before = carrier.clone();
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(foreign_actor), corpse_item.clone()),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+        assert_eq!(*carrier, before);
+        let stale_actor = ActorRef::from_scoped_owner_parts(
+            actor.runtime_scope,
+            ScopeOwnershipGeneration::new(99).expect("foreign generation"),
+            actor.actor_local_id,
+            actor.actor_local_generation,
+        );
+        assert_eq!(
+            carrier.bind_corpse_item_inner(ExactActorRef(stale_actor), corpse_item.clone()),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+        assert_eq!(*carrier, before);
         // Reusing the slot cannot let an old receipt address its successor.
         carrier.remove(owner, *actor).expect("retire dead slot");
         let successor = carrier

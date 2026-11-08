@@ -191,12 +191,13 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         for entry in items {
             let mut item = entry.item;
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 if item.ground.map_revision != field_revision
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
-                    || item.runtime_scope_ownership_generation != field_pin.2
+                    || (entry.field_collision.is_some()
+                        && item.runtime_scope_ownership_generation != field_pin.2)
                 {
                     continue;
                 }
@@ -214,12 +215,12 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .is_some_and(|(_, projectile)| projectile),
-                pickupable: entry.field_collision.is_none(),
+                pickupable: entry.field_collision.is_none() && !entry.native_corpse,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -1160,6 +1161,81 @@ pub(super) async fn observe_container(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn committed_corpse_survives_owner_generation_but_not_foreign_frame_or_scope()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::durability::item_loop_move::LoopGroundItem;
+        use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+        let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&id(1))?;
+        let scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(2),
+        };
+        let index = ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"],["oteryn:item.tibia.i48416","definition-r1"]]}"#)?;
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+            ("oteryn:item.tibia.i48416", 1),
+            ("oteryn:item.tibia.i3031", 0),
+        );
+        let base = Arc::new(crate::map::load(&bytes, &pins)?);
+        let pin = ([7; 32], [8; 32], 2);
+        let item = LoopGroundItem {
+            native_corpse: true,
+            field_collision: None,
+            stack_ordinal: 1,
+            item: GroundItemInstance {
+                item_instance_id: id(3),
+                world_id: world,
+                runtime_scope: scope,
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i48416".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+                quantity: 1,
+                runtime_scope_ownership_generation: 1,
+                ground: GroundPlacement {
+                    spatial_position: ground_cell(1, 0, 7),
+                    corpse_ref: vec![1],
+                    map_revision: sha256_revision(
+                        Sha256::digest(map_revision(&base).as_bytes()).into(),
+                    ),
+                    content_revision: sha256_revision(pin.0),
+                    native_room_placement_context: pin.1.to_vec(),
+                },
+                minted_transaction_id: id(4),
+            },
+        };
+        let tile = TilePos {
+            x: 1,
+            y: 0,
+            floor: -7,
+        };
+        let project =
+            |item| LoopGroundOverlay::build_for_scope(base.clone(), scope, &index, pin, vec![item]);
+        assert!(
+            project(item.clone()).overlay().has_added_item(tile),
+            "accepted corpse history survives owner replacement"
+        );
+        let mut foreign = item.clone();
+        foreign.item.ground.native_room_placement_context = vec![9; 32];
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut foreign = item.clone();
+        foreign.item.runtime_scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(5),
+        };
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut field = item;
+        field.native_corpse = false;
+        field.field_collision = Some((false, false));
+        assert!(
+            !project(field).overlay().has_added_item(tile),
+            "fields still require the live owner generation"
+        );
+        Ok(())
+    }
 
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>

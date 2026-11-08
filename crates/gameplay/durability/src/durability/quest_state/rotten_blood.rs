@@ -56,7 +56,7 @@ struct Mutation<'a> {
     occurrence: &'a [u8],
     binding: [u8; 32],
     kind: i16,
-    source_death: Option<&'a [u8; 52]>,
+    source_death: Option<&'a [u8]>,
     source_terminal: Option<&'a [u8; 32]>,
     party_minimum: Option<u8>,
     dealt_damage: Option<bool>,
@@ -188,7 +188,7 @@ impl DurabilityRoot {
 pub async fn apply_rotten_blood_kill_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
-    death_key: &[u8; 52],
+    death_key: &[u8],
     creature: &str,
     participants: &[(CurrentCharacterGameplayFence, bool)],
 ) -> Result<()> {
@@ -204,7 +204,7 @@ pub async fn apply_rotten_blood_kill_in_transaction(
     let source: Option<(String, bool, i16)> = sqlx::query_as(
         "SELECT creature_key,created_xact_id=pg_current_xact_id(),principal_count FROM game_party_kill_xp_receipts WHERE death_key=$1",
     )
-    .bind(death_key.as_slice())
+    .bind(death_key)
     .fetch_optional(&mut **tx)
     .await
     .map_err(DurabilityError::from)?;
@@ -220,7 +220,7 @@ pub async fn apply_rotten_blood_kill_in_transaction(
     let binding = kill_binding(death_key, boss, participants);
     let occurrence = kill_occurrence(death_key);
     let memberships=sqlx::query("SELECT character_id::text,party_id::text FROM game_party_kill_xp_members WHERE death_key=$1 ORDER BY character_id")
-        .bind(death_key.as_slice()).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
+        .bind(death_key).fetch_all(&mut **tx).await.map_err(DurabilityError::from)?;
     if memberships.len()!=participants.len() {
         return Err(CharacterProgressionError::AuthorityRejected);
     }
@@ -236,12 +236,8 @@ pub async fn apply_rotten_blood_kill_in_transaction(
     }
     let mut locked = Vec::with_capacity(participants.len());
     for &(fence, damage) in participants {
-        let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
-            return Err(CharacterProgressionError::AuthorityRejected);
-        };
-        if death_key[..16] != *world_id.as_bytes()
-            || death_key[16..32] != *channel_id.as_bytes()
-            || death_key[32..40] != fence.scope_ownership_generation.get().to_be_bytes()
+        if super::super::party_kill_xp::decoded_death_scope(death_key)
+            != Some((fence.runtime_scope, fence.scope_ownership_generation.get()))
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -265,7 +261,7 @@ pub async fn apply_rotten_blood_kill_in_transaction(
              ON x.reward_occurrence_id=m.reward_occurrence_id AND x.character_id=m.character_id \
              WHERE m.death_key=$1 AND m.character_id=encode($2,'hex')::uuid",
         )
-        .bind(death_key.as_slice())
+        .bind(death_key)
         .bind(fence.character_id.as_bytes().as_slice())
         .fetch_optional(&mut **tx)
         .await
@@ -475,13 +471,13 @@ fn cleanse_binding(character: CharacterId, mode: CleanseMode) -> [u8; 32] {
         .finalize().into()
 }
 
-fn kill_occurrence(death: &[u8; 52]) -> Vec<u8> {
+fn kill_occurrence(death: &[u8]) -> Vec<u8> {
     let mut out = b"rotten-blood/kill/v1".to_vec();
     out.extend_from_slice(death);
     out
 }
 
-fn kill_binding(death: &[u8; 52], boss: RottenBloodBoss, participants: &[(CurrentCharacterGameplayFence, bool)]) -> [u8; 32] {
+fn kill_binding(death: &[u8], boss: RottenBloodBoss, participants: &[(CurrentCharacterGameplayFence, bool)]) -> [u8; 32] {
     let mut hash = Sha256::new().chain_update(b"rotten-blood/kill/v1").chain_update(death).chain_update([boss as u8]);
     for (fence, damage) in participants {
         hash.update(fence.character_id.as_bytes());
@@ -552,7 +548,7 @@ async fn write_transition(
          FROM game_character_progression_state s WHERE s.character_id=encode($1,'hex')::uuid \
          AND s.character_revision=$9::text::numeric",
     ).bind(character.as_bytes().as_slice()).bind(occurrence).bind(binding.as_slice()).bind(kind)
-        .bind(source_death.map(|key| key.as_slice())).bind(before_json).bind(result_json)
+        .bind(source_death).bind(before_json).bind(result_json)
         .bind(changed.then(|| next.to_string())).bind(root.revision.to_string())
         .bind(party_minimum.map(i16::from)).bind(dealt_damage).bind(source_terminal.map(|value|value.as_slice())).execute(&mut **tx).await?;
     if inserted.rows_affected() != 1 {
@@ -603,4 +599,19 @@ pub(crate) async fn read_taints_in_transaction(
 ) -> StoredResult<(u8, u8, bool)> {
     let state = read_state(tx, character).await?;
     Ok((state.regular_taints(), state.child_flags(), state.final_taint()))
+}
+
+#[cfg(test)]
+mod death_identity_tests {
+    use super::*;
+
+    #[test]
+    fn rotten_death_occurrence_preserves_instance_tag_and_channel_bytes() {
+        let channel = [1_u8; 52];
+        let mut instance = vec![2];
+        instance.extend_from_slice(&channel);
+        assert_ne!(kill_occurrence(&channel), kill_occurrence(&instance));
+        assert!(kill_occurrence(&instance).ends_with(&instance));
+        assert!(kill_occurrence(&channel).ends_with(&channel));
+    }
 }

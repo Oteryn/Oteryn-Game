@@ -400,7 +400,7 @@ async fn relocate(
     }
     let proof = crate::map::floor::prepare_quest_callback_teleport(
         &runtime,
-        owner.movement_cells,
+        &owner.movement_cells,
         actor,
         session,
         expected,

@@ -365,6 +365,7 @@ pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
                     terrain: Some(bundle::Terrain {
                         kind: bundle::TerrainKind::Common,
                         walkable: None,
+                        blocks_projectile: None,
                         ground_speed: None,
                     }),
                 });

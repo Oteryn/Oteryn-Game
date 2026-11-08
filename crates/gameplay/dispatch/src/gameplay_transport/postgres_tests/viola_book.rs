@@ -128,7 +128,7 @@ fn scenario() -> TestResult {
         {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             let mut stale = admitted;
@@ -145,7 +145,7 @@ fn scenario() -> TestResult {
         {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             let mut wrong = target.clone();
@@ -203,7 +203,7 @@ fn scenario() -> TestResult {
         {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
@@ -222,7 +222,7 @@ fn scenario() -> TestResult {
         for _ in 0..2 {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
@@ -246,7 +246,7 @@ fn scenario() -> TestResult {
             sqlx::query(sqlx::AssertSqlSafe(format!("CREATE OR REPLACE FUNCTION game_viola_book_now_ms() RETURNS BIGINT LANGUAGE SQL VOLATILE AS 'SELECT {now}::bigint'"))).execute(&h.pool).await?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             if expected == UseDisposition::Committed {
@@ -260,7 +260,7 @@ fn scenario() -> TestResult {
         {
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
@@ -365,6 +365,7 @@ pub(super) fn source_world() -> TestResult<crate::map::boot::BundleWorld> {
                     bundle::TerrainKind::Common
                 },
                 walkable: (id == 0).then_some(true),
+                blocks_projectile: None,
                 ground_speed: (id == 0).then_some(150),
             }),
         });

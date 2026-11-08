@@ -58,6 +58,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
                     bundle::TerrainKind::Wall
                 },
                 walkable: None,
+                blocks_projectile: None,
                 ground_speed: None,
             }),
         });

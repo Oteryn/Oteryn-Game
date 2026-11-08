@@ -862,7 +862,7 @@ async fn field_scenario_inner(
     };
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
@@ -1852,16 +1852,27 @@ async fn field_scenario_inner(
             let periodic_now = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
-                let state = states.get(&runtime, target, target_session).ok_or("player state")?;
-                let started_at = state.owned_conditions().instances().iter()
-                    .find(|condition| condition.provenance().source.as_deref()
-                        .is_some_and(|source| source.starts_with("player:field:")))
+                let state = states
+                    .get(&runtime, target, target_session)
+                    .ok_or("player state")?;
+                let started_at = state
+                    .owned_conditions()
+                    .instances()
+                    .iter()
+                    .find(|condition| {
+                        condition
+                            .provenance()
+                            .source
+                            .as_deref()
+                            .is_some_and(|source| source.starts_with("player:field:"))
+                    })
                     .map_or(owner.owner_now().get(), |condition| condition.started_at());
                 // Periodic evaluation truncates to milliseconds; round the
                 // application instant up so energy's eleven-second tick is due.
                 let started_at = started_at.div_ceil(1_000) * 1_000;
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(started_at)
-                    .checked_add(11_000_000).map_err(debug)?
+                    .checked_add(11_000_000)
+                    .map_err(debug)?
             };
             let mut interrupted = if matches!(
                 scenario,
@@ -1882,7 +1893,9 @@ async fn field_scenario_inner(
                 None
             };
             eprintln!("FIELD-RUNES periodic begin {scenario:?}");
-            let tick = owner.tick_spell_periodic_at(target, target_session, periodic_now).await;
+            let tick = owner
+                .tick_spell_periodic_at(target, target_session, periodic_now)
+                .await;
             eprintln!("FIELD-RUNES periodic returned {scenario:?}");
             if scenario == Scenario::PeriodicPermissionChange {
                 // Change exactly the current source liveness at the retained
@@ -2202,6 +2215,7 @@ fn field_world_inner(
                     kind: TerrainKind::Ground,
                     walkable: Some(true),
                     ground_speed: Some(150),
+                    blocks_projectile: None,
                 }),
             },
             PaletteEntry {
@@ -2212,6 +2226,7 @@ fn field_world_inner(
                     kind: TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             },
         ],
@@ -2443,16 +2458,30 @@ async fn qualify_creature_residual(
     output: u32,
 ) -> TestResult {
     let (before, periodic_now) = {
-        let snapshot = owner.runtime.lock().await.companion_snapshot(creature).map_err(debug)?;
-        let started_at = snapshot.state.conditions.instances().iter()
-            .find(|condition| condition.provenance().source_kind
-                == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field)
-            .ok_or("creature field condition")?.started_at();
+        let snapshot = owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(creature)
+            .map_err(debug)?;
+        let started_at = snapshot
+            .state
+            .conditions
+            .instances()
+            .iter()
+            .find(|condition| {
+                condition.provenance().source_kind
+                    == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field
+            })
+            .ok_or("creature field condition")?
+            .started_at();
         // Match the player's eleven-second residual window, independent of
         // real time spent projecting and expiring the durable field.
         let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
             started_at.div_ceil(1_000) * 1_000,
-        ).checked_add(11_000_000).map_err(debug)?;
+        )
+        .checked_add(11_000_000)
+        .map_err(debug)?;
         (snapshot.health, now)
     };
     owner

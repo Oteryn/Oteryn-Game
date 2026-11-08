@@ -10,10 +10,11 @@ import ast
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-from historical_world_owner_context import GROUND, MARKER, original_marker
+from historical_world_owner_context import GROUND, MARKER, SUGAR_GROUND, original_marker
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools/content-migration"))
@@ -90,6 +91,7 @@ ALLOWED = {
     ),
     "crates/gameplay/content/src/content/item_name_promotion.rs",
     MARKER,
+    "tools/content-migration/validate_world_project_v2_to_tree.py",
     "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
     "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
     *(
@@ -125,8 +127,11 @@ def refresh_list(root, pins, additional_owner_inputs=()):
     if any(pin["path"] == MARKER for pin in pins):
         for path in (
             "content/world/terrain/" + GROUND,
+            "content/world/terrain/" + SUGAR_GROUND,
             HERE + "historical_world_owner_context.py",
             *additional_owner_inputs,
+            "tools/content-schema/world-object-authoring/sugar_room.py",
+            "tools/content-schema/world-object-authoring/samples/sugar-room-source-flags.json",
         ):
             raw = (root / path).read_bytes()
             pins.append({"path": path, "sha256": digest(raw), "bytes": len(raw)})
@@ -139,12 +144,14 @@ def refresh(
     base_head="4224c44239d0913e6dc14b6e30bcb18e1b248c43",
     reason="W15c owner footprint; original source records and closed scope unchanged",
     generator=HERE + Path(__file__).name,
+    require_new_or_identical=False,
+    regenerate_owned_successor=False,
 ):
     module, kind, source, expected, version = recipe
     raw = (root / source).read_bytes()
     if digest(raw) != expected:
         raise ValueError(f"frozen qualification changed: {source}")
-    original_marker(root)  # Exact qualified W15c marker and ground pair only.
+    original_marker(root)  # Replay both qualified appearance-only owner additions.
     packet = json.loads(raw)
     for key in (
         "input_pins",
@@ -159,7 +166,13 @@ def refresh(
             for path, previous in pins.items():
                 pins[path] = refresh_pin(root, path, previous)[0]
             if MARKER in pins:
-                for path in additional_owner_inputs:
+                for path in (
+                    "content/world/terrain/" + SUGAR_GROUND,
+                    HERE + "historical_world_owner_context.py",
+                    "tools/content-schema/world-object-authoring/sugar_room.py",
+                    "tools/content-schema/world-object-authoring/samples/sugar-room-source-flags.json",
+                    *additional_owner_inputs,
+                ):
                     pins[path] = digest((root / path).read_bytes())
     if "world_owner_baseline" in packet:
         refresh_list(
@@ -192,7 +205,23 @@ def refresh(
         ).encode()
     else:
         encoded = (json.dumps(packet, indent=2, ensure_ascii=False) + "\n").encode()
-    (root / output).write_bytes(encoded)
+    destination = root / output
+    if (
+        require_new_or_identical
+        and destination.exists()
+        and destination.read_bytes() != encoded
+    ):
+        # Only this producer's exact successor lineage may be recomputed. The
+        # candidate above was rebuilt from the hash-checked frozen source, so
+        # refreshed input pins never copy mutable successor source facts.
+        existing = json.loads(destination.read_bytes())
+        if (
+            not regenerate_owned_successor
+            or existing.get("input_footprint_refresh")
+            != packet["input_footprint_refresh"]
+        ):
+            raise ValueError(f"successor already exists with different bytes: {output}")
+    destination.write_bytes(encoded)
     compiler = root / HERE / (module + ".py")
     text = compiler.read_text()
     # Accept reruns from either original or refreshed constants, without changing checks.
@@ -217,10 +246,53 @@ def refresh(
     print(output)
 
 
+def refresh_consumer_pins(root):
+    """Repin exact consumers only after their closed source producers rebuild."""
+    path = root / "tools/content-migration/validate_world_project_v2_to_tree.py"
+    text = path.read_text()
+    for module, packet, code, expected_count in (
+        (
+            "lower_item_hit_magic_packet",
+            "OTV2-20261002-item-hit-magic-promotion-v1.json",
+            "HIT_MAGIC_PACKET_DIGEST",
+            1,
+        ),
+        (
+            "lower_item_use_observation_packet",
+            "OTV2-20261002-item-use-observation-promotion-v1.json",
+            "USE_OBSERVATION_PACKET_DIGEST",
+            2,
+        ),
+    ):
+        subprocess.run(
+            [sys.executable, str(root / HERE / (module + ".py")), "--check"], check=True
+        )
+        actual = digest((root / "docs/agents/evidence" / packet).read_bytes())
+        pattern = (
+            r'(hashlib\.sha256\(raw\)\.hexdigest\(\) == ")[0-9a-f]{64}(", "'
+            + code
+            + '")'
+        )
+        text, count = re.subn(
+            pattern, lambda match, value=actual: match[1] + value + match[2], text
+        )
+        if count != expected_count:
+            raise ValueError(f"consumer pin shape changed: {code}")
+    path.write_text(text)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("target", type=int, choices=range(len(RECIPES)))
+    parser.add_argument("target", type=int, choices=range(len(RECIPES)), nargs="?")
+    parser.add_argument("--consumer-pins", action="store_true")
     args = parser.parse_args()
+    if args.consumer_pins:
+        if args.target is not None:
+            parser.error("--consumer-pins does not take a receipt target")
+        refresh_consumer_pins(ROOT)
+        return
+    if args.target is None:
+        parser.error("a receipt target or --consumer-pins is required")
     refresh(ROOT, RECIPES[args.target])
 
 

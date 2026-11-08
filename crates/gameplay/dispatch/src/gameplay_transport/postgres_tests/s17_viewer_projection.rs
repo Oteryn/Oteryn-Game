@@ -60,7 +60,7 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                         .movement_cells(deps.room.movement_cells())
                         .map_err(debug)?;
                     let mut owner = deps.owner(&h, &authority);
-                    owner.movement_cells = &cells;
+                    owner.movement_cells = (&cells).into();
                     owner.active_generation = Some(generation);
                     let position = MovementLocalPosition {
                         x: i32::from(DOOR_AT.x) - 1,

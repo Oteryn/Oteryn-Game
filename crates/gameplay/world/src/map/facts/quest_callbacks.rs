@@ -507,6 +507,43 @@ impl BundleFacts {
         true
     }
 
+    /// Crystal data-global/scripts/systems/hazard_primal.lua:53,68 removes
+    /// only the pod that still exists.
+    /// The physical owner supplies this exact volatile occurrence, position and
+    /// appearance; base/DUR-03/world-change identities cannot be removed here.
+    pub fn remove_movement_item(&self, pos: TilePos, key: u64, appearance: u16) -> bool {
+        if key >> 62 != 2 {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        let Some(index) = states.movement_items.get(&pos).and_then(|entries| {
+            entries.iter().position(|entry| {
+                matches!(entry.source,
+                view::EntrySource::Added(id) if id.get()==key)
+                    && entry.facts.appearance_id == appearance
+            })
+        }) else {
+            return false;
+        };
+        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        let states = Arc::make_mut(&mut states);
+        let Some(entries) = states.movement_items.get_mut(&pos) else {
+            return false;
+        };
+        entries.remove(index);
+        if entries.is_empty() {
+            states.movement_items.remove(&pos);
+        }
+        states.changed.remove(&key);
+        states.movement_decays.retain(|(_, entry), _| *entry != key);
+        states.movement_sequence = sequence;
+        true
+    }
+
     /// W05b (Crystal thawing.lua:21-27): a daily world change's volatile Item, placed at
     /// Channel boot; no magic effect. Lives until the Channel ends, like other callback items.
     /// Author a server-owned shared callback object through the existing Added
@@ -1027,6 +1064,58 @@ impl BundleFacts {
             .and_then(|k| states.passable.get(&k).copied())
             .unwrap_or_else(|| tile.walkable());
         !ground_walkable || if changed { blocked } else { baseline }
+    }
+}
+
+#[cfg(test)]
+mod primal_pod_removal_tests {
+    use super::*;
+    use std::num::NonZeroU32;
+
+    #[test]
+    fn volatile_pod_removal_is_exact_and_frees_the_physical_occurrence() -> Result<(), String> {
+        let mut facts = BundleFacts::default();
+        facts.movement_definitions.insert(
+            39176,
+            EntryFacts {
+                definition: MapDefinition::Item(NonZeroU32::MIN),
+                terrain_kind: None,
+                appearance_id: 39176,
+                blocks_projectile: false,
+                pickupable: false,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            },
+        );
+        let position = TilePos {
+            x: 1,
+            y: 2,
+            floor: -7,
+        };
+        assert!(facts.create_movement_item(position, 39176, 0, || true));
+        assert!(facts.create_movement_item(position, 39176, 0, || true));
+        let key = facts
+            .callbacks
+            .lock()
+            .map_err(|_| "callback lock")?
+            .movement_items
+            .get(&position)
+            .and_then(|entries| entries.first())
+            .and_then(|entry| match entry.source {
+                view::EntrySource::Added(id) => Some(id.get()),
+                _ => None,
+            })
+            .ok_or("created pod occurrence")?;
+        assert!(!facts.remove_movement_item(TilePos { x: 2, ..position }, key, 39176));
+        assert!(!facts.remove_movement_item(position, key, 39175));
+        assert!(!facts.remove_movement_item(position, key | (1 << 62), 39176));
+        assert!(facts.remove_movement_item(position, key, 39176));
+        assert!(!facts.remove_movement_item(position, key, 39176));
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        assert_eq!(state.movement_items.get(&position).map(Vec::len), Some(1));
+        assert_eq!(state.movement_sequence, 3);
+        Ok(())
     }
 }
 

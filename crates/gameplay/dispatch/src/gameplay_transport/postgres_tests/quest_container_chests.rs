@@ -448,7 +448,7 @@ fn scenario_case(
                 );
             }
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             let mut stale = admitted;
@@ -589,7 +589,7 @@ fn scenario_case(
                     );
                 }
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
                 assert_eq!(
@@ -635,7 +635,7 @@ fn scenario_case(
                 );
             }
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             assert_eq!(
@@ -680,7 +680,7 @@ fn scenario_case(
                     );
                 }
                 owner.active_generation = Some(generation);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 owner.admit_progression_session(&mut admitted).await;
                 deps.initialize(&owner).await;
                 if cold_replay {

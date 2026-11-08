@@ -336,6 +336,7 @@ fn world_ordinal(
             kind: bundle::TerrainKind::Common,
             walkable: None,
             ground_speed: None,
+            blocks_projectile: None,
         }),
     });
     if let Some(appearance) = callback
@@ -351,6 +352,7 @@ fn world_ordinal(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -390,6 +392,7 @@ fn world_ordinal(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
         }
@@ -425,6 +428,7 @@ fn world_ordinal(
                     kind: bundle::TerrainKind::Common,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
             cells
@@ -471,6 +475,7 @@ fn world_ordinal(
                         kind: bundle::TerrainKind::Common,
                         walkable: None,
                         ground_speed: None,
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -495,6 +500,7 @@ fn world_ordinal(
                     kind: bundle::TerrainKind::Wall,
                     walkable: None,
                     ground_speed: None,
+                    blocks_projectile: None,
                 }),
             });
             index
@@ -528,6 +534,7 @@ fn world_ordinal(
                         } else {
                             Some(150)
                         },
+                        blocks_projectile: None,
                     }),
                 });
             }
@@ -577,6 +584,7 @@ fn world_ordinal(
                 },
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
     }
@@ -632,6 +640,7 @@ fn world_ordinal(
                 kind: bundle::TerrainKind::Common,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             }),
         });
         cells

@@ -35,6 +35,7 @@ pub(super) fn world(
                     bundle::TerrainKind::Common
                 },
                 walkable: if *appearance == 432 { Some(true) } else { None },
+                blocks_projectile: None,
                 ground_speed: if *appearance == 432 { Some(150) } else { None },
             }),
         });

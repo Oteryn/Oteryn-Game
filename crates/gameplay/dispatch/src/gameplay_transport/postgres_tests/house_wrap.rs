@@ -101,7 +101,7 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     );
     let deps = Dependencies::with_content(pin, base.room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     // This fixture boots the bounded command set it will carry through the real handoff.
@@ -272,7 +272,7 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     // New composed owner / command directory forces durable replay, bypassing cached ingress.
     drop(owner);
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     admitted.continuity.next_command_id = 1;

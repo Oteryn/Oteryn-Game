@@ -49,7 +49,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(UseDisposition::Rejected);
         }
-        let proof = prepare_source_scene(runtime, self.movement_cells, sources, map.facts.doors())
+        let proof = prepare_source_scene(runtime, &self.movement_cells, sources, map.facts.doors())
             .map_err(|_| UseDisposition::NotPossible)?;
         if proof.observations().iter().any(|(actor, session, _)| {
             session.is_some_and(|session| {

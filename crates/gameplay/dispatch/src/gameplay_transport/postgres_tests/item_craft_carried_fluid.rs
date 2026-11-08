@@ -207,7 +207,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.rooms=crate::gameplay_transport::SeamRooms::new(None,Some(action_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -470,7 +470,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
                 // immutable item-action receipt even though input handles changed.
                 let mut restarted = deps.owner(&harness, &authority);
                 restarted.active_generation = Some(active);
-                restarted.movement_cells = &cells;
+                restarted.movement_cells = (&cells).into();
                 deps.initialize(&restarted).await;
                 let (_, recovered, _) = exchange_carried(&restarted, admitted, 1, &actual, None, None).await?;
                 assert_eq!(recovered, UseDisposition::Committed);
@@ -537,7 +537,7 @@ fn scenario(case: Case, name: &str) -> TestResult {
             // Reconstruct the owner and replay the original command on the original admission.
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(active);
-            restarted.movement_cells = &cells;
+            restarted.movement_cells = (&cells).into();
             deps.initialize(&restarted).await;
             let output = "oteryn:item.tibia.i3604";
             let (_, replay, _) =

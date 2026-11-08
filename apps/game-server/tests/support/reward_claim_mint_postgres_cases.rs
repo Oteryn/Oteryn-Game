@@ -1606,15 +1606,15 @@ fn database_rejects_unproven_reward_claim_rows() -> TestResult {
             // MINT receipt of the current transaction.
             vec![
                 format!(
-                    "INSERT INTO game_item_mint_receipts(death_world_id, death_channel_id, \
+                    "INSERT INTO game_item_mint_receipts(death_scope_kind,death_scope_key,death_world_id, death_channel_id, \
                        death_scope_ownership_generation, death_actor_local_id, \
                        death_actor_local_generation, loot_table_family, \
                        loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                        draw_ordinal, intent_binding, transaction_id, event_id, \
                        item_instance_id, occurred_at, envelope_sha256, committed_at) \
-                     VALUES ('{world}', '{}', 1, 900, 1, 'LootTable', 'fixture:loot.forged', \
+                     VALUES (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{0}'::uuid,NULL),'{world}', '{0}', 1, 900, 1, 'LootTable', 'fixture:loot.forged', \
                        'definition-r1', 'fixture:purpose', 0, decode(repeat('ab',33),'hex'), \
-                       '{}', '{}', '{}', 1000, sha256(decode('ab','hex')), 1000)",
+                       '{1}', '{2}', '{3}', 1000, sha256(decode('ab','hex')), 1000)",
                     uuid(id(CHANNEL)),
                     uuid(id(175)),
                     uuid(id(176)),

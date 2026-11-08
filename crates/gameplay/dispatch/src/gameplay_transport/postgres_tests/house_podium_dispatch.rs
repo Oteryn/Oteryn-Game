@@ -108,7 +108,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     );
     let deps = Dependencies::with_content(pin, base.room, base.spells)?;
     let mut owner = deps.owner(h, &authority);
-    owner.movement_cells = &cells;
+    owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     const OFFERS: &[crate::gameplay_transport::capabilities::OfferedCapability] = &[

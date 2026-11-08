@@ -105,6 +105,31 @@ pub struct FloorTable {
 }
 
 impl FloorTable {
+    pub(super) fn activity_region(&self, bounds: [i32; 6]) -> Self {
+        let inside = |pos| super::activity_contains(bounds, pos);
+        Self {
+            tiles: self
+                .tiles
+                .iter()
+                .filter(|(pos, _)| inside(**pos))
+                .map(|(pos, mask)| (*pos, *mask))
+                .collect(),
+            teleports: self
+                .teleports
+                .iter()
+                .filter(|(from, to)| inside(**from) && inside(**to))
+                .map(|(from, to)| (*from, *to))
+                .collect(),
+            teleport_sources: self
+                .teleport_sources
+                .iter()
+                .filter(|(from, _)| {
+                    inside(**from) && self.teleports.get(*from).is_some_and(|to| inside(*to))
+                })
+                .map(|(from, source)| (*from, *source))
+                .collect(),
+        }
+    }
     pub fn add(&mut self, pos: TilePos, mask: u8) {
         if mask != 0 {
             *self.tiles.entry(pos).or_insert(0) |= mask;
@@ -716,6 +741,46 @@ mod tests {
     #![allow(clippy::expect_used, clippy::panic)]
     use super::*;
     use std::collections::BTreeSet;
+
+    #[test]
+    fn activity_region_preserves_teleport_source_transform_fence() {
+        let from = TilePos {
+            x: 33430,
+            y: 31537,
+            floor: -11,
+        };
+        let to = TilePos {
+            x: 33457,
+            y: 31531,
+            floor: -11,
+        };
+        let outgoing = TilePos { x: 33431, ..from };
+        let outside = TilePos { x: 33470, ..to };
+        let orphan = TilePos { x: 33432, ..from };
+        let mut table = FloorTable::default();
+        table.add_teleport(from, to);
+        table.bind_teleport_source(from, 1, 1949);
+        table.add_teleport(outgoing, outside);
+        table.bind_teleport_source(outgoing, 2, 1949);
+        table.add_teleport(outside, to);
+        table.bind_teleport_source(outside, 3, 1949);
+        table.bind_teleport_source(orphan, 4, 1949);
+        let room = table.activity_region([33420, 31520, 33460, 31560, 11, 11]);
+        assert_eq!(room.teleport_count(), 1);
+        assert_eq!(room.teleport_sources.len(), 1);
+        assert_eq!(
+            room.teleport_for_source(from, |ordinal| {
+                assert_eq!(ordinal, 1);
+                Some(1949)
+            }),
+            Some(to)
+        );
+        assert_eq!(room.teleport_for_source(from, |_| Some(1950)), None);
+        assert_eq!(room.teleport_for_source(from, |_| None), None);
+        assert_eq!(room.teleport(outgoing), None);
+        assert_eq!(room.teleport(outside), None);
+        assert!(!room.teleport_sources.contains_key(&orphan));
+    }
 
     #[test]
     fn worldchg_native_teleport_tracks_exact_source_transform_and_restore() {

@@ -75,6 +75,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
                     bundle::TerrainKind::Common
                 },
                 walkable,
+                blocks_projectile: None,
                 ground_speed: walkable.map(|value| if value { 150 } else { 0 }),
             }),
         });

@@ -26,6 +26,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
         terrain: Some(bundle::Terrain {
             kind: bundle::TerrainKind::Ground,
             walkable: Some(true),
+            blocks_projectile: None,
             ground_speed: Some(130),
         }),
     };
@@ -48,6 +49,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
                 Some(bundle::Terrain {
                     kind: bundle::TerrainKind::Ground,
                     walkable: Some(*appearance != 4611),
+                    blocks_projectile: None,
                     ground_speed: Some(match appearance {
                         4611 => 0,
                         5770 => 90,
@@ -58,6 +60,7 @@ pub(super) fn torch_world() -> TestResult<crate::map::boot::BundleWorld> {
                 Some(bundle::Terrain {
                     kind: bundle::TerrainKind::Border,
                     walkable: None,
+                    blocks_projectile: None,
                     ground_speed: None,
                 })
             } else {

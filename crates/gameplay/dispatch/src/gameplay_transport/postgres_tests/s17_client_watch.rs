@@ -81,7 +81,7 @@ fn scenario(case: u8) -> TestResult {
             let result=async {
                 let seal=h.recovery.seal_current().map_err(debug)?;
                 let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
-                let mut owner=deps.owner(&h,&authority);owner.movement_cells=&cells;owner.active_generation=Some(generation);
+                let mut owner=deps.owner(&h,&authority);owner.movement_cells=crate::gameplay_transport::activity_runtime::SharedOwner::Borrowed(&cells);owner.active_generation=Some(generation);
                 deps.initialize(&owner).await;
                 let current=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(deps.admitted.game_session_id).await?.0;
                 let mut admitted=deps.admitted;
