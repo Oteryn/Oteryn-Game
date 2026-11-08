@@ -138,3 +138,7 @@ impl SettingsState {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n05.rs"]
+mod e2e_n05;

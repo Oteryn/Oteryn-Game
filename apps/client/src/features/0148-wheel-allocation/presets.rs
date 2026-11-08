@@ -158,3 +158,7 @@ fn open_window(shared: &Arc<Mutex<Mailbox>>, commands: &UnboundedSender<PlayComm
         lock(&shared).wheel.presets_open = false;
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n02.rs"]
+mod e2e_n02;

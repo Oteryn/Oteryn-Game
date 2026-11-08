@@ -416,3 +416,7 @@ mod windows {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n03.rs"]
+mod e2e_n03;
