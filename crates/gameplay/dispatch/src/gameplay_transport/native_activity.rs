@@ -55,7 +55,6 @@ pub(super) struct NativeActivityAttempt<'a> {
     boss_pad_wire: Option<[u8; 32]>,
     pub(super) boss_pad_prefix:
         Option<crate::durability::activity_handoff::boss_room::QualifiedBossPadPrefix>,
-    soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
     sources: Vec<AdmittedSession>,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
@@ -361,23 +360,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .await
     }
 
-    pub(super) async fn enter_native_soulpit_activity(
-        &self,
-        request: ActivityEnterRequest,
-        core: crate::durability::soulpit::SoulpitEntryRequest,
-    ) -> Result<NativeActivityOutcome, ()> {
-        self.enter_native_activity_inner(request, false, Some(core), None)
-            .await
-    }
-
-    pub(super) async fn enter_native_activity(
-        &self,
-        request: ActivityEnterRequest,
-        boss_room: bool,
-    ) -> Result<NativeActivityOutcome, ()> {
-        self.enter_native_activity_inner(request, boss_room, None, None)
-            .await
-    }
     pub(super) async fn enter_native_soulpit(
         &self,
         request: ActivityEnterRequest,
@@ -820,7 +802,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 soulpit,
                 boss_pad_wire,
                 boss_pad_prefix,
-                soulpit,
                 sources,
                 physical,
                 spells: held,

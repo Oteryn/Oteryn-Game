@@ -123,6 +123,9 @@ impl FreshAdmissionAuthority for SlowOwner {
             scope_generation: 1,
             connection_generation: 1,
             lease_generation: 1,
+            // This authority-double transport fixture resumes with a bound
+            // command1; acknowledged production handoffs have separate tests.
+            requires_ack: false,
             selection: destination
                 .continuity
                 .selected_capabilities

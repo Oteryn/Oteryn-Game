@@ -225,6 +225,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     runtime,
                     door,
                     ActivityRuntimeAssets {
+                        activity_room: Some(owned_room.clone()),
                         movement_cells: template_room.movement_cells(),
                         rooms: SeamRooms::new(None, Some(template_room)),
                     },

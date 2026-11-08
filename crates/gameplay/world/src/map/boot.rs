@@ -902,6 +902,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             spell_tiles: Arc::clone(&source.map.spell_tiles),
         });
         Some(BundleCollisionIndex(Arc::new(BundleCollisionData {
+            source_bases: Arc::clone(&source.source_bases),
             scope: source.scope.clone(),
             base: Arc::clone(&source.base),
             blocked: Arc::clone(&source.blocked),

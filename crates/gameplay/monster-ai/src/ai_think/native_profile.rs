@@ -459,10 +459,12 @@ mod soulpit_preflight_tests {
                         species: creature.key.clone(),
                         boss_ability: BossAbility::Overpower,
                         now_micros: 0,
-                        positions: std::array::from_fn(|index| MovementLocalPosition {
-                            x: 32363 + index as i32,
-                            y: 31133,
-                            floor: 8,
+                        positions: std::array::from_fn(|index| {
+                            Some(MovementLocalPosition {
+                                x: 32363 + index as i32,
+                                y: 31133,
+                                floor: 8,
+                            })
                         }),
                     },
                     |_| true,

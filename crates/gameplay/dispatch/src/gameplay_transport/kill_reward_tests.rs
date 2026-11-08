@@ -158,7 +158,6 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         creature: "fixture:rat".into(),
         soulpit_experience: None,
         row: Some(row(drops)),
-        soulpit_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {
@@ -1508,7 +1507,7 @@ fn pubproj_physical_source_invalid_key_and_regressed_clock_hold_coverage() {
 #[test]
 fn srx3_soulpit_boss_xp_is_rowless_and_never_ordinary_progression() {
     let ordinary = pending(2, 50, 3, 1);
-    assert_eq!(ordinary.base_experience(), Some(ExactI64::new(5)));
+    assert_eq!(ordinary.experience(), Some(ExactI64::new(5)));
     let mut boss = PendingKillSettlement::without_materialization(
         ordinary.facts,
         "oteryn:creature.rat".into(),
@@ -1519,7 +1518,7 @@ fn srx3_soulpit_boss_xp_is_rowless_and_never_ordinary_progression() {
     );
     boss.soulpit_experience = Some(ExactI64::new(140));
     assert_eq!(
-        boss.base_experience(),
+        boss.experience(),
         Some(ExactI64::new(140)),
         "Crystal stack40 grants 28x base XP independently of any corpse qualification"
     );
@@ -1532,7 +1531,7 @@ fn srx3_soulpit_boss_xp_is_rowless_and_never_ordinary_progression() {
     assert!(boss.grizzly.is_none());
     boss.soulpit_experience = None;
     assert_eq!(
-        boss.base_experience(),
+        boss.experience(),
         None,
         "ordinary rowless deaths do not invent XP"
     );

@@ -1,6 +1,6 @@
 //! Historical source-scene fixtures call the canonical #3036 owner, never a second writer.
 use super::super::ComposedFreshAdmission;
-impl ComposedFreshAdmission<'_, '_, '_> {
+impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(in crate::gameplay_transport) async fn drive_shared_soulpits(
         &self,
         now: u64,
@@ -12,7 +12,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
     pub(in crate::gameplay_transport) async fn drive_one_soulpit(
         &self,
-        registered: &super::super::activity_runtime::RegisteredRuntime<'_>,
+        registered: &super::super::activity_runtime::RegisteredRuntime<'a>,
         now: u64,
         global: bool,
     ) -> Result<Option<u64>, super::runtime::SoulpitRuntimeError> {

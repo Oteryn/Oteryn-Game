@@ -85,7 +85,7 @@ impl<S: SessionStream> Session<S> {
                 .last_server_sequence
                 .checked_add(1)
                 .ok_or(FoundationProtocolError::ServerSequenceGap)?;
-            self.finish_activity_scope(receipt, source_sequence, begin)
+            self.finish_activity_scope(receipt, source_sequence, begin, row.payload)
                 .await?;
             return Ok(Some(SessionError::ScopeChanged));
         }

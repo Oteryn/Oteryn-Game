@@ -82,7 +82,17 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                     y: 31151,
                     floor: 8,
                 };
+            let (family, production_key, revision_ref): (String, String, String) =
+                sqlx::query_as("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(production_key, core_key);
+            assert!(native.item_policy(&production_key, &revision_ref).is_some());
             let core = SoulpitEntryRequest {
+                source_definition: crate::durability::item_mint::TypedDefinitionRef {
+                    family,
+                    production_key,
+                    revision_ref,
+                },
                 handoff_id: activity.handoff_id,
                 command: CommandRef::new(
                     source.game_session_id,
@@ -123,7 +133,7 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 .map_err(debug)?;
             assert!(matches!(
                 owner
-                    .enter_soulpit(&authority, &h.node, stale, &permit, core.clone(), native)
+                    .enter_soulpit(&authority, &h.node, &permit, stale, &core, native)
                     .await?,
                 ActivityEnterOutcome::Refused(_)
             ));
@@ -134,9 +144,9 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                     .enter_soulpit(
                         &authority,
                         &h.node,
-                        activity.clone(),
                         &permit,
-                        missing_core,
+                        activity.clone(),
+                        &missing_core,
                         native
                     )
                     .await?,
@@ -153,9 +163,9 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                 .enter_soulpit(
                     &authority,
                     &h.node,
-                    activity.clone(),
                     &permit,
-                    core.clone(),
+                    activity.clone(),
+                    &core,
                     native,
                 )
                 .await
@@ -198,9 +208,9 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
                     .enter_soulpit(
                         &authority,
                         &h.node,
-                        activity.clone(),
                         &permit,
-                        core.clone(),
+                        activity.clone(),
+                        &core,
                         native
                     )
                     .await?,
@@ -210,7 +220,7 @@ fn exercise_shared_soulpit_entry(exit_while_live: bool, without_core_context: bo
             rebound.source = id(72);
             assert!(matches!(
                 owner
-                    .enter_soulpit(&authority, &h.node, activity, &permit, rebound, native)
+                    .enter_soulpit(&authority, &h.node, &permit, activity, &rebound, native)
                     .await?,
                 ActivityEnterOutcome::Refused(_)
             ));

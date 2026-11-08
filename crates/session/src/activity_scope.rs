@@ -1,7 +1,9 @@
 //! Adopt a committed activity destination only after its complete fresh snapshot validates.
 use super::*;
 pub use oteryn_protocol_oteryn::activity_scope::{
-    ActivityScope, ActivityScopeSnapshot, decode_activity_scope, encode_activity_scope,
+    ActivityScope, ActivityScopeAck, ActivityScopeSnapshot, COMMAND_TYPE_ACTIVITY_SCOPE_ACK,
+    MAX_ACTIVITY_SCOPE_BYTES, STATE_DOMAIN_ACTIVITY_SCOPE, decode_activity_scope,
+    decode_activity_scope_ack, encode_activity_scope, encode_activity_scope_ack,
 };
 
 impl<S: SessionStream> Session<S> {
@@ -73,7 +75,7 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let begin = decode_snapshot_begin(envelope.payload())?;
-        self.finish_activity_scope(scope, source_sequence, begin)
+        self.finish_activity_scope(scope, source_sequence, begin, domains[0].payload)
             .await
     }
 
@@ -84,8 +86,12 @@ impl<S: SessionStream> Session<S> {
         scope: ActivityScopeSnapshot,
         source_sequence: u64,
         begin: oteryn_protocol_oteryn::SnapshotBeginFields,
+        source_payload: &[u8],
     ) -> Result<(), SessionError> {
         let malformed = || SessionError::SessionUnusable;
+        if decode_activity_scope(source_payload).map_err(|_| malformed())? != scope {
+            return Err(malformed());
+        }
         // A proven fresh namespace uses the same initial baseline as native
         // cold admission (current producer0; legacy complete fixtures1). This
         // never relaxes sequence checks within an unchanged GameSession.
@@ -152,7 +158,7 @@ impl<S: SessionStream> Session<S> {
             domain_id: 99,
             snapshot_type: 1,
             revision: 1,
-            payload: domains[0].payload.to_vec(),
+            payload: source_payload.to_vec(),
         });
         next.gated_revisions.push((99, 1));
         let join = JoinSnapshot {

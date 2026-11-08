@@ -1,20 +1,21 @@
 //! Read the current shared Map/Item owners before borrowing the physical kernel.
 use super::super::ComposedFreshAdmission;
+#[cfg(test)]
 use super::runtime::ActivityHandoffScene;
-use crate::durability::native_world_items::SpellGroundTarget;
-use crate::durability::spell_item_transaction::{
-    assert_spell_item_scope_in_transaction, begin_spell_owner_transaction, check_scope_transaction,
-    read_creature_scope_tile_in_transaction,
-};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::GameSessionId;
+#[cfg(test)]
+use crate::foundation::{ExactActorRef, MovementLocalPosition};
+#[cfg(test)]
 use std::collections::BTreeMap;
 
+#[cfg(test)]
 pub(super) struct NativeScene {
     room: Option<std::sync::Arc<crate::content::QualifiedNativeEntryRoom>>,
     tiles: BTreeMap<(i32, i32, i16), (bool, bool)>,
     targets: Vec<(ExactActorRef, ExactActorRef)>,
     attributes: Vec<((ExactActorRef, GameSessionId), i32)>,
 }
+#[cfg(test)]
 impl ActivityHandoffScene for NativeScene {
     fn emit_spawn_effect(&self, at: MovementLocalPosition, effect: u16) -> bool {
         self.room
@@ -144,10 +145,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.set_soulpit_obelisk(true).await
     }
 
-    pub(in crate::gameplay_transport) async fn reset_soulpit_obelisk(&self) -> Result<(), ()> {
-        self.set_soulpit_obelisk(false).await
-    }
-
     async fn set_soulpit_obelisk(&self, active: bool) -> Result<(), ()> {
         use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
         use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
@@ -205,119 +202,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .transform_movement_item(placement_key, target)
             .then_some(())
             .ok_or(())
-    }
-
-    pub(super) async fn prepare_soulpit_scene(
-        &self,
-        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-    ) -> Result<NativeScene, ()> {
-        let owned_room = self.activity_room.clone().ok_or(())?;
-        if owned_room.pinned_activity_source_room()
-            != Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Soulpit)
-        {
-            return Err(());
-        }
-        let room = self.effective_rooms().gate_native_combat_cast().ok_or(())?;
-        let native = self
-            .active_generation
-            .and_then(crate::content::ActiveGeneration::native_gameplay)
-            .ok_or(())?;
-        let now = self.owner_now().get();
-        let (scope, generation, requests, targets, attributes) = {
-            let runtime = self.runtime.lock().await;
-            let objects = self.door.lock().await;
-            let static_owner = crate::durability::native_world_read::qualified_static_owner(
-                room, &runtime, &*objects,
-            )
-            .map_err(|_| ())?;
-            let states = self.states.spell_states.lock().await;
-            let binding = runtime.binding();
-            let mut requests = Vec::new();
-            let mut targets = Vec::new();
-            let mut attributes = Vec::new();
-            for (actor, _, session) in runtime.positioned_actor_census().map_err(|_| ())? {
-                if let Some(session) = session {
-                    if let Some(state) = states.get(&runtime, actor, session) {
-                        attributes.push((
-                            (actor, session),
-                            state.owned_conditions().attribute_damage_delta_at(now),
-                        ));
-                    }
-                } else if let Some(target) = states
-                    .monster_melee
-                    .creature_ai
-                    .state(actor)
-                    .and_then(|s| s.target())
-                {
-                    targets.push((actor, target));
-                }
-            }
-            let floor = runtime.content_pin().entry_start().floor;
-            for y in 31132..=31153 {
-                for x in 32362..=32390 {
-                    let at = MovementLocalPosition { x, y, floor };
-                    let Some(tile) = crate::durability::native_world_read::tile::<
-                        std::convert::Infallible,
-                    >(room, at)
-                    .ok()
-                    .flatten() else {
-                        continue;
-                    };
-                    let flags = tile.flags();
-                    let walk = tile.ground_present()
-                        && !flags.block_solid
-                        && !flags.protection_zone
-                        && !flags.floor_change
-                        && !static_owner.blocks_movement(at);
-                    let target = SpellGroundTarget::for_native_tile_read(room, &runtime, at)
-                        .map_err(|_| ())?;
-                    requests.push((at, target, walk, flags.block_projectile));
-                }
-            }
-            (
-                binding.runtime_scope(),
-                binding.scope_generation(),
-                requests,
-                targets,
-                attributes,
-            )
-        };
-        // Owned target addresses above retain the exact frame/map/content proof; no
-        // runtime, spell-state or physical-kernel borrow crosses the Item read await.
-        let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
-        let mut context = (self, permit, requests, native);
-        let tiles = pass.run_with_context(&mut context, move |holder,deadline,context| Box::pin(async move {
-            let (owner,permit,requests,native) = context;
-            let mut tx = begin_spell_owner_transaction(holder,deadline).await?;
-            let authority = assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,scope,generation.get()).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            let mut tiles = BTreeMap::new();
-            for (at,target,walk,projectile) in requests.iter() {
-                let Ok(items) = read_creature_scope_tile_in_transaction(&mut tx,&authority,target).await else { return Err(crate::durability::DurabilityError::Unavailable); };
-                let mut walk = *walk;
-                let mut projectile = *projectile;
-                let mut known = true;
-                for item in items.items {
-                    let Some(policy) = native.item_policy(&item.definition.production_key,&item.definition.revision_ref) else { known=false; break; };
-                    let attributes = &policy.record().attributes;
-                    let flags = oteryn_gameplay_items::native_world_items::source_barrier_collision(policy)
-                        .or_else(|| Some((attributes.blocks_movement?,attributes.blocks_projectile?)));
-                    let Some((solid,blocks_projectile)) = flags else {known=false;break;};
-                    if item.blocks_movement != solid || item.blocks_projectile != blocks_projectile {known=false;break;}
-                    walk &= !solid;
-                    projectile |= blocks_projectile;
-                }
-                if known { tiles.insert((at.x,at.y,at.floor),(walk,projectile)); }
-            }
-            check_scope_transaction(&mut tx,&authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-            Ok(tiles)
-        })).await.map_err(|_| ())?;
-        Ok(NativeScene {
-            room: Some(owned_room),
-            tiles,
-            targets,
-            attributes,
-        })
     }
 }
 

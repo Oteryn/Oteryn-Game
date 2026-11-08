@@ -170,10 +170,6 @@ impl PendingKillSettlement {
         self.soulpit_experience
             .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
     }
-    pub(super) fn base_experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
-        self.soulpit_experience
-            .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
-    }
 
     #[cfg(test)]
     pub(super) fn captured_talisman(

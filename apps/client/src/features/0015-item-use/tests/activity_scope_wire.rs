@@ -202,6 +202,7 @@ fn scope_value(stage: u8) -> wire::activity_scope::ActivityScopeSnapshot {
         connection_generation: 1,
         lease_generation: u64::from(stage + 1),
         selection: CAPS.to_vec(),
+        requires_ack: false,
     }
 }
 
