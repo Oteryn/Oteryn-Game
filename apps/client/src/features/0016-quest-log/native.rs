@@ -4,7 +4,8 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::quest_log::{
-    QuestLogQuery, QuestLogView, QuestPanel, panel_text, request, tracking_query,
+    QUEST_SORT_LABELS, QuestLogQuery, QuestLogView, QuestPanel, QuestSort, panel_text,
+    quest_row_query, quest_rows, request, tracking_query,
 };
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
@@ -111,11 +112,53 @@ fn run(
             "",
             QUESTS,
             10,
-            10,
+            94,
             220,
-            220,
+            136,
             LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
         );
+        control(
+            hwnd,
+            "STATIC",
+            "Find quest number or status",
+            112,
+            10,
+            10,
+            220,
+            20,
+            0,
+        );
+        let list_search = control(
+            hwnd,
+            "EDIT",
+            "",
+            113,
+            10,
+            32,
+            220,
+            24,
+            WS_BORDER | WS_TABSTOP,
+        );
+        SendMessageW(
+            list_search,
+            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
+            128,
+            0,
+        );
+        let list_sort = control(
+            hwnd,
+            "COMBOBOX",
+            "",
+            114,
+            10,
+            62,
+            220,
+            200,
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
+        );
+        for label in QUEST_SORT_LABELS {
+            SendMessageW(list_sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+        }
         let missions = control(
             hwnd,
             "LISTBOX",
@@ -165,9 +208,17 @@ fn run(
             28,
             WS_TABSTOP,
         );
-        if [quests, missions, description, refresh, track]
-            .iter()
-            .any(|h| h.is_null())
+        if [
+            quests,
+            missions,
+            description,
+            refresh,
+            track,
+            list_search,
+            list_sort,
+        ]
+        .iter()
+        .any(|h| h.is_null())
         {
             DestroyWindow(hwnd);
             close(&weak);
@@ -246,6 +297,8 @@ fn run(
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
         );
         let mut held = None;
+        let mut shown_quests = Vec::new();
+        let mut options_initialized = false;
         let mut message: MSG = std::mem::zeroed();
         loop {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -263,6 +316,16 @@ fn run(
             let mut mailbox = lock(&mailbox);
             if mailbox.quest_shutdown {
                 break;
+            }
+            if !options_initialized {
+                SetWindowTextW(list_search, wide(&mailbox.quest.list_search).as_ptr());
+                SendMessageW(
+                    list_sort,
+                    CB_SETCURSEL,
+                    mailbox.quest.list_sort.selection(),
+                    0,
+                );
+                options_initialized = true;
             }
             for id in std::mem::take(&mut actions.0) {
                 let query = match id {
@@ -289,10 +352,7 @@ fn run(
                         let row = SendMessageW(quests, LB_GETCURSEL, 0, 0);
                         usize::try_from(row)
                             .ok()
-                            .and_then(|i| mailbox.quest.state.list.get(i))
-                            .map(|q| QuestLogQuery::Quest {
-                                quest_index: q.quest_index,
-                            })
+                            .and_then(|i| quest_row_query(&mailbox.quest, &shown_quests, i))
                     }
                     MISSIONS => {
                         let row = SendMessageW(missions, LB_GETCURSEL, 0, 0);
@@ -315,6 +375,11 @@ fn run(
                     mailbox.quest_pending = commands.send(PlayCommand::QuestLog(payload)).is_ok();
                 }
             }
+            let mut list_text = [0u16; 129];
+            let len = GetWindowTextW(list_search, list_text.as_mut_ptr(), 129).max(0) as usize;
+            mailbox.quest.list_search = String::from_utf16_lossy(&list_text[..len]);
+            mailbox.quest.list_sort =
+                QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0));
             let mut search_text = [0u16; 129];
             let len = GetWindowTextW(search, search_text.as_mut_ptr(), 129);
             mailbox.quest.tracker.search =
@@ -374,18 +439,30 @@ fn run(
                     .collect::<Vec<_>>()
                     .join("\r\n\r\n");
                 SetWindowTextW(tracker, wide(&text).as_ptr());
-                if held
-                    .as_ref()
-                    .is_none_or(|old: &QuestPanel| old.state.list != panel.state.list)
-                {
+                if held.as_ref().is_none_or(|old: &QuestPanel| {
+                    old.state.list != panel.state.list
+                        || old.list_search != panel.list_search
+                        || old.list_sort != panel.list_sort
+                }) {
+                    let selected = usize::try_from(SendMessageW(quests, LB_GETCURSEL, 0, 0))
+                        .ok()
+                        .and_then(|i| shown_quests.get(i))
+                        .copied();
                     SendMessageW(quests, LB_RESETCONTENT, 0, 0);
-                    for q in &panel.state.list {
+                    let rows = quest_rows(panel);
+                    shown_quests = rows.iter().map(|q| q.quest_index).collect();
+                    for q in rows {
                         let label = format!(
                             "Quest {}{}",
                             q.quest_index,
                             if q.completed { " (completed)" } else { "" }
                         );
                         SendMessageW(quests, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                    }
+                    if let Some(row) =
+                        selected.and_then(|id| shown_quests.iter().position(|q| *q == id))
+                    {
+                        SendMessageW(quests, LB_SETCURSEL, row, 0);
                     }
                 }
                 if held
@@ -394,6 +471,13 @@ fn run(
                 {
                     SendMessageW(missions, LB_RESETCONTENT, 0, 0);
                     if let Some(QuestLogView::Line(line)) = &panel.state.log.view {
+                        let selected = shown_quests.iter().position(|id| *id == line.quest_index);
+                        SendMessageW(
+                            quests,
+                            LB_SETCURSEL,
+                            selected.map_or(usize::MAX, |row| row),
+                            0,
+                        );
                         for m in &line.missions {
                             SendMessageW(
                                 missions,
