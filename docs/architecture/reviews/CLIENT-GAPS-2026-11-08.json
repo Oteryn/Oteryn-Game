@@ -823,9 +823,10 @@
   "src": "TIBAUD-1",
   "area": "Imbuing",
   "feature": "Shrine: apply/clear, sloty i materiały/szansa",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session"
  },
  {
   "id": "T116",

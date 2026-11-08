@@ -176,7 +176,7 @@ Zasady przeciw dublowaniu:
 | T137 | House | Hireling jobs/name/sex/outfit config | PARTIAL | Podgląd nazwy/płci, jobów i oczekującego outfitu jest; brak wspólnego pełnego edytora name/sex/jobs/outfit. |
 | O079 | House | Cyklopedia: katalog domów i aukcje | DONE | Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację. |
 | O083 | House | Edycja list gości, współwłaścicieli i drzwi | DONE | Natywny edytor i HouseResult są zamontowane; door ACL korzysta z rewizji wybranego domu bez ręcznego wpisywania rewizji. |
-| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | PARTIAL | Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa. |
+| T115 | Imbuing | Shrine: apply/clear, sloty i materiały/szansa | DONE | Evidence: apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session |
 | T002 | Login | Połączenie, re-entry i logout | DONE | Widoczna ponowna próba, odliczanie admission i anulowanie pojedynczej próby bez zatrzymania runtime (`68169ce25`). |
 | T003 | Login | Pozycja kolejki i odliczanie | PARTIAL | Odliczanie, automatyczne ponowienie i anulowanie są podłączone do istniejącej odmowy capacity; brak autorytatywnej pozycji kolejki oraz jej producenta/protokołu na serwerze (`68169ce25`). |
 | T004 | Login | News i kalendarz zdarzeń | PARTIAL | Jest ograniczony rozmiarem feed pakietu `bulletin.json`, news i kalendarz z opisami; brak żywego feedu i publikacji przyszłych wydarzeń przez usługę operatora (`8ba0c9983`, `f86998757`). |
