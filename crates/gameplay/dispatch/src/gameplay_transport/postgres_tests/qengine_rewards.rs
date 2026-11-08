@@ -15,6 +15,9 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "qengine_rewards/m39_any_topic.rs"]
+mod m39_any_topic;
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -773,6 +776,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-m39-any-topic" {
+        return m39_any_topic::exercise(owner, admitted, h).await;
+    }
     if name.starts_with("qengine-rewards-qnpcfx-m10-") {
         return super::qnpcfx_m10::exercise(owner, admitted, h, authority, name).await;
     }
