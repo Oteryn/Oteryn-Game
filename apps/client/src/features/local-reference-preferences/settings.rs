@@ -89,6 +89,18 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "enabled")]
+    pub hud_health: bool,
+    #[serde(default = "enabled")]
+    pub hud_mana: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_own: bool,
+    #[serde(default = "enabled")]
+    pub hud_marks_other: bool,
+    #[serde(default)]
+    pub hud_npc_icons: bool,
+    #[serde(default)]
+    pub hud_npc_names: Option<bool>,
     #[serde(default = "default_arc_opacity")]
     pub arc_opacity: u8,
     #[serde(default)]
@@ -155,6 +167,12 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            hud_health: true,
+            hud_mana: true,
+            hud_marks_own: true,
+            hud_marks_other: true,
+            hud_npc_icons: false,
+            hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
             console_font_px: 14,

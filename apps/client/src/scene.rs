@@ -50,6 +50,8 @@ pub struct Scene {
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
     name_visibility: [bool; 3],
+    name_marks: bool,
+    npc_names: bool,
 }
 
 impl Scene {
@@ -119,6 +121,8 @@ impl Scene {
             actor_draws: Vec::new(),
             names: Vec::new(),
             name_visibility: [true; 3],
+            name_marks: true,
+            npc_names: true,
         };
         scene.rebuild_sprites()?;
         Ok(scene)

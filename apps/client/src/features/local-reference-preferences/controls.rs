@@ -12,8 +12,12 @@ use layout_controls::LayoutControls;
 #[path = "console_controls.rs"]
 mod console_controls;
 use console_controls::ConsoleControls;
+#[path = "hud_controls.rs"]
+mod hud_controls;
+use hud_controls::HudControls;
 
 pub(super) struct Controls {
+    pub(super) actor_hud: HudControls,
     pub(super) console: ConsoleControls,
     pub(super) layout: LayoutControls,
     pub(super) arcs: ArcControls,
@@ -54,6 +58,7 @@ pub(super) struct Controls {
 impl Controls {
     pub(super) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
+            let actor_hud = HudControls::new(hwnd)?;
             let console = ConsoleControls::new(hwnd)?;
             let layout = LayoutControls::new(hwnd)?;
             let arcs = ArcControls::new(hwnd)?;
@@ -330,6 +335,7 @@ impl Controls {
                 return None;
             }
             Some(Self {
+                actor_hud,
                 manual,
                 console,
                 layout,

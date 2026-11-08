@@ -280,10 +280,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: player/creature names, HP/mana, marks, NPC icons",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Brak osobnych przełączników dla owner i pozostałych aktorów.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:17 + hud_name_controls_separate_owner_players_and_creatures; Independent HP/mana, marks and NPC icon controls remain."
+  "evidence": "apps/client/src/features/0023-presentation/actor_hud.rs:25 + hud_marks_and_npc_badges_are_independent_and_generation_fenced + own_health_and_mana_visibility_are_independent + hud_name_controls_separate_owner_players_and_creatures; Native HUD controls independently project owner/other names and resources, party/PvP/forge marks and NPC icons using confirmed server identities and generations."
  },
  {
   "id": "T052",

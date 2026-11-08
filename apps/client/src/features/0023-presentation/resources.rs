@@ -5,6 +5,8 @@ use oteryn_client_runtime::spell::ActorVitals;
 
 pub(super) struct Options {
     bars: bool,
+    health: bool,
+    mana: bool,
     harmony: bool,
     serene: bool,
     health_circle: bool,
@@ -16,6 +18,8 @@ impl From<&ReferencePreferences> for Options {
     fn from(preferences: &ReferencePreferences) -> Self {
         Self {
             bars: preferences.hud_bars,
+            health: preferences.hud_health,
+            mana: preferences.hud_mana,
             harmony: preferences.show_harmony,
             serene: preferences.show_serene,
             health_circle: preferences.health_circle,
@@ -35,6 +39,8 @@ pub(super) fn draw(
 ) -> Result<(), BatchError> {
     let Options {
         bars,
+        health,
+        mana,
         harmony,
         serene,
         health_circle,
@@ -43,15 +49,25 @@ pub(super) fn draw(
         opacity,
     } = options;
     if bars && let Some(vitals) = vitals {
-        for (row, value, max, color) in [
+        for (visible, row, value, max, color) in [
             (
+                health,
                 0.0,
                 vitals.health,
                 vitals.max_health,
                 PresentationColor::Red,
             ),
-            (1.0, vitals.mana, vitals.max_mana, PresentationColor::Blue),
+            (
+                mana,
+                1.0,
+                vitals.mana,
+                vitals.max_mana,
+                PresentationColor::Blue,
+            ),
         ] {
+            if !visible {
+                continue;
+            }
             let at = [8.0, 56.0 + row * 14.0];
             pixel(
                 batch,

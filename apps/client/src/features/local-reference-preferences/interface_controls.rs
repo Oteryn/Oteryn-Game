@@ -12,7 +12,7 @@ pub(crate) struct InterfaceControls {
 impl InterfaceControls {
     pub(crate) unsafe fn new(hwnd: HWND) -> Option<Self> {
         unsafe {
-            let names = ["Own name", "Other player names", "Creature / NPC names"].map(|label| {
+            let names = ["Own name", "Other player names", "Creature names"].map(|label| {
                 control(
                     hwnd,
                     "BUTTON",

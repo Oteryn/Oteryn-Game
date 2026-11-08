@@ -34,6 +34,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
         let Some(Controls {
+            actor_hud,
             manual,
             console,
             layout,
@@ -126,6 +127,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     },
                 );
             }
+            actor_hud.show(state.page == SettingsPage::ActorHud);
             console.show(state.page == SettingsPage::Console);
             layout.show(state.page == SettingsPage::Status);
             arcs.show(state.page == SettingsPage::Arcs);
@@ -181,6 +183,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         | SettingsPage::Sound
                         | SettingsPage::Graphics
                         | SettingsPage::Arcs
+                        | SettingsPage::ActorHud
                 ) {
                     SW_SHOW
                 } else {
@@ -256,22 +259,6 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
-                    if let Err(error) = console.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = layout.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = arcs.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
-                    if let Err(error) = interface.read(&mut preferences) {
-                        state.feedback = error;
-                        continue;
-                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -291,6 +278,21 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(hud_checks[5], BM_GETCHECK, 0, 0) == 1;
                             preferences.health_circle =
                                 SendMessageW(hud_checks[6], BM_GETCHECK, 0, 0) == 1;
+                            let result = match state.page {
+                                SettingsPage::Interface => interface.read(&mut preferences),
+                                SettingsPage::Arcs => arcs.read(&mut preferences),
+                                SettingsPage::Status => layout.read(&mut preferences),
+                                SettingsPage::Console => console.read(&mut preferences),
+                                SettingsPage::ActorHud => {
+                                    actor_hud.read(&mut preferences);
+                                    Ok(())
+                                }
+                                _ => Ok(()),
+                            };
+                            if let Err(error) = result {
+                                state.feedback = error;
+                                continue;
+                            }
                             state.apply(preferences);
                         }
                         _ => state.feedback = "Enter valid zoom and volume percentages".into(),
@@ -298,6 +300,7 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                actor_hud.refresh(&state.preferences);
                 console.refresh(&state.preferences);
                 layout.refresh(&state.preferences);
                 arcs.refresh(&state.preferences);

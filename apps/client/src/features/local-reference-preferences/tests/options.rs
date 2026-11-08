@@ -349,5 +349,5 @@ fn basic_options_navigate_without_changing_preferences() {
         assert!(!page.label().is_empty());
         assert_eq!(state.preferences, before);
     }
-    assert_eq!(SettingsPage::ALL.len(), 11);
+    assert_eq!(SettingsPage::ALL.len(), 12);
 }

@@ -3,6 +3,8 @@
 //! Other magic effects retain the existing hit pulse until official sprites are resolved.
 #[path = "resources.rs"]
 mod resources;
+#[path = "actor_hud.rs"]
+mod actor_hud;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
@@ -40,73 +42,11 @@ impl PlayView {
         let atlas = atlas.atlas();
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let creature_bars = self.preferences().creature_bars;
+        let own_ref = self.scene.own_identity().and_then(|identity| self.appearances.iter().find(|entry| entry.entity.entity.identity == identity).map(|entry| entry.entity.entity));
+        let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref);
         let (view, batch) = self.scene.presentation_base()?;
         resources::draw(batch, view, atlas, self.vitals.as_ref(), self.own, resource_options)?;
-        if creature_bars {
-            for entity in &self.entities {
-                let oteryn_session::EntityDetail::Actor { health_percent, .. } = entity.detail
-                else {
-                    continue;
-                };
-                let tile = TileCoord::new(entity.position.x, entity.position.y);
-                if entity.position.floor != self.floor || !view.contains(tile) {
-                    continue;
-                }
-                let [x, y] = view.tile_to_screen(tile);
-                let at = [x + 2.0, y + view.tile_px() as f32 - 5.0];
-                let width = (view.tile_px() as f32 - 4.0).max(1.0);
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width, 3.0],
-                    PresentationColor::DarkRed,
-                )?;
-                pixel(
-                    batch,
-                    view,
-                    atlas,
-                    at,
-                    [width * f32::from(health_percent.min(100)) / 100.0, 3.0],
-                    PresentationColor::LightGreen,
-                )?;
-                if let Some(icon) = self
-                    .party_icons
-                    .iter()
-                    .find(|icon| icon.entity == entity.entity)
-                {
-                    for (offset, value, pattern) in [
-                        (0.0, icon.shield, [5_u8, 7, 2]),
-                        (8.0, icon.skull, [7_u8, 5, 2]),
-                    ] {
-                        if value == 0 {
-                            continue;
-                        }
-                        let color = match value {
-                            1 | 3 | 5 | 7 | 9 => PresentationColor::Blue,
-                            2 | 4 | 6 | 8 | 10 => PresentationColor::Yellow,
-                            _ => PresentationColor::Red,
-                        };
-                        for (row, bits) in pattern.into_iter().enumerate() {
-                            for col in 0..3 {
-                                if bits & (4 >> col) != 0 {
-                                    pixel(
-                                        batch,
-                                        view,
-                                        atlas,
-                                        [x + offset + col as f32 * 2.0, y + row as f32 * 2.0],
-                                        [2.0, 2.0],
-                                        color,
-                                    )?;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        actor_hud::draw(batch, view, atlas, self.own, &self.entities, &self.party_icons, actor_options)?;
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         if !effects {
             return Ok(());
