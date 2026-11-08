@@ -44,9 +44,6 @@ pub fn carried_cooking_conversion_with_sub_type(
     target: &TypedDefinitionRef,
     target_sub_type: Option<u32>,
 ) -> Option<CookingConversion> {
-    if let Some(conversion) = quest_recipes::carried(native, used, target) {
-        return Some(conversion);
-    }
     carried_cooking_conversion_with_quantity(native, used, target, target_sub_type, 1)
         .map(|resolved| resolved.conversion)
 }
@@ -59,6 +56,15 @@ pub fn carried_cooking_conversion_with_quantity(
     target_sub_type: Option<u32>,
     target_quantity: u32,
 ) -> Option<CarriedCookingConversion> {
+    if !(1..=100).contains(&target_quantity) {
+        return None;
+    }
+    if let Some(conversion) = quest_recipes::carried(native, used, target) {
+        return Some(CarriedCookingConversion {
+            conversion,
+            target_debit: 1,
+        });
+    }
     let rows = catalogue_rows()?;
     let used_ref = source_ref(native, used)?;
     let target_ref = source_ref(native, target)?;
