@@ -28,6 +28,9 @@ impl MountReward {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Finish this quest only through its bound, irreversible native trial.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes_quest: bool,
     /// Complete a separately owned child quest with this native once-only reward.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quest_completion: Option<String>,
@@ -216,6 +219,17 @@ pub struct EncounterTiming {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.completes_quest
+        && (!callback.requires_world_admission
+            || callback.actor_kind != ActorKind::Player
+            || callback.reversible
+            || callback.opening_only
+            || callback.storage.iter().all(|state| state.preserve)
+            || effects.quest_completion.is_some()
+            || effects.item_reward_cycle.is_some())
+    {
+        return false;
+    }
     if effects.item_reward_cycle.as_ref().is_some_and(|track| {
         effects.item_reward.is_none()
             || !callback.storage.iter().any(|state| {
