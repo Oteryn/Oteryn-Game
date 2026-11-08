@@ -39,13 +39,7 @@ impl Database {
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
         let name = format!("character_inbox_{suffix}");
-        let mut admin = PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
-            .await?;
-        admin.close().await?;
+        oteryn_gameplay_durability::postgres_fixture::create_database(&admin_url, &name).await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
@@ -196,6 +190,7 @@ async fn seed_items(
     world: &str,
     count: i64,
 ) -> TestResult<Vec<String>> {
+    let started = std::time::Instant::now();
     let mut tx = connection.begin().await?;
     tx.execute("SET LOCAL session_replication_role = replica")
         .await?;
@@ -213,6 +208,12 @@ async fn seed_items(
     .fetch_all(&mut *tx)
     .await?;
     tx.commit().await?;
+    if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+        eprintln!(
+            "PGSPEED phase=inbox_seed_items count={count} elapsed={:?}",
+            started.elapsed()
+        );
+    }
     Ok(items)
 }
 
@@ -424,6 +425,7 @@ fn one_hundred_thousand_and_one_deliveries_are_all_accepted() -> TestResult {
 
         // MARKET0-RL-06 is MARKET-1's refusal: INBOX-1a never refuses for
         // capacity. Deliveries commit in batches, as callers' transactions do.
+        let started = std::time::Instant::now();
         let mut delivered = 0_i64;
         for batch in items.chunks(250) {
             let mut tx = connection.begin().await?;
@@ -438,6 +440,12 @@ fn one_hundred_thousand_and_one_deliveries_are_all_accepted() -> TestResult {
             .fetch_one(&mut *tx)
             .await?;
             tx.commit().await?;
+        }
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!(
+                "PGSPEED phase=inbox_deliveries count={delivered} elapsed={:?}",
+                started.elapsed()
+            );
         }
         assert_eq!(delivered, 100_001);
         assert_eq!(

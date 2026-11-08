@@ -84,6 +84,7 @@ const LIMITS: [usize; 5] = [
 ];
 
 #[derive(Debug, Clone)]
+#[cfg_attr(any(test, feature = "test-support"), derive(PartialEq, Eq))]
 pub struct PinnedGameplayBytes {
     pub bytes: Vec<u8>,
     pub sha256: String,
@@ -97,6 +98,7 @@ pub enum NativeGameplayMapProfile {
     SourceQualifiedSpellEntryR2,
 }
 #[derive(Debug, Clone)]
+#[cfg_attr(any(test, feature = "test-support"), derive(PartialEq, Eq))]
 pub struct NativeGameplayInput {
     /// Mandatory explicit pin: authored V9 content or the validated unavailable legacy packet.
     pub cosmetics: PinnedGameplayBytes,
@@ -123,6 +125,7 @@ pub struct NativeGameplayInput {
     pub loot_tables: Option<PinnedGameplayBytes>,
 }
 #[derive(Debug, Clone)]
+#[cfg_attr(any(test, feature = "test-support"), derive(PartialEq, Eq))]
 pub struct NativeTrainingInput {
     pub profile: PinnedGameplayBytes,
     pub content_revision: String,
@@ -1017,6 +1020,17 @@ pub struct DecodedNativeGameplay<'a> {
     pub state: NativeGameplayState,
 }
 pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
+    #[cfg(any(test, feature = "test-support"))]
+    {
+        test_support::decode_cache::decode(bytes)
+    }
+    #[cfg(not(any(test, feature = "test-support")))]
+    {
+        decode_uncached(bytes)
+    }
+}
+
+fn decode_uncached(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     bounded(bytes, MAX_ARTIFACT_BYTES)?;
     if !is_envelope(bytes) {
         return Err(invalid("native gameplay discriminator"));
@@ -1819,6 +1833,7 @@ fn creature_policies(
 pub mod test_support {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     pub mod cosmetics_fixture;
+    pub(super) mod decode_cache;
     use super::*;
     use crate::content::production::test_source;
     use crate::content::{
@@ -1922,6 +1937,7 @@ pub mod test_support {
     }
 
     mod activation_fixture;
+    mod qualified_fixture;
     pub use activation_fixture::{
         activated_boss_slot_loot_fixture, activated_loop_monster,
         activated_loop_monster_missing_child, activated_reward_boss_fixture,

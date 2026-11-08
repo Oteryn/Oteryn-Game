@@ -37,7 +37,7 @@ pub fn try_activate_input(
         .validate_cosmetics_pin()
         .map_err(crate::content::ProjectError::from)
         .map_err(NativeEntryActivationError::Qualification)?;
-    let room = crate::content::qualify_selected_native_gameplay_room(world, supplied)
+    let room = super::qualified_fixture::qualify(world, supplied)
         .map_err(NativeEntryActivationError::Qualification)?;
     let issuance = NativeEntryActivationIssuance {
         world_id: world,

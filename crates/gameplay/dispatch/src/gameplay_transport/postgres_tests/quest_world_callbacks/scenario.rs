@@ -270,8 +270,13 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
+    let world_started = std::time::Instant::now();
     let world = world(&callback, trigger)?;
+    if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+        eprintln!("PGSPEED phase=quest_map elapsed={:?}", world_started.elapsed());
+    }
     run(async |admin| {
+        let harness_started = std::time::Instant::now();
         let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(
                 admin,
@@ -283,6 +288,9 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=quest_harness elapsed={:?}", harness_started.elapsed());
+        }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
@@ -530,12 +538,16 @@ fn scenario_case(
         if let Some(room) = bundle_room.as_ref() {
             owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(room), Some(room));
         }
+        let catalogue_started = std::time::Instant::now();
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
                 .catalogue()
                 .clone(),
         ));
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=quest_catalogue elapsed={:?}", catalogue_started.elapsed());
+        }
         if mead {
             owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
                 owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
@@ -558,6 +570,7 @@ fn scenario_case(
                     .is_ok()
             );
         }
+        let admission_started = std::time::Instant::now();
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         let fence = owner
@@ -607,6 +620,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=quest_admission elapsed={:?}", admission_started.elapsed());
+        }
         if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;

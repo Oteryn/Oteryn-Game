@@ -327,6 +327,7 @@ pub(crate) mod tests {
     }
 
     fn physical_bundle() -> crate::map::boot::CheckedBundle {
+        let started = std::time::Instant::now();
         use oteryn_world_bundle::sector::{Attrs, Item, Tile};
         use oteryn_world_bundle::writer::{
             self as bundle, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector,
@@ -477,7 +478,7 @@ pub(crate) mod tests {
             content_revision: "sp02".into(),
             production: true,
         };
-        crate::map::boot::check(
+        let checked = crate::map::boot::check(
             bytes,
             crate::map::boot::BootPins {
                 map_revision: format!(
@@ -495,7 +496,14 @@ pub(crate) mod tests {
                 },
             },
         )
-        .expect("checked")
+        .expect("checked");
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!(
+                "PGSPEED phase=daily_physical_bundle elapsed={:?}",
+                started.elapsed()
+            );
+        }
+        checked
     }
 
     fn boot_physical(changes: &DailyWorldChanges) -> crate::map::boot::BundleWorld {

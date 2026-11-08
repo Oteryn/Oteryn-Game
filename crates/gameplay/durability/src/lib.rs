@@ -7,6 +7,10 @@ extern crate self as oteryn_gameplay_durability;
 pub static GAME_MIGRATOR: sqlx::migrate::Migrator =
     sqlx::migrate!("../../../apps/game-server/migrations");
 
+#[cfg(any(test, feature = "test-support"))]
+#[path = "../../../../apps/game-server/tests/support/postgres_fixture.rs"]
+pub mod postgres_fixture;
+
 #[cfg(test)]
 #[test]
 fn migration_numbers_are_unique_and_match_embedded_migrator()

@@ -114,12 +114,17 @@ struct Dependencies {
 }
 impl Dependencies {
     fn new() -> TestResult<Self> {
+        let started = std::time::Instant::now();
         let world = fence(1)?.runtime_scope.world_id();
-        Self::with_content(
+        let result = Self::with_content(
             ChannelContentPin::test(world),
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-        )
+        );
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=dependencies elapsed={:?}", started.elapsed());
+        }
+        result
     }
 
     fn with_content(
@@ -815,9 +820,19 @@ mod death_ml_loss_composed {
         ContentActivationController,
         crate::content::NativeEntryContentPin,
     )> {
+        let started = std::time::Instant::now();
         let supplied = production_input_with_source(content, source)?;
-        crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
-            .map_err(debug)
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=manifest elapsed={:?}", started.elapsed());
+        }
+        let started = std::time::Instant::now();
+        let result =
+            crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
+                .map_err(debug);
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!("PGSPEED phase=activation elapsed={:?}", started.elapsed());
+        }
+        result
     }
 
     /// Keep initial and successor generations on the same fixture revision.

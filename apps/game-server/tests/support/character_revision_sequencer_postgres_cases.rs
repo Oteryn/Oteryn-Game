@@ -122,13 +122,15 @@ impl Database {
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
         let name = format!("crs_{name}_{suffix}");
-        let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
-            .await?;
-        admin.close().await?;
+        let phase_started = std::time::Instant::now();
+        oteryn_gameplay_durability::postgres_fixture::create_database(&admin_url, &name).await?;
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!(
+                "PGSPEED phase=db_create elapsed={:?}",
+                phase_started.elapsed()
+            );
+        }
+        let phase_started = std::time::Instant::now();
         let prefix = admin_url
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
@@ -146,6 +148,12 @@ impl Database {
             .run(&mut connection)
             .await?;
         connection.close().await?;
+        if std::env::var_os("OTERYN_TEST_TIMINGS").is_some() {
+            eprintln!(
+                "PGSPEED phase=migrate elapsed={:?}",
+                phase_started.elapsed()
+            );
+        }
         Ok(Self {
             admin_url,
             name,

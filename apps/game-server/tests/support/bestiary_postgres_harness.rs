@@ -84,13 +84,7 @@ impl Database {
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
         let name = format!("bp_{name}_{suffix}");
-        let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
-            .await?;
-        admin.close().await?;
+        oteryn_gameplay_durability::postgres_fixture::create_database(&admin_url, &name).await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
