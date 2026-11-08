@@ -54,3 +54,25 @@ in numeric order, each in its own transaction, in 4.879 seconds. Versions
 migration checksums; the separate production-harness cases validate the
 SQLx migration path. The earlier rollback-only reproduction remains historical
 evidence of the original ordering defect, not the current migration layout.
+
+## Final forward scope fix and validation boundary
+
+The post-merge native run executed five real PostgreSQL scenarios: Grand Mother
+Foulthorn (46.633 s), Tibiadrome (45.224 s), Primal (115.139 s), and Soulpit
+(101.271 s) passed. The Instance corpse/reward case failed in 85.668 s because
+Scavenge's immutable 0983 race-provenance guard still compared two NULL Channel
+IDs. Its assertion was retained unchanged.
+
+New migration **1421** extends only that provenance predicate to disjoint,
+exact Channel/Instance scopes. The recorded 19-case PostgreSQL guard probe
+passed in 0.085562 s, including the original Instance rejection and cross-scope,
+identity, generation, world and transaction refusals. It preserves function
+ACL, owner and search path; it does not add Instance skinning authority.
+A fresh database subsequently applied all **339** migration bodies, including
+1421, in **4.622 s**; the actual highscore-role SELECT took **0.318 ms**.
+
+The 25 changed-crate library build reached a linker bus error after **585.105 s**
+while disk space was low; no unit cases executed in that attempt. Completed
+build caches were reclaimed. Full unit execution and the post-1421 native
+scenario rerun remain pending under PREPUSH-2's cadence exception; neither is
+reported as green. CI with heavy tests remains required on the shipment head.
