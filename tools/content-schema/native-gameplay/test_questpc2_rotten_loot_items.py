@@ -7,7 +7,7 @@ import questpc2_rotten_loot_items as tool
 
 ROOT = Path(__file__).resolve().parents[3]
 CANONICAL_OUTSIDE = 'a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130'
-NATIVE_OUTSIDE = '6e4be634a432d164970ce0188c2b362b0eeceb9d43ce0ef52056d8d839d6370e'
+NATIVE_OUTSIDE = '3beba9c66db1323f5b69ef6570888e5900a0a366eb1b7cf02d16276411966fc9'
 
 
 def digest(records):

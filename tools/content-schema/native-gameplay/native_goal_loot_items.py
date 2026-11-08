@@ -126,6 +126,8 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical,
             record = copy.deepcopy(observed)
             document['records'].append(record)
         existing_admitted = bool(present) and record['admission']['materializable']
+        import questpc2_loot_speed_facts
+        questpc2_loot_speed_facts.retain(record, observed)
         charge_fields = [d.get('charges', {'state': 'UNKNOWN'}) for d in
                          (definition['semantics'], record['semantics'], observed['semantics'])]
         if any(field.get('state') == 'KNOWN' for field in charge_fields) and not (

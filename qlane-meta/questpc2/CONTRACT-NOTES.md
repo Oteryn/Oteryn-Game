@@ -870,3 +870,15 @@ remain from that merge; publish the final receipt with the next green slice.
   mandatory follow-up evidence; never claim PG or full unit success prematurely.
 - ENOSPC retries retire inactive own target caches only. Disable incremental
   caches for this validation; compiler checks and test scope are unchanged.
+
+- Book2824integration: countfix exposed an additional original assertion,
+  expected qualifiedspeed0versusNone. Existing main also hasNone. Pinned
+  NativeGoalLoot source already yields0, but existing-record merge omitted it;
+  SRX1correctly preserves physical admission and therefore doesnot repair it.
+  Bound repair to2824only, fillunknownspeed from verified source0, retain
+  knownvalues/otherattributes. CanaryXML5813-5817SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+  SourceproducerRED8.235s;7producerGREEN and8fingerprintnegative-bound checks.
+  Strictoutside-six proof remainsactive. Repository48-line refresh tool first
+  reproduces HEADproof, permits only existing2824speedNone->0, requiressource0
+  and canonicalidentity. No hand-edited fingerprint/pins or weakened assertion.
+  Final7/7Rust215.213458s including5realPG180006; Python16PASS33.306s.

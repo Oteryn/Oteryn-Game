@@ -1,3 +1,24 @@
+# GREEN: publish book fact repair and merged-main runtime proof
+
+Current source33890c3f3plus bounded book2824producer fix. Sevenfocused cases
+PASS215.213458s:5realPG on180006 plus2unit regressions. Producer/fingerprint/
+strict closure16Python checksPASS33.306s. WorkspacealltargetsPASS3m21s,fmtPASS.
+Rust/Cargo source unchanged since tencrateclippyPASS9m55s. Full suitesCIpending.
+Only native book2824missing speed becomes its already source-qualified0;
+accepted known stats stay unchanged. Exact sourcehelper16lines, bounded
+fingerprintrefresh48lines. Tool proves oldHEADproof, exactsingle-leaf delta,
+source0and canonicalidentity. Canonicaloutsidea36ccc unchanged; nativeoutside
+3beba9c66db1323f5b69ef6570888e5900a0a366eb1b7cf02d16276411966fc9.
+45native outputs/central lists/pins regenerated. Inputsdigest a4c26043;
+worlddigest6b4be39d unchanged. Stage finalmetadata/pins,dupcheck,fetchactualmain
+andbref,ownercommit/trailers,pushb. Parentquestpc2frozen0a6d6e208 untouched.
+Afterpush continue originalpacket. Counts3qualified,3inprogress,23notstarted,
+6excluded. All observed integration failures fixed; no tests weakened.
+Big missing engine features remainqengine2owned; latestdf01fc4e8authoredkill
+counterwork exists but doesnot supply timedwaves/sourcebosshooks. Inspectreuse
+before any newmechanic. No new wholequest qualification fromthisbatch.
+See BATCH-book-speed-and-main-pg-green-2026-11-08.json for fullsource/runtimeproof.
+
 # READY TO PUBLISH main b386 compile checkpoint
 
 ClippyPASS9m55s; workspacePASS6m03s; fmtPASS; generation/pinsPASS.

@@ -15,6 +15,41 @@ def definitions():
 
 
 class NativeGoalLootProof(unittest.TestCase):
+    def test_book_speed_requires_qualified_source_and_refuses_atomically(self):
+        key = 'oteryn:item.tibia.i2824'
+        observed = native.profiles(native.ROOT, {2824})[key]
+        profile = copy.deepcopy(observed)
+        profile['attributes']['speed_bonus'] = None
+        observed['attributes']['speed_bonus'] = 7
+        canonical = lambda value: json.dumps(value, sort_keys=True).encode()
+        generated = {'profiles': canonical({'records': [profile]}),
+                     'manifest': canonical({'item_profiles': {'sha256': '0' * 64}})}
+        before = copy.deepcopy(generated)
+        with self.assertRaisesRegex(ValueError, 'NATIVE_GOAL_LOOT_SPEED_SOURCE_REQUIRED'):
+            native.admit_native(native.ROOT, generated, 'profiles', 'manifest',
+                                lambda row: row['production_definition']['production_key'],
+                                canonical, item_ids={2824}, qualified_profiles={key: observed})
+        self.assertEqual(generated, before)
+
+    def test_existing_book_gets_qualified_speed_without_retuning_known_attributes(self):
+        key = 'oteryn:item.tibia.i2824'
+        canonical = lambda value: json.dumps(value, sort_keys=True).encode()
+        for previous, expected in ((None, 0), (7, 7)):
+            with self.subTest(previous=previous):
+                profile = native.profiles(native.ROOT, {2824})[key]
+                profile['attributes']['speed_bonus'] = previous
+                profile['admission']['materializable'] = True
+                before = copy.deepcopy(profile['attributes'])
+                generated = {'profiles': canonical({'records': [profile]}),
+                             'manifest': canonical({'item_profiles': {'sha256': '0' * 64}})}
+                native.admit_native(native.ROOT, generated, 'profiles', 'manifest',
+                                    lambda row: row['production_definition']['production_key'],
+                                    canonical, item_ids={2824})
+                actual = json.loads(generated['profiles'])['records'][0]['attributes']
+                self.assertEqual(actual['speed_bonus'], expected)
+                before.pop('speed_bonus')
+                self.assertEqual({k: v for k, v in actual.items() if k != 'speed_bonus'}, before)
+
     def test_selected_source_tables_have_complete_finite_custody(self):
         ids = native.selected()
         self.assertEqual(len(ids), 71)
