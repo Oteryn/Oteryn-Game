@@ -9,12 +9,6 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
             "Boss points: {}\nServer time: {}",
             page.points, page.now
         );
-        for (key, at) in &page.cooldowns {
-            let _ = writeln!(text, "{key}: {} ms remaining", at.saturating_sub(page.now));
-        }
-        for (key, kills) in panel.visible_bosses() {
-            let _ = writeln!(text, "{key}: {kills} kills");
-        }
         if let Some(taints) = page.taints {
             let _ = writeln!(text, "Soul War taints: {}", taints.soul_war);
             let _ = writeln!(
@@ -50,6 +44,7 @@ pub fn panel_text(panel: &BossEncounterPanel) -> String {
     } else {
         text.push_str("No server snapshot loaded\n");
     }
+    text.push_str(&super::browser_text(panel));
     if let Some((unlocked, selected)) = panel.hazard {
         let gauge: String = (1..=12)
             .map(|level| {

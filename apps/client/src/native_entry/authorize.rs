@@ -52,13 +52,13 @@ pub(super) async fn authorize(
     client: &NativeLoginClient,
     config: &NativeLoginConfig,
     cancellation: CancellationToken,
-) -> Result<(NativeTicket, String, Option<String>, String), GameplayEntryError> {
+) -> Result<(NativeTicket, String, Option<String>, String, bool), GameplayEntryError> {
     let mut token = access_token(client, config, cancellation.clone(), false).await?;
     let platform = PlatformClientConfig::new(&config.platform_url)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
     let directory_client = oteryn_platform_client::PlatformClient::new(platform)
         .map_err(|_| GameplayEntryError::InvalidConfiguration)?;
-    let (character_id, channel_id, character_name) = loop {
+    let (character_id, channel_id, character_name, training_requested) = loop {
         let characters = client
             .owner_characters(&token, cancellation.clone())
             .await
@@ -76,8 +76,14 @@ pub(super) async fn authorize(
             .await
             .map_err(retry_login)?;
         use crate::character_selection::SelectionAction;
+        // Training uses the same owner and channel validation as ordinary play.
+        let training_requested = matches!(&action, SelectionAction::Train { .. });
         match action {
             SelectionAction::Play {
+                character_id,
+                channel_id,
+            }
+            | SelectionAction::Train {
                 character_id,
                 channel_id,
             } => {
@@ -89,7 +95,12 @@ pub(super) async fn authorize(
                             .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
                 });
                 let selected = selected.ok_or_else(|| rejected(PublicClass::RetryLogin))?;
-                break (character_id, channel_id, selected.character.name.clone());
+                break (
+                    character_id,
+                    channel_id,
+                    selected.character.name.clone(),
+                    training_requested,
+                );
             }
             SelectionAction::Create => {
                 let url = format!(
@@ -127,12 +138,20 @@ pub(super) async fn authorize(
                 token = access_token(client, config, cancellation.clone(), false).await?;
             }
             SelectionAction::Refresh => {}
-            SelectionAction::Cancel => return Err(rejected(PublicClass::RetryLogin)),
+            SelectionAction::Cancel => {
+                return Err(rejected(PublicClass::RetryLogin));
+            }
         }
     };
     let ticket = client
         .issue_native_ticket(token, cancellation)
         .await
         .map_err(login_rejected)?;
-    Ok((ticket, character_id, channel_id, character_name))
+    Ok((
+        ticket,
+        character_id,
+        channel_id,
+        character_name,
+        training_requested,
+    ))
 }

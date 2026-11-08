@@ -29,6 +29,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Raise hazard",
                 "Previous boss",
                 "Next boss",
+                "Boss category",
                 "Apply search",
                 "Next unlocked slot",
             ],
@@ -37,7 +38,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 (
                     panel.open,
                     panel.pending,
-                    [panel.fields.to_vec(), vec![panel.boss_search.clone()]].concat(),
+                    [panel.fields.to_vec(), vec![panel.browser_search.clone()]].concat(),
                     oteryn_client_ui::boss_encounter::panel_text(panel)
                         .replace("\r\n", "\n")
                         .replace('\n', "\r\n"),
@@ -50,12 +51,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 }
                 if let Some(search) = values.get(3) {
                     mailbox.boss_encounter.boss_search = search.clone();
+                    mailbox.boss_encounter.browser_search = search.clone();
                 }
                 if action >= 14 {
                     if action <= 15 {
                         mailbox.boss_encounter.select_boss(action == 14);
                     }
-                    if action == 17 {
+                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
+                    if action == 18 {
                         mailbox.boss_encounter.select_slot();
                     }
                     return;

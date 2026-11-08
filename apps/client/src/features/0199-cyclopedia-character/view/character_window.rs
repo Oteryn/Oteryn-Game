@@ -27,7 +27,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 32
-                && matches!(id, 101..=116 | 140)
+                && matches!(id, 101..=117 | 140)
                 && note == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -114,6 +114,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.cyclopedia_character_shutdown {
                 break;
             }
+            let mut analytics = false;
             let mut browse_achievements = false;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
@@ -130,6 +131,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     }
                     continue;
                 }
+                if action == 117 { analytics = true; continue; }
                 if action == 140 {
                     browse_achievements = true;
                     continue;
@@ -350,6 +352,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             drop(mailbox);
+            if analytics { crate::play::feature_0010_analyser::view::open_shared(&shared, &commands); }
             if browse_achievements {
                 crate::play::feature_local_account_achievements::view::open_character(
                     weak.clone(),

@@ -10,6 +10,8 @@ pub struct BossEncounterPanel {
     pub slots: Option<oteryn_client_runtime::boss_encounter::bosstiary_slots::BossSlotReply>,
     pub boss_search: String,
     pub fields: [String; 3],
+    pub browser_search: String,
+    pub browser_category: super::BossCategory,
     pub summary: String,
     pub hazard: Option<(u8, u8)>,
     pub rewards: Option<oteryn_client_runtime::boss_encounter::RewardChest>,
@@ -18,23 +20,16 @@ pub struct BossEncounterPanel {
 }
 
 impl BossEncounterPanel {
-    pub fn visible_bosses(&self) -> impl Iterator<Item = &(String, u64)> {
-        let search = self.boss_search.to_lowercase();
-        self.snapshot
-            .iter()
-            .flat_map(|s| &s.progress)
-            .filter(move |(key, _)| key.to_lowercase().contains(&search))
-    }
     pub fn select_boss(&mut self, previous: bool) {
         if self.pending {
             return;
         }
-        let cards: Vec<_> = self.visible_bosses().collect();
+        let cards = super::boss_records(self);
         if cards.is_empty() {
             self.fields[0].clear();
             return;
         }
-        let index = cards.iter().position(|(key, _)| key == &self.fields[0]);
+        let index = cards.iter().position(|key| *key == self.fields[0]);
         let index = index.map_or(0, |i| {
             if previous {
                 (i + cards.len() - 1) % cards.len()
@@ -42,7 +37,7 @@ impl BossEncounterPanel {
                 (i + 1) % cards.len()
             }
         });
-        self.fields[0] = cards[index].0.clone();
+        self.fields[0] = cards[index].to_owned();
     }
 }
 

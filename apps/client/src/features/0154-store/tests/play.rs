@@ -154,3 +154,78 @@ fn store_native_preview_remains_visible_after_catalogue_feedback() {
     };
     assert!(native::panel_text(&p).contains("Preview: Horse — 73 coins"));
 }
+
+#[test]
+fn coin_gift_reviews_exact_recipient_amount_and_remains_disabled()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::StoreCataloguePage;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true);
+    crate::play::mailbox::lock(&link.mailbox).store.catalogue = Some(StoreCataloguePage {
+        catalog_revision: "r1".into(),
+        offers: vec![],
+        next_page_cursor: String::new(),
+        total_coins: 100,
+        transferable_coins: 40,
+    });
+    link.store_gift_open();
+    let action = |code, recipient: &str, amount: &str| {
+        crate::play::feature_0154_store::input::gift_submit(
+            &mut crate::play::mailbox::lock(&link.mailbox).store,
+            code,
+            &[recipient.into(), amount.into()],
+        )
+    };
+    assert!(action(0, "Alice", "20"));
+    assert!(!action(1, "Bob", "20"));
+    assert!(
+        link.store_panel()
+            .feedback
+            .as_deref()
+            .is_some_and(|s| s.contains("Review"))
+    );
+    assert!(!action(0, "Alice", "41"));
+    assert!(action(0, "Alice", "20"));
+    crate::play::mailbox::lock(&link.mailbox)
+        .store
+        .catalogue
+        .as_mut()
+        .ok_or("catalogue")?
+        .transferable_coins = 10;
+    assert!(!action(1, "Alice", "20"));
+    assert!(
+        link.store_panel()
+            .feedback
+            .as_deref()
+            .is_some_and(|s| s.contains("exceeds"))
+    );
+    crate::play::mailbox::lock(&link.mailbox)
+        .store
+        .catalogue
+        .as_mut()
+        .ok_or("catalogue")?
+        .transferable_coins = 40;
+    assert!(action(0, "Alice", "20"));
+    assert!(!action(1, "Alice", "20"));
+    assert!(
+        link.store_panel()
+            .feedback
+            .as_deref()
+            .is_some_and(|s| s.contains("No coins were moved"))
+    );
+    assert!(commands.try_recv().is_err());
+    assert_eq!(
+        link.store_panel()
+            .catalogue
+            .as_ref()
+            .map(|p| p.transferable_coins),
+        Some(40)
+    );
+    assert!(!link.store_panel().pending);
+    outbox.store_initialize(false);
+    assert!(!link.store_panel().gift_open);
+    assert!(link.store_panel().gift_reviewed.is_none());
+    assert!(link.store_panel().gift_fields.iter().all(String::is_empty));
+    assert!(!action(0, "Alice", "1"));
+    Ok(())
+}

@@ -15,6 +15,9 @@ pub struct Panel {
     pub feedback: String,
     /// Only confirmed edits from this session; the existing wire has no settings query.
     pub confirmed: Vec<Action>,
+    /// Current destinations confirmed in this session, at most one per category.
+    pub destinations: Vec<Action>,
+    pub managed: bool,
     pub skipped: std::collections::BTreeSet<u32>,
     pub accepted: std::collections::BTreeSet<u32>,
     pub result: Option<QuickLootResult>,

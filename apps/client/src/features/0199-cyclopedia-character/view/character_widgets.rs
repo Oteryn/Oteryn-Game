@@ -64,7 +64,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
                 WS_TABSTOP,
             );
         }
-        for (id, label, x) in [(112, "Previous page", 10), (113, "Next page", 190)] {
+        for (id, label, x) in [(112, "Previous page", 10), (113, "Next page", 190), (117, "Analytics", 370)] {
             control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
         }
         let output = control(

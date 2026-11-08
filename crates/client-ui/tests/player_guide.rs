@@ -9,3 +9,16 @@ fn player_guide_switches_from_controls_to_recommendations() {
     guide.select(Page::Basics);
     assert!(guide.text().contains("right-click"));
 }
+
+#[test]
+fn compendium_has_updates_features_and_support_sections() {
+    let mut guide = Guide::default();
+    for (page, text) in [
+        (Page::Updates, "Updates"),
+        (Page::Features, "quests"),
+        (Page::Help, "translation"),
+    ] {
+        guide.select(page);
+        assert!(guide.text().contains(text));
+    }
+}
