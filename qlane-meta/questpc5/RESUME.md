@@ -12,3 +12,5 @@ Resume when an engine contract or the collector lands: merge main first, recheck
 
 N3 validation: workspace all-targets PASS (4m40s), fmt PASS, packet integrity PASS, duplicate migrations PASS. Repository generation produced no generated differences. This metadata-only audit does not require or claim fresh crate/PG execution.
 World pin-refresh and pin-check PASS; pinned digest unchanged. Final origin/main fetch/merge remained up to date.
+
+Continuation recheck: ENGNPC3423ac56e adds sixteen-track reward guards/proofs, not the missing personal marker or guarded taming. Main and the other checked engine heads remain unchanged; all ten WAITING-ENGINE rows remain current.

@@ -416,5 +416,11 @@
     "generation": "native content, quest bindings, completion matrix, talk candidates, item audit tags, world metadata; no generated differences",
     "unit_and_pg": "No changed crate, runtime, content or pinned test; historical proof remains explicitly historical",
     "world_pins": "PASS pin-refresh and pin-check; existing digest unchanged"
+  },
+  "continuation_engine_recheck": {
+    "ENGNPC": "3423ac56e151843f62652e6bbb45984b05c18aaf",
+    "main_unchanged": true,
+    "other_engine_heads_unchanged": true,
+    "result": "ENGNPC adds atomic sixteen-track reward guards; no personal map-marker delivery or quest-guarded taming. All ten waiting rows retain their missing contract."
   }
 }
