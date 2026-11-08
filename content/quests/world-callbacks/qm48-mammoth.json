@@ -3,7 +3,7 @@
   "callbacks": [
     {
       "key": "oteryn:quest-callback/qm48/mammoth",
-      "quest": "oteryn:quest.barbarian_test",
+      "quest": "oteryn:quest.the_ice_islands_quest",
       "trigger": "use",
       "requires_world_admission": true,
       "selector": {
@@ -22,13 +22,13 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/storage/41174",
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
           "minimum": 6,
           "maximum": 6,
           "set": 7
         },
         {
-          "track": "oteryn:quest-progress/storage/41177",
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03",
           "minimum": -1,
           "maximum": 2,
           "set": 2

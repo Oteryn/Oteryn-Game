@@ -2,7 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
-use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_gameplay_quests::quest::{barbarian_mead, world_callbacks::Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 const AT: Position = Position {
@@ -10,6 +10,7 @@ const AT: Position = Position {
     y: 31028,
     floor: -5,
 };
+const MISSION: &str = "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03";
 const KEY: &str = "oteryn:quest-callback/qm48/mammoth";
 
 #[test]
@@ -70,40 +71,6 @@ pub(super) async fn exercise(
     eprintln!("POSTGRES_DATABASE_READY qm48_mammoth version={version}");
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
-    // Arrange only Sven's external accepted-mission state through the typed writer.
-    let fence = owner
-        .current_quest_fence(session)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
-    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let seeded = slot
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            crate::durability::quest_state::QuestTransitionRequest {
-                transition_key: "oteryn:quest-transition/fixture-qm48-accepted".into(),
-                cause: crate::durability::quest_state::QuestCause::Command(
-                    crate::foundation::CommandRef::new(
-                        session,
-                        crate::foundation::CommandId::new(900).map_err(debug)?,
-                    ),
-                ),
-            },
-            owner.quest_catalogue.as_ref().ok_or("catalogue")?.clone(),
-        )
-        .await
-        .map_err(debug)?;
-    assert!(
-        matches!(
-            seeded,
-            crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
-        ),
-        "{seeded:?}"
-    );
-    drop(slot);
     let key =
         oteryn_world_bundle::bundle::placement_key(AT.floor, AT.x, AT.y, 1).ok_or("mammoth key")?;
     let mut placement = owner
@@ -203,8 +170,12 @@ pub(super) async fn exercise(
         .await?;
         assert_eq!(receipts, i64::from(command == 4));
     }
-    let rows:Vec<(String,i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ('oteryn:quest-progress/storage/41174','oteryn:quest-progress/storage/41177') ORDER BY track_key").bind(super::fixture::id(41).as_slice()).fetch_all(&h.pool).await?;
-    assert_eq!(rows.iter().map(|r| r.1).collect::<Vec<_>>(), vec![7, 2]);
+    let rows: Vec<(String, i64)> = sqlx::query_as("SELECT track_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3) ORDER BY track_key")
+        .bind(super::fixture::id(41).as_slice()).bind(MISSION).bind(barbarian_mead::TRACKS[0]).fetch_all(&h.pool).await?;
+    assert_eq!(
+        rows,
+        vec![(MISSION.into(), 2), (barbarian_mead::TRACKS[0].into(), 7)]
+    );
     let runtime = owner.runtime.lock().await;
     owner
         .states
@@ -232,7 +203,8 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-/// A fixture adds only the source NPC's accepted state; the actual action stays production.
+/// Only external NPC progress is arranged: the production callback and its bound
+/// transition remain byte-for-byte unchanged, including the live actor admission.
 pub(super) fn catalogue(
     original: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
@@ -241,31 +213,23 @@ pub(super) fn catalogue(
     let mut tracks = callback
         .storage
         .iter()
-        .map(|s| original.track(&s.track).cloned().ok_or("mammoth track"))
-        .collect::<Result<Vec<_>, _>>()?;
+        .zip([6, 1])
+        .map(|(state, accepted)| {
+            let mut track = original
+                .track(&state.track)
+                .cloned()
+                .ok_or("mammoth track")?;
+            track.initial = accepted;
+            Ok(track)
+        })
+        .collect::<Result<Vec<_>, &str>>()?;
     tracks.push(QuestTrack {
-        key: "oteryn:quest-progress/storage/41179".into(),
+        key: barbarian_mead::TRACKS[2].into(),
         quest: callback.quest.clone(),
-        initial: 0,
+        initial: 9,
         min: 0,
         max: 9,
     });
-    let seed = QuestTransition {
-        world_change: None,
-        key: "oteryn:quest-transition/fixture-qm48-accepted".into(),
-        quest: callback.quest.clone(),
-        effects: tracks
-            .iter()
-            .zip([6, 1, 9])
-            .map(|(t, value)| QuestEffect {
-                track: t.key.clone(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
-            })
-            .collect(),
-        completes: false,
-        experience: None,
-    };
     QuestStateCatalogue::new(
         original.content_revision(),
         tracks,
@@ -274,7 +238,6 @@ pub(super) fn catalogue(
                 .transition(&callback.key)
                 .ok_or("mammoth transition")?
                 .clone(),
-            seed,
         ],
     )
     .map_err(debug)
