@@ -51,4 +51,11 @@
 
 | M29 — Primal Ordeal Instance corpse stage/deadline and party prerequisite refusal | encx | 2200 reserved; coordinator-assigned 2200–2209 only | The Primal Ordeal | CLAIMED; party refusal fix transferred in ed8f218de, Instance corpse deadline implementation next |
 
+| M39: NPC any_topic offers and inventory quantity/absence predicates with refusal dialogue | questl2 | none planned; owner allocation 2020–2029 reserved | Tomes of Knowledge; Into The Bone Pit | CLAIMED |
+
+| M01b: imported-route EXPLORE native stage binding | questpc | none planned; only 2000–2009 if required by this assignment | 46 explore routes in MISSING-questpc-pc2.md, per ASSIGN.md | CLAIMED |
+| M08 — fenced live level/vocation/Premium predicates in source NPC programs | questpc2 | none planned; owner-assigned QMECH range 2050–2059 only | Elemental Spheres; Hot Cuisine; The Hidden City of Beregar | CLAIMED |
+
+| M01c imported-route: native USE / COLLECT / KILL stage bindings | questpc3 | 2030–2039 reserved; none allocated yet | Ancient Aucar Outfits Quest; Black Knight Quest; Dead Archer Quest; Decaying Defender Outfits Quest; Draconia Quest; Dreamer's Challenge Quest; Falconer Outfits Quest; Fanfare Quest; Feral Trappers Quest; Grimvale Quest; Illuminator Outfits Quest | CLAIMED |
+
 | M31 — native world-change activation, thresholds, raid bindings and journal/recipe lowering | engworldchg | 1840 reserved; explicit task allocation1840–1859 retained | All10 quests in MISSING-engworldchg.md | CLAIMED |
