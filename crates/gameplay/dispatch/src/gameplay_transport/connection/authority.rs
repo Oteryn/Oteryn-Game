@@ -588,6 +588,17 @@ pub trait FreshAdmissionAuthority {
         async { UseOutcome::rejected() }
     }
 
+    /// A live map handle can reach a specific world owner without being treated as carried.
+    /// Unknown map uses retain the ordinary fail-closed container/item path.
+    fn use_map_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// ITEM-USE-1c: one `USE` of the main backpack direct entry `item` (food or a potion) under
     /// capability 15. `command` is as for [`Self::use_object`].
     fn use_item(

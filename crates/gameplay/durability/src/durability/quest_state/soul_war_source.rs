@@ -131,6 +131,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(super::QuestSourceAction::SoulWar(Box::new(input))),
         )
         .await

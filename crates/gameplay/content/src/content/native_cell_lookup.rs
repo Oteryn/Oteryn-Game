@@ -93,6 +93,14 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError>;
+    /// Complete House-marker evidence from this exact loaded bundle scope.
+    /// Older or unqualified ports provide no absence proof.
+    fn house_tiles_present(
+        &self,
+        _scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        Err(StaticCellEngineError::Unqualified)
+    }
     /// Exact loaded base tile census, supplied only by the real bundle owner.
     /// Other ports cannot qualify a pinned activity source scene.
     fn source_capture_cell_count(&self) -> Option<usize> {
@@ -122,5 +130,12 @@ impl BundleCollisionIndex {
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.0.lookup(scope, cell)
+    }
+
+    pub fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        self.0.house_tiles_present(scope)
     }
 }

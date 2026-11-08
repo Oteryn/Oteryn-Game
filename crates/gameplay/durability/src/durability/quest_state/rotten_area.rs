@@ -98,6 +98,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
             Some(super::QuestSourceAction::RottenArea(input)),
         )
         .await

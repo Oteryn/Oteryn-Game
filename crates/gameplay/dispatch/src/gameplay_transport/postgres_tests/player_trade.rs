@@ -23,7 +23,14 @@ use tokio::{io::AsyncWriteExt, sync::Mutex};
 fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> TestResult {
     run_scenario(false)
 }
+#[test]
+fn player_trade_postgres_offer_waits_for_busy_holder() -> TestResult {
+    run_scenario_with_offer_contention(false, true)
+}
 pub(super) fn run_scenario(inspection: bool) -> TestResult {
+    run_scenario_with_offer_contention(inspection, false)
+}
+fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -34,7 +41,7 @@ pub(super) fn run_scenario(inspection: bool) -> TestResult {
                 let h = Harness::create(admin, "player_trade_wire", true)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, inspection).await.map_err(|e| e.to_string());
+                let result = scenario(&h, inspection, offer_contention).await.map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -60,7 +67,7 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
     tx.commit().await?;
     Ok(())
 }
-async fn scenario(h: &Harness, inspection: bool) -> TestResult {
+async fn scenario(h: &Harness, inspection: bool, offer_contention: bool) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -237,10 +244,38 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&h.pool).await?;
-    assert!(
-        owner.ensure_source_map_initialized().await,
-        "real source-map initialization"
+    // This is the ordinary idempotent admission step: temporary holder/commit
+    // unavailability must reach real readiness under the existing entry budget.
+    let map_budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
+        &admitted[0].game_session_id,
+        &h.root,
     );
+    let initialize = async {
+        map_budget
+            .retry_until(async || owner.ensure_source_map_initialized().await)
+            .await
+    };
+    let initialized = if offer_contention {
+        use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
+        let held = read_retry(&h.root, async || {
+            h.root.try_acquire_ready().map_err(CheckError::from)
+        })
+        .await
+        .map_err(debug)?;
+        assert!(
+            !owner.ensure_source_map_initialized().await,
+            "the held root must prevent the initial map commit"
+        );
+        let (initialized, ()) = join_two(initialize, async move {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            drop(held);
+        })
+        .await;
+        initialized
+    } else {
+        initialize.await
+    };
+    assert!(initialized, "real source-map initialization");
     for a in &mut admitted {
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
@@ -282,7 +317,19 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
             partner: targets[0],
             item: 2,
         };
-        assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        let offered = if offer_contention {
+            use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
+            let held = read_retry(&h.root, async || h.root.try_acquire_ready().map_err(CheckError::from)).await.map_err(debug)?;
+            let (offered, ()) = join_two(a.trade(offer_a), async move {
+                // Model an in-flight background read returning the sole ready holder.
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                drop(held);
+            }).await;
+            offered?
+        } else {
+            a.trade(offer_a).await?
+        };
+        assert_eq!(offered, ResultCode::Offered.payload());
         let (_, first, _) = owner
             .trade_observation(admitted[1].game_session_id)
             .await
@@ -707,7 +754,9 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
                 .acquire()
                 .await
                 .map_err(|_| "fixture lane unresolved")?;
-            h.root.try_issue_semantic_pass().map_err(debug)
+            crate::gameplay_transport::player_trade::preflight::read_retry(&h.root, async || {
+                h.root.try_issue_semantic_pass().map_err(crate::gameplay_transport::player_trade::CheckError::from)
+            }).await.map_err(debug)
         })
         .await;
         assert!(refreshed);
@@ -920,8 +969,9 @@ impl Peer {
         assert_eq!(
             r.0,
             CommandStatus::Accepted,
-            "command {kind}, id {}, result {:?}",
+            "command {kind}, id {}, intent {:?}, result {:?}",
             self.next - 1,
+            wire::decode_intent(payload),
             r.1
         );
         Ok(r.1)

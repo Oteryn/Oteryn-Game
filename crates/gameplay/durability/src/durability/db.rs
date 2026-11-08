@@ -16,6 +16,8 @@ use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Notify};
 
+mod ready_admission;
+
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_PASS_DEADLINE_MILLIS: u64 = 2_000;
 pub const DB_PASS_DEADLINE: Duration = Duration::from_millis(DB_PASS_DEADLINE_MILLIS);

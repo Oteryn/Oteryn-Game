@@ -7,6 +7,7 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, Movement
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerDeath {
     pub occurrence: PlayerDeathOccurrence,
+    pub public_cause: Option<crate::durability::character_death::PublicDeathCause>,
     pub cell: MovementLocalPosition,
 }
 

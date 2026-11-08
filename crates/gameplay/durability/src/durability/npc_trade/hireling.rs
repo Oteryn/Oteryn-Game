@@ -421,6 +421,7 @@ impl DurabilityRoot {
                 sell_all,
                 hireling: Some(Extra::Trade(selection)),
                 weights: None,
+                ..TradeCommitOptions::default()
             },
         )
         .await
@@ -443,6 +444,7 @@ impl DurabilityRoot {
                 sell_all: false,
                 hireling: Some(Extra::Package(Box::new(selection))),
                 weights: Some(weights),
+                ..TradeCommitOptions::default()
             },
         )
         .await

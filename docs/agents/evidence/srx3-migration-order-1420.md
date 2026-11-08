@@ -76,3 +76,20 @@ while disk space was low; no unit cases executed in that attempt. Completed
 build caches were reclaimed. Full unit execution and the post-1421 native
 scenario rerun remain pending under PREPUSH-2's cadence exception; neither is
 reported as green. CI with heavy tests remains required on the shipment head.
+
+## Owner-authorized main 6f61 integration
+
+The owner lifted the freeze to merge `6f61ac15d93bbda9f9d718721233c0d067f40530`.
+Main 1258 had renamed the ordinal constraint expected by our unchanged
+migration body. New **1422** verifies the complete current predicate and its
+semantic expression tree, then only renames that constraint. The former
+1358 file is now **1423**, byte-identical to its prior SQL. Migration 1357 and
+forward grants/provenance fixes 1420/1421 remain unchanged. The owned sequence
+is therefore **1357, 1420, 1421, 1422, 1423**.
+
+The actual bridge plus complete 1423 passed 27 positive/negative PostgreSQL
+CHECK cases in 0.188882 seconds inside a rolled-back transaction. An altered
+main predicate was refused in 0.024800 seconds. A separate fresh database
+applied all 364 current migration bodies in 4.716 seconds; the actual
+highscore-role SELECT executed in 0.281 ms. These SQL probes do not substitute
+for the separate native production-scenario replay.

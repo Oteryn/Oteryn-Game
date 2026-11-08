@@ -51,6 +51,8 @@ fn trade(
     unit_price: u64,
 ) -> TestResult<NpcTradeRequest> {
     Ok(NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: "fixture:npc.trader".into(),
             catalogue_revision: 1,
@@ -135,6 +137,14 @@ async fn commit(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     request: NpcTradeRequest,
 ) -> Result<NpcTradeOutcome, NpcTradeError> {
+    if request.cause.npc_key == "oteryn:npc.yasir" {
+        return harness.root.commit_yasir_trade(
+            authority, &harness.node,
+            fence().map_err(|_| NpcTradeError::InvalidInput)?, request,
+            oteryn_gameplay_world_change::daily::OrientalTraderTown::Ankrahmun.yasir_position(),
+            false,
+        ).await;
+    }
     harness
         .root
         .commit_npc_trade(
@@ -796,6 +806,21 @@ fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing(
     };
     runtime()?.block_on(async move {
         let harness = Harness::create(admin, "npcsiariki").await?;
+        let started = std::time::Instant::now();
+        let world = fence()?.runtime_scope.world_id();
+        // The achievement case must use the current reset owner's selected ship,
+        // through the same placement-bound entry point as the production NPC caller.
+        let epoch = (1..=256_u64).find(|epoch| {
+            crate::durability::world_event::changes::roll(world, *epoch, 0)
+                .is_ok_and(|day| day.oriental_trader == Some(
+                    oteryn_gameplay_world_change::daily::OrientalTraderTown::Ankrahmun))
+        }).ok_or("selected Ankrahmun trader day")?;
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(0),'1970-01')")
+            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).execute(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)")
+            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&harness.pool).await?;
+        let day = harness.root.world_changes(world, epoch).await?.ok_or("trader day")?;
+        assert_eq!(day.oriental_trader, Some(oteryn_gameplay_world_change::daily::OrientalTraderTown::Ankrahmun));
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -825,6 +850,9 @@ fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing(
         committed(&harness, &authority, with(10, "fixture:npc.trader")?).await?;
         assert_eq!(granted().await?, (vec![], 0));
         let first = with(30, "oteryn:npc.yasir")?;
+        assert!(matches!(harness.root.commit_npc_trade(
+            &authority, &harness.node, fence()?, first.clone()).await,
+            Err(NpcTradeError::RequirementNotMet)));
         committed(&harness, &authority, first.clone()).await?;
         let si_ariki = (vec!["oteryn:achievement/si_ariki".to_owned()], 1);
         assert_eq!(granted().await?, si_ariki);
@@ -837,6 +865,8 @@ fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing(
         assert_eq!(granted().await?, si_ariki);
         drop(authority);
         drop(seal);
-        harness.cleanup().await
+        harness.cleanup().await?;
+        eprintln!("POSTGRES_CASE_COMPLETED first_yasir_trade duration={:?} success=true", started.elapsed());
+        Ok(())
     })
 }

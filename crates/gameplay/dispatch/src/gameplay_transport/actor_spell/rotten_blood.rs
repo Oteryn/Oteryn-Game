@@ -20,6 +20,8 @@ impl ChannelSpellStates {
             session,
             crate::player_lethal::PlayerHitKind::Mitigated,
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            // Crystal rotten_blood_boss_mechanics.lua248 uses player:addHealth: the Lua caster is nil.
+            None,
             |state| {
                 crate::spell::actor_conditions::stage_preprocessed_player_hit(
                     state,

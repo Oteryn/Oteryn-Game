@@ -116,6 +116,33 @@ async fn write<C: ItemLoopContent>(
     let Some(before) = u16::try_from(mutation.before).ok() else {
         return Ok(UseDisposition::Rejected);
     };
+    let key = u64::from_be_bytes(
+        mutation.placement[32..]
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    );
+    if let Some((appearance, x, y, z)) = fishing::world_change_item_source(key) {
+        let position = (x, y, z as i8);
+        // The ID is provenance from the native daily constructor, not appearance/coordinate
+        // guessing: a player's ordinary flower at this same tile never enters this branch.
+        if appearance != 13842
+            || before != 13842
+            || !oteryn_gameplay_world_change::daily::THAWING_ICE_FLOWERS.contains(&position)
+            || operand.source_position
+                != super::super::map_item_mint_audit::map_item_spatial_position(x, y, -(z as i8))
+        {
+            return Ok(UseDisposition::Rejected);
+        }
+        let Ok(epoch) = u64::try_from(operand.scope.reset_epoch) else {
+            return Ok(UseDisposition::Rejected);
+        };
+        let Some(day) = super::super::world_event::changes::load(tx, world, epoch).await? else {
+            return Ok(UseDisposition::Rejected);
+        };
+        if !oteryn_gameplay_world_change::owner::is_active(&day, "thawing") {
+            return Ok(UseDisposition::Rejected);
+        }
+    }
     let roll = fishing::map_harvest_roll(
         native.source_digest(),
         *world.as_bytes(),

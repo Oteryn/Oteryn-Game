@@ -154,6 +154,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // QNPCFX: tender venison 52636, source-qualified by qnpcfx_item_profiles.py
     // from Crystal 201189f items.xml:88039 and the pinned client; zero speed.
     ("QNPCFX", 1),
+    // QUESTPC4: source-neutral sword52824; questpc4-stag-item-profiles.json.
+    ("QUESTPC4-STAG-ITEMS", 1),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -284,6 +286,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // (tools/content-migration/soulpit_echo_item_profiles.py EXTRA_IDS) from Crystal
     // 201189f871d23597b82caf88fd611454a2ddefb8 items.xml. All three keep speed_bonus=0.
     ("SV16-ECHO-CATALYSTS", 3),
+    // WORLDCHG: 41 source-captured definitions; 12369 is already in ITEMHOLD-Q.
+    ("WORLDCHG", 40),
+    // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
+    ("SRV9-MARRIAGE", 2),
 ];
 
 #[test]
@@ -291,9 +297,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     let input = input()?;
     let profiles: ItemProfilesDocument =
         serde_json::from_slice(&input.item_profiles.as_ref().ok_or("profiles")?.bytes)?;
-    // QENGINE2 adds exactly the 53 independently captured physical quest Items.
+    // QENGINE2 captures 53 shared Items plus seven portable QUESTPC4 Items.
     // The producer's fixed IDS set is source-pinned to Canary 47dfd51f XML/client
-    // data. Main d34807f5 has none of these keys; all retain qualified zero speed.
+    // data. All retain qualified zero speed; merged owner cohorts overlap.
     let proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
@@ -318,7 +324,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(profile.admission.materializable, "{key}");
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
-    assert_eq!(added_keys.len(), 53);
+    assert_eq!(added_keys.len(), 60);
     let npc_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../../tools/content-schema/native-gameplay/qnpcfx-item-profiles.json"
@@ -338,11 +344,44 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .ok_or("missing NPC venison profile")?;
     assert!(venison.admission.materializable);
     assert_eq!(venison.attributes.speed_bonus, Some(0));
+    let world_change_proof: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tools/content-schema/native-gameplay/world-change-item-profiles.json"
+    )))?;
+    let world_change_records = world_change_proof["records"]
+        .as_array()
+        .ok_or("world-change profiles")?;
+    assert_eq!(world_change_records.len(), 41);
+    for source in world_change_records {
+        let key = source["production_definition"]["production_key"]
+            .as_str()
+            .ok_or("world-change key")?;
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing world-change source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+    for id in [9585, 9586] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing marriage source profile {key}"))?;
+        assert!(profile.admission.materializable, "{key}");
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
+
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES
             + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
             + additions.len()
+            // Source-backed QUESTPC4 floor/callback cohorts add 26 + 23 keys.
+            + 26 + 23
     );
     for id in [2949, 12369, 14156, 33330, 44179, 52732] {
         let key = format!("oteryn:item.tibia.i{id}");

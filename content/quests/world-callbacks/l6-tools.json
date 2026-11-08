@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l6/yalahar-sewer-grate",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3073,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/mission01",
+          "minimum": -1,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3304",
+        "alternatives": ["oteryn:item.tibia.i9598"],
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have used the crowbar on a grate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:884-886",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:921-927"
+      ]
+    }
+  ]
+}

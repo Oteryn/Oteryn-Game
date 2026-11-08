@@ -37,6 +37,7 @@ use std::sync::{Arc, Mutex};
 mod creature_visuals;
 pub use creature_visuals::{CreatureVisualCue, CreatureVisualKind};
 mod quest_callbacks;
+mod world_change_phases;
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::QuestCallbackProjection;
 
@@ -198,26 +199,29 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [1025, 1949, 12369, 13842, 26077, 26087, 26100]
-            .into_iter()
-            .chain(6594..=6608)
-            .filter_map(|id| {
-                let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
-                Some((
-                    id,
-                    EntryFacts {
-                        definition: MapDefinition::Item(definition.reference),
-                        terrain_kind: None,
-                        appearance_id: id,
-                        blocks_projectile: definition.blocks_projectile,
-                        pickupable: definition.pickupable,
-                        bound: false,
-                        count: 1,
-                        sub_type: 0,
-                    },
-                ))
-            })
-            .collect();
+        let movement_definitions = [
+            1025, 1949, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074,
+            14076, 14077, 14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+        ]
+        .into_iter()
+        .chain(6594..=6608)
+        .filter_map(|id| {
+            let definition = item(&format!("oteryn:item.tibia.i{id}"))?;
+            Some((
+                id,
+                EntryFacts {
+                    definition: MapDefinition::Item(definition.reference),
+                    terrain_kind: None,
+                    appearance_id: id,
+                    blocks_projectile: definition.blocks_projectile,
+                    pickupable: definition.pickupable,
+                    bound: false,
+                    count: 1,
+                    sub_type: 0,
+                },
+            ))
+        })
+        .collect();
         Ok(Self {
             palette,
             movement_definitions,
@@ -238,6 +242,29 @@ impl BundleFacts {
         self.palette
             .get(index as usize)
             .is_none_or(|entry| entry.facts.terrain_kind == Some(TerrainKind::Wall) || entry.solid)
+    }
+
+    /// Collision of a transformed entry whose exact definition and appearance
+    /// already have qualified palette facts. Unknown/ambiguous targets cannot
+    /// clear a blocker from the immutable base map.
+    fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        let reference = match after.definition {
+            MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
+        };
+        if let Some(index) = self.unique_index(reference.get() - 1)
+            && self.palette.get(index as usize).is_some_and(|entry| {
+                entry.facts.definition == after.definition
+                    && entry.facts.appearance_id == after.appearance_id
+            })
+        {
+            return Some(self.blocks(index));
+        }
+        let mut entries = self.palette.iter().enumerate().filter(|(_, entry)| {
+            entry.facts.definition == after.definition
+                && entry.facts.appearance_id == after.appearance_id
+        });
+        let (index, _) = entries.next()?;
+        entries.next().is_none().then(|| self.blocks(index as u32))
     }
 
     /// Records the placements, house tiles and doors of one sector of `manifest`, and adds to
@@ -409,6 +436,16 @@ impl BundleFacts {
         self.house_doors.sort_unstable();
         self.house_doors.shrink_to_fit();
         self.doors.finish();
+    }
+
+    /// Source house identities in the checked active map, for public catalogue qualification.
+    pub fn house_ids(&self) -> impl Iterator<Item = u32> + '_ {
+        self.houses.iter().map(|(_, id)| *id)
+    }
+
+    /// Complete immutable House-marker presence after the boot scan finished.
+    pub(crate) fn has_house_tiles(&self) -> bool {
+        !self.houses.is_empty()
     }
 
     /// Exact source membership of an authored House tile. A boolean House marker
@@ -1120,6 +1157,8 @@ mod pickup_tests;
 #[cfg(test)]
 #[path = "facts/source_static_tests.rs"]
 mod source_static_tests;
+#[cfg(test)]
+mod terrain_collision_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1171,6 +1210,70 @@ mod tests {
         assert_eq!(facts.house_id(at(100)), None);
         assert!(facts.house_tile(at(100)));
         assert_eq!(facts.house_id(at(101)), Some(3438));
+    }
+
+    #[test]
+    fn worldchg_thawing_added_identity_and_harvest_cas_survive_callback_reordering()
+    -> Result<(), &'static str> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("source bundle");
+        let items = |key: &str| {
+            if matches!(key, "oteryn:item.tibia.i13842" | "oteryn:item.tibia.i13843") {
+                fixture::items("item:coin")
+            } else {
+                fixture::items(key)
+            }
+        };
+        let one = BundleFacts::palette(&bundle.manifest, items).expect("facts");
+        let two = BundleFacts::palette(&bundle.manifest, items).expect("facts");
+        let pos = TilePos {
+            x: 32255,
+            y: 31079,
+            floor: -5,
+        };
+        assert!(one.create_world_change_item(pos, 13842));
+        let first = MapFacts::movement_items(&one, pos)[0];
+        let view::EntrySource::Added(id) = first.source else {
+            return Err("Added source");
+        };
+        assert!(two.create_movement_item(pos, 13842, 0, || true));
+        let unrelated = MapFacts::movement_items(&two, pos)[0];
+        assert!(two.create_world_change_item(pos, 13842));
+        assert_eq!(MapFacts::movement_items(&two, pos)[1].source, first.source);
+        assert_ne!(unrelated.source, first.source);
+        assert_eq!(
+            two.install_world_change_harvest_state(id.get(), 1, 13843),
+            Some(true)
+        );
+        assert_eq!(
+            MapFacts::movement_items(&two, pos)[1].facts.appearance_id,
+            13843
+        );
+        assert_eq!(MapFacts::object_revision(&two, id.get()), 1);
+        assert!(two.create_world_change_item(pos, 13842));
+        assert_eq!(MapFacts::movement_items(&two, pos).len(), 2);
+        assert_eq!(
+            MapFacts::movement_items(&two, pos)[1].facts.appearance_id,
+            13843
+        );
+        assert_eq!(
+            two.install_world_change_harvest_state(id.get(), 1, 13842),
+            Some(false)
+        );
+        assert_eq!(
+            two.install_world_change_harvest_state(id.get(), 2, 13842),
+            Some(true)
+        );
+        assert_eq!(
+            two.install_world_change_harvest_state(id.get(), 1, 13843),
+            Some(true)
+        );
+        assert_eq!(
+            MapFacts::movement_items(&two, pos)[1].facts.appearance_id,
+            13842
+        );
+        assert_eq!(MapFacts::movement_items(&two, pos)[0], unrelated);
+        Ok(())
     }
 
     #[test]

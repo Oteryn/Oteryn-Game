@@ -111,6 +111,8 @@ impl ChannelSpellStates {
             now,
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
             true,
+            // Current-HP arena hazards have no creature caster.
+            None,
         )
     }
 }

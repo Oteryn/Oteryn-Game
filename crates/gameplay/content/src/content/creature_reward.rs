@@ -785,6 +785,11 @@ fn row(
             .and_then(|facts| facts.container_capacity)
             .filter(|capacity| {
                 (1..=GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX as u64).contains(&u64::from(*capacity))
+                    // Source capacity36 belongs only to this exact Seacrest
+                    // body; the independent runtime loot-entry limit stays30.
+                    || (*capacity == 36
+                        && corpse.key == "oteryn:item.tibia.i21893"
+                        && corpse.revision == "definition-r1")
                     || (*capacity == 48
                         && verified_source_corpses.contains(&corpse.key)
                         && source_soul_war_corpse_pair(creature, profile, &corpse))

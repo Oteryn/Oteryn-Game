@@ -115,6 +115,28 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(UseOutcome::rejected()));
         }
     }
+    // A map handle reaches only its explicit world owner. It never widens the
+    // carried-item or container admissions below; stale handles keep their refusal.
+    if let Ok(UseIntent {
+        target: UseTarget::Item(handle),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }) = &decoded
+        && admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+        && let Some(key @ (ItemKey::MapBase { .. } | ItemKey::MapAdded(_))) =
+            item_view.as_ref().and_then(|view| view.resolve(*handle))
+        && let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_map_item(actor, UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: command.command_id,
+                item_fence: admitted.item_fence,
+            }, key),
+        ).await.ok()?
+    {
+        return Some(Dispatch::Use(outcome));
+    }
     // The shared item-action owner also admits equipped hats and player-targeted toys.
     // Map and position uses must reach their own receipt probes before an unrelated
     // event-item inventory check can reject a historical command's stale fence.

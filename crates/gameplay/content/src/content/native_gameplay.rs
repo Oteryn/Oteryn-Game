@@ -35,7 +35,7 @@ use std::{
 pub mod cosmetics_loader;
 
 mod cosmetics_view;
-pub use cosmetics_view::NativeCosmeticsView;
+pub use cosmetics_view::{MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView};
 
 mod market_catalogue;
 

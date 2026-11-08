@@ -324,6 +324,10 @@ pub(super) async fn apply(
     else {
         return rejected();
     };
+    // Acquire the physical item lane before the revision cursor and SQL transaction.
+    let Some(item_permit) = admission.spell_lane_permit().await else {
+        return unknown();
+    };
     let mut slot = admission
         .revision_sequencer
         .acquire(item_fence.character_id)
@@ -393,6 +397,7 @@ pub(super) async fn apply(
             admission.root,
             admission.character,
             admission.holder,
+            &item_permit,
             fence,
             request,
             Arc::clone(catalogue),
@@ -412,6 +417,7 @@ pub(super) async fn apply(
         )
         .await;
     drop(slot);
+    drop(item_permit);
     match outcome {
         Ok(commit)
             if commit.read_only

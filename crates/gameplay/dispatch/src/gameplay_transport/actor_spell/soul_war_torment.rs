@@ -71,6 +71,8 @@ impl ChannelSpellStates {
             session,
             crate::player_lethal::PlayerHitKind::Death,
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            // The pinned Torment player:addHealth call has a nil caster; source registration is not a killer.
+            None,
             |state| {
                 state.stage_soul_war_torment_pulse(
                     counter.value(),

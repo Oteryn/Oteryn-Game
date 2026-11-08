@@ -32,6 +32,8 @@ fn facts(key: &str) -> ItemDefinitionFacts {
 }
 fn request() -> NpcTradeRequest {
     NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: crate::durability::house_hireling::npc_key(id(60)),
             catalogue_revision: 1,

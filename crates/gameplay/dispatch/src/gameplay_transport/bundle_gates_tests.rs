@@ -159,6 +159,8 @@ const INVENTORY: &[Entry] = &[
         },
         calls: &[
             ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // S10: source NPC wandering uses the same live-world movement gate.
+            ("gameplay_transport/npc_actor/current_map.rs", 1),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
             // W17: the physical Drome regression proves participant-only targeting.
@@ -846,11 +848,19 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
+    // QUESTPC4 source callback and reset fixtures bind their explicit source room.
+    (
+        "gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+        2,
+    ),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
     (
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
         1,
     ),
+    // S10 source NPC fixtures supply combat only; qualified room remains None.
+    ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
+    ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),

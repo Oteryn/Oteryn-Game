@@ -523,7 +523,15 @@ impl ChannelSpellStates {
         }
         if next.vitals().health > 0 {
             let label = format!("creature:{}", super::hex(&source.placement_identity()));
-            next = next.stage_source_player_conditions(label, definitions, immunities, facts)?;
+            let historical = super::native_public_death_cause(runtime, source)
+                .and_then(|cause| cause.historical_source());
+            next = next.stage_source_player_conditions_with_history(
+                label,
+                definitions,
+                immunities,
+                facts,
+                historical.as_ref(),
+            )?;
         }
         let changed = next != *before;
         let revision = if changed {
@@ -536,6 +544,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
+                public_cause: super::native_public_death_cause(runtime, source),
                 occurrence: (self.mint_death)()?,
                 cell,
             })

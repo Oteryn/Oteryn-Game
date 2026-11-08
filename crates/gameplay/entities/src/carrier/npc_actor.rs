@@ -145,6 +145,54 @@ impl NpcPlacementTable {
 }
 
 impl ChannelRuntimeV1 {
+    /// Move an already admitted Rashid actor when the UTC weekday destination changes.
+    /// The pinned donor schedule teleports his existing actor and resets masterPos.
+    /// Preserve the actor identity while advancing the ordinary visibility position revision.
+    pub fn rotate_rashid_at(&mut self, unix_ms: i64) -> Result<bool, NpcPlacementError> {
+        self.owner_fence().map_err(NpcPlacementError::Carrier)?;
+        let expected = crate::rashid_schedule::destination_at(unix_ms).placement;
+        let next = cell(expected)?;
+        let Some(index) = self.carrier.slots.iter().position(|slot| matches!(slot,
+            Slot::NpcOccupied { key, hireling: None, .. } if key.as_ref() == crate::rashid_schedule::RASHID_NPC_KEY))
+        else { return Ok(false); };
+        let Slot::NpcOccupied { position, .. } = &self.carrier.slots[index] else {
+            return Ok(false);
+        };
+        let at = crate::MovementLocalPosition {
+            x: position.position.x,
+            y: position.position.y,
+            floor: position.position.floor,
+        };
+        if crate::rashid_schedule::trade_available(
+            crate::rashid_schedule::RASHID_NPC_KEY,
+            at,
+            unix_ms,
+        ) {
+            return Ok(false);
+        }
+        let revision = position
+            .revision
+            .checked_add(1)
+            .ok_or(NpcPlacementError::Carrier(
+                CarrierError::PositionRevisionExhausted,
+            ))?;
+        // Retrying on the next owner pass avoids overlapping a player occupying the arrival cell.
+        if self
+            .carrier
+            .cell_occupied(self.pinned_position_context(), next)
+        {
+            return Err(NpcPlacementError::CellOccupied);
+        }
+        let Slot::NpcOccupied { position, .. } = &mut self.carrier.slots[index] else {
+            return Ok(false);
+        };
+        position.position = next;
+        position.revision = revision;
+        position.last_translation_revision = revision;
+        position.facing = Some(expected.direction);
+        Ok(true)
+    }
+
     /// Adds one service NPC after boot. Used by durable, house-scoped hirelings only.
     pub fn place_dynamic_npc(
         &mut self,
@@ -407,6 +455,61 @@ mod tests {
             )
             .expect("native NPC placements");
         (runtime, outcome.actors[0], outcome.actors[1])
+    }
+
+    #[test]
+    fn rashid_weekday_rotation_preserves_actor_and_does_not_recentre_wandering() {
+        let mut runtime = runtime(2);
+        let thursday = crate::rashid_schedule::destination_at(0).placement;
+        let actor = runtime
+            .place_npcs(
+                &table(vec![npc(
+                    crate::rashid_schedule::RASHID_NPC_KEY,
+                    vec![thursday],
+                )]),
+                all,
+                true,
+            )
+            .expect("Thursday Rashid")
+            .actors[0];
+        let original = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("position");
+        let wandered = MovementLocalPosition {
+            x: i32::from(thursday.x) + 1,
+            y: i32::from(thursday.y),
+            floor: -i16::from(thursday.floor),
+        };
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(original, wandered)
+            .expect("wander");
+        assert_eq!(runtime.rotate_rashid_at(0), Ok(false));
+        assert_eq!(
+            runtime
+                .borrow_movement_position()
+                .read(actor)
+                .expect("wander retained")
+                .position(),
+            wandered
+        );
+        assert_eq!(runtime.rotate_rashid_at(86_400_000), Ok(true));
+        let friday = crate::rashid_schedule::destination_at(86_400_000).placement;
+        let moved = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("same actor");
+        assert_eq!(
+            moved.position(),
+            MovementLocalPosition {
+                x: i32::from(friday.x),
+                y: i32::from(friday.y),
+                floor: -i16::from(friday.floor),
+            }
+        );
+        assert_eq!(moved.revision(), 3);
+        assert_eq!(runtime.rotate_rashid_at(86_400_001), Ok(false));
     }
 
     #[test]
