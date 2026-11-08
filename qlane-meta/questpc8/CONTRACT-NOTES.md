@@ -837,3 +837,8 @@ loot becomes a grant and no test count or refusal assertion is relaxed.
   Restore those exact already-published rows to chosen-route-rewards.json before
   regeneration; do not hand-patch generated outputs or lose the earlier openings.
   Revalidate both opening PG cases alongside the new dream-report regression.
+- The NX6 donor dream fixture originally had no Premium coordinator. Preserve
+  the chosen report's Premium requirement and explicitly provision its current,
+  latched Premium authority through the existing scenario setup. The new test
+  asserts that authority is present before testing the missing-receipt refusal;
+  it does not turn a Premium refusal into evidence of receipt enforcement.

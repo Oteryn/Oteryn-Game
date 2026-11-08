@@ -20,6 +20,7 @@ async fn refuse(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &Admit
 
 pub(super) async fn before(owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession, dragon:EntityRef) -> TestResult {
     eprintln!("POSTGRES_CASE_STARTED questpc8_wrath_dream_report");
+    assert!(owner.premium_coordinator.is_some(), "chosen Wrath needs native Premium authority");
     assert!(owner.quest_catalogue.as_ref().ok_or("catalogue")?.transition(REPORT).is_some(),"WRATH_DREAM_REPORT_RED: chosen stage has no receipt-bound native report");
     talk(owner,admitted,dragon,6001,"hi").await?;
     refuse(owner,admitted,dragon,6002).await

@@ -571,6 +571,7 @@ fn scenario_case(
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let premium = if name.starts_with("authored-")
+            || name == "nx6-wayfarer"
             || name.contains("l6-beggar-")
             || name.contains("l7-knight-")
             || name.contains("l8-")
@@ -705,7 +706,7 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead {
+        if mead || name == "nx6-wayfarer" {
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
