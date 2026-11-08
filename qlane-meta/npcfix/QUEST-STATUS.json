@@ -51,5 +51,23 @@
     },
     "broader_authoring_checks": "running; no full-pass claim",
     "new_migrations": []
+  },
+  "hoaxette_slice": {
+    "state": "GREEN_FOCUSED_BOOT_PENDING",
+    "code_commit": "d06fa01e7",
+    "scope": "April-only conditional source occurrence, exact actor retirement; not the NPC services or whole quest",
+    "source_cell": [
+      32380,
+      32215,
+      7
+    ],
+    "source": "content/npcs/definitions/npcs-00500-00999.json records[107] source metadata, BR revision357473",
+    "red_pg_seconds": 11.705896845,
+    "green_pg_seconds": 16.201671309,
+    "focused_tests": 3,
+    "clippy": "PASS game-server lib after qmech merge",
+    "pin_check": "PASS after qmech merge",
+    "migrations": [],
+    "boot": "all18 variants queued; no pass claimed"
   }
 }

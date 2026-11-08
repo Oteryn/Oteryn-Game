@@ -534,7 +534,7 @@ pub(super) fn place(
 
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, reason = "test fixtures")]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::foundation::{ChannelId, NodeId, WorldId};
 

@@ -68,8 +68,7 @@ fn m38_hoaxette_refuses_absent_calendar_unadmitted_catalogue_and_bad_anchor() {
     }
 }
 
-#[test]
-fn m38_hoaxette_postgres_reset_calendar_controls_presence_and_epoch_replay()
+pub(crate) fn m38_hoaxette_postgres_case()
 -> crate::bestiary_postgres_harness::TestResult {
     use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
     let Some(admin) = configured_admin() else {
