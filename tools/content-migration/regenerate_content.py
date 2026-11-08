@@ -90,6 +90,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
@@ -501,7 +502,7 @@ def unresolved_worktree_paths() -> list[str]:
 
 
 def refresh_quest_callback_proof() -> None:
-    """Re-pin merged compiler/callback inputs without changing reviewed snapshots."""
+    """Re-pin existing compiler inputs without changing reviewed proof snapshots."""
     directory = ROOT / "tools/content-schema/quest-authoring/samples/completion242"
     approval_path = directory / "source-fix-approval.json"
     receipt_path = directory / "source-fix-receipt.json"
@@ -518,12 +519,6 @@ def refresh_quest_callback_proof() -> None:
             if relative.is_absolute() or ".." in relative.parts or not source.is_relative_to(ROOT):
                 raise ValueError("source compiler input escapes repository")
             descriptor["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
-    callback_path = "content/quests/world-callbacks.json"
-    digest = hashlib.sha256((ROOT / callback_path).read_bytes()).hexdigest()
-    for document in (approval, receipt):
-        for descriptor in document["proof_inputs"]:
-            if descriptor["path"] == callback_path:
-                descriptor["sha256"] = digest
     approval_path.write_text(json.dumps(approval, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     receipt["approval"]["sha256"] = hashlib.sha256(approval_path.read_bytes()).hexdigest()
     receipt_path.write_text(json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
@@ -551,6 +546,7 @@ def main() -> int:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         for census in ("equipment", "audit_sites", "room_sites"):
             run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
@@ -585,6 +581,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
     for census in ("equipment", "audit_sites", "room_sites"):
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
+    run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

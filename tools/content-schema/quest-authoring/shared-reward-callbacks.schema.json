@@ -69,7 +69,7 @@
           "type": "array",
           "maxItems": 20,
           "items": {
-            "$ref": "#/$defs/item"
+            "$ref": "#/$defs/giftItem"
           }
         },
         "backpack_outputs": {
@@ -438,10 +438,6 @@
             }
           }
         },
-        "carried_exchange": {
-          "type": "boolean",
-          "default": false
-        },
         "carried_item": {
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
@@ -492,6 +488,10 @@
               }
             }
           }
+        },
+        "carried_exchange": {
+          "type": "boolean",
+          "default": false
         },
         "experience": {
           "type": "integer",
@@ -768,6 +768,47 @@
           ]
         }
       }
+    },
+    "giftItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "count"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "fluid_subtype": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "fluid_subtype"
+            ]
+          },
+          "then": {
+            "properties": {
+              "count": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

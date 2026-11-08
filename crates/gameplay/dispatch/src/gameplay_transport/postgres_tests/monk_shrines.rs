@@ -72,6 +72,7 @@ fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("monk-shrines", || {
         super::quest_world_callbacks::scenario(
             "monk-guidance",
@@ -82,7 +83,12 @@ fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
             },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED monk_shrines_real_use_persists_once_and_checks_each_level duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 #[test]
@@ -206,7 +212,7 @@ pub(super) async fn exercise(
             let actor = admitted.runtime_actor.ok_or("actor")?;
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
+            let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
                 &runtime,
                 owner.movement_cells,
                 actor,
@@ -215,6 +221,7 @@ pub(super) async fn exercise(
                 local(Position { x: p.x - 1, ..p }),
                 false,
                 &doors,
+                None,
             )
             .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;

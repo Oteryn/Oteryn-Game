@@ -36,6 +36,7 @@ fn colours_blue_opening_preserves_letter_remainder_and_stage_guards() -> Result<
         assert_eq!(
             callback.take,
             [ItemAmount {
+                fluid_subtype: None,
                 item: format!("oteryn:item.tibia.i{input}"),
                 count: 1
             }]
@@ -54,6 +55,7 @@ fn colours_blue_opening_preserves_letter_remainder_and_stage_guards() -> Result<
             assert_eq!(
                 grant.backpack_outputs,
                 [ItemAmount {
+                    fluid_subtype: None,
                     item: "oteryn:item.tibia.i12205".into(),
                     count: 1
                 }]
@@ -79,11 +81,13 @@ fn colours_exchange_admission_matches_reused_postgresql_bounds() -> Result<(), S
         let mut invalid = source.clone();
         if many_inputs {
             invalid.take.extend((5901..5909).map(|item| ItemAmount {
+                fluid_subtype: None,
                 item: format!("oteryn:item.tibia.i{item}"),
                 count: 1,
             }));
         } else {
             invalid.take.push(ItemAmount {
+                fluid_subtype: None,
                 item: "oteryn:item.tibia.i5901".into(),
                 count: 101,
             });

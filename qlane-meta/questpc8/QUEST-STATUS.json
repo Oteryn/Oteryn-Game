@@ -1459,6 +1459,12 @@
       "proof": "unit-completion-validation.json",
       "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
       "qualification_unchanged": true
+    },
+    "main_sync": {
+      "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+      "proof": "main-83ac-validation.json",
+      "state": "COMPILE_UNIT_GREEN_DISPATCH_PG_PENDING",
+      "qualification_unchanged": true
     }
   },
   {
@@ -1743,6 +1749,12 @@
     "continuation_validation": {
       "proof": "unit-completion-validation.json",
       "unit_run": "INTERRUPTED_FOR_MAIN_MERGE;6affected cases PASS after abort",
+      "qualification_unchanged": true
+    },
+    "main_sync": {
+      "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
+      "proof": "main-83ac-validation.json",
+      "state": "COMPILE_UNIT_GREEN_DISPATCH_PG_PENDING",
       "qualification_unchanged": true
     }
   },

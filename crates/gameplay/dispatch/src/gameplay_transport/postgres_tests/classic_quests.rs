@@ -56,8 +56,13 @@ pub(super) async fn install<const N: usize>(
     )
     .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model_with_native_quests(&model, &keys)));
-    owner.states.chat.admit(admitted.game_session_id, "Quest witness", owner.owner_now());
+    owner.states.chat.install_npc_talk(std::sync::Arc::new(
+        NpcTalkBook::from_model_with_native_quests(&model, &keys),
+    ));
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -522,7 +527,7 @@ pub(super) async fn exercise_step(
             let mut runtime = owner.runtime.lock().await;
             let expected = runtime.read_actor_position(actor).map_err(debug)?;
             let doors = crate::map::floor::BundleDoors(world.facts().doors());
-            let proof = crate::map::floor::prepare_quest_callback_teleport(
+            let proof = crate::map::floor::prepare_quest_callback_teleport_facing(
                 &runtime,
                 owner.movement_cells,
                 actor,
@@ -531,6 +536,7 @@ pub(super) async fn exercise_step(
                 origin,
                 false,
                 &doors,
+                None,
             )
             .map_err(debug)?;
             runtime.commit_source_step(proof).map_err(debug)?;

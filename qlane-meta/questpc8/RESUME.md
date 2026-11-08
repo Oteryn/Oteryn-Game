@@ -1,3 +1,26 @@
+# Active checkpoint: main83ac integrated; full dispatch PG running
+
+Resolved64conflicts while retaining both accepted main QUESTPC4 and questpc8
+mechanics. Native fluid/charge and backpack output paths compose once. Three
+review P1s repaired: premium-only contextual admission, world completion flag
+and exact optional fluid child matching (new own migration1308). All369
+migrations pass actual PostgreSQL; exact-output RED2.988s/GREEN3.265s markers
+are recorded. Never edit canonical1254/1301 or reused1552.
+Main registry safety now permits only provably disjoint owned phases on a reused
+selector; aliases/overlap/crossquest/actor ambiguity remain refused. Published
+main hashes and newer chosen reward markers both retain their exact contracts.
+Quest units355/355PASS26.28s; focusedPython100PASS; workspace all-targets PASS;
+changed-crate clippy PASS2m49s; fmt and duplicate migrations PASS.
+All generated source/claims/binding/completion/native/pins are regenerated.
+Equipment expected3924keys is independently the union of immutable published
+inputs; baseline3663 and every raw attribute assertion remain checked.
+See main-83ac-validation.json for failure repairs, scripts, logs and migrations.
+Five full native dispatch PG cases are BUILDING in /tmp/questpc8b-83ac-own-pg.log .
+Continue them immediately after the PREPUSH-2 cadence checkpoint; no full
+dispatch PG or full backend-unit completion is claimed until their actual result.
+Original questpc8 remains FROZEN; all work stays on questpc8b. Whole quest count
+remains21/23; selected-player colour and item-look disguise stay QENGINE2-owned.
+
 # Active checkpoint: authorized compiling-state push, then resume main merge
 
 Main advanced to83acbdac3 (QUESTPC4/#3029). Fail-fast push guard stopped

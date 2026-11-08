@@ -364,6 +364,8 @@ pub(super) async fn exercise(
         assert_eq!(
             callback.take,
             vec![ItemAmount {
+                fluid_subtype: None,
+
                 item: format!("oteryn:item.tibia.i{id}"),
                 count: needed
             }]

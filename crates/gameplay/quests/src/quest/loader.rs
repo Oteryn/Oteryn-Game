@@ -229,6 +229,7 @@ pub fn load_embedded_quest_state(
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::death_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
@@ -254,6 +255,12 @@ pub fn load_embedded_quest_state(
     }
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
+    // This tool-owned auxiliary flag is outside the captured NPC track inventory.
+    lowered.source_tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
+        "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
+    );
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Preserve source captures and their counts; only the production catalogue
@@ -442,6 +449,14 @@ mod tests {
         );
         let registries = [
             crate::quest::world_callbacks::EMBEDDED,
+            // Accepted main83acbdac3 source cohorts remain independently enumerated.
+            include_str!(
+                "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/l6-item-rewards.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tools.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-world-puzzles.json"),
+            include_str!("../../../../../content/quests/world-callbacks/l6-tomb-rooms.json"),
             include_str!("../../../../../content/quests/shared-access-callbacks.json"),
             include_str!("../../../../../content/quests/native-scene-callbacks.json"),
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
@@ -487,6 +502,24 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
         assert_eq!(expected.len() - before_native, 65);
+        // Crystal source carried tomb keys and shared switch/gate identities
+        // are fixed independently of the runtime callback constructors.
+        let before_main_native = expected.len();
+        for unique in 3950..=3956 {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-key-{unique}")));
+        }
+        for suffix in [
+            "thalas-switch",
+            "diprath-switch",
+            "ashmunrah-switch",
+            "thalas-switch-gate",
+            "diprath-switch-gate",
+            "ashmunrah-switch-gate",
+            "diprath-room",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/ancient-tombs-{suffix}")));
+        }
+        assert_eq!(expected.len() - before_main_native, 14);
         assert_eq!(
             callbacks
                 .into_iter()

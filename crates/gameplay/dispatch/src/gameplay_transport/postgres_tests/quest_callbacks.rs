@@ -29,7 +29,24 @@ pub(super) fn source_world_choices(
     choices: &[(u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_rectangle(chest, choices, appearance, 1)
+    source_world_positions(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, unique)| (*x, chest.1, *unique))
+            .collect::<Vec<_>>(),
+        appearance,
+    )
+}
+
+/// Preserve all source placements of one shared claim, including different rows.
+pub(super) fn source_world_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
+    appearance: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let rows: Vec<_> = choices.iter().map(|(_, y, _)| (*y, appearance)).collect();
+    source_world_rectangle_positions(chest, choices, appearance, 1, 2, &[], &rows)
 }
 
 pub(super) fn source_world_rectangle(
@@ -50,13 +67,37 @@ pub(super) fn source_world_rectangle_with_prefix(
     west: u16,
     prefix: &[u16],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_rectangle_with_prefix_rows(chest, choices, appearance, height, west, prefix, &[(chest.1, appearance)])
+    source_world_rectangle_with_prefix_rows(
+        chest,
+        choices,
+        appearance,
+        height,
+        west,
+        prefix,
+        &[(chest.1, appearance)],
+    )
 }
 
 /// Several native cache rows may share the same appearance and column.
 pub(super) fn source_world_rectangle_with_prefix_rows(
     chest: (u16, u16, i8),
     choices: &[(u16, u16)],
+    appearance: u16,
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    rows: &[(u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let positions: Vec<_> = choices
+        .iter()
+        .flat_map(|(x, unique)| rows.iter().map(move |(y, _)| (*x, *y, *unique)))
+        .collect();
+    source_world_rectangle_positions(chest, &positions, appearance, height, west, prefix, rows)
+}
+
+fn source_world_rectangle_positions(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16)],
     appearance: u16,
     height: u16,
     west: u16,
@@ -94,13 +135,24 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
     let mut row_palettes = Vec::new();
     for (row, row_appearance) in rows {
         let key = format!("oteryn:terrain.tibia.i{row_appearance}");
-        let palette = if let Some(index) = data.manifest.palette.iter().position(|entry| entry.key == key) {
+        let palette = if let Some(index) = data
+            .manifest
+            .palette
+            .iter()
+            .position(|entry| entry.key == key)
+        {
             u32::try_from(index).map_err(debug)?
         } else {
             let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
             data.manifest.palette.push(bundle::PaletteEntry {
-                key, family: bundle::Family::Terrain, id,
-                terrain: Some(bundle::Terrain { kind: bundle::TerrainKind::Common, walkable: None, ground_speed: None }),
+                key,
+                family: bundle::Family::Terrain,
+                id,
+                terrain: Some(bundle::Terrain {
+                    kind: bundle::TerrainKind::Common,
+                    walkable: None,
+                    ground_speed: None,
+                }),
             });
             id
         };
@@ -114,24 +166,34 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
     };
     let min_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
         .min(chest.0 - west);
     let max_x = choices
         .iter()
-        .map(|(x, _)| *x)
+        .map(|(x, _, _)| *x)
         .max()
         .ok_or("source choices")?
         .max(chest.0);
+    let min_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .min()
+        .ok_or("source choices")?;
+    let max_y = choices
+        .iter()
+        .map(|(_, y, _)| *y)
+        .max()
+        .ok_or("source choices")?;
     data.manifest.world = bundle::Extent {
         min_x,
-        min_y: chest.1,
+        min_y,
         max_x: max_x + 1,
-        max_y: chest.1 + height,
+        max_y: (max_y + 1).max(chest.1 + height),
         floors: vec![chest.2],
     };
-    let tiles = (chest.1..chest.1 + height)
+    let tiles = (min_y..(max_y + 1).max(chest.1 + height))
         .flat_map(|y| {
             (min_x..=max_x).map(move |x| sector::Tile {
                 x,
@@ -139,9 +201,8 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
                 flags: 0,
                 house: 0,
                 zones: Vec::new(),
-                items: if let Some((_, unique)) = choices
-                    .iter()
-                    .find(|(placed, _)| *placed == x)
+                items: if let Some((_, _, unique)) =
+                    choices.iter().find(|(px, py, _)| (*px, *py) == (x, y))
                     && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
                 {
                     std::iter::once(ground())
@@ -175,7 +236,7 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
             .or_default()
             .push(tile);
     }
-    let sectors = grouped
+    let mut sectors = grouped
         .into_iter()
         .map(|((sx, sy), tiles)| bundle::Sector {
             floor: chest.2,
@@ -184,6 +245,7 @@ pub(super) fn source_world_rectangle_with_prefix_rows(
             tiles,
         })
         .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
     let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -270,7 +332,15 @@ pub(super) async fn wire_uses(
 
 pub(super) async fn wire_use_targets(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
+    mut admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
+    wire_use_targets_retained(owner, &mut admitted, commands).await
+}
+
+pub(super) async fn wire_use_targets_retained(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
     commands: &[(u64, &WorldObjectTarget)],
 ) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
@@ -321,7 +391,7 @@ pub(super) async fn wire_use_targets(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(
             async {
-                let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+                let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
                 drop(server);
                 end
             },
@@ -329,6 +399,12 @@ pub(super) async fn wire_use_targets(
         ),
     )
     .await?;
+    use crate::gameplay_transport::connection::ConnectionEnd;
+    if let ConnectionEnd::AdmittedThenDisconnected(next)
+    | ConnectionEnd::AdmittedThenClosed(next, _) = &end
+    {
+        *admitted = *next;
+    }
     results.map_err(|error| format!("{end:?}: {error}").into())
 }
 
