@@ -15,4 +15,5 @@
 |---|---|---|---|---|
 | cults_boss_phase_closures: wire shared native phase owner into production admission/deaths and durable settlement | ENGENC2 | none; reserved range 1800–1819 | Cults of Tibia | CLAIMED |
 | Fugue native combat profile source missing from checked native catalogue | ENGENC2 | none | The Order of the Lion | OWNER: need an authoritative creature profile; do not invent combat data |
+| Literal readable text on NPC/World quest Item rewards through the existing MINT owner | questpc5 | none planned; own range 1270–1279 retained | Nomads Land Quest (book reward step only; window puzzle remains) | CLAIMED |
 | Literal readable text on quest-reward root Items through the existing fenced mint owner (NPC/world bridge) | qready1 | none planned; retained range 1430–1439 | Nomads Land Quest (Sacred Casket book reward semantics only; other blockers remain) | CLAIMED |
