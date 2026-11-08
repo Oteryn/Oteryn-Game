@@ -54,9 +54,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 8 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 119 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Encounter gains depend on generation-specific source-hook closure, physical corpse Item admission, candidate layout and exact room publication, then the owning quest start/final reward bindings."
         ]
       },
@@ -159,7 +159,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 462
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:26"
     },
     {
       "suffix": "e2e-rows",
@@ -220,11 +221,24 @@
         ]
       },
       "C_merge_delta": {
-        "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
-        "dependencies": [
-          "Head is 14 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
-        ]
+        "status": "EXACT_ZERO_FOR_AUDITED_CLASSIFICATION",
+        "wiki_titles": {
+          "PLAYABLE_PROVEN": 0,
+          "LIVE_UNPROVEN": 0,
+          "REWARD_ONLY_LIVE": 0,
+          "BINDING_MISSING": 0,
+          "MECHANIC_MISSING": 0
+        },
+        "canonical_definitions": {
+          "PLAYABLE_PROVEN": 0,
+          "LIVE_UNPROVEN": 0,
+          "REWARD_ONLY_LIVE": 0,
+          "BINDING_MISSING": 0,
+          "MECHANIC_MISSING": 0
+        },
+        "reason": "Composed tree has identical content, gameplay server handlers/boot outside qualification, and existing quest completion proof files. Added feature qualification rows do not drive complete wiki quest programmes. No native server binding/proof changes under C criteria; no assertion about client regressions or a fresh passing build.",
+        "disposition": "CLOSED_EXACT_CLASSIFICATION_DELTA",
+        "dependencies": []
       },
       "new_native_owner_files": [],
       "literal_registry_sha256": "c969a50452a74c88a9702d064ab537a9d176574dde73cb6f1776003b7a9a109c",
@@ -245,7 +259,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 462
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:354"
     },
     {
       "suffix": "qready1b",
@@ -297,9 +312,9 @@
       },
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 4 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+          "Repository-driver three-way composition retains 9 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing."
         ]
       },
       "new_native_owner_files": [],
@@ -322,7 +337,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:729"
     },
     {
       "suffix": "qready2",
@@ -385,9 +401,9 @@
       },
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 14 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 18 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Stale shard edits change timering3/weddingring1/trollcave1 readiness ready to waiting_item_semantics and remove desert2 native_contents; binder exclusion at world_reward_claims.rs:282 makes the surviving merge hunk decisive."
         ]
       },
@@ -456,7 +472,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 462
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:773"
     },
     {
       "suffix": "questl2-wip",
@@ -507,9 +524,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 24 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 34 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
         ]
       },
@@ -529,7 +546,8 @@
           "head_suffix": "wpkg2",
           "shared_callback_keys": 271
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:839"
     },
     {
       "suffix": "questl2",
@@ -634,9 +652,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 77 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -668,7 +686,8 @@
           "head_suffix": "wpkg2",
           "shared_callback_keys": 474
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:980"
     },
     {
       "suffix": "questl2b",
@@ -774,8 +793,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree 19ab66781ba4829c062ea6362856e9d705699dd0 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -808,7 +828,8 @@
           "head_suffix": "wpkg2",
           "shared_callback_keys": 515
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:1199"
     },
     {
       "suffix": "questpc-pc2",
@@ -896,8 +917,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree 9c742c70e9c5ba0ae6647cfc45e9c84e3ea3c2e0 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -944,7 +966,8 @@
           "head_suffix": "questpc8b",
           "shared_callback_keys": 515
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:2145"
     },
     {
       "suffix": "questpc-snap",
@@ -1015,9 +1038,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 55 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
       },
@@ -1042,7 +1065,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 256
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:3775"
     },
     {
       "suffix": "questpc-wip",
@@ -1116,9 +1140,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 83 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -1149,7 +1173,8 @@
           "head_suffix": "questpc8-wip",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:3925"
     },
     {
       "suffix": "questpc",
@@ -1220,9 +1245,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 55 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
       },
@@ -1247,7 +1272,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 256
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:4171"
     },
     {
       "suffix": "questpc2-wip",
@@ -1295,9 +1321,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+          "Repository-driver three-way composition retains 35 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing."
         ]
       },
       "new_native_owner_files": [
@@ -1324,7 +1350,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 256
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:4321"
     },
     {
       "suffix": "questpc2",
@@ -1375,9 +1402,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 58 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
         ]
       },
@@ -1408,7 +1435,8 @@
           "head_suffix": "srvenc",
           "shared_callback_keys": 465
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:4428"
     },
     {
       "suffix": "questpc2b",
@@ -1465,8 +1493,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree a9cb9a13606ce937184832d0980fc14df8d8753d is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
         ]
       },
@@ -1502,7 +1531,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:4594"
     },
     {
       "suffix": "questpc3-wip",
@@ -1544,9 +1574,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted."
+          "Repository-driver three-way composition retains 45 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing."
         ]
       },
       "new_native_owner_files": [
@@ -1574,7 +1604,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 256
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:5249"
     },
     {
       "suffix": "questpc3",
@@ -1626,9 +1657,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 48 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
         ]
       },
@@ -1658,7 +1689,8 @@
           "head_suffix": "srvenc",
           "shared_callback_keys": 465
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:5393"
     },
     {
       "suffix": "questpc3b",
@@ -1716,8 +1748,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree c4383fa417a7927de2e1e09ef950db7e3662a50e is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion."
         ]
       },
@@ -1753,7 +1786,8 @@
           "head_suffix": "srvenc",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:5541"
     },
     {
       "suffix": "questpc4-wip",
@@ -1795,9 +1829,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 25 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 65 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "New profile admission can activate pre-existing callback rewards; evaluate real binder and retained source map on a composed tree rather than counting new callback keys (zero)."
         ]
@@ -1818,7 +1852,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:5928"
     },
     {
       "suffix": "questpc4b",
@@ -1866,8 +1901,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree ed8e7475f4144562fd8a0f3c3e3fefd37d0cf189 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "New profile admission can activate pre-existing callback rewards; evaluate real binder and retained source map on a composed tree rather than counting new callback keys (zero)."
         ]
       },
@@ -1891,7 +1927,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:6106"
     },
     {
       "suffix": "questpc5-wip",
@@ -1965,9 +2002,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 80 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -1993,7 +2030,8 @@
           "head_suffix": "wpkg2",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:6194"
     },
     {
       "suffix": "questpc5",
@@ -2090,8 +2128,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree 72bbeee3a69161bf2ea1e0059722b78d886a7409 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2124,7 +2163,8 @@
           "head_suffix": "questpc-pc2",
           "shared_callback_keys": 515
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:6431"
     },
     {
       "suffix": "questpc6-wip",
@@ -2192,9 +2232,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 79 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2224,7 +2264,8 @@
           "head_suffix": "questpc8-wip",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:7500"
     },
     {
       "suffix": "questpc6",
@@ -2300,9 +2341,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 104 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2331,7 +2372,8 @@
           "head_suffix": "questl2",
           "shared_callback_keys": 291
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:7738"
     },
     {
       "suffix": "questpc7-wip",
@@ -2405,9 +2447,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 80 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2433,7 +2475,8 @@
           "head_suffix": "wpkg2",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:8063"
     },
     {
       "suffix": "questpc7",
@@ -2533,9 +2576,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 6 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 69 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2566,7 +2609,8 @@
           "head_suffix": "questpc8b",
           "shared_callback_keys": 474
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:8299"
     },
     {
       "suffix": "questpc8-wip",
@@ -2640,9 +2684,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 33 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 78 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2671,7 +2715,8 @@
           "head_suffix": "questpc8",
           "shared_callback_keys": 265
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:8491"
     },
     {
       "suffix": "questpc8",
@@ -2770,9 +2815,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 7 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 63 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2807,7 +2852,8 @@
           "head_suffix": "questpc7",
           "shared_callback_keys": 474
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:8723"
     },
     {
       "suffix": "questpc8b",
@@ -2907,8 +2953,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree 2a8ebd74fb4dc03de817958ebfdc1dae7ebdac18 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -2948,7 +2995,8 @@
           "head_suffix": "questpc5",
           "shared_callback_keys": 515
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:8908"
     },
     {
       "suffix": "questwip",
@@ -3019,9 +3067,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 42 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 43 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
       },
@@ -3048,7 +3096,8 @@
           "head_suffix": "season",
           "shared_callback_keys": 256
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:9932"
     },
     {
       "suffix": "season",
@@ -3102,8 +3151,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree d6223947264a6b3720d5238f141c2b8faad62a2e is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "A Piece of Cake depends on current seasonal reset/calendar/raid phase and shipped cake creature/object admission; component Cake/Santa scenarios do not by themselves prove an entire wiki campaign."
         ]
       },
@@ -3137,7 +3187,8 @@
           "head_suffix": "questpc8b",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:10088"
     },
     {
       "suffix": "srvenc",
@@ -3191,8 +3242,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "CLEAN_TREE_NEEDS_ADMISSION_VALIDATION",
         "dependencies": [
+          "Clean composed tree 176bc9d263d6632f4675965cc9ac51dc589e8a04 is known and equals this head's tree; composition is no longer an unknown. Its changed native/content generation has not been rebuilt/admitted and driven through full owning-quest proofs.",
           "Encounter gains depend on generation-specific source-hook closure, physical corpse Item admission, candidate layout and exact room publication, then the owning quest start/final reward bindings."
         ]
       },
@@ -3221,7 +3273,8 @@
           "head_suffix": "questpc8b",
           "shared_callback_keys": 506
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:10512"
     },
     {
       "suffix": "wpkg2",
@@ -3320,9 +3373,9 @@
       "exact_slice_delta": null,
       "C_merge_delta": {
         "status": "UNKNOWN",
-        "disposition": "TERMINAL_EVIDENCE_LIMIT",
+        "disposition": "NEEDS_CONFLICT_RESOLUTION",
         "dependencies": [
-          "Head is 1 commits behind audited/queried main with stale shared registry versions; merge-base patch must be composed with current main, not two-dot tree substituted.",
+          "Repository-driver three-way composition retains 1 conflicted files; no unique merged executable generation exists. Resolve the specific conflict paths retained in merge-probes.json before runtime admission/testing.",
           "Added callback keys must resolve exact shipped selectors/items/NPC actors and all stage prerequisites; per-title start-to-finish tests are needed before a PLAYABLE_PROVEN promotion.",
           "Shared runtime-scope exclusion removes Dawnport; preserving or replacing this filter materially changes the net class vector."
         ]
@@ -3358,7 +3411,8 @@
           "head_suffix": "questpc5",
           "shared_callback_keys": 515
         }
-      ]
+      ],
+      "merge_probe_evidence": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json:10949"
     }
   ]
 }

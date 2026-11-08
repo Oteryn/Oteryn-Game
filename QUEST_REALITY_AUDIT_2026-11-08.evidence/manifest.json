@@ -3,8 +3,8 @@
   "files": [
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/branch-assessments.json",
-      "sha256": "97727a9c43ef719bb3a5b13322d138dd7717cf42ce3f511b4461522b65bbd844",
-      "bytes": 146002
+      "sha256": "525d61ed6b367d443ce0f12918c64dba0ac10eda1cb2e68674ce21f52489eb8d",
+      "bytes": 153289
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/classification.json",
@@ -15,6 +15,11 @@
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/item-outfit-bindings.json",
       "sha256": "ef23c152b6ea2fdd5613f4dd35c6ab63cff6457a799d4c09084cf36c75e6b5a0",
       "bytes": 25910
+    },
+    {
+      "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/merge-probes.json",
+      "sha256": "0d8bb2f8f782defe07090397fb70d37f4a73c2af66c9d49a606d9f8b07fd884c",
+      "bytes": 793418
     },
     {
       "file": "QUEST_REALITY_AUDIT_2026-11-08.evidence/npc-bindings.json",
