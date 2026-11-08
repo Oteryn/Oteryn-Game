@@ -44,6 +44,14 @@ pub(super) async fn exercise(
         ).ok_or("USE capabilities")?;
     let fence = owner.current_quest_fence(admitted.game_session_id).await
         .map_err(|_| "fence")?.ok_or("fence")?.item_fence();
+    // The synthetic runtime must install the same fenced lease as normal admission.
+    owner.runtime.lock().await.bind_attacker_lease(
+        actor, admitted.game_session_id,
+        crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        ).map_err(debug)?,
+    ).map_err(debug)?;
     for n in [580, 581] {
         super::quest_world_callbacks::input_item(owner, fence, &Offering {
             position: Position { x: position.x.try_into()?, y: position.y.try_into()?, floor: (-position.floor).try_into()? },
