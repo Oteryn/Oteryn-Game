@@ -649,7 +649,14 @@ fn row(
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
     admitted(&corpse)
         .and_then(|facts| facts.container_capacity)
-        .filter(|capacity| (1..=maximum_corpse_capacity).contains(capacity))
+        .filter(|capacity| {
+            (1..=maximum_corpse_capacity).contains(capacity)
+                // Exact retained Seacrest source capacity is36. This value is not
+                // retained in the reward row or used as a runtime loot budget;
+                // actual planned/minted entries keep their independent30limit.
+                || (*capacity == 36 && corpse.key == "oteryn:item.tibia.i21893"
+                    && corpse.revision == "definition-r1")
+        })
         .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     let corpse_item = corpse.lower();
     let (loot_table_ref, loot_table) = match loot {

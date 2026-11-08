@@ -64,6 +64,7 @@ def compatible(accepted, observed):
 
 
 def apply_admissions(definitions, root=ROOT):
+    portable = module('questpc2_portable_corpse_facts', root).profiles(root)
     definitions = list(definitions)
     indexed = {d['identity']['key']: d for d in definitions}
     if len(indexed) != len(definitions):
@@ -91,6 +92,13 @@ def apply_admissions(definitions, root=ROOT):
                 or movable.get('state') != 'KNOWN' or type(movable.get('value')) is not bool):
             raise ValueError('NATIVE_GOAL_CORPSE_WORLDOBJECT_PROOF')
         observed = builder.corpse_definition(definition, capacity, duration, target, movable['value'], weights[item])
+        if key in portable:
+            for field in ('movable', 'weight'):
+                if (observed['semantics']['physical']['value'][field]
+                        != portable[key]['semantics']['physical']['value'][field]):
+                    raise ValueError('NATIVE_GOAL_CORPSE_PORTABLE_PHYSICAL_CONFLICT')
+            for group in ('physical', 'container'):
+                observed['semantics'][group] = copy.deepcopy(portable[key]['semantics'][group])
         replacement = copy.deepcopy(definition)
         accepted_semantics = definition.get('semantics', {})
         replacement.setdefault('semantics', copy.deepcopy(observed['semantics']))
@@ -107,6 +115,7 @@ def apply_admissions(definitions, root=ROOT):
 
 
 def admit_native(root, generated, profile_path, manifest_path, order, canonical):
+    portable = module('questpc2_portable_corpse_facts', root).profiles(root)
     values, _ = policies(root)
     wanted = {f'oteryn:item.tibia.i{i}' for i in values}
     definitions = {}
@@ -131,10 +140,19 @@ def admit_native(root, generated, profile_path, manifest_path, order, canonical)
         present = [r for r in document['records'] if r['production_definition']['production_key'] == key]
         if len(present) > 1:
             raise ValueError('NATIVE_GOAL_CORPSE_DUPLICATE_PROFILE')
+        if key in portable and not present:
+            raise ValueError('NATIVE_GOAL_CORPSE_PORTABLE_PROFILE_REQUIRED')
         if present:
             record = present[0]
             if record['production_binding'] != exact[0]:
                 raise ValueError('NATIVE_GOAL_CORPSE_PROFILE_BINDING')
+            if key in portable:
+                source = portable[key]
+                if (record['admission'] != source['admission']
+                        or any(not compatible(record['semantics'][group], source['semantics'][group])
+                               for group in GROUPS)):
+                    raise ValueError('NATIVE_GOAL_CORPSE_PORTABLE_SOURCE_CONFLICT')
+                continue
             for group in GROUPS:
                 if not compatible(record['semantics'][group], definition['semantics'][group]):
                     raise ValueError('NATIVE_GOAL_CORPSE_NATIVE_FACT_CONFLICT')

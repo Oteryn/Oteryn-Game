@@ -72,6 +72,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            // A replay may acknowledge an already-committed gobbler XP award.
+            if result == UseDisposition::Committed {
+                self.states.level_refresh.mark([fence.character_id]);
+                // A recovered receipt also repairs the Channel's physical projection.
+                // Release the item lane before the existing snapshot owner reacquires it.
+                drop(permit);
+                self.refresh_terrain_tools().await;
+            }
             return Ok(Some(outcome(result)));
         }
         let native = self
@@ -216,6 +224,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
+            // The daily projector creates slime only on these dungeon ground entries.
+            // Carrying the tool never authorizes unrelated map appearances or positions.
+            if definition.production_key == "oteryn:item.tibia.i12077"
+                && (!(33306..=33369).contains(&pos.x)
+                    || !(31847..=31919).contains(&pos.y)
+                    || pos.floor != -9
+                    || before.terrain_kind
+                        != Some(oteryn_world_bundle::bundle::TerrainKind::Ground)
+                    || view::placement_of(key).is_none_or(|(_, ordinal)| ordinal != 0))
+            {
+                return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            }
             let Some(action) = at.map.facts.terrain_tool_action(key) else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
@@ -376,21 +396,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mutation = mutation.0;
         // The lane remains held until durable acknowledgement. The next clock/read recovers an
         // ambiguous commit from the same rows, so no speculative runtime mutation occurs.
-        let result = self
-            .root
-            .apply_terrain_tool(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                command_ref,
-                encoded,
-                scope,
-                Some(mutation),
-            )
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
+        let result = if mutation.tool_key == "oteryn:item.tibia.i12077" {
+            use crate::durability::character_progression::ExperienceAwardRequest;
+            use crate::durability::terrain_tool::{TerrainExperience, voice_experience_occurrence};
+            let Some(binding) = self.progression_binding(command.game_session_id) else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            let Some(mut xp_fence) = self.current_quest_fence(command.game_session_id).await?
+            else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            xp_fence.expected_character_revision = slot
+                .cursor(self.root, self.character)
+                .await
+                .map_err(|_| ())?;
+            let experience = Box::new(TerrainExperience {
+                fence: xp_fence,
+                request: ExperienceAwardRequest {
+                    occurrence: voice_experience_occurrence(command_ref).map_err(|_| ())?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(20),
+                    context: binding.context.clone(),
+                    policy_revision: binding.policy_revision.clone(),
+                    reward_revision: binding.reward_revision.clone(),
+                    policy: binding.policy.clone(),
+                },
+            });
+            let durable = self
+                .root
+                .apply_terrain_tool_with_experience(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command_ref,
+                    encoded,
+                    scope,
+                    Some(mutation),
+                    Some(experience),
+                )
+                .await;
+            // Reload after success or an unknown outcome: an ambiguous commit may
+            // already have advanced CharacterRevision with the terrain receipt.
+            slot.observe_endgame_progression();
+            let result = durable.map_err(|_| ())?.ok_or(())?;
+            if result == UseDisposition::Committed {
+                self.states.level_refresh.mark([fence.character_id]);
+            }
+            result
+        } else {
+            self.root
+                .apply_terrain_tool(
+                    &permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    command_ref,
+                    encoded,
+                    scope,
+                    Some(mutation),
+                )
+                .await
+                .map_err(|_| ())?
+                .ok_or(())?
+        };
         drop(permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;
@@ -454,6 +523,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             };
             let key = u64::from_be_bytes(bytes);
+            if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
+                let (Ok(revision), Ok(appearance)) =
+                    (u64::try_from(row.revision), u16::try_from(row.item))
+                else {
+                    return;
+                };
+                if map
+                    .facts
+                    .install_world_change_harvest_state(key, revision, appearance)
+                    != Some(true)
+                {
+                    return;
+                }
+                continue;
+            }
             let Some((pos, _)) = view::placement_of(key) else {
                 return;
             };

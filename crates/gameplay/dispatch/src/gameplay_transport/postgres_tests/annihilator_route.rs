@@ -128,7 +128,9 @@ fn run(route: Route) -> TestResult {
         for index in 0..4_u8 {
             let (current, operation) =
                 crate::world_party_runtime_postgres_cases::committed_fresh_player_with_operation(
-                    &h,
+                    &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                        root: h.root.clone(), node: h.node.clone(), recovery: &h.recovery,
+                    },
                     60 + index,
                     80 + index,
                     70 + index,

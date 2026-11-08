@@ -24,10 +24,13 @@ pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
 pub mod dark_trails;
+pub mod deepling_boss_access;
 pub mod elvenbane;
+pub mod fire_feathered_native;
 pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
+pub mod hive_access;
 pub mod isle_of_evil;
 pub mod kill_objectives;
 pub mod liquid_black;
@@ -43,6 +46,7 @@ mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;
 pub mod schrodinger_island;
+pub mod shared_world_progress;
 pub mod soul_war;
 pub mod soul_war_dialogue;
 pub mod task_board;
@@ -328,7 +332,9 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty()
                 && !transition.completes
-                && !(transition.key.starts_with("oteryn:quest-reward/")
+                && !(((transition.key == "oteryn:quest-transition/worldchange/benevola/handover"
+                    && transition.quest == "oteryn:quest/worldchange/benevola")
+                    || transition.key.starts_with("oteryn:quest-reward/"))
                     && transition.experience.is_none())
             {
                 return Err(E::InvalidEffect(transition.key));

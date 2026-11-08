@@ -6,8 +6,8 @@ from pathlib import Path
 import questpc2_rotten_loot_items as tool
 
 ROOT = Path(__file__).resolve().parents[3]
-CANONICAL_OUTSIDE = 'b83fd262a10f1578d0d7bdcfed726eba76f24dbf1fd9ff28086741a89b105046'
-NATIVE_OUTSIDE = '27e185646aaa583954bf0248661b43ff1b402b255e1ea06933eb611381456ffe'
+CANONICAL_OUTSIDE = 'a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130'
+NATIVE_OUTSIDE = '6e4be634a432d164970ce0188c2b362b0eeceb9d43ce0ef52056d8d839d6370e'
 
 
 def digest(records):

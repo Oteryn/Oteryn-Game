@@ -1757,36 +1757,11 @@
     }
   },
   "current_batch": {
-    "name": "Rotten Blood six exact source memberships for engine handoff",
-    "state": "SOURCE_GREEN_PUBLISH_NOW_BROADER_UNITS_PENDING",
-    "proof": "qlane-meta/questpc2/BATCH-rotten-membership-facts-2026-11-07.json",
-    "runtime_admissions": 0,
-    "whole_quests_qualified": 0,
-    "prepush": {
-      "workspace_all_targets": "PASS2m31s on disk-recovered retry",
-      "fmt": "PASS",
-      "native_regeneration": "44outputs regenerated in memory; byte equalityPASS",
-      "central_lists": "audit tags, quest binding evidence and completion matrix reproduced",
-      "pin_refresh": "PASS; runtime world pin unchanged aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
-      "own_pg": [
-        {
-          "case": "questpc2_rotten_source_items::rotten_source_items_materialize_into_exact_character_custody",
-          "returncode": 0,
-          "seconds": 34.395
-        },
-        {
-          "case": "boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
-          "returncode": 0,
-          "seconds": 60.254
-        },
-        {
-          "case": "npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
-          "returncode": 0,
-          "seconds": 72.197
-        }
-      ],
-      "pending": "1914selected content+dispatch units (prior admission slice), explicitly pending under PREPUSH-2 cadence exception"
-    }
+    "name": "Collector3030 integration",
+    "state": "PUBLISH_ONCE_UNDER_PREPUSH2_PENDING_TEST_EXCEPTION",
+    "proof": "qlane-meta/questpc2/BATCH-collector3030-integration-2026-11-08.json",
+    "main": "78294c081",
+    "freeze_after_successful_push": true
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1817,13 +1792,9 @@
     "BATCH-main-qworld-2026-11-07.json"
   ],
   "next_batch": {
-    "quests": [
-      "oteryn:quest.rotten_blood_quest",
-      "oteryn:quest.soul_war_quest"
-    ],
-    "state": "AUTHORING",
-    "work_owner": "questpc2",
-    "task": "Finish1914 selected units, collect all failures, then continue source room closures or reuse qengine2 membership support when available; main47db34f09 is already merged."
+    "state": "FROZEN_FOR_COLLECTOR_AFTER_PUBLICATION",
+    "branch_for_new_features": "claude/happy-davinci-ijz3wy-questpc2b",
+    "task": "No new features after this merge push; keep remaining quest counts honest."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",
@@ -2236,64 +2207,105 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "batch": "six Rotten Blood Item custody admissions",
-    "state": "FOCUSED_GREEN_UNIT_RUN_PENDING",
-    "canonical_admissions": 6,
-    "new_native_profiles": 4,
-    "existing_native_physical_records_preserved": 2,
-    "source_ids": [
-      43501,
-      43502,
-      43503,
-      43504,
-      43899,
-      43900
+    "schema": "OTERYN_QUESTPC2_BATCH_EVIDENCE/v1",
+    "main": "78294c081",
+    "source_checkpoint": "e3802b39f",
+    "lifecycle": "AUTHORING",
+    "freeze_after_successful_push": true,
+    "scope": "Integrate collector main while preserving both main quest work and all lane logic; no whole-quest qualification.",
+    "migrations": [
+      "1240_al_dee_item_exchange.sql",
+      "1241_uzgod_obsidian_knife_exchange.sql",
+      "1242_seymour_present_exchange.sql",
+      "1243_native_encounter_progression_scope.sql",
+      "1244_instance_corpse_mint.sql"
     ],
-    "no_use_effects_added": true,
-    "new_qualified_quests": 0,
-    "pg": {
-      "version_num": 180006,
-      "red_seconds": 35.586,
-      "red_error": "oteryn:item.tibia.i43501: real mint/custody refused: DefinitionNotFound",
-      "green_cases": 3,
-      "green_runtime_seconds": 133.133,
-      "new_item_case_seconds": 59.452,
-      "new_item_marker": "distinct=6 quantity=6",
-      "new_item_completion_seconds": 59.405815035
+    "migration_renumbering": "None required; own range1240-1244 preserved, main migrations retained, duplicate checkPASS on resolved staged tree.",
+    "conflicts": {
+      "runtime": "Preserved both guard/effect sets; adapted new default fields and borrowed native fixture owners without replacing production authority.",
+      "loot": "3360Item rows merged by exact identity and three-way field equality; both sets retained, five overlapping rows agree and preserve main stack facts.",
+      "portable_corpses": {
+        "source_ids": [
+          3990,
+          4103,
+          4104
+        ],
+        "full_main_record_sha256": "e944c1030d8f9fe7206f967b1632e9a9c92c1ce53750b6dfcada0c97afb536a9",
+        "red": "3source conflicts, regressionRED5.162s",
+        "green": "6/6PASS61.103s, full native record preservation and atomic conflicting-fact refusal."
+      },
+      "derived": "Regenerate content providers, Prey, registered authoring stages, central lists and pins with repo tooling."
     },
-    "source_regression": {
-      "red_subcases": 6,
-      "green_seconds": 0.591,
-      "preserved_nonselected_canonical": 34105,
-      "preserved_nonselected_native": 3687,
-      "canonical_outside_sha256": "b83fd262a10f1578d0d7bdcfed726eba76f24dbf1fd9ff28086741a89b105046",
-      "native_outside_sha256": "27e185646aaa583954bf0248661b43ff1b402b255e1ea06933eb611381456ffe"
+    "workspace_check": {
+      "intermediate": "PASS2m21s after merge compile repairs; final post-generation checkPENDING",
+      "initial_failures": "Missing Selector.position_aliases, QuestWorldContext.party, NpcTradeRequest fluid/full-charge options; fixture owner type mismatch; merged test formatting. All corrected together.",
+      "final": "PASS7m23s --workspace --all-targets",
+      "after_migration_composition": "PASS3m11s --workspace --all-targets"
     },
-    "unit_run": {
-      "selected": 1914,
-      "packages": [
-        "oteryn-gameplay-content",
-        "oteryn-gameplay-dispatch"
+    "generation": "PASS canonical/native providers and all registered authoring stages; real Prey15cases/776creatures; Rust model build3m01s",
+    "pending_units": {
+      "oteryn-client": "apps/client",
+      "oteryn-game-server": "apps/game-server",
+      "oteryn-client-assets": "crates/client-assets",
+      "oteryn-client-domain": "crates/client-domain",
+      "oteryn-client-ui": "crates/client-ui",
+      "oteryn-gameplay-combat": "crates/gameplay/combat",
+      "oteryn-gameplay-content": "crates/gameplay/content",
+      "oteryn-gameplay-dispatch": "crates/gameplay/dispatch",
+      "oteryn-gameplay-durability": "crates/gameplay/durability",
+      "oteryn-gameplay-encounters": "crates/gameplay/encounters",
+      "oteryn-gameplay-entities": "crates/gameplay/entities",
+      "oteryn-gameplay-monster-ai": "crates/gameplay/monster-ai",
+      "oteryn-gameplay-npc": "crates/gameplay/npc",
+      "oteryn-gameplay-quests": "crates/gameplay/quests",
+      "oteryn-gameplay-world": "crates/gameplay/world",
+      "oteryn-protocol-oteryn": "crates/protocol-oteryn",
+      "oteryn-session": "crates/session",
+      "oteryn-architecture-check": "tools/architecture-check"
+    },
+    "pg": "Fresh expanded16cases include main Yeo barter; rebuilding embedded ledger after SQL composition fix.",
+    "resource_recovery": "Retired inactive lane caches and prior-tree executables; no active cache or test data removed. No tests weakened/skipped/deleted.",
+    "clippy": "PASS3m43s, alltargets5changed owner crates, -Dwarnings",
+    "item_mount_equivalence": "PASS34111Items/252Mounts/27508creature_profiles",
+    "world_metadata": "PASS",
+    "source_regressions": {
+      "portable_corpses": "6/6PASS61.103s",
+      "own_source_facts": "3/3PASS6.294s",
+      "loot_adapters": "2/2PASS1.051s",
+      "strict_outside_fingerprints": "GREEN0.597s after accepted-main rebase; old HEAD proof reproduced first",
+      "new_canonical_outside_sha256": "a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130",
+      "new_native_outside_sha256": "6e4be634a432d164970ce0188c2b362b0eeceb9d43ce0ef52056d8d839d6370e",
+      "full_portable_main_records": "3/3exact SHAe944c1030d8f9fe7206f967b1632e9a9c92c1ce53750b6dfcada0c97afb536a9"
+    },
+    "central_generation": "PASS item audit tags, quest binding evidence and completion matrix; source metadata stays honest",
+    "pin_refresh": "PASS using rebuilt current main compiler; root main preproduction fields synchronized by main repair",
+    "fmt": "PASS cargo fmt --all --check",
+    "pg_build_retry": "Initial post-check compilation failed ENOSPC before executing tests; completed check/clippy caches retired, focused run restarted unchanged withjobs1.",
+    "pg_red": {
+      "cases": 15,
+      "passed_pure": 3,
+      "failed_pg_setup": 12,
+      "seconds": 40.154,
+      "root_cause": "migration1333 missing opposite-side NPC line guard after lane1240 textual rewrite",
+      "exact_error": "while executing migration 1333: error returned from database: missing opposite-side NPC line guard at line 3909"
+    },
+    "migration_composition_fix": {
+      "changed_only": [
+        1240,
+        1241,
+        1242
       ],
-      "state": "RUNNING_LIBTEST_RETRY; no failures observed",
-      "filter": "not test(postgres) & not test(::db_tests::)",
-      "log": "/tmp/questpc2-rotten-source-items-libtest.log",
-      "isolated_process_run": "Interrupted after1032/1914observed passes; no failures; same selection restarted in one process per crate.",
-      "command": "existing content+dispatch libtest executables --skip postgres --skip ::db_tests:: --test-threads=2"
+      "main_1333_unchanged": true,
+      "opposite_side_guard": "Keep main original substring; compose exact side3 item-only exception and explicit no-coin guard.",
+      "typed_definition_guard": "Keep main RHS intact for Yeo; LHS maps only exact ordinal-specific exchange input keys, mismatches becomeNULL and refuse.",
+      "independent_plain_input_and_cooldown_guards": "All existing Al Dee/Uzgod/Seymour predicates retained.",
+      "all_migrations_on_pg": "PASS3.001s PG180006 through1349; four retained guard queries true."
     },
-    "workspace_check": "PASS6m32s including build-lock wait",
-    "fmt": "PASS",
-    "generation": "canonical+native provider pipeline completed; registered authoring tools reapplied (Raid family lock count restored); central binding evidence, matrix, audit goldens refreshed",
-    "main_merge_prior_batch": {
-      "main": "47db34f09",
-      "durability_units": "698/698PASS314.521s",
-      "own_pg": "2/2PASS67.798s"
-    },
-    "clippy": "PASS5m29s -D warnings",
-    "item_mount_equivalence": "PASS34111Items/252Mounts after registered authoring stages",
-    "pin_refresh": "PASS on resource-recovered retry",
-    "duplicate_migrations": "PASS",
-    "publication_authority": "PREPUSH-2 cadence exception: focused mechanic/PG/check/fmt/generation green;1914-crate-unit selection continues with no failures observed."
+    "changed_crate_unit_state": "Prior18-crate unit build interrupted before execution when migration error was collected; fresh full unit run pending under PREPUSH-2 cadence exception.",
+    "registration_replay": "PASS1test134.322s, all45native generated outputs byte-identical.",
+    "fmt_after_migration_composition": "PASS",
+    "publication_state": "COMPILES_AND_SCHEMA_GREEN_RUNTIME_PG_AND_FULL_UNITS_PENDING",
+    "cadence_exception": "Owner PREPUSH-2: when step3 is not complete in budget, publish after steps1,2,4 and explicitly name pending tests. Fresh16focused cases (13runtimePG+3pure) rebuilding; full18changed-crate units pending. No runtimePG success inferred from schema-only proof."
   },
   "engine_requests": [
     {
@@ -2402,5 +2414,29 @@
       "Soul War Quest"
     ]
   },
-  "last_pushed_sha": "6758be404bd6d037161c7f224a50c99ed8ab9af7"
+  "last_pushed_sha": "6758be404bd6d037161c7f224a50c99ed8ab9af7",
+  "prepush_pending_tests": {
+    "focused_16": "13runtimePG+3pure, recompiling embedded ledger after fixed1333composition; log/tmp/questpc2-collector3030-focused-schema-fixed.log",
+    "full_changed_crate_units": [
+      "oteryn-client",
+      "oteryn-game-server",
+      "oteryn-client-assets",
+      "oteryn-client-domain",
+      "oteryn-client-ui",
+      "oteryn-gameplay-combat",
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch",
+      "oteryn-gameplay-durability",
+      "oteryn-gameplay-encounters",
+      "oteryn-gameplay-entities",
+      "oteryn-gameplay-monster-ai",
+      "oteryn-gameplay-npc",
+      "oteryn-gameplay-quests",
+      "oteryn-gameplay-world",
+      "oteryn-protocol-oteryn",
+      "oteryn-session",
+      "oteryn-architecture-check"
+    ],
+    "proof": "qlane-meta/questpc2/BATCH-collector3030-integration-2026-11-08.json"
+  }
 }

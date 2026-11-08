@@ -14,8 +14,8 @@ DO $migration$
 DECLARE body TEXT; before TEXT; after TEXT; begin_at INT;
 BEGIN
     body:=pg_get_functiondef('game_npc_trade_consistency_guard()'::regprocedure);
-    before:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END ELSE ''oteryn:item.tibia.i3462'' END ELSE NEW.item_definition_production_key END';
-    after:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END WHEN NEW.npc_key=''oteryn:npc.seymour'' THEN ''oteryn:item.tibia.i2856'' ELSE ''oteryn:item.tibia.i3462'' END ELSE NEW.item_definition_production_key END';
+    before:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN i.definition_production_key=CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END ELSE ''oteryn:item.tibia.i3462'' END THEN NEW.item_definition_production_key ELSE NULL END ELSE i.definition_production_key END';
+    after:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN i.definition_production_key=CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END WHEN NEW.npc_key=''oteryn:npc.seymour'' THEN ''oteryn:item.tibia.i2856'' ELSE ''oteryn:item.tibia.i3462'' END THEN NEW.item_definition_production_key ELSE NULL END ELSE i.definition_production_key END';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'missing fixed exchange definition guard'; END IF;
     body:=replace(body,before,after);
     begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');

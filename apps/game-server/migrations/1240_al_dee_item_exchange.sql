@@ -18,17 +18,23 @@ BEGIN
     before:='CASE NEW.side WHEN 1 THEN 4 ELSE 3 END';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected NPC trade item-line guard'; END IF;
     body:=replace(body,before,'CASE NEW.side WHEN 1 THEN 4 WHEN 3 THEN 4 ELSE 3 END');
-    before:='CASE NEW.side WHEN 1 THEN 3 ELSE 4 END';
+    -- Keep main's original opposite-side and RHS typed-definition substrings
+    -- intact so later Yeo/fluid migrations can compose their exact guards.
+    before:=E'AND l.line_kind IN (CASE NEW.side WHEN 1 THEN 3 ELSE 1 END,\n                                         CASE NEW.side WHEN 1 THEN 3 ELSE 4 END)';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected NPC trade mint-kind guard'; END IF;
-    body:=replace(body,before,'CASE NEW.side WHEN 1 THEN 3 WHEN 3 THEN 2 ELSE 4 END');
-    before:='NEW.item_definition_production_key,';
-    after:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN ''oteryn:item.tibia.i3462'' ELSE NEW.item_definition_production_key END,';
+    body:=replace(body,before,before||' AND NOT (NEW.side=3 AND l.line_kind=4)');
+    before:='(l.line_kind IN (3, 4) AND (i.definition_family, i.definition_production_key,';
+    after:='(l.line_kind IN (3, 4) AND (i.definition_family, CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN i.definition_production_key=''oteryn:item.tibia.i3462'' THEN NEW.item_definition_production_key ELSE NULL END ELSE i.definition_production_key END,';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'unexpected NPC trade definition guard'; END IF;
     -- Only the first occurrence belongs to the line query (alias l). The
     -- later Sell All inventory query has different aliases and stays intact.
     body:=overlay(body placing after from strpos(body,before) for length(before));
     before:='BEGIN';
     after:=$guard$BEGIN
+    IF NEW.side=3 AND EXISTS (SELECT 1 FROM game_npc_trade_lines l
+        WHERE l.transaction_id=NEW.transaction_id AND l.line_kind NOT IN (3,4)) THEN
+        RAISE EXCEPTION 'Quest item exchange allows only exact item burns and mint' USING ERRCODE='23514';
+    END IF;
     IF NEW.side=3 AND NOT EXISTS (
         SELECT 1 FROM game_npc_trade_lines l JOIN game_item_instances i USING(item_instance_id)
         WHERE l.transaction_id=NEW.transaction_id AND l.line_ordinal=1 AND l.line_kind=3

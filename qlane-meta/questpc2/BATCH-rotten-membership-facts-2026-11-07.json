@@ -40,7 +40,7 @@
       "oteryn-gameplay-content",
       "oteryn-gameplay-dispatch"
     ],
-    "state": "RUNNING_LIBTEST_RETRY; no failures observed",
+    "state": "INTERRUPTED_BY_COLLECTOR3030_MERGE; fresh changed-crate run pending",
     "filter": "not test(postgres) & not test(::db_tests::)",
     "log": "/tmp/questpc2-rotten-source-items-libtest.log",
     "isolated_process_run": "Interrupted after1032/1914observed passes; no failures; same selection restarted in one process per crate.",

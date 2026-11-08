@@ -3,13 +3,14 @@ use super::*;
 
 pub(super) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &super::super::quest_state::npc_program::NpcItemPermit,
+    permit: &super::super::quest_state::npc_program::NpcItemPermit,
+    fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
     // Ground consumption requires the spell owner's channel permit.
     location_queries(&input.kind)?;
-    apply_input_rows(tx, input, transaction).await
+    apply_input(tx, permit, fence, input, transaction).await
 }
 
 #[cfg(test)]

@@ -80,15 +80,15 @@
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
-      "records": 1
+      "records": 2
     },
     "Service.Blessing": {
       "index": "content/services/blessings/index.json",
-      "records": 4
+      "records": 10
     },
     "Service.Promotion": {
       "index": "content/services/promotion/index.json",
-      "records": 4
+      "records": 7
     },
     "Service.Trade": {
       "index": "content/services/trade/index.json",
@@ -730,13 +730,13 @@
       "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
-      "path": "content/services/bank/bank-00000-00000.json"
+      "path": "content/services/bank/bank-00000-00001.json"
     },
     {
       "path": "content/services/bank/index.json"
     },
     {
-      "path": "content/services/blessings/blessing-00000-00003.json"
+      "path": "content/services/blessings/blessing-00000-00009.json"
     },
     {
       "path": "content/services/blessings/index.json"
@@ -745,7 +745,7 @@
       "path": "content/services/promotion/index.json"
     },
     {
-      "path": "content/services/promotion/promotion-00000-00003.json"
+      "path": "content/services/promotion/promotion-00000-00006.json"
     },
     {
       "path": "content/services/trade/index.json"
@@ -850,6 +850,9 @@
       "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/loot-tables.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     },
     {
@@ -939,7 +942,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"
+          "sha256": "a051499f90d192d83f93cbeaed6efcaf45650b66ed261f661d5e9889aad9c149"
         },
         {
           "creates_canonical_identities": false,
@@ -1010,7 +1013,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3693,
+          "record_count": 3730,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1018,7 +1021,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "ff4bb54d5ad0235e4c5ffdd144b311e5ae8391e21d62051feb5adbc60d56b59e"
+          "sha256": "f9172d645c3b5b7f8e0e55e3e78996a0400f100bbd13f94bbd5ae92ae271b973"
         },
         {
           "creates_canonical_identities": false,

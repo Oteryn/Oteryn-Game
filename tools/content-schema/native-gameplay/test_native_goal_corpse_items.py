@@ -15,6 +15,38 @@ def definitions():
 
 
 class NativeGoalCorpseProof(unittest.TestCase):
+    def test_portable_native_profiles_remain_exact_and_conflicts_are_atomic(self):
+        root = native.ROOT
+        profiles = 'content/items/definitions/spell-native-profiles.json'
+        manifest = 'content/spells.manifest.json'
+        generated = {path: (root / path).read_bytes() for path in (profiles, manifest)}
+        original = json.loads(generated[profiles])
+        keys = {f'oteryn:item.tibia.i{i}' for i in (3990, 4103, 4104)}
+        selected = lambda doc: {r['production_definition']['production_key']: r
+            for r in doc['records'] if r['production_definition']['production_key'] in keys}
+        order = lambda r: r['production_definition']['production_key']
+        encode = lambda doc: (json.dumps(doc, sort_keys=True) + '\n').encode()
+        native.admit_native(root, generated, profiles, manifest, order, encode)
+        self.assertEqual(selected(json.loads(generated[profiles])), selected(original))
+        tampered = json.loads(generated[profiles])
+        selected(tampered)['oteryn:item.tibia.i3990']['semantics']['physical']['value']['pickupable']['value'] = False
+        generated[profiles] = encode(tampered)
+        before = copy.deepcopy(generated)
+        with self.assertRaisesRegex(ValueError, 'PORTABLE_SOURCE_CONFLICT'):
+            native.admit_native(root, generated, profiles, manifest, order, encode)
+        self.assertEqual(generated, before)
+
+    def test_merged_portable_source_corpses_keep_exact_main_facts(self):
+        import sys
+        sys.path.insert(0, str(native.ROOT / 'tools/content-migration'))
+        import encounter_loot_item_admissions as source
+        profiles = source.facts(native.ROOT, {3990, 4103, 4104}, allow_containers=True)
+        items = {d['identity']['key']: d for d in definitions()}
+        for key, profile in profiles.items():
+            with self.subTest(item=key):
+                for group in ('physical', 'container'):
+                    self.assertEqual(items[key]['semantics'][group], profile['semantics'][group])
+
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
         self.assertEqual(len(policies), 20)
@@ -35,7 +67,9 @@ class NativeGoalCorpseProof(unittest.TestCase):
                 self.assertEqual(new, old)
                 continue
             self.assertTrue(new['materializable'])
-            self.assertFalse(new['semantics']['physical']['value']['pickupable']['value'])
+            self.assertEqual(new['semantics']['physical']['value']['pickupable']['value'],
+                             new['identity']['key'] in {'oteryn:item.tibia.i3990',
+                                 'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104'})
             for group, accepted in old['semantics'].items():
                 if group not in native.GROUPS:
                     self.assertEqual(new['semantics'][group], accepted)

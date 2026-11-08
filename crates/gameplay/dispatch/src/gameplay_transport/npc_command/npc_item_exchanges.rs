@@ -251,6 +251,8 @@ pub(super) async fn talk(
     let id =
         |tag: &[u8]| npc_trade_command::derived(tag, command.game_session_id, command.command_id);
     let request = NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: recipe.npc.into(),
             catalogue_revision: context.0,

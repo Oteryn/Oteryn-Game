@@ -18,8 +18,8 @@ BEGIN
     before:='IF NEW.side=3 AND NOT EXISTS (';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'missing Al Dee source guard'; END IF;
     body:=replace(body,before,'IF NEW.side=3 AND NEW.npc_key=''oteryn:npc.al_dee'' AND NOT EXISTS (');
-    before:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN ''oteryn:item.tibia.i3462'' ELSE NEW.item_definition_production_key END';
-    after:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END ELSE ''oteryn:item.tibia.i3462'' END ELSE NEW.item_definition_production_key END';
+    before:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN i.definition_production_key=''oteryn:item.tibia.i3462'' THEN NEW.item_definition_production_key ELSE NULL END ELSE i.definition_production_key END';
+    after:='CASE WHEN NEW.side=3 AND l.line_kind=3 THEN CASE WHEN i.definition_production_key=CASE WHEN NEW.npc_key=''oteryn:npc.uzgod'' THEN CASE l.line_ordinal WHEN 1 THEN ''oteryn:item.tibia.i5889'' ELSE ''oteryn:item.tibia.i3313'' END ELSE ''oteryn:item.tibia.i3462'' END THEN NEW.item_definition_production_key ELSE NULL END ELSE i.definition_production_key END';
     IF strpos(body,before)=0 THEN RAISE EXCEPTION 'missing fixed exchange definition guard'; END IF;
     body:=replace(body,before,after);
     begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');

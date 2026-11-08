@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         fence: Option<CurrentCharacterGameplayFence>,
         slot: Option<&mut RevisionSlot>,
+        observed_world: Option<&ObservedWorldCallback>,
         optional_pvp: Option<bool>,
     ) -> UseDisposition {
         if !runtime
@@ -45,25 +46,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
-            return UseDisposition::Rejected;
-        };
-        let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
-            return UseDisposition::Rejected;
-        };
-        let Some(id) = base
-            .ids()
-            .iter()
-            .zip(base.depths())
-            .filter(|(_, d)| **d == 0)
-            .nth(usize::from(ordinal))
-            .map(|(id, _)| *id)
-        else {
-            return UseDisposition::Rejected;
-        };
-        let Some(mut after) = map.facts.base_entry(pos, ordinal, id) else {
-            return UseDisposition::Rejected;
-        };
+        let (pos, mut after) =
+            if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
+                let Some(source) = shared_added_source(map, callback, key) else {
+                    return UseDisposition::Rejected;
+                };
+                source
+            } else {
+                let Some((pos, ordinal)) = crate::map::view::placement_of(key) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(base) = map.overlay.base().tile(pos.x, pos.y, pos.floor) else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(id) = base
+                    .ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, d)| **d == 0)
+                    .nth(usize::from(ordinal))
+                    .map(|(id, _)| *id)
+                else {
+                    return UseDisposition::Rejected;
+                };
+                let Some(after) = map.facts.base_entry(pos, ordinal, id) else {
+                    return UseDisposition::Rejected;
+                };
+                (pos, after)
+            };
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
@@ -218,6 +228,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .quest_callback_capacity(key, expected_revision, callback.passages.len())
         {
             return UseDisposition::Exhausted;
+        }
+        if callback.storage.is_empty()
+            && world_callbacks::world_change_requirement(&callback.key).is_some()
+        {
+            let Some(observed) = observed_world else {
+                return UseDisposition::Rejected;
+            };
+            if runtime.owner_fence().is_err()
+                || observed.actor != actor
+                || observed.session != session
+                || observed.callback != callback.key
+                || observed.key != key
+                || observed.revision != expected_revision
+                || observed.expected != expected
+                || runtime.read_actor_position(actor) != Ok(observed.expected)
+                || map.facts.object_revision(key) != expected_revision
+                || !matches(map, callback, key)
+                || observed.context.reset_epoch != self.reset_epoch
+                || observed.context.map_revision
+                    != crate::map::overlay::map_revision(map.overlay.base())
+                || observed.context.placement_context.as_slice()
+                    != runtime.content_pin().frame_binding_digest().as_slice()
+                || observed.context.content_revision
+                    != format!(
+                        "sha256:{}",
+                        hex(&runtime.content_pin().server_artifact_digest())
+                    )
+            {
+                return UseDisposition::StaleState;
+            }
         }
         let party = if let Some(party) = &callback.effects.party_transfer {
             if after.appearance_id != party.activation_appearance {
@@ -441,6 +481,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_some_and(|pair| pair.lifetime_us.is_some())
         {
             states.owner_wake.notify_one();
+        }
+        if oteryn_gameplay_quests::quest::shared_world_progress::binding(&callback.key).is_some_and(
+            |binding| {
+                !matches!(
+                    binding.action,
+                    oteryn_gameplay_quests::quest::shared_world_progress::SharedAction::HiveTask(_)
+                )
+            },
+        ) && !map
+            .facts
+            .remove_world_change_callback_item(key, expected_revision + 1)
+        {
+            return UseDisposition::Rejected;
         }
         if let Some(proof) = teleport {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {

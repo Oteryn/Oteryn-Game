@@ -1151,6 +1151,136 @@ mod tests {
     use super::*;
 
     #[test]
+    fn worldchg_actual_corpse_plan_still_refuses_thirty_one_entries() {
+        // An admitted source corpse may declare36slots, while this independent
+        // execution budget continues to cap actual planned loot at30entries.
+        assert!(check_corpse_container_capacity(20).is_ok());
+        assert!(check_corpse_container_capacity(31).is_err());
+    }
+
+    #[test]
+    fn worldchg_embedded_ff_inputs_have_real_loot_rows_and_bounded_seeded_plans() {
+        use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
+        let mut identity = [1u8; 16];
+        identity[6] = 0x71;
+        identity[8] = 0x81;
+        let world = crate::foundation::WorldId::decode(&identity).expect("world");
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let generation = controller.active().expect("active native generation");
+        let native = generation.native_gameplay().expect("native gameplay");
+        let source: oteryn_gameplay_content::content::creature_reward::LootTablesSection =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+            ))
+            .expect("retained source tables");
+        for (name, corpse, required, chance, count) in [
+            ("demon_skeleton", 5963, 3062, 5581, 16),
+            ("calamary", 13853, 3581, 122700, 1),
+            ("seacrest_serpent", 21893, 21747, 69559, 20),
+        ] {
+            let creature = format!("oteryn:creature.{name}");
+            let row = native
+                .reward_table()
+                .row(&creature)
+                .expect("source corpse and entire native loot closure must settle");
+            assert_eq!(
+                row.corpse_item.production_key,
+                format!("oteryn:item.tibia.i{corpse}")
+            );
+            assert!(
+                native
+                    .item_policy(
+                        &row.corpse_item.production_key,
+                        &row.corpse_item.revision_ref
+                    )
+                    .expect("native corpse")
+                    .record()
+                    .admission
+                    .materializable
+            );
+            let retained = source
+                .tables
+                .iter()
+                .find(|table| table.identity.key == format!("oteryn:loot.creature.{name}"))
+                .expect("retained table");
+            assert_eq!(row.loot_table.entries.len(), count);
+            assert_eq!(row.loot_table.entries.len(), retained.entries.len());
+            for (entry, original) in row.loot_table.entries.iter().zip(&retained.entries) {
+                assert_eq!(entry.item.production_key, original.item.key);
+                assert_eq!(entry.min_count, original.min_count);
+                assert_eq!(entry.max_count, original.max_count);
+                assert_eq!(entry.probability_ppm, original.probability_ppm);
+                assert!(entry.details.children.is_empty());
+                assert!(
+                    native
+                        .item_policy(&entry.item.production_key, &entry.item.revision_ref)
+                        .expect("entire loot Item closure")
+                        .record()
+                        .admission
+                        .materializable
+                );
+            }
+            let required_key = format!("oteryn:item.tibia.i{required}");
+            let target = row
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == required_key)
+                .expect("required input drop");
+            assert_eq!(target.probability_ppm, Some(chance));
+            assert!(target.details.stackable);
+            // The actual source table has at most20flat outputs. Preserve its RNG,
+            // chances and quantities; find an ordinary bounded seed that drops the input.
+            assert!(check_corpse_container_capacity(count).is_ok());
+            let mut observed = false;
+            for seed in 0..8192u32 {
+                let key = LootPlanDeathKey::new([1; 16], [2; 16], 1, seed, 1);
+                let plan = plan_creature_loot(key, &row.loot_table_ref, &row.loot_table)
+                    .expect("unchanged native loot planner");
+                let top_level = plan
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.parent.is_none())
+                    .count();
+                assert!(top_level <= count);
+                assert!(check_corpse_container_capacity(top_level).is_ok());
+                if plan
+                    .entries
+                    .iter()
+                    .any(|entry| entry.item.production_key == required_key && entry.quantity > 0)
+                {
+                    observed = true;
+                    break;
+                }
+            }
+            assert!(
+                observed,
+                "bounded ordinary source seed must produce {required_key}"
+            );
+        }
+        // Full source decay closure stays materializable; source cap36 is never clamped.
+        for id in [
+            3583, 5963, 3990, 4103, 4104, 13853, 13854, 13855, 13856, 21893, 21894, 21895, 21896,
+        ] {
+            assert!(
+                native
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .expect("native source decay closure")
+                    .record()
+                    .admission
+                    .materializable
+            );
+        }
+        let seacrest = source
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i21893")
+            .expect("source corpse facts");
+        assert_eq!(seacrest.container_capacity, Some(36));
+        assert!(check_corpse_container_capacity(31).is_err());
+    }
+
+    #[test]
     fn animus_multiplier_is_species_scoped_steps_and_caps() {
         assert_eq!(animus_mastery_experience(10_000, 200, false), 10_000);
         assert_eq!(animus_mastery_experience(10_000, 0, true), 10_200);

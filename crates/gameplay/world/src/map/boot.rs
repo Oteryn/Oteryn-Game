@@ -499,11 +499,13 @@ fn scan(
             floors.add(at, mask);
             // NEWHAVEN-TELEPORT-1: the teleport attribute of a top-level entry; its floor byte
             // is the native floor (format document §5), which the reader checked is in the World.
-            if let Some((x, y, floor)) = tile
+            if let Some((ordinal, source)) = tile
                 .items
                 .iter()
                 .filter(|item| item.depth == 0)
-                .find_map(|item| item.attrs.teleport)
+                .enumerate()
+                .find(|(_, item)| item.attrs.teleport.is_some())
+                && let Some((x, y, floor)) = source.attrs.teleport
             {
                 floors.add_teleport(
                     at,
@@ -513,6 +515,14 @@ fn scan(
                         floor: i8::from_ne_bytes([floor]),
                     },
                 );
+                if let Some(appearance) = manifest
+                    .palette
+                    .get(source.palette as usize)
+                    .and_then(|entry| super::palette_appearance(&entry.key))
+                    && let Ok(ordinal) = u8::try_from(ordinal)
+                {
+                    floors.bind_teleport_source(at, ordinal, appearance);
+                }
             }
         }
         facts.push(manifest, sector, &mut blocked);

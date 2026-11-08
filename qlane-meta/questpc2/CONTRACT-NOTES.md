@@ -774,3 +774,40 @@ remain from that merge; publish the final receipt with the next green slice.
 - This source-only batch adds no Rust or SQL and changes no runtime content.
   Existing PG180006 proof3/3PASS133.133s belongs to the prior six admitted Items;
   it is not evidence of admission for the six new membership candidates.
+
+
+- Collector3030 merge78294c081: main already admits portable slain-skeleton
+  Items3990/4103/4104. Keep their complete native records and both carried/Ground
+  destinations. The lane's conservative no-pickup policy still applies to the
+  other17selected corpse/decay Items. Canonical physical/container fields for
+  these three now come from the same pinned existing source importer as main,
+  rather than overwriting accepted source facts with a conservative default.
+  Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:data/items/items.xml:11924-11929,
+  12485-12494, SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+  Client flags use existing pinned appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2;
+  Item4103capacity8 is the accepted loader/client default from
+  build_source_item_profiles.py:73-78, not an invented XML attribute.
+  Existing movement and weight must still agree; missing admitted portable
+  profiles and conflicting known facts refuse before publishing any output.
+- Merge keeps both runtime guard sets: earned-reward and shared-world gates;
+  pending-party admission plus added world objects; lane quest persistence
+  plus main shared credit/benevola/hive guards; exact NPC exchanges plus main
+  Yeo/fluid/full-charge behavior. Reuse main's typed input_authority permit,
+  with the lane carried-only NPC wrapper and negative ground test retained.
+- Strict outside-six Item fingerprints must be regenerated after accepted
+  upstream record changes, using questpc2_rotten_fingerprint_rebase.py during
+  the exact active main merge. It first reproduces the old committed proof.
+  Keep both full-record digest assertions; never hand-edit the fingerprint pins.
+- Owner freeze decision: publish this merge once, then freeze questpc2 for the
+  collector. No new features on this branch; subsequent features belong on
+  claude/happy-davinci-ijz3wy-questpc2b. Remaining quests are not qualified by
+  this integration work or by source-only membership evidence.
+
+- Migration composition after collector3030: own1240-1242 run before main1333.
+  Preserve main's exact opposite-side and RHS typed-definition substrings for
+  its Yeo extension. Side3 permits only item BURN/MINT kinds and maps only the
+  exact expected input identity/ordinal on the LHS; wrong input keys becomeNULL
+  and fail IS DISTINCT FROM. Plain-input, empty-box and20hcooldown predicates
+  stay intact. Main1333 is unchanged. Full chain through1349 passed onPG180006
+  in3.001s; Yeo/Al Dee/Uzgod/Seymour guards all retained. All12initial PG failures
+  shared this setup cause; do not count them as executed mechanic proof.
