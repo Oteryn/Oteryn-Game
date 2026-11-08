@@ -73,6 +73,14 @@ pub(super) fn prepare(
         return None;
     }
     offers.offers.extend(authored.offers);
+    let markers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
+    ))
+    .ok()?;
+    if markers.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(markers.offers);
     #[cfg(test)]
     if let Some(rows) = admission.states.npc_conversations.fixture_offer_rows.get() {
         offers.offers.extend(rows.iter().cloned());
@@ -176,4 +184,23 @@ pub(super) fn prepare(
             })
         },
     )
+}
+
+#[cfg(test)]
+#[test]
+fn sterling_marker_offer_requires_the_source_morla_report() -> Result<(), serde_json::Error> {
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/m16-targuna-marker.json"
+    ))?;
+    assert_eq!(offers.offers.len(), 1);
+    let offer = &offers.offers[0];
+    assert_eq!(offer.npc, "oteryn:npc.sterling");
+    assert_eq!((offer.topic, offer.next_topic), (0, 2));
+    assert!(
+        offer
+            .requires
+            .iter()
+            .any(|r| r.track.ends_with("/morla_done") && r.minimum == 1 && r.maximum == 1)
+    );
+    Ok(())
 }
