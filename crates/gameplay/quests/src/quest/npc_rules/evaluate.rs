@@ -118,6 +118,19 @@ impl<'a> Staged<'a> {
             }
             NpcRuleGuard::Level { op, value } => op.holds(i64::from(input.level), *value, None),
             NpcRuleGuard::CalendarMonth { value } => input.calendar_month == *value,
+            NpcRuleGuard::CalendarWindow {
+                start_month,
+                start_day,
+                end_month,
+                end_day,
+                within,
+            } => {
+                super::calendar::within(
+                    input.now_epoch_seconds,
+                    (*start_month, *start_day),
+                    (*end_month, *end_day),
+                )? == *within
+            }
             NpcRuleGuard::Vocation { value } => input.vocation == value,
             NpcRuleGuard::Premium { value } => input.premium_current == *value,
             NpcRuleGuard::Sex { value } => input.sex == *value,
@@ -330,6 +343,7 @@ pub(super) fn plan(
                             | NpcRuleGuard::Level { .. }
                             | NpcRuleGuard::Vocation { .. }
                             | NpcRuleGuard::Premium { .. }
+                            | NpcRuleGuard::CalendarWindow { .. }
                     )
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
