@@ -10,6 +10,17 @@ impl PlayLink {
     pub fn chat_text(&self, text: String) {
         self.chat_composer(true, text);
     }
+    pub fn chat_console(
+        &self,
+        tab: oteryn_client_ui::chat::ConsoleTab,
+        mode: oteryn_client_ui::chat::ComposerMode,
+        filter: oteryn_client_ui::chat::ConsoleFilter,
+    ) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.chat.console.tab = tab;
+        mailbox.chat.console.mode = mode;
+        *mailbox.chat.console.filter_mut() = filter;
+    }
     pub fn chat_request(&self, mode: Mode, recipient: &str) {
         enqueue(&mut lock(&self.mailbox), &self.commands, mode, recipient);
     }

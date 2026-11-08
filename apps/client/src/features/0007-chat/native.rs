@@ -6,7 +6,7 @@ use crate::play::{
     PlayLink,
     mailbox::{SharedMailbox, lock},
 };
-use oteryn_client_ui::chat::{Mode, panel_text};
+use oteryn_client_ui::chat::{ComposerMode, Mode, panel_text};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
@@ -21,6 +21,10 @@ const MESSAGE: usize = 102;
 const RECIPIENT: usize = 103;
 const RECIPIENT_LABEL: usize = 104;
 const SEND: usize = 105;
+const TABS: usize = 110;
+const FILTER: usize = 111;
+const HIDE_YELLS: usize = 112;
+const INPUT_MODE: usize = 113;
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
 #[derive(Default)]
@@ -33,7 +37,8 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             let id = w & 0xffff;
             let note = (w >> 16) & 0xffff;
             if !actions.is_null()
-                && ((id == SEND && note == BN_CLICKED as usize)
+                && ((matches!(id, SEND | HIDE_YELLS | INPUT_MODE) && note == BN_CLICKED as usize)
+                    || (id == TABS && note == LBN_SELCHANGE as usize)
                     || PrivateControls::accepts(id, note))
             {
                 (*actions).0.push(id);
@@ -83,7 +88,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Local Chat (Ctrl+Shift+C)").as_ptr(),
+            wide("Chat console (Ctrl+Shift+C)").as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -150,6 +155,48 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [250, 86, 430, 380],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
+        let tabs_control = control(
+            hwnd,
+            "LISTBOX",
+            "",
+            TABS,
+            [10, 240, 230, 180],
+            LBS_NOTIFY as u32 | WS_BORDER,
+        );
+        control(
+            hwnd,
+            "STATIC",
+            "Filter this tab (speaker or message)",
+            114,
+            [10, 425, 230, 24],
+            0,
+        );
+        let filter = control(
+            hwnd,
+            "EDIT",
+            "",
+            FILTER,
+            [10, 450, 230, 28],
+            WS_BORDER | WS_TABSTOP,
+        );
+        let hide_yells = control(
+            hwnd,
+            "BUTTON",
+            "Hide yells in this tab",
+            HIDE_YELLS,
+            [10, 490, 230, 28],
+            BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+        );
+        let input_mode = control(
+            hwnd,
+            "BUTTON",
+            "Input On / Off / Once",
+            INPUT_MODE,
+            [10, 530, 230, 28],
+            WS_TABSTOP,
+        );
+        let mut tabs = Vec::new();
+        let mut preferences_initialized = false;
         let mut private = PrivateControls::new(hwnd);
         let mut held = String::new();
         let mut msg: MSG = std::mem::zeroed();
@@ -166,6 +213,37 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            if preferences_initialized {
+                mailbox.chat.console.filter_mut().contains = read_text(filter);
+            } else {
+                let preferences = mailbox.chat.console.filter_mut();
+                SetWindowTextW(filter, wide(&preferences.contains).as_ptr());
+                SendMessageW(
+                    hide_yells,
+                    BM_SETCHECK,
+                    usize::from(preferences.hide_yells),
+                    0,
+                );
+                preferences_initialized = true;
+            }
+            let current_tabs = mailbox.chat.console.tabs(&mailbox.chat.lines);
+            if tabs != current_tabs {
+                tabs = current_tabs;
+                SendMessageW(tabs_control, LB_RESETCONTENT, 0, 0);
+                for tab in &tabs {
+                    SendMessageW(
+                        tabs_control,
+                        LB_ADDSTRING,
+                        0,
+                        wide(&tab.label()).as_ptr() as isize,
+                    );
+                }
+                let selected = tabs
+                    .iter()
+                    .position(|tab| *tab == mailbox.chat.console.tab)
+                    .unwrap_or(0);
+                SendMessageW(tabs_control, LB_SETCURSEL, selected, 0);
+            }
             mailbox.chat.text = read_text(message);
             super::super::super::feature_0233_player_typing::input::composer(
                 &mut mailbox,
@@ -177,12 +255,42 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 mailbox.chat.guild_open = false;
             }
             let guild_mode = SendMessageW(rooms, LB_GETCURSEL, 0, 0) == 4;
-            let enabled =
-                !guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat);
+            let enabled = mailbox.chat.console.mode != ComposerMode::Off
+                && (!guild_mode || oteryn_client_ui::chat_guild_room::available(&mailbox.chat));
             EnableWindow(message, i32::from(enabled));
             EnableWindow(GetDlgItem(hwnd, SEND as i32), i32::from(enabled));
             for action in std::mem::take(&mut actions.0) {
                 if private.action(action, &mut mailbox, &commands) {
+                    continue;
+                }
+                if action == TABS {
+                    let selected = SendMessageW(tabs_control, LB_GETCURSEL, 0, 0);
+                    if let Ok(index) = usize::try_from(selected)
+                        && let Some(tab) = tabs.get(index)
+                    {
+                        mailbox.chat.console.tab = *tab;
+                        let preferences = mailbox.chat.console.filter_mut();
+                        SetWindowTextW(filter, wide(&preferences.contains).as_ptr());
+                        SendMessageW(
+                            hide_yells,
+                            BM_SETCHECK,
+                            usize::from(preferences.hide_yells),
+                            0,
+                        );
+                    }
+                    continue;
+                }
+                if action == HIDE_YELLS {
+                    mailbox.chat.console.filter_mut().hide_yells =
+                        SendMessageW(hide_yells, BM_GETCHECK, 0, 0) != 0;
+                    continue;
+                }
+                if action == INPUT_MODE {
+                    mailbox.chat.console.mode = match mailbox.chat.console.mode {
+                        ComposerMode::On => ComposerMode::Off,
+                        ComposerMode::Off => ComposerMode::Temporary,
+                        ComposerMode::Temporary => ComposerMode::On,
+                    };
                     continue;
                 }
                 if action != SEND {
@@ -201,6 +309,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
+            SetWindowTextW(
+                input_mode,
+                wide(&format!(
+                    "Input {:?} (click to cycle)",
+                    mailbox.chat.console.mode
+                ))
+                .as_ptr(),
+            );
             private.render(&mailbox.chat_private);
             let text = format!(
                 "{}\n{}",

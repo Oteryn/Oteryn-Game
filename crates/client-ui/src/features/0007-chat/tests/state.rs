@@ -163,3 +163,64 @@ fn guild_lines_require_current_matching_membership_and_preserve_order() {
     assert!(positions.iter().all(Option::is_some));
     assert!(positions.windows(2).all(|p| p[0] < p[1]));
 }
+
+#[test]
+fn console_tabs_keep_independent_filters_and_gate_composition() {
+    use oteryn_client_runtime::chat_public_channels::ChatRoom;
+    let mut panel = ChatPanel {
+        selected: true,
+        text: "hello".into(),
+        ..Default::default()
+    };
+    panel.lines = vec![
+        ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "private hello".into(),
+        },
+        ChatLine::Room {
+            room: ChatRoom::World,
+            speaker_name: "Bob".into(),
+            text: "world hello".into(),
+        },
+    ];
+    panel.console.tab = ConsoleTab::Private;
+    panel.console.filter_mut().contains = "Alice".into();
+    assert!(panel_text(&panel).contains("private hello"));
+    assert!(!panel_text(&panel).contains("world hello"));
+    panel.console.tab = ConsoleTab::Public(ChatRoom::World);
+    assert!(panel.console.filter_mut().contains.is_empty());
+    assert!(panel_text(&panel).contains("world hello"));
+    panel.console.tab = ConsoleTab::Private;
+    assert_eq!(panel.console.filter_mut().contains, "Alice");
+    panel.console.mode = ComposerMode::Off;
+    assert!(request(&mut panel, Mode::Say, "").is_none());
+    panel.console.mode = ComposerMode::Temporary;
+    assert!(request(&mut panel, Mode::Say, "Alice").is_some());
+    assert_eq!(panel.console.mode, ComposerMode::Off);
+}
+
+#[test]
+fn console_tab_sends_to_the_selected_server_room() {
+    use oteryn_client_runtime::chat_public_channels::ChatRoom;
+    let mut panel = ChatPanel {
+        selected: true,
+        text: "hello".into(),
+        ..Default::default()
+    };
+    panel.console.tab = ConsoleTab::Public(ChatRoom::Help);
+    assert_eq!(
+        request(&mut panel, Mode::Say, ""),
+        Some(ChatIntent::Room {
+            room: ChatRoom::Help,
+            text: "hello".into()
+        })
+    );
+    panel.pending = false;
+    panel.console.tab = ConsoleTab::Party;
+    assert_eq!(
+        request(&mut panel, Mode::Say, ""),
+        Some(ChatIntent::Party {
+            text: "hello".into()
+        })
+    );
+}
