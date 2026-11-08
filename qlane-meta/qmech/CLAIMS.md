@@ -33,10 +33,12 @@
 | Annual UTC month/day window for source NPC dialogue, derived from the transaction clock | SRVWLD | none planned; retained range 1110–1119 | The First Dragon Quest (Tamoril Jan 14–Feb 12 opening only; other encounter/binding gaps remain) | CLAIMED |
 | Quest item-look disguise and exact exit restoration through the existing condition/appearance owner | srvgap1108 | 1669–1670 reserved if required; retained original range 1660–1679 | Wrath of the Emperor (carried crate USE and restoration step); reusable adapter for Last Creep Standing, whose form/portal identities remain unresolved | CLAIMED |
 
-| Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | CLAIMED |
+| Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | RELEASED: SRVWLD published the same claim first in3e73a1cf7; local alternative remains unpublished |
 
 | Live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; retained 1650–1659 | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
 
 | Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
 
 | World-change conditions on the existing personal native-death counter adapter, with Fury/Werewolf/Mad Mage registrations | qworld | none planned; retained range1320–1329 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf); Their Master's Voice World Change (Mad Mage stage) | CLAIMED; preceding personal stages remain separate bindings |
+
+| Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
