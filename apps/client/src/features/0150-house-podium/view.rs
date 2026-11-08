@@ -13,7 +13,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             title: "House podium",
             labels: &[
                 "Podium item UUID",
-                "Display: 1 outfit, 2 mount, 3 item",
+                "Display: 1 outfit, 2 mount, 3 creature",
                 "Direction: 0 north, 1 east, 2 south, 3 west",
                 "Display content key",
             ],

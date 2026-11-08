@@ -959,8 +959,9 @@
   "src": "TIBAUD-1",
   "area": "Depot",
   "feature": "Search/details po item/tier, retrieve",
-  "status": "PARTIAL",
-  "gap": "Search/details są; brak pełnego widżetu wyników i widocznych działań retrieve-all.",
+  "status": "DONE",
+  "gap": "Natywna lista, szczegóły, retrieve one/all i paginacja są; akcje wyniku odrzucają zmianę wyświetlonego reply.",
+  "evidence": "apps/client/src/features/0153-depot-search/native.rs:107 + depot_native_retrieve_rejects_a_changed_displayed_reply; depot_result_controls_retrieve_all_and_keep_server_outcomes",
   "lane": "cg_ui"
  },
  {
@@ -1573,8 +1574,9 @@
   "src": "OTCAUD1108",
   "area": "House",
   "feature": "Cyklopedia: katalog domów i aukcje",
-  "status": "PARTIAL",
-  "gap": "Brakuje podłączenia katalogu i aukcji domów do sesji oraz natywnego okna; kontroler 0049 i model odpowiedzi istnieją, ale nie są zamontowane w aplikacji.",
+  "status": "DONE",
+  "gap": "Sesja i natywne okno są już zamontowane w cgmech; uzupełniono własność, typ, termin aukcji, własny max bid i paginację.",
+  "evidence": "apps/client/src/features/0049-house/view.rs:8 + house_production_queue_and_result_cleanup; house_catalogue_shows_auction_identity_and_navigation",
   "lane": "cg_ui"
  },
  {
