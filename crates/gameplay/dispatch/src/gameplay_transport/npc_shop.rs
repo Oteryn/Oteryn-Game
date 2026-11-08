@@ -14,8 +14,8 @@ use super::connection::UseCommand;
 use super::npc_command::NpcTradeRefusal;
 use super::npc_trade_command::{self, NpcTradeStep};
 use super::{ComposedFreshAdmission, item_ref_admission::pinned_index};
-use crate::foundation::ExactActorRef;
 use crate::content::ActiveGeneration;
+use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeIntent, NpcTradeSide};
 use oteryn_protocol_oteryn::npc_shop::{
     MAX_NPC_SHOP_LOOK_TEXT_BYTES, NpcShopAction, NpcShopIntent, NpcShopResult,
@@ -151,7 +151,21 @@ async fn look(
             SHOP_LOOK_DISTANCE,
         )
     }) {
-        Some(text) => NpcShopStep::Looked(bounded(text)),
+        Some(mut text) => {
+            if crate::content::npc_catalogue::subtype_trades::fluid_container(&offer.item_key) {
+                let subtype = offer.sub_type.unwrap_or(0);
+                let Some(name) = crate::content::npc_catalogue::subtype_trades::fluid_name(subtype)
+                else {
+                    return NpcShopStep::rejected();
+                };
+                if subtype == 0 {
+                    text.push_str(" It is empty.");
+                } else {
+                    text.push_str(&format!(" It contains {name}."));
+                }
+            }
+            NpcShopStep::Looked(bounded(text))
+        }
         None => NpcShopStep::rejected(),
     }
 }
@@ -164,8 +178,7 @@ macro_rules! authority_methods {
             _actor: $crate::foundation::ExactActorRef,
             _command: $crate::gameplay_transport::connection::UseCommand,
             _intent: oteryn_protocol_oteryn::npc_shop::NpcShopIntent,
-        ) -> impl std::future::Future<Output = $crate::gameplay_transport::npc_shop::NpcShopStep>
-        {
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::npc_shop::NpcShopStep> {
             async { $crate::gameplay_transport::npc_shop::NpcShopStep::rejected() }
         }
     };

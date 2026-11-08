@@ -27,11 +27,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     assert_eq!(catalogue.project_revision(), "npcfix-retail-20261106-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "e1698c02b19fa21bd2b764de784b5984cbbeaf3e6785d81ae841b36e8fb03a2c"
+        "d75898369cf484d61acf92a5fb756db4b45f7e82bc44d5932e7e759129b099bb"
     );
     assert_eq!(catalogue.npc_count(), 1290);
     assert_eq!(catalogue.dialogue_count(), 839);
-    assert_eq!(catalogue.service_count(), 395);
+    assert_eq!(catalogue.service_count(), 405);
     assert_eq!(catalogue.sources(), sources);
     assert_eq!(catalogue.source_identity_bindings(), bindings);
     let (reference, imported) = catalogue

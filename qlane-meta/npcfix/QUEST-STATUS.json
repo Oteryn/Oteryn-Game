@@ -8573,17 +8573,9 @@
       {
         "file": "1237_quest_reward_bulk_draws.sql",
         "sha256": "2bb33341159c64bb71c09784950019821e55cb19e160ce7aabcab7567b33eeaa"
-      },
-      {
-        "file": "1238_npc_trade_fluid_mints.sql",
-        "sha256": "5f07fae2248a5b2cc28961c8c3300aea01bbaaf4022ab0189950f6da7113d250"
-      },
-      {
-        "file": "1239_npc_trade_optional_fluid_shape.sql",
-        "sha256": "4c1037b3d896a557e6830a464e3f928b382e998c9b29bb66c82466fa8d02c393"
       }
     ],
-    "note": "Renames are historical. Current files consume main0999–1008; no1200–1205 copies.1231/1232 removed because they replaced the shared completion owner;1234/1235 now extend main in bounded lane-owned arms."
+    "note": "Renames are historical. Current files consume main0999–1008; no1200–1205 copies.1231/1232 removed because they replaced the shared completion owner;1234/1235 now extend main in bounded lane-owned arms. Collector78294: remove duplicate1238/1239; consume Main1346/1347 for fluid/full-charge state. Six lane migrations remain."
   },
   "prepared_physical_batches": [
     {
@@ -9382,5 +9374,140 @@
     "nested_store": "Verified item_loop_move.rs:752,1408 writes nested rows to game_item_nested_entries. Assert direct-root0, exact live nested UUID/quantity1, recursive carried ownership1 and unchanged money.",
     "gates": "PASS:283 unchanged quest units90.92s; final current-source workspace all-target check5m30s; final fmt; audit/matrix regeneration, native44 freshness, double-build world pin check, duplicate migrations. Full10-crate units59146 now compiling; current6PG scheduler69240 and Clippy85125 pending under PREPUSH-2 cadence exception.",
     "pending": "Full10-crate unfiltered cargo-test unit run59146 queued behind final check; PG scheduler69240 covers state3, five shops, Guardian, atomic eleven (6 tests) after new binary. Clippy rerun pending. No promotion;37 owned entries remain."
+  },
+  "collector_round1_integration": {
+    "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+    "predecessor_pushed": "25b9ca98f60cf8d019214a45c8b3ad812ef6df89",
+    "merge": "All source and derived conflict markers resolved within8minutes; derived files incoming seeds until repository regeneration. Retain both world_change_profiles and npcfix_item_profiles producers.",
+    "shared_reuse": "Main native fluid/full-charge trade implementation replaces own older core variant; delete1238/1239 duplicate fluid-column migrations in favor of Main1346/1347. Main world mechanisms adopted as-is. Retain owned source-bound offers/quest gates and strict existing tests.",
+    "current_repairs": "Canonical NPC programme runs before old state-dialogue fallback; fixes legacy Tereban interception of Main11-track acceptance. Standard game_content_record_activation added to postage fixture before key33 item-loop moves; retain independent equipment/content guard.",
+    "source25_pg": {
+      "state_three": "2PASS/1FAIL401.894s; Tereban still intercepted by old handler",
+      "five_shops": "FAIL640.125s, all5 markers; first nested move Rejected because independent active content was not published",
+      "guardian": "PASS194.711s",
+      "atomic_eleven": "PASS82.634s; all3 scenarios including guard/range rollback"
+    },
+    "source25_clippy": "PASS all10 crates24m38s; planner-current-clippy.log",
+    "source25_units": "Incomplete unfiltered10-crate cargo-test snapshot; no assertion failure observed before collector merge interruption. Archived under/tmp/npcfix-evidence/precollector-round1; never counted green.",
+    "compile": "All-target compile RED also exposed duplicate fluid_subtype in game-server authority and NPC bank fixtures; source scan found third in lifted imbuement test. Removed duplicates preserving fluid_subtype None and full_charges None. No tests removed/weakened; complete retry queued after original jobs finish.",
+    "regeneration": "GREEN full official materializer/content/native/store/authoring/pin regeneration; collector-round1-conditional-regeneration.log.60 strict repairs,18 conditional terrain additions and4 standard Bank bindings preserved. All60 exact-before preflight PASS and final materializer PASS. Original repair behavior retained.",
+    "qualification": "Unchanged256QUALIFIED;37owned open. No new quest started outside packet.",
+    "travel_routes": "Merged source has243 unique corrections (195 original source corrections preserved); strict total/key assertions updated from incoming233 to actual union243.",
+    "focused_tests": "npcfix reward Python tests GREEN9 in47.929s. World metadata regeneration unchanged0/4 and validation PASS. Audit, matrix, proficiency, Crystal and Grizzly generators ran; binding evidence must rerun after canonical tree because seeded index names absent dialogue shard.",
+    "lane_migrations": [
+      {
+        "file": "1230_quest_atomic_track_capacity.sql",
+        "sha256": "2980e59396009db00a24a350ec9bbf1c71d971c4f3e1bb0f4312e5eabd0ebd8f"
+      },
+      {
+        "file": "1233_quest_reward_absolute_deadlines.sql",
+        "sha256": "373fccd785b07116932e046735786fab4f3978785640bba0e1e3691e823c1cb6"
+      },
+      {
+        "file": "1234_quest_cooldown_repeat_occurrences.sql",
+        "sha256": "a56b5cf5f915be36629a739fe2328a3b5ed091936fef05031f160de2898bd0e7"
+      },
+      {
+        "file": "1235_quest_reward_workshop_clocks.sql",
+        "sha256": "4f3914b14d8ef0127efc552aa6f9bd1de197b272cda4746fe91ba833949eb9e5"
+      },
+      {
+        "file": "1236_quest_reward_backpack_outputs.sql",
+        "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f"
+      },
+      {
+        "file": "1237_quest_reward_bulk_draws.sql",
+        "sha256": "2bb33341159c64bb71c09784950019821e55cb19e160ce7aabcab7567b33eeaa"
+      }
+    ],
+    "workspace_compile": "GREEN cargo check --workspace --all-targets1m53s after all duplicate fixture fields fixed; collector-round1-workspace-check-retry.log. Final generated-output recheck pending.",
+    "quest_units": "GREEN289 passed,0failed,0ignored,0filtered;91.02s,collector-quest-unit-tests.log. Main adds6 tests beyond prior283.",
+    "clippy": "GREEN strict --lib Clippy all10 own changed crates -Dwarnings2m46s; collector-changed-crate-clippy.log. Other current own unit/PG tests remain pending, not counted green.",
+    "generated_checks": [
+      {
+        "name": "binding-evidence",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/quest_binding_authoring.py"
+        ],
+        "exit": 0,
+        "seconds": 30.477
+      },
+      {
+        "name": "tree-validation",
+        "command": [
+          "python3",
+          "tools/content-migration/validate_world_project_v2_to_tree.py"
+        ],
+        "exit": 0,
+        "seconds": 211.569
+      },
+      {
+        "name": "native-freshness",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 115.498
+      },
+      {
+        "name": "materialized-tree",
+        "command": [
+          "python3",
+          "tools/content-schema/validate_materialized_game_tree.py"
+        ],
+        "exit": 0,
+        "seconds": 0.103
+      },
+      {
+        "name": "duplicates",
+        "command": [
+          "bash",
+          ".claude/skills/oteryn-dev/scripts/dup-migrations.sh"
+        ],
+        "exit": 0,
+        "seconds": 0.566
+      }
+    ],
+    "world_pin": {
+      "digest": "5679b28855bf3b9ff46c617c6c90c7ac48e7febe82f1f8bf34ab63b74cb0dcd6",
+      "pin_check": "GREEN current release compiler after binding regeneration; collector-final-world-pin-check.log",
+      "bytes": 33564597
+    },
+    "current_counts": {
+      "npcs": 1290,
+      "dialogues": 839,
+      "trade_services": 327,
+      "travel_services": 59,
+      "native_output_files": 45
+    },
+    "pending": "All remaining changed-crate units and fresh own PG: state3,35 shop offers,Guardian,canonical atomic11,cumulative retained physical actors,Ahmet filled fluids,13 services and AlDee costed pick. Final generated workspace/fmt gate active; no additional quest qualified.",
+    "final_compile_and_fmt": [
+      {
+        "name": "workspace-check",
+        "command": [
+          "cargo",
+          "check",
+          "--workspace",
+          "--all-targets"
+        ],
+        "exit": 0,
+        "seconds": 388.702
+      },
+      {
+        "name": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 27.256
+      }
+    ],
+    "publication": "Compiling integration checkpoint: all PREPUSH-2 generation/workspace/fmt gates PASS, strict10-library Clippy PASS, quest289 and authoring9 tests PASS. Other changed-crate units and own focused PG reruns explicitly pending under cadence exception. No new entry qualified."
   }
 }

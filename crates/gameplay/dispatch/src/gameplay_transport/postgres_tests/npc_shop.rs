@@ -173,7 +173,11 @@ async fn carried(h: &Harness) -> TestResult<Vec<(String, i64)>> {
 }
 
 fn scenario() -> TestResult {
-    run(async |admin| {
+    run_shop_scenario(false)
+}
+
+pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
+    run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "npc_shop_wire", true, false).await?;
         prepare_current_session(&h).await?;
@@ -186,6 +190,14 @@ fn scenario() -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
+        let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(
+            crate::gameplay_transport::npc_trade_command::unix_ms_now(),
+        ).placement;
+        let entry = if wandering_rashid {
+            (i32::from(destination.x), i32::from(destination.y), -i16::from(destination.floor))
+        } else {
+            (2, 0, 7)
+        };
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
@@ -193,7 +205,7 @@ fn scenario() -> TestResult {
             pin.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             pin.qualified_room().map_revision_digest(),
-            (2, 0, 7),
+            entry,
         );
         // One player plus Alice and Rashid each occupy a carrier slot.
         let deps = Dependencies::with_content_and_capacity(
@@ -252,10 +264,11 @@ fn scenario() -> TestResult {
                 .position();
             runtime
                 .place_npcs(
-                    &NpcPlacementTable {
+                    &{
+                        let mut table = NpcPlacementTable {
                         npcs: vec![
                             NpcPlacements {
-                                key: TRADER.into(),
+                                key: if wandering_rashid { RASHID } else { TRADER }.into(),
                                 placements: vec![NpcPlacement {
                                     floor: -i8::try_from(spot.floor)?,
                                     x: u16::try_from(spot.x + 1)?,
@@ -264,7 +277,7 @@ fn scenario() -> TestResult {
                                 }],
                             },
                             NpcPlacements {
-                                key: RASHID.into(),
+                                key: if wandering_rashid { TRADER } else { RASHID }.into(),
                                 placements: vec![NpcPlacement {
                                     floor: -i8::try_from(spot.floor)?,
                                     x: u16::try_from(spot.x + 2)?,
@@ -273,12 +286,17 @@ fn scenario() -> TestResult {
                                 }],
                             },
                         ],
+                        };
+                        table.npcs.sort_by(|left, right| left.key.cmp(&right.key));
+                        table
                     },
                     |_| true,
                     true,
                 )
                 .map_err(debug)?;
-            let placed = runtime.visible_entities().npcs[0];
+            let placed = runtime.visible_entities().npcs.into_iter().find(|npc| {
+                runtime.npc_key(npc.actor) == Some(if wandering_rashid { RASHID } else { TRADER })
+            }).ok_or("shop actor absent")?;
             EntityRef {
                 identity: placed.actor.placement_identity(),
                 generation: placed.generation,
@@ -379,6 +397,13 @@ fn scenario() -> TestResult {
         let (status, nothing) = exchange(&owner, &mut admitted, Some((7, 8)), 9, &sell_all).await?;
         assert_ne!(nothing.disposition, NpcIntentDisposition::Ok, "{status:?}");
         assert_eq!(footprint(&h).await?, after);
+
+        if wandering_rashid {
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
 
         // A visible Rashid outside today's server-owned Canary destination cannot trade. This
         // traverses the production command decoder and dispatcher, rather than calling the

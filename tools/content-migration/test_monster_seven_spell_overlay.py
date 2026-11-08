@@ -37,7 +37,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         # C1 registers the Newhaven starting-loadout item profiles; SRX-1
         # registers the pinned item-profile supplement. QENGINE2 adds its
         # source-qualified reward Item proof alongside those 42 outputs.
-        self.assertEqual(len(actual),44)
+        # WORLDCHG adds the three admitted source-loot closures as one output.
+        self.assertEqual(len(actual),45)
+        self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual.keys())
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('tools/content-schema/native-gameplay/npcfix-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)

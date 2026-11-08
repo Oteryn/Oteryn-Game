@@ -142,12 +142,16 @@ pub trait NpcItemFacts {
     }
     /// Charges of an admitted timed definition; `None` when the item is not timed.
     fn timed_charges(&self, key: &str) -> Option<u32>;
+    fn default_charges(&self, key: &str) -> Option<u32> {
+        self.timed_charges(key)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ItemFactRow {
     stackable: bool,
     charged: bool,
+    default_charges: Option<u32>,
     fluid: bool,
     fluid_container: bool,
     timed_charges: Option<u32>,
@@ -195,6 +199,7 @@ impl ReferenceNpcItemFacts {
                 ItemFactRow {
                     stackable,
                     charged: charges.is_some(),
+                    default_charges: charges,
                     fluid,
                     fluid_container: matches!(&semantics.fluid, ReferenceItemField::Known(_)),
                     timed_charges: if timed { charges } else { None },
@@ -206,6 +211,13 @@ impl ReferenceNpcItemFacts {
 }
 
 impl NpcItemFacts for ReferenceNpcItemFacts {
+    fn default_charges(&self, key: &str) -> Option<u32> {
+        self.items
+            .get(key)
+            .filter(|row| !row.stackable)
+            .and_then(|row| row.default_charges)
+            .filter(|charges| (1..=NPC_CHARGES_MAX).contains(charges))
+    }
     fn known(&self, key: &str) -> bool {
         self.items.contains_key(key)
     }
@@ -213,7 +225,9 @@ impl NpcItemFacts for ReferenceNpcItemFacts {
         self.items.get(key).is_some_and(|row| row.stackable)
     }
     fn charged(&self, key: &str) -> bool {
-        self.items.get(key).is_some_and(|row| row.charged)
+        self.items
+            .get(key)
+            .is_some_and(|row| row.charged && !row.stackable)
     }
     fn fluid(&self, key: &str) -> bool {
         self.items.get(key).is_some_and(|row| row.fluid)
@@ -401,7 +415,10 @@ fn classify(
         return Some(NpcOfferHeldReason::UnknownItem);
     }
     let count = count_of(offer);
-    if let Some(subtype) = offer.sub_type {
+    if let Some(subtype) = offer
+        .sub_type
+        .filter(|_| facts.default_charges(key).is_none())
+    {
         return if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
             && facts.fluid_container(key)
             && !facts.stackable(key)
@@ -460,8 +477,9 @@ fn classify(
     {
         return None;
     }
-    if let Some(charges) = facts.timed_charges(key) {
-        if count != charges {
+    if let Some(charges) = facts.default_charges(key) {
+        if offer.sub_type.map(u32::from) == Some(charges) && count == 1 {
+        } else if count != charges {
             return Some(NpcOfferHeldReason::TimedCountMismatch);
         }
     } else if facts.charged(key) || facts.fluid(key) {
@@ -477,13 +495,24 @@ fn classify(
     }
     if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
         && offer.unit_price > NPC_SELL_PRICE_COIN_CAPACITY
+        && facts.default_charges(key).is_none()
     {
         return Some(NpcOfferHeldReason::SellPriceAboveCoinCapacity);
     }
     if offer.parity_pending {
         return Some(NpcOfferHeldReason::ParityPending);
     }
-    if facts.timed_charges(key).is_some() || facts.charged(key) || facts.fluid(key) {
+    if super::subtype_trades::fluid_container(key) {
+        if count != 1 || offer.sub_type.is_none_or(|subtype| subtype > 20) {
+            return Some(NpcOfferHeldReason::CountOutOfRange);
+        }
+    } else if facts
+        .default_charges(key)
+        .is_some_and(|charges| offer.sub_type.map(u32::from) == Some(charges))
+        && count == 1
+    {
+        // Full-charge instances use the existing default Item state.
+    } else if facts.charged(key) || facts.fluid(key) {
         return Some(NpcOfferHeldReason::ChargedOrFluidPending);
     }
     None
@@ -508,6 +537,18 @@ pub fn build(
     source_tree_digest: &str,
     facts: &dyn NpcItemFacts,
 ) -> NpcServiceModel {
+    let subtypes = super::subtype_trades::declarations(records, facts);
+    let records: Vec<_> = records
+        .iter()
+        .copied()
+        .filter(|(reference, _)| !subtypes.iter().any(|(added, _)| added == *reference))
+        .chain(
+            subtypes
+                .iter()
+                .map(|(reference, declaration)| (reference, declaration)),
+        )
+        .collect();
+    let records = records.as_slice();
     let grizzly = super::grizzly_shop::declarations(records);
     let records: Vec<_> = records
         .iter()

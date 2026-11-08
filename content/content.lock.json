@@ -33,9 +33,9 @@
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 336,
-    "Service.Bank": 1,
-    "Service.Blessing": 4,
-    "Service.Promotion": 4,
+    "Service.Bank": 2,
+    "Service.Blessing": 10,
+    "Service.Promotion": 7,
     "Service.Trade": 327,
     "Service.Travel": 59,
     "StarterKit": 1,
@@ -47,7 +47,7 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "4e8ec2591b6df1a5a7ab0e494a545175f07bf9d2",
+    "declarations": "e7322c3b9402a648fdd83e56a7aec669461e4369",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "d8b4494706de894558d959d4321e619affa53c04",
     "reference": "cb4363a29f724318b3d5b2cc77119bd04db52b8c",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "e772d5c4f26cb707dd66b0fe2912801a3daa5db033ef0484dd1e9fe1fb3efc83"
+          "sha256": "29eabbfcfeb2e0a70e14a78d09295ceae252d7e2dd5e4aa4607012a84aaf665b"
         },
         {
           "creates_canonical_identities": false,
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3681,
+          "record_count": 3723,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "1a40834da179e52c515b4411826674489bbe3f133d19a0af7c19fc7fd5bee543"
+          "sha256": "a05730037d26ab4b4761e6a0cd43bdb918b629a9554ea9f833cdfba39b448a78"
         },
         {
           "creates_canonical_identities": false,

@@ -93,7 +93,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
     if draft.core.project_revision != "e06-market-crystal-parity-20261031-r1" {
         return Err("NPCFIX predecessor revision drifted".into());
     }
-    if hex_sha256(PACKET) != "bde7214723c91671cf00238d9db6b8de64c58323c5591de0cd7b1ed3c44bfcae" {
+    if hex_sha256(PACKET) != "287b82c0e7e41912ab276cd6e206037ac4ff2a2ac2874646b5b5010d1d9a946f" {
         return Err("NPCFIX repair packet digest drifted".into());
     }
     let packet: Packet = serde_json::from_slice(PACKET)?;
@@ -118,7 +118,19 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
         let slot = match (&repair.before, current.as_slice()) {
             (None, []) => None,
             (Some(before), [(slot, current)]) if *current == before => Some(*slot),
-            _ => return Err(format!("NPCFIX exact before-state drifted: {identity}").into()),
+            _ => {
+                return Err(format!(
+                    "NPCFIX exact before-state drifted: {identity}; expected={}; current={}",
+                    serde_json::to_string(&repair.before)?,
+                    serde_json::to_string(
+                        &current
+                            .iter()
+                            .map(|(_, declaration)| *declaration)
+                            .collect::<Vec<_>>()
+                    )?
+                )
+                .into());
+            }
         };
         replacements.push((slot, repair.after));
     }
