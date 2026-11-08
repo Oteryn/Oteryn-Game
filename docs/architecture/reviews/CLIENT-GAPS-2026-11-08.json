@@ -474,7 +474,8 @@
   "feature": "Help: settings import/export/backup/reset/defaults",
   "status": "PARTIAL",
   "gap": "Jest zapis i walidacja preferencji; brak UI import/export, backup i pełnego reset/defaults.",
-  "lane": "cg_options"
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-reference-preferences/store.rs:64 + active_settings_use_transfer_size_limit; existing settings_transfer_backup_and_defaults_survive_restart covers transfer/defaults. Remaining: workspace architecture validation blocked by unowned 0199-cyclopedia-character/native.rs (648 lines)."
  },
  {
   "id": "T074",
@@ -500,9 +501,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia",
   "feature": "Wspólne okno i nawigacja",
-  "status": "PARTIAL",
-  "gap": "Fasada i osobne panele nie tworzą zintegrowanego CyclopediaDialog.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
  },
  {
   "id": "T078",
@@ -824,9 +826,10 @@
   "src": "TIBAUD-1",
   "area": "Imbuing",
   "feature": "Shrine: apply/clear, sloty i materiały/szansa",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Komendy/lista są; brak pełnego interaktywnego widoku slotów i szczegółów koszt/szansa.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0068-imbue/input.rs:12 + imbuement_live_picker_and_material_reply_reach_run_session"
  },
  {
   "id": "T116",
@@ -869,9 +872,10 @@
   "src": "TIBAUD-1",
   "area": "Wheel",
   "feature": "Presets i copy/import code/URL",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Save allocation jest; brak nazwanych presetów i wymiany buildów code/URL.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0148-wheel-allocation/presets.rs:57 + wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views"
  },
  {
   "id": "T121",
@@ -887,9 +891,10 @@
   "src": "TIBAUD-1",
   "area": "Proficiency",
   "feature": "Weapon perks/rank i shape/reshape",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Operacje/katalog są; ręczne id/perk index/slot/revision zamiast pełnego wyboru wizualnego.",
-  "lane": "cg_ui"
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0195-weapon-proficiency/input.rs:6 + proficiency_session_routes_state_from_native_selection_into_exact_paid_revision"
  },
  {
   "id": "T124",
@@ -1006,6 +1011,7 @@
   "feature": "Offline / exercise / multi-character dialog",
   "status": "PARTIAL",
   "gap": "Komendy offline/exercise są; brak pełnego multi-character wyboru treningu.",
+  "evidence": "apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training",
   "lane": "cg_analytics"
  },
  {
@@ -1194,8 +1200,9 @@
   "area": "Account",
   "feature": "Premium status/features i expiry",
   "status": "PARTIAL",
-  "gap": "Dane account/store są; brak dedykowanego Premium Panel z feature list i expiry; real-money zakup wykluczony.",
-  "lane": "cg_account"
+  "gap": "Native Premium panel, typed client and real-caller mock tests exist; remaining: existing Platform Premium read model needs the authenticated native projection and live qualification. Real-money purchase excluded.",
+  "lane": "cg_account",
+  "evidence": "apps/client/src/features/local-premium/mod.rs:133 + premium_panel_opens_from_real_services_selection_and_refreshes_without_payment; apps/client/src/features/local-premium/tests.rs:131 + premium_panel_reports_missing_service_and_never_confirms_cached_benefits. PARTIAL: authenticated native Premium status/features/expiry producer remains unqualified; see docs/contracts/OTERYN_PREMIUM_PANEL_V1.md."
  },
  {
   "id": "T166",
@@ -1301,9 +1308,10 @@
   "src": "OTCAUD1108",
   "area": "Cyclopedia",
   "feature": "Cyklopedia: nawigacja między działami",
-  "status": "PARTIAL",
-  "gap": "Brakuje wspólnego okna Cyklopedii łączącego działy; Oteryn otwiera oddzielne formularze postaci, bestiariusza, mapy i inspekcji.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8"
  },
  {
   "id": "O025",
@@ -1355,9 +1363,10 @@
   "src": "OTCAUD1108",
   "area": "Analytics",
   "feature": "Kalkulator podziału łupu drużyny",
-  "status": "MISSING",
+  "status": "DONE",
   "gap": "Brakuje kalkulatora importującego podsumowanie sesji i wyliczającego przelewy wyrównujące bilans członków drużyny.",
-  "lane": "cg_analytics"
+  "lane": "cg_analytics",
+  "evidence": "apps/client/src/features/0010-analyser/input/party_import.rs:11 + party_summary_file_io_is_bounded_advisory_and_keeps_live_members_untouched (apps/client/src/features/0010-analyser/tests/party_import.rs)"
  },
  {
   "id": "O037",
