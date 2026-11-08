@@ -88,6 +88,20 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Draconia source custody"));
         }
+        // Crystal 201189f data-global/npc/tamoril.lua:45-111: the calendar gate
+        // and all unconditional acceptance resets belong to this exact source.
+        if document.program_key.as_deref() == Some("oteryn:quest-npc-program.first-dragon-calendar")
+            && (document.quest != "oteryn:quest.the_first_dragon_quest"
+                || document.source_files.len() != 1
+                || document.source_files.iter().any(|file| {
+                    file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                        || file.path != "data-global/npc/tamoril.lua"
+                        || file.sha256
+                            != "d5d55a74c2bb9ade413c23442924b46ee6e5b05c9daf73ed8259e67f04576969"
+                }))
+        {
+            return Err(invalid("Tamoril source custody"));
+        }
         if !super::hidden_threats::custody(document) {
             return Err(invalid("Corym source custody"));
         }
@@ -184,6 +198,16 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                         *value >= 0 && *op != NpcComparison::Between
                     }
                     NpcRuleGuard::CalendarMonth { value } => (1..=12).contains(value),
+                    NpcRuleGuard::CalendarWindow {
+                        start_month,
+                        start_day,
+                        end_month,
+                        end_day,
+                        ..
+                    } => {
+                        super::calendar::valid_date(*start_month, *start_day)
+                            && super::calendar::valid_date(*end_month, *end_day)
+                    }
                     NpcRuleGuard::Vocation { value } => valid_quest_key(value),
                     NpcRuleGuard::Premium { .. } => true,
                     NpcRuleGuard::Sex { value } => *value <= 1,
