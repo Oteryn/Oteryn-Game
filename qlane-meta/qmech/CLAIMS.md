@@ -35,7 +35,7 @@
 
 | Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | RELEASED: SRVWLD published the same claim first in3e73a1cf7; local alternative remains unpublished |
 
-| Live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; retained 1650–1659 | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
+| M11: live current-Character-name matcher in fenced source NPC dialogue | ENGNPC2 | none planned; binding QMECH range 2290–2299 only | The Dream Courts (Stricken Soul access branch; later stages remain separate) | CLAIMED |
 
 | Remove-only native map-target consequence for reusable carried-tool quest USE, atomic with progress and replay | qworld | none planned; retained range 1320–1329 | Their Master's Voice World Change (fungus-cleaning stage) | RELEASED: pinned donor Gobbler_onUse transforms target to12065; existing target_replacement supports it, so remove-only is unnecessary |
 
