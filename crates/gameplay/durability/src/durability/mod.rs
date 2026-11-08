@@ -56,6 +56,7 @@ pub mod terrain_tool;
 pub mod tibiadrome;
 pub mod vip;
 pub mod vip_presence;
+pub mod weapon_proficiency_state;
 // End sorted module declarations.
 
 #[cfg(test)]

@@ -1,263 +1,316 @@
-//! Minimap transfer and marker editing on the settings window thread.
-#![allow(
-    unsafe_code,
-    reason = "Win32 controls and callback data stay on this UI thread"
-)]
-use super::{Shared, control, lock, text, wide};
-use oteryn_client::play::{MinimapMark, MinimapMemory};
-use std::{
-    ptr::{null, null_mut},
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+//! Local marker editor. Window handles and action storage remain on the creating thread.
+#![allow(unsafe_code)]
+use crate::play::feature_local_minimap::state::{SharedMinimap, lock};
+use std::ptr::{null, null_mut};
 use windows_sys::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, WPARAM},
-    UI::{
-        Controls::EM_SETLIMITTEXT, Input::KeyboardAndMouse::EnableWindow, WindowsAndMessaging::*,
-    },
+    Foundation::*,
+    UI::{Controls::EM_SETLIMITTEXT, WindowsAndMessaging::*},
 };
 #[derive(Default)]
-struct Actions(Vec<usize>);
+struct Actions(Vec<(usize, usize)>);
+fn wide(s: &str) -> Vec<u16> {
+    s.replace('\0', "\u{fffd}")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
+}
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
-        if msg == WM_COMMAND
-            && matches!(w & 0xffff, 902 | 903 | 909 | 910)
-            && w >> 16 == BN_CLICKED as usize
-        {
+        if msg == WM_COMMAND {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !actions.is_null() && (*actions).0.len() < 16 {
-                (*actions).0.push(w & 0xffff);
+            if !actions.is_null() && (*actions).0.len() < 64 {
+                (*actions).0.push((w & 0xffff, (w >> 16) & 0xffff));
             }
             return 0;
         }
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
-pub(super) fn open(shared: Arc<Mutex<Shared>>, parent: HWND) {
+pub(super) fn open(shared: SharedMinimap, own: (i32, i32, i16)) {
+    {
+        let mut map = lock(&shared);
+        if map.editor_open {
+            return;
+        }
+        map.editor_open = true;
+    }
+    let failed = shared.clone();
+    if std::thread::Builder::new()
+        .name("minimap-marker-editor".into())
+        .spawn(move || run(shared, own))
+        .is_err()
+    {
+        lock(&failed).editor_open = false;
+    }
+}
+fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
+    // SAFETY: controls copy strings; Actions outlives the HWND and all dispatch stays here.
     unsafe {
-        let hwnd = CreateWindowExW(
+        let h = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Minimap transfer and markers").as_ptr(),
+            wide("Minimap and markers — Ctrl+Alt+Shift+M").as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            780,
-            620,
-            parent,
+            740,
+            640,
+            null_mut(),
             null_mut(),
             null_mut(),
             null(),
         );
-        if hwnd.is_null() {
+        if h.is_null() {
+            lock(&shared).editor_open = false;
             return;
         }
-        EnableWindow(parent, 0);
         let mut actions = Box::<Actions>::default();
-        SetWindowLongPtrW(
-            hwnd,
-            GWLP_USERDATA,
-            (&mut *actions as *mut Actions) as isize,
-        );
-        SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
-        let help = control(
-            hwnd,
-            "STATIC",
-            "Local observations only: remembered terrain and named markers never supply world geometry.\r\nFiles preserve world/channel/content scope. A different scope is hidden during play.\r\nMemory keeps the latest 8,192 tiles and up to 128 markers; older tiles are discarded.",
-            0,
-            [16, 12, 720, 65],
-            0,
-        );
-        let path = control(
-            hwnd,
-            "EDIT",
-            "",
-            901,
-            [16, 90, 720, 28],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        SendMessageW(path, EM_SETLIMITTEXT, 240, 0);
-        let import = control(hwnd, "BUTTON", "Import map...", 902, [16, 130, 220, 30], 0);
-        let export = control(
-            hwnd,
-            "BUTTON",
-            "Export new map file",
-            903,
-            [250, 130, 240, 30],
-            0,
-        );
-        let marks = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            904,
-            [16, 180, 720, 180],
-            WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
-        );
-        let label = control(
-            hwnd,
-            "STATIC",
-            "Marker: X / Y / Floor / Label",
-            0,
-            [16, 375, 720, 24],
-            0,
-        );
-        let x = control(
-            hwnd,
-            "EDIT",
-            "",
-            905,
-            [16, 405, 110, 28],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        let y = control(
-            hwnd,
-            "EDIT",
-            "",
-            906,
-            [140, 405, 110, 28],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        let floor = control(
-            hwnd,
-            "EDIT",
-            "",
-            907,
-            [265, 405, 85, 28],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        let name = control(
-            hwnd,
-            "EDIT",
-            "",
-            908,
-            [365, 405, 370, 28],
-            WS_BORDER | ES_AUTOHSCROLL as u32,
-        );
-        SendMessageW(name, EM_SETLIMITTEXT, 64, 0);
-        let add = control(hwnd, "BUTTON", "Add marker", 909, [16, 445, 220, 30], 0);
-        let remove = control(
-            hwnd,
-            "BUTTON",
-            "Remove selected marker",
-            910,
-            [250, 445, 300, 30],
-            0,
-        );
-        let feedback = control(hwnd, "STATIC", "", 0, [16, 495, 720, 65], 0);
-        if [
-            help, path, import, export, marks, label, x, y, floor, name, add, remove, feedback,
+        SetWindowLongPtrW(h, GWLP_USERDATA, (&mut *actions as *mut Actions) as isize);
+        SetWindowLongPtrW(h, GWLP_WNDPROC, proc as *const () as isize);
+        for (i, label) in [
+            "Zoom in",
+            "Zoom out",
+            "Floor up",
+            "Floor down",
+            "Recenter",
+            "West",
+            "East",
+            "North",
+            "South",
+            "Use map centre",
         ]
         .iter()
-        .any(|h| h.is_null())
+        .enumerate()
         {
-            DestroyWindow(hwnd);
-            EnableWindow(parent, 1);
+            control(
+                h,
+                "BUTTON",
+                label,
+                100 + i,
+                [10 + (i % 5) as i32 * 140, 10 + (i / 5) as i32 * 34, 130, 28],
+                0,
+            );
+        }
+        let status = control(h, "STATIC", "", 300, [10, 85, 690, 48], 0);
+        let list = control(
+            h,
+            "LISTBOX",
+            "",
+            207,
+            [10, 140, 690, 230],
+            WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
+        );
+        let mut fields = Vec::new();
+        for (i, (label, value)) in [
+            ("X", own.0.to_string()),
+            ("Y", own.1.to_string()),
+            ("Floor", own.2.to_string()),
+            ("Label", String::new()),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let y = 385 + i as i32 * 32;
+            control(h, "STATIC", label, 0, [10, y, 75, 25], 0);
+            let field = control(
+                h,
+                "EDIT",
+                value,
+                201 + i,
+                [90, y, 350, 25],
+                WS_BORDER | ES_AUTOHSCROLL as u32,
+            );
+            SendMessageW(field, EM_SETLIMITTEXT, if i == 3 { 128 } else { 8 }, 0);
+            fields.push(field);
+        }
+        let color = control(
+            h,
+            "COMBOBOX",
+            "",
+            205,
+            [460, 385, 230, 160],
+            CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
+        );
+        for name in ["Red", "Blue", "Green", "Gold"] {
+            SendMessageW(color, CB_ADDSTRING, 0, wide(name).as_ptr() as isize);
+        }
+        SendMessageW(color, CB_SETCURSEL, 0, 0);
+        control(h, "BUTTON", "Save marker", 110, [460, 425, 230, 28], 0);
+        control(h, "BUTTON", "Delete selected", 111, [460, 460, 230, 28], 0);
+        control(h, "BUTTON", "Go to selected", 112, [460, 495, 230, 28], 0);
+        let feedback = control(h, "STATIC", "", 301, [10, 530, 690, 55], 0);
+        if fields
+            .iter()
+            .chain([&status, &list, &color, &feedback])
+            .any(|h| h.is_null())
+        {
+            DestroyWindow(h);
+            lock(&shared).editor_open = false;
             return;
         }
-        let mut shown = None;
-        let mut message: MSG = std::mem::zeroed();
-        while IsWindow(hwnd) != 0 && !lock(&shared).shutdown {
-            while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
-                if IsDialogMessageW(hwnd, &message) == 0 {
-                    TranslateMessage(&message);
-                    DispatchMessageW(&message);
+        let mut held: Vec<crate::play::feature_local_minimap::state::Marker> = Vec::new();
+        loop {
+            let mut msg: MSG = std::mem::zeroed();
+            while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
+                if IsDialogMessageW(h, &msg) == 0 {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
                 }
             }
-            let mut state = lock(&shared);
-            let snapshot = (state.character_scope(), state.preferences.minimap.clone());
-            if shown
-                .as_ref()
-                .is_some_and(|old: &(Option<[u8; 16]>, MinimapMemory)| {
-                    old.0 != snapshot.0
-                        || old.1.binding != snapshot.1.binding
-                        || old.1.marks != snapshot.1.marks
-                })
-            {
-                actions.0.clear();
+            if IsWindow(h) == 0 {
+                break;
             }
-            if let Some(action) = std::mem::take(&mut actions.0).into_iter().next() {
-                let file = std::path::PathBuf::from(text(path));
-                if action == 903 {
-                    state.feedback = match state.preferences.minimap.export_new(&file) {
-                        Ok(()) => "Minimap exported. Existing files are never overwritten.".into(),
-                        Err(error) => format!("Export failed: {error}"),
-                    };
-                } else if action == 902 {
-                    let scope = state.character_scope();
-                    drop(state);
-                    let imported = MinimapMemory::import(&file);
-                    let confirmed = imported.is_ok() && MessageBoxW(hwnd,wide("Replace remembered map tiles and markers in this character's settings?").as_ptr(),wide("Minimap import").as_ptr(),MB_YESNO | MB_ICONQUESTION) == IDYES;
-                    state = lock(&shared);
-                    match imported {
-                        Ok(map) if confirmed && state.character_scope() == scope => {
-                            let mut prefs = state.preferences.clone();
-                            prefs.minimap = map;
-                            state.apply(prefs);
+            let chosen = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0))
+                .ok()
+                .and_then(|i| held.get(i))
+                .cloned();
+            let values: Vec<_> = fields.iter().map(|h| text(*h)).collect();
+            let selected_color = u8::try_from(SendMessageW(color, CB_GETCURSEL, 0, 0)).unwrap_or(0);
+            let mut map = lock(&shared);
+            for (id, notification) in actions.0.drain(..) {
+                if id == 207 && notification == LBN_SELCHANGE as usize {
+                    if let Some(marker) = &chosen {
+                        for (field, value) in fields.iter().zip([
+                            marker.x.to_string(),
+                            marker.y.to_string(),
+                            marker.floor.to_string(),
+                            marker.label.clone(),
+                        ]) {
+                            SetWindowTextW(*field, wide(&value).as_ptr());
                         }
-                        Err(error) => state.feedback = format!("Import failed: {error}"),
-                        _ => {}
+                        SendMessageW(color, CB_SETCURSEL, usize::from(marker.color), 0);
                     }
-                } else {
-                    let mut prefs = state.preferences.clone();
-                    let result = if action == 909 {
-                        match (
-                            text(x).parse::<i32>(),
-                            text(y).parse::<i32>(),
-                            text(floor).parse::<i16>(),
-                        ) {
-                            (Ok(x), Ok(y), Ok(floor)) => prefs.minimap.add_mark(MinimapMark {
-                                x,
-                                y,
-                                floor,
-                                label: text(name),
-                            }),
-                            _ => Err(std::io::Error::other("Enter integer X, Y and floor values")),
+                    continue;
+                }
+                if notification != BN_CLICKED as usize {
+                    continue;
+                }
+                match id {
+                    100 => map.zoom = (map.zoom / 2).max(1),
+                    101 => map.zoom = (map.zoom * 2).min(8),
+                    102 => {
+                        map.tracking = false;
+                        map.floor = (map.floor + 1).min(0);
+                    }
+                    103 => {
+                        map.tracking = false;
+                        map.floor = (map.floor - 1).max(-15);
+                    }
+                    104 => {
+                        map.tracking = true;
+                        let (x, y, f) = map.own;
+                        map.follow(x, y, f);
+                    }
+                    105 => map.pan(-5, 0),
+                    106 => map.pan(5, 0),
+                    107 => map.pan(0, -5),
+                    108 => map.pan(0, 5),
+                    109 => {
+                        for (field, value) in fields.iter().zip([
+                            map.x.to_string(),
+                            map.y.to_string(),
+                            map.floor.to_string(),
+                        ]) {
+                            SetWindowTextW(*field, wide(&value).as_ptr());
                         }
-                    } else {
-                        usize::try_from(SendMessageW(marks, LB_GETCURSEL, 0, 0))
+                    }
+                    110 => {
+                        let position = values[0]
+                            .parse::<i32>()
                             .ok()
-                            .filter(|row| prefs.minimap.remove_mark(*row))
-                            .map_or_else(
-                                || Err(std::io::Error::other("Select a marker to remove")),
-                                |_| Ok(()),
-                            )
-                    };
-                    match result {
-                        Ok(()) => state.apply(prefs),
-                        Err(error) => state.feedback = error.to_string(),
+                            .zip(values[1].parse::<i32>().ok())
+                            .zip(values[2].parse::<i16>().ok());
+                        map.feedback = match position {
+                            Some(((x, y), f)) => {
+                                match map.edit_marker(x, y, f, values[3].clone(), selected_color) {
+                                    Ok(()) => "Marker saved locally".into(),
+                                    Err(e) => e.to_string(),
+                                }
+                            }
+                            None => "Enter valid X, Y and floor values".into(),
+                        };
                     }
+                    111 => {
+                        if let Some(marker) = &chosen {
+                            map.feedback = match map.remove_marker(marker.x, marker.y, marker.floor)
+                            {
+                                Ok(()) => "Marker deleted".into(),
+                                Err(e) => e.to_string(),
+                            };
+                        }
+                    }
+                    112 => {
+                        if let Some(marker) = &chosen {
+                            map.tracking = false;
+                            map.x = marker.x;
+                            map.y = marker.y;
+                            map.floor = marker.floor;
+                        }
+                    }
+                    _ => {}
                 }
             }
-            let snapshot = (state.character_scope(), state.preferences.minimap.clone());
-            if shown.as_ref() != Some(&snapshot) {
-                let row = SendMessageW(marks, LB_GETCURSEL, 0, 0);
-                SendMessageW(marks, LB_RESETCONTENT, 0, 0);
-                for mark in &snapshot.1.marks {
-                    let label = format!(
-                        "{}, {} / floor {}: {}",
-                        mark.x, mark.y, mark.floor, mark.label
+            SetWindowTextW(status, wide(&format!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
+            SetWindowTextW(feedback, wide(&map.feedback).as_ptr());
+            if held != map.markers {
+                SendMessageW(list, LB_RESETCONTENT, 0, 0);
+                for marker in &map.markers {
+                    SendMessageW(
+                        list,
+                        LB_ADDSTRING,
+                        0,
+                        wide(&format!(
+                            "{} · {}, {} · floor {}",
+                            marker.label, marker.x, marker.y, marker.floor
+                        ))
+                        .as_ptr() as isize,
                     );
-                    SendMessageW(marks, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                 }
-                SendMessageW(marks, LB_SETCURSEL, usize::try_from(row).unwrap_or(0), 0);
-                shown = Some(snapshot);
+                held = map.markers.clone();
             }
-            SetWindowTextW(
-                feedback,
-                wide(&format!(
-                    "{} remembered tiles. {}",
-                    state.preferences.minimap.tiles.len(),
-                    state.feedback
-                ))
-                .as_ptr(),
-            );
-            drop(state);
-            std::thread::sleep(Duration::from_millis(20));
+            drop(map);
+            std::thread::sleep(std::time::Duration::from_millis(30));
         }
-        if IsWindow(hwnd) != 0 {
-            DestroyWindow(hwnd);
+        if IsWindow(h) != 0 {
+            DestroyWindow(h);
         }
-        EnableWindow(parent, 1);
+        let mut map = lock(&shared);
+        map.editor_open = false;
+        if let Err(error) = map.save() {
+            map.feedback = error.to_string();
+        }
+    }
+}
+unsafe fn control(
+    parent: HWND,
+    class: &str,
+    label: &str,
+    id: usize,
+    r: [i32; 4],
+    style: u32,
+) -> HWND {
+    unsafe {
+        CreateWindowExW(
+            0,
+            wide(class).as_ptr(),
+            wide(label).as_ptr(),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | style,
+            r[0],
+            r[1],
+            r[2],
+            r[3],
+            parent,
+            id as _,
+            null_mut(),
+            null(),
+        )
+    }
+}
+unsafe fn text(h: HWND) -> String {
+    unsafe {
+        let n = GetWindowTextLengthW(h).max(0);
+        let mut buffer = vec![0; n as usize + 1];
+        let read = GetWindowTextW(h, buffer.as_mut_ptr(), n + 1).max(0) as usize;
+        String::from_utf16_lossy(&buffer[..read])
     }
 }

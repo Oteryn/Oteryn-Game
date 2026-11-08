@@ -34,6 +34,7 @@ pub struct PlayView {
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
     local: LocalPlayState,
     live_map: bool,
+    minimap: feature_local_minimap::state::SharedMinimap,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
     /// The session floor the map is anchored to; on any other floor no map is drawn.
@@ -85,6 +86,7 @@ impl PlayView {
             scene: Scene::centered_on(local.world(), None, own, StepDir::South, &[])?,
             local,
             live_map: false,
+            minimap: Default::default(),
             anchor,
             map_floor: None,
             in_flight: false,

@@ -38,6 +38,8 @@ pub struct NativeLoginConfig {
     pub retry_unit: Duration,
     pub open_browser: BrowserOpener,
     pub select_character: crate::character_selection::CharacterSelector,
+    pub account_services: crate::account_services::Presenter,
+    pub coin_shop: crate::coin_shop::Presenter,
 }
 
 impl Debug for NativeLoginConfig {
@@ -79,6 +81,8 @@ impl NativeLoginConfig {
             retry_unit: Duration::from_secs(1),
             open_browser: Arc::new(open_system_browser),
             select_character: Arc::new(crate::character_selection::select),
+            account_services: Arc::new(crate::account_services::present),
+            coin_shop: Arc::new(crate::coin_shop::present),
         }))
     }
 }

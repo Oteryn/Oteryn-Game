@@ -1,6 +1,6 @@
 # Spellbook details V1
 
-Capability 447 requires 287 and adds command 731. It is offered in bundle World
+Capability 449 requires 287 and adds command 733. It is offered in bundle World
 when native gameplay is active. Existing catalog snapshots and deltas are unchanged.
 The query is read-only, bound to the admitted exact actor and current Game session.
 The current spell book and the existing fenced Character known-spell reader supply

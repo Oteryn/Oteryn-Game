@@ -49,7 +49,7 @@ pub async fn run_session<T: Stepper>(
     outbox.wheel_initialize(session.wheel_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.loyalty_skills_initialize(session.loyalty_skills_selected());
-    outbox.spellbook_details_initialize(session.feature_selected(447));
+    outbox.spellbook_details_initialize(session.feature_selected(449));
     outbox.mechanics_status_initialize(session.feature_selected(384));
     outbox.condition_status_initialize(session.feature_selected(276));
     outbox.rest_status_initialize(session.feature_selected(277));
@@ -116,6 +116,7 @@ pub async fn run_session<T: Stepper>(
     outbox.store_initialize(session.server_mechanic_selected(154));
     outbox.vip_presence_initialize(session.feature_selected(258));
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
+    outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
@@ -134,11 +135,11 @@ pub async fn run_session<T: Stepper>(
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 | 149 => outbox.properties_result(&command, &result),
                         59 | 86 | 99 => outbox.properties_result(&command, &result),
-                        76 | 103 | 146 => outbox.properties_result(&command, &result),
+                        76 | 103 | 146 | 447 => outbox.properties_result(&command, &result),
                         117 => outbox.boss_encounter_result(&result),
                         151 => outbox.daily_boost_result(&result),
                         170 => outbox.arena_result(&result),
-                        195 => outbox.weapon_proficiency_result(&result),
+                        195 | 448 => outbox.weapon_proficiency_result(&result),
                         197 => outbox.cyclopedia_tracker_result(&result),
                         199 => outbox.cyclopedia_character_result(&result),
                         225 => outbox.boss_difficulty_result(&result),
@@ -151,7 +152,7 @@ pub async fn run_session<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
-                        447 => outbox.spellbook_details_result(&result),
+                        449 => outbox.spellbook_details_result(&result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

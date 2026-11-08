@@ -1,0 +1,19 @@
+{
+  "id": 449,
+  "name": "SPELLBOOK_DETAILS_V1",
+  "constant": "spellbook_details::CAPABILITY_SPELLBOOK_DETAILS_V1",
+  "requires": [
+    287
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    733
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

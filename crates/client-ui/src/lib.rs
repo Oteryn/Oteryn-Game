@@ -140,6 +140,8 @@ pub mod store;
 pub mod vip_presence;
 #[path = "features/0195-weapon-proficiency/mod.rs"]
 pub mod weapon_proficiency;
+#[path = "features/0448-weapon-proficiency-state/mod.rs"]
+pub mod weapon_proficiency_state;
 
 #[path = "features/0053-world-event/mod.rs"]
 pub mod world_event;
@@ -190,7 +192,7 @@ pub mod analyser;
 pub mod spell_action_bar;
 #[path = "features/0287-actor-spell-catalog/mod.rs"]
 pub mod spell_catalog;
-#[path = "features/0447-spellbook-details/mod.rs"]
+#[path = "features/0449-spellbook-details/mod.rs"]
 pub mod spellbook_details;
 
 /// Bestiary and Charms page state, protocol mapping, views, and settings.

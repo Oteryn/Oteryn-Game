@@ -15,7 +15,7 @@ use std::sync::Arc;
 /// Compatibility exports for the deterministic viewport policy.
 pub use oteryn_client_simulation::scene::{SCENE_COLUMNS, SCENE_ROWS, SCENE_TILE_PX};
 
-// A full view plus the minimap (background, terrain, creature per cell and own marker)
+// A full view plus the minimap (background, terrain, creature and user marker per cell, plus own marker)
 // fits one sprite batch.
 // One floor (map cells, a marker per tile, the player and the target) fits one sprite batch.
 // The renderer also bounds the aggregate draws from the visible floors.
@@ -23,13 +23,14 @@ const _: () = assert!(
     ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
         * (MAX_TILE_DRAWS + 1)
         + MAX_TILE_DRAWS
-        + (31 * 25 * 3 + 1)
+        + (31 * 25 * 4 + 1)
         < MAX_BATCH_QUADS
 );
 
 #[derive(Debug, Clone)]
 pub struct Scene {
     minimap: bool,
+    minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
     pub(crate) minimap_floor: i16,
     pub(crate) minimap_origin: Option<oteryn_session::ActorPosition>,
@@ -100,8 +101,9 @@ impl Scene {
             .collect();
         let mut scene = Self {
             minimap: false,
+            minimap_state: None,
+            minimap_floor: -7,
             minimap_memory: Default::default(),
-            minimap_floor: 0,
             minimap_origin: None,
             world,
             lit_atlas: None,

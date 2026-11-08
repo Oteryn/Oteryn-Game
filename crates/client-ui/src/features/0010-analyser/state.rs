@@ -3,6 +3,7 @@
 pub struct Panel {
     pub selected: bool,
     pub open: bool,
+    pub tool: Tool,
     pub kills: u64,
     pub raw_xp: u64,
     pub gained_xp: u64,
@@ -13,4 +14,39 @@ pub struct Panel {
     pub healing: u64,
     pub received: u64,
     pub dropped: u64,
+}
+
+/// Separate views over the same confirmed session facts.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Tool {
+    #[default]
+    Overview,
+    Hunting,
+    Experience,
+    Loot,
+    Supplies,
+    Damage,
+    Healing,
+}
+impl Tool {
+    pub const ALL: [Self; 7] = [
+        Self::Overview,
+        Self::Hunting,
+        Self::Experience,
+        Self::Loot,
+        Self::Supplies,
+        Self::Damage,
+        Self::Healing,
+    ];
+    pub const fn title(self) -> &'static str {
+        match self {
+            Self::Overview => "Overview",
+            Self::Hunting => "Hunting",
+            Self::Experience => "Experience",
+            Self::Loot => "Loot",
+            Self::Supplies => "Supplies",
+            Self::Damage => "Damage",
+            Self::Healing => "Healing",
+        }
+    }
 }

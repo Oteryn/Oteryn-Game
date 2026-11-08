@@ -221,7 +221,7 @@ mod tests {
     #[test]
     fn spellbook_routes_queries_retains_confirmed_pages_and_persists_filters()
     -> Result<(), Box<dyn std::error::Error>> {
-        assert!(oteryn_session::CLIENT_SUPPORTED_CAPABILITIES.contains(&447));
+        assert!(oteryn_session::CLIENT_SUPPORTED_CAPABILITIES.contains(&449));
         let (link, mut commands, outbox) = crate::play::play_channel();
         assert!(!link.spellbook_open());
         outbox.spellbook_details_initialize(true);
@@ -276,8 +276,8 @@ mod tests {
         let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
             return Err("wrong command".into());
         };
-        assert_eq!(command.capability, 447);
-        assert_eq!(command.kind, 731);
+        assert_eq!(command.capability, 449);
+        assert_eq!(command.kind, 733);
         assert_eq!(Query::decode(&command.payload), Some(filter.query(0)));
         outbox.spellbook_details_result(&GatedCommandResult {
             command_id: 2,

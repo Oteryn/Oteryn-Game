@@ -1,7 +1,7 @@
 //! Independently negotiated spellbook pages; the original catalog wire remains unchanged.
 use crate::actor_spell_catalog::{self as catalog, SpellCatalogEntry};
-pub const CAPABILITY_SPELLBOOK_DETAILS_V1: u32 = 447;
-pub const COMMAND_TYPE_SPELLBOOK_QUERY: u32 = 731;
+pub const CAPABILITY_SPELLBOOK_DETAILS_V1: u32 = 449;
+pub const COMMAND_TYPE_SPELLBOOK_QUERY: u32 = 733;
 pub const PAGE_SIZE: usize = 32;
 pub const MAX_REPLY_BYTES: usize = 65_536;
 /// Vocation bits, in order: none, druid, elder druid, sorcerer, master sorcerer,

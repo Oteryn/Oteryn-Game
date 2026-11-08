@@ -29,7 +29,7 @@ mod controls_window;
 mod frames_window;
 #[path = "help_native.rs"]
 mod help_window;
-#[path = "../local-minimap/native.rs"]
+#[path = "minimap_native.rs"]
 mod minimap_window;
 #[path = "profiles_native.rs"]
 mod profile_window;

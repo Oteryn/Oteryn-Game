@@ -34,6 +34,47 @@ pub fn panel_text(p: &WeaponProficiencyPanel) -> String {
             }
         }
     }
+    if let Some(shaping) = &p.shaping {
+        use std::fmt::Write;
+        let _ = writeln!(
+            state,
+            "\nShaping costs: modify {} / {} dust; reshape {} dust; clear {} dust; orb rank {} orb(s).",
+            shaping.modify_dust[0],
+            shaping.modify_dust[1],
+            shaping.reshape_dust,
+            shaping.clear_dust,
+            shaping.orbs
+        );
+        for (index, slot) in shaping.slots.iter().enumerate() {
+            if let Some(slot) = slot {
+                let cost = shaping
+                    .rank_dust
+                    .get(usize::from(slot.rank))
+                    .copied()
+                    .unwrap_or(0);
+                let _ = writeln!(
+                    state,
+                    "Slot {}: rank {} — {}",
+                    index + 1,
+                    slot.rank,
+                    slot.current
+                );
+                if slot.rank < 10 {
+                    let _ = writeln!(state, "Next rank ({} dust): {}", cost, slot.next);
+                } else {
+                    let _ = writeln!(state, "Maximum rank reached");
+                }
+                let _ = writeln!(state, "Maximum: {}", slot.maximum);
+                for (choice, offer) in slot.offers.iter().enumerate() {
+                    let _ = writeln!(state, "Offer {}: {}", choice + 1, offer);
+                }
+            }
+        }
+        if shaping.revision == 0 {
+            state
+                .push_str("No committed proficiency track yet; shaping changes are unavailable.\n");
+        }
+    }
     let mut catalogue = String::new();
     if let Some(page) = &p.page {
         catalogue.push_str(&format!(

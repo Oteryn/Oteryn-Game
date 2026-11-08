@@ -2,7 +2,7 @@ use std::fmt::Write;
 pub fn panel_text(p: &super::DepotSearchPanel) -> String {
     let mut s = format!("Depot Search\nItem id: {}", p.item_id);
     if let Some(r) = &p.reply {
-        let _ = writeln!(s, "\nResult: {:?}", r.outcome);
+        let _ = writeln!(s, "\nResult: {:?}\nRetrieved: {}", r.outcome, r.retrieved);
         for x in &r.results {
             let _ = write!(
                 s,

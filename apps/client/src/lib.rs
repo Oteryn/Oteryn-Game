@@ -1,7 +1,11 @@
 //! Native client process and component composition.
+#[path = "features/local-account-services/mod.rs"]
+pub mod account_services;
 pub mod cast_watch;
 #[path = "features/local-character-selection/mod.rs"]
 pub mod character_selection;
+#[path = "features/local-coin-shop/mod.rs"]
+pub mod coin_shop;
 pub mod combat_input;
 pub mod cyclopedia;
 pub mod input;
@@ -109,7 +113,9 @@ impl ClientBootstrap {
         let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
         let view = admitted.play_view().map_err(|_error| unavailable())?;
         let (link, commands, events) = play::play_channel();
+        link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
+        link.house_world(admitted.world_id());
         self.runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;
