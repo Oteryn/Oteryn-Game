@@ -2157,3 +2157,22 @@ World/dispatch clippy -D warnings:49.571s. Pin-check:157.579s, unchanged bundle.
 M51 remains PARTIAL: native portal STEP admission, automatic death publication
 and the full source pit reset (including movable items) are still unfinished.
 Own M51 durability cases rerun:4 PASS, real PG4.81s (108.400s including rebuild).
+
+## M51: durable native portal origin (migration2181)
+
+Allocated2181_svargrond_native_step_origin.sql, in SRVENC's2180-2189 range.
+Arena receipts retain the complete native-step binding beside its compact id.
+Both client/native collisions and two native bindings with the same compact id
+refuse replay. Existing client reward/arena writers keep their NULL origin.
+NativeArenaStep is built from an actual translation snapshot at the source
+pillar, binding exact actor, session, run, pit, scope generation, owner epoch and
+movement revisions. The native writer accepts only credited phase2 Advance and
+requires exact current unexpired pit custody before a new transition.
+Source: Crystal201189f data-global/scripts/quests/svargrond_arena/
+movements_arena_pit.lua:52-64. No protocol command/capability/ordinal allocation.
+RED: missing origin helpers E0425,19.875s. GREEN:6 focused durability tests,
+31.976s including build. Real PG native-origin case:5.662605238s; pit custody:
+5.701863876s. Migration uniqueness/embedded-migrator test:14.968s PASS.
+Durability/dispatch clippy -D warnings:28.990s. Pin-check:166.664s PASS.
+M51 remains PARTIAL: native STEP ingress still needs to call this typed writer;
+automatic death publication and full source pit reset also remain unfinished.
