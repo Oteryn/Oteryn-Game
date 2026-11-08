@@ -179,22 +179,18 @@ impl PlayView {
                     .iter()
                     .find(|icon| icon.entity == entity.entity)
                 {
-                    for (offset, value, pattern) in [
-                        (0.0, icon.shield, [5_u8, 7, 2]),
-                        (8.0, icon.skull, [7_u8, 5, 2]),
+                    for (offset, value, pattern, skull) in [
+                        (0.0, icon.shield, [5_u8, 7, 2], false),
+                        (8.0, icon.skull, [7_u8, 5, 2], true),
                     ] {
                         if value == 0 {
                             continue;
                         }
-                        let color = match value {
-                            1 | 3 | 5 | 7 | 9 => PresentationColor::Blue,
-                            2 | 4 | 6 | 8 | 10 => PresentationColor::Yellow,
-                            _ => PresentationColor::Red,
-                        };
+                        let color = party_icon_rgb(value, skull);
                         for (row, bits) in pattern.into_iter().enumerate() {
                             for col in 0..3 {
                                 if bits & (4 >> col) != 0 {
-                                    pixel(
+                                    pixel_rgb(
                                         batch,
                                         view,
                                         atlas,
@@ -378,6 +374,17 @@ fn pixel(
     size: [f32; 2],
     color: PresentationColor,
 ) -> Result<(), BatchError> {
+    pixel_rgb(batch, view, atlas, position, size, rgb(color))
+}
+
+fn pixel_rgb(
+    batch: &mut SpriteBatch,
+    view: &TileView,
+    atlas: &AtlasImage,
+    position: [f32; 2],
+    size: [f32; 2],
+    [r, g, b]: [u8; 3],
+) -> Result<(), BatchError> {
     let (width, height) = view.viewport_px();
     if position[0] < 0.0
         || position[1] < 0.0
@@ -386,7 +393,6 @@ fn pixel(
     {
         return Ok(());
     }
-    let [r, g, b] = rgb(color);
     let index = u32::from(r) * 36 + u32::from(g) * 6 + u32::from(b);
     let cell = u32::from(oteryn_renderer::world::PALETTE_CELL);
     let columns = atlas.width() / atlas.cell_px();
@@ -454,6 +460,27 @@ fn draw_tutorial(
         }
     }
     Ok(())
+}
+
+// Observer-relative values follow party_skull::PartyIcon's wire contract.
+fn party_icon_rgb(value: u8, skull: bool) -> [u8; 3] {
+    if skull {
+        match value {
+            1 => [5, 5, 0],
+            2 => [2, 5, 2],
+            3 => [5, 5, 5],
+            4 => [5, 0, 0],
+            5 => [0, 0, 0],
+            6 => [5, 3, 0],
+            _ => [4, 4, 4],
+        }
+    } else {
+        match value {
+            1 | 3 | 5 | 7 | 9 => [0, 0, 5],
+            2 | 4 | 6 | 8 | 10 => [5, 5, 0],
+            _ => [4, 4, 4],
+        }
+    }
 }
 
 #[cfg(test)]
