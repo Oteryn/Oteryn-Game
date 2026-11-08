@@ -194,7 +194,7 @@ Zasady przeciw dublowaniu:
 | O066 | PvP | Unjustified points i limity fragów | PARTIAL | Brakuje liczników dziennych/tygodniowych/miesięcznych fragów, czasu czaszki i otwartych sytuacji PvP; obecny panel pokazuje tylko tarcze i czaszki. |
 | T144 | Rewards | Daily wall/streak/jokers/claim/pick items | PARTIAL | 30-day wall/claim są; brak pełnego kalendarza, historii i pick-items dialog. |
 | T145 | Rewards | Returner reward | MISSING | Brak dedykowanego przepływu i notyfikacji nagrody powrotnej. |
-| T147 | Rewards | Boosted creature/boss i daily boost | PARTIAL | Status/komendy są; brak pełnego daily spotlight z prezentacją boosted creature/boss. |
+| T147 | Rewards | Boosted creature/boss i daily boost | DONE | evidence: apps/client/src/features/0151-daily-boost/native.rs:76 + daily_boost_shell_input_queries_selected_session; cl25j_feature_commands_cross_the_session_loop; crates/client-ui/src/features/0151-daily-boost/view.rs:90 + spotlight_projects_both_server_choices_and_reset_time |
 | T128 | Stash | Stow/withdraw/paging i search/filter/sort | PARTIAL | Search strony i sort name/stock działają w oknie z zachowaniem handle withdrawal; brak global search i filtrów trader/category (brak metadanych w wire). |
 | T130 | Store | Katalog/search/buy/confirmation/result | PARTIAL | Natywne search/sort strony i preview oferty zachowują server quote; brak pełnej nawigacji kategorii i graficznego preview. |
 | T131 | Store | Purchase history i coins history | PARTIAL | Filtry offer/time strony, szczegóły i sumy per currency są; brak pełnej historii ledger monet i typów top-up/transfer (Platform). |

@@ -1055,9 +1055,10 @@
   "src": "TIBAUD-1",
   "area": "Rewards",
   "feature": "Boosted creature/boss i daily boost",
-  "status": "PARTIAL",
-  "gap": "Status/komendy są; brak pełnego daily spotlight z prezentacją boosted creature/boss.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0151-daily-boost/native.rs:76 + daily_boost_shell_input_queries_selected_session; cl25j_feature_commands_cross_the_session_loop; crates/client-ui/src/features/0151-daily-boost/view.rs:90 + spotlight_projects_both_server_choices_and_reset_time"
  },
  {
   "id": "T148",
