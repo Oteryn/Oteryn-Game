@@ -209,6 +209,7 @@ fn run(
             {
                 EnableWindow(*edit, i32::from(!form.pending()));
             }
+            SetWindowTextW(button, wide(form.submit_caption()).as_ptr());
             SetWindowTextW(status, wide(form.message()).as_ptr());
             std::thread::sleep(Duration::from_millis(30));
         }
