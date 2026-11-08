@@ -22,6 +22,17 @@ pub struct QuestWorldContext {
     pub movement_revision: u64,
 }
 
+/// Test-only access to the same transaction-scoped Ground predicate.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn fixture_ground_stack_matches(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &super::spell_item_transaction::SpellItemScopeAuthority,
+    target: &super::spell_items_abi::SpellGroundTarget,
+    expected: &[oteryn_gameplay_quests::quest::world_callbacks::GroundStackEntry],
+) -> Result<bool, DurabilityError> {
+    ground_stack::matches(tx, authority, target, expected).await
+}
+
 #[path = "quest_world_callback/reward_inputs.rs"]
 mod reward_inputs;
 
