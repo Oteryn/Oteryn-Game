@@ -181,3 +181,6 @@ mod achievements;
 mod misc;
 #[path = "navigation.rs"]
 mod navigation;
+
+#[path = "visibility.rs"]
+mod visibility;

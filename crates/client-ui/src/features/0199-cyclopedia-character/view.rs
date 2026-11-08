@@ -271,18 +271,23 @@ pub fn badge_rows(p: &CyclopediaCharacterPanel) -> Vec<super::BadgeRow> {
             BadgeFilter::Earned => row.earned,
             BadgeFilter::Locked => !row.earned,
             BadgeFilter::Hidden => row.hidden,
+            BadgeFilter::Public => p.badge_visibility_known && row.earned && !row.hidden,
         })
         .collect()
 }
 pub fn badge_text(p: &CyclopediaCharacterPanel) -> String {
-    let mut text = String::from("Badges — local display preferences\r\n");
+    let mut text = String::from(if p.badge_visibility_known {
+        "Badges — server-confirmed visibility\r\n"
+    } else {
+        "Badges — public visibility unavailable\r\n"
+    });
     for row in badge_rows(p) {
         text.push_str(&format!(
             "#{} {} — {}{}\r\n",
             row.id,
             row.name,
             if row.earned { "earned" } else { "locked" },
-            if row.hidden { "; hidden locally" } else { "" }
+            if row.hidden { "; hidden publicly" } else { "" }
         ));
     }
     text

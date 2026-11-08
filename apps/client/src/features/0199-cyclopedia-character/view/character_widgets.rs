@@ -2,6 +2,7 @@
 use super::*;
 
 pub(super) struct Widgets {
+    pub(super) badge_id: HWND,
     pub(super) edits: [HWND; 3],
     pub(super) output: HWND,
     pub(super) heading: HWND,
@@ -143,7 +144,7 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             (145, "All badges", 10),
             (146, "Earned badges", 185),
             (147, "Locked badges", 360),
-            (148, "Hidden locally", 535),
+            (148, "Hidden publicly", 535),
         ] {
             control(hwnd, "BUTTON", label, id, [x, 615, 165, 28], WS_TABSTOP);
         }
@@ -159,12 +160,21 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
         control(
             hwnd,
             "BUTTON",
-            "Hide / show locally",
+            "Hide / show publicly",
             150,
             [210, 655, 200, 25],
             WS_TABSTOP,
         );
+        control(
+            hwnd,
+            "BUTTON",
+            "Public badges",
+            152,
+            [430, 655, 165, 25],
+            WS_TABSTOP,
+        );
         Widgets {
+            badge_id,
             edits,
             output,
             heading,
@@ -175,6 +185,69 @@ pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
             cards,
             stamina_bar,
             training_bar,
+        }
+    }
+}
+
+pub(super) unsafe fn render_cards(
+    panel: &CyclopediaCharacterPanel,
+    cards: &[HWND],
+    bars: [HWND; 2],
+    output: HWND,
+    [table, overview, combat, store, misc]: [bool; 5],
+) {
+    let [stamina_bar, training_bar] = bars;
+    unsafe {
+        let card_rows = if misc {
+            oteryn_client_ui::cyclopedia_character::misc_cards(panel)
+        } else if store {
+            oteryn_client_ui::cyclopedia_character::store_cards(panel)
+        } else {
+            oteryn_client_ui::cyclopedia_character::overview_cards(panel)
+        };
+        ShowWindow(
+            output,
+            if table || overview || combat || store {
+                SW_HIDE
+            } else {
+                SW_SHOW
+            },
+        );
+        for (i, handle) in cards.iter().enumerate() {
+            ShowWindow(
+                *handle,
+                if (overview || store || misc) && i < card_rows.len() {
+                    SW_SHOW
+                } else {
+                    SW_HIDE
+                },
+            );
+        }
+        for handle in [stamina_bar, training_bar] {
+            ShowWindow(
+                handle,
+                if overview || (misc && panel.misc_general.is_some()) {
+                    SW_SHOW
+                } else {
+                    SW_HIDE
+                },
+            );
+        }
+        if overview || store || misc {
+            for (handle, (label, value)) in cards.iter().zip(card_rows) {
+                SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
+            }
+            let bars = if misc {
+                oteryn_client_ui::cyclopedia_character::misc_bars(panel)
+            } else {
+                oteryn_client_ui::cyclopedia_character::overview_bars(panel)
+            };
+            if let Some(bars) = bars {
+                for (handle, (value, max)) in [stamina_bar, training_bar].into_iter().zip(bars) {
+                    SendMessageW(handle, PBM_SETRANGE32, 0, max as isize);
+                    SendMessageW(handle, PBM_SETPOS, usize::from(value), 0);
+                }
+            }
         }
     }
 }

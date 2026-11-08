@@ -47,7 +47,7 @@ Zasady przeciw dublowaniu:
 | T139 | NPC | Buy/sell/amount/backpack/capacity/filters | PARTIAL | Sklep istnieje; brak pełnej listy opcji ignore capacity/equipped/backpack i prezentacji. |
 | T029 | Party | Team Finder assemble/join | PARTIAL | Ogłoszenia i operacje członka są; brak pełnej kompozycji Social, filtrów i listy zespołów. |
 | T026 | Social | Friends, main character, zaproszenia | PARTIAL | Są zgody/status VIP; brak pełnego kontowego Friends i main character. |
-| T027 | Social | Badges: widoczność i filtry | PARTIAL | Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public. |
+| T027 | Social | Badges: widoczność i filtry | DONE | Odczyt jest; brak edycji publicznej widoczności i filtrów locked/hidden/public. evidence: apps/client/src/features/0199-cyclopedia-character/native.rs:25 + native_badge_controls_route_public_filters_and_confirmed_visibility_changes; crates/gameplay/durability/src/durability/account_badge/visibility.rs:5 + cyclopedia_badges_postgres_real_dispatch |
 | T140 | Training | Offline / exercise / multi-character dialog | PARTIAL | Komendy offline/exercise są; brak pełnego multi-character wyboru treningu. evidence: apps/client/src/features/local-character-selection/native.rs:145 + training_selection_enters_the_owned_character_and_opens_training; remaining: bulk multi-character offline training |
 
 ## cg_cyclo

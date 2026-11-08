@@ -3,6 +3,7 @@ use oteryn_client_runtime::cyclopedia_character::CharacterTab;
 pub struct CyclopediaCharacterPanel {
     pub badges: Option<Vec<u8>>,
     pub badge_filter: BadgeFilter,
+    pub badge_visibility_known: bool,
     pub hidden_badges: std::collections::BTreeSet<u8>,
     pub selected: bool,
     pub open: bool,
@@ -35,6 +36,7 @@ impl Default for CyclopediaCharacterPanel {
             badges: None,
             badge_filter: Default::default(),
             hidden_badges: Default::default(),
+            badge_visibility_known: false,
             selected: false,
             open: false,
             pending: false,
@@ -77,6 +79,7 @@ impl CyclopediaCharacterPanel {
             self.target = target;
             self.badges = None;
             self.hidden_badges.clear();
+            self.badge_visibility_known = false;
             self.profile_generation = self.profile_generation.saturating_add(1);
             self.achievements = Default::default();
             self.achievement_profile = None;
@@ -100,6 +103,7 @@ pub enum BadgeFilter {
     Earned,
     Locked,
     Hidden,
+    Public,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BadgeRow {

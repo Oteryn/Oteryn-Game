@@ -39,17 +39,29 @@ pub(in crate::play) fn submit(
         };
         return None;
     }
-    if matches!(id, 145..=148) {
+    if id == 150 {
+        let badge = values[0].trim().parse::<u8>().ok()?;
+        return request(
+            p,
+            Intent::SetBadgeVisibility {
+                badge,
+                public: p.hidden_badges.contains(&badge),
+            },
+        );
+    }
+    if matches!(id, 145..=148 | 152) {
         use oteryn_client_ui::cyclopedia_character::BadgeFilter;
         p.badge_filter = match id {
             146 => BadgeFilter::Earned,
             147 => BadgeFilter::Locked,
             148 => BadgeFilter::Hidden,
+            152 => BadgeFilter::Public,
             _ => BadgeFilter::All,
         };
         return None;
     }
     if id == 111 {
+        // Badge actions use the currently selected profile, not unsubmitted page edits.
         return request(p, Intent::Badges);
     }
     let tab = if matches!(id, 112 | 113) {

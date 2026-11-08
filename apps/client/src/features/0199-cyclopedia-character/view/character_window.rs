@@ -17,46 +17,7 @@ use windows_sys::Win32::UI::{
     WindowsAndMessaging::*,
 };
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
-#[derive(Default)]
-struct Actions(Vec<usize>);
-unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
-    unsafe {
-        if msg == WM_COMMAND {
-            let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            let id = w & 0xffff;
-            let note = (w >> 16) & 0xffff;
-            if !actions.is_null()
-                && (*actions).0.len() < 32
-                && matches!(id, 101..=117 | 140)
-                && note == BN_CLICKED as usize
-            {
-                (*actions).0.push(id);
-            }
-            return 0;
-        }
-        DefWindowProcW(hwnd, msg, w, l)
-    }
-}
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    {
-        let mut m = lock(&link.mailbox);
-        if m.cyclopedia_character.open {
-            return;
-        }
-        m.cyclopedia_character.open = true;
-    }
-    link.cyclopedia_character_request(Intent::Tab);
-    let weak = Arc::downgrade(&link.mailbox);
-    let rollback = weak.clone();
-    let commands = link.commands.clone();
-    if std::thread::Builder::new()
-        .name("0199-cyclopedia-character-panel".into())
-        .spawn(move || run(weak, commands))
-        .is_err()
-    {
-        close(&rollback);
-    }
-}
+
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -85,6 +46,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
         let character_widgets::Widgets {
+            badge_id,
             edits,
             output,
             heading,
@@ -118,16 +80,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let mut browse_achievements = false;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
-                    if let Ok(id) = read_text(badge_id).parse::<u8>()
-                        && mailbox
-                            .cyclopedia_character
-                            .badges
-                            .as_ref()
-                            .is_some_and(|ids| ids.contains(&id))
+                    let badge = read_text(badge_id);
+                    if let Some(command) =
+                        submit(&mut mailbox.cyclopedia_character, 150, [&badge, "", ""])
+                        && commands.send(PlayCommand::Feature(command)).is_err()
                     {
-                        if !mailbox.cyclopedia_character.hidden_badges.remove(&id) {
-                            mailbox.cyclopedia_character.hidden_badges.insert(id);
-                        }
+                        mailbox.cyclopedia_character.pending = false;
+                        mailbox.cyclopedia_character.feedback = Some("The session has ended");
                     }
                     continue;
                 }
@@ -207,58 +166,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             let misc = !badges
                 && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc;
             super::misc_layout::layout(&cards, [stamina_bar, training_bar], heading, detail, misc);
-            let card_rows = if misc {
-                oteryn_client_ui::cyclopedia_character::misc_cards(panel)
-            } else if store {
-                oteryn_client_ui::cyclopedia_character::store_cards(panel)
-            } else {
-                oteryn_client_ui::cyclopedia_character::overview_cards(panel)
-            };
-            ShowWindow(
+            character_widgets::render_cards(
+                panel,
+                &cards,
+                [stamina_bar, training_bar],
                 output,
-                if table || overview || combat || store {
-                    SW_HIDE
-                } else {
-                    SW_SHOW
-                },
+                [table, overview, combat, store, misc],
             );
-            for (i, handle) in cards.iter().enumerate() {
-                ShowWindow(
-                    *handle,
-                    if (overview || store || misc) && i < card_rows.len() {
-                        SW_SHOW
-                    } else {
-                        SW_HIDE
-                    },
-                );
-            }
-            for handle in [stamina_bar, training_bar] {
-                ShowWindow(
-                    handle,
-                    if overview || (misc && panel.misc_general.is_some()) {
-                        SW_SHOW
-                    } else {
-                        SW_HIDE
-                    },
-                );
-            }
-            if overview || store || misc {
-                for (handle, (label, value)) in cards.iter().zip(card_rows) {
-                    SetWindowTextW(*handle, wide(&format!("{label}\r\n{value}")).as_ptr());
-                }
-                let bars = if misc {
-                    oteryn_client_ui::cyclopedia_character::misc_bars(panel)
-                } else {
-                    oteryn_client_ui::cyclopedia_character::overview_bars(panel)
-                };
-                if let Some(bars) = bars {
-                    for (handle, (value, max)) in [stamina_bar, training_bar].into_iter().zip(bars)
-                    {
-                        SendMessageW(handle, PBM_SETRANGE32, 0, max as isize);
-                        SendMessageW(handle, PBM_SETPOS, usize::from(value), 0);
-                    }
-                }
-            }
             for handle in [heading, detail] {
                 ShowWindow(handle, if table || combat { SW_SHOW } else { SW_HIDE });
             }
@@ -371,11 +285,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         drop(actions);
     }
 }
-fn close(weak: &WeakMailbox) {
-    if let Some(shared) = weak.upgrade() {
-        lock(&shared).cyclopedia_character.open = false;
-    }
-}
 
 #[path = "character_widgets.rs"]
 mod character_widgets;
+
+#[path = "character_events.rs"]
+mod character_events;
+use character_events::{Actions, close, proc};
+
+pub(in crate::play) use character_events::open_window;
