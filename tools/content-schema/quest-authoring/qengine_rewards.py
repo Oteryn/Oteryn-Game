@@ -1008,7 +1008,7 @@ def validate_callbacks(document):
         participant_ops=[s for p in participants for s in p.get('state_ops',[])]
         operations=callback.get('state_ops',[])
         all_keys=[s['track'] for s in storage+operations+participant_storage+participant_ops]
-        if (len(all_keys)>8 or len(all_keys)!=len(set(all_keys))
+        if (len(all_keys)>16 or len(all_keys)!=len(set(all_keys))
             or len({p['quest'] for p in participants})!=len(participants)
             or any(p['quest']==callback['quest'] for p in participants)
             or any(s['minimum']>s['maximum'] for s in participant_storage)

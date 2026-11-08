@@ -65,8 +65,9 @@ pub mod predicate;
 
 /// `QUESTSTATE0-RL-01`: tracks per Character.
 pub const QUESTSTATE0_RL_01: usize = 4096;
-/// `QUESTSTATE0-RL-02`: effects per transition.
-pub const QUESTSTATE0_RL_02: usize = 8;
+/// `QUESTSTATE0-RL-02`: effects per atomic transition (migration 1600).
+/// Complete source operations share one receipt and Character revision.
+pub const QUESTSTATE0_RL_02: usize = 16;
 /// `QUESTSTATE0-RL-04`: request binding bytes.
 pub const QUESTSTATE0_RL_04: usize = 1024;
 /// `QUESTSTATE0-RL-05`: quest states per Character.
@@ -772,7 +773,11 @@ mod tests {
             Err(E::DuplicateEffectTrack(_))
         ));
         assert!(matches!(
-            build(transition("oteryn:t/1", vec![set(STAGE); 9], false)),
+            build(transition(
+                "oteryn:t/1",
+                vec![set(STAGE); QUESTSTATE0_RL_02 + 1],
+                false
+            )),
             Err(E::TooManyEffects(_))
         ));
         assert!(matches!(

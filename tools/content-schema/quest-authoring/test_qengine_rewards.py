@@ -7,6 +7,21 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_atomic_effect_capacity_matches_the_runtime(self):
+        for count in (16, 17):
+            document=copy.deepcopy(self.callbacks)
+            callback=copy.deepcopy(next(c for c in document['callbacks']
+                if not c.get('participants') and not c.get('state_ops')))
+            callback['storage']=[{'track':f'oteryn:quest-progress/engnpc-atomic/{i}',
+                'minimum':0,'maximum':0,'set':1} for i in range(count)]
+            document['callbacks']=[callback]
+            document.pop('tracks',None)
+            if count==16:
+                q.validate_callbacks(document)
+            else:
+                with self.assertRaises((ValueError,ValidationError)):
+                    q.validate_callbacks(document)
+
     def test_native_trial_bindings_require_full_goals_and_one_shot_grants(self):
         document=json.loads(q.build()['content/quests/shared-reward-callbacks.json'])
         rows={c['key'].split('/')[-1]:c for c in document['callbacks']}

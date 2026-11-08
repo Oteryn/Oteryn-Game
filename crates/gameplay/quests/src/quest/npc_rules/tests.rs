@@ -134,6 +134,50 @@ fn fixture_catalog(document: &serde_json::Value) -> Result<NpcRuleCatalog, NpcRu
 }
 
 #[test]
+fn native_storage_accepts_sixteen_tracks_and_refuses_seventeen_atomically()
+-> Result<(), NpcRuleError> {
+    let mut document = fixture_document(Vec::new());
+    let track = document["tracks"][0].clone();
+    let facts = Facts::empty();
+    for count in [9, 16, 17] {
+        let tracks: Vec<_> = (0..count)
+            .map(|i| {
+                let mut definition = track.clone();
+                definition["key"] = format!("oteryn:quest-progress/test/atomic-{i:02}").into();
+                definition
+            })
+            .collect();
+        let effects: Vec<_> = tracks
+            .iter()
+            .map(|t| {
+                serde_json::json!({
+                    "kind":"set", "track":t["key"], "value":1,
+                })
+            })
+            .collect();
+        document["tracks"] = serde_json::json!(tracks);
+        document["rules"] = serde_json::json!([fixture_rule("atomic", serde_json::json!(effects))]);
+        let catalog = fixture_catalog(&document)?;
+        let result = catalog.plan_storage(&facts.input("oteryn:npc.test", "mission", 0));
+        if count <= 16 {
+            let plan =
+                result?.ok_or_else(|| NpcRuleError::Invalid("missing atomic plan".into()))?;
+            assert_eq!(plan.track_changes.len(), count);
+            assert_eq!(plan.selected_rule_keys.len(), 1);
+            assert!(
+                plan.track_changes
+                    .iter()
+                    .all(|c| c.before == -1 && c.after == 1)
+            );
+        } else {
+            assert!(matches!(result, Err(NpcRuleError::LimitExceeded)));
+        }
+        assert!(facts.tracks.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
 fn continuation_reads_staged_tracks_topics_and_items() -> Result<(), NpcRuleError> {
     let mut first = fixture_rule(
         "first",
@@ -385,18 +429,17 @@ fn source_time_guard_and_cooldown_use_supplied_epoch_seconds() -> Result<(), Npc
 }
 
 #[test]
-fn father_acceptance_refuses_all_eleven_atomic_writes_without_splitting() -> Result<(), NpcRuleError>
+fn father_acceptance_plans_all_eleven_atomic_writes_without_splitting() -> Result<(), NpcRuleError>
 {
     let catalog = NpcRuleCatalog::from_json_documents(&[include_str!(
         "test-fixtures/father_acceptance.json"
     )])?;
     let facts = Facts::empty();
-    // Coordinator ANSWER preserves the existing eight-write contract and forbids
-    // splitting one donor transaction: PR2843#issuecomment-6589517205, point 5.
-    assert!(matches!(
-        catalog.plan(&facts.input("oteryn:npc.tereban", "yes", 1)),
-        Err(NpcRuleError::LimitExceeded)
-    ));
+    let plan = catalog
+        .plan(&facts.input("oteryn:npc.tereban", "yes", 1))?
+        .ok_or_else(|| NpcRuleError::Invalid("missing acceptance".into()))?;
+    assert_eq!(plan.track_changes.len(), 11);
+    assert_eq!(plan.selected_rule_keys.len(), 1);
     assert!(facts.tracks.is_empty());
     assert_eq!(facts.inventory, NpcInventorySnapshot::default());
     Ok(())
@@ -758,12 +801,12 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
 }
 
 #[test]
-fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
+fn storage_owner_preserves_exact_father_acceptance_with_shared_receipt_cap()
 -> Result<(), NpcRuleError> {
     let source = NpcRuleCatalog::runtime()?;
     let facts = Facts::empty();
     let input = facts.input("oteryn:npc.tereban", "yes", 1);
-    assert_eq!(MAX_NPC_TRACK_CHANGES, 8);
+    assert_eq!(MAX_NPC_TRACK_CHANGES, super::super::QUESTSTATE0_RL_02);
     let plan = source
         .plan_storage(&input)?
         .ok_or_else(|| NpcRuleError::Invalid("father acceptance".into()))?;

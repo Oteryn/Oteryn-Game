@@ -109,7 +109,7 @@ Selected look, disguise and caller-supplied gender never establish this guard.
 
 `participants` optionally names up to three distinct existing foreign quest
 owners and their exact storage effects. The combined primary and participant
-write set is limited to eight tracks, with no duplicates or overlap with readonly
+write set is limited to sixteen tracks, with no duplicates or overlap with readonly
 prerequisites. A participant cannot invent or reassign a track. Its validated
 transition contributes to its original owner's definition hash. Participants
 cannot be submitted as independent quest transitions. The Character writer locks
@@ -124,7 +124,7 @@ participant proof arm. A participant never completes another quest.
 `elapsed_at_least`) and existing native effects (`add`, `set_now`). Both primary
 and foreign-owner participants support it. Elapsed checks preserve their clock
 with add0;the database transaction clock authorizes value. Dialogue time never
-authorizes a grant. Duplicate tracks,owner confusion and combined effects>8
+authorizes a grant. Duplicate tracks,owner confusion and combined effects>16
 fail closed. Source deadlines can normalize to start+exact elapsed duration.
 
 A source-bound track declaration is read-only unless `writable:true` is explicit.
@@ -260,7 +260,7 @@ Selected look, disguise and caller-supplied gender never establish this guard.
 
 `participants` optionally names up to three distinct existing foreign quest
 owners and their exact storage effects. The combined primary and participant
-write set is limited to eight tracks, with no duplicates or overlap with readonly
+write set is limited to sixteen tracks, with no duplicates or overlap with readonly
 prerequisites. A participant cannot invent or reassign a track. Its validated
 transition contributes to its original owner's definition hash. Participants
 cannot be submitted as independent quest transitions. The Character writer locks
@@ -275,7 +275,7 @@ participant proof arm. A participant never completes another quest.
 `elapsed_at_least`) and existing native effects (`add`, `set_now`). Both primary
 and foreign-owner participants support it. Elapsed checks preserve their clock
 with add0;the database transaction clock authorizes value. Dialogue time never
-authorizes a grant. Duplicate tracks,owner confusion and combined effects>8
+authorizes a grant. Duplicate tracks,owner confusion and combined effects>16
 fail closed. Source deadlines can normalize to start+exact elapsed duration.
 
 A source-bound track declaration is read-only unless `writable:true` is explicit.
