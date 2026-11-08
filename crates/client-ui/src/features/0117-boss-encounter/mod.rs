@@ -10,6 +10,9 @@ pub use protocol::{Intent, apply_result, request};
 pub use state::BossEncounterPanel;
 pub use view::{cooldown_text, panel_text};
 #[cfg(test)]
+#[path = "tests/e2e_n07b.rs"]
+mod e2e_n07b;
+#[cfg(test)]
 #[path = "tests/e2e_p02.rs"]
 mod e2e_p02;
 #[cfg(test)]

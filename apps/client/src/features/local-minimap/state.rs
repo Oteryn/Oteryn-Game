@@ -454,3 +454,7 @@ mod tests {
         assert!(!map.cells.contains_key(&(-7, 100, 200)));
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n07d.rs"]
+mod e2e_n07d;

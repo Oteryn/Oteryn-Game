@@ -98,6 +98,9 @@ pub(in crate::play) fn apply(
 }
 
 #[cfg(test)]
+#[path = "tests/e2e_n07a.rs"]
+mod e2e_n07a;
+#[cfg(test)]
 #[path = "tests/e2e_p12a.rs"]
 mod e2e_p12a;
 #[cfg(test)]

@@ -26,3 +26,7 @@ pub(in crate::play) fn reduce(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "tests/e2e_n07c.rs"]
+mod e2e_n07c;
