@@ -8,3 +8,5 @@ Identity/source references retained by those selected recipes:
 - Native schedule implementation already sourced from Crystal: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/fury_gates.lua and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/world_changes/grimvale_respawn_event.lua
 
 M31's personal journal lowering may open the `qworld/fury/hunt` and `qworld/grimvale/hunt` tracks only after the preceding selected stages; both default to0. Native death increments the corresponding `/kills` track, capped at10. This bounded adapter does not declare the exploration, seal/survey or final completion stages qualified.
+
+Status: M32 remains CLAIMED; the complete content/PG batch is still undergoing validation.
