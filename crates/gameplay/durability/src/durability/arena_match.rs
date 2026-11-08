@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 pub mod donor;
+mod pit_lease;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MatchState {
@@ -166,6 +167,13 @@ impl DurabilityRoot {
             if !valid_transition(&prior,&ready,&request.after,request.disposition,&request.payload,fence,request.command,now_ms) {return Err(DurabilityError::InvalidStoredState);}
             let mut after=request.after;
             let mut disposition=request.disposition;
+            // Claim shared custody before charging an entry fee or moving to the
+            // next pit. Runtime census alone cannot close concurrent admissions.
+            if disposition==ArenaDisposition::Applied && matches!(after.phase,1|2)
+                && !pit_lease::claim(&mut tx,fence,&after,now_ms).await? {
+                after=ready.clone();
+                disposition=ArenaDisposition::Busy;
+            }
             let entering=disposition==ArenaDisposition::Applied && after.phase==1 && prior.rank==0;
             let mut fee_occurrence=None;
             if entering {
@@ -209,6 +217,7 @@ impl DurabilityRoot {
                     if sqlx::query(query).bind(fence.character_id.as_bytes().as_slice()).bind(next.to_string()).bind(root.revision.to_string()).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
                 }
             }
+            if !matches!(after.phase,1|2) { pit_lease::release(&mut tx,fence).await?; }
             save(&mut tx,fence,request.command,&request.payload,&prior,&after,&bytes).await?;
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?

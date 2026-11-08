@@ -2082,3 +2082,23 @@ clippy all targets passed in10.977s and format check passed. No SQL or content
 input changed, so this slice adds no PG case or generated content. No migration
 or registry number is allocated. Exclusive pit custody, production death/map
 composition and durable kick/reset remain; M51 is PARTIAL, not DONE.
+
+## M51: atomic shared pit reservation before entry fee (second slice)
+
+Allocated migration2180 (assigned range2180–2189): game_svargrond_pit_leases.
+The existing fenced arena_match writer claims shared pit custody before charging
+an entry fee or accepting an advance. Transaction advisory locking closes the
+empty-slot race; a different live run cannot replace custody. Old-pit release
+and new-pit claim share the arena transaction, so a failed composition rolls
+back to the old pit. Idle/completed arena state releases custody. Progress,
+fees, victories and command receipts remain with the existing owner.
+
+Source: Crystal201189f movements_arena_enter.lua:22-30,
+movements_arena_pit.lua:52-62, lib/quests/svargrond_arena.lua:193-256,285-313.
+RED pre-migration PG fixture:5.22s, Database(Database(None)); new table absent.
+GREEN real PG: m51_postgres_pit_reservation_serializes_contenders_and_releases_atomically,
+4.95s (wall23.356s including compilation). It exercises actual simultaneous
+transactions, refusal after commit, rollback of an advance and release.
+Durability clippy -D warnings:98.792s; fmt check PASS. No generated content or
+command/capability ordinal changed. M51 remains PARTIAL pending native
+pillar/portal composition, recovery custody checks and kick/reset closure.
