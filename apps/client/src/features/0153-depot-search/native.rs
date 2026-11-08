@@ -8,6 +8,10 @@ pub(in crate::play) const CONTROLS: &[(&str, &str, &str)] = &[
     ("EDIT", "Result row (starting at 0)", "0"),
     ("EDIT", "Tier", "0"),
     ("BUTTON", "Select result / details", ""),
+    ("BUTTON", "List holdings", ""),
+    ("BUTTON", "Next page", ""),
+    ("BUTTON", "Retrieve one", ""),
+    ("BUTTON", "Retrieve all (all tiers)", ""),
 ];
 pub(in crate::play) struct Inputs(pub Vec<String>);
 impl Default for Inputs {
@@ -65,6 +69,60 @@ pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) 
             .commands
             .send(crate::combat_input::PlayCommand::ServerMechanic(command))
             .is_err()
+    {
+        panel.pending = false;
+        panel.feedback = Some("The session has ended".into());
+    }
+}
+
+pub(in crate::play) fn activate(link: &PlayLink, inputs: &Inputs, action: usize) {
+    use oteryn_client_runtime::cui3::depot_search::{self as wire, Outcome, Request};
+    if action == 1 {
+        submit(link, inputs);
+        return;
+    }
+    if action == 4 {
+        dispatch(link, inputs, true);
+        return;
+    }
+    let mut mailbox = lock(&link.mailbox);
+    let panel = &mut mailbox.depot_search;
+    if !enabled(panel) {
+        return;
+    }
+    let request = match action {
+        5 => Some(Request::Open { after: 0 }),
+        6 => panel
+            .reply
+            .as_ref()
+            .filter(|r| r.outcome == Outcome::More)
+            .and_then(|r| r.results.last())
+            .map(|row| Request::Open {
+                after: row.client_id,
+            }),
+        7 | 8 => inputs
+            .0
+            .get(2)
+            .and_then(|s| s.trim().parse::<usize>().ok())
+            .and_then(|i| panel.reply.as_ref()?.results.get(i))
+            .map(|row| Request::Retrieve {
+                client_id: row.client_id,
+                all: action == 8,
+            }),
+        _ => None,
+    };
+    let Some(payload) = request.and_then(|r| wire::encode_request(r).ok()) else {
+        panel.feedback =
+            Some("Select a current result, or list holdings for the first page".into());
+        return;
+    };
+    if let Some(command) = oteryn_client_ui::depot_search::request(
+        panel,
+        oteryn_client_ui::depot_search::command(payload),
+    ) && link
+        .commands
+        .send(crate::combat_input::PlayCommand::ServerMechanic(command))
+        .is_err()
     {
         panel.pending = false;
         panel.feedback = Some("The session has ended".into());
@@ -153,13 +211,19 @@ mod windows {
                 let mut handles = Vec::new();
                 let mut labels = Vec::new();
                 for (index, (class, label, value)) in CONTROLS.iter().enumerate() {
-                    let y = 10 + index as i32 * 65;
+                    let y = 10 + index.min(5) as i32 * 55;
+                    let x = if index >= 5 {
+                        10 + (index - 5) as i32 * 215
+                    } else {
+                        10
+                    };
+                    let width = if index >= 5 { 205 } else { 860 };
                     labels.push(control(
                         hwnd,
                         "STATIC",
                         label,
                         200 + index,
-                        [10, y, 860, 22],
+                        [x, y, width, 22],
                         0,
                     ));
                     handles.push(control(
@@ -167,10 +231,18 @@ mod windows {
                         class,
                         if *class == "BUTTON" { label } else { value },
                         100 + index,
-                        [10, y + 24, 860, 28],
+                        [x, y + 24, width, 28],
                         WS_TABSTOP | WS_BORDER,
                     ));
                 }
+                let results = control(
+                    hwnd,
+                    "LISTBOX",
+                    "",
+                    400,
+                    [10, 350, 860, 175],
+                    LBS_NOTIFY as u32 | WS_VSCROLL | WS_BORDER | WS_TABSTOP,
+                );
                 let status = control(
                     hwnd,
                     "EDIT",
@@ -184,7 +256,10 @@ mod windows {
                         | WS_BORDER
                         | WS_TABSTOP,
                 );
-                if !status.is_null() && handles.iter().chain(labels.iter()).all(|h| !h.is_null()) {
+                if !results.is_null()
+                    && !status.is_null()
+                    && handles.iter().chain(labels.iter()).all(|h| !h.is_null())
+                {
                     let mut held = None;
                     loop {
                         let mut message: MSG = std::mem::zeroed();
@@ -214,7 +289,7 @@ mod windows {
                             {
                                 continue;
                             }
-                            let inputs = Inputs(
+                            let mut inputs = Inputs(
                                 handles
                                     .iter()
                                     .map(|handle| {
@@ -228,14 +303,54 @@ mod windows {
                                     })
                                     .collect(),
                             );
-                            if id == 100 + CONTROLS.len() - 1 && CONTROLS.len() == 5 {
-                                dispatch(&link, &inputs, true);
-                            } else {
-                                submit(&link, &inputs);
+                            if let Ok(row) =
+                                usize::try_from(SendMessageW(results, LB_GETCURSEL, 0, 0))
+                            {
+                                inputs.0[2] = row.to_string();
+                                SetWindowTextW(handles[2], wide(&inputs.0[2]).as_ptr());
                             }
+                            activate(&link, &inputs, id - 100);
                         }
                         let panel = lock(&shared).depot_search.clone();
                         if held.as_ref() != Some(&panel) {
+                            let selected = SendMessageW(results, LB_GETCURSEL, 0, 0);
+                            SendMessageW(results, LB_RESETCONTENT, 0, 0);
+                            if let Some(reply) = &panel.reply {
+                                for (index, row) in reply.results.iter().enumerate() {
+                                    let tiers = row
+                                        .tiers
+                                        .iter()
+                                        .map(|t| format!("tier {}: {}", t.tier, t.count))
+                                        .collect::<Vec<_>>()
+                                        .join(", ");
+                                    let text = format!(
+                                        "{} | Item {} | Depot {} | Stash {} | Inbox {} | {}",
+                                        index,
+                                        row.client_id,
+                                        row.depot,
+                                        row.stash,
+                                        row.inbox,
+                                        tiers
+                                    );
+                                    SendMessageW(
+                                        results,
+                                        LB_ADDSTRING,
+                                        0,
+                                        wide(&text).as_ptr() as isize,
+                                    );
+                                }
+                                if !reply.results.is_empty() {
+                                    SendMessageW(
+                                        results,
+                                        LB_SETCURSEL,
+                                        usize::try_from(selected)
+                                            .unwrap_or(0)
+                                            .min(reply.results.len() - 1),
+                                        0,
+                                    );
+                                }
+                            }
+                            EnableWindow(results, i32::from(enabled(&panel)));
                             SetWindowTextW(
                                 status,
                                 wide(&presentation(&panel).replace('\n', "\r\n")).as_ptr(),
