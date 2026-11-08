@@ -11804,5 +11804,37 @@
       "production_change": "None: no current failing assertion was reproduced; do not invent a patch.",
       "whole_quest": "Ancient Tombs remains IN_PROGRESS."
     }
+  },
+  "publication_2026_11_08": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc4d",
+    "base": "df0b4e35095a11f2d5947c901838059b889a9493",
+    "scope": "Publish the green six-input Treasure Hunt component and recorded assembly proof only; no whole-quest promotion.",
+    "excluded_draft": "Poem9204 and telescope9616\u20139619: authoring controls pass, but actual PG red/green was not run. Retained in local stash and /tmp/questpc4d-unvalidated-draft.patch plus new-files archive. No failing PG command/error exists to report.",
+    "counts": {
+      "qualified": 4,
+      "in_progress": 17,
+      "external_excluded": 2
+    },
+    "crate_unit_run": "PREPUSH-2 cadence exception: unfiltered4008-case repeat interrupted after1044 passes; four SIGINT cases rerun individually and all PASS108.531/185.734/84.973/114.161s. Remaining2960 cases pending, not claimed as a full pass. Prior B4002-case complete unit result retained as prior-head evidence only.",
+    "validation": {
+      "regen": "PUBLICATION_REGEN_EXIT=0",
+      "checks": "CHECKS_EXIT=0 duration=525s",
+      "authoring-units": "AUTHORING_UNITS_EXIT=0 duration=787s",
+      "content-tree": "CONTENT_TREE_EXIT=0 duration=358s",
+      "workspace-check": "PUBLICATION_WORKSPACE_CHECK_EXIT=0 duration=519s",
+      "clippy": "PUBLICATION_CLIPPY_EXIT=0 duration=339s",
+      "fmt": "PUBLICATION_FMT_EXIT=0",
+      "duplicate-migrations": "DUP_MIGRATIONS_EXIT=0",
+      "pin-check": "PIN_CHECK_EXIT=0",
+      "interrupted-units": "INTERRUPTED_UNITS_EXIT=0 cases=4"
+    },
+    "assembly_recheck": {
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "case": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+      "result": "PASS",
+      "body_seconds": 76.559046718,
+      "change": "Original seven-to-one assertion and production code unchanged; existing final-drop transactional hook is present."
+    },
+    "main": "f5b584ef161eb93c951cb8579a1b3e5538935b1b; fresh fetch before publication, behind=0"
   }
 }
