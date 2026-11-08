@@ -273,7 +273,7 @@
   "status": "PARTIAL",
   "gap": "Skala mapy i pole języka są; brak pełnej skali UI, kursora i tooltip controls.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/interface_controls.rs:15 + interface_scale_changes_hud_geometry_and_rejects_invalid_values; Full panel scaling and tooltip controls remain."
+  "evidence": "apps/client/src/features/local-reference-preferences/native_tooltips.rs:19 + tooltips_use_visible_server_names_delay_and_generation + interface_scale_changes_hud_geometry_and_rejects_invalid_values; Cursor, HUD scaling and enabled/delayed native tooltips are wired; scaling all native panels remains."
  },
  {
   "id": "T051",

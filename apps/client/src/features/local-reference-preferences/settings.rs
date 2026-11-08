@@ -16,6 +16,9 @@ mod profiles;
 mod store;
 #[path = "sync.rs"]
 mod sync;
+#[path = "tooltips.rs"]
+mod tooltips;
+pub use tooltips::{HoverTooltip, TooltipTarget};
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
 pub use store::PreferenceStore;
 pub use sync::{SettingsPage, SettingsState, WINDOW_ACTIONS};
@@ -43,6 +46,8 @@ const PANEL_IDS: &[&str] = &[
 fn enabled() -> bool {
     true
 }
+
+fn default_tooltip_delay() -> u16 { 500 }
 
 fn default_arc_opacity() -> u8 { 100 }
 
@@ -89,6 +94,10 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "enabled")]
+    pub tooltips_enabled: bool,
+    #[serde(default = "default_tooltip_delay")]
+    pub tooltip_delay_ms: u16,
     #[serde(default = "enabled")]
     pub hud_health: bool,
     #[serde(default = "enabled")]
@@ -167,6 +176,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            tooltips_enabled: true,
+            tooltip_delay_ms: 500,
             hud_health: true,
             hud_mana: true,
             hud_marks_own: true,
@@ -226,7 +237,7 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if self.arc_opacity > 100
+        if self.tooltip_delay_ms > 3000 || self.arc_opacity > 100
             || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80

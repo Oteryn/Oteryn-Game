@@ -22,6 +22,9 @@ use winit::{
     window::Window,
 };
 
+#[path = "native_tooltips.rs"]
+mod native_tooltips;
+
 type Shared = SettingsState;
 fn lock(shared: &Mutex<Shared>) -> MutexGuard<'_, Shared> {
     shared
@@ -36,6 +39,7 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(super) struct Settings {
+    tooltip: std::cell::RefCell<native_tooltips::NativeTooltip>,
     // Win32 borrows the Arc handle address; Box keeps it stable when Settings moves.
     #[allow(clippy::redundant_allocation)]
     shared: Box<Arc<Mutex<Shared>>>,
@@ -46,6 +50,7 @@ pub(super) struct Settings {
 impl Settings {
     pub(super) fn new() -> Self {
         Self {
+            tooltip: std::cell::RefCell::new(native_tooltips::NativeTooltip::default()),
             shared: Box::new(Arc::new(Mutex::new(SettingsState::new(
                 PreferenceStore::path(),
             )))),
@@ -175,6 +180,12 @@ impl Settings {
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }
+        let enabled = state.preferences.tooltips_enabled;
+        let delay = state.preferences.tooltip_delay_ms;
+        drop(state);
+        self.tooltip
+            .borrow_mut()
+            .refresh(self.parent, view, enabled, delay);
     }
     pub(super) fn capture(&self, view: &mut PlayView) {
         let mut state = lock(&self.shared);
