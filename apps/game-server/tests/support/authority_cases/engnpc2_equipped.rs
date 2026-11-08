@@ -55,7 +55,12 @@ pub(super) fn run_equipped_fixture(
                 .map_err(fixture::debug)?
                 .block_on(async {
                     let started = std::time::Instant::now();
-                    let h = fixture::Harness::create(admin, "engnpc2_equipped", true).await?;
+                    let h = fixture::Harness::create(
+                        admin,
+                        &format!("engnpc2_equipped_{slot_name}"),
+                        true,
+                    )
+                    .await?;
                     let result = exercise(&h, slot_name, item, slot).await;
                     h.cleanup().await?;
                     result?;

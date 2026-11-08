@@ -299,6 +299,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/oramond-native-roots.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
+    callbacks.extend(super::children_puzzle::callbacks());
     callbacks.extend(super::shared_switches::callbacks());
     if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) {
         return Err("callback bounds including native source callbacks".into());
@@ -335,8 +336,12 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
-        let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
-            .map_err(|error| error.to_string())?;
+        let selector = serde_json::to_vec(&(
+            callback.trigger,
+            &callback.selector,
+            super::children_puzzle::binding(&callback.key).map(|(_, solved)| solved),
+        ))
+        .map_err(|error| error.to_string())?;
         if !selectors.insert(selector) {
             return Err("duplicate callback selector across registries".into());
         }
@@ -733,6 +738,9 @@ mod clock_tests;
 
 #[cfg(test)]
 mod literal_text_tests;
+
+#[cfg(test)]
+mod ground_stack_tests;
 
 #[cfg(test)]
 mod cycle_tests;
@@ -1677,6 +1685,27 @@ mod qn1_lifecycle_tests {
                     )
                     .is_err()
             );
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod qn1_cells_tests {
+    #[test]
+    fn children_levers_bind_both_completion_branches() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let levers: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.key.contains("qn1-children-lever-"))
+            .collect();
+        assert_eq!(levers.len(), 10);
+        for callback in levers {
+            super::parse(&serde_json::json!({"schema":1,"callbacks":[callback]}).to_string())?;
+            assert_eq!(callback.lever, Some([9125, 9126]));
+            assert_eq!(callback.effects.reset_after_ms, Some(5000));
+            assert_eq!(callback.storage[0].minimum, 14);
+            assert_eq!(callback.storage[0].maximum, 14);
         }
         Ok(())
     }
