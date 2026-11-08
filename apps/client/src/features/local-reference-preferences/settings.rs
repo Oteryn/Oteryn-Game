@@ -44,6 +44,8 @@ fn enabled() -> bool {
     true
 }
 
+fn default_hud_names() -> [bool; 3] { [true; 3] }
+
 fn default_shortcuts() -> Vec<String> {
     WINDOW_ACTIONS
         .iter()
@@ -74,6 +76,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_hud_names")]
+    pub hud_names: [bool; 3],
     #[serde(default = "default_scale")]
     pub interface_scale: u16,
     #[serde(default)]
@@ -124,6 +128,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            hud_names: default_hud_names(),
             interface_scale: 100,
             cursor_crosshair: false,
             rotation_modifier: default_rotation_modifier(),

@@ -1,6 +1,25 @@
 use super::*;
 
 #[test]
+fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{EntityDetail, EntityDisplayName, EntityKind, EntityRef, VisibleAppearance, WorldSpatialEntity};
+    let mut play = view()?;
+    play.set_own_identity([1; 16]);
+    let entries = [(1, EntityKind::Player), (2, EntityKind::Player), (3, EntityKind::Creature)].into_iter().map(|(id, kind)| Ok(VisibleAppearance {
+        entity: WorldSpatialEntity { entity: EntityRef { identity: [id; 16], generation: 1 }, kind,
+            position: ActorPosition { x: 100 + i32::from(id), y: 200, floor: 0 }, display_name: Some(EntityDisplayName::new("Actor")?),
+            detail: EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 } }, look: None, light: None, forge_stacks: None,
+    })).collect::<Result<Vec<_>, oteryn_session::SessionError>>()?;
+    play.set_presentations(entries)?;
+    assert_eq!(play.scene().name_count(), 3);
+    let mut preferences = play.preferences().clone();
+    preferences.hud_names = [false, true, false];
+    play.set_preferences(preferences)?;
+    assert_eq!(play.scene().name_count(), 1);
+    Ok(())
+}
+
+#[test]
 fn interface_scale_changes_hud_geometry_and_rejects_invalid_values() -> Result<(), Box<dyn std::error::Error>> {
     let mut play = view()?;
     let mut preferences = play.preferences().clone();
