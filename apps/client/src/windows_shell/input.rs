@@ -9,6 +9,8 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         // Route the full batch before a panel can consume it, retaining pointer/reset events.
+        let routed = self.settings.input(events);
+        let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
             play.view.observe_creature_pointer(events);
@@ -16,8 +18,6 @@ impl Application {
                 return;
             }
         }
-        let routed = self.settings.input(events);
-        let events = routed.as_slice();
         if let Some(play) = &mut self.play {
             self.settings.restore(&mut play.view);
             if play.view.audio_input(events) {

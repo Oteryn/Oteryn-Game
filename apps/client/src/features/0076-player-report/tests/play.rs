@@ -446,3 +446,23 @@ fn bug_categories_show_specific_reproduction_guidance() {
         assert!(mailbox.properties.player_report.bug.preview.contains(expected));
     }
 }
+
+#[test]
+fn violation_review_is_invalidated_by_edits() -> Result<(), Error> {
+    use crate::play::feature_0076_player_report::view::violation::activate;
+    let (link, mut receiver, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let panel = &mut mailbox.properties.player_report;
+    panel.selected = true;
+    panel.fields = ["0".into(), "1".into(), "Other Player".into(), String::new(), "Original statement".into()];
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_err());
+    activate(&mut mailbox, &link.commands, true);
+    mailbox.properties.player_report.fields[4].push('!');
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_err());
+    activate(&mut mailbox, &link.commands, true);
+    activate(&mut mailbox, &link.commands, false);
+    assert!(receiver.try_recv().is_ok());
+    Ok(())
+}
