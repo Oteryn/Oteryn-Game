@@ -90,6 +90,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
+        if !close && let Some(delay) = callback.effects.reset_after_ms {
+            let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000) else {
+                return UseDisposition::Exhausted;
+            };
+            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                due,
+                restore: before,
+            });
+        }
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()

@@ -10931,5 +10931,14 @@
       "whole_treasure_hunt_done": false,
       "source": "n2 61a1f24af source tools/tests restored; packet regenerated from pinned local donor"
     }
+  },
+  "qmech_m07": {
+    "status": "IN_PROGRESS",
+    "slice": "Bound native world predicates and own-quest completion",
+    "code_commit": "96a1d1cfb",
+    "red": "/tmp/questpc4-m07-red.log: 2 failed (invalid callback; unknown effect)",
+    "green": "/tmp/questpc4-m07-green2.log: 15 passed, including 3 M07 tests",
+    "clippy": "/tmp/questpc4-m07-clippy.log: all targets passed 12.29s",
+    "remaining": "Source-specific lifecycle projection, five quest bindings and PG scenarios"
   }
 }
