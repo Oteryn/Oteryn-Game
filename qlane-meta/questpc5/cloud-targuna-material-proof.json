@@ -1,0 +1,38 @@
+{
+  "quest": "oteryn:quest.targuna_quest",
+  "state": "REGISTERED_PG_RED_PROVEN_GREEN_PENDING",
+  "item": 53073,
+  "source_identity": "bunch of turnips; exact existing Crystal item binding",
+  "known_weight": {
+    "centioz": 200,
+    "source": "content/items/definitions/items-28500-28999.json:1",
+    "json_pointer": "/records/227/definition/semantics/physical/value/weight",
+    "sha256": "ab430f09558a741812d55deaaf88cb64637515e965ccda9b31f5dd9a7aec2bd8",
+    "commit": "51a476805fe543f912bde3bf7eaf476de837669e"
+  },
+  "producer": "tools/content-migration/questpc5_targuna_material.py",
+  "source_tests": "3PASS6.531s including wrong alias/container flags and contradictory Known stack/container facts",
+  "assumptions": [
+    "Selected portable turnips have no container capability and zero intrinsic speed bonus; these conservative custody rules activate no custom use.",
+    "Preserve Unknown charge/lifetime facts; do not claim a timeless specimen or intrinsic charge state."
+  ],
+  "not_activated": [
+    "Ram binding53439",
+    "quest progress",
+    "mount grant250/client1934"
+  ],
+  "postgres": {
+    "red_server_version": "18.6",
+    "red_seconds": 41.858535248,
+    "red_error": "DefinitionNotFound",
+    "green": "queued after shipping checks"
+  },
+  "whole_quest_qualified": false,
+  "generated": {
+    "native_files": 50,
+    "native_profiles": 3847,
+    "existing_unchanged": 3846,
+    "equipment_union": 3882
+  },
+  "shipping_checks": "workspacealltargets/fmt/pinrefresh/pincheck/duplicatesPASS; strictClippy and PGGREEN pending at cadence checkpoint"
+}

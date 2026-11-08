@@ -848,6 +848,12 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-targuna-material" {
+        return Box::pin(super::questpc5_targuna_material::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
     if name.starts_with("qengine-rewards-cook-") {
         return Box::pin(super::questpc5_oramond_roots::exercise_cook(
             owner, admitted, h, name,

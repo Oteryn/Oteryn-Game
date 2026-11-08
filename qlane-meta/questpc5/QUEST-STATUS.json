@@ -762,7 +762,15 @@
       "proof": "cloud-main3209-integration-proof.json",
       "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
     },
-    "engine_requests_file": "ENGINE-REQUESTS.md"
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "physical_material_work": {
+      "identity": 53073,
+      "producer_registered": true,
+      "source_tests": "3PASS6.531s",
+      "postgres": "RED PostgreSQL18.6 DefinitionNotFound41.858535248s before registration; GREEN pending",
+      "proof": "cloud-targuna-material-proof.json",
+      "equipment_union": 3882
+    }
   },
   {
     "canonical": "oteryn:quest.the_explorer_society_quest",
