@@ -19,7 +19,9 @@ fn claim_case(suffix: &'static str) -> TestResult {
         .ok_or("callback")?;
     let siblings = callbacks
         .into_iter()
-        .filter(|c| c.quest == callback.quest)
+        .filter(|c| {
+            c.quest == callback.quest && (suffix.starts_with("magic") || c.key == callback.key)
+        })
         .collect::<Vec<_>>();
     let claim = callback
         .world_claim
@@ -210,6 +212,26 @@ fn claim_case(suffix: &'static str) -> TestResult {
             .grant_starter_items(&authority, &harness.node, &fence, &weights, &template)
             .await
             .map_err(debug)?;
+        let (consumer, premium_clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        if callback.requires_premium {
+            harness
+                .root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+        }
+        let premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(premium_clock),
+                Some(activation),
+                Some(harness.root.clone()),
+            );
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
@@ -252,6 +274,11 @@ fn claim_case(suffix: &'static str) -> TestResult {
             admitted = admission_start;
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
+            if callback.requires_premium {
+                owner.premium_coordinator = Some(&premium);
+                owner.admit_premium(id(40), admitted.game_session_id);
+            }
+
             owner.quest_catalogue = qualified_catalogue.clone().or(Some(std::sync::Arc::new(
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?
@@ -280,6 +307,8 @@ fn claim_case(suffix: &'static str) -> TestResult {
                 .await
                 .ok_or("binding")?;
             assert_eq!(refused.disposition, UseDisposition::Rejected);
+            // Refused USEs consume the real world-action cooldown too.
+            tokio::time::sleep(std::time::Duration::from_millis(210)).await;
             let before: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_reward_claim_mint_reservations WHERE command_id=99",
             )
@@ -294,6 +323,34 @@ fn claim_case(suffix: &'static str) -> TestResult {
                     .await
                     .map_err(|e| format!("seed route prerequisites: {e}"))?;
                 qualified_catalogue = owner.quest_catalogue.clone();
+                if callback.requires_premium {
+                    owner.premium_coordinator = None;
+                    let denied = owner
+                        .use_bundle_chest_from_shards(
+                            deps.actor,
+                            crate::gameplay_transport::connection::UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: 98,
+                                item_fence: Some(fence),
+                            },
+                            owner.bundle_map().ok_or("bundle map")?,
+                            &target,
+                            &shards,
+                        )
+                        .await
+                        .ok_or("binding")?;
+                    assert_eq!(denied.disposition, UseDisposition::Rejected);
+                    let minted: i64 =
+                        sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                            .fetch_one(&harness.pool)
+                            .await?;
+                    assert_eq!(
+                        minted, 0,
+                        "a cached session cannot substitute for current premium authority"
+                    );
+                    owner.premium_coordinator = Some(&premium);
+                }
+
                 if suffix.starts_with("magic") {
                     super::l6_paradox::raise_level(&owner, &admitted, &authority, &harness, 100)
                         .await?;
@@ -302,6 +359,7 @@ fn claim_case(suffix: &'static str) -> TestResult {
                         .await;
                 }
             }
+            tokio::time::sleep(std::time::Duration::from_millis(210)).await;
             let result = wire(&owner, &mut admitted, &[1, 2], &target).await?;
             assert_eq!(
                 result,
@@ -351,7 +409,8 @@ fn claim_case(suffix: &'static str) -> TestResult {
         assert_eq!(claims, (count, count));
         let completed:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_states WHERE quest_key=$1 AND completed_character_revision IS NOT NULL),(SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes)")
             .bind(&callback.quest).fetch_one(&harness.pool).await?;
-        assert_eq!(completed, (1, 1));
+        let complete = i64::from(siblings.iter().any(|c| c.completes));
+        assert_eq!(completed, (complete, complete));
         drop(authority);
         drop(seal);
         harness.cleanup().await
@@ -482,4 +541,9 @@ fn engclaim_m34_kormarak_production_multi_reward_once() -> TestResult {
 #[test]
 fn engclaim_m34_magic_sword_production_chosen_vault_once() -> TestResult {
     execute("magic_sword-north")
+}
+
+#[test]
+fn engclaim_m34_mastermind_personal_cache_current_premium_once() -> TestResult {
+    execute("mastermind_potion-wall")
 }
