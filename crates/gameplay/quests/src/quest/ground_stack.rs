@@ -125,6 +125,58 @@ pub fn match_stack<'a>(
     }))
 }
 
+/// Match a bounded multi-tile readset while preserving each Ground owner's
+/// ordered witness. The caller must protect all observations through commit.
+/// Instance identities cannot be reused across tiles.
+pub fn match_readset<'a>(
+    requirements: &[GroundStackRequirement],
+    snapshots: &'a [GroundStackSnapshot],
+) -> Result<Option<Vec<GroundStackWitness<'a>>>, GroundStackError> {
+    const MAX_TILES: usize = 8;
+    if requirements.is_empty() || requirements.len() > MAX_TILES || snapshots.len() > MAX_TILES {
+        return Err(GroundStackError::LimitExceeded);
+    }
+    let mut positions = BTreeSet::new();
+    for requirement in requirements {
+        requirement.validate()?;
+        if !positions.insert(requirement.position) {
+            return Err(GroundStackError::InvalidRequirement);
+        }
+    }
+    let mut observed_positions = BTreeSet::new();
+    let mut instances = BTreeSet::new();
+    for snapshot in snapshots {
+        if snapshot.entries.len() > MAX_STACK_ITEMS {
+            return Err(GroundStackError::LimitExceeded);
+        }
+        if !observed_positions.insert(snapshot.position)
+            || snapshot
+                .entries
+                .iter()
+                .any(|entry| !instances.insert(entry.instance))
+        {
+            return Err(GroundStackError::InvalidObservation);
+        }
+    }
+    if positions != observed_positions {
+        return Ok(None);
+    }
+    let mut witnesses = Vec::with_capacity(requirements.len());
+    for requirement in requirements {
+        let Some(snapshot) = snapshots
+            .iter()
+            .find(|s| s.position == requirement.position)
+        else {
+            return Ok(None);
+        };
+        let Some(witness) = match_stack(requirement, snapshot)? else {
+            return Ok(None);
+        };
+        witnesses.push(witness);
+    }
+    Ok(Some(witnesses))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,6 +210,32 @@ mod tests {
             GroundStackRequirement { position, items },
             GroundStackSnapshot { position, entries },
         )
+    }
+
+    #[test]
+    fn m49_multi_altar_readset_requires_every_tile_and_unique_custody()
+    -> Result<(), GroundStackError> {
+        let (first, snapshot) = fixture();
+        let mut second = first.clone();
+        second.position.x += 1;
+        let mut other = snapshot.clone();
+        other.position = second.position;
+        for entry in &mut other.entries {
+            entry.instance[0] += 10;
+        }
+        let required = [first, second];
+        assert!(match_readset(&required, std::slice::from_ref(&snapshot))?.is_none());
+        assert!(match_readset(&required, &[other.clone(), snapshot.clone()])?.is_some());
+        other.entries[0].instance = snapshot.entries[0].instance;
+        assert_eq!(
+            match_readset(&required, &[snapshot.clone(), other]),
+            Err(GroundStackError::InvalidObservation)
+        );
+        assert_eq!(
+            match_readset(&[required[0].clone(), required[0].clone()], &[snapshot]),
+            Err(GroundStackError::InvalidRequirement)
+        );
+        Ok(())
     }
 
     #[test]
