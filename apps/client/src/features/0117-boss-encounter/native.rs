@@ -30,6 +30,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Previous boss",
                 "Next boss",
                 "Boss category",
+                "Soul War boss",
+                "Rotten Blood boss",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.boss_encounter;
@@ -69,6 +71,17 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if action == 16 {
                     mailbox.boss_encounter.browser_category =
                         mailbox.boss_encounter.browser_category.next();
+                    return;
+                }
+                if let Some(chain) = match action {
+                    17 => Some(oteryn_client_ui::boss_encounter::EndgameChain::SoulWar),
+                    18 => Some(oteryn_client_ui::boss_encounter::EndgameChain::RottenBlood),
+                    _ => None,
+                } {
+                    oteryn_client_ui::boss_encounter::select_next_boss(
+                        &mut mailbox.boss_encounter,
+                        chain,
+                    );
                     return;
                 }
                 let intent = match action {
