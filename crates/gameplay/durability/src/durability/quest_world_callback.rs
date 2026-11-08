@@ -197,6 +197,11 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    if !ground_stack::matches_requirements(tx, permit, fence, context, &callback.world_requirements)
+        .await?
+    {
+        return Ok(false);
+    }
     if !ground_stack::require(
         tx,
         permit,
