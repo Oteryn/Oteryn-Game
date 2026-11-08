@@ -35,10 +35,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     let Some(rule) = plan.selected_rule_keys.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
-    let rule_hash = Sha256::digest(rule.as_bytes())
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
+    let claim_key = crate::durability::quest_state::npc_program::hot_cuisine_m42::claim_key(plan)?;
     let context: Option<(String, String)> = sqlx::query_as("SELECT ruleset_revision,simulation_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let Some((ruleset_revision, sim_revision)) = context else {
@@ -68,7 +65,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: format!("oteryn:reward-claim.npc-program.{rule_hash}"),
+            production_key: claim_key,
             revision_ref: "npc-program-r1".into(),
         },
         source_placement: rule.clone(),
@@ -87,7 +84,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         ),
         ruleset_revision,
         sim_revision,
-        achievement: None,
+        achievement: crate::durability::quest_state::npc_program::hot_cuisine_m42::achievement(plan)?,
         quest_transition: None,
         key_number: None,
     };

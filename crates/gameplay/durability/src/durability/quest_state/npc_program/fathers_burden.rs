@@ -56,7 +56,7 @@ pub(super) async fn inventory_for(
 ) -> StoredResult<NpcInventorySnapshot> {
     let (world, _) =
         scope_of(&fence.item_fence()).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let rows = sqlx::query("SELECT i.definition_production_key,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3) ORDER BY i.item_instance_id LIMIT 501")
+    let rows = sqlx::query("SELECT i.definition_production_key,i.quantity,(SELECT f.fluid_subtype FROM game_item_fluid_states f WHERE f.item_instance_id=i.item_instance_id) AS fluid_subtype FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3) ORDER BY i.item_instance_id LIMIT 501")
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(keys).fetch_all(&mut **tx).await?;
     if rows.len() > 500 {
         return Err(DurabilityError::InvalidStoredState);
@@ -67,7 +67,7 @@ pub(super) async fn inventory_for(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         let key = NpcItemKey {
             item: row.try_get("definition_production_key")?,
-            subtype: None,
+            subtype: row.try_get::<Option<i16>, _>("fluid_subtype")?.map(u16::try_from).transpose().map_err(|_| DurabilityError::InvalidStoredState)?,
         };
         let total = inventory.items.entry(key).or_default();
         *total = total

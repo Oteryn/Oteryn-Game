@@ -33,6 +33,8 @@ pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
 pub mod hive_access;
+#[path = "batch3_a/hot_cuisine.rs"]
+pub mod hot_cuisine;
 pub mod isle_of_evil;
 pub mod liquid_black;
 pub mod loader;
