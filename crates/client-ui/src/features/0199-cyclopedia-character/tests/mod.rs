@@ -231,3 +231,7 @@ fn character_history_rejects_complete_reply_exceeding_requested_page()
     assert_eq!(panel.result.as_deref(), Some("confirmed"));
     Ok(())
 }
+
+mod history_tables;
+mod overview;
+mod services;

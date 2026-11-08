@@ -333,6 +333,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         npc: NPC.into(),
         trigger: NpcRuleTrigger::Say,
         keywords: vec!["yes".into()],
+        match_player_name: false,
         exclude_keywords: ["cook", "recipe", "menu", "apprentice"]
             .map(String::from)
             .to_vec(),
@@ -344,6 +345,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         effects: Vec::new(),
         continue_matching: false,
         inventory_failure_reply: Vec::new(),
+        completes: false,
         sources: recipe.sources.clone(),
     }
 }

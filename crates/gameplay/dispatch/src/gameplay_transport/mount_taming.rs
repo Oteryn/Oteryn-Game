@@ -50,6 +50,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(result) = self
+            .tame_quest_object(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(result));
+        }
         match self
             .tame(actor, command, intent, source, item_target, visible)
             .await
@@ -58,6 +64,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(Some(disposition)) => Ok(Some(outcome(disposition))),
             Err(None) => Err(()),
         }
+    }
+
+    /// M14 uses the existing world receipt, not an unguarded chance-based grant.
+    async fn tame_quest_object(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
+            &intent.use_with_map_item
+        else {
+            return Ok(None);
+        };
+        let Some(ItemKey::Instance(source)) = source else {
+            return Ok(None);
+        };
+        let Some(map) = self.bundle_map() else {
+            return Ok(None);
+        };
+        let view = super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: self
+                .active_generation
+                .ok_or(())?
+                .identity()
+                .client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let Ok(resolved) = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
+        else {
+            return Ok(None);
+        };
+        let callbacks = self.callback_content();
+        let Some(callback) = callbacks.iter().find(|callback| {
+            callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY
+                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
+        }) else {
+            return Ok(None);
+        };
+        let Some(required) = &callback.item_on_target else {
+            return Err(());
+        };
+        let Some(fence) = command.item_fence else {
+            return Ok(Some(outcome(UseDisposition::Rejected)));
+        };
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
+        let selected = inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .any(|entry| {
+                entry.item.item_instance_id == source
+                    && entry.item.definition.production_key == required.item
+            });
+        if !selected {
+            return Ok(Some(outcome(UseDisposition::NothingToUse)));
+        }
+        Ok(self.use_quest_callback(actor, command, map, target).await)
     }
 
     async fn tame(
