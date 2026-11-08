@@ -150,6 +150,21 @@ pub(super) fn prepare(
                     reply: offer.reply.clone(),
                 });
             }
+            // A source-owned offer may explain why a mission prerequisite is
+            // missing. Select an unambiguous stage before falling back to lore.
+            let mut blocked = offers.offers.iter().filter(|offer| {
+                offer.npc == context.2
+                    && offer.matches_topic(topic.number)
+                    && offer.keywords.contains(&text)
+                    && eligible(&offer.storage)
+                    && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
+            });
+            if let Some(offer) = blocked.next()
+                && blocked.next().is_none()
+                && let Some(choice) = refusal(&offer.failure_reply)
+            {
+                return Some(choice);
+            }
             // A unique exchange owns its exact keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.

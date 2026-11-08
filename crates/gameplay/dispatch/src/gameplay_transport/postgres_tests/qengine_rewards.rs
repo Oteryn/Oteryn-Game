@@ -155,6 +155,8 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-cael-tome-") { return &["tome"]; }
+    if key.ends_with("/l2-zalamon-tome") { return &["mission"]; }
     if key.ends_with("/l2-bone-start") {
         return &["mission"];
     }
@@ -774,6 +776,9 @@ pub(super) async fn exercise(
 ) -> TestResult {
     if name == "qengine-rewards-m39-any-topic" {
         return m39_any_topic::exercise(owner, admitted, h).await;
+    }
+    if name == "qengine-rewards-m39-tomes" {
+        return super::m39_tomes_journey::exercise(owner, admitted, h).await;
     }
     if name.starts_with("qengine-rewards-m39-bone") {
         return super::m39_bone_journey::exercise(owner, admitted, h, authority, name).await;

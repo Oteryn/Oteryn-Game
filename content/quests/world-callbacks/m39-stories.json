@@ -37,6 +37,406 @@
       "sources": [
         "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12:sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-children-1",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33247,
+          "y": 31161,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2756-2761:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-children-2",
+      "quest": "oteryn:quest.children_of_the_revolution_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33264,
+          "y": 31130,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2770-2775:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-container",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33343,
+          "y": 31610,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/container_tome",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/container_quest.lua:92-98:sha256:c18f0caf3d2c9f1d0c084722dfcb55523dbb1811166863a4f72d052bd2ae24b9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-frontier-1",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33164,
+          "y": 31257,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/chest_tome_of_knowledge1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2741-2746:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-frontier-2",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33057,
+          "y": 31019,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/chest_tome_of_knowledge2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2748-2753:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-knowledge-1",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33009,
+          "y": 31251,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2778-2783:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-knowledge-2",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32978,
+          "y": 31427,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2785-2790:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-knowledge-3",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33306,
+          "y": 31125,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge3",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2792-2797:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-knowledge-4",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33157,
+          "y": 31229,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2480
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge4",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:2799-2804:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-tome-top-tower",
+      "quest": "oteryn:quest.tomes_of_knowledge_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33154,
+          "y": 31297,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/tomes_of_knowledge/top_tower",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i10217",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/chest.lua:1375-1380:sha256:0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+      ]
     }
   ]
 }

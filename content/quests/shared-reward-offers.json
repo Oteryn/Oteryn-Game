@@ -389,6 +389,420 @@
     {
       "npc": "oteryn:npc.cael",
       "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 10,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tome",
+        "knowledge"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
+          "minimum": 2,
+          "maximum": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "failure_reply": [
+        "I'm sorry I'm busy. Speak with Ongulf to get some missions!"
+      ],
+      "reply": [
+        "Have you found a Tome of Knowledge for me to read?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
         "tribal crest"
       ],
       "topic": 0,
@@ -4378,6 +4792,27 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zalamon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 12,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 17,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Have you found the way which will lead us to the great gate?"
       ]
     },
     {

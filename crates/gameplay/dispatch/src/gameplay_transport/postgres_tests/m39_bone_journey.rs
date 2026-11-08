@@ -32,7 +32,7 @@ fn callback(key: &str) -> TestResult<RewardCallback> {
         .find(|c| c.key == format!("oteryn:quest-reward/{key}"))
         .ok_or_else(|| format!("source callback {key}").into())
 }
-async fn stage(h: &Harness, track: &str) -> TestResult<Option<i64>> {
+pub(super) async fn stage(h: &Harness, track: &str) -> TestResult<Option<i64>> {
     Ok(
         sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
             .bind(track)
@@ -40,7 +40,7 @@ async fn stage(h: &Harness, track: &str) -> TestResult<Option<i64>> {
             .await?,
     )
 }
-async fn carried(h: &Harness, item: u32) -> TestResult<i64> {
+pub(super) async fn carried(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key=$3")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
@@ -51,7 +51,7 @@ async fn xp(h: &Harness) -> TestResult<i64> {
             .await?,
     )
 }
-async fn grant(
+pub(super) async fn grant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -61,7 +61,7 @@ async fn grant(
         super::qengine_rewards::wire_reward(owner, admitted, npc, &callback(key)?, false).await?;
     Ok((disposition, last))
 }
-async fn use_at(
+pub(super) async fn use_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     p: Position,
