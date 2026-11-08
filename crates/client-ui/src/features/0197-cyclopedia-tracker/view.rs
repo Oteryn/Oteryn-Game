@@ -84,3 +84,10 @@ fn remaining_to_stage(entry: &oteryn_client_runtime::cyclopedia_tracker::Tracker
         .unwrap_or(entry.kill_count)
         .saturating_sub(entry.kill_count)
 }
+
+/// Keep selection attached to the creature when widget configuration changes.
+pub fn tracker_selection(panel: &CyclopediaTrackerPanel, boss: bool, key: &str) -> Option<usize> {
+    tracker_rows(panel, boss)
+        .iter()
+        .position(|entry| entry.creature_key == key)
+}

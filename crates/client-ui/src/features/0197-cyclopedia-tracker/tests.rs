@@ -98,3 +98,18 @@ fn nearest_completion_sorts_by_next_unfinished_stage() {
     };
     assert_eq!(bestiary_rows(&p)[0].creature_key, "rat");
 }
+
+#[test]
+fn boss_selection_follows_identity_when_sort_or_filter_changes() {
+    let mut p = CyclopediaTrackerPanel {
+        bosstiary_snapshot: Some(TrackerSnapshot {
+            boss: true,
+            entries: vec![entry("alpha", 1, false), entry("beta", 9, false)],
+        }),
+        ..Default::default()
+    };
+    p.boss_sort = TrackerSort::Kills;
+    assert_eq!(tracker_selection(&p, true, "alpha"), Some(1));
+    p.boss_search = "beta".into();
+    assert_eq!(tracker_selection(&p, true, "alpha"), None);
+}
