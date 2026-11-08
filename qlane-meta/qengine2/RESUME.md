@@ -1687,3 +1687,13 @@ arrived (large shared-code/World update). Commit admission checkpoint locally,
 merge newMain, retain its authoritative generatedWorld (we author noWorldchanges),
 regenerate affected native outputs/pins and run publication gates. GREEN PG next
 AFTER compiling checkpoint push; pending tests stated under PREPUSH2 cadence.
+
+05:31UTC native admission compiling checkpoint ready on Soulpit main98d6ae8ce.
+Workspace all-target PASS8m05s; strict changedcrate clippy PASS10m56s including
+lockwait; fmt PASS; native/freshness/registry/itemaudit generation and official
+World pin-refresh PASS (main353cc02d preserved).326questunits42.66s green.
+Fixed3own qengine_access fixtures to use main activity-aware movement_cells().
+Publish now under PREPUSH2 pending-test exception, then immediately run new
+native-admission PG + retainedworld/NPC-carried + nativekill PG with stableHEAD.
+No ENGINE-DONE native admission untilactualPGGREEN. Original RED52.000s with
+marker51.941706214s proved stale recipe acceptance. Own packet44/66 unchanged.

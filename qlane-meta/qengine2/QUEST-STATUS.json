@@ -3703,10 +3703,17 @@
       "seconds": 42.66
     },
     "pending": [
-      "merge new main98d6ae8ce Soulpit",
-      "workspace/fmt/clippy/generated publication gates",
-      "own PostgreSQL GREEN after compiling checkpoint push"
+      "own real-dispatch PostgreSQL GREEN after compiling checkpoint push",
+      "remaining dispatch crate unit suite under PREPUSH-2 cadence exception"
     ],
-    "whole_quest_counts_unchanged": true
+    "whole_quest_counts_unchanged": true,
+    "main_merged": "98d6ae8ce",
+    "publication_gates": {
+      "workspace": "PASS8m05s --workspace --all-targets --keep-going",
+      "clippy": "PASS changed quests/dispatch -Dwarnings,10m56s including lock wait",
+      "fmt": "PASS",
+      "generation": "native providers, equipment/cohort67, Grizzly30, freshness, registry/itemaudit regenerated",
+      "pins": "official pin-refresh PASS; main Soulpit digest353cc02d preserved"
+    }
   }
 }

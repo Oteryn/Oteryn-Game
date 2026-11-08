@@ -529,3 +529,14 @@ Preserve main's published bound-set encoding; move authored kill threshold to
 unused tag11. Existing legacy/base effect hashes are unchanged. The threshold
 feature has no production quest binding data in this lane; synthetic PG cases
 will be refreshed against the corrected merged catalogue before qualification.
+
+Native binding admission decision: native boot catalogues carry immutable canonical
+recipe evidence; bare synthetic catalogues retain their existing low-level API.
+No caller-controlled admission boolean. Compiled registry follows existing
+build_npc_programs.rs. Fresh search of8active npcfix/questpc heads found no
+canonical recipe admission implementation; deleted qworld/qnpcfx/wpkg are reused
+through canonical main. Draccoon chosen recipe witness content/quests/definitions/quests-00200-00299.json:1 at
+2ddd4f9cd; file SHA256 359681e392e0588e5f76ef80af7ff6f780550271da2bdacfa0f32f5754f84c02, exact recipe SHA256
+c6bb54b0c423a165891b0ca32fb305a0963d1a06417249b0b317ec34cf65e708.
+All68 current chosen recipes contain no floating point values. No readiness
+promotion or whole-quest qualification is implied by registry admission.
