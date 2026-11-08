@@ -50,29 +50,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.analyser.open = value,
 
-            submit: |mailbox, commands, action, values| {
-                let tools = oteryn_client_ui::analyser::Tool::ALL.len();
-                if action < oteryn_client_ui::analyser::Tool::CYCLOPEDIA.len() {
-                    super::input::select_tool(&mut mailbox.analyser, action);
-                } else if let Some(tool) = oteryn_client_ui::analyser::Tool::ALL.get(action) {
-                    oteryn_client_ui::analyser::select_tool(&mut mailbox.analyser, tool.key());
-                } else if action == tools {
-                    super::input::select_tool(
-                        &mut mailbox.analyser,
-                        oteryn_client_ui::analyser::Tool::CYCLOPEDIA.len(),
-                    );
-                } else if action == tools + 1
-                    && let Some(value) = values.first()
-                {
-                    oteryn_client_ui::analyser::set_xp_goal(&mut mailbox.analyser, value);
-                } else if action == tools + 2
-                    && let [_, item, price] = values.as_slice()
-                {
-                    oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
-                } else if action == tools + 3 {
-                    super::input::resolve_items(mailbox, commands);
-                }
-            },
+            submit: super::input::submit,
         },
     );
 }

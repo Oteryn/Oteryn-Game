@@ -95,3 +95,45 @@ fn analyser_item_query_and_reply_use_the_production_command_mailbox()
     assert!(link.analyser_panel().catalogue_pending.is_empty());
     Ok(())
 }
+
+#[test]
+fn merged_analyser_controls_keep_selectors_prices_resolve_and_reset_distinct()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::analyser::Tool;
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.analyser_initialize(true);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 1,
+        new_revision: 2,
+        value: vec![
+            AnalyserFact::Kill { race: None },
+            AnalyserFact::SupplyUsed(oteryn_session::analyser_transport::AnalyserItemCount {
+                item_type: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU16::MIN,
+            }),
+        ],
+    })]);
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    let controls = crate::play::feature_0010_analyser::input::submit;
+    controls(&mut mailbox, &link.commands, 4, vec![]);
+    assert_eq!(mailbox.analyser.tool, Tool::Supplies);
+    controls(
+        &mut mailbox,
+        &link.commands,
+        Tool::ALL.len() + 2,
+        vec![String::new(), "1".into(), "7".into()],
+    );
+    assert_eq!(mailbox.analyser.supply_prices.get(&1), Some(&7));
+    controls(&mut mailbox, &link.commands, Tool::ALL.len() + 3, vec![]);
+    assert!(
+        matches!(incoming.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == 731)
+    );
+    controls(&mut mailbox, &link.commands, 7, vec![]);
+    assert_eq!(mailbox.analyser.tool, Tool::Impact);
+    assert_eq!(mailbox.analyser.kills, 1);
+    controls(&mut mailbox, &link.commands, Tool::ALL.len(), vec![]);
+    assert_eq!(mailbox.analyser.kills, 0);
+    assert_eq!(mailbox.analyser.tool, Tool::Impact);
+    Ok(())
+}

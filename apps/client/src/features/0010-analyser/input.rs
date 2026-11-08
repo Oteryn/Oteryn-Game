@@ -65,3 +65,32 @@ pub(in crate::play) fn resolve_items(
         mailbox.analyser.feedback = Some("Session ended");
     }
 }
+
+/// Preserve the seven cyclopedia selector actions alongside the expanded analytics controls.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn submit(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    action: usize,
+    values: Vec<String>,
+) {
+    use oteryn_client_ui::analyser::Tool;
+    let tools = Tool::ALL.len();
+    if action < Tool::CYCLOPEDIA.len() {
+        select_tool(&mut mailbox.analyser, action);
+    } else if let Some(tool) = Tool::ALL.get(action) {
+        oteryn_client_ui::analyser::select_tool(&mut mailbox.analyser, tool.key());
+    } else if action == tools {
+        select_tool(&mut mailbox.analyser, Tool::CYCLOPEDIA.len());
+    } else if action == tools + 1
+        && let Some(value) = values.first()
+    {
+        oteryn_client_ui::analyser::set_xp_goal(&mut mailbox.analyser, value);
+    } else if action == tools + 2
+        && let [_, item, price] = values.as_slice()
+    {
+        oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
+    } else if action == tools + 3 {
+        resolve_items(mailbox, commands);
+    }
+}
