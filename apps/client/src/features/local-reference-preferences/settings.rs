@@ -38,6 +38,10 @@ const PANEL_IDS: &[&str] = &[
     "wheel",
 ];
 
+fn default_hud_bounds() -> [u16; 4] {
+    [8, 8, 900, 40]
+}
+
 fn default_scale() -> u16 {
     100
 }
@@ -53,6 +57,9 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    /// Saved HUD position and size in client pixels; editable through settings transfer.
+    #[serde(default = "default_hud_bounds")]
+    pub hud_bounds: [u16; 4],
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -69,6 +76,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            hud_bounds: default_hud_bounds(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
@@ -81,7 +89,10 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
-        if self.audio.master_volume > 100
+        if self.hud_bounds[2] < 120
+            || self.hud_bounds[3] < 24
+            || self.hud_bounds.iter().any(|value| *value > 4096)
+            || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
             || self.visible_panels.iter().enumerate().any(|(index, id)| {

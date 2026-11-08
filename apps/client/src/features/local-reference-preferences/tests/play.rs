@@ -255,3 +255,18 @@ fn moved_logout_suppresses_all_original_modifier_variants() -> Result<(), Box<dy
     }
     Ok(())
 }
+
+#[test]
+fn t010_hud_layout_is_validated_and_restored() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["hud_bounds"] = serde_json::json!([20, 80, 640, 60]);
+    play.set_preferences(serde_json::from_value(json.clone())?)?;
+    assert_eq!(
+        serde_json::to_value(play.preferences())?["hud_bounds"],
+        json["hud_bounds"]
+    );
+    json["hud_bounds"] = serde_json::json!([20, 80, 0, 60]);
+    assert!(play.set_preferences(serde_json::from_value(json)?).is_err());
+    Ok(())
+}
