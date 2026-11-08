@@ -459,3 +459,59 @@ fn open_shortcut_requires_a_fresh_control_w_press() -> Result<(), Error> {
     )]));
     Ok(())
 }
+
+#[test]
+fn wheel_build_exchange_is_bounded_and_only_applies_as_a_server_proposal() -> Result<(), Error> {
+    let mut panel = panel();
+    panel.points[0] = 25;
+    let code = panel.build_code();
+    panel.points = [0; 36];
+    panel.import_build(&code)?;
+    assert_eq!(panel.points[0], 25);
+    assert_eq!(
+        panel
+            .confirmed_wheel
+            .as_ref()
+            .ok_or("missing snapshot")?
+            .points[0],
+        0
+    );
+    let command = request(&mut panel, Intent::Save, occurrence(3)).ok_or("missing command")?;
+    let decoded = wire(wheel::decode_wheel_request(&command.payload))?;
+    assert_eq!(decoded.points[0], 25);
+    assert_eq!(decoded.expected_revision, 4);
+    assert!(panel.import_build(&code).is_err());
+    panel.pending = None;
+    panel.import_build(&format!(
+        "oteryn://wheel/v1/{}",
+        code.strip_prefix("OW1:").ok_or("prefix")?
+    ))?;
+    let before = panel.points;
+    for invalid in ["OW1:1", "OW1:65535", "https://untrusted.invalid/OW1:0"] {
+        assert!(panel.import_build(invalid).is_err());
+        assert_eq!(panel.points, before);
+    }
+    Ok(())
+}
+
+#[test]
+fn wheel_named_presets_roundtrip_and_reject_corrupt_storage() -> Result<(), Error> {
+    use super::presets::PresetBook;
+    let path = std::env::temp_dir().join(format!(
+        "oteryn-wheel-presets-{}-{}.json",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    ));
+    let mut book = PresetBook::default();
+    book.insert("Hunting", &panel().build_code())?;
+    book.save(&path)?;
+    assert_eq!(PresetBook::load(&path)?, book);
+    assert!(book.insert("", &panel().build_code()).is_err());
+    assert!(book.insert("Broken", "OW1:9999").is_err());
+    std::fs::write(&path, br#"{"version":99,"presets":{}}"#)?;
+    assert!(PresetBook::load(&path).is_err());
+    std::fs::remove_file(path)?;
+    Ok(())
+}
