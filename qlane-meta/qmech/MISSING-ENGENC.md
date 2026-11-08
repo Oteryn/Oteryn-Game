@@ -1,0 +1,10 @@
+# ENGENC missing mechanics — PARTIAL
+
+This is a partial code audit. These rows describe missing server boundaries, not whole-quest qualification. Pickup/capture rows will follow after their source steps are checked. Migration range remains 1620–1639.
+
+| quest | missing mechanic (server or client) | evidence (quest file and step, missing hook/table/command) | blocks the quest fully or partly |
+|---|---|---|---|
+| Asura Palace Quest | Server: participant-scoped defender deaths admitting the corresponding chamber door | `content/quests/definitions/quests-00200-00299.json`, `oteryn:quest.authored.asura_palace_quest`, recipe steps s2–s4 require two defenders per chamber. `crates/gameplay/quests/src/quest/native_kills.rs::Counter` carries creature/track/gate, with no chamber participant or admitted defender roster; `dispatch/src/gameplay_transport/quest_kills.rs` settles those death counters. `entities/src/carrier/encounter_access.rs::commit_quest_encounter_entry` returns player positions, not admitted defender identities. | Partly: chamber kill/door progression. |
+| Child of Destiny Quest | Server: successful spear-hit and magic-missile-hit quest events | Same Quest shard, `oteryn:quest.authored.child_of_destiny_quest`, recipe s3 and s4. `quests/src/quest/world_callbacks.rs::Trigger` exposes USE/STEP triggers; `durability/src/durability/quest_state.rs::QuestCause` has creature-death credit but no successful-hit cause. `dispatch/src/gameplay_transport/ordinary_combat.rs` has no quest hit-credit delivery hook. A USE command is not proof of a hit. | Partly: training steps s3–s4. |
+
+Already checked, not missing: the native Svargrond arena owner has ten ordered pits, exclusive occupancy, death-driven advancement and tier settlement (`dispatch/src/gameplay_transport/arena_match.rs`, `durability/src/durability/arena_match.rs`). Its real PG case passed in 136.54 s. Private boss-loot admission is finished on ENGENC commit `4ffd19f3ad28778f0bd283c350f27b34eae92d60` and is being integrated into this package separately.

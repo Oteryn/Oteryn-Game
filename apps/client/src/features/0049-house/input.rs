@@ -1,0 +1,135 @@
+use crate::combat_input::PlayCommand;
+use crate::play::{
+    PlayLink,
+    mailbox::{Mailbox, lock},
+};
+use oteryn_client_runtime::house::Action;
+use tokio::sync::mpsc::UnboundedSender;
+#[path = "controller.rs"]
+pub(super) mod controller;
+use super::state::Panel;
+
+pub(in crate::play) fn prepare(
+    panel: &mut Panel,
+    selection: usize,
+) -> Result<oteryn_client_runtime::raw_feature::FeatureCommand, String> {
+    if selection >= controller::BUTTONS.len() {
+        return Err("Invalid action".into());
+    }
+    if !panel.model.selected {
+        return Err("Unavailable in this session".into());
+    }
+    if panel.model.pending.is_some() {
+        return Err("Waiting for the server".into());
+    }
+    let uuid = crate::play::feature_0115_mail::protocol::uuid;
+    let world = uuid(panel.fields[0].trim())?;
+    let town = panel.fields[1].trim();
+    if panel.model.world != world || panel.model.town != town {
+        panel.model.page = Default::default();
+        panel.model.index = 0;
+        panel.model.world = world;
+        panel.model.town = town.into();
+    }
+    if selection >= 2 {
+        panel.model.index = panel.fields[2]
+            .trim()
+            .parse::<usize>()
+            .ok()
+            .and_then(|n| n.checked_sub(1))
+            .ok_or("Select a house row (starting at 1)")?;
+    }
+    let members = || {
+        panel.fields[4]
+            .split_whitespace()
+            .map(uuid)
+            .collect::<Result<Vec<_>, _>>()
+    };
+    let amount = || {
+        panel.fields[3]
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| "Enter an amount or Unix time".to_owned())
+    };
+    let action = match selection {
+        0 | 1 | 7 | 9 => None,
+        2 => Some(Action::Bid(amount()?)),
+        3 => Some(Action::Guests(members()?)),
+        4 => Some(Action::Subowners(members()?)),
+        5 => {
+            let coordinates = panel.fields[5].split_whitespace().collect::<Vec<_>>();
+            let [x, y, floor, revision] = coordinates.as_slice() else {
+                return Err("Enter door x y floor revision".into());
+            };
+            Some(Action::Door {
+                x: x.parse().map_err(|_| "Invalid door x")?,
+                y: y.parse().map_err(|_| "Invalid door y")?,
+                floor: floor.parse().map_err(|_| "Invalid door floor")?,
+                revision: revision.parse().map_err(|_| "Invalid door revision")?,
+                members: members()?,
+            })
+        }
+        6 => Some(Action::Kick(uuid(panel.fields[4].trim())?)),
+        8 => Some(Action::Notice(amount()?)),
+        _ => return Err("Invalid action".into()),
+    };
+    if selection >= 2 && panel.fields[6].trim() != "CONFIRM" {
+        return Err("Review the selected house and enter CONFIRM to apply".into());
+    }
+    let result = controller::submit(&mut panel.model, selection, action).map_err(str::to_owned);
+    if result.is_ok() {
+        panel.fields[6].clear();
+    }
+    result
+}
+pub(in crate::play) fn submit(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    selection: usize,
+) {
+    let panel = &mut mailbox.properties.house;
+    match prepare(panel, selection) {
+        Ok(command) => {
+            if commands.send(PlayCommand::Feature(command)).is_err() {
+                panel.model.pending = None;
+                panel.model.feedback = "The session has ended".into();
+            }
+        }
+        Err(message) => panel.model.feedback = message,
+    }
+}
+impl PlayLink {
+    pub(crate) fn house_world(&self, world: &str) {
+        lock(&self.mailbox).properties.house.fields[0] = world.into();
+    }
+    pub fn house_request(&self, selection: usize) {
+        submit(&mut lock(&self.mailbox), &self.commands, selection);
+    }
+    pub fn house_edit(&self, field: usize, value: String) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.house;
+        if panel.model.pending.is_none()
+            && value.len() <= 8192
+            && !value.contains('\0')
+            && let Some(slot) = panel.fields.get_mut(field)
+        {
+            *slot = value;
+        }
+    }
+    pub fn house_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+        if !events.iter().any(|event| matches!(event, NormalizedInputEvent::Key {
+            code, state: ButtonState::Pressed, modifiers, repeat: false
+        } if code.get() == 11 && *modifiers == Modifiers::one(Modifier::Control).with(Modifier::Alt).with(Modifier::Shift))) { return false; }
+        self.house_open();
+        true
+    }
+    pub fn house_open(&self) {
+        #[cfg(windows)]
+        super::view::open_window(self);
+        #[cfg(not(windows))]
+        {
+            lock(&self.mailbox).properties.house.model.open = true;
+        }
+    }
+}

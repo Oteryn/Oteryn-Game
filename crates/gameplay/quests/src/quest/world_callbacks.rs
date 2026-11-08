@@ -630,6 +630,9 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
 mod timed_tests;
 
 #[cfg(test)]
+mod literal_text_tests;
+
+#[cfg(test)]
 mod batch4_tests;
 
 #[cfg(test)]

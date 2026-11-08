@@ -90,9 +90,8 @@ impl NpcRuleCatalog {
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
         self.item_exchange_keys(input.npc)
             .ok_or_else(|| NpcRuleError::MissingNativeResolution("plain item exchange".into()))?;
-        // Keep storage-only branches on their existing owner, including the
-        // exact eleven-track Father acceptance. Only inventory-owned guards
-        // and effects select the plain item planner with its ordinary cap.
+        // Keep storage-only branches on their existing owner. Only inventory-owned
+        // guards and effects select the plain item planner with the same atomic cap.
         match self.plan_storage(input) {
             Err(NpcRuleError::MissingNativeResolution(_)) => {
                 evaluate::plan(self, input, &BTreeMap::new(), false)
