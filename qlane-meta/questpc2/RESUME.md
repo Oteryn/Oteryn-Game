@@ -86,3 +86,15 @@ repo quest-authoring directory, generate its source JSON, add the narrow
 41line custody helper patterned after Oldrak, wire runtime+both custody guards,
 update finite admitted-set assertion and run quest units + Henricus PG GREEN.
 No extra investigation needed; source bytes/pins/tracks are already known.
+
+Prepush caught another main update47baa7bb8 (#3038, four files). Soulpit
+merge03c5e8268216fc504a1fbad2586f207071556ac7 is committed locally but not
+pushed yet.47b is now a clean uncommitted merge. Current workspacePASS3m03s;
+provisioning tests2/2PASS0.022s; applicable generation/pins reproduce unchanged
+quest content. Durability clippy running. Commit+push as soon as it passes;
+then apply the prepared Henricus source authorer and narrow custody guard.
+Last actual remote remainsb33d0c985, not7fc or03c5. Never claim they pushed.
+
+47b final gates PASS: workspace3m03s, durability clippy3m57s, provisioning
+tests2/2 in0.022s, fmt, applicablegeneration. Publish merged WIP now and
+implement Henricus immediately using the prepared source authorer.

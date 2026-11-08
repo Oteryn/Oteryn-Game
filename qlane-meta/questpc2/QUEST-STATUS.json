@@ -2230,6 +2230,15 @@
       "terrain_units": "PASS6/6,0ignored,0.02s",
       "workspace_post_pin": "PASS4m20s",
       "red_pg_scope": "Henricus65.812s RED is pre-Soulpit; no postmerge GREEN claimed"
+    },
+    "main_47b": {
+      "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+      "merge": "clean four-file merge",
+      "workspace": "PASS3m03s",
+      "provisioning_tests": "PASS2/2,0.022s",
+      "generated": "PASS unchanged applicable central outputs/pins",
+      "clippy_durability": "PASS3m57s alltargets/allfeatures -Dwarnings",
+      "npc_source_implementation": "pending immediately after publication; RED premerge65.812s"
     }
   },
   "engine_requests": [
