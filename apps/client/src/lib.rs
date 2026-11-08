@@ -1,5 +1,6 @@
 //! Native client process and component composition.
 
+pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
 pub mod bulletin;
