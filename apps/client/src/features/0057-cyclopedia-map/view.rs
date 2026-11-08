@@ -91,7 +91,7 @@ fn section_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
             &mailbox.properties.charm_progression,
         ),
         Section::Charms => {
-            oteryn_client_ui::charm_progression::panel_text(&mailbox.properties.charm_progression)
+            oteryn_client_ui::charm_progression::charms_text(&mailbox.properties.charm_progression)
         }
         Section::Bosses => oteryn_client_ui::boss_encounter::panel_text(&mailbox.boss_encounter),
         Section::Analytics => oteryn_client_ui::analyser::panel_text(&mailbox.analyser),

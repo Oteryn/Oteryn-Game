@@ -79,3 +79,55 @@ fn bestiary_browser_filters_confirmed_stages_and_selects_without_index_entry()
     assert_eq!(panel.fields[1], "1");
     Ok(())
 }
+
+#[test]
+fn charm_selector_uses_confirmed_costs_and_eligible_races() -> Result<(), &'static str> {
+    use oteryn_client_runtime::charm_progression::{
+        CharmProgressionOutcome, CharmProgressionReply,
+        bestiary::BestiaryRaceProgress,
+        charm::{CharmKind, CharmState, CharmView},
+    };
+    let id = |n| std::num::NonZeroU32::new(n).ok_or("id");
+    let mut panel = Panel {
+        selected: true,
+        reply: Some(CharmProgressionReply {
+            outcome: CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            charms: CharmView {
+                charm_points_available: 50,
+                charms: vec![CharmState {
+                    charm: id(7)?,
+                    kind: CharmKind::Major,
+                    unlocked_stage: 1,
+                    assigned_race: None,
+                    next_stage_cost: 250,
+                    effect_active: false,
+                }],
+                ..Default::default()
+            },
+            bestiary: vec![
+                BestiaryRaceProgress {
+                    race: id(1)?,
+                    kill_count: 5,
+                    kill_thresholds: [5, 10, 20],
+                },
+                BestiaryRaceProgress {
+                    race: id(9)?,
+                    kill_count: 20,
+                    kill_thresholds: [5, 10, 20],
+                },
+            ],
+        }),
+        ..Default::default()
+    };
+    panel.select_charm(false);
+    panel.select_assignment_race(false);
+    assert_eq!(panel.fields, ["7", "9"]);
+    let text = charms_text(&panel);
+    assert!(text.contains("250 Charm Points"));
+    assert!(text.contains("Effect not yet active"));
+    panel.pending = true;
+    panel.select_charm(true);
+    assert_eq!(panel.fields[0], "7");
+    Ok(())
+}

@@ -52,3 +52,51 @@ pub fn bestiary_text(panel: &Panel) -> String {
     out.push_str("Creature names, illustrations, combat statistics, resistances and loot are not supplied by this progress snapshot.\r\n");
     out
 }
+
+pub fn charms_text(panel: &Panel) -> String {
+    use oteryn_client_runtime::charm_progression::charm::CharmKind;
+    use std::fmt::Write;
+    if !panel.selected {
+        return "Charms unavailable in this session".into();
+    }
+    let Some(reply) = &panel.reply else {
+        return "Query to load Charms".into();
+    };
+    let mut out = format!(
+        "Charms\r\n{} Charm Points | {} Minor Charm Echoes\r\n",
+        reply.charms.charm_points_available, reply.charms.minor_charm_echoes_available
+    );
+    for charm in &reply.charms.charms {
+        let (currency, stage) = match charm.kind {
+            CharmKind::Major => ("Charm Points", 3),
+            CharmKind::Minor => ("Minor Charm Echoes", 1),
+        };
+        let _ = write!(
+            out,
+            "{}Charm {} — {:?}, stage {}\r\nNext stage: {} {currency} | Assign to Bestiary stage {stage} or higher\r\nAssigned race: {} | {}\r\n",
+            if panel.fields[0] == charm.charm.to_string() {
+                "> "
+            } else {
+                ""
+            },
+            charm.charm,
+            charm.kind,
+            charm.unlocked_stage,
+            charm.next_stage_cost,
+            charm
+                .assigned_race
+                .map_or_else(|| "none".into(), |r| r.to_string()),
+            if charm.effect_active {
+                "Effect active"
+            } else {
+                "Effect not yet active"
+            }
+        );
+    }
+    let _ = write!(
+        out,
+        "Selected assignment race: {}\r\n{}\r\n",
+        panel.fields[1], panel.feedback
+    );
+    out
+}
