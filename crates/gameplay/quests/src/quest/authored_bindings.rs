@@ -253,12 +253,18 @@ impl Bindings {
                 .hashes
                 .get_mut(&quest.quest)
                 .ok_or("authored quest hash")?;
-            *before = Sha256::new()
+            let mut digest = Sha256::new()
                 .chain_update(*before)
-                .chain_update(b"authored-native-bindings-v1")
-                .chain_update(serde_json::to_vec(quest).map_err(|e| e.to_string())?)
-                .finalize()
-                .into();
+                .chain_update(b"authored-native-bindings-v1");
+            if let Some(previous) = base.hashes.get(&quest.quest) {
+                digest.update(previous);
+            }
+            digest.update(serde_json::to_vec(quest).map_err(|e| e.to_string())?);
+            *before = digest.finalize().into();
+            // Replacing the route requires its new binding witness. Keep the
+            // legacy migration owners only for unrelated, retained quests.
+            catalogue.npc_legacy.remove(&quest.quest);
+            catalogue.predecessors.remove(&quest.quest);
         }
         let mut world = super::world_callbacks::load()?;
         world.extend(self.world_callbacks().cloned());
@@ -333,3 +339,6 @@ fn digest(value: &str) -> bool {
 
 #[cfg(test)]
 mod collection_tests;
+
+#[cfg(test)]
+mod composition_tests;

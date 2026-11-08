@@ -47,6 +47,10 @@ fn parse(value: &str) -> Result<Chord, PreferenceError> {
             "ARROWDOWN" => 81,
             "ARROWLEFT" => 80,
             "ARROWRIGHT" => 79,
+            "NUMPAD1" | "KEYPAD1" => 89,
+            "NUMPAD3" | "KEYPAD3" => 91,
+            "NUMPAD7" | "KEYPAD7" => 95,
+            "NUMPAD9" | "KEYPAD9" => 97,
             "ESCAPE" => 41,
             "ENTER" => 40,
             "KEYPADENTER" | "NUMPADENTER" => 88,
@@ -233,4 +237,20 @@ impl PreferenceInput {
         }
         Ok(output)
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qn6_diagonal_default_chords_parse_to_keypad_codes() -> Result<(), &'static str> {
+    for (name, expected) in [
+        ("NUMPAD1", 89),
+        ("NUMPAD3", 91),
+        ("NUMPAD7", 95),
+        ("NUMPAD9", 97),
+    ] {
+        let Chord(code, modifiers) = parse(name).map_err(|_| "diagonal default chord")?;
+        assert_eq!(code.get(), expected);
+        assert_eq!(modifiers, Modifiers::NONE);
+    }
+    Ok(())
 }
