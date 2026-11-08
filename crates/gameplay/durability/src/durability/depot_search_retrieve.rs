@@ -213,6 +213,7 @@ async fn attempt_child<C: ItemLoopContent>(
             depot,
             None,
             Some(ordinal),
+            None,
         )
         .await?;
         // Each child proves its exact state before a later child may top it up.

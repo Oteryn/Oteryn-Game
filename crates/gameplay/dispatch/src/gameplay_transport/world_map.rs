@@ -30,6 +30,7 @@
 #![cfg_attr(not(test), allow(dead_code))]
 
 mod house;
+pub(super) use house::{DecoratedFacts, HouseBaseMapEntry};
 
 use super::item_view::{
     ItemHandleTable, ItemKey, ItemViewDelta, ItemViewError, ItemViewSnapshotDomain, SessionItemView,

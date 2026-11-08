@@ -468,7 +468,7 @@ impl super::DurabilityRoot {
             let result: Result<BossClockClaim> = async {
                 assert_clock_owner(&mut tx, &recovery, &node, &key, generation).await?;
                 let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
-                let reset: Option<(String,i64)> = sqlx::query_as("SELECT a.reset_epoch::text, floor(extract(epoch FROM e.activated_at)*1000)::bigint FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
+                let reset: Option<(String,i64)> = sqlx::query_as("SELECT reset_epoch::text, activated_at_unix_ms FROM game_world_reset_read_locked(encode($1,'hex')::uuid)")
                     .bind(key.world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
                 let reset_initialized = reset.is_some();
                 let (epoch, reset_time) = match reset {

@@ -1,6 +1,7 @@
 //! Carried and ground container transport. Depot browsing is not covered.
 pub use oteryn_session::container_tree::{
     ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews,
+    decode_container_views_with_house_capacity, encode_container_views_with_house_capacity,
 };
 pub use oteryn_session::{ItemEntry, ItemHandle};
 

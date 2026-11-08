@@ -3160,10 +3160,12 @@ mod native_ability_coverage {
         gaps.sort();
         eprintln!("GAPS {}\n{}", gaps.len(), gaps.join("\n"));
         eprintln!("COVERAGE {stats:?}");
+        // Crystal201189f cake_golem.lua:77-81 adds three supported attacks.
+        // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         let expected: BTreeMap<String, usize> = [
-            ("melee:Ok(())", 1689),
+            ("melee:Ok(())", 1690),
             ("spell:Err(UnsupportedShape)", 116),
-            ("spell:Ok(())", 4198),
+            ("spell:Ok(())", 4200),
         ]
         .into_iter()
         .map(|(k, v)| (k.to_owned(), v))
