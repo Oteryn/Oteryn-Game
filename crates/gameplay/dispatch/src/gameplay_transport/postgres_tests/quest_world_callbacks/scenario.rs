@@ -454,7 +454,9 @@ fn scenario_case(
         } else {
             world
         };
-        let world = if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
+        let world = if name == "qengine-rewards-hot-corpses" {
+            world_with_objects(&callback,trigger,&super::super::questpc7_hot_corpses::terrain(),&[])?
+        } else if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
         world_with_objects(&callback,trigger,&super::super::questpc7_goblin::stalker_objects(),&[])?
     } else if name == "qengine-rewards-goblin-trunks" {
             world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::trunk_objects(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_goblin::trunk_items())?
@@ -974,6 +976,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "qengine-rewards-hot-corpses" {
+            super::super::questpc7_hot_corpses::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
             super::super::questpc7_goblin_slug::exercise(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-perfume-items" {

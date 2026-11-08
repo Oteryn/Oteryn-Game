@@ -1,8 +1,14 @@
-"""Retain the accepted Skull Coin description across the existing source qualifiers."""
+"""Retain established mechanic/presentation owners across physical source qualifiers."""
 import copy
 
 
 def preserve(existing, observed):
+    if observed['production_definition']['production_key'] == 'oteryn:item.tibia.i3456' and existing['attributes'].get('speed_bonus') is None:
+        # MINING-1 owns this unknown mechanic; physical custody cannot assert zero.
+        if 'speed_bonus' in existing['attributes']:
+            observed['attributes']['speed_bonus'] = None
+        else:
+            observed['attributes'].pop('speed_bonus', None)
     key = 'oteryn:item.tibia.i32583'
     if observed['production_definition']['production_key'] != key:
         return

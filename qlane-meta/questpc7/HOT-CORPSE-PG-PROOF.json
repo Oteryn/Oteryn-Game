@@ -1,0 +1,87 @@
+{
+  "at": "2026-11-08T13:53:50.638869+00:00",
+  "state": "QUALIFIED_SUPPORT_SLICE",
+  "test": "questpc7_hot_native_bat_chicken_corpse_inputs",
+  "postgres": "18.6",
+  "red_seconds": 40.029096953,
+  "green_seconds": 62.782588758,
+  "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.chicken",
+  "green_log_sha256": "5b6ddbf1f30122e35636e4ae751e21f0a65c7e347ab6fecb0cc2b761b99067e6",
+  "test_sha256": "e97f11709011768c94d9689ba62ba86eb3fe1f5b82792bfa996cd00a4b24ca95",
+  "scope": [
+    "all eight exact source corpse policies admitted",
+    "ordinary native Chicken and Bat deaths",
+    "one corpse per death despite duplicate lethal notifications",
+    "no cooking progress seeded",
+    "all existing item profiles preserved except restoring mining-owned Pick unknown speed",
+    "all loot tables/bindings/quantities/probabilities unchanged; only6042/6053/5894 custody facts change"
+  ],
+  "not_claimed": [
+    "complete Hot Cuisine route",
+    "timed decay execution or portable ingredient pickup",
+    "source-map creature spawn positions",
+    "NPC recipe/calendar/level/Premium integration"
+  ],
+  "profile_proof": "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json",
+  "source_creatures": {
+    "path": "content/creatures/definitions/spell-native-profiles.json",
+    "sha256": "fe5e2ceaf60817d2cf3fffd78ff7bf4110c3286b8fac55cc88be669b8b26c52c",
+    "bat_pointer": "/records/107/profile/data/profile/details/corpse_item",
+    "chicken_pointer": "/records/231/profile/data/profile/details/corpse_item"
+  },
+  "native_inventory": {
+    "before": 3947,
+    "after": 3955,
+    "added": [
+      4330,
+      4331,
+      4332,
+      4363,
+      4364,
+      4365,
+      6042,
+      6053
+    ],
+    "removed": [],
+    "modified_existing_profiles": [
+      3456
+    ],
+    "closed_remainder": 97
+  },
+  "world_pin": "5e23e39d9479b37a4c0b66a17ecf6bdbc4e8158bc5417e150c5b81ca1c01e79d",
+  "pick_owner_repair": {
+    "source": "tools/content-migration/mining_item_profiles.py:48",
+    "rule": "physical custody must not manufacture zero from absent/unknown speed; known conflicting values remain strict",
+    "regression": "four source-preservation tests RED then GREEN; original equipment assertion unchanged"
+  },
+  "rust_tests": {
+    "selected": 372,
+    "passed": 372,
+    "failed": 0,
+    "seconds": 338.389
+  },
+  "source_owner_tests": {
+    "existing_tests": 8,
+    "new_preservation_tests": 4,
+    "result": "PASS"
+  },
+  "prey": {
+    "simulation_cases": 15,
+    "creatures": 776,
+    "freshness": "PASS"
+  },
+  "content_tree": "PASS34111Items/252Mounts/1864Creaturebindings",
+  "remaining": "complete Hot Cuisine guarded recipe/calendar/real-level/Premium execution remains requested from qengine2; this support slice does not qualify the full quest",
+  "validation": {
+    "pg": "PASS18.6 RED40.029096953s\u2192GREEN62.782588758s",
+    "rust_collected_set": "372/372 PASS338.389s",
+    "authoring_checks": "PASS exact CI runner",
+    "authoring_units": "106modules/1152reported cases/8preexisting skips PASS",
+    "source_owner_tests": "8existing+4new PASS",
+    "workspace_all_targets": "PASS6m15s",
+    "clippy": "PASS dispatch all-targets -Dwarnings2m37s retry after memory cleanup",
+    "content_tree": "PASS34111Items/252Mounts/1864Creaturebindings",
+    "prey": "PASS15cases/776creatures simulation and4-file freshness",
+    "native_generation": "PASS47files and3955profile closed inventory"
+  }
+}

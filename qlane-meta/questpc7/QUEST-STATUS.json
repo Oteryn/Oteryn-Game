@@ -1969,7 +1969,27 @@
       "native_npc_level": "literal zero at npc_program.rs:148",
       "shared_reward_take_bound": 16,
       "decision": "Reuse existing cooking owner; request real native eligibility from qengine2; do not qualify from ingredient-only proof."
-    }
+    },
+    "qualified_support": [
+      {
+        "kind": "source-qualified native Bat/Chicken corpse ingredient policies and ordinary death custody",
+        "proof": "qlane-meta/questpc7/HOT-CORPSE-PG-PROOF.json",
+        "postgres": "18.6",
+        "red_seconds": 40.029096953,
+        "green_seconds": 62.782588758,
+        "item_ids": [
+          4330,
+          4331,
+          4332,
+          4363,
+          4364,
+          4365,
+          6042,
+          6053
+        ],
+        "boundary": "No full quest, timed-decay execution, portable pickup or source-map spawn claim."
+      }
+    ]
   },
   {
     "title": "Hunter Outfits Quest",

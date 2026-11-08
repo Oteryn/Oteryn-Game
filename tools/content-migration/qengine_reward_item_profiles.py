@@ -114,8 +114,8 @@ def reconcile(existing, observed):
             or accepted.known_conflict(observed['semantics'], semantics)):
         raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics')
     merged['semantics'] = semantics
-    attributes = dict(existing['attributes'])
-    for key, value in observed['attributes'].items():
+    attributes = dict(existing.get('attributes', {}))
+    for key, value in observed.get('attributes', {}).items():
         previous = attributes.get(key)
         if previous is not None and value is not None and previous != value:
             raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.' + key)
@@ -146,7 +146,9 @@ def admit_records(root,generated,profile_path,manifest_path,order,canonical,reco
             reconcile_active_physical(present[key],record)
             import questpc7_quest_item_reconcile
             questpc7_quest_item_reconcile.preserve(present[key], record)
-            merged = reconcile(present[key], record)
+            import questpc7_physical_custody_join
+            physical = questpc7_physical_custody_join.observation(present[key], record, accepted.accepted_first)
+            merged = reconcile(present[key], physical)
             present[key].clear()
             present[key].update(merged)
         else:

@@ -1,3 +1,29 @@
+# Physical join owner preservation — 2026-11-08
+
+Physical custody may join its qualified physical/stack/container groups and exact
+physical blocking flags. The existing accepted-first join keeps known unrelated
+semantics (including charges), and existing mechanic attributes stay authoritative.
+A proposal cannot manufacture a zero speed for the mining-owned Pick. Generic
+full-fact reconciliation retains its strict conflicts. All8 existing source-join
+regressions and4 owner-preservation regressions pass; no assertion was weakened.
+Final runtime profile delta is8new corpse profiles and only Pick's old unknown
+speed restored. All other existing profile records remain unchanged.
+
+# Hot Cuisine corpse ingredient support — 2026-11-08
+
+Source-qualified8-policy closed chains: Chicken6042→4330→4331→4332→removal;
+Bat6053→4363→4364→4365→removal. Exact durations/capacities come from pinned
+Canary XML lines13638/13645/13650/13797/13804/13809/16590/16656, SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2,
+and the pinned client appearance flags. No donor bytes or world spawns copied.
+Existing native creature definitions already name6042/6053. Loot tables and
+bindings remain identical; only two corpse capacities and existing Bat Wing
+custody become executable. Existing native Bat Wing profile remains unchanged.
+ActualPG RED40.029096953s→GREEN42.108075926s proves ordinary deaths/duplicate
+notifications and eight admitted policies, with no cooking-progress seeds.
+This does not qualify timed decay execution, ingredient pickup, or the complete
+Hot Cuisine route. Those claims require their own native execution proof;
+qengine2 still owns the guarded NPC calendar/recipe/real-level/Premium adapter.
+
 # Fresh-main runtime reconciliation — 2026-11-08
 
 - Current ownership is the four titles in LANE-questpc7.json; the 21 explicit
@@ -877,7 +903,7 @@ world-change MapAdded family (quest_callbacks.rs:575-590), also true on peer
 qengine2c7f9d9ba7. No static corpse substitution or out-of-order stage seed.
 Supporting physical facts: items.xml:35719-35721 gives17672..17675 at350weight;
 items.xml:7558-7561 gives3120 at400; items.xml:35740 gives17681, with source
-zero-weight default. XML SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+zero-weight default. XML SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
 Client SHA2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2
 supplies portable nonstack vials, fixed17681, cumulative portable3120. Support
 admission does not enable an action or grant any item. When the engine route

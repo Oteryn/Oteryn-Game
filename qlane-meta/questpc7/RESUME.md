@@ -1,3 +1,35 @@
+# Publish Hot Cuisine corpse support and physical-owner repair — 2026-11-08
+
+Hot remains ACTIVE; this is a qualified SUPPORT slice, not complete cooking.
+PG18.6 RED40.029096953s (Chicken corpse_item_inadmissible)→GREEN62.782588758s.
+All8 exact Bat/Chicken corpse policies admitted; ordinary native deaths each
+produce one corpse despite duplicate notifications; cooking progress stays0.
+Root chains6042→4330→4331→4332 and6053→4363→4364→4365 use pinned XML/client
+facts. Loot tables/bindings/quantities/probabilities unchanged; only6042/6053/5894
+custody facts changed. All previous profiles unchanged except restoring mining
+Pick3456's unknown speed. No timed-decay/pickup/source-spawn/full-quest claim.
+See HOT-CORPSE-PG-PROOF.json and generated questpc7-hot-corpse-profiles.json.
+Physical-join regression repaired without weakening tests: source custody preserves
+known unrelated semantics/charge owners and mechanic attributes; exact physical
+facts still join strictly.8existing source regressions+4new preservation tests PASS.
+372collected Rust/ownPG checks PASS338.389s, including original equipment assertion;
+authoring checks/full106module1152reported-case runner PASS(8preexisting skips).
+Workspacealltargets PASS6m15s; strict dispatchclippy PASS2m37s; contenttree PASS;
+prey simulation15cases776creatures/freshness PASS; native generation47files and
+closed3955profiles PASS. Final official worldpin refresh and fmt checked beforepush.
+RESOURCE: lane dispatch incremental cache is symlinked from target/debug/incremental/
+oteryn_gameplay_dispatch-3uw3ighoo6g5t to /tmp/questpc7-incremental-cache/dispatch.
+Normal compiler flags/incremental remain enabled. Keep only newest completed cache
+generation when no compiler is using it; do not run pin compilation/node Docker
+build concurrently with clippy (prior memory/disk failures are not green proofs).
+Docker node runner needs this temporary cache mounted, or remove/reset the cache
+symlink before a serialized node build. Never commit target symlink or binaries.
+NEXT immediately inspect the remaining native Hot input holds (notably Northern
+Fishburger9088) and finish independent data; guarded cooking execution still
+belongs qengine2 (fresh790996f8e level:0/no HotCuisine wiring). Full node matrix
+and optional content_world_project_repository test remain pending; no node GREEN.
+Only4own quest titles; skip21 remote-owned titles and no new quest outside packet.
+
 # Publish fresh-main actual-PG requalification — 2026-11-08
 
 Main1076254706e4ddc05a6d0a1aba0c1777af2038ac merged cleanly as036be9914.

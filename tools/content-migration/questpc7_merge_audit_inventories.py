@@ -86,6 +86,11 @@ def main():
         if row not in equipment.read_text():
             replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
+    hot = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json').read_bytes())['records']
+    assert {r['production_definition']['production_key'] for r in hot} == {f'oteryn:item.tibia.i{i}' for i in (4330,4331,4332,4363,4364,4365,6042,6053)}
+    assert len(hot) == 8 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in hot)
+    replace(str(equipment.relative_to(ROOT)), '    (\"SRV9-MARRIAGE\", 2),\n', '    (\"SRV9-MARRIAGE\", 2),\n    (\"QUESTPC7-HOT-CORPSES\", 8),\n')
+    text = equipment.read_text()
     # Additive merge anchors can repeat these identical, closed lane cohorts.
     for name in ('QUESTPC7-MARSH-CORPSES', 'QUESTPC7-SLUG-CORPSES'):
         row = f'    ("{name}", 4),\n'
@@ -117,6 +122,7 @@ def main():
     residual = len(actual_keys) - 432 - other - len(keys) + 1 - 26 - 23
     # Main adds 35 distinct profiles, 12 named cohort entries and seven shared
     # quest profiles; its floor/callback cohorts now own 49 previously grouped keys.
+    # Main3034 and Hot add18/8 keys with matching named cohorts; net remainder stays97.
     expected_residual = 130 + 35 - 12 - 7 - 26 - 23
     assert residual == expected_residual == 97, 'review source-cohort changes before refreshing this closed union'
     row = f'    ("QUESTPC7-REGISTERED-UNION", {residual}),\n'
