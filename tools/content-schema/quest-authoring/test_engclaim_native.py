@@ -21,6 +21,11 @@ class NativeClaimTest(unittest.TestCase):
             actual=[(c['give']['item'],c['give']['count'])]+[(i['item'],i['count']) for i in c['give']['additional']]
             self.assertEqual(actual,[(i['item']['key'],i['count']) for i in p['reward']['items']])
 
+    def test_native_callbacks_pass_the_shared_strict_schema(self):
+        from jsonschema import Draft202012Validator
+        schema=json.loads((ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_bytes())
+        Draft202012Validator(schema).validate(native.records()[1])
+
     def test_final_statue_takes_three_distinct_fragments(self):
         _,doc=native.records();c=next(c for c in doc['callbacks'] if c['key'].endswith('valley-guardian'))
         self.assertEqual([i['item'] for i in c['take']],[f'oteryn:item.tibia.i{i}' for i in (50336,50337,50338)])

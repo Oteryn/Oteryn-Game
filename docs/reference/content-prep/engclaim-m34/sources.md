@@ -55,8 +55,9 @@ Read through `world_region_codec.py` over the committed placement shards:
 Kormarak's exact treasure tile already contains top-level ordinal1, appearance
 4240 (`dead human`), beside wooden coffin appearances2474/2475. The Mastermind
 marker tile contains ordinal1, appearance2473 (`box`). No source UID is needed
-for either binding. The archival Magic Sword coordinates currently have no
-native tile; that selected restoration requires authored geometry/placements.
+for either binding. The archival Magic Sword coordinates contain nonwalkable mountain filler
+(appearance1128); the selected restoration replaces unowned filler with authored
+floors, chests and a paired entrance.
 The Valley shrine map markers identify approaches, so each final shrine's floor
 and exact object must be selected and checked independently.
 

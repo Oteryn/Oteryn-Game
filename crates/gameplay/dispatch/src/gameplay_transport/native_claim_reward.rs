@@ -170,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: None,
+                    peer_use: None,
                 }),
             )
             .await;
@@ -188,5 +189,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 UseDisposition::Rejected
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::content::world_reward_claims::{RewardClaimBase, RewardClaimTile, UniqueEntry};
+    struct Base;
+    struct Tile;
+    impl RewardClaimBase for Base {
+        type Tile<'a> = Tile;
+        fn tile(&self, x: u16, y: u16, floor: i8) -> Option<Tile> {
+            (x == 32552 && y == 32200 && floor == -11).then_some(Tile)
+        }
+    }
+    impl RewardClaimTile for Tile {
+        fn depths(&self) -> &[u8] {
+            &[0, 0]
+        }
+        fn unique(&self, _: u8) -> Option<UniqueEntry> {
+            None
+        }
+        fn appearance(&self, ordinal: u8) -> Option<u16> {
+            (ordinal == 1).then_some(4240)
+        }
+    }
+    #[test]
+    fn engclaim_m34_allocation_authority_rejects_changed_digest() -> Result<(), String> {
+        let report =
+            crate::content::world_reward_claims::bind_embedded_reward_claims(&Base, &|_| true)
+                .map_err(|e| e.to_string())?;
+        let mut claim = report
+            .served
+            .into_iter()
+            .find(|c| c.key.as_str().ends_with("kingdom_of_kormarak.corpse"))
+            .ok_or("corpse")?;
+        let bound = claim.placements.first().ok_or("placement")?;
+        assert_eq!(
+            callback(&claim, bound)
+                .ok_or("exact allocation")?
+                .give
+                .ok_or("items")?
+                .additional
+                .len(),
+            3
+        );
+        claim.authority_digest[0] ^= 1;
+        assert!(callback(&claim, &claim.placements[0]).is_none());
+        Ok(())
     }
 }

@@ -294,20 +294,41 @@ mod tests {
     #[test]
     fn native_authored_independent_outputs_require_one_bound_callback() {
         let mut source = definition();
-        source["placements"][0].as_object_mut().expect("placement").remove("achievement");
-        source["placements"][0]["reward"].as_object_mut().expect("reward").remove("contents");
+        source["placements"][0]
+            .as_object_mut()
+            .expect("placement")
+            .remove("achievement");
+        source["placements"][0]["reward"]
+            .as_object_mut()
+            .expect("reward")
+            .remove("contents");
         source["placements"][0]["reward"]["items"].as_array_mut().expect("items").push(
             serde_json::json!({"item":{"family":"Item","key":"oteryn:item.tibia.i3354","revision":"definition-r1"},"count":1}));
-        assert!(matches!(candidate(source.as_object().expect("definition"), &|_| true), Ok(Err(_))));
+        assert!(matches!(
+            candidate(source.as_object().expect("definition"), &|_| true),
+            Ok(Err(_))
+        ));
         source["placements"][0]["reward_callback"] = "oteryn:quest-reward/engclaim-corpse".into();
         let shard = serde_json::json!({"records":[{"definition":source.clone()}]}).to_string();
         let report = bind_reward_claims(&Base, &[&shard], &|_| true).expect("binding");
-        assert_eq!(report.served[0].placements[0].placement.items.len(),2);
-        assert!(matches!(candidate(source.as_object().expect("definition"), &|item|item.key().as_str() != "oteryn:item.tibia.i3354"), Ok(Err(LeftOut::ItemNotAdmitted))));
-        let first=report.served[0].authority_digest;
+        assert_eq!(report.served[0].placements[0].placement.items.len(), 2);
+        assert!(matches!(
+            candidate(source.as_object().expect("definition"), &|item| item
+                .key()
+                .as_str()
+                != "oteryn:item.tibia.i3354"),
+            Ok(Err(LeftOut::ItemNotAdmitted))
+        ));
+        let first = report.served[0].authority_digest;
         source["placements"][0]["reward"]["items"][1]["count"] = 2.into();
-        let changed=serde_json::json!({"records":[{"definition":source}]}).to_string();
-        assert_ne!(first,bind_reward_claims(&Base,&[&changed],&|_|true).expect("binding").served[0].authority_digest);
+        let changed = serde_json::json!({"records":[{"definition":source}]}).to_string();
+        assert_ne!(
+            first,
+            bind_reward_claims(&Base, &[&changed], &|_| true)
+                .expect("binding")
+                .served[0]
+                .authority_digest
+        );
     }
 
     #[test]
