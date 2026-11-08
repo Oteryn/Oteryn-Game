@@ -140,6 +140,7 @@ pub fn load() -> Result<&'static [DeathObjective], String> {
 }
 
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
+    let npc_legacy = catalogue.npc_legacy.clone();
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for objective in load()? {
@@ -155,7 +156,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             .iter_mut()
             .find(|track| track.key == objective.counter)
         else {
-            return Err("missing objective counter".into());
+            return Err(format!(
+                "{}: missing objective counter {}",
+                objective.key, objective.counter
+            ));
         };
         if counter.quest != objective.quest {
             return Err("foreign objective counter".into());
@@ -198,8 +202,10 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             ],
         });
     }
-    QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
-        .map_err(|e| format!("{e:?}"))
+    let mut updated = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
+        .map_err(|e| format!("{e:?}"))?;
+    updated.npc_legacy = npc_legacy;
+    Ok(updated)
 }
 
 #[cfg(test)]

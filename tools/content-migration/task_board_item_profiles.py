@@ -32,6 +32,8 @@ DEFAULTS = 'src/items/items.hpp'
 SOURCE_HASHES = {
     XML: '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509',
     APPEARANCES: '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
+    DELIVERY: '7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d',
+    DEFAULTS: '06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca',
 }
 SCHEMA = 'OTERYN_NATIVE_TASK_BOARD_ITEM_PROFILES/v1'
 TALISMAN = 51978
@@ -200,6 +202,13 @@ def capture(crystal, root=ROOT):
     sources = {path: subprocess.check_output(
         ['git', '-C', str(crystal), 'show', f'{PIN}:{path}'])
         for path in (XML, APPEARANCES, DELIVERY, DEFAULTS)}
+    return capture_sources(sources, root)
+
+
+def capture_sources(sources, root=ROOT):
+    """Qualify the same exact source bytes from a Git or exported source view."""
+    if set(sources) != {XML, APPEARANCES, DELIVERY, DEFAULTS}:
+        raise ValueError('TASK_BOARD_SOURCE_SET')
     for path, expected in SOURCE_HASHES.items():
         if digest(sources[path]) != expected:
             raise ValueError('TASK_BOARD_SOURCE_PIN:' + path)

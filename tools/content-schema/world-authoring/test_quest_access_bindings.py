@@ -97,7 +97,9 @@ class QuestAccessBindings(unittest.TestCase):
             )
             found = []
             # Runtime startup projection preserves the binary source inputs.
-            projected, imported = access.overlay_region(path.read_bytes(), index["palette"], [row])
+            projected, imported = access.overlay_region(
+                path.read_bytes(), index["palette"], [row]
+            )
             self.assertEqual(len(imported), 1, row)
             for _, tiles in codec.decode_region(projected)[3]:
                 for tx, ty, _, _, _, items in tiles:

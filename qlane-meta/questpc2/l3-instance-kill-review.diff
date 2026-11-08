@@ -14,7 +14,7 @@ index fce8950fc..38a732d09 100644
 @@ -138,7 +140,22 @@ pub(super) struct CapturedActivityDeath {
      pub(super) died_at_unix_ms: i64,
  }
- 
+
 +/// Closed native progression consumers. Missing loot never admits arbitrary XP.
 +pub(super) fn tracks_native_progression(creature: &str) -> bool {
 +    oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(creature).is_some()

@@ -16,7 +16,7 @@
 @@ -1009,6 +1009,15 @@
                          return Ok(Ok(outcomes));
                      }
- 
+
 +                    // Historical receipts above remain replayable. A fresh tutorial
 +                    // batch locks and qualifies its Character before any item row.
 +                    if let Some(claim) = &tutorial_corruptor

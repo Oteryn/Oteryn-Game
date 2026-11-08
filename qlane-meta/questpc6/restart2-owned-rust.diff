@@ -1868,7 +1868,7 @@ index c5d30d063..9978732a0 100644
 @@ -494,6 +549,61 @@ fn start<K: Copy + PartialEq>(
  mod tests {
      use super::*;
- 
+
 +    #[test]
 +    fn native_quest_book_admits_only_requested_source_greetings() -> Result<(), String> {
 +        let catalogue = crate::content::NpcDataCatalogue::load(

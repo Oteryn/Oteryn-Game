@@ -26,7 +26,7 @@ ITEMHOLD_ADMISSIONS = frozenset({
 # story/outfit reward sources have source-selector dispatch PostgreSQL proof.
 # Every other supported claim keeps its per-World qualification hold; reward
 # qualification does not certify access puzzles or a complete storyline.
-EXPECTED_DENOMINATOR = 162
+EXPECTED_DENOMINATOR = 145
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

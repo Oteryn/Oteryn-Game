@@ -41,7 +41,11 @@ def donor_inputs():
               'data-global/startup/tables/item.lua',
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
-    paths += ["data-global/npc/dermot.lua"]
+    paths += [f'data-global/npc/{name}.lua' for name in (
+        'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
+        'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'rafzan',
+        'jorge', 'the_forgemaster', 'henricus', 'yana')]
+    paths += ['data/XML/imbuements.xml']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -979,6 +983,10 @@ def build():
     lane_data=lane.extend(ROOT,callbacks,offers,inputs,PIN,load_module)
     fibula_callbacks = []
     load_module('fibula_reward_authoring', 'tools/content-schema/quest-authoring/fibula_rewards.py').append(fibula_callbacks, offers, inputs)
+    # Keep every registered document within the runtime's 256-record bound.
+    l13_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith('l13-')]
+    callbacks = [c for c in callbacks if c not in l13_callbacks]
+    l13_callbacks.sort(key=lambda c:c['key'])
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -995,6 +1003,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'callbacks':fibula_callbacks}),
+            'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})
@@ -1016,7 +1025,7 @@ def build():
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
     greetings=[]
-    for npc in sorted({c['npc'] for c in callbacks + ready_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
+    for npc in sorted({c['npc'] for c in callbacks + ready_callbacks + l13_callbacks} | {'oteryn:npc.'+npc for npc in ('alesar','yaman','haroun','nah_bob')}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
         messages={}
         citations=[]
@@ -1064,6 +1073,15 @@ def build():
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
     reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
     generated.update(lane.outputs(ROOT,inputs,PIN,load_module,lane_data))
+    # The selected smith port owns these keys and the explicit cache placement.
+    # Retain all other authored programmes; do not mount the older native-cache
+    # variant beside its replacement.
+    authored_path = 'content/quests/authored-world-callbacks.json'
+    authored = json.loads((ROOT / authored_path).read_bytes())
+    smith_keys = {'oteryn:quest-callback/authored-smith-cache',
+                  'oteryn:quest-callback/authored-smith-cache-reward'}
+    authored['callbacks'] = [c for c in authored['callbacks'] if c['key'] not in smith_keys]
+    generated[authored_path] = encoded(authored)
     return generated
 
 

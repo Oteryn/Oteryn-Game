@@ -4083,12 +4083,12 @@ index e399f8654..a5ffba596 100644
 @@ -4,6 +4,9 @@
  // through the real B3-1 TRANSFER path; its definition is the same test-only
  // fixture as the B3-1 cases.
- 
+
 +#[path = "reward_claim_mint_postgres_cases/filled_fluid.rs"]
 +mod filled_fluid;
 +
  use crate::durability::item_weight_lookup::TEST_WEIGHTS;
- 
+
  use crate::character_recovery_fence::CharacterRecoveryStore;
 @@ -808,6 +811,8 @@ fn chest(
          quantity,
@@ -4246,7 +4246,7 @@ index d1c10d706..f51dfb4bc 100644
 +++ b/apps/game-server/tests/support/tutorial_corruptor_postgres_cases.rs
 @@ -5,38 +5,93 @@ use crate::durability::character_tutorial::TutorialProgressOutcome;
  use oteryn_gameplay_quests::tutorial::{TutorialProgress, TutorialStep};
- 
+
  #[test]
 -fn tutorial_corruptor_claim_clears_once_replays_and_rejects_stale_authority() -> TestResult {
 +fn tutorial_corruptor_preparation_preserves_arm_and_rejects_stale_authority() -> TestResult {
@@ -4462,7 +4462,7 @@ index 332eba41b..ccb7cdca4 100644
 +        input.tutorial_corruptor.clone(),
      )
      .await;
- 
+
 diff --git a/crates/gameplay/content/src/content/world_reward_claims.rs b/crates/gameplay/content/src/content/world_reward_claims.rs
 index 5c7071e30..b47d0138f 100644
 --- a/crates/gameplay/content/src/content/world_reward_claims.rs
@@ -4470,7 +4470,7 @@ index 5c7071e30..b47d0138f 100644
 @@ -6,6 +6,8 @@
  //! placement's canonical [`PlacementKey`], bound cell and bundle `placement_key`, plus the
  //! placements that did not bind and the records left out, so the caller can gate boot on it.
- 
+
 +mod native_state;
 +
  use crate::content::{
@@ -4492,7 +4492,7 @@ index 5c7071e30..b47d0138f 100644
 +    pub root_fluid_subtype: Option<u8>,
 +    pub root_charges_remaining: Option<u32>,
  }
- 
+
  #[derive(Debug, Clone, PartialEq, Eq)]
 @@ -117,6 +123,8 @@ pub struct RewardContainerItem {
      pub count: u32,
@@ -4501,7 +4501,7 @@ index 5c7071e30..b47d0138f 100644
 +    pub fluid_subtype: Option<u8>,
 +    pub charges_remaining: Option<u32>,
  }
- 
+
  /// A claim whose placements are all bound.
 @@ -234,6 +242,8 @@ struct CandidatePlacement {
      achievement: Option<String>,
@@ -4510,7 +4510,7 @@ index 5c7071e30..b47d0138f 100644
 +    root_fluid_subtype: Option<u8>,
 +    root_charges_remaining: Option<u32>,
  }
- 
+
  const DEFINITION_FIELDS: [&str; 6] = [
 @@ -274,18 +284,35 @@ fn candidate(
      definition: &serde_json::Map<String, Value>,
@@ -4690,7 +4690,7 @@ index 5c7071e30..b47d0138f 100644
 -        .filter(|entries| !entries.is_empty())
 +    Some(placements)
  }
- 
+
  fn candidate_container_placement(
 @@ -437,6 +549,7 @@ fn candidate_container_placement(
              "completion",
@@ -4770,7 +4770,7 @@ index 5c7071e30..b47d0138f 100644
 +        root_charges_remaining: None,
      }))
  }
- 
+
 @@ -871,6 +1014,8 @@ fn bind_candidate(
                  bundle_placement_key,
                  contents: placement.contents.clone(),
@@ -4783,7 +4783,7 @@ index 5c7071e30..b47d0138f 100644
 @@ -932,6 +1077,102 @@ fn bind_placement(
  mod container_tests {
      use super::*;
- 
+
 +    #[test]
 +    fn source_charge_and_fluid_projections_reach_the_native_candidate() {
 +        for suffix in [
@@ -5360,7 +5360,7 @@ index 8b4d709e7..f6256693d 100644
 @@ -696,6 +705,29 @@ impl KillSettlementQueue {
          Some(frozen)
      }
- 
+
 +    fn freeze_tutorial_loot(
 +        &self,
 +        runtime: &ChannelRuntimeV1,
@@ -5390,7 +5390,7 @@ index 8b4d709e7..f6256693d 100644
 @@ -1023,6 +1055,36 @@ impl KillSettlementQueue {
          true
      }
- 
+
 +    /// Top up this death's existing take and extra reservations to its frozen
 +    /// exact plan, under the same scope counter lock used by take/release.
 +    fn ensure_loot_mint_reservation(
@@ -5541,7 +5541,7 @@ index 85d292275..6125d222d 100644
 @@ -190,6 +191,31 @@ fn taken(outcome: TakeOutcome) -> TakenKillSettlement {
      }
  }
- 
+
 +#[test]
 +fn newhaven_cached_plan_reserves_only_shortfall_and_releases_it() {
 +    let queue = KillSettlementQueue::default();
@@ -5595,7 +5595,7 @@ index cc1c4e4d4..b30d26ecd 100644
 --- a/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_fixture/fresh_session.rs
 +++ b/crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_fixture/fresh_session.rs
 @@ -3,17 +3,23 @@ use super::*;
- 
+
  pub(super) async fn prepare_current_session(
      harness: &Harness,
 +) -> TestResult<crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1> {
@@ -5721,7 +5721,7 @@ index e3c03970f..fc769b8a4 100644
 --- a/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
 +++ b/crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
 @@ -35,6 +35,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
- 
+
  /// The instants of the talk intents of the last second of one session.
  type RecentIntents = VecDeque<u64>;
 +mod catalogue;
@@ -5735,7 +5735,7 @@ index e3c03970f..fc769b8a4 100644
 +mod viola;
  mod wrath_sleeping_dragon;
  pub(super) use premium_purchase::resume_npc_talk;
- 
+
 @@ -72,8 +74,10 @@ struct SessionNpc {
      grizzly: grizzly::Conversation,
      premium: Option<premium_purchase::PendingPurchase>,
@@ -6559,7 +6559,7 @@ index 04809c6c4..316601736 100644
 +    );
 +    Ok(())
  }
- 
+
  pub(super) async fn install<const N: usize>(
 @@ -41,98 +51,221 @@ pub(super) async fn install<const N: usize>(
  ) -> TestResult<[EntityRef; N]> {
@@ -6676,7 +6676,7 @@ index 04809c6c4..316601736 100644
      }
      found.try_into().map_err(|_| "exact NPC refs".into())
  }
- 
+
  pub(super) async fn talk(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
 -    npc: EntityRef, command_id: u64, text: &str,
@@ -6724,7 +6724,7 @@ index 04809c6c4..316601736 100644
      assert!(!result.unknown);
      Ok(result.conversation.map(|c| c.lines).unwrap_or_default())
  }
- 
+
  pub(super) async fn progress(
 -    owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession,
 -    authority: &ReconciledCharacterAuthority<'_, '_>, track: &str,
@@ -6748,7 +6748,7 @@ index 04809c6c4..316601736 100644
 +        .map_err(debug)?;
      Ok(copy.tracks().get(track).copied().unwrap_or(0))
  }
- 
+
  pub(super) async fn exercise(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
 -    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -6859,7 +6859,7 @@ index 04809c6c4..316601736 100644
 +    );
      Ok(())
  }
- 
+
 @@ -162,26 +302,43 @@ fn classic_rottin_disrepair_commits_three_flags_only_after_the_source_offer() ->
      }
      super::kill_reward_e2e::scenario_thread::run("classic-rottin", || {
@@ -6875,7 +6875,7 @@ index 04809c6c4..316601736 100644
          )
      })
  }
- 
+
  pub(super) async fn exercise_rottin(
 -    owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession,
 -    h: &Harness, authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -7004,7 +7004,7 @@ index 04809c6c4..316601736 100644
 +    );
      Ok(())
  }
- 
+
 @@ -228,10 +430,22 @@ fn classic_draconia_real_levers_open_and_restore_the_source_obstacles() -> TestR
      }
      super::kill_reward_e2e::scenario_thread::run("classic-draconia", || {
@@ -7076,7 +7076,7 @@ index 04809c6c4..316601736 100644
 @@ -255,23 +497,40 @@ fn classic_world_steps_use_source_teleports_and_commit_seal_flags_atomically() -
      })
  }
- 
+
 -#[allow(clippy::too_many_arguments, reason = "existing callback fixture owner and source binding")]
 +#[allow(
 +    clippy::too_many_arguments,
@@ -10475,7 +10475,7 @@ index 94e4fd28e..12e5b7a4b 100644
      DemonShield,
 +    Catalogue,
  }
- 
+
  fn execute(case: Case, marker: &'static str) -> TestResult {
      if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
          return Ok(());
@@ -10490,10 +10490,10 @@ index 94e4fd28e..12e5b7a4b 100644
 +    println!("{marker} POSTGRES_CASE_COMPLETED {:?}", started.elapsed());
      Ok(())
  }
- 
+
 @@ -102,7 +104,36 @@ fn definition(key: &str) -> TypedDefinitionRef {
  }
- 
+
  fn scenario(case: Case) -> TestResult {
 +    scenario_case(case, None, None)
 +}
@@ -12266,7 +12266,7 @@ index 67f10d773..98e2d27a9 100644
 @@ -42,6 +42,13 @@ struct Pending {
      ingress_settled: bool,
  }
- 
+
 +struct ReadOnlyGate {
 +    actor: ExactActorRef,
 +    session: GameSessionId,
@@ -12457,7 +12457,7 @@ index 85c56f740..8574bec82 100644
 -use oteryn_gameplay_quests::tutorial::corruptor_items;
 -use std::collections::BTreeMap;
 +use crate::durability::tutorial_corruptor::TutorialCorruptorClaim;
- 
+
  impl ComposedFreshAdmission<'_, '_, '_> {
      pub(super) async fn tutorial_corruptor_table(
          &self,
@@ -12841,7 +12841,7 @@ index 5eaedd1fd..37da62559 100644
 @@ -20,6 +20,7 @@
  //! they wait for a slot or across the durable write, and every write is still refused by the
  //! existing session-generation gameplay fence in its own transaction.
- 
+
 +mod npc_program;
  mod appearance_revision;
  mod arena_match;
@@ -12894,7 +12894,7 @@ index 8146c4e6d..49224c7ad 100644
 +++ b/crates/gameplay/durability/src/durability/item_craft/audit.rs
 @@ -14,7 +14,7 @@ pub struct OneItemCraftV1 {
  }
- 
+
  #[allow(clippy::too_many_arguments)]
 -pub(super) fn encode(
 +pub(in crate::durability) fn encode(
@@ -12956,7 +12956,7 @@ index 7e071d222..e46ad4bfe 100644
 @@ -993,6 +1020,15 @@ impl DurabilityRoot {
                          return Ok(Ok(outcomes));
                      }
- 
+
 +                    // Historical receipts above remain replayable. A fresh tutorial
 +                    // batch locks and qualifies its Character before any item row.
 +                    if let Some(claim) = &tutorial_corruptor
@@ -12998,7 +12998,7 @@ index 5a3a475b1..4037f10e7 100644
 @@ -63,6 +63,8 @@ use crate::domain::progression::FiniteProgressionPolicy;
  use crate::domain::{CharacterId, CharacterRevision};
  use crate::foundation::{CommandId, CommandRef, GameSessionId, RuntimeScopeRefV1};
- 
+
 +pub mod npc_program;
 +
  type Result<T> = std::result::Result<T, CharacterProgressionError>;
@@ -13307,7 +13307,7 @@ index 6cd8dedc7..b0d117e4a 100644
 -use super::*;
  use super::super::db::begin_type2_transaction;
 +use super::*;
- 
+
  impl DurabilityRoot {
      /// Commit one quest transition (§4-§5). Exact replay of the receipt key returns the receipt
 @@ -74,11 +74,22 @@ impl DurabilityRoot {
@@ -13335,7 +13335,7 @@ index 6cd8dedc7..b0d117e4a 100644
 +        )
 +        .await
      }
- 
+
      #[allow(clippy::too_many_arguments)]
 @@ -103,6 +114,9 @@ impl DurabilityRoot {
          grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
@@ -13451,7 +13451,7 @@ index af8794180..8ed85e26a 100644
 @@ -17,6 +17,112 @@ pub struct QuestWorldContext {
      pub movement_revision: u64,
  }
- 
+
 +impl super::DurabilityRoot {
 +    /// Read a literal callback's quest gates under the live session and Character
 +    /// root fences. This path never writes Quest state, receipts or revisions.
@@ -13615,7 +13615,7 @@ index 1883cd77c..f2c26f977 100644
 --- a/crates/gameplay/durability/src/durability/reward_claim_mint.rs
 +++ b/crates/gameplay/durability/src/durability/reward_claim_mint.rs
 @@ -116,10 +116,14 @@ use sqlx::Row;
- 
+
  mod arena;
  pub mod boss_reward;
 +mod charges;
@@ -13626,7 +13626,7 @@ index 1883cd77c..f2c26f977 100644
  mod monk;
  mod soul_war;
 +mod viola_book;
- 
+
  type Result<T> = std::result::Result<T, RewardClaimMintError>;
  type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
 @@ -152,6 +156,10 @@ pub struct RewardClaimMintContent {
@@ -13638,7 +13638,7 @@ index 1883cd77c..f2c26f977 100644
 +    /// Exact source charge state; absence retains the definition default.
 +    pub charges_remaining: Option<u32>,
  }
- 
+
  /// Complete semantic intent of one reward-claim MINT.
 @@ -173,6 +181,10 @@ pub struct RewardClaimMintRequest {
      pub contents: Vec<RewardClaimMintContent>,
@@ -13723,7 +13723,7 @@ index 1883cd77c..f2c26f977 100644
 +    charges::validate(request)?;
      Ok(())
  }
- 
+
 @@ -1595,6 +1615,18 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
          canonical.push(0x54);
          push_text(&mut canonical, text.as_bytes()).map_err(from_transfer_input)?;
@@ -13755,7 +13755,7 @@ index 1883cd77c..f2c26f977 100644
 @@ -1985,6 +2019,58 @@ mod tests {
          }
      }
- 
+
 +    #[test]
 +    fn filled_fluid_rewards_bind_subtypes_and_refuse_ambiguous_shapes() {
 +        let character = CharacterId::from_bytes(id(41)).expect("character");
@@ -13940,7 +13940,7 @@ index 4540fccab..5623050b8 100644
 --- a/crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs
 +++ b/crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs
 @@ -90,7 +90,7 @@ pub(super) fn capacity(request: &RewardClaimMintRequest) -> Option<i16> {
- 
+
  /// UUIDv7-shaped, domain-separated identities retain the reserved timestamp
  /// prefix. Retry/restart derives the same children, independently of process RNG.
 -fn child_id(root: &[u8; 16], ordinal: usize, kind: u8) -> [u8; 16] {
@@ -13965,7 +13965,7 @@ index 4540fccab..5623050b8 100644
 +        && saved.0 == plan(request, reservation)
 +        && row.try_get::<Option<String>, _>("root_text")? == request.root_text)
  }
- 
+
  /// The character fence already holds its root. This is the complete fresh
 diff --git a/crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs b/crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs
 new file mode 100644
@@ -14386,7 +14386,7 @@ index 9a038a3ff..9b181faf2 100644
 @@ -12,22 +13,56 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
  use crate::foundation::CreatureDeathOccurrenceKey;
  use oteryn_gameplay_quests::tutorial::{TutorialEvent, corruptor_items, tutorial_transition};
- 
+
 +/// Trusted preparation only. Preparing this value never consumes an entitlement.
 +#[derive(Debug, Clone)]
 +pub struct TutorialCorruptorClaim {
@@ -15059,7 +15059,7 @@ index c5d30d063..9978732a0 100644
 @@ -494,6 +549,61 @@ fn start<K: Copy + PartialEq>(
  mod tests {
      use super::*;
- 
+
 +    #[test]
 +    fn native_quest_book_admits_only_requested_source_greetings() -> Result<(), String> {
 +        let catalogue = crate::content::NpcDataCatalogue::load(
@@ -15123,7 +15123,7 @@ index 803aeba4d..c0dfd0f6d 100644
 --- a/crates/gameplay/quests/src/quest/classic_dialogue.rs
 +++ b/crates/gameplay/quests/src/quest/classic_dialogue.rs
 @@ -158,8 +158,12 @@ mod tests {
- 
+
      #[test]
      fn native_start_commits_both_herb_flags_and_refuses_stale_confirmation() -> Result<(), String> {
 -        let loaded =
@@ -15138,7 +15138,7 @@ index 803aeba4d..c0dfd0f6d 100644
          let transition = catalogue
              .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
 @@ -181,8 +185,11 @@ mod tests {
- 
+
      #[test]
      fn logbook_start_checks_torn_book_and_does_not_clear_its_track() -> Result<(), String> {
 -        let loaded =
@@ -15338,11 +15338,11 @@ index b1dea070a..1350e87a3 100644
 +        .retain(|key, _| lowered.catalogue.transition(key).is_some());
      Ok(lowered)
  }
- 
+
 @@ -360,6 +390,54 @@ mod tests {
          load_embedded_quest_state("content-1").expect("embedded quest state loads")
      }
- 
+
 +    #[test]
 +    fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
 +        let loaded =
@@ -15395,7 +15395,7 @@ index b1dea070a..1350e87a3 100644
          serde_json::from_str(EMBEDDED).expect("embedded quest state is JSON")
      }
 @@ -370,7 +448,9 @@ mod tests {
- 
+
      #[test]
      fn every_lowered_record_loads_under_an_oteryn_key() {
 -        let lowered = embedded();
@@ -15406,7 +15406,7 @@ index b1dea070a..1350e87a3 100644
          let quests = document["quests"].as_array().expect("quests");
          let (mut tracks, mut transitions) = (0, 0);
 @@ -402,42 +482,53 @@ mod tests {
- 
+
      #[test]
      fn a_lowered_npc_transition_keeps_its_source_and_dialogue_bindings() {
 -        let lowered = embedded();
@@ -15486,7 +15486,7 @@ index b1dea070a..1350e87a3 100644
 +            assert_eq!((changes[0].before, changes[0].after), (0, 1));
 +        }
      }
- 
+
      #[test]
 diff --git a/crates/gameplay/quests/src/quest/mod.rs b/crates/gameplay/quests/src/quest/mod.rs
 index 1dc2d29a0..bd36232c4 100644
@@ -15511,7 +15511,7 @@ index 1dc2d29a0..bd36232c4 100644
 @@ -73,6 +73,12 @@ pub const QUESTGATE0_RL_10: usize = 16;
  const KEY_PREFIX: &str = "oteryn:";
  const DEFINITION_HASH_VERSION: u8 = 2;
- 
+
 +/// QUEST-FINISH owner scope: Dawnport is reference data; Newhaven owns the start.
 +#[must_use]
 +pub(super) fn in_runtime_scope(quest: &str) -> bool {
@@ -15528,7 +15528,7 @@ index 1dc2d29a0..bd36232c4 100644
 +    // Read-compatible NPC activation retains historical pins and absent-track meanings.
 +    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
  }
- 
+
  impl QuestStateCatalogue {
 @@ -372,6 +380,7 @@ impl QuestStateCatalogue {
              tracks: track_map,
@@ -15537,7 +15537,7 @@ index 1dc2d29a0..bd36232c4 100644
 +            npc_legacy: BTreeMap::new(),
          })
      }
- 
+
 @@ -388,7 +397,7 @@ impl QuestStateCatalogue {
          if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
              return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
@@ -15556,7 +15556,7 @@ index 1dc2d29a0..bd36232c4 100644
 +        extended.npc_legacy.clone_from(&self.npc_legacy);
 +        Ok(extended)
      }
- 
+
      /// A catalogue with no quest: every transition request is unknown.
 diff --git a/crates/gameplay/quests/src/quest/monk_shrines.rs b/crates/gameplay/quests/src/quest/monk_shrines.rs
 index 6387adf6b..40592a27d 100644
@@ -15588,22 +15588,22 @@ index 552a981ad..7d62860a1 100644
 -//! defines keyword matching; individual programs retain their source references.
 +//! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 +//! Crystal source references and source-order branches are retained in each program.
- 
+
  mod evaluate;
  mod keyword;
  mod validate;
- 
+
 -// Directory-scanned source data only. No NPC owner applies these plans yet;
 -// see PR2843#issuecomment-6589900671. Each quest can add its own file without
 -// editing a shared include list or depending on other quest commits.
 +// Directory-scanned source programs retain their exact source custody.
  include!(concat!(env!("OUT_DIR"), "/npc_rule_programs.rs"));
- 
+
  use std::collections::BTreeMap;
 @@ -164,8 +156,8 @@ pub enum NpcRuleGuard {
      },
  }
- 
+
 -/// Effects retain source order. Storage/topic effects have already been evaluated
 -/// in the plan; the owner executes the other typed effects after durable admission.
 +/// Effects retain source order. Storage/topic effects are evaluated in the plan;
@@ -15614,7 +15614,7 @@ index 552a981ad..7d62860a1 100644
 @@ -374,8 +366,77 @@ impl NpcRuleCatalog {
          Ok(catalogue)
      }
- 
+
 +    /// Preserve the source's absent value while accepting the complete native
 +    /// track range shared with other quest owners. Source bytes keep their digest.
 +    pub fn with_native_bounds(
@@ -15688,12 +15688,12 @@ index 552a981ad..7d62860a1 100644
 +            .as_ref()
 +            .map_err(Clone::clone)
      }
- 
+
      #[must_use]
 @@ -390,20 +451,150 @@ impl NpcRuleCatalog {
              .find(|program| program.document.quest == quest)
      }
- 
+
 -    pub fn plan(&self, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
 +    #[cfg(test)]
 +    pub(super) fn plan(
@@ -15702,7 +15702,7 @@ index 552a981ad..7d62860a1 100644
 +    ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
          self.plan_with_native(input, &BTreeMap::new())
      }
- 
+
 +    /// Storage-only owner: every reached guard must be storage-owned, including
 +    /// guards of skipped branches. Unowned effects refuse the entire operation.
 +    pub fn plan_storage(
@@ -15842,7 +15842,7 @@ index 552a981ad..7d62860a1 100644
 +        .filter(|(hash, _)| hash == stored_hash)
 +        .map(|(_, defaults)| defaults)
  }
- 
+
  #[cfg(test)]
 diff --git a/crates/gameplay/quests/src/quest/npc_rules/evaluate.rs b/crates/gameplay/quests/src/quest/npc_rules/evaluate.rs
 index 467f12e4d..80eb0d8ff 100644
@@ -16150,13 +16150,13 @@ index d1e06d7a0..a3ae99c70 100644
 +++ b/crates/gameplay/quests/src/quest/world_callbacks.rs
 @@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
  use std::collections::BTreeSet;
- 
+
  pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 -// The merged quest batches contain 224 static callbacks plus the dynamic altar.
 +// Static callbacks and the dynamic altar share the same boot bound.
  pub const MAX_CALLBACKS: usize = 512;
  pub const MAX_EFFECTS: usize = 8;
- 
+
 @@ -59,9 +59,12 @@ pub struct Storage {
      pub minimum: i64,
      pub maximum: i64,
@@ -16169,12 +16169,12 @@ index d1e06d7a0..a3ae99c70 100644
 +    #[serde(default, skip_serializing_if = "is_false")]
 +    pub read_only: bool,
  }
- 
+
  fn is_false(value: &bool) -> bool {
 @@ -123,6 +126,14 @@ pub struct Callback {
      pub sources: Vec<String>,
  }
- 
+
 +impl Callback {
 +    /// A pure quest-state predicate, with no Quest mutation or receipt.
 +    #[must_use]
@@ -16247,7 +16247,7 @@ index d1e06d7a0..a3ae99c70 100644
 @@ -308,6 +338,43 @@ mod batch4_tests;
  mod tests {
      use super::*;
- 
+
 +    #[test]
 +    fn read_only_world_callback_has_no_quest_write_transition() -> Result<(), String> {
 +        let held: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json")).map_err(|e| e.to_string())?;
@@ -16630,7 +16630,7 @@ index af35f0d72..09743b759 100644
  import sys
 +
  from pathlib import Path
- 
+
  PACKET = "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json"
 @@ -23,6 +24,20 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
  CLIENT_BYTES = 5017996
@@ -16650,7 +16650,7 @@ index af35f0d72..09743b759 100644
 +# These carried fluid identities already have native empty-container profiles;
 +# per-instance subtypes are initialized by the reward mint's fluid owner.
 +NATIVE_REWARD_FLUID_ITEMS = {f'oteryn:item.tibia.i{number}' for number in (2874, 2881, 2882)}
- 
+
  # ITEM-SEM-2 precedence, bounded to exact client identities and English Wiki cuts.
  # Donor XML stays in the packet as a witness; only its container fact is superseded.
 @@ -273,6 +288,19 @@ def enrich(definition, facts, xml):
@@ -16671,8 +16671,8 @@ index af35f0d72..09743b759 100644
 +        put_group(definition, 'fluid', {'fluid_type': {'state': 'NOT_APPLICABLE'}})
 +        definition['materializable'] = True
      return definition
- 
- 
+
+
 diff --git a/tools/content-migration/register_spell_families.py b/tools/content-migration/register_spell_families.py
 index 844c895b7..94e34e609 100644
 --- a/tools/content-migration/register_spell_families.py
@@ -16698,7 +16698,7 @@ index 1716ee942..c9f0b76de 100644
 +                                     BLOODY_TEAR, 'oteryn:item.tibia.i9388', 'oteryn:item.tibia.i2973')]
          self.generated = {PROFILE: json.dumps(self.document).encode(),
                            MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
- 
+
 @@ -60,7 +60,7 @@ class QuestCallbackProfiles(unittest.TestCase):
          self.admit()
          rows = {r['production_definition']['production_key']: r
@@ -16714,13 +16714,13 @@ index 1716ee942..c9f0b76de 100644
                               {'state': 'KNOWN', 'value': True})
 +        self.assertEqual(rows['oteryn:item.tibia.i2973']['semantics']['physical']['value']['weight'],
 +                         {'state': 'KNOWN', 'value': 100})
- 
+
      def test_demon_helmet_chest_reuses_canonical_equipment_without_new_owner(self):
          self.admit()
 @@ -93,6 +95,27 @@ class QuestCallbackProfiles(unittest.TestCase):
                           'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory', 'Ground']})
- 
+
 +    def test_every_ready_reward_leaf_has_its_exact_native_item_profile(self):
 +        self.admit()
 +        rows = {row['production_definition']['production_key']: row
@@ -16909,7 +16909,7 @@ index 9a1d7b044..cd82b7684 100644
 @@ -112,6 +112,46 @@ class RewardItemAdmissionTests(unittest.TestCase):
          self.assertFalse(definition["materializable"])
          self.assertEqual(definition["semantics"]["charges"]["value"]["count"], known(5))
- 
+
 +    def test_full_charge_quest_items_reuse_the_existing_timed_instance_owner(self):
 +        defaults = {3048: 20, 3054: 200, 3056: 200, 3081: 5, 3082: 50, 3083: 150,
 +                    3084: 250, 3085: 200, 3284: 1}
@@ -16959,7 +16959,7 @@ index 389797d2a..2ffa37a87 100644
 +++ b/tools/content-schema/native-gameplay/build_full_spell_artifact.py
 @@ -9,6 +9,7 @@ Original Lua, DAT, XML, OTBM and client assets are never copied into the output.
  from __future__ import annotations
- 
+
  import argparse
 +import copy
  import hashlib
@@ -16967,8 +16967,8 @@ index 389797d2a..2ffa37a87 100644
  import re
 @@ -397,6 +398,54 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
      return facts
- 
- 
+
+
 +def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
 +    """Current named drops and the owner-approved native30 corpse projection.
 +
@@ -17023,7 +17023,7 @@ index 389797d2a..2ffa37a87 100644
 @@ -426,6 +475,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
              raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
          named[ref['key']] = fact
- 
+
 +    if any(record['profile']['target']['key'] == 'oteryn:creature.the_corruptor'
 +           for record in creatures['records']):
 +        for ref in corruptor_loot_projection(tables, facts, item_definitions):
@@ -17039,7 +17039,7 @@ index 6c460a122..f9b01dfb9 100644
 @@ -153,6 +153,42 @@ class ItemKeySetTests(unittest.TestCase):
  class LootTablesTests(unittest.TestCase):
      """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
- 
+
 +    def test_corruptor_projects_current_items_and_native_corpse_without_changing_source(self):
 +        _, creatures = full.read(full.CREATURE_PROFILES)
 +        document = json.loads(full.loot_tables(creatures))
@@ -17086,7 +17086,7 @@ index e4a1e4077..d9a3684d9 100644
 @@ -44,6 +44,13 @@ class ConvertPlacementsTest(unittest.TestCase):
              self.assertEqual(actual[key]['cell'], cell)
              self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
- 
+
 +    def test_viola_uses_the_newhaven_magic_shop_source_cell(self):
 +        viola = next(r['declaration'] for r in self.records
 +                     if r['declaration']['npc'] == 'oteryn:npc.viola')
@@ -17121,7 +17121,7 @@ index 20f741f3c..db55af5a0 100644
 +    if len(callbacks) >= 512:
          raise ValueError('callback budget including existing Rotten Blood altar')
      return {'schema': 1, 'callbacks': sorted(callbacks, key=lambda row: row['key'])}, {'schema': SCHEMA, 'sources': sources}
- 
+
 @@ -68,6 +68,20 @@ def outputs(root):
      # sibling is outside this closed input set.
      paths += sorted((root / 'tools/content-schema/quest-authoring/batch3_c/world').glob('*.json'))
@@ -17204,7 +17204,7 @@ index 45f864ff5..7d1cb4f81 100644
 +import sys
  from collections import Counter, defaultdict
  from pathlib import Path
- 
+
 @@ -26,6 +27,244 @@ QUALIFIED = {
      "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet": "quest_demon_helmet_chests_demon_helmet_once_and_replay",
      "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield": "quest_demon_helmet_chests_demon_shield_once_and_replay",
@@ -17541,8 +17541,8 @@ index 28e840092..3f0da2b3b 100644
 +            for binding in claim.get('source_variant', {}).get('item_bindings', [])
 +            if binding.get('canonical_item'))
      return claims
- 
- 
+
+
 @@ -112,7 +120,10 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
              canonical.append({'family': 'RewardClaim', **copy.deepcopy(claim['identity'])})
              if claim.get('definition_profile') == 'authored_variant_v1':
@@ -17556,7 +17556,7 @@ index 28e840092..3f0da2b3b 100644
                      issues.append({'code': code, 'source_key': ref['key']})
              elif claim['readiness'] != 'ready':
 @@ -154,7 +165,8 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
- 
+
  def monk_native_lowering(root):
      callbacks = [c for c in read(root, 'content/quests/world-callbacks.json')['callbacks']
 -                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest']
@@ -17570,7 +17570,7 @@ index 70f2df754..b93a384ee 100644
 --- a/tools/content-schema/quest-authoring/test_batch3_world.py
 +++ b/tools/content-schema/quest-authoring/test_batch3_world.py
 @@ -28,7 +28,7 @@ class Batch3WorldTests(unittest.TestCase):
- 
+
      def test_existing_runtime_altar_keeps_its_reserved_slot(self):
          empty = {'schema': tool.SCHEMA, 'sources': []}
 -        for count, valid in [(255, True), (256, False)]:
@@ -17614,7 +17614,7 @@ index 489305783..5157d31fb 100644
 +        # 172 source claims have focused dispatch PG proof; only the
 +        # two Dawnport claims are excluded. Keep exact denominator detection.
 +        self.assertEqual(sum(counts.values()), 162)
- 
+
      def test_missing_row_is_rejected(self):
          del self.ledger["claims"][next(iter(self.ledger["claims"]))]
 diff --git a/tools/content-schema/quest-authoring/test_quest_completion_matrix.py b/tools/content-schema/quest-authoring/test_quest_completion_matrix.py
@@ -17799,16 +17799,16 @@ index d5acc5a33..5f4ba4d44 100644
 +    'oteryn:reward-claim.kv.present_box': (
 +        [6113], {0: (2882, 1), 2: (2881, 1)}, 'CRYSTAL_PRESENT_WATER_SUBTYPES'),
 +}
- 
- 
+
+
  def source():
 @@ -54,17 +71,27 @@ def item_id(ref):
- 
- 
+
+
  def full_charge_leaf(item, pilot_key, position, key, raw_count):
 -    """UID6082 is one already-admitted Item at its exact definition charges.
 +    """An exact D277 source leaf is one admitted Item at definition charges.
- 
+
      Missing native timed state means full definition values; this does not
      authorize partial source charges or make a held Item materializable.
      """
@@ -17834,8 +17834,8 @@ index d5acc5a33..5f4ba4d44 100644
      setting = entries[6082]['setting']
      return (setting.get('useKV') is True and setting.get('questName') == 'madmageroom3'
 @@ -72,6 +99,41 @@ def full_charge_leaf(item, pilot_key, position, key, raw_count):
- 
- 
+
+
  def derive(definition, items, stack_problem):
 +    difference = None
 +    fluid_choice = FLUID_CHOICES.get(definition['identity']['key'])
@@ -17925,10 +17925,10 @@ index 322680188..91313149a 100755
 +++ b/tools/content-schema/reward-claim-authoring/reward_claim_authoring.py
 @@ -43,6 +43,7 @@ import sys
  from pathlib import Path
- 
+
  import container_native
 +import charge_native
- 
+
  HERE = Path(__file__).resolve().parent
  ROOT = HERE.parents[2]
 @@ -355,6 +356,9 @@ def build_records(claims: list, manifest: dict, items: dict,
@@ -17947,11 +17947,11 @@ index f41715ae1..91b35250a 100644
 +++ b/tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py
 @@ -9,6 +9,7 @@ import json
  from pathlib import Path
- 
+
  import container_native
 +import charge_native
  import reward_claim_variant_migration as migration
- 
+
  PROFILE = 'authored_variant_v1'
 @@ -49,6 +50,9 @@ def canonical_schema(root):
              'schema': {'const': 'OTERYN_NATIVE_CONTAINER_REWARD/v1'},
@@ -18071,7 +18071,7 @@ index 77d1bf7ca..8b86ca7e9 100644
 @@ -27,6 +27,98 @@ class ContainerNativeTests(unittest.TestCase):
                           [('oteryn:item.tibia.i3447', 12), ('oteryn:item.tibia.i3031', 40)])
          self.assertEqual(placement['completion'], {'kind': 'quest_kv', 'key': 'bearChest1'})
- 
+
 +    def fluid_items(self):
 +        # Copy only the vessels changed by negative cases; positive admission
 +        # must use the actual generated Item facts.
@@ -18176,13 +18176,13 @@ index 77d1bf7ca..8b86ca7e9 100644
          self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
 -                             for d in native), 54)
 +                             for d in native), 63)
- 
+
      def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
          evidence, _ = container_native.source()
 @@ -160,6 +252,18 @@ class ContainerNativeTests(unittest.TestCase):
              self.assertFalse(container_native.full_charge_leaf(changed, claim, point,
                               item['identity']['key'], raw), mutation)
- 
+
 +    def test_every_admitted_default_matching_charge_leaf_uses_one_instance(self):
 +        proof = plain.load_source_charge_evidence()
 +        for source in proof:
@@ -18205,7 +18205,7 @@ index 557e480f0..830e824e7 100644
 @@ -31,19 +31,26 @@ class CanonicalVariantTests(unittest.TestCase):
                          self.assertTrue(q['item']['key'].startswith('oteryn:item.tibia.i'))
                          self.assertEqual(q['item'], self.items[q['item']['key']]['identity'])
- 
+
 -    def test_plain_231_definition_records_remain_exact_and_readiness_220_11(self):
 +    def test_plain_231_definition_records_remain_exact_and_readiness_228_3(self):
          outputs = plain.generate(); index = json.loads(outputs[plain.INDEX_PATH])
@@ -18218,7 +18218,7 @@ index 557e480f0..830e824e7 100644
          for path in index['shards'][:3]:
              self.assertEqual(outputs[path], (self.root / path).read_text())
          self.assertEqual(index['native_admission']['variants'], 'WAITING_IMPLEMENTATION')
- 
+
      def test_source_complete_is_not_native_or_item_complete(self):
          self.assertTrue(any(r['definition']['readiness'] == 'waiting_implementation' for r in self.records))
 -        held = [r['definition'] for r in self.records if any(g['category'] == 'item' for g in r['definition']['data_holds'])]
@@ -18232,9 +18232,9 @@ index 557e480f0..830e824e7 100644
 +        held = [r['definition'] for r in self.records if r['definition']['data_holds']]
          self.assertTrue(held)
          self.assertTrue(all(d['readiness'] == 'waiting_data' for d in held))
- 
+
 @@ -125,10 +132,10 @@ class CanonicalVariantTests(unittest.TestCase):
- 
+
      def test_compiler_boundary_keeps_unimplemented_shapes_closed(self):
          errors = variants.native_lowering_errors(self.records)
 -        # W15b admits 67 exact container/leaf recipes without rewriting
@@ -18245,7 +18245,7 @@ index 557e480f0..830e824e7 100644
 +        self.assertEqual(sum('native_contents' in r['definition'] for r in self.records), 78)
 +        self.assertEqual(len(errors), 27)
          self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
- 
+
      def test_committed_family_reproduces_with_separate_holds(self):
 diff --git a/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py b/tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py
 index 790e112ac..71d57fe29 100644
@@ -18260,6 +18260,6 @@ index 790e112ac..71d57fe29 100644
          # these two selected native stack normalizations (PR2770 Q4/A).
 -        self.assertEqual(len(variants.native_lowering_errors(self.records)), 38)
 +        self.assertEqual(len(variants.native_lowering_errors(self.records)), 27)
- 
+
      def test_every_actual_item_total_is_preserved(self):
          for row, old in zip(self.records, self.old):

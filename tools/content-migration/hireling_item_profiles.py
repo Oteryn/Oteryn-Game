@@ -31,6 +31,7 @@ MERGED_MAIN_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i10454": (115, 114, 27704),
     "oteryn:item.tibia.i18924": (510, 509, 38605),
     "oteryn:item.tibia.i27598": (230, 229, 52453),
+    "oteryn:item.tibia.i32228": (20, 250, 60653),
 }
 
 # ANSWER Q15A (PR2783 comment6549542080): this one virtual Hireling

@@ -240,6 +240,10 @@ pub fn validate_closed(catalogue: &QuestStateCatalogue) -> Result<(), String> {
         }
         for t in catalogue.transitions.values() {
             for e in &t.effects {
+                // Computed contract markers cannot execute or mutate a track.
+                if e.effect == QuestEffectKind::Computed {
+                    continue;
+                }
                 if e.track == goal.phase {
                     let valid = match (e.from, e.effect) {
                         (QuestComparison::Between(-1, -1), QuestEffectKind::Set(0)) => {
@@ -319,6 +323,29 @@ mod tests {
             .find(|g| g.counter == "oteryn:quest-progress/elvenbane/native-defenders/dragon")
             .ok_or("goal")?;
         validate_closed(lowered.catalogue())?;
+        for track in [&goal.phase, &goal.counter] {
+            let mut catalogue = lowered.catalogue().clone();
+            let marker = QuestTransition {
+                world_change: None,
+                key: "oteryn:quest-transition/fixture-native-goal-marker".into(),
+                quest: goal.quest.clone(),
+                effects: vec![QuestEffect {
+                    track: track.clone(),
+                    from: QuestComparison::Any,
+                    effect: QuestEffectKind::Computed,
+                }],
+                completes: false,
+                experience: None,
+            };
+            catalogue
+                .transitions
+                .insert(marker.key.clone(), marker.clone());
+            validate_closed(&catalogue)?;
+            assert!(matches!(
+                catalogue.evaluate(&marker, &BTreeMap::new(), 0),
+                Err(super::super::QuestRefusal::NotSupported)
+            ));
+        }
         for (track, from, effect) in [
             (&goal.phase, QuestComparison::Eq(1), QuestEffectKind::Set(0)),
             (

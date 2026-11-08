@@ -98,7 +98,7 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(mounts['oteryn:content.mount.wind_up_loco']['look']['id'],1459)
 
     def test_endgame_native_bits_and_completed_parent_contract(self):
-        rows={c['key'].rsplit('/',1)[-1]:c for c in self.callbacks['callbacks']}
+        rows={c['key'].rsplit('/',1)[-1]:c for c in self.l13_callbacks['callbacks']}
         for family,items,bits in [('revenant',[34075,34076],[2,1]),('decaying_defender',[43899,43900],[1,2])]:
             for index,stage in enumerate(['first','second']):
                 row=rows[f'l13-{family}-{stage}']
@@ -109,7 +109,7 @@ class QuestRewards(unittest.TestCase):
         base=rows['l13-rift-base']
         self.assertEqual(base['requires_completed_quests'],['oteryn:quest.ferumbras_ascension_quest'])
         for parents in [[base['quest']],['oteryn:quest.INVALID'],['oteryn:quest.parent']*2,[f'oteryn:quest.parent_{i}' for i in range(9)]]:
-            bad=copy.deepcopy(self.callbacks)
+            bad=copy.deepcopy(self.l13_callbacks)
             next(c for c in bad['callbacks'] if c['key']==base['key'])['requires_completed_quests']=parents
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
 
@@ -147,6 +147,7 @@ class QuestRewards(unittest.TestCase):
     def setUpClass(cls):
         cls.outputs=q.build()
         cls.callbacks=json.loads(cls.outputs['content/quests/shared-reward-callbacks.json'])
+        cls.l13_callbacks=json.loads(cls.outputs['content/quests/npc-callbacks/l13-outfits.json'])
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
@@ -461,7 +462,7 @@ class QuestRewards(unittest.TestCase):
                             and s['preserve'] for s in terminal['storage']))
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=self.callbacks['callbacks']
+        callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].split('/')[-1].startswith('questpc7-')] + self.l13_callbacks['callbacks']
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),88)  # Seven L13 grants.

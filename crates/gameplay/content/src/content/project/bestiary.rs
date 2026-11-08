@@ -31,9 +31,9 @@ const SHARDS: [(&str, &[u8]); 4] = [
         ),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01863.json",
+        "content/creatures/definitions/creatures-01500-01864.json",
         include_bytes!(
-            "../../../../../../content/creatures/definitions/creatures-01500-01863.json"
+            "../../../../../../content/creatures/definitions/creatures-01500-01864.json"
         ),
     ),
 ];
@@ -546,7 +546,7 @@ mod tests {
                 .iter()
                 .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
         );
-        assert_eq!(limits().max_reference_records, 1_864);
+        assert_eq!(limits().max_reference_records, 1_865);
     }
 
     #[test]

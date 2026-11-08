@@ -180,6 +180,11 @@ def qualify(number, definition, world, node, appearance, physical, bindings, fre
             raise ValueError('QUEST_CORPSE_DECAY_ITEM_OWNER')
     source = grizzly.source.profile(number, node, appearance, physical, bindings, None)
     expected = source['semantics']
+    # Native goal corpses already own non-container decay tails. An absent XML
+    # capacity must not replace that accepted policy with the client default8.
+    if (not fresh and 'containersize' not in grizzly.source.attrs(node)
+            and definition.get('semantics', {}).get('container') == grizzly.source.NA):
+        expected['container'] = copy.deepcopy(grizzly.source.NA)
     for group in GROUPS:
         accepted = definition.get('semantics', {}).get(group, grizzly.source.U)
         if grizzly.known_conflict(accepted, expected[group]):

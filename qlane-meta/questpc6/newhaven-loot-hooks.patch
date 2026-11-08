@@ -72,7 +72,7 @@
 +        input.tutorial_corruptor.clone(),
      )
      .await;
- 
+
 --- a/crates/gameplay/durability/src/durability/item_mint.rs
 +++ b/crates/gameplay/durability/src/durability/item_mint.rs
 @@ -886,6 +886,7 @@

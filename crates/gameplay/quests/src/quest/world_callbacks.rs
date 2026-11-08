@@ -11,8 +11,10 @@ mod published_markers;
 mod selector_partitions;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
-// Static callbacks and the dynamic altar share the same boot bound.
+// Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
+// The merged source cohorts and native callbacks share a separate boot bound.
+const MAX_RUNTIME_CALLBACKS: usize = 1024;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -504,7 +506,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     native_callbacks.extend(super::fire_feathered_native::callbacks());
     native_callbacks.extend(super::shared_world_progress::callbacks());
     native_callbacks.extend(super::hive_access::callbacks());
-    if callbacks.len() > MAX_CALLBACKS.saturating_sub(native_callbacks.len()) {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS.saturating_sub(native_callbacks.len()) {
         return Err("callback bounds including native source callbacks".into());
     }
     callbacks.extend(native_callbacks);
@@ -513,12 +515,15 @@ pub fn load() -> Result<Vec<Callback>, String> {
         return Err("duplicate callback across registries".into());
     }
     callbacks.extend(super::deepling_boss_access::callbacks(&callbacks)?);
-    if callbacks.len() > MAX_CALLBACKS {
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
         return Err("callback bounds including native access".into());
     }
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/questl2-djinn-world.json"
     ))?);
+    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+        return Err("callback bounds including djinn access".into());
+    }
     counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));

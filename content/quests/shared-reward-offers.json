@@ -70,6 +70,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.amanda",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.amber",
       "keywords": [
         "addon",
@@ -454,6 +474,49 @@
       ]
     },
     {
+      "npc": "oteryn:npc.brewster",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.broken_servant_sentry",
       "keywords": [
         "slime",
@@ -660,6 +723,44 @@
         "task"
       ],
       "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
       "next_topic": 10,
       "storage": [
         {
@@ -745,6 +846,18 @@
           "set": 1
         }
       ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cledwyn",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [],
       "reply": [
         "Will you help me with this task?"
       ]
@@ -958,6 +1071,78 @@
       ],
       "reply": [
         "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Buy the dungeon key first. The deeper expedition is for adventurers of level 50 or higher."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Defeat eight Dragons or Dragon Lords in the final cavern and recover every equipment cache. Are you ready to report your expedition?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "expedition"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/supplement",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Your expedition is complete. You can still buy another dungeon key."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dermot",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Do you want to buy the dungeon key for 2000 gold?"
       ]
     },
     {
@@ -1825,6 +2010,25 @@
         "shard"
       ],
       "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 0,
       "next_topic": 4,
       "storage": [
         {
@@ -1844,6 +2048,25 @@
         "shard"
       ],
       "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 3,
       "next_topic": 4,
       "storage": [
         {
@@ -1855,6 +2078,25 @@
       ],
       "reply": [
         "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 4,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
       ]
     },
     {
@@ -1958,6 +2200,31 @@
         "outfit"
       ],
       "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
       "next_topic": 5,
       "storage": [
         {
@@ -1994,6 +2261,73 @@
       ],
       "reply": [
         "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
       ]
     },
     {
@@ -2296,6 +2630,106 @@
       ]
     },
     {
+      "npc": "oteryn:npc.isimov",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.kasmir",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "base outfit"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The basic Golden outfit costs 100000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "boots and gloves"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "golden helmet"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden helmet costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.king_tibianus",
       "keywords": [
         "outfit",
@@ -2509,6 +2943,26 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maealil",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -3184,6 +3638,33 @@
         "hat"
       ],
       "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Shall I teach you how to make a feather hat?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
       "next_topic": 2,
       "storage": [
         {
@@ -3215,6 +3696,33 @@
       "storage": [],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
       ]
     },
     {
@@ -3325,6 +3833,66 @@
       ],
       "reply": [
         "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "finish prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The prayer may bless your wooden stake only once."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.quentin",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rahkem",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -3746,6 +4314,40 @@
         "essence"
       ],
       "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
       "next_topic": 4,
       "storage": [
         {
@@ -3831,6 +4433,40 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
           "minimum": 0,
           "maximum": 0
         }
@@ -3989,6 +4625,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.tibra",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
+      ]
+    },
+    {
       "npc": "oteryn:npc.tom",
       "keywords": [
         "paws",
@@ -4006,6 +4662,26 @@
       ],
       "reply": [
         "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tyrias",
+      "keywords": [
+        "stake prayer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Follow the selected prayer order and keep your wooden stake."
       ]
     },
     {
@@ -4309,622 +4985,6 @@
       ]
     },
     {
-      "npc": "oteryn:npc.zoltan",
-      "keywords": [
-        "proof"
-      ],
-      "topic": 0,
-      "next_topic": 1,
-      "storage": [],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.cledwyn",
-      "keywords": [
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.amanda",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.brewster",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.broken_servant_sentry",
-      "keywords": [
-        "slime",
-        "mould",
-        "fungus",
-        "sample"
-      ],
-      "topic": 0,
-      "next_topic": 1,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
-          "minimum": -1,
-          "maximum": 0,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Did you bring samples for me to analyse?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.ceiron",
-      "keywords": [
-        "task"
-      ],
-      "topic": 0,
-      "next_topic": 6,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.ceiron",
-      "keywords": [
-        "task"
-      ],
-      "topic": 0,
-      "next_topic": 8,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        }
-      ],
-      "reply": [
-        "Will you help me with this task?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.hjaern",
-      "keywords": [
-        "shard"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
-          "minimum": 40,
-          "maximum": 40,
-          "set": 41
-        }
-      ],
-      "reply": [
-        "Have you brought 5 frostheart shards?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.hjaern",
-      "keywords": [
-        "shard"
-      ],
-      "topic": 3,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
-          "minimum": 40,
-          "maximum": 40,
-          "set": 41
-        }
-      ],
-      "reply": [
-        "Have you brought 5 frostheart shards?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.hjaern",
-      "keywords": [
-        "shard"
-      ],
-      "topic": 4,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
-          "minimum": 40,
-          "maximum": 40,
-          "set": 41
-        }
-      ],
-      "reply": [
-        "Have you brought 5 frostheart shards?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.hugo",
-      "keywords": [
-        "outfit"
-      ],
-      "topic": 0,
-      "next_topic": 2,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/outfit_quest/default_start",
-          "minimum": 0,
-          "maximum": 1,
-          "set": 1
-        }
-      ],
-      "reply": [
-        "Will you help gather the materials for my creation?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.irmana",
-      "keywords": [
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 19,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The accessory costs 150000 gold carried with you."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.irmana",
-      "keywords": [
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 24,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Are you here to collect your accessory for 150000 gold?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.irmana",
-      "keywords": [
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 25,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 2,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The accessory costs 150000 gold carried with you."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.isimov",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.kasmir",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "base outfit"
-      ],
-      "topic": 0,
-      "next_topic": 101,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The basic Golden outfit costs 100000 gold. Do you agree?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "boots and gloves"
-      ],
-      "topic": 0,
-      "next_topic": 102,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The Golden boots and gloves costs 50000 gold. Do you agree?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "golden helmet"
-      ],
-      "topic": 0,
-      "next_topic": 103,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 2,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The Golden helmet costs 50000 gold. Do you agree?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.maealil",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.norma",
-      "keywords": [
-        "addon",
-        "outfit",
-        "hat"
-      ],
-      "topic": 0,
-      "next_topic": 1,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "reply": [
-        "Shall I teach you how to make a feather hat?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.palimuth",
-      "keywords": [
-        "job",
-        "addon"
-      ],
-      "topic": 0,
-      "next_topic": 6,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
-          "minimum": 54,
-          "maximum": 54,
-          "set": 55
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Did you bring me the vampiric crest?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.quentin",
-      "keywords": [
-        "finish prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "The prayer may bless your wooden stake only once."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.quentin",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.rahkem",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.the_bone_master",
-      "keywords": [
-        "advancement",
-        "demonic",
-        "essence"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
-          "minimum": 1,
-          "maximum": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
-          "minimum": 0,
-          "maximum": 0
-        }
-      ]
-    },
-    {
-      "npc": "oteryn:npc.the_dream_master",
-      "keywords": [
-        "advancement",
-        "demonic",
-        "essence"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
-          "minimum": 1,
-          "maximum": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
-          "minimum": 0,
-          "maximum": 0
-        }
-      ]
-    },
-    {
-      "npc": "oteryn:npc.tibra",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.tyrias",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": 15,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Follow the selected prayer order and keep your wooden stake."
-      ]
-    },
-    {
       "npc": "oteryn:npc.yberius",
       "keywords": [
         "stake prayer"
@@ -4945,75 +5005,15 @@
       ]
     },
     {
-      "npc": "oteryn:npc.dermot",
+      "npc": "oteryn:npc.zoltan",
       "keywords": [
-        "expedition"
+        "proof"
       ],
       "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/fibula/supplement",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Buy the dungeon key first. The deeper expedition is for adventurers of level 50 or higher."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.dermot",
-      "keywords": [
-        "expedition"
-      ],
-      "topic": 0,
-      "next_topic": 3,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/fibula/supplement",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Defeat eight Dragons or Dragon Lords in the final cavern and recover every equipment cache. Are you ready to report your expedition?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.dermot",
-      "keywords": [
-        "expedition"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/fibula/supplement",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Your expedition is complete. You can still buy another dungeon key."
-      ]
-    },
-    {
-      "npc": "oteryn:npc.dermot",
-      "keywords": [
-        "key"
-      ],
-      "topic": 0,
-      "next_topic": 2,
+      "next_topic": 1,
       "storage": [],
       "reply": [
-        "Do you want to buy the dungeon key for 2000 gold?"
+        "Will you help me with this task?"
       ]
     }
   ]

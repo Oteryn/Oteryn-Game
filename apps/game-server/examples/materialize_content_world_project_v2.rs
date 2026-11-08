@@ -460,7 +460,7 @@ fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Er
 fn main_world_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         // E06 mints 68 client-only Crystal market Items into the committed world.
-        max_reference_records: 62_801 + 68 + 3 + cake_creature_admission::RECORD_DELTA,
+        max_reference_records: 62_886,
         max_reimport_states: 404,
         max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
         ..limits()

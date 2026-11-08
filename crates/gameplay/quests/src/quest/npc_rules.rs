@@ -677,7 +677,10 @@ pub(super) fn extend(
     for program in source.programs() {
         let quest = &program.document.quest;
         if program.document.schema == 1
-            && quest != "oteryn:quest.the_order_of_the_stag_quest"
+            && !matches!(
+                quest.as_str(),
+                "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
+            )
             && let Some(hash) = catalogue.definition_hash(quest)
         {
             legacy.insert(

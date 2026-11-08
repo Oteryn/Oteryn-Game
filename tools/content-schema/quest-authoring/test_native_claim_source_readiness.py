@@ -25,6 +25,7 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
                 self.assertEqual(native[key]['readiness'], 'waiting_implementation')
                 self.assertIn('native_contents', native[key])
                 self.assertTrue(source[key]['_source_baseline_item_hold'])
+        draconia = 'oteryn:reward-claim.kv.draconia1'
         triangle = 'oteryn:reward-claim.kv.triangletower'
         self.assertEqual(native[triangle]['data_holds'], [])
         self.assertIn('native_contents', native[triangle])

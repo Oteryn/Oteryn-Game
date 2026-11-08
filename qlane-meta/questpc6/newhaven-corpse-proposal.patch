@@ -47,8 +47,8 @@
 +    flags = objects.get(CORPSE_ID, {}).get('flags', {})
 +    if not all(flags.get('flags.' + flag) is True for flag in ('container', 'unmove', 'corpse')):
 +        raise ValueError('NEWHAVEN_CLIENT_CORPSE')
- 
- 
+
+
  def apply_native(root, generated, profile_path, manifest_path, provider_order, canonical_bytes):
 @@ -138,7 +151,7 @@
          for row in json.loads(path.read_bytes())['records']:
@@ -92,6 +92,6 @@
 +        self.assertEqual(sem['physical']['value']['movable'], newhaven.known(False))
 +        self.assertEqual(sem['physical']['value']['pickupable'], newhaven.known(False))
 +        self.assertTrue(corpse['materializable'])
- 
+
      def test_five_vocations_use_current_named_wiki_identities(self):
          self.assertEqual(newhaven.CORRUPTOR_ITEMS, {
