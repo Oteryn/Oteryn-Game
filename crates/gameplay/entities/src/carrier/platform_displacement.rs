@@ -19,6 +19,30 @@ impl ChannelRuntimeV1 {
         &mut self,
         from: MovementLocalPosition,
         to: MovementLocalPosition,
+        admits: impl FnMut(ExactActorRef, Option<GameSessionId>, MovementLocalPosition) -> bool,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<PlatformDisplacement>, CarrierError> {
+        self.commit_quest_platform_movement(from, to, None, admits, project)
+    }
+
+    /// An occupied winch carries only the invoking rider; a remote call instead
+    /// evacuates the complete platform census through the method above.
+    pub fn commit_quest_platform_ride(
+        &mut self,
+        from: MovementLocalPosition,
+        to: MovementLocalPosition,
+        rider: ExactActorRef,
+        admits: impl FnMut(ExactActorRef, Option<GameSessionId>, MovementLocalPosition) -> bool,
+        project: impl FnOnce() -> bool,
+    ) -> Result<Vec<PlatformDisplacement>, CarrierError> {
+        self.commit_quest_platform_movement(from, to, Some(rider), admits, project)
+    }
+
+    fn commit_quest_platform_movement(
+        &mut self,
+        from: MovementLocalPosition,
+        to: MovementLocalPosition,
+        rider: Option<ExactActorRef>,
         mut admits: impl FnMut(ExactActorRef, Option<GameSessionId>, MovementLocalPosition) -> bool,
         project: impl FnOnce() -> bool,
     ) -> Result<Vec<PlatformDisplacement>, CarrierError> {
@@ -27,7 +51,12 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::PlanConflict);
         }
         let mut occupants = self.positioned_melee_census()?;
-        occupants.retain(|(_, position, _)| position.position() == from);
+        occupants.retain(|(actor, position, _)| {
+            position.position() == from && rider.is_none_or(|rider| rider == *actor)
+        });
+        if rider.is_some() && occupants.len() != 1 {
+            return Err(CarrierError::PlanConflict);
+        }
         if occupants
             .iter()
             .any(|(actor, _, session)| !admits(*actor, *session, to))

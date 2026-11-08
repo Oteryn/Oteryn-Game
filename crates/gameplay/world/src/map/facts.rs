@@ -42,7 +42,7 @@ pub use source_containers::CapturedMapItem;
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
+pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove, RafzaneElevator};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
@@ -120,6 +120,7 @@ pub struct BundleFacts {
     palette: Vec<PaletteFacts>,
     /// Movement targets may be unplaced; these are resolved by the same served Item index.
     movement_definitions: BTreeMap<u16, EntryFacts>,
+    movement_blocks: BTreeMap<u16, bool>,
     /// `(compact id, palette index)` ascending by id, for the ids only one palette entry has.
     ids: Vec<(u32, u32)>,
     /// `(placement key, placement)` ascending by key.
@@ -213,6 +214,7 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements,
             map_source_items: self
@@ -258,6 +260,7 @@ impl BundleFacts {
         Self {
             palette: self.palette.clone(),
             movement_definitions: self.movement_definitions.clone(),
+            movement_blocks: self.movement_blocks.clone(),
             ids: self.ids.clone(),
             placements: self
                 .placements
@@ -305,10 +308,10 @@ impl BundleFacts {
             }
         }
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
-        let movement_definitions = [
+        let movement_definitions: BTreeMap<_, _> = [
             1025, 1949, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187,
             12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
-            14163, 14164, 14255, 21804, 21805, 21812, 26077, 26087, 26100,
+            14163, 14164, 14255, 17939, 21804, 21805, 21812, 26077, 26087, 26100,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -329,9 +332,14 @@ impl BundleFacts {
             ))
         })
         .collect();
+        let movement_blocks = movement_definitions
+            .keys()
+            .filter_map(|id| Some((*id, item(&format!("oteryn:item.tibia.i{id}"))?.solid?)))
+            .collect();
         Ok(Self {
             palette,
             movement_definitions,
+            movement_blocks,
             ids: unique,
             placements: Vec::new(),
             map_source_items: BTreeMap::new(),
@@ -359,6 +367,11 @@ impl BundleFacts {
     /// already have qualified palette facts. Unknown/ambiguous targets cannot
     /// clear a blocker from the immutable base map.
     fn override_blocks(&self, after: EntryFacts) -> Option<bool> {
+        if self.movement_definitions.get(&after.appearance_id) == Some(&after)
+            && let Some(blocked) = self.movement_blocks.get(&after.appearance_id)
+        {
+            return Some(*blocked);
+        }
         let reference = match after.definition {
             MapDefinition::Item(reference) | MapDefinition::Terrain(reference) => reference,
         };

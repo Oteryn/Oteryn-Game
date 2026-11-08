@@ -5,6 +5,10 @@ use super::*;
 mod item_batch;
 pub use item_batch::QuestMapItemMove;
 
+#[path = "rafzane_elevator.rs"]
+mod rafzane_elevator;
+pub use rafzane_elevator::RafzaneElevator;
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
