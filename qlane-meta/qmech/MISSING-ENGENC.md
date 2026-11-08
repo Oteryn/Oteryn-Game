@@ -1,6 +1,6 @@
-# ENGENC missing mechanics — PARTIAL
+# ENGENC — checked M30 mechanics
 
-This is a partial code audit. These rows describe missing server boundaries, not whole-quest qualification. Pickup/capture rows will follow after their source steps are checked. Migration range remains 1620–1639.
+Scope: the coordinator’s binding M30 assignment. These two rows describe checked server boundaries, not whole-quest qualification. M30 uses 2240–2249 as explicitly reassigned by the coordinator; no migration has been added yet.
 
 | quest | missing mechanic (server or client) | evidence (quest file and step, missing hook/table/command) | blocks the quest fully or partly |
 |---|---|---|---|
