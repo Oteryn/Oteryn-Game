@@ -38,8 +38,6 @@ pub mod house_furniture_wrap;
 pub mod house_move_out;
 #[path = "features/0150-house-podium/mod.rs"]
 pub mod house_podium;
-#[path = "features/0449-house-podium-display/mod.rs"]
-pub mod house_podium_display;
 #[path = "features/0086-house-transfer/mod.rs"]
 pub mod house_transfer;
 #[path = "features/0115-mail/mod.rs"]

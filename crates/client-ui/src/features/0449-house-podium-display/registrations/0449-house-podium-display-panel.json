@@ -1,7 +1,0 @@
-{
-  "mechanic": "0449-house-podium-display",
-  "kind": "panels",
-  "id": "0449-house-podium-display-panel",
-  "status": "supported",
-  "entry": "view.rs::panel_text"
-}

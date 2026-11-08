@@ -40,8 +40,6 @@ pub mod guildhall;
 pub mod house;
 #[path = "features/0059-house-move-out/protocol.rs"]
 pub mod house_move_out;
-#[path = "features/0449-house-podium-display/protocol.rs"]
-pub mod house_podium_display;
 #[path = "features/0086-house-transfer/protocol.rs"]
 pub mod house_transfer;
 #[path = "features/0134-party-skull/protocol.rs"]

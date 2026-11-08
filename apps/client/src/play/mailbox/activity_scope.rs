@@ -72,7 +72,7 @@ impl Mailbox {
         self.properties.pvp_expert.pending = Default::default();
         self.properties.mail.pending = Default::default();
         self.properties.house_furniture_wrap.pending = Default::default();
-        self.properties.house_podium.reset_scope();
+        self.properties.house_podium.pending = Default::default();
         self.properties.timed_item.pending = Default::default();
         self.properties.training.pending = Default::default();
         self.properties.guild_bank.pending = Default::default();
@@ -117,9 +117,6 @@ impl Outbox {
         mailbox.target_walk.pending = false;
         mailbox.target_walk.response = None;
         mailbox.cancel_activity_requests();
-        mailbox.properties.house_podium.selected = receipt.selection.contains(&150);
-        mailbox.properties.house_podium.display_selected =
-            mailbox.properties.house_podium.selected && receipt.selection.contains(&449);
         mailbox.activity_reset_commands = true;
         mailbox.map = None;
         mailbox.action_feedback = Some(Some(match receipt.scope {

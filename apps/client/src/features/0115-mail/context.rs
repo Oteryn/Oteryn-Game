@@ -51,7 +51,7 @@ fn open(
         [
             link.mail_panel().selected,
             link.training_panel().selected,
-            link.house_podium_panel().display_selected,
+            link.house_podium_panel().selected,
             link.guild_bank_panel().selected,
         ],
     );
@@ -106,7 +106,7 @@ fn open(
                                 link.training_edit(2, handle.to_string());
                                 link.training_open();
                             }
-                            Property::Podium(handle) => link.house_podium_select(handle),
+                            Property::Podium => link.house_podium_open(),
                             Property::GuildBank => link.guild_bank_open(),
                         }
                     }

@@ -8,8 +8,6 @@ pub use oteryn_protocol_oteryn::{
 pub use oteryn_protocol_oteryn::house_move_out;
 #[path = "property_services/house_handoff.rs"]
 mod house_handoff;
-#[path = "property_services/house_podium_display.rs"]
-pub mod house_podium_display;
 #[path = "property_services/house_transfer.rs"]
 pub mod house_transfer;
 #[path = "property_services/imbuement_details.rs"]

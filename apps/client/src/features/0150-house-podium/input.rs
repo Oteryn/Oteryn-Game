@@ -33,20 +33,6 @@ pub(in crate::play) fn submit(
     }
 }
 impl PlayLink {
-    /// Open the clicked live item; the server resolves its session-local handle.
-    pub fn house_podium_select(&self, handle: u64) {
-        {
-            let mut mailbox = lock(&self.mailbox);
-            let panel = &mut mailbox.properties.house_podium;
-            if !panel.display_selected || panel.pending || handle == 0 {
-                return;
-            }
-            edit(panel, 0, handle.to_string());
-            submit(&mut mailbox, &self.commands, Intent::Refresh);
-        }
-        self.house_podium_open();
-    }
-
     pub fn house_podium_edit(&self, field: usize, value: String) {
         edit(
             &mut lock(&self.mailbox).properties.house_podium,
@@ -87,7 +73,6 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
-        panel.preview = None;
         if field == 0 {
             panel.summary.clear();
             panel.projection.clear();
@@ -95,30 +80,4 @@ pub(in crate::play) fn edit(
             panel.loaded_item.clear();
         }
     }
-}
-
-#[cfg(any(windows, test))]
-pub(in crate::play) fn display_action(
-    panel: &mut oteryn_client_ui::house_podium::Panel,
-    action: usize,
-) {
-    if panel.pending {
-        return;
-    }
-    if matches!(action, 4 | 5) && !panel.display_selected {
-        panel.feedback = "The server does not support podium visibility controls".into();
-        return;
-    }
-    match action {
-        4 if panel.display_selected => panel.visibility.display = !panel.visibility.display,
-        5 if panel.display_selected => panel.visibility.platform = !panel.visibility.platform,
-        6..=8 => panel.fields[1] = (action - 5).to_string(),
-        9 | 10 => {
-            let direction = panel.fields[2].trim().parse::<u8>().unwrap_or(0).min(3);
-            panel.fields[2] = ((direction + if action == 9 { 3 } else { 1 }) % 4).to_string();
-        }
-        _ => return,
-    }
-    panel.preview = None;
-    panel.feedback = "Draft changed. Preview checks it; Save commits it".into();
 }

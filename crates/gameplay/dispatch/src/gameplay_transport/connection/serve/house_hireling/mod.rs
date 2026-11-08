@@ -53,20 +53,6 @@ impl State {
             return Some(routing::store::route(authority, admitted, command).await);
         }
         // Podiums use capability 150 independently of hirelings (Crystal game.cpp:4603-4636).
-        if command.command_type
-            == oteryn_protocol_oteryn::house_podium_display::COMMAND_TYPE_HOUSE_PODIUM_DISPLAY
-        {
-            self.stash_rows = None;
-            return Some(
-                routing::house_podium_display::route(
-                    authority,
-                    admitted,
-                    self.items.as_ref(),
-                    command,
-                )
-                .await,
-            );
-        }
         if matches!(
             command.command_type,
             oteryn_protocol_oteryn::house_podium::COMMAND_QUERY

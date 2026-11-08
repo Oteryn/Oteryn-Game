@@ -30,7 +30,6 @@ pub(in crate::play) struct Panels {
 }
 impl Panels {
     pub fn end(&mut self) {
-        self.house_podium = Default::default();
         self.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { feedback: "The session has ended".into(), ..Default::default() };
         self.house = Default::default();
         self.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel { feedback: "The session has ended".into(), ..Default::default() };
@@ -200,7 +199,7 @@ impl Outbox {
         shared.properties.mail.selected = session.feature_selected(115);
         shared.properties.house_furniture_rotation = oteryn_client_ui::house_furniture_rotation::Panel { selected: session.feature_selected(445), ..Default::default() };
         shared.properties.house_furniture_wrap = oteryn_client_ui::house_furniture_wrap::Panel {selected: session.feature_selected(207), ..Default::default()};
-        super::super::feature_0150_house_podium::protocol::initialize(&mut shared.properties.house_podium, session);
+        shared.properties.house_podium.selected = session.feature_selected(150);
         shared.properties.training.selected = session.feature_selected(54);
         shared.properties.guild_bank.selected = session.feature_selected(55);
     }
@@ -261,10 +260,11 @@ impl Outbox {
                 command,
                 result,
             ),
-            86 => {
-                super::super::feature_0086_house_transfer::protocol::apply(&mut shared.properties.house_transfer, command, result);
-                super::super::feature_0150_house_podium::protocol::after_house_transfer(&mut shared.properties.house_podium, command, result);
-            }
+            86 => super::super::feature_0086_house_transfer::protocol::apply(
+                &mut shared.properties.house_transfer,
+                command,
+                result,
+            ),
             87 => super::super::feature_0087_pvp_expert::protocol::apply(
                 &mut shared.properties.pvp_expert,
                 command,
@@ -303,7 +303,7 @@ impl Outbox {
                 command,
                 result,
             ),
-            150 | 449 => super::super::feature_0150_house_podium::protocol::apply(
+            150 => super::super::feature_0150_house_podium::protocol::apply(
                 &mut shared.properties.house_podium,
                 command,
                 result,

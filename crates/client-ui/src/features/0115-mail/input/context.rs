@@ -29,7 +29,7 @@ pub enum Action {
     Offline(u64),
     Weapon(u64),
     Dummy(u64),
-    Podium(u64),
+    Podium,
     GuildBank,
 }
 pub fn entries(
@@ -55,8 +55,8 @@ pub fn entries(
             ]);
         }
     }
-    if podium && let Some(handle) = handle.filter(|handle| *handle != 0) {
-        entries.push(("Configure this house podium…", Action::Podium(handle)));
+    if podium {
+        entries.push(("House podium editor…", Action::Podium));
     }
     if bank {
         entries.push(("Guild bank…", Action::GuildBank));
@@ -87,7 +87,5 @@ mod tests {
         assert_eq!(menu.len(), 7);
         assert_eq!(menu[0].1, Action::Letter(7));
         assert_eq!(menu[4].1, Action::Dummy(7));
-        assert_eq!(menu[5].1, Action::Podium(7));
-        assert!(entries(None, false, false, true, false).is_empty());
     }
 }

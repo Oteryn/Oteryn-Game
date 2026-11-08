@@ -3,14 +3,9 @@ pub enum Intent {
     Refresh,
     Projection,
     Set,
-    Preview,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
-    pub display_selected: bool,
-    pub visibility: oteryn_client_runtime::house_podium_display::Visibility,
-    pub preview: Option<oteryn_client_runtime::house_podium_display::State>,
-    pub preview_open: bool,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -40,16 +35,5 @@ impl Panel {
     pub fn failed(&mut self, message: &str) {
         self.pending = false;
         self.feedback = message.into();
-    }
-}
-
-impl Panel {
-    /// No source-house target, revision or image may cross an activity scope boundary.
-    pub fn reset_scope(&mut self) {
-        *self = Self {
-            selected: self.selected,
-            display_selected: self.display_selected,
-            ..Self::default()
-        };
     }
 }

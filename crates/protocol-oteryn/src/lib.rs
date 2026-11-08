@@ -74,7 +74,6 @@ pub mod hotkey_equip;
 pub mod house;
 pub mod house_move_out;
 pub mod house_podium;
-pub mod house_podium_display;
 pub mod house_rotation;
 pub mod house_transfer;
 pub mod house_wrap;

@@ -1,8 +1,0 @@
-name=house_podium_display
-commands=733
-transport=house_podium_display
-composed=house_podium_display
-authority=house_podium_display
-offer=703,house_podium_display::offered,house_podium_display_available
-[route]
-routing::house_podium_display::route(authority, &session.admitted, session.item_view.as_ref(), command).await

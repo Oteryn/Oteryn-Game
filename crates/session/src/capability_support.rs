@@ -135,9 +135,6 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
-    oteryn_protocol_oteryn::house_podium_display::CAPABILITY_HOUSE_PODIUM_DISPLAY_V1,
-    oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
-    oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
     oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
@@ -240,8 +237,6 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
-    oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
-    oteryn_protocol_oteryn::house_podium_display::CAPABILITY_HOUSE_PODIUM_DISPLAY_V1,
     oteryn_protocol_oteryn::weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1,
 ];
 

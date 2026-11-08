@@ -26,8 +26,6 @@ pub struct HousePodiumDisplay {
     pub display_kind: u8,
     pub display_key: String,
     pub direction: u8,
-    pub show_display: bool,
-    pub show_platform: bool,
     pub revision: u64,
 }
 
@@ -38,20 +36,6 @@ pub struct HousePodiumSet {
     pub display_kind: u8,
     pub display_key: String,
     pub direction: u8,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HousePodiumWrite {
-    pub value: HousePodiumSet,
-    /// None preserves capability 150's legacy direction-only write.
-    pub visibility: Option<(bool, bool)>,
-    pub preview: bool,
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HousePodiumContext {
-    pub podium_kind: u8,
-    pub definition_key: String,
-    pub definition_revision: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,16 +82,7 @@ const KIND: &str = concat!(
     fence_args!(),
     ",encode($10,'hex')::uuid)"
 );
-const CONTEXT: &str = concat!(
-    "SELECT * FROM game_house_podium_context_fenced(",
-    fence_args!(),
-    ",encode($10,'hex')::uuid)"
-);
-const LOAD: &str = concat!(
-    "SELECT * FROM game_house_podium_load_fenced(",
-    fence_args!(),
-    ")"
-);
+const LOAD: &str = concat!("SELECT * FROM game_house_podium_load_fenced(", fence_args!(), ")");
 
 fn fenced(
     sql: &'static str,
@@ -146,14 +121,6 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<HousePodiumDisplay, DurabilityE
             .map_err(|_| invalid())?,
         display_key: row.try_get("display_key")?,
         direction,
-        show_display: match variant.get("show_display") {
-            None => true,
-            Some(v) => v.as_bool().ok_or_else(invalid)?,
-        },
-        show_platform: match variant.get("show_platform") {
-            None => true,
-            Some(v) => v.as_bool().ok_or_else(invalid)?,
-        },
         revision: row
             .try_get::<String, _>("revision")?
             .parse()
@@ -176,32 +143,6 @@ impl DurabilityRoot {
     where
         C: AppearanceContent<String> + PodiumContent + Send + Sync + 'static,
     {
-        self.set_house_podium_display(
-            node,
-            fence,
-            house,
-            HousePodiumWrite {
-                value: request,
-                visibility: None,
-                preview: false,
-            },
-            content,
-        )
-        .await
-    }
-
-    pub async fn set_house_podium_display<C>(
-        &self,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        house: HouseId,
-        write: HousePodiumWrite,
-        content: C,
-    ) -> Result<Result<u64, HousePodiumRefusal>, DurabilityError>
-    where
-        C: AppearanceContent<String> + PodiumContent + Send + Sync + 'static,
-    {
-        let request = write.value;
         if fence.runtime_scope != house.runtime_scope()? || request.direction > 3 {
             return Ok(Err(HousePodiumRefusal::InvalidInput));
         }
@@ -259,33 +200,11 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(HousePodiumRefusal::NotOwned));
                     }
-                    if write.preview {
-                        let rows = fenced(LOAD, &node, &fence, &house)
-                            .fetch_all(&mut *tx)
-                            .await?;
-                        let revision = rows
-                            .iter()
-                            .map(decode)
-                            .collect::<Result<Vec<_>, _>>()?
-                            .into_iter()
-                            .find(|d| d.item_instance_id == request.item_instance_id)
-                            .map_or(0, |d| d.revision);
-                        if revision != request.expected_revision {
-                            return Ok(Err(HousePodiumRefusal::Changed));
-                        }
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok(revision));
-                    }
-                    let mut variant = serde_json::json!({ "direction": request.direction });
-                    if let Some((display, platform)) = write.visibility {
-                        variant["show_display"] = serde_json::Value::Bool(display);
-                        variant["show_platform"] = serde_json::Value::Bool(platform);
-                    }
                     let result = fenced(SET, &node, &fence, &house)
                         .bind(request.item_instance_id.to_vec())
                         .bind(i16::from(request.display_kind))
                         .bind(request.display_key.clone())
-                        .bind(variant)
+                        .bind(serde_json::json!({ "direction": request.direction }))
                         .bind(request.expected_revision.to_string())
                         .fetch_one(&mut *tx)
                         .await;
@@ -326,10 +245,7 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Ok(Err(HousePodiumRefusal::StaleSession));
                     }
-                    let rows = match fenced(LOAD, &node, &fence, &house)
-                        .fetch_all(&mut *tx)
-                        .await
-                    {
+                    let rows = match fenced(LOAD, &node, &fence, &house).fetch_all(&mut *tx).await {
                         Ok(rows) => rows,
                         Err(error) => {
                             return match HousePodiumRefusal::of(&error) {
@@ -344,52 +260,6 @@ impl DurabilityRoot {
                     let displays = rows.iter().map(decode).collect::<Result<Vec<_>, _>>()?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(displays))
-                })
-            })
-            .await
-    }
-    /// One placed podium's identity. The SQL function re-proves the current session,
-    /// named-House and runtime fences before exposing catalogue references.
-    pub async fn house_podium_context(
-        &self,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        house: HouseId,
-        item: [u8; 16],
-    ) -> Result<Result<HousePodiumContext, HousePodiumRefusal>, DurabilityError> {
-        if fence.runtime_scope != house.runtime_scope()? {
-            return Ok(Err(HousePodiumRefusal::InvalidInput));
-        }
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    if !prove_current_incarnation(&mut tx, &node).await? {
-                        return Ok(Err(HousePodiumRefusal::StaleSession));
-                    }
-                    let row = match fenced(CONTEXT, &node, &fence, &house)
-                        .bind(item.to_vec())
-                        .fetch_optional(&mut *tx)
-                        .await
-                    {
-                        Ok(Some(row)) => row,
-                        Ok(None) => return Ok(Err(HousePodiumRefusal::NotHouseItem)),
-                        Err(error) => {
-                            return match HousePodiumRefusal::of(&error) {
-                                Some(r) => Ok(Err(r)),
-                                None => Err(error.into()),
-                            };
-                        }
-                    };
-                    let context = HousePodiumContext {
-                        podium_kind: u8::try_from(row.try_get::<i16, _>("podium_kind")?)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                        definition_key: row.try_get("definition_key")?,
-                        definition_revision: row.try_get("definition_revision")?,
-                    };
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(context))
                 })
             })
             .await

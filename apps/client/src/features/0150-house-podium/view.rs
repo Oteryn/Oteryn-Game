@@ -12,24 +12,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         Form {
             title: "House podium",
             labels: &[
-                "Live podium handle (or legacy item UUID)",
-                "Display: 1 Outfit, 2 Mount, 3 Creature",
+                "Podium item UUID",
+                "Display: 1 outfit, 2 mount, 3 item",
                 "Direction: 0 north, 1 east, 2 south, 3 west",
                 "Display content key",
             ],
-            buttons: &[
-                "Refresh",
-                "Committed view",
-                "Save",
-                "Preview draft",
-                "Show/hide display",
-                "Show/hide platform",
-                "Outfit",
-                "Mount",
-                "Creature",
-                "Turn left",
-                "Turn right",
-            ],
+            buttons: &["Refresh", "Projection", "Set"],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.house_podium;
                 (
@@ -48,24 +36,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (index, value) in values.into_iter().enumerate() {
                     super::input::edit(panel, index, value);
                 }
-                if action >= 4 {
-                    super::input::display_action(&mut mailbox.properties.house_podium, action);
-                    return;
-                }
                 let intent = match action {
                     0 => oteryn_client_ui::house_podium::Intent::Refresh,
                     1 => oteryn_client_ui::house_podium::Intent::Projection,
                     2 => oteryn_client_ui::house_podium::Intent::Set,
-                    3 => oteryn_client_ui::house_podium::Intent::Preview,
                     _ => return,
                 };
                 super::input::submit(mailbox, commands, intent);
             },
         },
     );
-    preview::open_window(link);
 }
-
-#[cfg(any(windows, test))]
-#[path = "preview.rs"]
-pub(in crate::play) mod preview;
