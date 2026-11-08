@@ -18,7 +18,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Map bug position / optional violation translation",
                 "Comment",
             ],
-            buttons: &["Bug", "Review violation", "Send violation", "Name", "Statement", "Bot"],
+            buttons: &[
+                "Bug",
+                "Review violation",
+                "Send violation",
+                "Name",
+                "Statement",
+                "Bot",
+                "Previous reason",
+                "Next reason",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.player_report;
                 (
@@ -38,7 +47,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     super::input::edit(panel, index, value);
                 }
                 match action {
-                    0 => super::input::submit(mailbox, commands, oteryn_client_ui::player_report::Intent::Bug),
+                    0 => super::input::submit(
+                        mailbox,
+                        commands,
+                        oteryn_client_ui::player_report::Intent::Bug,
+                    ),
                     1 | 2 => violation::activate(mailbox, commands, action == 1),
                     3..=5 => {
                         let panel = &mut mailbox.properties.player_report;
@@ -46,6 +59,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         panel.violation_reviewed = None;
                         panel.feedback = "Choose the operator's reason code, describe the evidence, then review.".into();
                     }
+                    6 | 7 => mailbox.properties.player_report.cycle_reason(action == 7),
                     _ => {}
                 }
             },
