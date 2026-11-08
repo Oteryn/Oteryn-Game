@@ -29,14 +29,17 @@ fn identity_hex(identity: &[u8; 16]) -> String {
 }
 
 fn fixture(fields: EntityFields) -> Result<Capture, BoxError> {
-    let owner = actor(EntityKind::Player, 0xb1, 3, at(0, 1));
+    let mut owner = actor(EntityKind::Player, 0xb1, 3, at(0, 1));
+    owner.display_name = Some(EntityDisplayName::new("Owner").map_err(|e| format!("name: {e:?}"))?);
+    let mut me = own(at(0, 0));
+    me.display_name = Some(EntityDisplayName::new("Observer").map_err(|e| format!("name: {e:?}"))?);
     let mut rat = actor(EntityKind::Creature, 0xc1, 7, at(1, 0));
     rat.display_name = Some(EntityDisplayName::new("Rat").map_err(|e| format!("name: {e:?}"))?);
     let baseline = WorldSpatialEntitiesSnapshot {
         content_generation: CONTENT_GENERATION,
         actor_position: at(0, 0),
         own_identity: OWN,
-        entities: vec![own(at(0, 0)), owner],
+        entities: vec![me, owner],
     };
     let spawn = entities_delta(at(0, 0), vec![rat], vec![], vec![]);
     let ended = entities_delta(at(0, 0), vec![], vec![], vec![rat.entity, owner.entity]);
