@@ -3,6 +3,8 @@ use super::{QuestEffectKind, QuestTransition, reward_callbacks, world_callbacks}
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
+mod shared_world;
+
 struct Owner {
     transition: QuestTransition,
     world: bool,
@@ -51,10 +53,13 @@ fn registry() -> Result<&'static Registry, String> {
                     protect,
                 )?;
             }
+            let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
                 let protect = world_callbacks::gated_binding(&callback)?.is_some();
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
+                } else if let Some(operation) = shared_world.transition(&callback.key) {
+                    operation.clone()
                 } else {
                     world_callbacks::primary_transition(&callback)?
                 };
@@ -260,6 +265,35 @@ mod tests {
                 .transition();
         assert_eq!(room.effects[0].track, timer.effects[0].track);
         validate(&timer, false)?;
+        Ok(())
+    }
+    #[test]
+    fn collector_shared_world_operations_keep_their_canonical_owner() -> Result<(), String> {
+        let empty =
+            super::super::QuestStateCatalogue::new("collector-owner", Vec::new(), Vec::new())
+                .map_err(|error| format!("{error:?}"))?;
+        let source = super::super::shared_world_progress::extend(empty)?;
+        let mut checked = 0;
+        for callback in super::super::shared_world_progress::callbacks() {
+            if let Some(operation) = source.transition(&callback.key) {
+                checked += 1;
+                validate(operation, true).map_err(|error| format!("{}: {error}", callback.key))?;
+                assert!(validate(operation, false).is_err());
+                let mut shadow = operation.clone();
+                shadow.effects[0].effect = QuestEffectKind::Set(999);
+                assert!(validate(&shadow, true).is_err());
+            }
+        }
+        assert_eq!(
+            checked, 6,
+            "five tool objectives plus the hatchling counter"
+        );
+        let fluid = super::super::shared_world_progress::callbacks()
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-callback/hive-native-fluid-preparation")
+            .ok_or("fluid source callback")?;
+        // Fluid preparation keeps its ordinary Set(0), rather than a specialized increment.
+        validate(&world_callbacks::primary_transition(&fluid)?, true)?;
         Ok(())
     }
 }

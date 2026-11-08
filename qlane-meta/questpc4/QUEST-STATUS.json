@@ -10722,8 +10722,34 @@
   "main3030_merge": {
     "main": "78294c081a099c96a57948573d5dbf0caf398abf",
     "scope": "Owner-authorized collector merge on frozen PR branch; compass continuation retained in stash on questpc4b.",
-    "resolution": "Preserve lane carried/shared-switch fences and teleport suppression with main world-change fences/live teleport lookup. Reuse main single typed apply_input helper, keep NPC ground rejection. Add neutral constructor defaults and new Benevola argument; remove duplicate forwarding methods.",
-    "validation": "Full repository regeneration and merged-tree checks in progress; no push yet.",
-    "previous_unit_run": "Interrupted for mandatory branch/content switch:1685 passed;6 running cases cancelled,1119 not run. Not a complete pass. Rerun merged tree."
+    "resolution": "Preserve both behaviours: lane carried/shared-switch fences plus main world-change fence; main live teleport lookup plus lane suppression; main typed InputPermit single apply_input helper plus explicit NPC ground rejection. Neutral constructor defaults/new Benevola argument and duplicate-forwarder cleanup. Reuse exact collector Hive operations through eight-line adapter.",
+    "validation": {
+      "quest_units": "307/307 PASS30.12s; new ownership regression RED0.05s before adapter, GREEN in complete quest run.",
+      "own_postgres": "6/6 realPG18.6 PASS204.169s: reusable55.692s,switch61.831s,sword56.390s,altar49.310s,NPC99.574s,Hiveegress42.773s. /tmp/questpc4-main3030-own-pg.log",
+      "focused_inventories": "5/5 PASS62.703s: equipment3763,Type2mint,Sourcewitnesses,module registration.",
+      "clippy": "12changed crates/alltargets -Dwarnings PASS4m40s",
+      "authoring_units": "1099tests across98modules PASS; former receipt/tree/binding-index failures repaired together.",
+      "authoring_checks": "All remaining freshness checks PASS; donor replay PASS0 missing captures. Matched compiler/receipt, frozen SOURCE cores verified unchanged.",
+      "generated": "Full materializer/tree/catalogues, equipment3763, quest tree/bindings/v2/bundle/rollout/state/candidates regenerated with repository tooling. Final world pin37f50ed7b12dd2ac1ca93ae46c1f76d4604145da34cea18bc2fe73c4a2605063 unchanged on final refresh.",
+      "quest_state": "96quests,1335tracks,3263transitions unchanged; only authoring_sources metadata refreshed.",
+      "duplicate_migrations": 0,
+      "workspace_check": "Final post-regeneration cargo check --workspace --all-targets --keep-going PASS4m19s; initialPASS4m32s.",
+      "fmt": "cargo fmt --all --check PASS, confirmed after final metadata refresh.",
+      "changed_crate_units": "Final twelve-crate unit run compiling at publication; own307questunits,5inventoryregressions and6realPGcases green. Explicit owner PREPUSH-2 step3 cadence allowance used; full result pending, not claimed green."
+    },
+    "previous_unit_run": "Interrupted for mandatory branch/content switch:1685 passed;6 running cases cancelled,1119 not run. Not a complete pass. Rerun merged tree.",
+    "ownership_audit": {
+      "before": "305 files changed,57894 insertions,695 deletions",
+      "local_merge": "270 files changed,57868 insertions,654 deletions",
+      "lane_added_files_retained": "136/136",
+      "owned_quest_ids_retained": "23/23; semantic records unchanged when provenance hashes excluded",
+      "overlapping_owned_ids": [
+        "oteryn:quest.dreamer_s_challenge_quest",
+        "oteryn:quest.the_hidden_city_of_beregar_quest"
+      ],
+      "overlap_scope": "Only source_change_provenance.sha256 differs; regenerated from matched lane receipt and current callback witness.",
+      "samples": "23 overlapping sample files audited. Main live admissions retained for non-owned reward records; regenerated metadata keeps union identities."
+    },
+    "remote_ancestry": "Fetched main and PR branch immediately before publication; behindmain0, own remote is ancestor."
   }
 }
