@@ -85,7 +85,7 @@ Zasady przeciw dublowaniu:
 | T097 | Cyclopedia / Character | Badges / cudza postać / inspection | PARTIAL | Odczyt/zgody są; brak spójnego pełnego profilu i zakładki badges. |
 | O015 | Cyclopedia / Character | Błogosławieństwa i ochrona po śmierci | PARTIAL | Brakuje panelu prognozy kary XP/PvP i utraty ekwipunku przed śmiercią; dostępne są listy błogosławieństw i ich zużycia po śmierci. |
 | T143 | Highscores | Kategorie/world/vocation, paging/show-me | PARTIAL | Są category/vocation/refresh/previous/next; brak world selector i show-me; BattlEye wykluczone. |
-| T113 | Hunting tasks | Bounty, rewards, shop i talisman | PARTIAL | Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji. |
+| T113 | Hunting tasks | Bounty, rewards, shop i talisman | DONE | evidence: apps/client/src/features/0072-task-board/input.rs:76 + task_tree_uses_server_quotes_and_submits_the_selected_path_and_reward |
 | T114 | Hunting tasks | Soul Seals fight dialog | PARTIAL | Licznik soulseals jest; brak dedykowanego fight dialog i wyboru starcia. |
 | T076 | Minimap | Exploration/markers/labels, floor/zoom/pan | DONE | evidence: apps/client/src/features/local-minimap/state.rs:79 + minimap_world_switch_reanchors_camera_without_losing_same_world_pan |
 | O039 | Minimap | Minimapa i nawigacja | DONE | evidence: apps/client/src/features/local-minimap/input.rs:6 + minimap_edge_clicks_never_queue_out_of_world_navigation |

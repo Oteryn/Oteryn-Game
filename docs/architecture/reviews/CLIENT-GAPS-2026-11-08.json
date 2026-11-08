@@ -812,9 +812,10 @@
   "src": "TIBAUD-1",
   "area": "Hunting tasks",
   "feature": "Bounty, rewards, shop i talisman",
-  "status": "PARTIAL",
-  "gap": "Główne operacje są; brak pełnej prezentacji sklepu/drzewa ulepszeń i odbioru wszystkich nagród jak w referencji.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0072-task-board/input.rs:76 + task_tree_uses_server_quotes_and_submits_the_selected_path_and_reward"
  },
  {
   "id": "T114",
