@@ -127,7 +127,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = if name.starts_with("qengine-rewards-m39-bone") {
+    let mut callback = if name == "unnatural-selection-dance-native" {
+        callback("unnatural-selection-dance-2")?
+    } else if name.starts_with("qengine-rewards-m39-bone") {
         callback("bone-pit-collect")?
     } else if native_signs || diprath_room {
         callback("ancient-tombs-diprath-sign-1")?
@@ -1077,6 +1079,8 @@ fn scenario_case(
                 origin,
             )
             .await?;
+        } else if name == "unnatural-selection-dance-native" {
+            super::super::m40_native_dance::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "unnatural-selection-dance-2" {
             super::unnatural_selection::exercise(
                 &mut owner,

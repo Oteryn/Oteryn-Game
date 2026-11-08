@@ -18,7 +18,7 @@ a full-quest certification from these NPC-offer tests.
 
 | quest | missing mechanic (server or client) | evidence (quest file and step, missing hook/table/command) | blocks fully or partly |
 |---|---|---|---|
-| Unnatural Selection | Server and client: native diagonal movement commands for the complete dance route. | `content/quests/world-callbacks.json:8719` onward contains dance callbacks citing `data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:1-67`. `postgres_tests/quest_world_callbacks/unnatural_selection.rs:1-6` explicitly leaves diagonal movement unqualified and arranges fifteen setup steps through the writer. `crates/protocol-oteryn/src/world_spatial.rs:41-46` still defines only cardinal `StepDirection` variants. | Partly: the complete native dance journey. |
+| Unnatural Selection | M40 implemented: negotiated eight-way STEP across server and native client. | `postgres_tests/m40_native_dance.rs::m40_native_diagonal_dance_full_sequence_and_replay`: PostgreSQL 18.6, 69.40 s; all sixteen source steps, four diagonals, x3 receipts, wrong-step reset, capability refusal, replay and one achievement. Existing source dance callbacks are reused. | Assigned engine boundary proved; final clippy/workspace/node-boot validation is pending. |
 
 Current coordinator-assigned migration range: **2020-2029**; M39 uses **2020**
 for the existing reward trigger's quantity-variable collision with the independent-output SQL alias.

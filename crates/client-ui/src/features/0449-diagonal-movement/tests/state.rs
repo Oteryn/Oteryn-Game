@@ -15,7 +15,7 @@ fn m40_keypad_diagonals_require_selected_capability() -> Result<(), Box<dyn std:
             modifiers: Modifiers::NONE,
             repeat: false,
         };
-        assert_eq!(step(&[event.clone()], false), None);
+        assert_eq!(step(std::slice::from_ref(&event), false), None);
         assert_eq!(step(&[event], true), Some(direction));
         assert_eq!(facing(direction), expected_facing);
         let released = NormalizedInputEvent::Key {
