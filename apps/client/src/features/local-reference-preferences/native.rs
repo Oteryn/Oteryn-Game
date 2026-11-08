@@ -188,7 +188,7 @@ unsafe extern "system" fn panel_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM)
             let id = w & 0xffff;
             if !actions.is_null()
                 && (*actions).0.len() < 16
-                && matches!(id, 103 | 106 | 110..=113)
+                && matches!(id, 103 | 106 | 110..=113 | 223)
                 && w >> 16 == BN_CLICKED as usize
             {
                 (*actions).0.push(id);
@@ -261,7 +261,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
             hwnd,
             "COMBOBOX",
             "",
-            120,
+            220,
             [10, 10, 720, 240],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
@@ -272,7 +272,7 @@ fn run(shared: Arc<Mutex<Shared>>) {
         let help = control(
             hwnd,
             "STATIC",
-            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse1 is fixed. Conflicts include all registered actions.",
+            "Key bindings: select an action, enter e.g. ALT+H, then Rebind.\nMouse buttons follow the selected preset. Conflicts include all registered actions.",
             0,
             [10, 50, 720, 45],
             0,
@@ -294,6 +294,54 @@ fn run(shared: Arc<Mutex<Shared>>) {
             WS_BORDER | ES_AUTOHSCROLL as u32,
         );
         let rebind = control(hwnd, "BUTTON", "Rebind", 103, [610, 100, 110, 26], 0);
+        let mouse_preset = control(
+            hwnd,
+            "BUTTON",
+            "Swap primary / secondary mouse buttons",
+            221,
+            [10, 150, 360, 26],
+            BS_AUTOCHECKBOX as u32,
+        );
+        let delay_label = control(
+            hwnd,
+            "STATIC",
+            "Keyboard repeat delay ms (0–1000)",
+            0,
+            [10, 185, 360, 26],
+            0,
+        );
+        let delay = control(
+            hwnd,
+            "EDIT",
+            "",
+            222,
+            [380, 185, 100, 26],
+            WS_BORDER | ES_NUMBER as u32,
+        );
+        let controls_apply = control(
+            hwnd,
+            "BUTTON",
+            "Apply controls",
+            223,
+            [500, 185, 180, 26],
+            0,
+        );
+        let rotation_label = control(
+            hwnd,
+            "STATIC",
+            "Turn modifier (CTRL / ALT / SHIFT)",
+            0,
+            [10, 225, 360, 26],
+            0,
+        );
+        let rotation = control(
+            hwnd,
+            "EDIT",
+            "",
+            224,
+            [380, 225, 100, 26],
+            WS_BORDER | ES_AUTOHSCROLL as u32,
+        );
         let label = control(
             hwnd,
             "STATIC",
@@ -396,6 +444,12 @@ fn run(shared: Arc<Mutex<Shared>>) {
         .collect::<Vec<_>>();
         let feedback = control(hwnd, "STATIC", "", 0, [10, 380, 710, 90], 0);
         if [
+            rotation_label,
+            rotation,
+            mouse_preset,
+            delay_label,
+            delay,
+            controls_apply,
             pages,
             help,
             list,
@@ -448,7 +502,21 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 state.page = *page;
             }
             for (handles, page) in [
-                (&[help, list, chord, rebind][..], SettingsPage::Gameplay),
+                (
+                    &[
+                        help,
+                        list,
+                        chord,
+                        rebind,
+                        mouse_preset,
+                        delay_label,
+                        delay,
+                        controls_apply,
+                        rotation_label,
+                        rotation,
+                    ][..],
+                    SettingsPage::Gameplay,
+                ),
                 (&[label, scale][..], SettingsPage::Interface),
                 (&[volume, mute][..], SettingsPage::Sound),
                 (
@@ -526,7 +594,21 @@ fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 103 {
+                if action == 223 {
+                    match text(delay).parse::<u16>() {
+                        Ok(value) => {
+                            preferences.rotation_modifier =
+                                text(rotation).trim().to_ascii_uppercase();
+                            preferences.keyboard_delay_ms = value;
+                            preferences.swap_mouse_buttons =
+                                SendMessageW(mouse_preset, BM_GETCHECK, 0, 0) == 1;
+                            state.apply(preferences);
+                        }
+                        Err(_) => {
+                            state.feedback = "Enter a keyboard delay from 0 to 1000 ms".into()
+                        }
+                    }
+                } else if action == 103 {
                     if let Some(binding) = bindings.get(selected.max(0) as usize) {
                         match preferences.rebind(binding.id, &text(chord)) {
                             Ok(()) => state.apply(preferences),
@@ -592,6 +674,20 @@ fn run(shared: Arc<Mutex<Shared>>) {
                 ]) {
                     SendMessageW(*control, BM_SETCHECK, usize::from(checked), 0);
                 }
+                SendMessageW(
+                    mouse_preset,
+                    BM_SETCHECK,
+                    usize::from(state.preferences.swap_mouse_buttons),
+                    0,
+                );
+                SetWindowTextW(
+                    delay,
+                    wide(&state.preferences.keyboard_delay_ms.to_string()).as_ptr(),
+                );
+                SetWindowTextW(
+                    rotation,
+                    wide(&state.preferences.rotation_modifier).as_ptr(),
+                );
                 selected = -1;
                 held = Some(state.preferences.clone());
             }

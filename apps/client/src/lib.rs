@@ -9,6 +9,7 @@ pub mod character_selection;
 #[path = "features/local-coin-shop/mod.rs"]
 pub mod coin_shop;
 pub mod combat_input;
+pub mod crash_report;
 pub mod cyclopedia;
 pub mod input;
 pub mod map;

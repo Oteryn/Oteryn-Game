@@ -95,6 +95,7 @@ fn run(
     requests: Sender<NativeLoginConfig>,
     ready: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
+    crate::crash_report::review_pending();
     let path = settings_path();
     let mut bulletin = crate::bulletin::Browser::default();
     let bulletin_warning = std::env::current_exe()
