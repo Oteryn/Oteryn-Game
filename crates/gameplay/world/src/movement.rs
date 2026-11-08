@@ -25,6 +25,7 @@ use {
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
+pub mod cake_extraction;
 pub mod interest;
 pub mod monster_map;
 pub mod pacing;

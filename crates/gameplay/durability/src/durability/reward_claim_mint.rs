@@ -125,6 +125,10 @@ mod quest_actor_conditions;
 mod quest_participants;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 pub use quest_actor_conditions::QuestActorConditionProof;
+mod santa;
+pub use santa::{
+    SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_failed_script_claim, santa_present_items,
+};
 mod soul_war;
 mod tibiadrome;
 
