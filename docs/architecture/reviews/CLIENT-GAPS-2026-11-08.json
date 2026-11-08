@@ -721,9 +721,10 @@
   "src": "TIBAUD-1",
   "area": "Trackers",
   "feature": "Imbuement remaining time",
-  "status": "PARTIAL",
-  "gap": "Stan imbuement/timed items jest; brak dedykowanego trackera wyposażenia i alertów.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0068-imbue/input/tracker.rs:69 + equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items"
  },
  {
   "id": "T102",

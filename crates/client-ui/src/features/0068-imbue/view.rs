@@ -137,8 +137,13 @@ pub fn tracker_text(panel: &ImbuePanel) -> String {
         };
         minutes.saturating_mul(60_000)
     };
+    if panel.equipment.available {
+        return super::equipment_tracker::text(&panel.equipment, limit);
+    }
     let Some(window) = &panel.window else {
-        text.push_str("Select an item and refresh its server state");
+        text.push_str(
+            "Equipment inspection is unavailable; select an item and refresh its server state",
+        );
         return text;
     };
     let mut found = false;
