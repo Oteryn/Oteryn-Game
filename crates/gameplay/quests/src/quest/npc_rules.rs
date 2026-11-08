@@ -265,7 +265,14 @@ pub struct NpcRule {
     pub continue_matching: bool,
     #[serde(default)]
     pub inventory_failure_reply: Vec<String>,
+    /// Canonical personal completion, committed with this selected source branch.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub sources: Vec<String>,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -343,6 +350,7 @@ pub struct NpcTrackChange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcRulePlan {
     pub quest: String,
+    pub completes: bool,
     pub program_digest: [u8; 32],
     pub selected_rule_keys: Vec<String>,
     pub reply: Vec<String>,
