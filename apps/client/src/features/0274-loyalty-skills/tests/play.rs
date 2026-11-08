@@ -14,6 +14,87 @@ use tokio::sync::Notify;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
+#[test]
+fn skills_widget_uses_server_progress_and_saves_visible_order() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    use oteryn_session::skill_display::SkillDisplay;
+    use oteryn_session::skill_progress::{SkillProgress, SkillProgressSnapshot};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.skill_display_initialize(true);
+    link.skills_widget_request();
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.capability == 370 && command.kind == 640 && command.payload.is_empty())
+    );
+    let mut snapshot = SkillDisplay {
+        trained: SkillProgressSnapshot {
+            skills: [SkillProgress {
+                level: 20,
+                progress: 450,
+                required: 1000,
+                percent: 4500,
+            }; 8],
+        },
+        level: 30,
+        experience: 100_000,
+        level_percent: 2345,
+        loyalty_bonus_percent: 10,
+        loyalty_levels: [23; 8],
+        current_levels: Some([24; 8]),
+    };
+    outbox.skill_progress_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: snapshot.encode().ok_or("encode")?,
+    });
+    let widget = link.skills_widget();
+    assert_eq!(widget.rows.len(), 8);
+    assert_eq!(widget.rows[0].progress, Some(4500));
+    assert_eq!(widget.rows[0].trained, 20);
+    assert_eq!(widget.rows[0].loyalty, Some(23));
+    assert_eq!(widget.rows[0].current, Some(24));
+    let path = std::env::temp_dir().join(format!("clientgap-skills-{}.json", std::process::id()));
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.skills_layout.preferences.order = vec![7, 0];
+        mailbox.skills_layout.dirty = true;
+        mailbox.skills_layout.edit = crate::play::feature_0017_attack::view::next_edit();
+    }
+    settings.sync_skills_layout(&link);
+    assert_eq!(
+        link.skills_widget()
+            .rows
+            .iter()
+            .map(|row| row.family)
+            .collect::<Vec<_>>(),
+        [7, 0]
+    );
+    assert_eq!(
+        crate::play::PreferenceStore::load(path.clone())?
+            .preferences()
+            .skills_layout
+            .order,
+        [7, 0]
+    );
+    snapshot.current_levels = None;
+    snapshot.trained.skills[7].required = 0;
+    outbox.skill_progress_result(&GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: CommandStatus::Accepted,
+        payload: snapshot.encode().ok_or("encode")?,
+    });
+    assert_eq!(link.skills_widget().rows[0].current, None);
+    assert_eq!(link.skills_widget().rows[0].progress, None);
+    let mut invalid = settings.preferences.clone();
+    invalid.skills_layout.order = vec![8];
+    settings.apply(invalid);
+    assert_eq!(settings.preferences.skills_layout.order, [7, 0]);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
 struct Reply {
     status: CommandStatus,
     payload: Vec<u8>,

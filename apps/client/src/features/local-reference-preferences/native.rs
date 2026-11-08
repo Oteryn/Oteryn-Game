@@ -94,6 +94,7 @@ impl Settings {
         let mut state = lock(&self.shared);
         state.select_character(view.preference_character());
         state.sync_battle_lists(link);
+        state.sync_skills_layout(link);
         if let Err(error) = state.restore(view, viewport) {
             state.feedback = error.to_string();
         }

@@ -11,6 +11,7 @@ pub struct SettingsState {
     base_path: Option<PathBuf>,
     character: Option<[u8; 16]>,
     battle_edit: u64,
+    skills_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     pub preferences: ReferencePreferences,
@@ -57,6 +58,7 @@ impl SettingsState {
         self.feedback = selected.feedback;
         self.character = character;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        self.skills_edit = self.battle_edit;
     }
 
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
@@ -88,6 +90,7 @@ impl SettingsState {
         store.replace_with_backup(preferences.clone(), &self.preferences)?;
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        self.skills_edit = self.battle_edit;
         Ok(())
     }
 
@@ -113,6 +116,7 @@ impl SettingsState {
             base_path,
             character: None,
             battle_edit: 0,
+            skills_edit: 0,
             store,
             preferences,
             feedback,
@@ -156,11 +160,24 @@ impl SettingsState {
         if self.preferences.battle_lists != preferences.battle_lists {
             self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         }
+        if self.preferences.skills_layout != preferences.skills_layout {
+            self.skills_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         self.preferences = preferences;
         self.feedback = match result {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
+    }
+
+    pub fn sync_skills_layout(&mut self, link: &crate::play::PlayLink) {
+        let mut preferences = self.preferences.clone();
+        if let Some(edit) =
+            link.sync_skills_layout(&mut preferences.skills_layout, self.skills_edit)
+        {
+            self.apply(preferences);
+            self.skills_edit = edit;
+        }
     }
 
     pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {

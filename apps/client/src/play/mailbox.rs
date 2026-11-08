@@ -180,6 +180,7 @@ pub(super) struct Mailbox {
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
+    pub(super) skills_layout: super::feature_0274_loyalty_skills::view::SkillsLayoutState,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,

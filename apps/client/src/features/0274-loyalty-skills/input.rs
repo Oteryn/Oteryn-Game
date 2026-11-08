@@ -17,11 +17,16 @@ impl PlayLink {
         }
     }
 
+    pub fn skills_widget_request(&self) {
+        self.loyalty_skills_request();
+        self.skill_progress_request();
+    }
+
     pub fn loyalty_skills_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::loyalty_skills::open_key(events) {
             return false;
         }
-        self.loyalty_skills_request();
+        self.skills_widget_request();
         #[cfg(windows)]
         super::view::open_window(self);
         #[cfg(not(windows))]
