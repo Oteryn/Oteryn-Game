@@ -13,98 +13,6 @@ pub struct CapturedMapItem {
     pub children: Vec<u64>,
 }
 
-#[cfg(test)]
-mod tests {
-    #![allow(clippy::expect_used)]
-    use super::*;
-    use crate::map::boot::tests as fixture;
-    use oteryn_world_bundle::sector::Item;
-
-    #[test]
-    fn nested_map_sources_keep_root_ordinals_parent_order_counts_and_key_provenance() {
-        let (bytes, _) = fixture::bundle();
-        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("bundle");
-        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("facts");
-        let mut tile = bundle.sectors[0]
-            .tiles
-            .iter()
-            .find(|tile| tile.x == 6)
-            .expect("box")
-            .clone();
-        tile.items.extend([
-            Item {
-                palette: 3,
-                depth: 1,
-                attrs: Attrs::default(),
-            },
-            Item {
-                palette: 4,
-                depth: 2,
-                attrs: Attrs {
-                    count: Some(37),
-                    action: Some(3301),
-                    ..Attrs::default()
-                },
-            },
-            Item {
-                palette: 4,
-                depth: 1,
-                attrs: Attrs::default(),
-            },
-        ]);
-        let pos = TilePos {
-            x: tile.x,
-            y: tile.y,
-            floor: -7,
-        };
-        facts.capture_nested_sources(pos, &tile);
-        let key = |n| placement_key(pos, n).expect("address");
-        let children = facts.captured_map_children(key(1)).expect("root");
-        assert_eq!(
-            children
-                .iter()
-                .map(|item| item.placement_key)
-                .collect::<Vec<_>>(),
-            vec![key(2), key(4)]
-        );
-        let child = facts.captured_map_item(key(3)).expect("nested leaf");
-        assert_eq!((child.root, child.parent), (key(1), key(2)));
-        assert_eq!((child.facts.count, child.attrs.action), (37, Some(3301)));
-    }
-
-    #[test]
-    fn nested_map_sources_refuse_malformed_and_over_budget_roots() {
-        let (bytes, _) = fixture::bundle();
-        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("bundle");
-        let mut tile = bundle.sectors[0]
-            .tiles
-            .iter()
-            .find(|tile| tile.x == 6)
-            .expect("box")
-            .clone();
-        let pos = TilePos {
-            x: tile.x,
-            y: tile.y,
-            floor: -7,
-        };
-        let root = placement_key(pos, 1).expect("root");
-        for depth in [2, 1] {
-            let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("facts");
-            tile.items.truncate(2);
-            tile.items.extend(std::iter::repeat_n(
-                Item {
-                    palette: 4,
-                    depth,
-                    attrs: Attrs::default(),
-                },
-                if depth == 1 { 64 } else { 1 },
-            ));
-            facts.capture_nested_sources(pos, &tile);
-            assert!(facts.captured_map_children(root).is_none());
-        }
-    }
-}
-
 impl BundleFacts {
     pub(super) fn capture_nested_sources(&mut self, pos: TilePos, tile: &Tile) {
         let top_count = tile.items.iter().filter(|item| item.depth == 0).count();
@@ -208,5 +116,97 @@ impl BundleFacts {
             .flatten()
             .map(|child| self.captured_map_item(*child))
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+    use crate::map::boot::tests as fixture;
+    use oteryn_world_bundle::sector::Item;
+
+    #[test]
+    fn nested_map_sources_keep_root_ordinals_parent_order_counts_and_key_provenance() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("bundle");
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("facts");
+        let mut tile = bundle.sectors[0]
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 6)
+            .expect("box")
+            .clone();
+        tile.items.extend([
+            Item {
+                palette: 3,
+                depth: 1,
+                attrs: Attrs::default(),
+            },
+            Item {
+                palette: 4,
+                depth: 2,
+                attrs: Attrs {
+                    count: Some(37),
+                    action: Some(3301),
+                    ..Attrs::default()
+                },
+            },
+            Item {
+                palette: 4,
+                depth: 1,
+                attrs: Attrs::default(),
+            },
+        ]);
+        let pos = TilePos {
+            x: tile.x,
+            y: tile.y,
+            floor: -7,
+        };
+        facts.capture_nested_sources(pos, &tile);
+        let key = |n| placement_key(pos, n).expect("address");
+        let children = facts.captured_map_children(key(1)).expect("root");
+        assert_eq!(
+            children
+                .iter()
+                .map(|item| item.placement_key)
+                .collect::<Vec<_>>(),
+            vec![key(2), key(4)]
+        );
+        let child = facts.captured_map_item(key(3)).expect("nested leaf");
+        assert_eq!((child.root, child.parent), (key(1), key(2)));
+        assert_eq!((child.facts.count, child.attrs.action), (37, Some(3301)));
+    }
+
+    #[test]
+    fn nested_map_sources_refuse_malformed_and_over_budget_roots() {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes).expect("bundle");
+        let mut tile = bundle.sectors[0]
+            .tiles
+            .iter()
+            .find(|tile| tile.x == 6)
+            .expect("box")
+            .clone();
+        let pos = TilePos {
+            x: tile.x,
+            y: tile.y,
+            floor: -7,
+        };
+        let root = placement_key(pos, 1).expect("root");
+        for depth in [2, 1] {
+            let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("facts");
+            tile.items.truncate(2);
+            tile.items.extend(std::iter::repeat_n(
+                Item {
+                    palette: 4,
+                    depth,
+                    attrs: Attrs::default(),
+                },
+                if depth == 1 { 64 } else { 1 },
+            ));
+            facts.capture_nested_sources(pos, &tile);
+            assert!(facts.captured_map_children(root).is_none());
+        }
     }
 }
