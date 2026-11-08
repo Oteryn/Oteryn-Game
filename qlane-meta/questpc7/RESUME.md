@@ -1,3 +1,23 @@
+# Slug fresh-corpse production PG QUALIFIED; publish then MAIN — 2026-11-08 09:08 UTC
+
+ActualPG18.6 RED91.212731681s corpse_item_inadmissible ->GREEN72.27338302s.
+RealRafzanintro+paidkit ->nativeSlugkill, duplicate notifications mint onefresh
+12526Groundcorpse and one visiblecorpse; allquesttracks0/questreceipts2/no odour
+vials. FourNativeprofiles sourcepinned10/300/300/60sec, capacities10/10/5/none.
+No claimof timedchain execution or orderedcorpseUSE; qengine2 handle request8
+remains. Exactsemanticdelta4profiles+one12526capacityfact; otherrecords unchanged.
+EquipmentclosedinventoryunitPASS40.24s; Sourcecaptureverified; Prey15cases776,
+normalregistry/auditinventory/pins/fmt/dups/workspacecheckPASS. Strictcontent/
+dispatchclippyPASS11m01s includingqueue. Fullunitrerun stoppedwhilecompiling,
+beforetests, toprioritizefreshmaincandidate; pending andmust rerunaftermerge.
+PriorThaian snapshotfull3682unitspassed/0fail/22existingignores retained.
+PUBLISH qualifiedslice NOW underPREPUSH2 pendingunitbudget. Whole21done4ACTIVE.
+NEXTownerpriorityfreshorigin/mainmerge: retainmainCallbackEffectSet plusreuse
+existinglane reward/boundedADD/read-only/remote-teleport behaviors. No newengine
+features. Scratchconflictplan/69filepreview under/workspace/scratch; main3209.
+Prepare/replay mergefixes; actualmergebudget15min, abort/publishcompilingstateif
+exceeded. Maincompatrequest7 canclose onlyaftermergedchecks/ownPG proof green.
+
 # Push compiling Slug source WIP — 2026-11-08 08:57 UTC
 
 WorkspacealltargetsPASS4m19s; fmt/dups/normalregeneration/officialpinrefreshPASS.

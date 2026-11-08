@@ -173,7 +173,8 @@
       "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:49-90",
       "facts": "Ordered odours: recently dead Slug, black swamp gas, living Rotworm, mouldy cheese. Do not replace a dynamic Slug corpse with a static map prop.",
       "reuse_checked": "qengine2c7f9d9ba7 shared callback handle route accepts MapAdded only after world_change_item_source; native corpse Entity/Instance handles are not routed here.",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "producer_ready_proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json: actual native Slug death produces one12526Groundcorpse, PG18.6 GREEN72.27338302s; exact Ground corpse USE adapter remains requested."
     }
   ],
   "latest_peer_review": {

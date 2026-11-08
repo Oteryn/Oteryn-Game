@@ -1214,7 +1214,7 @@
       "whole_quest": "ACTIVE"
     },
     "fresh_slug_corpse_progress": {
-      "state": "COMPILING_WIP_PG_GREEN_AND_UNITS_PENDING",
+      "state": "NATIVE_FRESH_CORPSE_PRODUCTION_PG_QUALIFIED",
       "test": "questpc7_goblin_native_slug_death_materializes_fresh_corpse",
       "source": "imports/canary/items-xml/items.xml:30254,30290,30296,30301",
       "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
@@ -1224,7 +1224,9 @@
       "red_error": "kill_reward_refused reason=corpse_item_inadmissible creature=oteryn:creature.slug",
       "frozen_units": "Prior Thaian dispatch full units still running; no production artifact writes until completion",
       "workspace_all_targets": "PASS4m19s",
-      "proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json"
+      "proof": "qlane-meta/questpc7/SLUG-CORPSE-PG-PROOF.json",
+      "green_seconds": 72.27338302,
+      "current_red": null
     }
   },
   {
