@@ -120,7 +120,7 @@ fn run(
         control(
             hwnd,
             "STATIC",
-            "Find quest number or status",
+            "Find number, status or known mission",
             112,
             10,
             10,
