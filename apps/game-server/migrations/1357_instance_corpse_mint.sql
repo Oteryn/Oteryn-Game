@@ -1,53 +1,24 @@
 -- SRX-3 additive source content and temporal rules.
 -- Main 1100/1101/1152 own the canonical tagged BYTEA death namespace,
 -- exact Instance Ground admission and corpse MINT guard chain.
--- Crystal 201189f data/items/items.xml:73328-73347 has precisely the existing
--- corpse-chain owner's 10s/300s/300s transforms plus 60s terminal lifetime.
-DO $$ DECLARE body TEXT; amended TEXT; old TEXT; BEGIN
-    body:=pg_get_functiondef('game_summer_corpse_chain(text)'::regprocedure);
-    old:='WHEN ''oteryn:item.tibia.i54678'' THEN';
-    amended:=replace(body,old,'WHEN ''oteryn:item.tibia.i39530'' THEN ARRAY[39530,39529,39528,39527] '||old);
-    IF amended=body THEN RAISE EXCEPTION 'SRX-3 corpse chain source registry changed'; END IF;
-    EXECUTE amended;
-END $$;
-
--- Reuse the field-chain receipt, predecessor and audit owner. Instance support
--- here is deliberately Ground-only; Character inventory timers retain their
--- independent existing Channel/session rules. Historical Channel audit bytes
--- omit the added discriminator defaults exactly as before.
-ALTER TABLE game_spell_field_temporal_receipts
-    ALTER COLUMN channel_id DROP NOT NULL,
-    ADD COLUMN scope_kind SMALLINT NOT NULL DEFAULT 1 CHECK (scope_kind IN (1,2)),
-    ADD COLUMN instance_id UUID,
-    ADD CONSTRAINT game_spell_field_temporal_scope CHECK (
-        (scope_kind=1 AND channel_id IS NOT NULL AND instance_id IS NULL)
-        OR (scope_kind=2 AND channel_id IS NULL AND instance_id IS NOT NULL
-            AND game_character_is_uuid_v7(instance_id) AND custody_kind=1));
-
+-- The canonical Instance corpse deadline and receipt-scope extension is owned
+-- by M29 migration2200. Retain only independent source corpse registries here.
+-- Keep immutable Channel audit bodies in their original shape when the later
+-- canonical Instance extension adds instance_id. JSON subtraction is valid
+-- before that column exists and idempotent for historical Channel receipts.
 CREATE FUNCTION game_spell_field_temporal_receipt_json(game_spell_field_temporal_receipts)
 RETURNS JSONB LANGUAGE sql STABLE STRICT AS $$
-    SELECT CASE WHEN ($1).scope_kind=1 THEN to_jsonb($1)-'scope_kind'-'instance_id'
+    SELECT CASE WHEN ($1).channel_id IS NOT NULL THEN to_jsonb($1)-'instance_id'
         ELSE to_jsonb($1) END
 $$;
 REVOKE ALL ON FUNCTION game_spell_field_temporal_receipt_json(game_spell_field_temporal_receipts) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_spell_field_temporal_receipt_json(game_spell_field_temporal_receipts) TO oteryn_game_runtime,oteryn_game_control;
-DO $$ BEGIN
+DO $$ DECLARE body TEXT; amended TEXT; BEGIN
     EXECUTE format('ALTER FUNCTION game_spell_field_temporal_receipt_json(game_spell_field_temporal_receipts) SET search_path = pg_catalog, %I, pg_temp',current_schema());
-END $$;
-
-DO $$ DECLARE body TEXT; amended TEXT; n TEXT; BEGIN
-    FOREACH n IN ARRAY ARRAY['game_spell_field_temporal_capture','game_spell_field_temporal_receipt_proven'] LOOP
-        body:=pg_get_functiondef(to_regprocedure(n||'()'));
-        amended:=regexp_replace(body,'g\.channel_id\s*=\s*(r|NEW)\.channel_id',
-            'ROW(g.scope_kind,g.channel_id,g.instance_id) IS NOT DISTINCT FROM ROW(\1.scope_kind,\1.channel_id,\1.instance_id)', 'gi');
-        IF amended=body THEN RAISE EXCEPTION 'SRX-3 field chain Ground proof changed: %', n; END IF;
-        IF n='game_spell_field_temporal_receipt_proven' THEN
-            IF position('to_jsonb(NEW)' IN amended)=0 THEN RAISE EXCEPTION 'SRX-3 field chain audit proof changed'; END IF;
-            amended:=replace(amended,'to_jsonb(NEW)',
-                'game_spell_field_temporal_receipt_json(NEW)');
-        END IF;
-        EXECUTE amended;
-    END LOOP;
+    body:=pg_get_functiondef('game_spell_field_temporal_receipt_proven()'::regprocedure);
+    IF position('to_jsonb(NEW)' IN body)=0 THEN RAISE EXCEPTION 'SRX-3 field chain audit proof changed'; END IF;
+    amended:=replace(body,'to_jsonb(NEW)','game_spell_field_temporal_receipt_json(NEW)');
+    EXECUTE amended;
 END $$;
 
 -- Crystal 201189f data/items/items.xml:12116-12126,16272,16589,63392-63509,76817-76890:

@@ -505,7 +505,8 @@ impl DurabilityRoot {
                     .iter()
                     .any(|c| {
                         c.key == request.transition_key
-                            && (!c.offerings.is_empty()
+                            && (!c.state_ops.is_empty()
+                                || !c.offerings.is_empty()
                                 || c.item_on_target.is_some()
                                 || c.world_change.is_some()
                                 || c.minimum_level.is_some()

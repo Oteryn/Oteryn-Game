@@ -15,6 +15,9 @@ use super::{
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
+#[path = "npc_actor/conditional.rs"]
+mod conditional;
+pub use conditional::ConditionalNpcActor;
 #[path = "npc_actor/hireling.rs"]
 mod hireling;
 #[doc(hidden)]

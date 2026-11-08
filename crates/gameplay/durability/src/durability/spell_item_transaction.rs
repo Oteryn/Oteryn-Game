@@ -126,9 +126,9 @@ impl DurabilityRoot {
                         )
                         .await?;
                         if authority.channel_bytes().is_none() {
-                            // Only original corpse chains are admitted to private Ground here.
-                            // Their existing schedule/receipt owner keeps the exact Instance;
-                            // no origin Channel or synthetic cast is borrowed.
+                            // Crystal 201189f data/items/items.xml:73328-73347:
+                            // the Primal corpse has the same absolute source chain
+                            // inside its exact Instance, never its origin Channel.
                             return super::spell_item_temporal::drain_due_field_chains_in_transaction(
                                 &mut tx, &authority, 500,
                             ).await;

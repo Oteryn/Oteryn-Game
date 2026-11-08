@@ -233,7 +233,8 @@ pub async fn drain_due_items_in_transaction(
             .bind(&event).bind(&transaction).bind(bytes).execute(&mut **tx).await?;
         changed += 1;
     }
-    let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
+    let floor =
+        super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
     Ok(changed + floor)
 }
 
@@ -272,12 +273,8 @@ pub async fn drain_due_field_chains_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let (scope_kind, scope_id) = match authority.runtime_scope() {
-        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
-            (1_i16, *channel_id.as_bytes())
-        }
-        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, instance_id),
-    };
+    let channel = authority.channel_bytes();
+    let instance = authority.runtime_scope().instance_id();
     let mut changed = 0;
     while changed < limit {
         let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,p.source_stage,
@@ -305,32 +302,14 @@ pub async fn drain_due_field_chains_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
-       AND (($5::smallint=1 AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+         OR (g.world_id=i.world_id AND game_instance_corpse_stage_current(i.item_instance_id,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,g.stack_ordinal))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
-          AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric)))
-         OR ($5::smallint=2 AND g.scope_kind=2 AND g.world_id=i.world_id
-          AND g.instance_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation=$3::text::numeric
-          AND p.source_ordinal=0 AND EXISTS (
-           SELECT 1 FROM game_item_mint_receipts m JOIN game_activity_handoff_groups h
-             ON h.world_id=m.death_world_id AND h.instance_id=m.death_instance_id
-              AND h.ownership_generation=m.death_scope_ownership_generation AND h.state=2
-           JOIN game_activity_runtime_entries installed USING(handoff_id)
-           JOIN game_activity_handoff_participants member USING(handoff_id)
-           JOIN game_runtime_scope_assignments live ON live.world_id=h.world_id
-             AND live.activity_instance_id=h.instance_id AND live.scope_kind=3 AND live.state=1
-             AND live.ownership_generation=h.ownership_generation
-             AND live.holder_node_id=installed.holder_node_id
-             AND live.holder_registration_revision=installed.holder_registration_revision
-           WHERE m.item_instance_id=i.item_instance_id AND m.transaction_id=p.source_transaction_id
-             AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
-             AND m.death_scope_kind=2 AND m.death_instance_id=g.instance_id
-             AND m.death_world_id=i.world_id AND m.death_scope_ownership_generation=$3::text::numeric
-             AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
-                 WHERE returned.handoff_id=member.handoff_id AND returned.character_id=member.character_id))))
+          AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
-        .bind(world.as_slice()).bind(scope_id.as_slice()).bind(authority.generation().to_string()).bind(1_i64).bind(scope_kind).fetch_all(&mut **tx).await?;
+        .bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string()).bind(1_i64).bind(instance.map(|id| id.to_vec())).fetch_all(&mut **tx).await?;
         if rows.is_empty() {
             break;
         }
@@ -378,9 +357,9 @@ pub async fn drain_due_field_chains_in_transaction(
             };
             let ordinal: Option<String> = row.try_get("ordinal")?;
             let equipment_revision: Option<String> = row.try_get("equipment_revision")?;
-            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,scope_kind,instance_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,CASE WHEN $19::smallint=1 THEN encode($5,'hex')::uuid END,$19::smallint,CASE WHEN $19::smallint=2 THEN encode($5,'hex')::uuid END,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
-            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(scope_id.as_slice()).bind(authority.generation().to_string())
-            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage).bind(scope_kind)
+            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal,instance_id) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17,encode($19,'hex')::uuid)")
+            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string())
+            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage).bind(instance.map(|id| id.to_vec()))
             .execute(&mut **tx).await?;
             let target: Option<String> = row.try_get("target_production_key")?;
             let affected = if let Some(target) = target {

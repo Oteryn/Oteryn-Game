@@ -684,3 +684,6 @@ fn native_instance_corpse_migration_preserves_legacy_v1_corpse_and_loot_replay_p
         result
     })
 }
+
+#[path = "native_corpse/primal_deadline.rs"]
+mod primal_deadline;
