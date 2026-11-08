@@ -55,16 +55,6 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     mailbox.boss_encounter.boss_search = search.clone();
                     mailbox.boss_encounter.browser_search = search.clone();
                 }
-                if action >= 14 {
-                    if action <= 15 {
-                        mailbox.boss_encounter.select_boss(action == 14);
-                    }
-                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
-                    if action == 18 {
-                        mailbox.boss_encounter.select_slot();
-                    }
-                    return;
-                }
                 for (index, value) in values.into_iter().take(3).enumerate() {
                     super::super::input::edit(&mut mailbox.boss_encounter, index, value);
                 }
@@ -77,6 +67,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         &mut mailbox.boss_encounter,
                         chain,
                     );
+                    return;
+                }
+                if action >= 14 {
+                    if action <= 15 {
+                        mailbox.boss_encounter.select_boss(action == 14);
+                    }
+                    if action == 16 { mailbox.boss_encounter.browser_category = mailbox.boss_encounter.browser_category.next(); }
+                    if action == 20 {
+                        mailbox.boss_encounter.select_slot();
+                    }
                     return;
                 }
                 let intent = match action {

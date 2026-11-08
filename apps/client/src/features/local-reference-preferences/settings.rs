@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 #[path = "bindings.rs"]
 mod bindings;
+#[path = "profiles.rs"]
+mod profiles;
 #[path = "store.rs"]
 mod store;
 #[path = "sync.rs"]
@@ -42,6 +44,17 @@ fn enabled() -> bool {
     true
 }
 
+fn default_arc_distance() -> u16 {
+    8
+}
+fn default_arc_size() -> u16 {
+    3
+}
+
+fn default_hud_names() -> [bool; 3] {
+    [true; 3]
+}
+
 fn default_shortcuts() -> Vec<String> {
     WINDOW_ACTIONS
         .iter()
@@ -72,6 +85,16 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "default_arc_distance")]
+    pub arc_distance: u16,
+    #[serde(default = "default_arc_size")]
+    pub arc_size: u16,
+    #[serde(default = "default_hud_names")]
+    pub hud_names: [bool; 3],
+    #[serde(default = "default_scale")]
+    pub interface_scale: u16,
+    #[serde(default)]
+    pub cursor_crosshair: bool,
     #[serde(default = "default_rotation_modifier")]
     pub rotation_modifier: String,
     #[serde(default)]
@@ -106,6 +129,9 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub keybindings: std::collections::BTreeMap<String, String>,
     #[serde(default)]
+    pub hotkey_profiles:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>,
+    #[serde(default)]
     pub english: bool,
     /// Requested world zoom percentage, fitted to the current viewport when projected.
     #[serde(default = "default_scale")]
@@ -117,6 +143,11 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            arc_distance: 8,
+            arc_size: 3,
+            hud_names: default_hud_names(),
+            interface_scale: 100,
+            cursor_crosshair: false,
             rotation_modifier: default_rotation_modifier(),
             swap_mouse_buttons: false,
             keyboard_delay_ms: 0,
@@ -133,6 +164,7 @@ impl Default for ReferencePreferences {
             battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
+            hotkey_profiles: std::collections::BTreeMap::new(),
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
@@ -143,6 +175,7 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)
@@ -152,6 +185,9 @@ impl ReferencePreferences {
             return Err(PreferenceError);
         }
         if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || self.arc_distance > 80
+            || !(1..=8).contains(&self.arc_size)
+            || !(80..=200).contains(&self.interface_scale)
             || !matches!(self.rotation_modifier.as_str(), "CTRL" | "ALT" | "SHIFT")
             || self.keyboard_delay_ms > 1000
             || self.hud_bounds[2] < 120
@@ -173,6 +209,11 @@ impl ReferencePreferences {
     #[must_use]
     pub fn panel_visible(&self, id: &str) -> bool {
         self.visible_panels.iter().any(|visible| visible == id)
+    }
+
+    pub fn scaled_hud_bounds(&self) -> [u16; 4] {
+        self.hud_bounds
+            .map(|value| (u32::from(value) * u32::from(self.interface_scale) / 100) as u16)
     }
 }
 

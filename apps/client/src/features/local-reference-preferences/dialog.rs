@@ -1,7 +1,8 @@
-//! Settings window message loop and preference actions.
+//! Settings message pump and preference application on its owning thread.
 use super::*;
-#[path = "widgets.rs"]
-mod widgets;
+#[path = "controls.rs"]
+mod controls;
+use controls::Controls;
 
 pub(super) fn run(shared: Arc<Mutex<Shared>>) {
     unsafe {
@@ -30,12 +31,20 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, panel_proc as *const () as isize);
-        let Some(widgets::Widgets {
+        let Some(Controls {
+            arcs,
+            interface,
+            profile_name,
+            profile_save,
+            profile_load,
+            profile_delete,
             pages,
             help,
             list,
             chord,
             rebind,
+            chat_on,
+            chat_off,
             mouse_preset,
             delay_label,
             delay,
@@ -55,11 +64,14 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             defaults,
             hud_checks,
             feedback,
-        }) = widgets::create(hwnd, &shared)
+        }) = Controls::new(hwnd)
         else {
+            DestroyWindow(hwnd);
+            lock(&shared).open = false;
             return;
         };
-        let bindings = preference_bindings().unwrap_or_default();
+        let mut bindings = preference_bindings().unwrap_or_default();
+        let mut binding_page = SettingsPage::Hotkeys;
         let mut held = None;
         let mut selected = -1;
         let mut message: MSG = std::mem::zeroed();
@@ -84,13 +96,44 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
             {
                 state.page = *page;
             }
+            if binding_page != state.page {
+                binding_page = state.page;
+                bindings = preference_bindings()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|binding| {
+                        state.page != SettingsPage::BarHotkeys
+                            || binding.id.starts_with("local-spell-action-bar-spell-")
+                    })
+                    .collect();
+                held = None;
+                selected = -1;
+            }
+            for handle in [help, list, chord, rebind] {
+                ShowWindow(
+                    handle,
+                    if matches!(
+                        state.page,
+                        SettingsPage::Hotkeys
+                            | SettingsPage::BarHotkeys
+                            | SettingsPage::CustomHotkeys
+                    ) {
+                        SW_SHOW
+                    } else {
+                        SW_HIDE
+                    },
+                );
+            }
+            arcs.show(state.page == SettingsPage::Arcs);
+            interface.show(state.page == SettingsPage::Interface);
             for (handles, page) in [
                 (
+                    &[profile_name, profile_save, profile_load, profile_delete][..],
+                    SettingsPage::CustomHotkeys,
+                ),
+                (&[chat_on, chat_off][..], SettingsPage::Hotkeys),
+                (
                     &[
-                        help,
-                        list,
-                        chord,
-                        rebind,
                         mouse_preset,
                         delay_label,
                         delay,
@@ -130,7 +173,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 apply,
                 if matches!(
                     state.page,
-                    SettingsPage::Interface | SettingsPage::Sound | SettingsPage::Graphics
+                    SettingsPage::Interface
+                        | SettingsPage::Sound
+                        | SettingsPage::Graphics
+                        | SettingsPage::Arcs
                 ) {
                     SW_SHOW
                 } else {
@@ -177,7 +223,29 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                     continue;
                 }
                 let mut preferences = state.preferences.clone();
-                if action == 223 {
+                if (231..=233).contains(&action) {
+                    let name = text(profile_name);
+                    let result = match action {
+                        231 => preferences.save_hotkey_profile(&name),
+                        232 => preferences.load_hotkey_profile(&name),
+                        _ => {
+                            preferences.hotkey_profiles.remove(&name);
+                            Ok(())
+                        }
+                    };
+                    match result {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => state.feedback = error.to_string(),
+                    }
+                } else if matches!(action, 225 | 226) {
+                    match preferences.general_hotkey_preset(action == 225) {
+                        Ok(()) => state.apply(preferences),
+                        Err(error) => {
+                            state.feedback =
+                                format!("Preset conflicts with a custom binding: {error}")
+                        }
+                    }
+                } else if action == 223 {
                     match text(delay).parse::<u16>() {
                         Ok(value) => {
                             preferences.rotation_modifier =
@@ -201,6 +269,14 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                         }
                     }
                 } else {
+                    if let Err(error) = arcs.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
+                    if let Err(error) = interface.read(&mut preferences) {
+                        state.feedback = error;
+                        continue;
+                    }
                     match (text(scale).parse::<u16>(), text(volume).parse::<u8>()) {
                         (Ok(scale), Ok(volume)) => {
                             preferences.ui_scale = scale;
@@ -227,6 +303,8 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 }
             }
             if held.as_ref() != Some(&state.preferences) {
+                arcs.refresh(&state.preferences);
+                interface.refresh(&state.preferences);
                 let selection = selected.max(0) as usize;
                 SendMessageW(list, CB_RESETCONTENT, 0, 0);
                 for binding in &bindings {
@@ -281,6 +359,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 held = Some(state.preferences.clone());
             }
             let page_help = match state.page {
+                SettingsPage::CustomHotkeys => {
+                    "Profile names use letters, digits, spaces, _ or -. Up to 16 saved profiles. Object, text and passive action assignment is not available yet."
+                }
+                SettingsPage::BarHotkeys => {
+                    "Configure each supported action bar slot above. This client currently exposes one row of four spell slots."
+                }
                 SettingsPage::Graphics => {
                     "Renderer and window options use the supported native renderer. Additional controls are not available yet."
                 }
