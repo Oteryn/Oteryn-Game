@@ -19,48 +19,7 @@ pub(super) async fn sample(
     let revision: i64 = sqlx::query_scalar("SELECT character_revision::bigint FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     let fence = f::fence(u64::try_from(revision)?)?;
-    let world = fence.runtime_scope.world_id();
-    let channel_pin = ChannelContentPin::from_activation(
-        world,
-        pin.activation_sequence(),
-        pin.identity().server_artifact_digest(),
-        pin.identity().client_artifact_digest(),
-        pin.frame_binding().digest(),
-        pin.qualified_room().map_revision_digest(),
-        (0, 0, 0),
-    );
-    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-        world,
-        f::scope()?.channel_id().ok_or("channel")?,
-        NodeId::decode(&f::id(1)).map_err(f::debug)?,
-        1,
-        1,
-        1,
-        "runtime-scope-assignment:1",
-        12,
-        channel_pin,
-    )
-    .map_err(f::debug)?;
-    let reservation = runtime
-        .reserve_fresh_session(fence.game_session_id)
-        .map_err(f::debug)?;
-    let actor = runtime
-        .commit_fresh_session(reservation)
-        .map_err(f::debug)?;
-    runtime
-        .initialize_first_entry_position(actor)
-        .map_err(f::debug)?;
-    runtime
-        .bind_attacker_lease(
-            actor,
-            fence.game_session_id,
-            CharacterLease::new(
-                CharacterId::decode(fence.character_id.as_bytes()).map_err(f::debug)?,
-                fence.character_lease_generation,
-            )
-            .map_err(f::debug)?,
-        )
-        .map_err(f::debug)?;
+    let (mut runtime, actor) = runtime(pin, fence)?;
     let at = runtime
         .read_actor_position(actor)
         .map_err(f::debug)?
@@ -143,6 +102,7 @@ pub(super) async fn sample(
             .ok_or("current native Rotworm")?;
     let source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i17673' AND lifecycle=1").fetch_one(&h.pool).await?;
     let carried = QuestCarriedUse {
+        recipe_target: None,
         source: source.try_into().map_err(|_| "source UUID")?,
         intent: encode_item_use_intent(&intent).map_err(f::debug)?,
     };
@@ -228,4 +188,54 @@ pub(super) async fn sample(
         "a replay never consumes or remints the selected tool again"
     );
     Ok(())
+}
+
+// Reused by the capture PG case: a real lease-bound native owner, no custody SQL.
+pub(super) fn runtime(
+    pin: &NativeEntryContentPin,
+    fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+) -> f::TestResult<(ChannelRuntimeV1, crate::foundation::ExactActorRef)> {
+    let world = fence.runtime_scope.world_id();
+    let channel_pin = ChannelContentPin::from_activation(
+        world,
+        pin.activation_sequence(),
+        pin.identity().server_artifact_digest(),
+        pin.identity().client_artifact_digest(),
+        pin.frame_binding().digest(),
+        pin.qualified_room().map_revision_digest(),
+        (0, 0, 0),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        f::scope()?.channel_id().ok_or("channel")?,
+        NodeId::decode(&f::id(1)).map_err(f::debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        12,
+        channel_pin,
+    )
+    .map_err(f::debug)?;
+    let reservation = runtime
+        .reserve_fresh_session(fence.game_session_id)
+        .map_err(f::debug)?;
+    let actor = runtime
+        .commit_fresh_session(reservation)
+        .map_err(f::debug)?;
+    runtime
+        .initialize_first_entry_position(actor)
+        .map_err(f::debug)?;
+    runtime
+        .bind_attacker_lease(
+            actor,
+            fence.game_session_id,
+            CharacterLease::new(
+                CharacterId::decode(fence.character_id.as_bytes()).map_err(f::debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(f::debug)?,
+        )
+        .map_err(f::debug)?;
+    Ok((runtime, actor))
 }

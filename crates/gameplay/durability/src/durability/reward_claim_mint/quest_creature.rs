@@ -30,6 +30,7 @@ pub struct QuestCreatureUseProof<'runtime> {
     callback: String,
     key: String,
     target: EntityRef,
+    target_actor: ExactActorRef,
 }
 impl<'runtime> QuestCreatureUseProof<'runtime> {
     pub fn read_current(
@@ -73,8 +74,37 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             callback: callback.key.clone(),
             key: key.clone(),
             target,
+            target_actor: creature,
         })
     }
+    /// Exact handle observed in the retained runtime turn; used after a committed capture.
+    pub fn target_actor(&self) -> ExactActorRef {
+        self.target_actor
+    }
+
+    pub(super) async fn record_capture(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        carried: &super::QuestCarriedUse,
+    ) -> Result<bool, crate::durability::DurabilityError> {
+        let crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = self.fence.runtime_scope
+        else {
+            return Ok(false);
+        };
+        Ok(sqlx::query("INSERT INTO game_quest_creature_captures(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,target_identity,target_generation,creature_key,source_item,ingress) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,$8,$9::text::numeric,$10,encode($11,'hex')::uuid,$12) ON CONFLICT DO NOTHING")
+            .bind(self.fence.character_id.as_bytes().as_slice())
+            .bind(self.command.game_session_id().as_bytes().as_slice())
+            .bind(self.command.command_id().get().to_string()).bind(&self.callback)
+            .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+            .bind(self.fence.scope_ownership_generation.get().to_string())
+            .bind(self.target.identity.as_slice()).bind(self.target.generation.to_string())
+            .bind(&self.key).bind(carried.source.as_slice()).bind(&carried.intent)
+            .execute(&mut **tx).await?.rows_affected() == 1)
+    }
+
     pub(super) fn permits(
         &self,
         fence: CurrentCharacterGameplayFence,

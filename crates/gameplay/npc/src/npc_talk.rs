@@ -25,10 +25,12 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
 ];
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];
 
 #[derive(serde::Deserialize)]
@@ -782,6 +784,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn goblin_capture_intro_has_source_rafzan_greeting() -> Result<(), String> {
+        assert!(reward_callback_npc("oteryn:npc.rafzan"));
+        let greeting = reward_messages("oteryn:npc.rafzan").ok_or("Rafzan greeting")?;
+        assert_eq!(greeting.greet, "Greetings, |PLAYERNAME|.");
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -801,6 +811,7 @@ mod tests {
             "sam",
             "oldrak",
             "zoltan",
+            "rafzan",
         ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book

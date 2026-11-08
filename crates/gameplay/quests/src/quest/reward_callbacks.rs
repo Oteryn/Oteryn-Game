@@ -6,6 +6,8 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
+mod capture_tests;
 mod colours_peer;
 #[cfg(test)]
 mod peer_tests;
@@ -166,6 +168,9 @@ pub struct RewardCallback {
     /// Exact native live creature selected by a carried quest tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Remove the exact living target only after its tool/progress receipt commits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub capture_creature: bool,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -310,6 +315,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-rotworm-sample.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m20-cursed-crystal-recipes.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
@@ -492,6 +498,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || (c.capture_creature && c.creature_target.is_none())
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
