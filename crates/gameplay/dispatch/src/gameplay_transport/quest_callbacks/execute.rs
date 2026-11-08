@@ -505,7 +505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback.storage.is_empty()
+        if !callback.has_state()
             && world_callbacks::world_change_requirement(&callback.key).is_some()
         {
             let Some(observed) = observed_world else {
@@ -535,7 +535,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        let durable = !callback.storage.is_empty() && !(close && callback.opening_only);
+        let durable = callback.has_state() && !(close && callback.opening_only);
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {
@@ -678,15 +678,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 after,
             );
         }
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-            projection.as_ref(),
-        ) {
+        let read_only_gift = callback.effects.item_reward.is_some()
+            && callback.lever.is_none()
+            && callback.effects.transform.is_none()
+            && callback
+                .item_on_target
+                .as_ref()
+                .is_none_or(|item| item.target_replacement.is_none())
+            && passages.is_empty()
+            && replacements.is_empty()
+            && projection.is_none();
+        if !read_only_gift
+            && !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+                projection.as_ref(),
+            )
+        {
             return UseDisposition::Rejected;
         }
         if matches!(

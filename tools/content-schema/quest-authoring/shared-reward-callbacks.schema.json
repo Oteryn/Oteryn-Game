@@ -431,6 +431,10 @@
             }
           }
         },
+        "carried_exchange": {
+          "type": "boolean",
+          "default": false
+        },
         "carried_item": {
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
@@ -480,6 +484,17 @@
                 ]
               }
             }
+          }
+        },
+        "requires_completed_quests": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^oteryn:quest\\.[a-z0-9_]+(?:\\.[a-z0-9_]+)*$",
+            "maxLength": 128
           }
         },
         "completes": {

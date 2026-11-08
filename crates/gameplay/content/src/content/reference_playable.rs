@@ -2309,9 +2309,9 @@ fn validate_reward_claim_definition(
                 entry.placement.as_str().to_owned(),
             ));
         }
-        if entry.items.len() != 1 {
+        if entry.items.is_empty() || entry.items.len() > 20 {
             return Err(ContentError::InvalidArtifact(
-                "reference-playable reward claim placement requires exactly one reward item",
+                "reference-playable reward claim placement requires 1..20 reward items",
             ));
         }
         if entry.items.iter().any(|item| item.count == 0) {
