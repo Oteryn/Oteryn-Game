@@ -102,9 +102,12 @@ pub(super) async fn apply<C: ItemLoopContent>(
         .into_iter()
         .map(|(item, count)| serde_json::json!({"item":item,"count":count}))
         .collect::<Vec<_>>();
-    let value = serde_json::json!({"key":request.transition_key,"quest":plan.quest,"npc":request.npc,
+    let mut value = serde_json::json!({"key":request.transition_key,"quest":plan.quest,"npc":request.npc,
         "program_digest":plan.program_digest,"rules":plan.selected_rule_keys,"take":take,"give":gift,
         "tracks":plan.track_changes.iter().map(|change|serde_json::json!({"key":change.key,"before":change.before,"after":change.after})).collect::<Vec<_>>()});
+    if plan.completes {
+        value["completes"] = serde_json::json!(true);
+    }
     if value.to_string().len() > 16384 {
         return Ok(false);
     }
