@@ -941,3 +941,7 @@ bounded aggregate is512. The separate per-document and document-count refusal
 cases remain tested. False completion fields retain main's omitted wire form.
 Generated index witnesses use the planned output only after native palette and
 region equality. This fixes a producer ordering error, without inventing facts.
+
+## Northern Fishburger custody (2026-11-08)
+
+Hot Cuisine's ninth reward is Northern Fishburger (9088), not a recipe ingredient. The pinned donor `imports/canary/items-xml/items.xml:24261` (SHA-256 `1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`) gives weight 459 centi-oz and omits the description's terminal period. Existing canonical `content/items/definitions/items-33000-33499.json` gives 460 centi-oz and the period. Retain those exact canonical facts, as with the established Purified Soul reconciliation; the new helper refuses any other pair. This is a bounded physical custody admission, not food-use activation, a cooking callback, or whole-quest qualification. Canonical data is unchanged. The source importer supplies stackability/client flags; no charges or food effects are invented.

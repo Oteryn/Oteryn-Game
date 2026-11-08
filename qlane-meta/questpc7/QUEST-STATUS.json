@@ -1876,7 +1876,7 @@
     "title": "Hot Cuisine Quest",
     "canonical": "oteryn:quest.hot_cuisine_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
-    "status": "ACTIVE",
+    "status": "WAITING-ENGINE",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "source_binding_queue": {
@@ -1893,8 +1893,8 @@
     },
     "owner": "questpc7",
     "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose the quest-owned route using the shared engine requested in ENGINE-REQUESTS.json after qengine2 delivery; do not implement a large new engine in this lane.",
+      "kind": "WAITING-ENGINE",
+      "missing_piece": "QENGINE2 guarded HotCuisineProgram adapter: UTC calendar, exact typed hand-ins, real level and Premium. Retained PG18.6 cooking case still Refused(StageMismatch),40.03s.",
       "evidence": [
         "content/quests/definitions/quests-00100-00199.json:1#/records/60/definition",
         "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351",
@@ -1933,7 +1933,8 @@
         "stale lease rejection"
       ],
       "reused_source": "origin/claude/happy-davinci-ijz3wy-qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e:tools/content-migration/qengine_reward_item_profiles.py",
-      "validation": "qlane-meta/questpc7/NPC-EXCHANGE-VALIDATION.json"
+      "validation": "qlane-meta/questpc7/NPC-EXCHANGE-VALIDATION.json",
+      "current_integration_state": "Historical GREEN superseded: retained cooking case on current main returns Refused(StageMismatch) in actualPG18.6,40.03s. Custody support is GREEN; cooking remains WAITING-ENGINE."
     },
     "mandatory_validation": {
       "state": "FOCUSED_CHECKS_RUNNING",
@@ -1953,7 +1954,7 @@
     },
     "engine_request": {
       "id": "hot-cuisine-native-eligibility",
-      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "state": "WAITING-ENGINE",
       "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
     },
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
@@ -1965,10 +1966,9 @@
       "own_pg_requalification": "PASS5cases actualPG18.6,332.064s; remaining unit/recheck budget explicitly pending"
     },
     "latest_engine_review": {
-      "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+      "main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
       "native_npc_level": "literal zero at npc_program.rs:148",
-      "shared_reward_take_bound": 16,
-      "decision": "Reuse existing cooking owner; request real native eligibility from qengine2; do not qualify from ingredient-only proof."
+      "decision": "All selected ingredients and dishes now have native profiles; guarded cooking planner integration remains owned by qengine2."
     },
     "qualified_support": [
       {
@@ -1988,8 +1988,20 @@
           6053
         ],
         "boundary": "No full quest, timed-decay execution, portable pickup or source-map spawn claim."
+      },
+      {
+        "kind": "source-qualified native Northern Fishburger custody",
+        "proof": "qlane-meta/questpc7/HOT-FISHBURGER-PG-PROOF.json",
+        "postgres": "18.6",
+        "red_seconds": 39.702659393,
+        "green_seconds": 40.78833194,
+        "item_ids": [
+          9088
+        ],
+        "boundary": "Fixture MINT/carried custody only; no cooking reward or whole-quest qualification."
       }
-    ]
+    ],
+    "latest_support_validation": "qlane-meta/questpc7/HOT-FISHBURGER-PG-PROOF.json"
   },
   {
     "title": "Hunter Outfits Quest",

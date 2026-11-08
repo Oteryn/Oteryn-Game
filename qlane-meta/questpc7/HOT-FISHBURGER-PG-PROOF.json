@@ -1,0 +1,58 @@
+{
+  "at": "2026-11-08T15:08:37.603425+00:00",
+  "state": "QUALIFIED_SUPPORT_SLICE",
+  "item": 9088,
+  "test": "questpc7_hot_native_bat_chicken_corpse_inputs",
+  "postgres": "18.6",
+  "red_seconds": 39.702659393,
+  "red_error": "missing Northern Fishburger custody policy",
+  "green_seconds": 40.78833194,
+  "green_log_sha256": "ceb44e6455eb162b26fca4bff3dda356390605f47393cb19709b458f5be87dcb",
+  "scope": [
+    "native Northern Fishburger custody policy and retained canonical460centi-oz",
+    "fixture MINT followed by carried custody of exactly one dish",
+    "ordinary Bat/Chicken deaths still produce one corpse each despite duplicate lethal notifications",
+    "no Hot Cuisine progress seeded"
+  ],
+  "not_claimed": [
+    "cooking reward delivery",
+    "food-use effect",
+    "complete Hot Cuisine route",
+    "calendar/real-level/Premium native NPC adapter"
+  ],
+  "profile_proof": "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json",
+  "inventory": {
+    "before": 3955,
+    "after": 3956,
+    "added": [
+      9088
+    ],
+    "removed": [],
+    "changed_existing_profiles": [],
+    "closed_remainder": 97
+  },
+  "menu_data": {
+    "courses": 14,
+    "ingredient_rows": 84,
+    "distinct_ingredient_item_ids": 53,
+    "typed_operands": 58,
+    "max_ingredients": 9,
+    "missing_native_ingredient_ids": [],
+    "missing_native_dish_ids": []
+  },
+  "validation": {
+    "authoring_checks": "PASS exact CI runner",
+    "authoring_units": "PASS106modules/1152cases/8preexisting skips",
+    "content_tree": "PASS34111Items/252Mounts/1864Creaturebindings",
+    "focused_rust": "PASS2/2 including PG and changed equipment inventory regression",
+    "workspace_all_targets": "PASS",
+    "clippy": "PASS dispatch all-targets -Dwarnings",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS377unique; no migration changes",
+    "native_generation": "PASS48files; only9088added",
+    "prey": "PASS4-file freshness; no simulation changes",
+    "pin_refresh": "PASS official tooling; world digest unchanged",
+    "full_dispatch_units": "PENDING under PREPUSH-2 time budget; broader selection interrupted, not reported green"
+  },
+  "remaining": "qengine2 guarded HotCuisineProgram integration; native npc_program.rs:148 still level:0"
+}

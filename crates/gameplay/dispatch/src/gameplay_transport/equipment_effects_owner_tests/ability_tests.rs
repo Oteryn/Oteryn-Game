@@ -301,6 +301,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
     ("QUESTPC7-HOT-CORPSES", 8),
+    ("QUESTPC7-HOT-FISHBURGER", 1),
     ("QUESTPC7-SLUG-CORPSES", 4),
     ("QUESTPC7-MARSH-CORPSES", 4),
     // BEGIN GENERATED QREADY PROFILE ADDITIONS

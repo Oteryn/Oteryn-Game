@@ -1,3 +1,45 @@
+# n3 loop checkpoint — 2026-11-08
+
+Branch: claude/happy-davinci-ijz3wy-questpc7-n3. Reused earlier tested lane
+history and merged current origin/main1076254706e4ddc05a6d0a1aba0c1777af2038ac;
+earlier questpc7 branch is frozen and is not pushed again. Local .lane/rows.md
+is deliberately NOT committed. Scope4: DONE3 (Exchange/Friends and Traders,
+Hidden Threats, Hunting for Tokens); WAITING-ENGINE1 (Hot Cuisine); BLOCKED0.
+21peer-owned titles remain excluded by the recorded coordinator decision.
+Hot cooking failure reproduced from the newly built dispatch test binary on
+actualPG18.6 in40.03s: npc_item_exchanges.rs:241 returns
+NpcProgramCommit { transition: Refused(StageMismatch), reply: [], next_topic: 0, read_only: false, inventory_changed: false, end_conversation: false, end_delay_ms: 0 }
+ENGINE-REQUESTS.json records exact command and QENGINE2 ownership. Do not enable
+ungated cooking or replace the existing reusable planner. All selected source
+ingredients/dishes have native custody profiles, but guarded execution awaits
+the shared owner. The following support proof remains valid; its ACTIVE wording
+means unqualified support and is superseded by this WAITING-ENGINE state.
+Workspace alltargets PASS4m01s, dispatch strict clippy PASS3m42s, fmt/dups PASS.
+
+# Publish Northern Fishburger custody support — 2026-11-08
+
+Hot Cuisine remains ACTIVE. PG18.6 RED39.702659393s (missing native policy)
+→GREEN40.78833194s; exact one fixture-minted Fishburger enters carried custody,
+canonical460centi-oz retained, Bat/Chicken ordinary deaths remain correct,
+and no cooking progress is seeded. New exact source qualifier admits only9088;
+all previous profiles unchanged. Native union3956, closed residual97. Source
+XML459/canonical460 and description punctuation pairs are documented in
+CONTRACT-NOTES.md and refused on drift. No food-use or cooking reward claim.
+Selected14courses:84ingredient rows,53Item identities,58typed operands,max9;
+all53ingredients/all14dishes now have native profiles.
+Authoring checks/full106module1152case runner PASS(8preexisting skips), content
+Tree PASS; focused equipment inventory regression and ownPG PASS2/2; workspace
+alltargets, strict dispatchclippy, fmt, migration duplicates and official final
+pins PASS. Broader dispatch unit selection interrupted for PREPUSH-2 budget;
+remaining crate units explicitly PENDING, not green. No standard reward-use
+proof packet or pinned standard leaf test changed. Historical corpse proof
+refers to1044b2a27; latest combined custody proof is HOT-FISHBURGER-PG-PROOF.json.
+NEXT: recheck actual guarded cooking failure/request qengine2. Native adapter
+still supplies level:0 and does not call HotCuisineProgram. Do not qualify Hot
+from custody alone; no large generic engine belongs here. Only4own titles,
+skip21delegated titles. Whole-node retries/optional content-world test remain
+pending; no node GREEN is claimed. target symlink/cache/binaries never staged.
+
 # Publish Hot Cuisine corpse support and physical-owner repair — 2026-11-08
 
 Hot remains ACTIVE; this is a qualified SUPPORT slice, not complete cooking.

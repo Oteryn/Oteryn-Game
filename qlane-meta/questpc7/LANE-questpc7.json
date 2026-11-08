@@ -1,6 +1,6 @@
 {
   "lane": "questpc7",
-  "branch": "claude/happy-davinci-ijz3wy-questpc7",
+  "branch": "claude/happy-davinci-ijz3wy-questpc7-n3",
   "source_ledger": "qlane-meta/questpc7/QUEST-STATUS.json",
   "ownership_rule": "Retain original25 ledger titles except exact owning entries in another lane LANE-*.json on origin claude/happy-davinci-ijz3wy-quest* branches. Nested citations alone are not treated as ownership.",
   "entries": [
@@ -17,7 +17,7 @@
     {
       "title": "Hot Cuisine Quest",
       "canonical": "oteryn:quest.hot_cuisine_quest",
-      "status": "ACTIVE"
+      "status": "WAITING-ENGINE"
     },
     {
       "title": "Hunting for Tokens Quest",
@@ -28,7 +28,7 @@
   "count": 4,
   "counts": {
     "QUALIFIED": 3,
-    "ACTIVE": 1,
+    "WAITING-ENGINE": 1,
     "SKIPPED_OTHER_LANE": 21
   },
   "skipped": [
@@ -470,5 +470,6 @@
       "sha": "19126b2482effd4f6529016234659e95341793ac",
       "branch": "refs/heads/claude/happy-davinci-ijz3wy-questwip"
     }
-  ]
+  ],
+  "continuation_decision": "n3 retains/reuses the previous tested lane history and merges current origin/main; earlier branch is frozen and receives no further pushes."
 }

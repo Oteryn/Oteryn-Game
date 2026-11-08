@@ -86,14 +86,21 @@ def main():
         if row not in equipment.read_text():
             replace(str(equipment.relative_to(ROOT)), anchor, anchor + row)
         text = equipment.read_text()
+    fish = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json').read_bytes())['records']
+    assert len(fish) == 1 and fish[0]['production_definition']['production_key'] == 'oteryn:item.tibia.i9088'
+    assert fish[0]['semantics']['physical']['value']['weight'] == {'state':'KNOWN','value':460}
     hot = json.loads((ROOT / 'tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json').read_bytes())['records']
     assert {r['production_definition']['production_key'] for r in hot} == {f'oteryn:item.tibia.i{i}' for i in (4330,4331,4332,4363,4364,4365,6042,6053)}
     assert len(hot) == 8 and all(r['semantics']['temporal']['state'] == 'KNOWN' for r in hot)
     replace(str(equipment.relative_to(ROOT)), '    (\"SRV9-MARRIAGE\", 2),\n', '    (\"SRV9-MARRIAGE\", 2),\n    (\"QUESTPC7-HOT-CORPSES\", 8),\n')
     text = equipment.read_text()
+    # Insert after the corpse cohort so the existing marriage/corpse anchor stays stable.
+    if '    ("QUESTPC7-HOT-FISHBURGER", 1),\n' not in text:
+        replace(str(equipment.relative_to(ROOT)), '    ("QUESTPC7-HOT-CORPSES", 8),\n', '    ("QUESTPC7-HOT-CORPSES", 8),\n    ("QUESTPC7-HOT-FISHBURGER", 1),\n')
+        text = equipment.read_text()
     # Additive merge anchors can repeat these identical, closed lane cohorts.
-    for name in ('QUESTPC7-MARSH-CORPSES', 'QUESTPC7-SLUG-CORPSES'):
-        row = f'    ("{name}", 4),\n'
+    for name in ('QUESTPC7-MARSH-CORPSES', 'QUESTPC7-SLUG-CORPSES', 'QUESTPC7-HOT-CORPSES'):
+        row = f'    ("{name}", {8 if name == "QUESTPC7-HOT-CORPSES" else 4}),\n'
         assert text.count(row) in (1, 2, 3), 'unexpected lane corpse cohort'
         if text.count(row) > 1:
             first = text.index(row) + len(row)
