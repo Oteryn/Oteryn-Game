@@ -162,6 +162,7 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
         new_revision: 2,
         value: vec![
             AnalyserFact::Kill { race: None },
+            AnalyserFact::Experience { raw: 29, gained: 37 },
             AnalyserFact::KillLoot {
                 race: None,
                 corpse_items: vec![],
@@ -194,6 +195,10 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
         "Race unavailable: 1",
         "Loot Analyser",
         "Supply Analyser",
+        "Session gained XP per minute",
+        "Session raw XP per minute",
+        "peak 37",
+        "peak 29",
     ] {
         assert!(report.contains(expected), "missing {expected}: {report}");
     }
