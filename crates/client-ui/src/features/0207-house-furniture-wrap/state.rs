@@ -12,6 +12,7 @@ pub struct Panel {
     pub open: bool,
     pub pending: bool,
     pub pending_payload: Vec<u8>,
+    pub reviewed_payload: Option<Vec<u8>>,
     pub catalogue: Option<Catalogue>,
     pub choice: String,
     pub feedback: String,

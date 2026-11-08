@@ -58,14 +58,14 @@ pub(in crate::play) fn prepare(
         4 => Some(Action::Subowners(members()?)),
         5 => {
             let coordinates = panel.fields[5].split_whitespace().collect::<Vec<_>>();
-            let [x, y, floor, revision] = coordinates.as_slice() else {
-                return Err("Enter door x y floor revision".into());
+            let [x, y, floor] = coordinates.as_slice() else {
+                return Err("Enter door x y floor".into());
             };
             Some(Action::Door {
                 x: x.parse().map_err(|_| "Invalid door x")?,
                 y: y.parse().map_err(|_| "Invalid door y")?,
                 floor: floor.parse().map_err(|_| "Invalid door floor")?,
-                revision: revision.parse().map_err(|_| "Invalid door revision")?,
+                revision: panel.model.page.rows.get(panel.model.index).ok_or("Select a house")?.acl_revision,
                 members: members()?,
             })
         }

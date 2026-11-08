@@ -56,6 +56,7 @@ pub(in crate::play) fn apply(
         7 => "Area currently improved",
         _ => {
             panel.summary = format!("Area 1 | Revision {} | Discovered: {}\r\nFound {}/7 | Area {}% | Pool {} | Epoch {} | Improved: {}\r\nVisible points: {:?}", state.revision, state.discovered, state.found, state.area_percent, state.pool, state.epoch, state.improved, state.visible);
+            panel.map = Some(state);
             "Cyclopedia map updated"
         }
     }.into();

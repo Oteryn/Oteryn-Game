@@ -16,11 +16,12 @@ pub fn slot_label(panel: &ImbuePanel, slot: u8) -> String {
             || format!("Slot {}: empty", slot + 1),
             |applied| {
                 format!(
-                    "Slot {}: family {}, tier {}, {} seconds left",
+                    "Slot {}: family {}, tier {}, {} seconds left{}",
                     slot + 1,
                     applied.family,
                     applied.tier,
-                    applied.remaining_ms / 1000
+                    applied.remaining_ms / 1000,
+                    time_alert(applied.remaining_ms)
                 )
             },
         )
@@ -85,8 +86,12 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
     if let Some(window) = &panel.window {
         for applied in &window.applied {
             text.push_str(&format!(
-                "Slot {}: family {}, tier {}, {} ms remaining\n",
-                applied.slot, applied.family, applied.tier, applied.remaining_ms
+                "Slot {}: family {}, tier {}, {} ms remaining{}\n",
+                applied.slot + 1,
+                applied.family,
+                applied.tier,
+                applied.remaining_ms,
+                time_alert(applied.remaining_ms)
             ));
         }
         for (index, offer) in window.offers.iter().enumerate() {
@@ -109,6 +114,43 @@ pub fn panel_text(panel: &ImbuePanel) -> String {
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);
+    }
+    text
+}
+
+fn time_alert(remaining_ms: u32) -> &'static str {
+    match remaining_ms {
+        0 => " — EXPIRED",
+        1..=300_000 => " — LOW TIME (5 minutes or less)",
+        _ => "",
+    }
+}
+
+/// The shrine protocol currently confirms one item, so label that scope explicitly.
+pub fn tracker_text(panel: &ImbuePanel) -> String {
+    let mut text = String::from("Imbuement time tracker — selected item snapshot\r\n");
+    let limit = if panel.tracker_minutes.trim().is_empty() {
+        0
+    } else {
+        let Ok(minutes) = panel.tracker_minutes.trim().parse::<u32>() else {
+            return format!("{text}Enter minutes (0 shows all times)");
+        };
+        minutes.saturating_mul(60_000)
+    };
+    let Some(window) = &panel.window else {
+        text.push_str("Select an item and refresh its server state");
+        return text;
+    };
+    let mut found = false;
+    for applied in &window.applied {
+        if limit == 0 || applied.remaining_ms <= limit {
+            text.push_str(&slot_label(panel, applied.slot));
+            text.push_str("\r\n");
+            found = true;
+        }
+    }
+    if !found {
+        text.push_str("No confirmed imbuements match this time filter");
     }
     text
 }
