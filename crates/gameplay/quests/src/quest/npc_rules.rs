@@ -501,6 +501,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_dream_courts_quest"
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
+                                | "oteryn:quest.tower_defence_quest"
                         )
                 });
                 Ok(catalogue)
