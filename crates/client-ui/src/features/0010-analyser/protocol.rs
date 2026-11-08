@@ -40,6 +40,7 @@ pub fn apply(panel: &mut Panel, facts: &[AnalyserFact]) {
 }
 pub fn reset(panel: &mut Panel) {
     *panel = Panel {
+        tool: panel.tool,
         selected: panel.selected,
         open: panel.open,
         ..Panel::default()

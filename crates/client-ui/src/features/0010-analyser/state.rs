@@ -1,6 +1,7 @@
 // oteryn-choice: saturating local counters retain constant space, including when the window is closed.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
+    pub tool: Tool,
     pub selected: bool,
     pub open: bool,
     pub kills: u64,
@@ -13,4 +14,47 @@ pub struct Panel {
     pub healing: u64,
     pub received: u64,
     pub dropped: u64,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Tool {
+    #[default]
+    Overview,
+    Xp,
+    Loot,
+    Supply,
+    Impact,
+    Input,
+    Session,
+    Party,
+    LootTracker,
+    Kills,
+}
+impl Tool {
+    pub const ALL: [Self; 10] = [
+        Self::Overview,
+        Self::Xp,
+        Self::Loot,
+        Self::Supply,
+        Self::Impact,
+        Self::Input,
+        Self::Session,
+        Self::Party,
+        Self::LootTracker,
+        Self::Kills,
+    ];
+    pub const fn key(self) -> &'static str {
+        match self {
+            Self::Overview => "overview",
+            Self::Xp => "xp",
+            Self::Loot => "loot",
+            Self::Supply => "supply",
+            Self::Impact => "impact",
+            Self::Input => "input",
+            Self::Session => "session",
+            Self::Party => "party",
+            Self::LootTracker => "loot-tracker",
+            Self::Kills => "kills",
+        }
+    }
 }

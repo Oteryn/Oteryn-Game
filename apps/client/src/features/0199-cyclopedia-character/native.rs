@@ -107,7 +107,7 @@ mod window {
                 let note = (w >> 16) & 0xffff;
                 if !actions.is_null()
                     && (*actions).0.len() < 32
-                    && matches!(id, 101..=113)
+                    && matches!(id, 101..=114)
                     && note == BN_CLICKED as usize
                 {
                     (*actions).0.push(id);
@@ -218,7 +218,11 @@ mod window {
                     WS_TABSTOP,
                 );
             }
-            for (id, label, x) in [(112, "Previous page", 10), (113, "Next page", 190)] {
+            for (id, label, x) in [
+                (112, "Previous page", 10),
+                (113, "Next page", 190),
+                (114, "Analytics", 370),
+            ] {
                 control(hwnd, "BUTTON", label, id, [x, 112, 165, 28], WS_TABSTOP);
             }
             let output = control(
@@ -243,7 +247,12 @@ mod window {
                 if mailbox.cyclopedia_character_shutdown {
                     break;
                 }
+                let mut analytics = false;
                 for action in std::mem::take(&mut actions.0) {
+                    if action == 114 {
+                        analytics = true;
+                        continue;
+                    }
                     let values = edits.map(read_text);
                     if let Some(command) = submit(
                         &mut mailbox.cyclopedia_character,
@@ -264,6 +273,13 @@ mod window {
                     wide(&display(&mailbox.cyclopedia_character)).as_ptr(),
                 );
                 drop(mailbox);
+                if analytics {
+                    PlayLink {
+                        mailbox: shared.clone(),
+                        commands: commands.clone(),
+                    }
+                    .analyser_open();
+                }
                 std::thread::sleep(Duration::from_millis(25));
             }
             DestroyWindow(hwnd);

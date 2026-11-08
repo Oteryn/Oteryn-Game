@@ -12,7 +12,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         Form {
             title: "Analysers",
             labels: &[],
-            buttons: &["Reset local totals"],
+            buttons: &[
+                "Overview",
+                "XP",
+                "Loot",
+                "Supply",
+                "Impact",
+                "Input",
+                "Hunting session",
+                "Party hunt",
+                "Loot tracker",
+                "Kill tracker",
+                "Reset session",
+            ],
             snapshot: |mailbox| {
                 let panel = &mailbox.analyser;
                 (
@@ -24,8 +36,12 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.analyser.open = value,
 
-            submit: |mailbox, _, _, _| {
-                oteryn_client_ui::analyser::protocol::reset(&mut mailbox.analyser)
+            submit: |mailbox, _, action, _| {
+                if let Some(tool) = oteryn_client_ui::analyser::Tool::ALL.get(action) {
+                    oteryn_client_ui::analyser::select_tool(&mut mailbox.analyser, tool.key());
+                } else if action == 10 {
+                    oteryn_client_ui::analyser::protocol::reset(&mut mailbox.analyser);
+                }
             },
         },
     );

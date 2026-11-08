@@ -1,4 +1,4 @@
-use super::{Panel, panel_text, protocol::*};
+use super::{Panel, Tool, panel_text, protocol::*, select_tool};
 #[test]
 fn confirmed_state_is_visible() -> Result<(), &'static str> {
     let mut panel = Panel {
@@ -41,4 +41,22 @@ fn confirmed_state_is_visible() -> Result<(), &'static str> {
     apply(&mut panel, &[AnalyserFact::Kill { race: None }]);
     assert_eq!(panel.kills, 0);
     Ok(())
+}
+
+#[test]
+fn analytics_selector_opens_independent_tools_over_confirmed_totals() {
+    let mut panel = Panel {
+        selected: true,
+        kills: 2,
+        gained_xp: 30,
+        ..Default::default()
+    };
+    assert!(select_tool(&mut panel, "xp"));
+    assert!(panel_text(&panel).starts_with("XP Analyser"));
+    assert!(!panel_text(&panel).contains("Kills:"));
+    assert!(select_tool(&mut panel, "kills"));
+    assert!(panel_text(&panel).contains("Kills: 2"));
+    assert_eq!(panel.gained_xp, 30);
+    assert!(!select_tool(&mut panel, "unknown"));
+    assert_eq!(panel.tool, Tool::Kills);
 }

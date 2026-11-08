@@ -3,8 +3,8 @@ mod input;
 pub mod protocol;
 mod state;
 mod view;
-pub use input::open_key;
-pub use state::Panel;
+pub use input::{open_key, select_tool};
+pub use state::{Panel, Tool};
 pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/state.rs"]
