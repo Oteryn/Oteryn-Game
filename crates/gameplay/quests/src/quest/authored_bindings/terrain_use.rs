@@ -108,3 +108,35 @@ impl TerrainUse {
         })
     }
 }
+
+impl super::Bindings {
+    /// Bounded candidates only; the durable writer independently proves the native receipt.
+    pub fn terrain_use_candidates(
+        &self,
+        catalogue: &crate::quest::QuestStateCatalogue,
+        tracks: &std::collections::BTreeMap<String, i64>,
+        tool: &ToolDefinition,
+        placement: &[u8],
+        result: u32,
+    ) -> Vec<String> {
+        self.quests
+            .iter()
+            .flat_map(|quest| &quest.stages)
+            .filter_map(|stage| {
+                let super::Trigger::TerrainUse { usage } = &stage.trigger else {
+                    return None;
+                };
+                let active = usage.tools.contains(tool)
+                    && usage.placement == placement
+                    && usage.result == result
+                    && usage.storage.iter().all(|guard| {
+                        catalogue.track(&guard.track).is_some_and(|track| {
+                            let value = tracks.get(&guard.track).copied().unwrap_or(track.initial);
+                            (guard.minimum..=guard.maximum).contains(&value)
+                        })
+                    });
+                active.then(|| usage.key.clone())
+            })
+            .collect()
+    }
+}

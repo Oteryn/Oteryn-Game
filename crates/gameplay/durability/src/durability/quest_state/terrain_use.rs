@@ -52,3 +52,58 @@ pub(super) async fn admit(
     .fetch_one(&mut **tx)
     .await?)
 }
+
+/// Candidate-selection facts, not admission authority. The quest writer rechecks the receipt.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TerrainUseObservation {
+    pub tool: oteryn_gameplay_quests::quest::authored_bindings::terrain_use::ToolDefinition,
+    pub placement: Vec<u8>,
+    pub result: u32,
+}
+
+impl DurabilityRoot {
+    /// Read the exact committed action after fresh USE or receipt replay. Legacy untyped
+    /// receipts cannot select a new typed observer. No current tool handle is required.
+    pub async fn read_quest_terrain_use(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: super::super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+    ) -> StoredResult<Option<TerrainUseObservation>> {
+        if command.game_session_id() != fence.game_session_id {
+            return Ok(None);
+        }
+        let (world, channel) = super::super::item_transfer::scope_of(&fence)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            super::super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
+            if super::super::character_progression::assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Err(DurabilityError::Unavailable);
+            }
+            let row = sqlx::query("SELECT tool_definition_family,tool_definition_production_key,tool_definition_revision_ref,placement,transformed_item_id FROM game_terrain_tool_receipts WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric AND world_id=encode($4,'hex')::uuid AND channel_id=encode($5,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                .fetch_optional(&mut *tx).await?;
+            let observation = row.map(|row| -> StoredResult<Option<TerrainUseObservation>> {
+                let family: Option<String> = row.try_get("tool_definition_family")?;
+                let key: Option<String> = row.try_get("tool_definition_production_key")?;
+                let revision: Option<String> = row.try_get("tool_definition_revision_ref")?;
+                let (Some(family),Some(key),Some(revision)) = (family,key,revision) else { return Ok(None); };
+                if family != "Item" { return Ok(None); }
+                Ok(Some(TerrainUseObservation {
+                    tool:oteryn_gameplay_quests::quest::authored_bindings::terrain_use::ToolDefinition { key,revision },
+                    placement:row.try_get("placement")?,
+                    result:u32::try_from(row.try_get::<i64,_>("transformed_item_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                }))
+            }).transpose()?.flatten();
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(observation)
+        })).await
+    }
+}

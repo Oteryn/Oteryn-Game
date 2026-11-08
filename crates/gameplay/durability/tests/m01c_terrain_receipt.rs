@@ -111,6 +111,13 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         decay: vec![],
     };
     let command = reward_fixture::command(9500)?;
+    assert!(
+        h.root
+            .read_quest_terrain_use(&authority, &h.node, f::item_fence()?, command)
+            .await
+            .map_err(f::debug)?
+            .is_none()
+    );
     let catalogue = terrain_catalogue()?;
     let request = |suffix: &str| QuestTransitionRequest {
         transition_key: format!("oteryn:quest-terrain-use/m01c-{suffix}"),
@@ -153,6 +160,25 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
             .map_err(f::debug)?;
         assert_eq!(outcome, Some(UseDisposition::Committed));
     }
+    let observed = h
+        .root
+        .read_quest_terrain_use(&authority, &h.node, f::item_fence()?, command)
+        .await
+        .map_err(f::debug)?
+        .ok_or("committed native observation")?;
+    assert_eq!(observed.tool.key, "oteryn:item.tibia.i3457");
+    assert_eq!(observed.tool.revision, "definition-r1");
+    let candidates = catalogue
+        .authored_bindings()
+        .ok_or("bindings")?
+        .terrain_use_candidates(
+            &catalogue,
+            &std::collections::BTreeMap::new(),
+            &observed.tool,
+            &observed.placement,
+            observed.result,
+        );
+    assert_eq!(candidates, vec!["oteryn:quest-terrain-use/m01c-exact"]);
     let wrong_pair = h
         .root
         .commit_character_quest_transition(

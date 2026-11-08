@@ -563,6 +563,7 @@ pub mod soul_war;
 pub mod source_deaths;
 mod storage;
 mod terrain_use;
+pub use terrain_use::TerrainUseObservation;
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests;
