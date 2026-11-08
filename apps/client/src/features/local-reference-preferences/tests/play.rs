@@ -270,3 +270,51 @@ fn t010_hud_layout_is_validated_and_restored() -> Result<(), Box<dyn std::error:
     assert!(play.set_preferences(serde_json::from_value(json)?).is_err());
     Ok(())
 }
+
+#[test]
+fn t011_vitals_bars_reach_live_scene_and_can_be_hidden() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.vitals = Some(oteryn_session::ActorVitals {
+        health: 50,
+        max_health: 100,
+        mana: 20,
+        max_mana: 40,
+        ..Default::default()
+    });
+    play.rebuild()?;
+    let shown = play.scene().sprites().instances().len();
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["hud_bars"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().instances().len() + 4, shown);
+    Ok(())
+}
+
+#[test]
+fn t012_visual_preferences_control_live_effect_projection() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut play = view()?;
+    let now = std::time::Instant::now();
+    let baseline = play.scene().sprites().len();
+    play.receive_presentation(
+        &[oteryn_session::PresentationEventKind::MagicEffect {
+            position: oteryn_session::ActorPosition {
+                x: play.own.x,
+                y: play.own.y,
+                floor: play.floor,
+            },
+            effect_id: 29,
+            source: oteryn_session::PresentationSource::Own,
+        }],
+        now,
+    );
+    play.project_presentation(now)?;
+    assert!(play.scene().sprites().len() > baseline);
+    let mut json = serde_json::to_value(play.preferences())?;
+    json["show_effects"] = serde_json::json!(false);
+    json["show_lights"] = serde_json::json!(false);
+    play.set_preferences(serde_json::from_value(json)?)?;
+    assert_eq!(play.scene().sprites().len(), baseline);
+    assert!(play.scene().sprites().lighting.sources.is_empty());
+    Ok(())
+}
