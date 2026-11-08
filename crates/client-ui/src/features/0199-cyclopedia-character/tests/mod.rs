@@ -233,5 +233,6 @@ fn character_history_rejects_complete_reply_exceeding_requested_page()
 }
 
 mod history_tables;
+mod misc;
 mod overview;
 mod services;

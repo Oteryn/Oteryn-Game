@@ -9,6 +9,7 @@ use oteryn_client_runtime::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Badges,
+    MiscResources,
     Tab,
     SelectTab(cyclopedia_character::CharacterTab),
     Next,
@@ -23,6 +24,16 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         p.feedback = Some("Waiting for the server");
         return None;
     }
+    let auxiliary = matches!(intent, Intent::MiscResources);
+    if auxiliary && (p.tab != cyclopedia_character::CharacterTab::Misc || !p.misc_resources_due) {
+        return None;
+    }
+    if !auxiliary {
+        p.misc_resources_due = false;
+        if matches!(intent, Intent::Tab | Intent::SelectTab(_) | Intent::Badges) {
+            p.misc_general = None;
+        }
+    }
     match intent {
         Intent::SelectTab(tab) => {
             p.tab = tab;
@@ -34,8 +45,17 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     }
     let (kind, payload) = match intent {
         Intent::Badges => (387, Vec::new()),
-        Intent::Tab | Intent::SelectTab(_) | Intent::Next | Intent::Previous => {
-            let mut v = vec![p.tab as u8];
+        Intent::Tab
+        | Intent::SelectTab(_)
+        | Intent::Next
+        | Intent::Previous
+        | Intent::MiscResources => {
+            let requested = if auxiliary {
+                cyclopedia_character::CharacterTab::GeneralStats
+            } else {
+                p.tab
+            };
+            let mut v = vec![requested as u8];
             v.extend_from_slice(&p.offset.to_le_bytes());
             v.push(p.limit);
             if let Some(target) = p.target {
@@ -43,7 +63,7 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             }
             if cyclopedia_character::decode_tab_request(&v)
                 != Ok(TabRequest {
-                    tab: p.tab,
+                    tab: requested,
                     page: oteryn_client_runtime::character_info::PageRequest::new(
                         p.offset, p.limit,
                     )?,
@@ -56,7 +76,15 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
             (388, v)
         }
     };
-    p.requested_tab = (kind == 388).then_some(p.tab);
+    p.auxiliary_pending = auxiliary;
+    if auxiliary {
+        p.misc_resources_due = false;
+    }
+    p.requested_tab = (kind == 388).then_some(if auxiliary {
+        cyclopedia_character::CharacterTab::GeneralStats
+    } else {
+        p.tab
+    });
     p.pending = true;
     p.command_kind = kind;
     p.feedback = None;
@@ -70,6 +98,7 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     let pending = p.pending;
     p.pending = false;
     let tab = p.requested_tab.take();
+    let auxiliary = std::mem::take(&mut p.auxiliary_pending);
     if !pending {
         return false;
     }
@@ -79,6 +108,15 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
     ) {
         p.feedback = Some("The server refused the character query");
         return false;
+    }
+    if auxiliary {
+        let Some(stats) = decode_general(&r.payload) else {
+            p.feedback = Some("The server returned invalid resource statistics");
+            return false;
+        };
+        p.misc_general = Some(stats);
+        p.feedback = None;
+        return true;
     }
     let text = if p.command_kind == 387 {
         decode_badges(&r.payload)
@@ -96,7 +134,13 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
             } else {
                 None
             };
-            p.combat = if tab == Some(cyclopedia_character::CharacterTab::Defence) {
+            p.combat = if matches!(
+                tab,
+                Some(
+                    cyclopedia_character::CharacterTab::Defence
+                        | cyclopedia_character::CharacterTab::Misc
+                )
+            ) {
                 cyclopedia_character::combat::CombatStats::decode(&r.payload).ok()
             } else {
                 None
@@ -107,6 +151,9 @@ pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) ->
                 None
             };
             p.general = general;
+            if tab == Some(cyclopedia_character::CharacterTab::Misc) {
+                p.misc_resources_due = true;
+            }
             if let Some(tab) = tab.filter(|t| {
                 matches!(
                     t,
