@@ -2,6 +2,9 @@
 //!
 //! A binding set belongs to the same immutable catalogue as its tracks and transitions.
 //! The ordinary NPC/world/kill owners remain the only execution and durable-write paths.
+pub mod kills;
+pub use kills::KillCounter;
+
 use super::reward_callbacks::RewardCallback;
 use super::world_callbacks::Callback;
 use super::{
@@ -31,6 +34,7 @@ pub enum Trigger {
     CarriedUse { callback: Box<RewardCallback> },
     MapUse { callback: Box<Callback> },
     StepIn { callback: Box<Callback> },
+    Kill { counter: Box<KillCounter> },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -77,6 +81,13 @@ impl Bindings {
 
     pub fn validate(&self) -> Result<(), String> {
         if self.schema != 1
+            || self
+                .quests
+                .iter()
+                .flat_map(|q| &q.stages)
+                .filter(|s| matches!(s.trigger, Trigger::Kill { .. }))
+                .count()
+                > kills::MAX_KILL_BINDINGS
             || self.quests.len() > MAX_BOUND_QUESTS
             || self.quests.iter().map(|q| q.stages.len()).sum::<usize>() > MAX_BOUND_STAGES
         {
@@ -120,7 +131,15 @@ impl Bindings {
                 {
                     return Err("authored stage identity".into());
                 }
+                if let Trigger::Kill { counter } = &stage.trigger {
+                    counter.validate(quest)?;
+                    if !transitions.insert(&counter.key) {
+                        return Err("authored kill binding collision".into());
+                    }
+                    continue;
+                }
                 let (key, owner, storage) = match &stage.trigger {
+                    Trigger::Kill { .. } => continue,
                     Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
                         super::reward_callbacks::validate_callbacks(std::slice::from_ref(
                             callback.as_ref(),
@@ -188,7 +207,19 @@ impl Bindings {
                 });
             }
             for stage in &quest.stages {
+                if let Trigger::Kill { counter } = &stage.trigger {
+                    transitions.push(QuestTransition {
+                        key: counter.key.clone(),
+                        quest: quest.quest.clone(),
+                        effects: counter.effects(),
+                        completes: stage.completes,
+                        experience: None,
+                        world_change: None,
+                    });
+                    continue;
+                }
                 let (key, storage) = match &stage.trigger {
+                    Trigger::Kill { .. } => continue,
                     Trigger::NpcDialogue { callback } | Trigger::CarriedUse { callback } => {
                         (&callback.key, &callback.storage)
                     }
@@ -201,7 +232,9 @@ impl Bindings {
                         Trigger::MapUse { callback } | Trigger::StepIn { callback } => {
                             callback.world_change.clone()
                         }
-                        Trigger::NpcDialogue { .. } | Trigger::CarriedUse { .. } => None,
+                        Trigger::NpcDialogue { .. }
+                        | Trigger::CarriedUse { .. }
+                        | Trigger::Kill { .. } => None,
                     },
                     key: key.clone(),
                     quest: quest.quest.clone(),

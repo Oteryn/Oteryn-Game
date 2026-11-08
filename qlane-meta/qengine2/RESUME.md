@@ -1011,3 +1011,44 @@ PREPUSH-2 owner rule21:17UTC supersedes check/fmt-only pushes: fetch/merge origi
 00:42UTC merged publication gates allGREEN: workspace6m20,fmt,clippy2m48,authoring32/32,regen/pins/equivalence/worldmetadata/duplicate-migrations. Publish merge and proof checkpoint now. Full backend unit completion and post-collector PG refresh remain pending;15ac seven-PG proof remains historical. Start focused build only after push.
 
 01:04UTC merged GREEN: sourcecca7c5790 equipment audit65.643s, all7real PostgreSQL18.6 cases GREEN423.443s,6native completion markers plus actual server probe; durations76.345legacytaming,136.845authored NPC/carried exchange,180.922NPCXP,179.199Father atomic acceptance,81.746GliderGround,82.901missing,84.337complete/replay. /tmp/qengine2-collector-focused/qualified-proof.json and own-pg.log. Compile/fmt rerunGREEN6m58, all affected authorer/native/central output reproduction checks + equivalence +metadata GREEN. Proof-only metadata commit changes no Rust crate; prior strict engineclippy2m48 applies to unchanged source. Regenerated expected bytes in-memory with repo --check modes; item-audit generator writes intercepted and byte-compared to preserve immutable PG inputs, all fresh. Push proof now, ENGINE-DONE carried_quest_exchanges; do NOT claim complete68binding feature or any new whole quest. Next actual code: generic kill counter bindings using peer262618b3 conditional effect and existing death queue; /tmp/qengine2-next-kill-plan.txt, /tmp/qengine2-counter-registry-draft.rs and fixture/PG drafts. Add/run real-PG RED before runtime wiring, then implement, green, gates/push. Keep30min cadence, do not run full backend units again before a push (budget exception; full prior run incomplete). Counts44QUALIFIED/22UNFINISHED remain.
+
+Authored kill binding slice (2026-11-08): real-dispatch PostgreSQL RED executed
+53.880s, with POSTGRES_CASE_COMPLETED marker and unknown `kill` variant. Reused
+questpc3 262618b3 threshold operation; added catalogue-scoped counter descriptors,
+immutable captured creature/definition witness and conditional completion at the
+count goal through the existing native death queue and fenced writer. All 292
+quest unit tests pass (27.38s). Own PG GREEN and final publication gates are still
+running; do not claim qualification before their actual outputs. API guide:
+docs/architecture/QUEST-AUTHORED-KILL-BINDINGS.md. Whole-quest counts remain 44/66.
+
+The first kill PG GREEN attempt ran 115.948s and failed with fixture
+CapacityExceeded. quest_world_callbacks/scenario.rs allocates only five actors
+for this synthetic classic-NPC scenario; the helper retained each defeated
+actor. Fixed the helper to reclaim the actor through remove_encounter_actor
+only AFTER both duplicate projections and both drains finish. No assertion or
+capacity bound weakened. Own kill + retained Dragon Slayer PG rerun queued in
+/tmp/qengine2-authored-kill-green2.log. Publish compiling WIP when mandatory
+workspace/fmt gates finish under PREPUSH-2 cadence exception if PG is still
+building; do not label this slice ENGINE-DONE until actual GREEN.
+
+Publication checkpoint: workspace --all-targets check PASS (16m21s including
+build-lock wait), fmt --all --check PASS; retained Dragon Slayer PG PASS134.14s
+on the new production engine before helper cleanup. Clippy currently running.
+The compiling WIP push uses PREPUSH-2 step-3 budget exception: new kill PG with
+cleanup and full dispatch/durability units are pending. Quest unit292/292 proof
+is retained; no whole-quest or kill-slice qualification is claimed yet.
+
+Final source checkpoint after strict-clippy found three needless &transition
+borrows: all three corrected, workspace --all-targets rerun PASS5m11s. The queued
+PG rebuild was stopped before consuming another full compile so this compiling
+WIP can publish first. Next steps are written in /tmp/qengine2-next-burst-plan.txt:
+add native queued-burst PG RED, preserve unchanged native gate revision only,
+then sequential/burst/retained-counter PG GREEN before ENGINE-DONE.
+
+01:47UTC WIP publication gates PASS: workspace5m11s, strict changed-engine
+clippy2m13s (all-features lib), fmt. Native registrations and equipment audit
+regenerated with repo native-only tool; central module registration tool and
+duplicate migration check clean. Main78294c081 already merged; fetch again at
+publication. Pending tests and burst fix are explicit above. Publish compiling
+WIP under owner's PREPUSH-2 budget exception, then immediately continue the
+queued-burst RED/GREEN plan. Do not claim new whole quests or ENGINE-DONE yet.

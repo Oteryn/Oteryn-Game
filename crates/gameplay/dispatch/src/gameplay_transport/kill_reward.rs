@@ -1469,7 +1469,7 @@ pub fn record_creature_kill(
             if boss.is_none()
                 && (top.present().is_none()
                     || !super::grizzly_kills::tracks_creature(&creature)
-                        && !oteryn_gameplay_quests::quest::native_kills::tracks_creature(&creature))
+                        && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature))
             {
                 refuse(reason.as_str(), &creature);
                 // Echo's first-species callback precedes ordinary loot admission in the

@@ -168,7 +168,7 @@ impl DurabilityRoot {
         )>,
     ) -> Result<QuestTransitionOutcome> {
         let native_key=request.transition_key.starts_with(oteryn_gameplay_quests::quest::native_kills::PREFIX);
-        if native_key!=native.is_some() || native.as_ref().is_some_and(|death|!death.valid(&request)) {
+        if native_key!=native.is_some() || native.as_ref().is_some_and(|death|!death.valid(&request,&catalogue)) {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let reward_callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load_for(&catalogue)
@@ -582,7 +582,7 @@ impl DurabilityRoot {
                             .then_some(QuestRefusal::StageMismatch)
                     });
                     let refusal=if refusal.is_none() {
-                        if let Some(death)=&native {(!death.admit(&mut tx,character).await?).then_some(QuestRefusal::StageMismatch)} else {None}
+                        if let Some(death)=&native {(!death.admit(&mut tx,character,&catalogue).await?).then_some(QuestRefusal::StageMismatch)} else {None}
                     } else {refusal};
                     let mut grizzly_plan = None;
                     let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
@@ -849,7 +849,7 @@ impl DurabilityRoot {
                     .bind(binding.as_slice())
                     .bind(&pin)
                     .bind(hash.as_slice())
-                    .bind(transition.completes)
+                    .bind(catalogue.completes_after(transition,&changes))
                     .bind(&track_keys)
                     .bind(&before)
                     .bind(&after)
@@ -882,7 +882,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         }
                     }
-                    let completed = transition.completes.then_some(committed.as_str());
+                    let completed = catalogue.completes_after(transition,&changes).then_some(committed.as_str());
                     let written = if stored_state.is_some() {
                         sqlx::query(
                             "UPDATE game_character_quest_states \
@@ -975,7 +975,7 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         pinned_content_revision: pin,
                         definition_hash: hash,
-                        completes: transition.completes,
+                        completes: catalogue.completes_after(transition,&changes),
                         changes,
                         experience,
                     };

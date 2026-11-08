@@ -3394,5 +3394,59 @@
     "equipment_unit_seconds": 65.643,
     "execution": "cargo nextest, exact focused cases; HEAD unchanged between build and PG",
     "full_backend_units": "Still pending under PREPUSH-2 budget exception; no full-suite success claimed"
+  },
+  "authored_kill_binding_slice": {
+    "status": "IN_PROGRESS",
+    "reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 threshold operation; existing native death queue/fenced writer",
+    "red": {
+      "test": "authored_bindings_native_kill_threshold_completion_postgres",
+      "seconds": 53.88,
+      "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-authored-kills duration=53.825161493s success=false",
+      "error": "unknown variant `kill`",
+      "log": "/tmp/qengine2-authored-kill-red.log"
+    },
+    "unit_tests": {
+      "passed": 292,
+      "failed": 0,
+      "test_seconds": 27.38,
+      "log": "/tmp/qengine2-kill-units.log"
+    },
+    "whole_quest_qualification_changed": false,
+    "pending": [
+      "own PG rerun after fixture actor cleanup",
+      "queued-burst PG regression and native gate-revision fix",
+      "full durability/dispatch crate suites (PREPUSH-2 budget exception)"
+    ],
+    "first_green_attempt": {
+      "seconds": 115.948,
+      "result": "fixture CapacityExceeded after retaining defeated actors",
+      "fix": "reclaim encounter actor only after duplicate projection and both drains settle; no assertion removed",
+      "log": "/tmp/qengine2-authored-kill-green.log"
+    },
+    "workspace_check": {
+      "result": "PASS after all three redundant-borrow fixes",
+      "seconds": 311,
+      "log": "/tmp/qengine2-kill-workspace2.log"
+    },
+    "fmt_check": "PASS /tmp/qengine2-kill-fmt2.log",
+    "retained_counter_pg": {
+      "test": "qengine_l12_dragon_slayer_native_trial_story",
+      "seconds": 134.14,
+      "result": "PASS before fixture cleanup",
+      "log": "/tmp/qengine2-kill-legacy-pg.log"
+    },
+    "queued_burst_followup": "Required before qualification: preserve unchanged native gate revision, prove multiple deaths captured from one snapshot with PG RED/GREEN",
+    "clippy": {
+      "result": "PASS",
+      "seconds": 133,
+      "packages": [
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-dispatch"
+      ],
+      "scope": "all-features lib, -D warnings",
+      "log": "/tmp/qengine2-kill-clippy2.log"
+    },
+    "publication": "Compiling WIP; PREPUSH-2 step-3 budget exception; no ENGINE-DONE qualification"
   }
 }

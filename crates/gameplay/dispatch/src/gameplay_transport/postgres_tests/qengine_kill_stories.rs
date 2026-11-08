@@ -25,7 +25,7 @@ async fn count(h: &Harness, track: &str) -> TestResult<i64> {
     .fetch_one(&h.pool)
     .await?)
 }
-async fn death(
+pub(super) async fn death(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,
@@ -44,7 +44,7 @@ async fn death(
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
-    {
+    let target = {
         let mut runtime = owner.runtime.lock().await;
         let at = runtime
             .read_actor_position(actor)
@@ -101,7 +101,8 @@ async fn death(
                 Some(observed),
             );
         }
-    }
+        target
+    };
     assert_eq!(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
@@ -110,6 +111,8 @@ async fn death(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
+    // Both duplicate projections and drains have settled before reclaiming the fixture slot.
+    owner.runtime.lock().await.remove_encounter_actor(target).map_err(debug)?;
     Ok(())
 }
 
