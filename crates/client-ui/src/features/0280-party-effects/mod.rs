@@ -10,6 +10,10 @@ pub use state::PartyEffectsPanel;
 pub use view::panel_text;
 
 #[cfg(test)]
+#[path = "tests/e2e_s13c.rs"]
+mod e2e_s13c;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

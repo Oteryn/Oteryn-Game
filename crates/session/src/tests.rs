@@ -38,10 +38,10 @@ mod e2e_c17b;
 mod e2e_c17c;
 #[path = "tests/e2e_c17d.rs"]
 mod e2e_c17d;
-#[path = "tests/e2e_c19a.rs"]
-mod e2e_c19a;
 #[path = "tests/e2e_c18b.rs"]
 mod e2e_c18b;
+#[path = "tests/e2e_c19a.rs"]
+mod e2e_c19a;
 #[path = "tests/e2e_c20b.rs"]
 mod e2e_c20b;
 #[path = "tests/e2e_c20d.rs"]
@@ -82,10 +82,33 @@ mod e2e_m09;
 mod e2e_m11a;
 #[path = "tests/e2e_p11.rs"]
 mod e2e_p11;
+#[cfg(test)]
+#[path = "tests/e2e_s04c.rs"]
+mod e2e_s04c;
+#[cfg(test)]
+#[path = "tests/e2e_s09.rs"]
+mod e2e_s09;
+#[cfg(test)]
+#[path = "tests/e2e_s10.rs"]
+mod e2e_s10;
+#[cfg(test)]
+#[path = "tests/e2e_s13a.rs"]
+mod e2e_s13a;
+#[cfg(test)]
+#[path = "tests/e2e_s13b.rs"]
+mod e2e_s13b;
+#[cfg(test)]
+#[path = "tests/e2e_s15b.rs"]
+mod e2e_s15b;
+#[cfg(test)]
+#[path = "tests/e2e_s16a.rs"]
+mod e2e_s16a;
 #[path = "features/0004-item-view-move/tests.rs"]
 mod item_movement_tests;
 #[path = "features/0004-item-view-move/tests/e2e_i05.rs"]
 mod item_replay_i05_tests;
+#[path = "tests/npc_conversation_replay.rs"]
+mod npc_conversation_replay;
 #[path = "tests/property_services.rs"]
 mod property_services_tests;
 #[path = "tests/pvp_expert.rs"]

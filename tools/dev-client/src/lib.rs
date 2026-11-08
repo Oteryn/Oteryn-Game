@@ -366,3 +366,7 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/e2e_c18a.rs"]
 mod e2e_c18a;
+
+#[cfg(test)]
+#[path = "tests/e2e_s05.rs"]
+mod e2e_s05;
