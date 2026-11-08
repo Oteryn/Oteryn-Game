@@ -106,108 +106,20 @@ fn run(
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, window_proc as *const () as isize);
-        let quests = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            QUESTS,
-            10,
-            94,
-            220,
-            136,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Find number, status or known mission",
-            112,
-            10,
-            10,
-            220,
-            20,
-            0,
-        );
-        let list_search = control(
-            hwnd,
-            "EDIT",
-            "",
-            113,
-            10,
-            32,
-            220,
-            24,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
+        let controls::Controls {
+            quests,
+            missions,
+            description,
+            refresh,
+            track,
             list_search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let list_sort = control(
-            hwnd,
-            "COMBOBOX",
-            "",
-            114,
-            10,
-            62,
-            220,
-            200,
-            CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
-        );
-        for label in QUEST_SORT_LABELS {
-            SendMessageW(list_sort, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }
-        let missions = control(
-            hwnd,
-            "LISTBOX",
-            "",
-            MISSIONS,
-            240,
-            10,
-            490,
-            220,
-            LBS_NOTIFY as u32 | WS_VSCROLL | WS_TABSTOP | WS_BORDER,
-        );
-        let description = control(
-            hwnd,
-            "EDIT",
-            "",
-            105,
-            10,
-            270,
-            720,
-            260,
-            ES_MULTILINE as u32
-                | ES_READONLY as u32
-                | ES_AUTOVSCROLL as u32
-                | WS_VSCROLL
-                | WS_BORDER
-                | WS_TABSTOP,
-        );
-        let refresh = control(
-            hwnd,
-            "BUTTON",
-            "Quest list / Refresh",
-            REFRESH,
-            10,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
-        let track = control(
-            hwnd,
-            "BUTTON",
-            "Track quest",
-            TRACK,
-            240,
-            235,
-            220,
-            28,
-            WS_TABSTOP,
-        );
+            list_sort,
+            auto_add,
+            auto_remove,
+            filter,
+            search,
+            tracker,
+        } = controls::create(hwnd);
         if [
             quests,
             missions,
@@ -224,78 +136,6 @@ fn run(
             close(&weak);
             return;
         }
-        let auto_add = control(
-            hwnd,
-            "BUTTON",
-            "Auto-add: off",
-            AUTO_ADD,
-            750,
-            10,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let auto_remove = control(
-            hwnd,
-            "BUTTON",
-            "Auto-remove: off",
-            AUTO_REMOVE,
-            750,
-            45,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        let filter = control(
-            hwnd,
-            "BUTTON",
-            "Tracker: all quests",
-            FILTER,
-            750,
-            80,
-            290,
-            28,
-            WS_TABSTOP,
-        );
-        control(
-            hwnd,
-            "STATIC",
-            "Search tracked missions",
-            109,
-            750,
-            115,
-            290,
-            22,
-            0,
-        );
-        let search = control(
-            hwnd,
-            "EDIT",
-            "",
-            110,
-            750,
-            140,
-            290,
-            28,
-            WS_BORDER | WS_TABSTOP,
-        );
-        SendMessageW(
-            search,
-            windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT,
-            128,
-            0,
-        );
-        let tracker = control(
-            hwnd,
-            "EDIT",
-            "",
-            111,
-            750,
-            180,
-            290,
-            350,
-            ES_MULTILINE as u32 | ES_READONLY as u32 | WS_VSCROLL | WS_BORDER,
-        );
         let mut held = None;
         let mut last_search = None;
         let mut shown_quests = Vec::new();
@@ -378,9 +218,10 @@ fn run(
             }
             let mut list_text = [0u16; 129];
             let len = GetWindowTextW(list_search, list_text.as_mut_ptr(), 129).max(0) as usize;
-            mailbox.quest.list_search = String::from_utf16_lossy(&list_text[..len]);
-            mailbox.quest.list_sort =
-                QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0));
+            mailbox.quest.set_list_options(
+                &String::from_utf16_lossy(&list_text[..len]),
+                QuestSort::from_selection(SendMessageW(list_sort, CB_GETCURSEL, 0, 0)),
+            );
             let mut search_text = [0u16; 129];
             let len = GetWindowTextW(search, search_text.as_mut_ptr(), 129);
             let typed = String::from_utf16_lossy(&search_text[..len.max(0) as usize]);
@@ -530,33 +371,5 @@ fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-unsafe fn control(
-    parent: HWND,
-    class: &str,
-    text: &str,
-    id: usize,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    style: u32,
-) -> HWND {
-    // SAFETY: parent is live on this thread; system class strings live for the call.
-    unsafe {
-        CreateWindowExW(
-            0,
-            wide(class).as_ptr(),
-            wide(text).as_ptr(),
-            WS_CHILD | WS_VISIBLE | style,
-            x,
-            y,
-            width,
-            height,
-            parent,
-            id as _,
-            null_mut(),
-            null(),
-        )
-    }
-}
+#[path = "native/controls.rs"]
+mod controls;

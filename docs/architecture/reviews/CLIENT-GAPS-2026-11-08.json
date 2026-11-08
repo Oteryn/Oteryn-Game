@@ -1421,9 +1421,10 @@
   "src": "OTCAUD1108",
   "area": "Quest",
   "feature": "Dziennik zadań i śledzenie",
-  "status": "PARTIAL",
-  "gap": "Brakuje wyszukiwania i sortowania dziennika; istnieją wybór zadania/misji, opis i przełączanie śledzenia.",
-  "lane": "cg_cyclo"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_cyclo",
+  "evidence": "crates/client-ui/src/features/0016-quest-log/state.rs:15 + journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor; apps/client/src/features/0016-quest-log/tests/list_options.rs:77"
  },
  {
   "id": "O056",
