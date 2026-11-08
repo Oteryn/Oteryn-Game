@@ -63,7 +63,6 @@ impl KillCounter {
                 .filter(|monster| monster.creature == self.creature)
                 .count();
             if self.minimum != 0
-                || self.advance_gate_to.is_some()
                 || encounter.timing.is_some()
                 || encounter.players.is_empty()
                 || encounter.players.len() > 8
@@ -78,7 +77,7 @@ impl KillCounter {
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
-        if self.encounter_source.is_some() {
+        if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
             // The source/epoch owner checks the gate without rewriting its revision
             // for every death queued from the same admission.
             return vec![QuestEffect {

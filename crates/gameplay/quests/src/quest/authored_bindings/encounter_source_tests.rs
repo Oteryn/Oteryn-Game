@@ -88,11 +88,55 @@ fn engenc_counter_source_is_owned_species_bounded_and_preserves_phase_revision()
         ("maximum", json!(3)),
         ("maximum", json!(1)),
         ("creature", json!("oteryn:creature.dragon")),
-        ("advance_gate_to", json!(5)),
+        ("advance_gate_to", json!(99)),
     ] {
         let mut bad = value.clone();
         bad["quests"][0]["stages"][1]["trigger"]["counter"][field] = invalid;
         assert!(parse(&bad).is_err(), "{field}");
     }
+    Ok(())
+}
+
+#[test]
+fn engenc_source_threshold_changes_phase_only_at_the_goal() -> Result<(), String> {
+    let mut value = fixture()?;
+    value["quests"][0]["stages"][1]["trigger"]["counter"]["advance_gate_to"] = json!(5);
+    let bindings = parse(&value)?;
+    let base = QuestStateCatalogue::empty("engenc-threshold").ok_or("base")?;
+    let catalogue = bindings.attach(&base)?;
+    let key = value["quests"][0]["stages"][1]["trigger"]["counter"]["key"]
+        .as_str()
+        .ok_or("key")?;
+    let transition = catalogue.transition(key).ok_or("transition")?;
+    let counter = super::super::native_kills::counter_for(&catalogue, key).ok_or("counter")?;
+    let mut state = BTreeMap::from([(counter.gate.into(), 4), (counter.track.into(), 0)]);
+    let first = catalogue
+        .evaluate(transition, &state, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(
+        first.len(),
+        2,
+        "retain one evaluation result per declared effect"
+    );
+    let phase = first
+        .iter()
+        .find(|change| change.track == counter.gate)
+        .ok_or("phase")?;
+    assert_eq!(
+        phase.before, phase.after,
+        "a nonterminal phase is a read-only gate"
+    );
+    for change in first {
+        state.insert(change.track, change.after);
+    }
+    let final_changes = catalogue
+        .evaluate(transition, &state, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    for change in final_changes {
+        state.insert(change.track, change.after);
+    }
+    assert_eq!(state[counter.track], 2);
+    assert_eq!(state[counter.gate], 5);
+    assert!(catalogue.evaluate(transition, &state, 0).is_err());
     Ok(())
 }

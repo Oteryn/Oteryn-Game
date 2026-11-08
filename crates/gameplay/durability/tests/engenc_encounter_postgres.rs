@@ -30,7 +30,7 @@ const PHASE: &str = "oteryn:quest-progress/authored-kills/phase";
 const KILL: &str = "oteryn:quest-transition/native-kills/authored-engine-rat";
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 
-fn catalogue() -> fixture::TestResult<Arc<QuestStateCatalogue>> {
+fn catalogue(maximum: i64, advance: Option<i64>) -> fixture::TestResult<Arc<QuestStateCatalogue>> {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../quests/src/quest/authored_bindings/fixtures/kill.json"
     ))?;
@@ -39,12 +39,16 @@ fn catalogue() -> fixture::TestResult<Arc<QuestStateCatalogue>> {
     quest["stages"].as_array_mut().ok_or("stages")?.remove(0);
     quest["stages"][0]["completes"] = json!(false);
     let counter = &mut quest["stages"][0]["trigger"]["counter"];
-    counter["maximum"] = json!(1);
+    counter["maximum"] = json!(maximum);
     counter["encounter_source"] = json!(ENTRY);
-    counter
-        .as_object_mut()
-        .ok_or("counter")?
-        .remove("advance_gate_to");
+    if let Some(value) = advance {
+        counter["advance_gate_to"] = json!(value);
+    } else {
+        counter
+            .as_object_mut()
+            .ok_or("counter")?
+            .remove("advance_gate_to");
+    }
     let mut callback = world_callbacks::load()?
         .into_iter()
         .find(|callback| callback.key == "oteryn:quest-callback/behemoth")
@@ -65,6 +69,17 @@ fn catalogue() -> fixture::TestResult<Arc<QuestStateCatalogue>> {
         "players":[{"from":{"x":99,"y":99,"floor":-7},"to":{"x":100,"y":100,"floor":-7}}],
         "monsters":[{"position":{"x":101,"y":100,"floor":-7},"creature":"oteryn:creature.rat"}],
         "room_min":{"x":100,"y":100,"floor":-7},"room_max":{"x":101,"y":100,"floor":-7},"timing":null}))?);
+    let encounter = callback.effects.encounter.as_mut().ok_or("encounter")?;
+    let template = encounter.monsters[0].clone();
+    let count = u16::try_from(maximum)?;
+    encounter.monsters = (0..count)
+        .map(|offset| {
+            let mut monster = template.clone();
+            monster.position.x += offset;
+            monster
+        })
+        .collect();
+    encounter.room_max.x = 100 + count;
     quest["stages"].as_array_mut().ok_or("stages")?.push(
         json!({"key":"entry","completes":false,"trigger":{"kind":"map_use","callback":callback}}),
     );
@@ -101,7 +116,7 @@ fn engenc_admitted_death_is_fenced_atomic_and_replay_safe_postgres() -> fixture:
 }
 
 async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
-    let catalogue = catalogue()?;
+    let catalogue = catalogue(1, None)?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root
@@ -205,5 +220,108 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(receipts, 1, "replay cannot duplicate defender credit");
+    Ok(())
+}
+
+#[test]
+fn engenc_source_threshold_keeps_admission_epoch_postgres() -> fixture::TestResult {
+    let Some(admin) = fixture::configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            fixture::runtime()
+                .map_err(fixture::debug)?
+                .block_on(async {
+                    let started = std::time::Instant::now();
+                    let h =
+                        fixture::Harness::create(admin, "engenc_source_threshold", true).await?;
+                    let result = threshold_exercise(&h).await;
+                    h.cleanup().await?;
+                    result?;
+                    assert!(started.elapsed().as_secs_f64() > 0.01);
+                    eprintln!(
+                        "ENGENC_THRESHOLD_PG_EXECUTED duration={:?}",
+                        started.elapsed()
+                    );
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                })
+                .map_err(fixture::debug)
+        })?
+        .join()
+        .map_err(|_| "ENGENC threshold PG worker panicked")?
+        .map_err(Into::into)
+}
+async fn threshold_exercise(h: &fixture::Harness) -> fixture::TestResult {
+    let catalogue = catalogue(2, Some(5))?;
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    for ordinal in 0_u8..2 {
+        let fence = fixture::fence(u64::from(ordinal) + 1)?;
+        let death = NativeQuestDeath {
+            transition: KILL.into(),
+            creature: "oteryn:creature.rat".into(),
+            observed_revision: 1,
+            definition_hash: catalogue.definition_hash(QUEST),
+            source: NativeDeathSource::Encounter(EncounterDeathContext {
+                source: ENTRY.into(),
+                scope: fence.runtime_scope,
+                scope_generation: fence.scope_ownership_generation.get(),
+                character: *fence.character_id.as_bytes(),
+                session: fence.game_session_id,
+                lease_generation: fence.character_lease_generation,
+                participant: [7; 16],
+                defender: [8 + ordinal; 16],
+            }),
+        };
+        let cause = QuestCause::CreatureDeath(
+            ExperienceRewardOccurrence::from_bytes(fixture::id(110 + ordinal))
+                .map_err(fixture::debug)?,
+        );
+        let outcome = h
+            .root
+            .commit_character_native_quest_kill(
+                &authority,
+                &h.node,
+                fence,
+                cause,
+                death,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(fixture::debug)?;
+        if !matches!(outcome, QuestTransitionOutcome::Committed(_)) {
+            return Err("admitted defender was rejected after an earlier nonterminal kill".into());
+        }
+        let count: i64 =
+            sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+                .bind(COUNT)
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(count, i64::from(ordinal) + 1);
+        if ordinal == 0 {
+            let phases: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(PHASE)
+            .fetch_one(&h.pool)
+            .await?;
+            if phases != 0 {
+                return Err("nonterminal kill rewrote the admission epoch".into());
+            }
+        }
+    }
+    let phase: i64 =
+        sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(PHASE)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(phase, 5);
+    assert_eq!(h.root_revision().await?, "3");
     Ok(())
 }
