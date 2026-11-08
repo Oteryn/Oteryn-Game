@@ -1241,7 +1241,7 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         )
         .await?;
         // A transition that only completes has no effect; one with none that does not
-        // complete, nine effects, a binding over RL-04 or a key over RL-06 is refused.
+        // complete, seventeen effects, a binding over RL-04 or a key over RL-06 is refused.
         let mut empty = Receipt::new(4, 4, &[]);
         empty.completes = true;
         expect_committed(pool, "completes only r5", &empty.continue_quest()).await?;
@@ -1249,14 +1249,14 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         let mut nothing = Receipt::new(5, 5, &[]);
         nothing.completes = false;
         expect_rejected(pool, "no effect", &nothing.continue_quest(), shape).await?;
-        let keys: Vec<String> = (0..9)
+        let keys: Vec<String> = (0..17)
             .map(|index| format!("oteryn:quest-progress/fixture.rats.k{index}"))
             .collect();
-        let nine: Vec<(&str, i64, i64)> = keys.iter().map(|key| (key.as_str(), 0, 1)).collect();
+        let over: Vec<(&str, i64, i64)> = keys.iter().map(|key| (key.as_str(), 0, 1)).collect();
         expect_rejected(
             pool,
             "RL-02",
-            &Receipt::new(5, 5, &nine).continue_quest(),
+            &Receipt::new(5, 5, &over).continue_quest(),
             shape,
         )
         .await?;
