@@ -24,6 +24,8 @@ mod e2e_c07;
 mod e2e_c09;
 #[path = "tests/e2e_c12.rs"]
 mod e2e_c12;
+#[path = "tests/e2e_c13.rs"]
+mod e2e_c13;
 #[path = "tests/e2e_c16a.rs"]
 mod e2e_c16a;
 #[path = "tests/e2e_c16c.rs"]
@@ -32,6 +34,8 @@ mod e2e_c16c;
 mod e2e_c17b;
 #[path = "tests/e2e_c17d.rs"]
 mod e2e_c17d;
+#[path = "tests/e2e_c18b.rs"]
+mod e2e_c18b;
 #[path = "tests/e2e_c20b.rs"]
 mod e2e_c20b;
 #[path = "tests/e2e_c20d.rs"]

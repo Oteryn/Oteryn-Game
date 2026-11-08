@@ -148,7 +148,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
     tile_item_row(clients, world).await;
 }
 
-fn input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
+pub(super) fn input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     Ok(
         crate::content::native_gameplay::NativeGameplayInput::from_manifest(
@@ -156,7 +156,7 @@ fn input() -> TestResult<crate::content::native_gameplay::NativeGameplayInput> {
         )?,
     )
 }
-fn book(
+pub(super) fn book(
     input: &crate::content::native_gameplay::NativeGameplayInput,
 ) -> TestResult<crate::spell::SpellBook> {
     let catalog =
@@ -1012,7 +1012,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     }
 }
 
-async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let travel: TestResult = async {
         let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
             at == TOWN
@@ -1028,7 +1028,7 @@ async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> Tes
 
 // An independently admitted observer must answer native liveness while the
 // other player walks or waits out combat logout. Keep pushed evidence queued.
-async fn with_observer_liveness<T>(
+pub(super) async fn with_observer_liveness<T>(
     observer: &mut DevClientSession,
     operation: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
@@ -1110,7 +1110,7 @@ fn rune_handle(
 
 // Content selects a real seller and navigation target. Neither source data nor an
 // accepted trade receipt proves acquisition: require the subsequent inventory frame.
-async fn acquire_rune(
+pub(super) async fn acquire_rune(
     client: &mut DevClientSession,
     world: &BundleWorld,
     id: u32,
@@ -1328,7 +1328,7 @@ async fn illegal_floor(
     Ok(sequence)
 }
 
-async fn cast_rune(
+pub(super) async fn cast_rune(
     client: &mut DevClientSession,
     spell: &crate::spell::SpellDefinition,
     reference: std::num::NonZeroU32,
@@ -1408,7 +1408,7 @@ async fn rune_rejoin(
 
 // Three equal-ground tiles keep the two observed step timestamps inside the
 // six-second paralysis lifetime. The caster stands off the measurement path.
-fn rune_corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
+pub(super) fn rune_corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
     for direction in [
         StepDirection::North,
         StepDirection::East,

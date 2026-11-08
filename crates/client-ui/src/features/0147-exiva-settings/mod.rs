@@ -9,6 +9,10 @@ pub use state::ExivaPanel;
 pub use view::panel_text;
 
 #[cfg(test)]
+#[path = "tests/e2e_c05.rs"]
+mod e2e_c05;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
