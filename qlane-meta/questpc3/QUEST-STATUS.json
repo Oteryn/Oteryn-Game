@@ -10999,7 +10999,7 @@
   },
   "current_main_integration": {
     "main": "83acbdac3720d7fe2df6c44d82623b7307806402",
-    "state": "main47baa late patch merged; workspace5m57s and348units86.05sPASS; Clippy/fmt pending, freshPGqueued",
+    "state": "publication ready on captured main47baa: workspace/Clippy/fmt and348units PASS; current10PG building",
     "published_parent": "bdb7ce79bb811ead06fd1c0700f5efe5797d4454",
     "migrations": "own 1220-1229 retained; incoming 1250-1258 retained; duplicate check passed",
     "decisions": [
@@ -11008,12 +11008,13 @@
       "Write canonical single-bound native-death receipts and recognize exact historical double-bound replay hashes.",
       "Keep one world item MINT with lane repeatable/provenance guards; reuse main completion, fluids and admission owners."
     ],
-    "checks": "Current main47baa snapshot: workspace-all-targets PASS5m57s; quest348unitPASS86.05s; provisioning2unitPASS0.103s; native/allcentral generation PASS; officialpin-refresh unchanged62543f3e. FinalClippy/fmt pending. Late9569252 candidate notpushed because main advanced; old PG build canceled before cases. Fresh10PG queued after new marker. Original30e2 PG8PASS2FAIL remains baseline-only; no repairedPG or wholequest claim.",
+    "checks": "Captured main47baa7bb8 fetched and merged before this prepush sequence. Current workspace-all-targets PASS5m57s; five-crate Clippy-Dwarnings PASS2m49s; fmt-all-checkPASS. Quest348unitPASS86.05s; provisioning2unitPASS0.103s; canonical native/allcentral regenerationPASS; repo pin-refresh unchanged62543f3e. Own10PG building /tmp/questpc3b-mainred3038-own-pg.log; remaining crate unit suites PENDING under explicit PREPUSH-2 step3 cadence exception. Original30e2 scoped8PASS2FAIL remains baseline-only, not repairedPG evidence. No new wholequest qualification.",
     "latest_main": "47baa7bb8",
     "local_merge_commits": [
       "4933f9bbd",
       "5b9b2b2f8",
-      "47a5fc6f3"
+      "47a5fc6f3",
+      "7998af2c7"
     ],
     "final_world_pin": "62543f3e8b65186e3edb555417fd492246eaf1379fa0caee0d6148d1714b3ae4",
     "equipment_profile_union": 3792,
@@ -11056,7 +11057,7 @@
       "unit_green": "/tmp/questpc3b-carlos-trade-registry-units-green.log",
       "unit_count": 348,
       "unit_duration_seconds": 72.73,
-      "pg": "queued job81165 after mainred3038 successmarker"
+      "pg": "current10case cohort BUILDING after all final gates passed"
     }
   }
 }
