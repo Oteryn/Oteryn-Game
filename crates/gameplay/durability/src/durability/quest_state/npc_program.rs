@@ -9,6 +9,7 @@ mod fathers_burden;
 mod items;
 mod marlin_trophy;
 mod rewards;
+pub mod teleport;
 
 /// Advisory for preview; the receipt owner reloads every fact under the Character fence.
 #[derive(Clone, Debug, Default)]
@@ -33,7 +34,8 @@ pub struct NpcProgramCommit {
     pub transition: QuestTransitionOutcome,
     pub reply: Vec<String>,
     pub next_topic: i32,
-    /// The locked source branch only replied; it wrote no receipt or value.
+    /// The source branch wrote no quest revision or inventory value. A free teleport
+    /// still owns a separate response receipt and pending arrival.
     pub read_only: bool,
     pub inventory_changed: bool,
     pub end_conversation: bool,
@@ -266,6 +268,7 @@ impl DurabilityRoot {
             catalogue,
             items,
             NpcRuleCatalog::runtime().map_err(|_| CharacterProgressionError::InvalidInput)?,
+            None,
         )
         .await
     }
@@ -284,6 +287,7 @@ impl DurabilityRoot {
         catalogue: Arc<QuestStateCatalogue>,
         items: &C,
         source: &NpcRuleCatalog,
+        teleport: Option<teleport::NpcTeleportAdmission>,
     ) -> Result<NpcProgramCommit> {
         if request.command.game_session_id() != fence.game_session_id
             || request.message.len() > 255
@@ -314,6 +318,9 @@ impl DurabilityRoot {
             let character=fence.character_id;
             let q=request.quest_request();
             lock_receipt_key(&mut tx,character,&q).await?;
+            if let Some(admission) = teleport
+                && !teleport::replay_matches(&mut tx, character, &request, admission).await? { return Ok(Err(CharacterProgressionError::ConflictingOccurrence)); }
+
             match load(&mut tx,character,&request).await? {
                 Ok(Some(replay)) => {tx.commit(deadline).await?;return Ok(Ok(replay));}
                 Err(error) => return Ok(Err(error)),
@@ -387,7 +394,32 @@ impl DurabilityRoot {
                     &mut tx, character.as_bytes()).await?)
             } else { None };
             let facts = NpcEvaluationFacts { eligibility: &eligibility, player_name: player_name.as_deref() };
-            let evaluated = evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref());
+            let teleport_plan = if teleport.is_some() {
+                match teleport::evaluate(&source, &request, &effective_tracks, now, facts) {
+                    Ok(Some(plan)) => Some(plan),
+                    _ => return Ok(Ok(refused(QuestRefusal::StageMismatch))),
+                }
+            } else { None };
+            if let (Some(admission), Some(plan)) = (teleport, &teleport_plan) {
+                if !admission.matches(fence, plan) { return Ok(Err(CharacterProgressionError::InvalidInput)); }
+                let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_arrivals WHERE character_id=encode($1,'hex')::uuid)").bind(id).fetch_one(&mut **tx).await?;
+                if pending { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }
+                if plan.source.selected_rule_keys.first() != Some(&request.transition_key) { return Ok(Ok(refused(QuestRefusal::StageMismatch))); }
+                if let Some(row) = sqlx::query("SELECT definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id).bind(&plan.source.quest).fetch_optional(&mut **tx).await? {
+                    let stored: [u8;32] = row.try_get::<Vec<u8>,_>("definition_hash")?.try_into().map_err(|_|DurabilityError::InvalidStoredState)?;
+                    if Some(stored) != catalogue.definition_hash(&plan.source.quest) && !row.try_get::<bool,_>("completed")?
+                        && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(&catalogue,&plan.source.quest,&stored).is_none() {
+                        return Ok(Ok(refused(QuestRefusal::RevisionMismatch)));
+                    }
+                }
+                if plan.source.track_changes.is_empty() && !plan.source.completes {
+                    teleport::insert(&mut tx, character, &request, &plan.source, admission).await?;
+                    let result = teleport::response(&plan.source);
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(result));
+                }
+            }
+            let evaluated = match teleport_plan { Some(plan) => Ok(Some(plan.source)), None => evaluate_source(&source,&request,&effective_tracks,&catalogue,now,facts,inventory.as_ref()) };
             if inventory_owned && let Ok(Some(plan)) = &evaluated && plan.track_changes.is_empty() && !plan.completes && !rewards::has_experience(&plan.effects) {
                 let result = NpcProgramCommit { transition: QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch), reply: plan.reply.clone(), next_topic: plan.next_topic, read_only: true, inventory_changed: false, end_conversation: items::ends(plan), end_delay_ms: items::end_delay(plan) };
                 tx.commit(deadline).await?;
@@ -471,6 +503,7 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_quest_npc_program_receipts(character_id,game_session_id,command_id,transition_key,reply,next_topic,inventory_changed,end_conversation,end_delay_ms,completes) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8,$9::text::integer,$10)")
                 .bind(id).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(&request.transition_key).bind(&plan.reply).bind(plan.next_topic).bind(item_action).bind(items::ends(&plan)).bind(items::end_delay(&plan).to_string()).bind(plan.completes).execute(&mut **tx).await?;
             achievements::grant(&mut tx, character, &request, &achievement_keys).await?;
+            if let Some(admission) = teleport { teleport::insert(&mut tx, character, &request, &plan, admission).await?; }
             if experience > 0 {
                 insert_xp_obligation(&mut tx, character, &q, experience, &pin).await?;
             }
@@ -500,7 +533,7 @@ async fn load(
     request: &NpcProgramRequest,
 ) -> StoredResult<Result<Option<NpcProgramCommit>>> {
     let Some(row) = load_receipt(tx, character, &request.quest_request()).await? else {
-        return Ok(Ok(None));
+        return teleport::load_read_only(tx, character, request).await;
     };
     if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding(character) {
         return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
