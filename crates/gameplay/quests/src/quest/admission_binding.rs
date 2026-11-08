@@ -3,7 +3,9 @@ use super::{QuestEffectKind, QuestTransition, reward_callbacks, world_callbacks}
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
+mod resolved_world;
 mod shared_world;
+pub use resolved_world::validate_resolved_world;
 
 struct Owner {
     transition: QuestTransition,
