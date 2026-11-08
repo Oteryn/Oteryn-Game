@@ -285,3 +285,26 @@ fn cooldown_shortcut_requires_exact_modifiers_and_a_fresh_press()
     )]));
     Ok(())
 }
+
+#[test]
+fn cooldown_widget_lists_the_next_available_boss_first() {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    assert!(request(&mut panel, Intent::Refresh).is_some());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: vec![
+                8, 100, 18, 7, 10, 3, b'a', b':', b'a', 16, 125, 18, 7, 10, 3, b'b', b':', b'b',
+                16, 105, 40, 5
+            ],
+        }
+    ));
+    let text = cooldown_text(&panel, 0);
+    assert!(text.find("b:b:") < text.find("a:a:"));
+}
