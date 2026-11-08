@@ -647,9 +647,10 @@
   "src": "TIBAUD-1",
   "area": "Cyclopedia / Character",
   "feature": "Appearances / outfits/mounts/familiars",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Tekstowy odczyt; brak galerii wyglądów/mountów/familiarów.",
-  "lane": "cg_cyclo"
+  "lane": "cg_cyclo",
+  "evidence": "apps/client/src/features/0199-cyclopedia-character/view/gallery_window.rs:35 + apps/client/src/features/0199-cyclopedia-character/tests/gallery.rs:8 t093_gallery_uses_confirmed_server_looks_and_filters_all_three_kinds"
  },
  {
   "id": "T094",

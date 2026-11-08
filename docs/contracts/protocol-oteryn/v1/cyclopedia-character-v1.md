@@ -206,3 +206,18 @@ No native owner currently records these facts:
 Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally followed by the 16-byte target Character. Pages are zero-based, 64 rows each, with a maximum complete list of 16,384 earned facts. Legacy tab request/reply grammars and their bounds are unchanged.
 
 The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.
+
+## Appearance gallery
+
+Command 388 additionally accepts selector 129 followed by `offset:u16`.
+This is a self-only, session-fenced read. It returns available outfits (including
+starter choices) and owned mounts from the same qualified cosmetics projection
+used for appearance selection. Familiar entries describe the active content
+catalogue; they do not assert an account unlock or summon eligibility.
+
+Reply: `129:u8, offset:u16, total:u16, count:u8`, then `count` entries of
+`kind:u8, look_type:u32, key:text`. Kinds are outfit=1, mount=2, familiar=3.
+Entries are sorted by kind and key, with exactly `min(24, total-offset)` rows.
+Look ids must be positive; keys are nonempty UTF-8 of at most 255 bytes without
+NUL/newlines. Maximum reply: 6270 bytes. The client resolves these confirmed ids
+through its pinned local sprite loader, without packaging additional art.

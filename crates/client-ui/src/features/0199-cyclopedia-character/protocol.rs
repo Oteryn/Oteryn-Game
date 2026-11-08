@@ -11,6 +11,9 @@ use oteryn_client_runtime::{
 };
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
+    Appearances,
+    GalleryNext,
+    GalleryPrevious,
     Achievements,
     Badges,
     MiscResources,
@@ -27,6 +30,12 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     if p.pending {
         p.feedback = Some("Waiting for the server");
         return None;
+    }
+    if matches!(
+        intent,
+        Intent::Appearances | Intent::GalleryNext | Intent::GalleryPrevious
+    ) {
+        return super::gallery::request(p, intent);
     }
     if matches!(
         intent,
@@ -55,7 +64,10 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
         _ => {}
     }
     let (kind, payload) = match intent {
-        Intent::Achievements => return None,
+        Intent::Appearances
+        | Intent::GalleryNext
+        | Intent::GalleryPrevious
+        | Intent::Achievements => return None,
         Intent::Badges => (387, Vec::new()),
         Intent::Tab
         | Intent::SelectTab(_)
@@ -107,6 +119,9 @@ pub fn request(p: &mut CyclopediaCharacterPanel, intent: Intent) -> Option<Featu
     })
 }
 pub fn apply_result(p: &mut CyclopediaCharacterPanel, r: &GatedCommandResult) -> bool {
+    if p.gallery.pending_offset.is_some() {
+        return super::gallery::apply(p, r);
+    }
     if p.achievement_pending {
         return super::achievements::apply(p, r);
     }

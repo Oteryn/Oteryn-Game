@@ -1,6 +1,9 @@
 //! Native cyclopedia character panel and admitted command mapping.
 #[path = "protocol/achievements.rs"]
 mod achievements;
+#[path = "state/gallery.rs"]
+mod gallery;
+pub use gallery::Gallery;
 mod input;
 mod protocol;
 mod state;

@@ -116,6 +116,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             }
             let mut analytics = false;
             let mut browse_achievements = false;
+            let mut browse_gallery = false;
             for action in std::mem::take(&mut actions.0) {
                 if action == 150 {
                     if let Ok(id) = read_text(badge_id).parse::<u8>()
@@ -129,6 +130,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                             mailbox.cyclopedia_character.hidden_badges.insert(id);
                         }
                     }
+                    continue;
+                }
+                if action == 105 && mailbox.cyclopedia_character.target.is_none() {
+                    browse_gallery = true;
                     continue;
                 }
                 if action == 117 {
@@ -355,6 +360,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 }
             }
             drop(mailbox);
+            if browse_gallery {
+                super::gallery_window::open(weak.clone(), commands.clone());
+            }
             if analytics {
                 crate::play::feature_0010_analyser::view::open_shared(&shared, &commands);
             }

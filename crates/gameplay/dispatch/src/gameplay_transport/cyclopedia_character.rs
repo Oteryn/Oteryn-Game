@@ -1,4 +1,6 @@
-//! PAR-P12 Cyclopedia character tabs on the admitted session owner (capability 199).
+#[path = "cyclopedia_character/gallery.rs"]
+mod gallery;
+// PAR-P12 Cyclopedia character tabs on the admitted session owner (capability 199).
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::cyclopedia_character as wire;
 
@@ -63,6 +65,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::gallery::SELECTOR) {
+                    return self.cyclopedia_gallery(admitted, payload).await;
+                }
                 if payload.first() == Some(&wire::achievements::SELECTOR) {
                     let request = wire::achievements::decode_request(payload).map_err(|_| ())?;
                     let target = match request.target {

@@ -119,3 +119,7 @@ mod controls;
 #[cfg(windows)]
 #[path = "view/misc_layout.rs"]
 mod misc_layout;
+
+#[cfg(windows)]
+#[path = "view/gallery_window.rs"]
+mod gallery_window;
