@@ -372,6 +372,10 @@ def validate_callback(callback, directory):
             require(storage['set'] > 0 and not storage.get('preserve', False)
                     and callback.get('native_rule') is None
                     and storage['maximum'] <= 2 ** 63 - 1 - storage['set'], key + ': invalid increment')
+        require(type(storage.get('at_least', False)) is bool, key + ': invalid at_least')
+        if storage.get('at_least', False):
+            require(not storage.get('preserve', False) and not storage.get('increment', False)
+                    and callback.get('native_rule') is None, key + ': invalid at_least')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)

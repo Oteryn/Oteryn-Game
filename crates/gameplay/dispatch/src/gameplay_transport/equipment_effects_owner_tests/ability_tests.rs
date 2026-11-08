@@ -381,9 +381,13 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .map(|(_, count)| count)
         .sum::<usize>();
     assert_eq!(later_main_profiles, 43);
+    // BASE1ae39c7f has53 QENGINE2 records. Main's seven QUESTPC4 records
+    // are already enumerated in the generated custody delta, not in that base.
+    const QENGINE2_BASE_PROFILES: usize = 53;
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 7);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
-        + additions.len()
+        + QENGINE2_BASE_PROFILES
         - npc_additions.len()
         - later_main_profiles; // Post-baseline main cohorts are already in the generated delta.
     let custody: serde_json::Value = serde_json::from_str(include_str!(concat!(

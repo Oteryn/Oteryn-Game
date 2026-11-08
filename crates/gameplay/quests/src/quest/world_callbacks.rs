@@ -419,18 +419,25 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+mod selector_gates;
+
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
     let mut keys = BTreeSet::new();
-    let mut selectors = BTreeSet::new();
+    let mut selectors = std::collections::BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
         }
         let selector = serde_json::to_vec(&(callback.trigger, &callback.selector))
             .map_err(|error| error.to_string())?;
-        if !selectors.insert(selector) {
+        let same_selector = selectors.entry(selector).or_default();
+        if same_selector
+            .iter()
+            .any(|other| !selector_gates::disjoint(other, callback))
+        {
             return Err("duplicate callback selector across registries".into());
         }
+        same_selector.push(callback);
     }
     Ok(())
 }

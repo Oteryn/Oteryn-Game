@@ -582,6 +582,9 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
+    # Claims above may add complete native container recipes. Rebuild their
+    # Item closure only after those final claims exist, before census and pins.
+    run(["python3", "tools/content-migration/register_spell_families.py"])
     # Room provenance includes the native Item provider, including NPC inputs.
     # Refresh after all native/map producers, before freshness checks and staging.
     run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])

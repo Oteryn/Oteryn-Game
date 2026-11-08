@@ -517,9 +517,10 @@ fn scenario_case(
             // These two cases keep five source NPCs and one player alive.
             if name.starts_with("qengine-rewards-l12-") {
                 128
-            } else if native_story || (native_upper && name.ends_with("-complete")) {
-                6
-            } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            } else if native_story
+                || (native_upper && name.ends_with("-complete"))
+                || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
+            {
                 6
             } else if name == "authored-magic-sword" {
                 9
