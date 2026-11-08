@@ -1,6 +1,57 @@
 use super::*;
 
 #[test]
+fn configured_rotation_modifier_sends_existing_turn_command() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    let mut view = view()?;
+    let mut preferences = view.preferences().clone();
+    preferences.rotation_modifier = "ALT".into();
+    view.set_preferences(preferences)?;
+    assert!(view.target_move_input(&link, &[NormalizedInputEvent::Key {
+        code: KeyCode::ARROW_UP, modifiers: Modifiers::one(Modifier::Alt),
+        state: ButtonState::Pressed, repeat: false,
+    }]));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("missing turn command".into());
+    };
+    assert_eq!(command.payload, [26, 2, 8, 1]);
+    Ok(())
+}
+
+#[test]
+fn mouse_preset_changes_actual_click_routing() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
+    let mut settings = SettingsState::new(None);
+    settings.preferences.swap_mouse_buttons = true;
+    let press = NormalizedInputEvent::MouseButton {
+        button: MouseButton::SECONDARY,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    };
+    let (events, _) = settings.input(&[press]);
+    assert!(matches!(events.as_slice(), [NormalizedInputEvent::MouseButton { button: MouseButton::PRIMARY, .. }]));
+    settings.preferences.keyboard_delay_ms = 1000;
+    let key = NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(82)?,
+        modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed,
+        repeat: false,
+    };
+    assert_eq!(settings.input(std::slice::from_ref(&key)).0.len(), 1);
+    let mut repeat = key.clone();
+    if let NormalizedInputEvent::Key { repeat, .. } = &mut repeat { *repeat = true; }
+    assert!(settings.input(&[repeat]).0.is_empty());
+    settings.input(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+    assert_eq!(settings.input(&[key]).0.len(), 1);
+    settings.preferences.keyboard_delay_ms = 1001;
+    assert!(view()?.set_preferences(settings.preferences).is_err());
+    Ok(())
+}
+
+#[test]
 fn basic_options_navigate_without_changing_preferences() {
     use crate::play::{SettingsPage, SettingsState};
     let mut state = SettingsState::new(None);
