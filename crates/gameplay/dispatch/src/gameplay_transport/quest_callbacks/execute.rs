@@ -505,7 +505,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
-        if callback.storage.is_empty()
+        if !callback.has_personal_state()
             && world_callbacks::world_change_requirement(&callback.key).is_some()
         {
             let Some(observed) = observed_world else {
@@ -535,7 +535,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
-        let durable = !callback.storage.is_empty() && !(close && callback.opening_only);
+        let durable = callback.has_personal_state() && !(close && callback.opening_only);
         let mut success_message = if !durable {
             callback.success_message.clone()
         } else {

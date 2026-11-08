@@ -474,6 +474,22 @@ pub(crate) async fn mint(
     // Every occurrence still uses the existing MINT once ledger and reservations.
     let claim_key = claim::key(fence.character_id, command, callback_key, claim)?;
     let request = RewardClaimMintRequest {
+        additional_items: reward
+            .additional
+            .iter()
+            .map(|item| {
+                if item.fluid_subtype.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                Ok(RewardClaimMintContent {
+                    fluid_subtype: None,
+                    item: resolve(&item.item)?,
+                    quantity: u32::from(item.count),
+                    key_number: None,
+                    text: None,
+                })
+            })
+            .collect::<std::result::Result<Vec<_>, DurabilityError>>()?,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

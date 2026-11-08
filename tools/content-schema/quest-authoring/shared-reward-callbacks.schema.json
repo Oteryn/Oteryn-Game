@@ -77,6 +77,24 @@
           "minLength": 1,
           "maxLength": 4000,
           "pattern": "^[^\\u0000]*$"
+        },
+        "additional": {
+          "type": "array",
+          "maxItems": 19,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/giftItem"
+              },
+              {
+                "not": {
+                  "required": [
+                    "fluid_subtype"
+                  ]
+                }
+              }
+            ]
+          }
         }
       },
       "allOf": [
