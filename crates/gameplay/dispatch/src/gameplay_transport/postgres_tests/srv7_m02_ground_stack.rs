@@ -24,8 +24,8 @@ fn srv7_m02_real_ground_order_guards_framed_world_use_without_consumption() -> T
 pub(super) fn fixture(mut callback: Callback) -> TestResult<Callback> {
     let guard = callback.world_requirements.first_mut().ok_or("static puzzle anchor")?;
     guard.ground_stack = Some(vec![
-        GroundStackEntry { item: GOLD.into(), quantity: 1, revision: "definition-r1".into() },
-        GroundStackEntry { item: PLATINUM.into(), quantity: 1, revision: "definition-r1".into() },
+        GroundStackEntry { item: GOLD.into(), count: 1 },
+        GroundStackEntry { item: PLATINUM.into(), count: 1 },
     ]);
     Ok(callback)
 }

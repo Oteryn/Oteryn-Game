@@ -7,8 +7,9 @@ use crate::durability::spell_item_transaction::{
     check_scope_transaction,
 };
 use crate::durability::spell_items_abi::SpellGroundTarget;
+use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
 use oteryn_gameplay_quests::quest::world_callbacks::{
-    GroundStackEntry, GroundStackFact, WorldRequirement, ground_stack_matches,
+    GroundStackEntry, Position, WorldRequirement, ground_stack_matches_at,
 };
 
 fn owner_error(error: SpellItemError) -> DurabilityError {
@@ -114,7 +115,14 @@ pub(crate) async fn matches(
         return Ok(false);
     }
     rows.sort_by_key(|r| r.stack_ordinal);
-    Ok(ground_stack_matches(
+    // The SQL predicate proves the exact serialized target address; the shared
+    // stack comparator below only compares entries within that proven cell.
+    Ok(ground_stack_matches_at(
+        Position {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
         expected,
         rows.iter().map(|row| {
             if row.definition_family != "Item"
@@ -125,10 +133,12 @@ pub(crate) async fn matches(
             {
                 return None;
             }
-            Some(GroundStackFact {
+            Some(NativeGroundStackFact {
                 instance: *row.item_instance_id.as_bytes(),
-                item: &row.definition_production_key,
-                count: u32::try_from(row.quantity).ok()?,
+                item: row.definition_production_key.clone(),
+                revision: row.definition_revision_ref.clone(),
+                quantity: u32::try_from(row.quantity).ok()?,
+                ordinal: u64::try_from(row.stack_ordinal).ok()?,
             })
         }),
     ))

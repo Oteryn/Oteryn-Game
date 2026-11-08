@@ -50,3 +50,10 @@ revision and positive ordered observation ordinals; no second comparison rule is
 retained. All three SRV7 regression behaviours remain tested. Ground predicates
 are explicitly value-free even after M07 admits *static* personal trial predicates:
 a mutable read-only projection cannot authorize a personal durable write.
+
+The subsequent qmech merge adds ENGNPC2's fenced durable Ground participant and
+assigns M02 jointly to ENGNPC2+SRV7. The public `{item,count}` wire shape is retained;
+both native and durable readers now delegate to the shared comparison rule with
+actual definition revisions and append ordinals. Personal progress requires world
+admission and the durable participant; an unfenced read-only declaration still
+fails parsing. Source quest window/cabinet placement qualification remains separate.

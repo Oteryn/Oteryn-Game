@@ -4,9 +4,8 @@ use crate::map::{
     overlay::{AddedItem, ChannelOverlay},
     view::EntrySource,
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{
-    GroundStackEntry, GroundStackFact, ground_stack_matches,
-};
+use oteryn_gameplay_quests::quest::ground_stack::GroundStackEntry as NativeGroundStackFact;
+use oteryn_gameplay_quests::quest::world_callbacks::{GroundStackEntry, ground_stack_matches_at};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn ground_requirements_match(
@@ -68,7 +67,7 @@ pub(super) fn matches(
     {
         return false;
     }
-    ground_stack_matches(
+    ground_stack_matches_at(
         Position {
             x: pos.x,
             y: pos.y,
@@ -82,7 +81,7 @@ pub(super) fn matches(
             (ground.definition.family == "Item"
                 && ground.world_id == overlay.world_id()
                 && ground.runtime_scope == overlay.runtime_scope())
-            .then_some(GroundStackFact {
+            .then_some(NativeGroundStackFact {
                 instance: ground.item_instance_id,
                 item: ground.definition.production_key.clone(),
                 revision: ground.definition.revision_ref.clone(),
@@ -152,13 +151,11 @@ mod tests {
         let required = [
             GroundStackEntry {
                 item: "oteryn:item.crate".into(),
-                quantity: 1,
-                revision: "definition-r1".into(),
+                count: 1,
             },
             GroundStackEntry {
                 item: "oteryn:item.amphora".into(),
-                quantity: 1,
-                revision: "definition-r1".into(),
+                count: 1,
             },
         ];
         let ground = |id, item: &str| GroundItemInstance {

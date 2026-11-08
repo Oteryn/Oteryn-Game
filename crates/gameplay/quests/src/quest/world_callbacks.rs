@@ -38,7 +38,9 @@ pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
     EncounterTiming, Facing, ItemCycle, ItemPresence, MagicEffect, MountReward, Portal, PortalPair,
 };
-pub use ground_stack::{GroundStackEntry, GroundStackFact, ground_stack_matches};
+pub use ground_stack::{
+    GroundStackEntry, GroundStackFact, ground_stack_matches, ground_stack_matches_at,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -428,9 +430,7 @@ pub(super) fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 !valid_pos(r.position)
                     || r.appearance == 0
                     || r.ground_stack.as_ref().is_some_and(|stack| {
-                        callback.actor_kind != ActorKind::Player
-                            || callback.has_personal_state()
-                            || !ground_stack::valid(stack)
+                        callback.actor_kind != ActorKind::Player || !ground_stack::valid(stack)
                     })
             })
             || (!callback.world_requirements.is_empty()
