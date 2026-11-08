@@ -22,7 +22,7 @@ impl Application {
         }
         match result {
             Ok((mut view, link)) => {
-                self.settings.restore(&mut view);
+                self.settings.restore(&mut view, &link);
                 self.scene = None;
                 self.play = Some(Play {
                     view,

@@ -8,6 +8,7 @@ use std::{
 };
 
 pub struct SettingsState {
+    battle_edit: u64,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     pub preferences: ReferencePreferences,
@@ -17,6 +18,38 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn export_to(&self, path: &Path) -> io::Result<()> {
+        PreferenceStore::export_to(&self.preferences, path)
+    }
+
+    pub fn import_from(&mut self, path: &Path) -> io::Result<()> {
+        self.replace_saved(PreferenceStore::read_transfer(path)?)
+    }
+
+    pub fn reset_defaults(&mut self) -> io::Result<()> {
+        self.replace_saved(ReferencePreferences::default())
+    }
+
+    pub fn restore_backup(&mut self) -> io::Result<()> {
+        let path = self
+            .store
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?
+            .backup_path();
+        self.import_from(&path)
+    }
+
+    fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+        let store = self
+            .store
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Preference storage is unavailable"))?;
+        store.replace_with_backup(preferences.clone())?;
+        self.preferences = preferences;
+        self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        Ok(())
+    }
+
     pub fn export_to(&self, path: &Path) -> io::Result<()> {
         PreferenceStore::export_to(&self.preferences, path)
     }
@@ -66,6 +99,7 @@ impl SettingsState {
             .as_ref()
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
+            battle_edit: 0,
             store,
             preferences,
             feedback,
@@ -106,11 +140,23 @@ impl SettingsState {
             .ok_or_else(|| "Preference storage is unavailable".to_owned())
             .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
         // A disk error must not disable local controls for this process.
+        if self.preferences.battle_lists != preferences.battle_lists {
+            self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
+        }
         self.preferences = preferences;
         self.feedback = match result {
             Ok(()) => "Applied and saved".into(),
             Err(error) => format!("Applied for this session; could not save: {error}"),
         };
+    }
+
+    pub fn sync_battle_lists(&mut self, link: &crate::play::PlayLink) {
+        let mut preferences = self.preferences.clone();
+        if let Some(edit) = link.sync_battle_lists(&mut preferences.battle_lists, self.battle_edit)
+        {
+            self.apply(preferences);
+            self.battle_edit = edit;
+        }
     }
 
     pub fn restore(

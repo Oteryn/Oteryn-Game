@@ -354,7 +354,7 @@ impl ApplicationHandler for Application {
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         self.poll_entry();
         if let Some(play) = &mut self.play {
-            self.settings.restore(&mut play.view);
+            self.settings.restore(&mut play.view, &play.link);
         }
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)

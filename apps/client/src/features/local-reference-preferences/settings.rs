@@ -53,6 +53,8 @@ fn default_panels() -> Vec<String> {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    #[serde(default = "crate::play::feature_0017_attack::view::default_lists")]
+    pub battle_lists: Vec<crate::play::feature_0017_attack::view::BattleListPreferences>,
     #[serde(default)]
     pub audio: crate::play::AudioSettings,
     #[serde(default)]
@@ -69,6 +71,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            battle_lists: crate::play::feature_0017_attack::view::default_lists(),
             audio: crate::play::AudioSettings::default(),
             keybindings: std::collections::BTreeMap::new(),
             english: false,
@@ -81,7 +84,8 @@ impl Default for ReferencePreferences {
 impl ReferencePreferences {
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
-        if self.audio.master_volume > 100
+        if !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
+            || self.audio.master_volume > 100
             || !(80..=180).contains(&self.ui_scale)
             || self.visible_panels.len() > PANEL_IDS.len()
             || self.visible_panels.iter().enumerate().any(|(index, id)| {
