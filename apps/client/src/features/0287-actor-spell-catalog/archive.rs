@@ -42,7 +42,18 @@ pub enum ArchiveSlot {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ArchiveBindings {
-    pub slots: [ArchiveSlot; 4],
+    #[serde(deserialize_with = "read_slots")]
+    pub slots: [ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS],
+}
+fn read_slots<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<[ArchiveSlot; oteryn_client_runtime::spell::ACTION_BAR_SLOTS], D::Error> {
+    let slots = Vec::<ArchiveSlot>::deserialize(deserializer)?;
+    if slots.len() > oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
+        return Err(serde::de::Error::custom("Too many action slots"));
+    }
+    let mut slots = slots.into_iter();
+    Ok(std::array::from_fn(|_| slots.next().unwrap_or_default()))
 }
 impl Default for ArchiveBindings {
     fn default() -> Self {
@@ -177,4 +188,38 @@ pub(in crate::play) fn manual(mailbox: &mut crate::play::mailbox::Mailbox) {
         mailbox.spellbook_details.archive_edit =
             crate::play::feature_0017_attack::view::next_edit();
     }
+}
+
+/// Store display identity from the current session catalog, never a stale numeric index.
+pub(in crate::play) fn assign_cast_index(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    slot: usize,
+    index: Option<u32>,
+) -> bool {
+    let binding = match index {
+        None => ArchiveSlot::Empty,
+        Some(index) => {
+            let Some(spell) = mailbox
+                .spell_catalog
+                .catalog
+                .entries()
+                .iter()
+                .find(|entry| entry.cast_index == index)
+            else {
+                return false;
+            };
+            ArchiveSlot::Spell(ArchivedSpell {
+                name: spell.name.clone(),
+                words: spell.words.clone(),
+                rune_item: spell.rune_item,
+            })
+        }
+    };
+    let Some(target) = mailbox.spellbook_details.archive.slots.get_mut(slot) else {
+        return false;
+    };
+    *target = binding;
+    mailbox.spellbook_details.archive_edit = crate::play::feature_0017_attack::view::next_edit();
+    resolve(mailbox);
+    true
 }

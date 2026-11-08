@@ -225,8 +225,13 @@ fn run(
             [700, 600, 95, 180],
             CBS_DROPDOWNLIST as u32 | WS_VSCROLL,
         );
-        for label in ["Slot 1", "Slot 2", "Slot 3", "Slot 4"] {
-            SendMessageW(slot, CB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+        for index in 1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
+            SendMessageW(
+                slot,
+                CB_ADDSTRING,
+                0,
+                wide(&format!("Slot {index}")).as_ptr() as isize,
+            );
         }
         SendMessageW(slot, CB_SETCURSEL, 0, 0);
         let assign = control(hwnd, "BUTTON", "Assign", 1114, [805, 600, 90, 30], 0);

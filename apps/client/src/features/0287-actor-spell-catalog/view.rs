@@ -1,6 +1,7 @@
 #[path = "archive.rs"]
 mod archive;
 pub use archive::ArchiveBindings;
+pub(in crate::play) use archive::assign_cast_index;
 pub(in crate::play) use archive::{
     manual as manual_archive_bindings, resolve as resolve_archive_bindings,
 };

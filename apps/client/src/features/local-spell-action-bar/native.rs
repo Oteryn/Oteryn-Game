@@ -14,9 +14,12 @@ use winit::window::Window;
 mod arcs;
 #[path = "../local-reference-preferences/shortcut_strip.rs"]
 mod shortcuts;
+#[path = "slots_native.rs"]
+mod slots;
 pub(super) struct Hud {
     arcs: arcs::ArcHud,
     status: HWND,
+    spells: slots::SpellRow,
     shortcuts: shortcuts::ShortcutStrip,
 }
 
@@ -62,7 +65,14 @@ impl Hud {
             }
             return None;
         };
+        let Some(spells) = slots::SpellRow::new(handle.hwnd.get() as HWND) else {
+            unsafe {
+                DestroyWindow(hwnd);
+            }
+            return None;
+        };
         Some(Self {
+            spells,
             arcs,
             status: hwnd,
             shortcuts,
@@ -109,6 +119,13 @@ impl super::Application {
             }
             if let Some(hud) = &mut self.hud {
                 hud.arcs.update(play.view.hud_arc_layout());
+                let labels = play.link.spell_slot_labels();
+                for slot in hud.spells.update(Some(&labels)) {
+                    if let Some(slot) = u32::try_from(slot).ok().and_then(std::num::NonZeroU32::new)
+                    {
+                        play.link.cast_spell_slot(slot);
+                    }
+                }
                 for id in hud
                     .shortcuts
                     .update(Some(&play.view.preferences().shortcuts))
@@ -126,6 +143,7 @@ impl super::Application {
         if self.play.is_none()
             && let Some(hud) = &mut self.hud
         {
+            hud.spells.update(None);
             hud.arcs.update(None);
             hud.shortcuts.update(None);
             hud.update(None, [8, 8, 900, 40]);

@@ -1,12 +1,12 @@
 use crate::play::{Input, PlayView};
-use crate::spell::SPELL_SLOTS;
+use oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
 use std::num::NonZeroU32;
 
 impl PlayView {
     /// A spell hotkey: casts the locally bound server spell index. Entries past the bar are ignored and
     /// at most one press per bar slot waits for the next tick.
     pub fn cast(&mut self, spell: NonZeroU32) {
-        if spell.get() <= u32::from(SPELL_SLOTS) {
+        if usize::try_from(spell.get()).is_ok_and(|slot| slot <= ACTION_BAR_SLOTS) {
             self.cursor_spell = None;
             self.queue(Input::Cast(spell));
         }
@@ -53,7 +53,7 @@ pub(in crate::play) fn configure(
     panel: &mut oteryn_client_ui::spell_action_bar::ActionBarPanel,
     fields: &[String],
 ) -> bool {
-    if fields.len() != 4 {
+    if fields.len() != 4 && fields.len() != ACTION_BAR_SLOTS {
         return false;
     }
     let mut next = panel.bar.clone();
@@ -102,4 +102,47 @@ pub(in crate::play) fn submit(
             crate::combat_input::CombatCommand::Cast(spell),
         ));
     }
+}
+
+#[cfg(windows)]
+pub(in crate::play) fn edit_slot(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+    action: usize,
+    fields: &[String],
+) {
+    let Some(slot) = fields
+        .first()
+        .and_then(|text| text.trim().parse::<usize>().ok())
+        .filter(|slot| (1..=ACTION_BAR_SLOTS).contains(slot))
+    else {
+        mailbox.spell_bar.feedback = "Select a slot in the row".into();
+        return;
+    };
+    if action == 2 {
+        submit(mailbox, commands, slot, &[]);
+        return;
+    }
+    let index = if action == 1 {
+        None
+    } else {
+        let Some(index) = fields
+            .get(1)
+            .and_then(|text| text.trim().parse::<u32>().ok())
+        else {
+            mailbox.spell_bar.feedback = "Select a cast index from the live catalogue".into();
+            return;
+        };
+        Some(index)
+    };
+    mailbox.spell_bar.feedback =
+        if crate::play::feature_0287_actor_spell_catalog::view::assign_cast_index(
+            mailbox,
+            slot - 1,
+            index,
+        ) {
+            "Saved slot assignment".into()
+        } else {
+            "That spell is absent from the live catalogue".into()
+        };
 }
