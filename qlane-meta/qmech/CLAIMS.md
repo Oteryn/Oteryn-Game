@@ -41,7 +41,7 @@
 
 | World-change conditions on the existing personal native-death counter adapter, with Fury/Werewolf/Mad Mage registrations | qworld | none planned; retained range1320–1329 | Fury Gates Mini World Change (10 Fury); Grimvale Mini World Change (10 Werewolf); Their Master's Voice World Change (Mad Mage stage) | CLAIMED; preceding personal stages remain separate bindings |
 
-| Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | CLAIMED |
+| Canonical-key achievement grant participant in fenced source NPC progress/item receipts | engclaim | none planned; retain own range1830–1839 | The Order of the Stag (Eldoran news reward); Kilmaresh (Sculptor Apprentice finale, programme binding also needed) | RELEASED: coordinator ASSIGN.md assigns M41 to wpkg; engclaim executes M34 then M35 |
 
 | Selected personal Cake Golem kill objective binding with Biff-start admission through the existing native kill/QuestState owners | SEASON | none planned; retained range1160–1169 only | A Piece of Cake (s1 admission and s2 personal20-kill progress only; later stages remain separate) | CLAIMED |
 | Rock Steady Deepling collection source: persisted NPC stages, exact hand-ins and weapon-addon grant | srvgap2 | none planned; retained range 1760–1779 | Outfit and Addon Quests — Deepling weapon addon source chain | CLAIMED |
