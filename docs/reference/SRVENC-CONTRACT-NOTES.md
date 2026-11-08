@@ -1871,3 +1871,11 @@ receipt identity. Cumulative kills guard the predecessor mission epoch rather
 than the changing counter, allowing multiple queued deaths without accepting
 a death captured before mission acceptance. Source-bound transition keys
 require native evidence; generic transition requests cannot mint this credit.
+
+The real PG red cases exposed an existing rowless-entry asymmetry: without
+a qualified corpse Item, the queue constructor discarded `damage_shares`.
+Room rules still worked, while damage-only quest steps received no eligible
+recipients. The producer now retains the actual native lethal ledger on this
+path as it already does on materialized and Soulpit entries. This grants no
+XP, corpse, loot or personal reward eligibility. The tests keep their exact
+source-stage and receipt-count assertions.

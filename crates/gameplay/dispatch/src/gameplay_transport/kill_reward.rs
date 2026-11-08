@@ -1579,7 +1579,7 @@ pub fn record_creature_kill(
                 )
             };
             let mut entry = entry;
-            // Crystal magma_bubble_death.lua:12-23 and the M24 chosen kill
+            // Crystal creaturescripts_magma_bubble_death.lua:12-23 and M24 kill
             // steps use actual damaging players independently of corpse MINT
             // qualification. Preserve the native lethal ledger on the rowless path.
             entry.damage_shares = damage_shares;

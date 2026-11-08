@@ -245,6 +245,79 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             "seed: {outcome:?}"
         );
     }
+    // Neither a generic command nor a detached source-generation snapshot is
+    // authority for progress, even at the correct source mission stage.
+    {
+        use crate::durability::character_progression::{
+            CharacterProgressionError, ExperienceRewardOccurrence,
+        };
+        use crate::durability::quest_state::{
+            native_kills::{NativeDeathSource, NativeQuestDeath},
+            source_deaths::SourceDeathContext,
+        };
+        use oteryn_gameplay_quests::quest::QuestRefusal;
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| "negative fence")?
+            .ok_or("negative fence")?;
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        let generic = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: rule.transition.clone(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        session,
+                        CommandId::new(2).map_err(debug)?,
+                    )),
+                },
+                Arc::clone(&catalogue),
+            )
+            .await;
+        assert!(
+            matches!(generic, Err(CharacterProgressionError::InvalidInput)),
+            "generic source-death request: {generic:?}"
+        );
+        let detached = NativeQuestDeath {
+            transition: rule.transition.clone(),
+            creature: rule.creature.clone(),
+            observed_revision: fence.expected_character_revision.get(),
+            source: NativeDeathSource::Source(SourceDeathContext {
+                scope: fence.runtime_scope,
+                scope_generation: fence.scope_ownership_generation.get() + 1,
+                character: *fence.character_id.as_bytes(),
+                session,
+                lease_generation: fence.character_lease_generation,
+                position,
+                dealt_damage: true,
+            }),
+        };
+        let outcome = slot
+            .commit_native_quest_kill(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestCause::CreatureDeath(
+                    ExperienceRewardOccurrence::from_bytes([0xa5; 16]).map_err(debug)?,
+                ),
+                &detached,
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(
+                outcome,
+                QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)
+            ),
+            "detached native source generation: {outcome:?}"
+        );
+    }
     owner.admit_quest_session(&admitted).await;
     owner.refresh_quest_session(session, false).await;
     let actor = deps.actor;
