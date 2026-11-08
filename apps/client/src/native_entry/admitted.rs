@@ -29,6 +29,7 @@ impl AdmittedSession {
     /// The server-owned join map, actors and overlays.
     pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
         let mut view = crate::play::PlayView::from_join(self.session.join_snapshot())?;
+        view.bind_minimap_world(self.world_id());
         if let Some(entities) = self.session.world_entities() {
             view.set_own_identity(*entities.own_identity());
         }

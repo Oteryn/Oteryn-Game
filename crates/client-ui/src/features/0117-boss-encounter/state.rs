@@ -3,6 +3,8 @@ use oteryn_client_runtime::boss_encounter::Snapshot;
 pub struct BossEncounterPanel {
     pub selected: bool,
     pub open: bool,
+    pub cooldowns_open: bool,
+    pub cooldown_received_at: Option<std::time::Instant>,
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 3],

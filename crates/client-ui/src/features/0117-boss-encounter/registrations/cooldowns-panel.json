@@ -1,0 +1,7 @@
+{
+  "mechanic": "0117-boss-encounter",
+  "kind": "panels",
+  "id": "0117-boss-encounter-cooldowns-panel",
+  "status": "supported",
+  "entry": "view.rs::cooldown_text"
+}
