@@ -6,7 +6,13 @@ AREA = 'content/world/areas/hunting-places/hunting-places-00000-00444.json'
 BINDINGS = (
     ('oteryn:quest.longsword_quest', 's1',
      'oteryn:area.hunting_place.dusalk_s_troll_clan_cave', 'chosen-source/longsword_quest'),
+    ('oteryn:quest.geomancer_quest', 's1',
+     'oteryn:area.hunting_place.mount_sternum_undead_cave', 'chosen-source/geomancer_quest'),
 )
+ANCHORS = {
+    'oteryn:area.hunting_place.dusalk_s_troll_clan_cave': (32663, 31970, -7, 4525),
+    'oteryn:area.hunting_place.mount_sternum_undead_cave': (32418, 32017, -7, 4529),
+}
 
 
 def callbacks(root):
@@ -23,6 +29,17 @@ def callbacks(root):
         recipe = definition.get('recipe') or definition.get('oteryn_recipe', {}).get('payload', {}).get('recipe')
         if not recipe:
             raise ValueError('Explore binding needs an explicit chosen recipe: ' + quest)
+        stages = [s for s in recipe['stages'] if s['key'] == stage and s['kind'] == 'explore']
+        if len(stages) != 1:
+            raise ValueError('Explore binding needs one EXPLORE stage: ' + quest + '/' + stage)
+        # Additional visits and preceding objectives need their own explicit guards.
+        if stages[0]['count'] != 1 or recipe['stages'][0]['key'] != stage:
+            raise ValueError('Explore binding needs explicit visit and predecessor guards: ' + quest)
+        tail = quest.removeprefix('oteryn:quest.')
+        expected_tail = ('authored/' + tail.removeprefix('authored.')
+                         if tail.startswith('authored.') else 'chosen-source/' + tail)
+        if track_tail != expected_tail:
+            raise ValueError('Explore counter owner differs from canonical quest: ' + quest)
         requirements = recipe['requirements']
         if (requirements['premium'] or requirements['min_level'] != 0
                 or requirements['prerequisites']):
@@ -35,19 +52,29 @@ def callbacks(root):
         source = record['declaration']['position']
         at = dict(x=source['x'], y=source['y'], floor=-source['floor'])
         # This is the pinned Area's declared entry point, not a guessed room box.
-        if (at['x'], at['y'], at['floor']) != (32663, 31970, -7):
-            raise ValueError('Longsword canonical entry point changed')
+        x, y, floor, appearance = ANCHORS[area]
+        if (at['x'], at['y'], at['floor']) != (x, y, floor):
+            raise ValueError('Canonical entry point changed: ' + area)
+        source_bindings = [b for b in record['source_bindings']
+                           if b['identity_namespace'] == 'tibiawiki-fandom/page-id'
+                           and b['disposition'] == 'EXACT']
+        if len(source_bindings) != 1:
+            raise ValueError('Explore anchor needs one exact pinned source: ' + area)
+        binding = source_bindings[0]
+        url = ('https://tibia.fandom.com/index.php?curid=' + binding['external_id']
+               + '&oldid=' + binding['source_revision'])
+        slug = tail.removeprefix('authored.').removesuffix('_quest').replace('_', '-')
         track = 'oteryn:quest-progress/' + track_tail + '/' + stage
         result.append(dict(
-            key='oteryn:quest-callback/m01b/longsword/s1/entry', quest=quest,
+            key='oteryn:quest-callback/m01b/' + slug + '/' + stage + '/entry', quest=quest,
             trigger='step_in', selector=dict(position=at, unique=None, action=None,
-                appearance=4525, native=dict(position=at, ordinal=0, appearance=4525)),
+                appearance=appearance, native=dict(position=at, ordinal=0, appearance=appearance)),
             lever=None, reversible=False, passages=[], teleport=None,
             storage=[dict(track=track + '/visited/entry', minimum=0, maximum=0, set=1),
                      dict(track=track, minimum=0, maximum=0, set=1, increment=True)],
             offerings=[], return_on_failure=False, failure_message=None,
             requires_world_admission=True,
             sources=[AREA + '#/records/' + str(index),
-                'https://tibia.fandom.com/index.php?curid=12046&oldid=1097493',
+                url,
                 'OTERYN_CHOSEN_EXPLORE_ENTRY:canonical-area-point;first-cycle-only']))
     return result

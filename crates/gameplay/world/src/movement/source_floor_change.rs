@@ -73,6 +73,10 @@ impl SourceStepProof<'_> {
             CardinalStep::East => MovementFacing::East,
             CardinalStep::South => MovementFacing::South,
             CardinalStep::West => MovementFacing::West,
+            CardinalStep::NorthEast => MovementFacing::North,
+            CardinalStep::SouthEast => MovementFacing::South,
+            CardinalStep::SouthWest => MovementFacing::South,
+            CardinalStep::NorthWest => MovementFacing::North,
         };
         (self.actor, self.expected, self.destination, facing)
     }
@@ -263,6 +267,10 @@ fn destination_with_lookup<'a>(
         CardinalStep::East => (1, 0),
         CardinalStep::South => (0, 1),
         CardinalStep::West => (-1, 0),
+        CardinalStep::NorthEast => (1, -1),
+        CardinalStep::SouthEast => (1, 1),
+        CardinalStep::SouthWest => (-1, 1),
+        CardinalStep::NorthWest => (-1, -1),
     };
     let mut next = shifted(origin, dx, dy, 0)?;
     // game.cpp2048..2079 uses source z8/7 boundaries and height3.
@@ -528,6 +536,10 @@ mod tests {
                     CardinalStep::East => MovementFacing::East,
                     CardinalStep::South => MovementFacing::South,
                     CardinalStep::West => MovementFacing::West,
+                    CardinalStep::NorthEast => MovementFacing::North,
+                    CardinalStep::SouthEast => MovementFacing::South,
+                    CardinalStep::SouthWest => MovementFacing::South,
+                    CardinalStep::NorthWest => MovementFacing::North,
                 })
             );
         }
