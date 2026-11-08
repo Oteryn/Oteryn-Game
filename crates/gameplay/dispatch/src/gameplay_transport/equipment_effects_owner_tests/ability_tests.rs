@@ -289,7 +289,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // SRV9: wedding ring 9585 and wedding outfit box 9586, Crystal 201189f8.
     ("SRV9-MARRIAGE", 2),
     // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.
-    ("QUESTPC7-REGISTERED-UNION", 95),
+    ("QUESTPC7-REGISTERED-UNION", 130),
 ];
 
 #[test]

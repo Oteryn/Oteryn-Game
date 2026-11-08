@@ -491,6 +491,26 @@ mod tests {
                 }
             }
         }
+        // Closed native inputs added by collector3030 remain subject to the
+        // same exclusion; retain exact inventory equality across all owners.
+        let native = crate::quest::fire_feathered_native::callbacks()
+            .into_iter()
+            .chain(crate::quest::shared_world_progress::callbacks())
+            .chain(crate::quest::hive_access::callbacks())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            native.len() + crate::quest::deepling_boss_access::BINDINGS.len(),
+            65
+        );
+        for callback in native {
+            assert_ne!(callback.quest, "oteryn:quest.dawnport_quest");
+            expected.insert(callback.key);
+        }
+        expected.extend(
+            crate::quest::deepling_boss_access::BINDINGS
+                .into_iter()
+                .map(|binding| binding.key.to_owned()),
+        );
         expected.insert(crate::quest::rotten_blood::altar_callback().key);
         expected.insert(crate::quest::schrodinger_island::callback().key);
         assert_eq!(

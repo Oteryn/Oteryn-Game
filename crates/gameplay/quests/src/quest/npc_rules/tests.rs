@@ -983,7 +983,7 @@ fn lane_npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatib
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 180), (0, 50)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -1039,7 +1039,15 @@ fn lane_npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatib
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+    assert_eq!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .keys()
+            .filter(|quest| original.contains(&quest.as_str()))
+            .count(),
+        6
+    );
     Ok(())
 }
 

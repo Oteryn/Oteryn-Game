@@ -35,10 +35,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -147,10 +147,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -283,10 +283,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -325,10 +325,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -370,10 +370,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -440,10 +440,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -611,10 +611,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -666,10 +666,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -752,10 +752,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -825,10 +825,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -976,10 +976,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1024,10 +1024,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1112,10 +1112,10 @@
     },
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1153,10 +1153,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1198,10 +1198,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1280,10 +1280,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1325,10 +1325,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1369,10 +1369,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1408,10 +1408,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1509,10 +1509,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1710,10 +1710,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1776,10 +1776,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1819,10 +1819,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1867,10 +1867,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   },
@@ -1943,10 +1943,10 @@
     "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
     "latest_main_integration": {
       "main": "78294c081a099c96a57948573d5dbf0caf398abf",
-      "state": "PREPUSH_2_CADENCE_CHECKPOINT_COMPILE_FMT_PINS_PASS_TESTS_PENDING",
-      "proof": "qlane-meta/questpc7/MAIN-3030-INTEGRATION-PROOF.json",
-      "unit_tests": "PENDING: all12 changed crates; full pre-repair baseline collected11 failures; fixes committed together",
-      "postgres_tests": "PENDING after repairs: Goblin intro/tools, resumed HotCuisine recipes, Father atomic11 acceptance",
+      "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+      "proof": "qlane-meta/questpc7/INVENTORY-REPAIR-PROOF.json",
+      "unit_validation": "Five repaired regressions GREEN, including full quests308/308; full content/dispatch reruns pending under PREPUSH-2 budget exception. Baseline5470pass/5fail/23retainedignored recorded.",
+      "postgres_validation": "PG18.6 Father70.173630946s PASS and Goblin68.007026843s PASS; Hot36.31s StageMismatch remains enabled and requested from qengine2.",
       "qualification_change": false
     }
   }

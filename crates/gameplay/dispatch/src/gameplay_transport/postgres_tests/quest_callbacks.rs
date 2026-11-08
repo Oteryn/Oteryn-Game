@@ -146,6 +146,15 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         .filter(|chest| chest["status"] != "not_playable")
         .map(|chest| chest["claim"].as_str().ok_or("claim"))
         .collect::<Result<_, _>>()?;
+    // Falcon's repeatable sources use the dedicated native handler, not the
+    // one-shot binder. Keep its closed runtime catalogue in the coverage proof.
+    let dedicated: BTreeSet<_> = oteryn_gameplay_quests::quest::falcon::CHESTS
+        .into_iter().map(|chest| chest.key()).collect();
+    assert_eq!(dedicated.len(), 6);
+    let dedicated_refs: BTreeSet<_> = dedicated.iter().map(String::as_str).collect();
+    let declared_dedicated: BTreeSet<_> = supported.iter().copied()
+        .filter(|key| key.starts_with(oteryn_gameplay_quests::quest::falcon::CLAIM_PREFIX)).collect();
+    assert_eq!(declared_dedicated, dedicated_refs);
     for (unique, appearance, offset, bound) in [
         (6176, 2434, 0, true),
         (6177, 2434, 0, false),
@@ -161,8 +170,8 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
                 .any(|claim| claim.key.as_str() == CLAIM),
             bound
         );
-        // The manifest's supported set must match the actual existing binder,
-        // not a second interpretation of the authoring readiness fields.
+        // Match the actual binder plus the dedicated handler catalogue;
+        // never infer support from authoring readiness fields.
         let candidates: BTreeSet<_> = report
             .served
             .iter()
@@ -174,7 +183,9 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
                     .map(|placement| placement.claim.as_str()),
             )
             .collect();
-        assert_eq!(supported, candidates);
+        assert!(candidates.is_disjoint(&dedicated_refs));
+        let actual = candidates.union(&dedicated_refs).copied().collect::<BTreeSet<_>>();
+        assert_eq!(supported, actual);
     }
     Ok(())
 }

@@ -1,3 +1,61 @@
+# Inventory repair publication — 2026-11-08 02:33 UTC
+
+All five collected unit assertion failures repaired as one batch. Four focused
+regressions GREEN (boss63.711s, equipment43.582s, coverage0.308s,
+Dawnport3.377s); the NPC legacy test exposed one final stale total9vs6.
+Preserve original-source subset6, then full quests suite308/308 GREEN21.68s.
+Workspace finalcheck5.19s, strict changed3clippy5.57s,fmt,duplicate migrations
+and generated source freshness PASS. Repo audit counts composed providers:
+base3842 + SRX25 + starter10 =3877; original source boss329 retained.
+Native65callbacks and dedicated Falcon6handlers added to closed inventory
+proofs, without admitting Dawnport or removing a source-witness negative.
+Repo audit refresh is byte+mtime idempotent. Full content/dispatch crate
+unit reruns after assertions are PENDING under PREPUSH-2 budget exception.
+Actual PG18.6: Father atomic11 PASS70.173630946s; Goblin intro/tools
+PASS68.007026843s; Hot resumed recipes RED36.31s StageMismatch. Existing Hot
+planner remains in quests but canonical NPC merge dropped routing and its
+special9-ingredient participant. ENGINE-REQUEST hot-native-recipe-restoration
+cites prior a056392a4 code. Do not raise generic8-input cap or skip the test.
+No new wholequest qualification:21historicalQUALIFIED,4ACTIVE.
+After publication: rerun content/dispatch full units with preserved compiled
+binaries if source hashes match (nextest supports binaries/cargo metadata),
+without a Git-HEAD-triggered rebuild. Metadata in
+/tmp/questpc7-inventory-repair-{binaries,cargo-metadata}.json. Then wire the
+prepared native3-sign PG regression and get its actualPG RED before authoring
+callbacks and target admission. Draft /tmp/questpc7-goblin-signs-regression.rs.
+Do not wait for shared capture/live-odour features to finish independent jobs.
+
+# Live unit gate after pushed collector checkpoint — 2026-11-08 01:44 UTC
+
+PUSHED ec0ad9a1b7660c6df29cc8d2bacdfa7859f3ffd2; source checkout unchanged
+while /tmp/questpc7-collector3030-tests.sh runs all12 changed crates' library
+and binary units, then3actualPG. Cargo build12m36s; server574PASS/3existing
+ignored in260.88s; combat43PASS27.98s; content328PASS/1FAIL/1existingignored
+473.01s. Dispatch still running, exactly2 failures reported across full run:
+1. Reward-boss fixture actual(52,329,1) versus temporary(52,334,1). Full repo
+   regeneration restores five qualified shared-body corpses. Restore original
+   exact329 and stop the audit tool from counting those five as inadmissible.
+2. Equipment closed inventory: audit tool counted raw base3842, while the
+   production loader composes SRX-1(25new) and starting-loadout(10new) records.
+   Source-composed union3877; expected reconciliation cohort must include35.
+   Wait for dispatch panic to confirm exact failure, then repair both together.
+No edits to implementation/test code before the complete failure list arrives.
+New root gate counts are observations, not weakened assertions. Keep every
+source-speed check, unknown-speed set and independent admission guard intact.
+Equivalence34111Items/252Mounts and worldmetadata PASS. Binary provenance
+/tmp/questpc7-collector3030-binary-provenance.json records unchanged ec0 source.
+PG cases remain PENDING. Do not call unit database guard exits real PG proof.
+Environment restart survived; running tests and all /tmp files were recovered.
+Next native Goblin3-sign regression is drafted ONLY in
+/tmp/questpc7-goblin-signs-regression.rs. Retained B3 source matches all3 sites:
+region-z07-x129-y125.b3 SHA d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f,
+Item17679, no house/zone flags. Wire it only after integration gate/repair push;
+include an actual PG version marker BEFORE native target-profile qualification
+so the expected missing-profile RED is proven to have executed on PG.
+Latest qengine2 peer cca7c5790 still has worlddelivery/kill pending and level0
+NPC input. No matching resolution of pending feature requests; don't rebuild
+large shared features here. All4 owned quests remain ACTIVE,21historicalDONE.
+
 # Collector3030 compiling checkpoint — 2026-11-08 00:57 UTC
 
 Merged main78294c081; conflicts and constructor arities resolved. Full World

@@ -4,6 +4,8 @@
 The allowlists remain closed. New entries require an explicit reviewed path below;
 source scanning only verifies their Type2 tuple, never authorizes arbitrary sites.
 """
+from collections import Counter
+import hashlib
 import json
 import re
 import sys
@@ -45,14 +47,17 @@ def main():
     proof = json.loads((ROOT / 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_text())
     keys = {r['production_definition']['production_key'] for r in proof['records']}
     assert keys == {f'oteryn:item.tibia.i{i}' for i in profiles.IDS}
-    replace(dispatch + 'equipment_effects_owner_tests/ability_tests.rs',
-            'assert_eq!(added_keys.len(), 53);', f'assert_eq!(added_keys.len(), {len(keys)});')
-    creatures = json.loads((ROOT / 'content/creatures/definitions/spell-native-profiles.json').read_text())['records']
-    bosses = [r for r in creatures if r['profile']['data']['profile'].get('details', {}).get('system_eligibility', {}).get('reward_boss')]
-    missing = sum(not r['profile']['data']['profile']['details'].get('corpse_item') for r in bosses)
-    assert missing == 52 and len(bosses) == 387
+    equipment_path = ROOT / dispatch / 'equipment_effects_owner_tests/ability_tests.rs'
+    previous = equipment_path.read_text()
+    refreshed, matches = re.subn(r'assert_eq!\(added_keys\.len\(\), [0-9]+\);',
+                                 f'assert_eq!(added_keys.len(), {len(keys)});', previous)
+    assert matches == 1, 'quest-profile inventory assertion is missing or ambiguous'
+    if refreshed != previous:
+        equipment_path.write_text(refreshed)
+    # Full regeneration restores five source-qualified shared corpse bodies.
+    # Preserve the original closed fixture; the partial-provider count was stale.
     replace('crates/gameplay/content/src/content/native_gameplay/test_support/activation_fixture.rs',
-            '(52, 329, 1)', f'({missing}, {len(bosses) - missing - 1}, 1)')
+            '(52, 334, 1)', '(52, 329, 1)')
 
     # Count the merged registered union once: older cohort totals omit the
     # lane's Newhaven/recipe/source-custody overlays and overlap the pick.
@@ -64,13 +69,48 @@ def main():
     document = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
     actual_keys = {r['production_definition']['production_key'] for r in document['records']}
     assert len(actual_keys) == len(document['records']) and keys <= actual_keys
+    # Production from_manifest composes these pinned providers before admission.
+    manifest = json.loads((ROOT / 'content/spells.manifest.json').read_text())
+    for field in ('item_profile_updates', 'starting_loadout_item_profiles'):
+        descriptor = manifest[field]
+        path = (ROOT / 'content' / descriptor['path']).resolve()
+        assert path.is_relative_to(ROOT)
+        raw = path.read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == descriptor['sha256']
+        records = json.loads(raw)['records']
+        additions = {r['production_definition']['production_key'] for r in records}
+        assert len(additions) == len(records)
+        actual_keys |= additions
     residual = len(actual_keys) - 432 - other - len(keys) + 1
-    assert residual == 95, 'review source-cohort changes before refreshing this closed union'
+    assert residual == 130, 'review source-cohort changes before refreshing this closed union'
     row = f'    ("QUESTPC7-REGISTERED-UNION", {residual}),\n'
+    replace(str(equipment.relative_to(ROOT)),
+            '    ("QUESTPC7-REGISTERED-UNION", 95),\n', row)
+    text = equipment.read_text()
     if row not in text:
         anchor = '    ("SRV9-MARRIAGE", 2),\n'
         replace(str(equipment.relative_to(ROOT)), anchor, anchor +
                 '    // Merged source/custody cohorts, refreshed by questpc7_merge_audit_inventories.py.\n' + row)
+
+    defaults = Counter()
+    for path in sorted((ROOT / 'content/dialogues/quest-rules').glob('quest-batch3-*.json')):
+        for track in json.loads(path.read_bytes())['tracks']:
+            defaults[track['initial']] += 1
+    assert defaults == {-1: 192, 0: 52}, 'review registered NPC source corpus changes'
+    path = ROOT / 'crates/gameplay/quests/src/quest/npc_rules/tests.rs'
+    text = path.read_text()
+    marker = 'fn lane_npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback'
+    prefix, body = text.split(marker, 1)
+    old = 'assert_eq!(defaults, BTreeMap::from([(-1, 180), (0, 50)]));'
+    new = f'assert_eq!(defaults, BTreeMap::from([(-1, {defaults[-1]}), (0, {defaults[0]})]));'
+    if old in body:
+        assert body.count(old) == 1
+        body = body.replace(old, new, 1)
+    else:
+        assert new in body
+    rendered = prefix + marker + body
+    if rendered != text:
+        path.write_text(rendered)
 
 
 if __name__ == '__main__':

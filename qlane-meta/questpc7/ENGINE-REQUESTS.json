@@ -103,6 +103,41 @@
         "result": "Authored catalogue bindings and carried exchange proofs exist; no exact live-creature USE target sampling owner found."
       },
       "boundary": "Do not infer a corpse or ground-item target for the live Rotworm sample; continue independent signs, trunks, pond and kill tasks."
+    },
+    {
+      "id": "hot-native-recipe-restoration",
+      "quest": "Hot Cuisine Quest",
+      "canonical": "oteryn:quest.hot_cuisine_quest",
+      "feature": "Restore existing native Hot Cuisine planner/calendar integration and dedicated fenced recipe consumption; source recipe6 has9 ingredient types while canonical plain-input participant is closed at8",
+      "where": [
+        "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+        "crates/gameplay/durability/src/durability/quest_world_callback.rs"
+      ],
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
+      "proof": {
+        "compiled_source": "ec0ad9a1b7660c6df29cc8d2bacdfa7859f3ffd2",
+        "binary_provenance": "/tmp/questpc7-collector3030-binary-provenance.json",
+        "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+        "postgres": "18.6",
+        "red_seconds": 35.0,
+        "exact_error": "NpcProgramCommit { transition: Refused(StageMismatch), reply: [], next_topic: 0, read_only: false, inventory_changed: false, end_conversation: false, end_delay_ms: 0 }",
+        "log": "/tmp/questpc7-collector3030-hot-diagnostic.log"
+      },
+      "reuse": {
+        "commit": "a056392a4",
+        "files": [
+          "crates/gameplay/durability/src/durability/quest_state/npc_program.rs",
+          "crates/gameplay/durability/src/durability/quest_state/npc_program/inventory_exchange.rs",
+          "crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs"
+        ],
+        "note": "Planner and calendar already remain in quests; routing and specialized inventory participant were dropped when reusing main NPC owner. Do not weaken generic8-type cap or recipe tests."
+      }
     }
-  ]
+  ],
+  "latest_peer_review": {
+    "branch": "origin/claude/happy-davinci-ijz3wy-qengine2",
+    "head": "cca7c5790",
+    "reviewed_at_utc": "2026-11-08 01:04",
+    "result": "Collector merged; seven historical PG cases documented. World delivery and generic kill remain explicitly pending; durable NPC input still level0. No matching implementation of this lane's pending requests found. Preserve owned independent Goblin jobs."
+  }
 }
