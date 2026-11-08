@@ -322,11 +322,7 @@ async fn wire_grant(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     callback: &RewardCallback,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     wire_reward(owner, admitted, npc, callback, true).await
 }
 
@@ -336,11 +332,22 @@ pub(super) async fn wire_reward(
     npc: EntityRef,
     callback: &RewardCallback,
     expect_outfit: bool,
-) -> TestResult<(
-    NpcIntentDisposition,
-    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
-    u64,
-)> {
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
+    let words: Vec<_> = std::iter::once("hi")
+        .chain(offer_words(&callback.key).iter().copied())
+        .chain(std::iter::once(callback.keywords[0].as_str()))
+        .collect();
+    wire_conversation(owner, admitted, npc, callback, expect_outfit, words).await
+}
+
+pub(super) async fn wire_conversation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    words: Vec<&str>,
+) -> TestResult<(NpcIntentDisposition, Vec<oteryn_protocol_oteryn::appearance::Catalogue>, u64)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -348,10 +355,6 @@ pub(super) async fn wire_reward(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let words: Vec<_> = std::iter::once("hi")
-        .chain(offer_words(&callback.key).iter().copied())
-        .chain(std::iter::once(callback.keywords[0].as_str()))
-        .collect();
     let last = admitted.continuity.next_command_id + u64::try_from(words.len())? - 1;
     let generation = admitted.continuity.connection_generation;
     let frames = words

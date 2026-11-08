@@ -154,28 +154,21 @@ async fn refuse_busy_offer(
     admitted: &mut AdmittedSession,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
 ) -> TestResult {
-    for (text, expected) in [
-        ("hi", NpcIntentDisposition::Ok),
-        ("tome", NpcIntentDisposition::Rejected),
-    ] {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(2))
-            .ok_or("clock")?;
-        let command = admitted.continuity.next_command_id;
-        let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(
-            &oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .map_err(debug)?;
-        let result = wire(owner, admitted, command, 7, payload).await?;
-        assert_eq!(
-            oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(&result)
-                .map_err(debug)?,
-            expected
-        );
-    }
+    let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|c| c.key.ends_with("/l2-cael-tome-7"))
+        .ok_or("seventh Tome")?;
+    // A native disconnect ends NPC focus. Keep greeting and refusal together,
+    // exactly as the successful hand-in conversations above do.
+    let (result, _, _) = super::qengine_rewards::wire_conversation(
+        owner,
+        admitted,
+        npc,
+        &callback,
+        false,
+        vec!["hi", "tome"],
+    )
+    .await?;
+    assert_eq!(result, NpcIntentDisposition::Rejected);
     Ok(())
 }
