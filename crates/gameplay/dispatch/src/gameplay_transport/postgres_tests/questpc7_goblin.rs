@@ -424,3 +424,31 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     for suffix in ["programme","signs","odours","captures","urine","trunks"] {assert_eq!(value(owner,a,&format!("{ROOT}{suffix}")).await?,0);}
     Ok(())
 }
+
+#[test]
+fn questpc7_goblin_perfume_source_items_admit_without_free_grants() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    let started=std::time::Instant::now();
+    let result=super::kill_reward_e2e::scenario_thread::run("questpc7-goblin-perfume-items",||super::quest_world_callbacks::scenario("qengine-rewards-goblin-perfume-items",Position{x:33294,y:31677,floor:-15},false));
+    eprintln!("QUESTPC7_GOBLIN_PERFUME_ITEMS POSTGRES_CASE_COMPLETED duration={:?} success={}",started.elapsed(),result.is_ok());result
+}
+pub(super) async fn exercise_perfume_items(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mut AdmittedSession,h:&Harness)->TestResult {
+    let version:String=sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+    eprintln!("QUESTPC7_GOBLIN_PERFUME_ITEMS POSTGRES_STARTED version={version}");
+    exercise(owner,a,h).await?;
+    let native=owner.active_generation.and_then(|g|g.native_gameplay()).ok_or("native")?;
+    for (item,weight,stack) in [(17672,350,"NonStackable"),(17673,350,"NonStackable"),(17674,350,"NonStackable"),(17675,350,"NonStackable"),(17681,0,"NonStackable"),(3120,400,"StackCapable")] {
+        let policy=native.item_policy_for_source_id(item).ok_or_else(||format!("missing source Item policy {item}"))?;
+        let record=serde_json::to_value(policy.record())?;
+        assert_eq!(record["production_definition"]["production_key"],format!("oteryn:item.tibia.i{item}"));
+        assert_eq!(record["production_definition"]["revision_ref"],"definition-r1");
+        assert_eq!(record["admission"]["materializable"],true);
+        assert_eq!(record["admission"]["stack_class"],stack);
+        assert_eq!(record["semantics"]["physical"]["value"]["weight"]["value"],weight);
+        assert_eq!(record["admission"]["legal_destinations"],if item==17681 {serde_json::json!(["Ground"])}else{serde_json::json!(["CharacterInventory","Ground"])});
+        assert_eq!(quantity(h,item).await?,0,"source admission alone grants no quest item");
+    }
+    assert_eq!(receipts(h).await?,2,"only the real introduction and paid kit commit");
+    assert_eq!(money(h).await?,8875);
+    Ok(())
+}

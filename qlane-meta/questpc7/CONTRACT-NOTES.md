@@ -848,3 +848,21 @@ would have changed unrelated existing admissions; discarded that output and
 preserved all other facts, source tables and Creature bindings. The normal
 prey_difficulty.py --simulate tool refreshed its dependent model (15cases,
 776creatures); no simulation output or pin was edited by hand.
+
+## Ordered perfume source review and supporting Items
+
+Task:Rafzan revision401277, lines49-90, explicitly requires recently dead Slug,
+black swamp gas, living Rotworm, then mouldy cheese in that order. Source URL:
+https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277 . The live
+Rotworm request remains correct; Slug instead needs the distinct native Ground
+corpse Entity/Instance handle route. Current callback handles accept only the
+world-change MapAdded family (quest_callbacks.rs:575-590), also true on peer
+qengine2c7f9d9ba7. No static corpse substitution or out-of-order stage seed.
+Supporting physical facts: items.xml:35719-35721 gives17672..17675 at350weight;
+items.xml:7558-7561 gives3120 at400; items.xml:35740 gives17681, with source
+zero-weight default. XML SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2.
+Client SHA2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2
+supplies portable nonstack vials, fixed17681, cumulative portable3120. Support
+admission does not enable an action or grant any item. When the engine route
+lands, choose ascending17672/17673/17674/17675 as the four transformed phases;
+this numeric phase mapping is a conservative lane rule, not an XML assertion.

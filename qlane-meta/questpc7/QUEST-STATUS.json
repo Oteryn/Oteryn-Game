@@ -1150,7 +1150,49 @@
       "red_seconds": 64.581898601,
       "green_seconds": 267.722714383,
       "whole_quest": "ACTIVE",
-      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries."
+      "next": "Source-bound remaining odours/captures and final reward; reuse qengine2 live actor and canonical callback convergence deliveries.",
+      "content_units": "330passed,0failed,1preexistingignored in432.68s"
+    },
+    "odour_source_review": {
+      "state": "SOURCE_ORDER_VERIFIED_SUPPORT_ITEMS_NEXT",
+      "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+      "order": [
+        "fresh Slug corpse",
+        "black swamp gas",
+        "live Rotworm",
+        "mouldy cheese"
+      ],
+      "native_static_targets": {
+        "gas": [
+          33092,
+          32061,
+          -7,
+          17681
+        ],
+        "cheese": [
+          33029,
+          32034,
+          -7,
+          3120
+        ]
+      },
+      "dynamic_corpse_request": "goblin-fresh-slug-corpse-use",
+      "item_support_next": [
+        17672,
+        17673,
+        17674,
+        17675,
+        17681,
+        3120
+      ]
+    },
+    "perfume_item_progress": {
+      "state": "SOURCE_ITEM_POLICIES_PG_QUALIFIED",
+      "proof": "qlane-meta/questpc7/GOBLIN-PERFUME-ITEMS-PG-PROOF.json",
+      "red_seconds": 74.325341548,
+      "green_seconds": 86.668771533,
+      "scope": "Supporting source Item admission only; ordered odour interactions remain incomplete",
+      "whole_quest": "ACTIVE"
     }
   },
   {

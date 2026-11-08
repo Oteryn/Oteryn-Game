@@ -1,3 +1,52 @@
+# Six perfume support Items PG QUALIFIED — publish now
+
+PG18.6 RED74.325341548s ->GREEN66.450643884s ->finalpinGREEN86.668771533s.
+Source17672..17675/17681/3120 policies checked after actual intro/paid kit;
+exact identities, weights, stack/destination policies, no unearned item/progress
+or extra receipt. Content full330pass/0fail/1existingignored363.15s. Workspace
+final11.37s, strict changedcrate clippy2m30s, fmt, source tests6, all regeneration/
+freshness/metadata/duplicates PASS. Official pin-refresh produced56c72f47...
+and updated deployment refs; finalPG+workspace rerun on those pins bothPASS.
+Dispatch full unit running/pending under PREPUSH2 budget; no full-suite claim.
+Previous stalker unit interrupted after721passes/0reportedfailures before new
+production data, content330 previously passed432.68s. Do not mix frozen tests
+with next production data. Whole counts21QUALIFIED/4ACTIVE remain.
+Main47baa still current and callback API conflict blobs unchanged from68file
+98d6abort; qengine2c7 native admission ownPG pending. New corpse route request
+is recorded: recently deadSlug ->gas ->liveRotworm ->cheese required in order;
+no static corpse substitution. Supporting admission enables no interactions.
+Next independent owned source data: Thaian creature (not NPCTheThaian).
+Existing Stage/Mapper and wiki-authored Converter support source-specific Wiki
+binding revision; exact codepaths creature_admission_stage.py:Stage.stage_monster,
+wiki_authored.py:494, population_census.py:129. Neither canonical nor native
+Thaian exists; NPCTheThaian does. Reuse normal staging/registration, no fake
+Tibia IDs or second generic engine. KnownWiki48123/rev445240:50000HP, noillusion,
+physical0resistance, paralysisimmune, invisibilitysensing. Unknown values chosen
+in CONTRACT-NOTES (zeroXP/noloot/corpse,125speed,0..100melee2s,ghost48visual).
+Keep source lookup under10min; data authoring can proceed from these decisions.
+
+# Perfume support Item PG RED building — 2026-11-08 06:22 UTC
+
+Pushed64ec9793f3c073c66e242254e227ae157a7a986a: actual native5kill job PG
+GREEN267.722714383s; all publication gates passed. Subsequent content full unit
+finished330pass/0fail/1existingignored432.68s. Dispatch full unit remains running
+(~705passes,0reportedfailures), pending PREPUSH2 budget; stop before changing
+production source data to avoid mixing its frozen assertions with new inputs.
+New testquestpc7_goblin_perfume_source_items_admit_without_free_grants builds
+actualPG RED after real intro+paid tools; six native policies absent. No source
+profile constants changed before RED. Qualify17672..17675 and3120 through
+existing qengine IDS,17681 through STATIC_IDS after RED, then repo generation,
+closed audit inventory, actualPG GREEN and prepush gates. Their canonical
+semantics exist for portable IDs; fixedgas unknown is supported by existing
+STATIC importer. Expected source weights350/350/350/350/0/400;3120 stackable.
+The pinned Wiki source requires freshSlugcorpse ->gas ->liveRotworm ->cheese.
+Added one owner-routed ENGINE-REQUEST goblin-fresh-slug-corpse-use: current
+callback handles restrict MapAdded to planted sources, not native Entity/Instance
+corpse handles, both lane and peerqengine2c7. Do not substitute a static corpse,
+seed an intermediate stage, or start a second big engine. Support Item admission
+can be qualified independently now; it grants no quest item/progress. Decision
+and source citations in CONTRACT-NOTES. Whole counts21QUALIFIED/4ACTIVE.
+
 # Native Marsh Stalker job PG QUALIFIED — publish now
 
 PG18.6 RED64.581898601s -> GREEN267.722714383s. Source4corpse chain and only

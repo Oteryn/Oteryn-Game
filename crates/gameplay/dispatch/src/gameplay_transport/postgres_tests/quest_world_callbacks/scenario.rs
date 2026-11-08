@@ -398,6 +398,8 @@ fn scenario_case(
             super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "qengine-rewards-goblin-perfume-items" {
+            super::super::questpc7_goblin::exercise_perfume_items(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-stalkers" {
             super::super::questpc7_goblin::exercise_stalkers(&mut owner,&mut admitted,&h).await?;
         } else if name == "qengine-rewards-goblin-trunks" {

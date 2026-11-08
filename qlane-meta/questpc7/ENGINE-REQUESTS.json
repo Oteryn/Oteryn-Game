@@ -158,6 +158,21 @@
         "preview": "/tmp/questpc7-main3029-preview/index.json"
       },
       "boundary": "Owner assigns large shared engine changes to qengine2. Preserve coherent lane source under the explicit15-minute merge-abort exception; continue independent quest-owned data and PG qualification."
+    },
+    {
+      "id": "goblin-fresh-slug-corpse-use",
+      "quest": "Goblin Merchant Quest",
+      "canonical": "oteryn:quest.goblin_merchant_quest",
+      "feature": "Carried quest-tool USE on an exact freshly killed native Ground corpse, with atomic tool transform and quest progress",
+      "where": [
+        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:575",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_craft.rs:55",
+        "crates/gameplay/dispatch/src/gameplay_transport/item_view.rs:64"
+      ],
+      "source": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277:49-90",
+      "facts": "Ordered odours: recently dead Slug, black swamp gas, living Rotworm, mouldy cheese. Do not replace a dynamic Slug corpse with a static map prop.",
+      "reuse_checked": "qengine2c7f9d9ba7 shared callback handle route accepts MapAdded only after world_change_item_source; native corpse Entity/Instance handles are not routed here.",
+      "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2"
     }
   ],
   "latest_peer_review": {

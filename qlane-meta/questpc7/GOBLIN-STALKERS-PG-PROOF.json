@@ -44,8 +44,13 @@
   "prey_generation": "15cases776creatures, repository simulation complete",
   "quests_units": "308passed in21.72s",
   "crate_units": {
-    "content": "PENDING under PREPUSH-2 cadence exception",
-    "dispatch": "PENDING under PREPUSH-2 cadence exception"
+    "content": [
+      "330",
+      "0",
+      "1",
+      "432.68"
+    ],
+    "dispatch": "INTERRUPTED after 721reportedpasses and0reportedfailures under PREPUSH-2 budget; remainder pendingCI"
   },
   "checks": {
     "green2": "PASS",
