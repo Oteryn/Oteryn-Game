@@ -3,8 +3,12 @@ use super::fixture::{self, Harness, debug, run};
 use super::{Dependencies, TestResult, reset};
 use crate::content::NativeEntryStart;
 use crate::durability::fresh_admission::FreshAdmissionStore;
-use crate::foundation::{ChannelContentPin, CharacterLease, MovementLocalPosition, RuntimeScopeRefV1};
-use crate::gameplay_transport::capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities};
+use crate::foundation::{
+    ChannelContentPin, CharacterLease, MovementLocalPosition, RuntimeScopeRefV1,
+};
+use crate::gameplay_transport::capabilities::{
+    BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_fence_of;
 use oteryn_protocol_oteryn::activity_scope::ActivityScope;
@@ -13,23 +17,49 @@ const BOSS: &str = "oteryn:boss.the_first_dragon";
 const CREATURE: &str = "oteryn:creature.the_first_dragon";
 const QUEST: &str = "oteryn:quest.the_first_dragon_quest";
 const TRIALS: &str = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s4";
-type PublishedRoom = (Vec<u8>,Vec<u8>,Vec<u8>,Vec<u8>,String,String,i64);
-const LEVER: MovementLocalPosition = MovementLocalPosition {x:33583,y:30993,floor:14};
-const ENTRY: MovementLocalPosition = MovementLocalPosition {x:33621,y:31023,floor:14};
-const EXIT: MovementLocalPosition = MovementLocalPosition {x:33597,y:30994,floor:14};
+type PublishedRoom = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, String, String, i64);
+const LEVER: MovementLocalPosition = MovementLocalPosition {
+    x: 33583,
+    y: 30993,
+    floor: 14,
+};
+const ENTRY: MovementLocalPosition = MovementLocalPosition {
+    x: 33621,
+    y: 31023,
+    floor: 14,
+};
+const EXIT: MovementLocalPosition = MovementLocalPosition {
+    x: 33597,
+    y: 30994,
+    floor: 14,
+};
 #[test]
 fn m18_selected_first_dragon_native_instance_timeout_postgres() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
-    std::thread::Builder::new().stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e|e.to_string()))?.join().map_err(|_|"M18 room thread failed")??;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M18 room thread failed")??;
     Ok(())
 }
 fn scenario(victory: bool) -> TestResult {
     run(async |admin| {
         let started = std::time::Instant::now();
         reset();
-        let h =
-            Harness::create_with_admission_seed(admin, if victory { "season_first_dragon_win" } else { "season_first_dragon_timeout" }, false, false).await?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if victory {
+                "season_first_dragon_win"
+            } else {
+                "season_first_dragon_timeout"
+            },
+            false,
+            false,
+        )
+        .await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
@@ -49,9 +79,12 @@ fn scenario(victory: bool) -> TestResult {
         let candidate = crate::content::bosses::activity_template::captured_boss_levers()
             .map_err(debug)?
             .into_iter()
-            .find(|candidate| candidate.path == "content/encounters/bosses/selected-first-dragon.json")
+            .find(|candidate| {
+                candidate.path == "content/encounters/bosses/selected-first-dragon.json"
+            })
             .ok_or("captured selected First Dragon lever")?;
-        let bundle = super::srvenc_source_boss::source_bundle(world_id, channel_id, native, &candidate)?;
+        let bundle =
+            super::srvenc_source_boss::source_bundle(world_id, channel_id, native, &candidate)?;
         let cells = bundle
             .movement_cells(source_room.movement_cells())
             .map_err(debug)?;
@@ -125,7 +158,29 @@ fn scenario(victory: bool) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        // Reuse the actual native Premium gate's trusted clock and delivered
+        // evidence. Session registration alone does not install this authority.
+        let (consumer, premium_clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(
+                fixture::id(40),
+            );
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await
+            .map_err(debug)?;
+        let premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(premium_clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = Some(&premium);
         owner.evidence = &evidence.evidence;
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
@@ -176,33 +231,65 @@ fn scenario(victory: bool) -> TestResult {
         // Use the same pinned Character interpretation as the real source session;
         // the historical seeded level50/profile-policy fixture is not this policy.
         owner.admit_progression_session(&mut admitted).await;
-        assert!(owner.progression_binding(admitted.game_session_id).is_some(),
-                "the source session must bind the native content-1 progression policy");
+        assert!(
+            owner
+                .progression_binding(admitted.game_session_id)
+                .is_some(),
+            "the source session must bind the native content-1 progression policy"
+        );
         super::qengine_outfit_stories::earn_level(&owner, &admitted, &authority, 40).await?;
         // Prior personal trials are historical input to this encounter, not a synthetic death.
-        let canonical = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let canonical =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?;
         let catalogue = canonical.catalogue();
-        let hash = catalogue.definition_hash(QUEST).ok_or("First Dragon catalogue")?;
+        let hash = catalogue
+            .definition_hash(QUEST)
+            .ok_or("First Dragon catalogue")?;
         let mut seed = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *seed).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
         sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) SELECT character_id,$1,'content-1',$2,character_revision,character_revision FROM game_character_roots")
             .bind(QUEST).bind(hash.as_slice()).execute(&mut *seed).await?;
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$1,$2,2,character_revision FROM game_character_roots")
             .bind(TRIALS).bind(QUEST).execute(&mut *seed).await?;
         seed.commit().await?;
         let mut guard = h.pool.begin().await?;
-        sqlx::query("SELECT character_id FROM game_character_roots FOR UPDATE").fetch_all(&mut *guard).await?;
-        let character = admitted.item_fence.ok_or("selected source fence")?.character_id;
-        assert!(!crate::durability::activity_handoff::fixture_first_dragon_entry_permit(
-            &mut guard, character, &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
-        ).await?, "complete trials never bypass missing Premium authority");
-        assert!(crate::durability::activity_handoff::fixture_first_dragon_entry_permit(
-            &mut guard, character, &owner.premium_coordinator,
-        ).await?, "the same live Premium coordinator permits the selected encounter");
+        sqlx::query("SELECT character_id FROM game_character_roots FOR UPDATE")
+            .fetch_all(&mut *guard)
+            .await?;
+        let character = admitted
+            .item_fence
+            .ok_or("selected source fence")?
+            .character_id;
+        assert!(
+            !crate::durability::activity_handoff::fixture_first_dragon_entry_permit(
+                &mut guard,
+                character,
+                &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
+            )
+            .await?,
+            "complete trials never bypass missing Premium authority"
+        );
+        assert!(
+            crate::durability::activity_handoff::fixture_first_dragon_entry_permit(
+                &mut guard,
+                character,
+                &owner.premium_coordinator,
+            )
+            .await?,
+            "the same live Premium coordinator permits the selected encounter"
+        );
         guard.rollback().await?;
         owner.quest_catalogue = Some(std::sync::Arc::new(catalogue.clone()));
-        owner.refresh_quest_session(admitted.game_session_id, false).await;
-        let clock: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        let clock: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool)
+                .await?;
         h.root.set_test_quest_clock(clock).map_err(debug)?;
         owner
             .register_current_runtime()
@@ -338,16 +425,18 @@ fn scenario(victory: bool) -> TestResult {
         }
         let timers: (i64,i64) = sqlx::query_as("SELECT a.deadline-a.opened_at,c.available_at-a.opened_at FROM game_boss_room_activities a JOIN game_character_boss_cooldowns c USING(boss_key) WHERE a.admission=encode($1,'hex')::uuid")
             .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(timers, (1_200_000,72_000_000));
+        assert_eq!(timers, (1_200_000, 72_000_000));
         if victory {
             settle_selected_boss(&destination, &admitted).await?;
             let completed: (i64,i64,bool) = sqlx::query_as("SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT value FROM game_character_quest_tracks WHERE track_key=$2),(SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$3)")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5")
                 .bind("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6").bind(QUEST).fetch_one(&h.pool).await?;
-            assert_eq!(completed,(1,1,true));
+            assert_eq!(completed, (1, 1, true));
             let exit_after: i64 = sqlx::query_scalar("SELECT exit_deadline / 1000 + 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid")
                 .bind(handoff.as_slice()).fetch_one(&h.pool).await?;
-            h.root.advance_test_quest_clock(exit_after - clock).map_err(debug)?;
+            h.root
+                .advance_test_quest_clock(exit_after - clock)
+                .map_err(debug)?;
         } else {
             h.root.advance_test_quest_clock(1201).map_err(debug)?;
         }
@@ -356,7 +445,11 @@ fn scenario(victory: bool) -> TestResult {
             &mut admitted,
             BOSS,
             true,
-            if victory { wire::COMMAND_TYPE_BOSS_DEFEATED } else { wire::COMMAND_TYPE_BOSS_TIMEOUT },
+            if victory {
+                wire::COMMAND_TYPE_BOSS_DEFEATED
+            } else {
+                wire::COMMAND_TYPE_BOSS_TIMEOUT
+            },
         )
         .await?;
         assert!(matches!(returned, BossActivityReply::Accepted { .. }));
@@ -376,28 +469,54 @@ fn scenario(victory: bool) -> TestResult {
                 .position(),
             EXIT
         );
-        owner.activity_lifecycle_pass().await.map_err(|_| "retire selected activity")?;
-        assert!(owner.activity_runtimes.get(instance, assignment.ownership_generation).is_none(),
-            "the terminal private room must be retired after its last participant returns");
-        let cooldown: i64 = sqlx::query_scalar("SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1")
-            .bind(BOSS).fetch_one(&h.pool).await?;
-        assert!(cooldown > (clock + 1201) * 1000, "returning never clears the personal cooldown");
+        owner
+            .activity_lifecycle_pass()
+            .await
+            .map_err(|_| "retire selected activity")?;
+        assert!(
+            owner
+                .activity_runtimes
+                .get(instance, assignment.ownership_generation)
+                .is_none(),
+            "the terminal private room must be retired after its last participant returns"
+        );
+        let cooldown: i64 = sqlx::query_scalar(
+            "SELECT available_at FROM game_character_boss_cooldowns WHERE boss_key=$1",
+        )
+        .bind(BOSS)
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(
+            cooldown > (clock + 1201) * 1000,
+            "returning never clears the personal cooldown"
+        );
         if !victory {
-            let minted: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items").fetch_one(&h.pool).await?;
+            let minted: i64 = sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
+                .fetch_one(&h.pool)
+                .await?;
             assert_eq!(minted, 0, "timeout never invents rewards or a quest kill");
             let deaths: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key LIKE '%the_first_dragon_quest/s5'").fetch_one(&h.pool).await?;
             assert_eq!(deaths, 0);
         }
-        eprintln!("M18_PG_EXECUTED selected_first_dragon_instance victory={} duration={:?}", victory, started.elapsed());
+        eprintln!(
+            "M18_PG_EXECUTED selected_first_dragon_instance victory={} duration={:?}",
+            victory,
+            started.elapsed()
+        );
         Ok(())
     })
 }
 
 #[test]
 fn m18_selected_first_dragon_native_victory_completes_once_postgres() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
-    std::thread::Builder::new().stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e|e.to_string()))?.join().map_err(|_|"M18 room thread failed")??;
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "M18 room thread failed")??;
     Ok(())
 }
 async fn settle_selected_boss(
@@ -419,7 +538,12 @@ async fn settle_selected_boss(
     {
         let mut runtime = owner.runtime.lock().await;
         let creature = CREATURE;
-        let target = runtime.visible_entities().creatures.first().ok_or("native First Dragon")?.actor;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .first()
+            .ok_or("native First Dragon")?
+            .actor;
         let lease = runtime
             .bound_attacker_lease(actor, session)
             .map_err(debug)?;
