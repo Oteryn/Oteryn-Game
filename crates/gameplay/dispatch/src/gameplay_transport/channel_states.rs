@@ -42,6 +42,7 @@ pub struct ChannelSessionStates {
     pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
     pub(super) grizzly_boss: super::grizzly_boss::GrizzlyBossSessions,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,
     pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
@@ -93,6 +94,9 @@ pub struct ChannelSessionStates {
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     /// NX-1: current-session staff flags and uncertain world-effect receipts.
     pub(super) staff_world: super::staff_tools::WorldTools,
+    /// Per-owner simulation clock control for native timer scenarios, never SQL time.
+    #[cfg(test)]
+    pub(super) test_owner_time: std::sync::atomic::AtomicU64,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
