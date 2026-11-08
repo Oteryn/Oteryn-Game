@@ -55,7 +55,8 @@ fn registry() -> Result<&'static Registry, String> {
             }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
-                let protect = world_callbacks::gated_binding(&callback)?.is_some();
+                let protect = world_callbacks::gated_binding(&callback)?.is_some()
+                    || !callback.state_ops.is_empty();
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
                 } else if let Some(operation) = shared_world.transition(&callback.key) {

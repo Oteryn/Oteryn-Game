@@ -1,4 +1,4 @@
-# PGSPEED checked mechanics
+# PGSPEED checked mechanics — PARTIAL
 
 **none** in the three server reward steps inspected below. This is a bounded
 code check, not a claim that the complete quests or their native client flows
@@ -25,3 +25,33 @@ pending the owner's direction on whether it belongs in this package.
 No migrations are allocated by this report. At initial inspection the package
 contained `PACKAGE.md` only: no `MISSING-*.md` queue items or `CLAIMS.md` existed,
 so there was no reported mechanic to claim yet.
+
+## PARTIAL follow-up
+
+The NPC teleport adapter is claimed by PGSPEED in `CLAIMS.md`; the missing
+source-plan boundary was reproduced by a failing Rust unit test and the bounded
+planner now passes both positive and fail-closed cases. Production/durable
+wiring and its real-PG qualification remain in progress. This report does not
+count that mechanic or either complete quest as DONE.
+
+The source planner tests are green (2 cases; 19.455 s including build).
+Migration **2220** is reserved for the zero-track NPC teleport receipt shape: a
+matching same-transaction NPC receipt and pending-arrival proof is required.
+The existing receipt arms and their bounds remain intact. No migration has
+been applied by this report-only reservation push.
+
+## M37 checkpoint
+
+- The initial durable/dispatch integration passed its all-target compile check
+  (227.538 s); the pure-teleport receipt refinement remains in progress.
+- The generated Riddler programme rebuilds from the pinned donor capture; four
+  focused authoring tests pass. Peter/Riddler placement scope uses only their
+  existing agreeing source candidates.
+- Migration 2220 now preserves **all** existing quest receipt constraints. A pure
+  teleport has a separate source NPC response receipt and no invented personal
+  quest start, track write, CharacterRevision, fare or paid-route receipt. A real
+  progress-changing teleport still composes the quest receipt and arrival.
+- Real-PG M37 cases and package regeneration/gates are pending: M37 is not DONE.
+- Separately, the unchanged PGSPEED fixture checkpoint passed all 4,636 unit
+  cases in 1,791.035 s (PG environment unset); its real-PG performance and full
+  node qualification continue in the isolated measurement worktree.

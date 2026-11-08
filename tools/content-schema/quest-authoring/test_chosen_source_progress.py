@@ -112,6 +112,7 @@ class ChosenSourceProgressTest(unittest.TestCase):
                 "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
                 "LOWERED": 6,
                 "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 90,
+                "standalone_source_claim": 5,
             },
             merged["counts"]["completion"],
         )
