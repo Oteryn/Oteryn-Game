@@ -160,7 +160,8 @@ impl HotCuisineProgram {
         input: &NpcRuleInput<'_>,
         calendar: &HotCuisineCalendar,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        if input.npc != NPC || input.trigger != NpcRuleTrigger::Say {
+        if input.npc != NPC || input.trigger != NpcRuleTrigger::Say
+            || input.level < 35 || !input.premium_current {
             return Ok(None);
         }
         let Some(recipe) = self

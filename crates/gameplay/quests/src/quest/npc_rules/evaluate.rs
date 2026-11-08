@@ -132,6 +132,7 @@ impl<'a> Staged<'a> {
                 )? == *within
             }
             NpcRuleGuard::Vocation { value } => input.vocation == value,
+            NpcRuleGuard::Premium { value } => input.premium_current == *value,
             NpcRuleGuard::Sex { value } => input.sex == *value,
             NpcRuleGuard::Outfit { look_type, addon } => self
                 .outfits
@@ -339,6 +340,9 @@ pub(super) fn plan(
                         NpcRuleGuard::Storage { .. }
                             | NpcRuleGuard::StorageTime { .. }
                             | NpcRuleGuard::CalendarMonth { .. }
+                            | NpcRuleGuard::Level { .. }
+                            | NpcRuleGuard::Vocation { .. }
+                            | NpcRuleGuard::Premium { .. }
                             | NpcRuleGuard::CalendarWindow { .. }
                     )
                 {

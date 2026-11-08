@@ -55,6 +55,7 @@ fn input<'a>(
         inventory,
         now_epoch_seconds: 1_785_542_400,
         calendar_month: 8,
+        premium_current: true,
         level: 100,
         vocation: "oteryn:vocation.knight",
         sex: 0,
@@ -197,6 +198,27 @@ fn sauce_completion_grants_one_bonus_use_without_inventing_order_requirement()
     assert_eq!(third.reply, hot.already_cooked_reply);
     assert!(third.track_changes.is_empty());
     assert_eq!(third.inventory_before, third.inventory_after);
+    Ok(())
+}
+
+#[test]
+fn cooking_confirmation_requires_live_level_35_and_premium() -> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 1);
+    let inventory = ingredients(&hot.recipes[0]);
+    let outfits = BTreeMap::new();
+    for (level, premium, accepted) in [(34, true, false), (35, false, false), (35, true, true)] {
+        let mut input = input(&progress, &inventory, &outfits, hot.recipes[0].topic);
+        input.level = level;
+        input.premium_current = premium;
+        assert_eq!(hot.plan(generic, &input, &calendar())?.is_some(), accepted);
+    }
     Ok(())
 }
 

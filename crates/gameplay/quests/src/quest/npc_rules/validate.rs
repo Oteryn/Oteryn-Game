@@ -209,6 +209,7 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
                             && super::calendar::valid_date(*end_month, *end_day)
                     }
                     NpcRuleGuard::Vocation { value } => valid_quest_key(value),
+                    NpcRuleGuard::Premium { .. } => true,
                     NpcRuleGuard::Sex { value } => *value <= 1,
                     NpcRuleGuard::Outfit { look_type, addon } => *look_type > 0 && *addon <= 3,
                 };

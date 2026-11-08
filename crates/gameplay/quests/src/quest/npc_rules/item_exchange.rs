@@ -18,7 +18,10 @@ impl NpcRuleCatalog {
                 match guard {
                     NpcRuleGuard::Storage { .. }
                     | NpcRuleGuard::CalendarMonth { .. }
-                    | NpcRuleGuard::CalendarWindow { .. } => {}
+                    | NpcRuleGuard::CalendarWindow { .. }
+                    | NpcRuleGuard::Level { .. }
+                    | NpcRuleGuard::Vocation { .. }
+                    | NpcRuleGuard::Premium { .. } => {}
                     NpcRuleGuard::Item {
                         item,
                         count: 1..=100,
