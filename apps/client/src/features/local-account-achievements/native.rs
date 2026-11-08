@@ -41,38 +41,57 @@ fn wide(s: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
+#[path = "view/backend.rs"]
+mod backend;
+use backend::Backend;
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    open_shared(
+        Arc::downgrade(&link.mailbox),
+        link.commands.clone(),
+        Backend::Account,
+    );
+}
+pub(in crate::play) fn open_character(
+    weak: Shared,
+    commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+) {
+    let Some(shared) = weak.upgrade() else {
+        return;
+    };
+    let generation = lock(&shared).cyclopedia_character.profile_generation;
+    open_shared(weak, commands, Backend::Character(generation));
+}
+fn open_shared(
+    weak: Shared,
+    commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>,
+    backend: Backend,
+) {
     {
-        let mut m = lock(&link.mailbox);
-        if m.achievements.open {
+        let Some(shared) = weak.upgrade() else {
+            return;
+        };
+        let mut m = lock(&shared);
+        if !backend.valid(&m) || !backend.ready(&m) || backend.panel(&mut m).open {
             return;
         }
-        let p = &mut m.achievements;
-        p.open = true;
-        if p.pending.is_none()
-            && let Some(page) = request(p, Intent::Refresh)
-            && link
-                .commands
-                .send(PlayCommand::AccountAchievements(page))
-                .is_err()
+        backend.panel(&mut m).open = true;
+        if let Some(command) = backend.request(&mut m, Intent::Refresh)
+            && commands.send(command).is_err()
         {
-            p.pending = None;
-            p.error = Some("Session ended");
+            backend.fail(&mut m);
         }
     }
-    let weak = Arc::downgrade(&link.mailbox);
     let failed = weak.clone();
-    let commands = link.commands.clone();
     if std::thread::Builder::new()
-        .name("account-achievements".into())
-        .spawn(move || run(weak, commands))
+        .name("achievement-browser".into())
+        .spawn(move || run(weak, commands, backend))
         .is_err()
     {
-        close(&failed);
+        close(&failed, backend);
     }
 }
 type Shared = Weak<Mutex<Mailbox>>;
-fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) {
+fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>, backend: Backend) {
     // SAFETY: handles and action storage remain on this thread until after DestroyWindow.
     unsafe {
         let h = CreateWindowExW(
@@ -90,7 +109,7 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
             null(),
         );
         if h.is_null() {
-            close(&weak);
+            close(&weak, backend);
             return;
         }
         let mut actions = Box::<Actions>::default();
@@ -163,7 +182,7 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
         .any(|h| h.is_null())
         {
             DestroyWindow(h);
-            close(&weak);
+            close(&weak, backend);
             return;
         }
         let mut held = None;
@@ -211,7 +230,13 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
                 .as_ptr(),
             );
             let mut m = lock(&shared);
-            let p = &mut m.achievements;
+            if !backend.valid(&m) {
+                break;
+            }
+            let ready = backend.ready(&m);
+            SetWindowTextW(h, wide(&backend.title(&m)).as_ptr());
+            let p = backend.panel(&mut m);
+            let mut intents = Vec::new();
             if p.catalog.search != search_value
                 || p.catalog.filter != filter_value
                 || p.catalog.sort != sort_value
@@ -222,41 +247,25 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
             p.catalog.filter = filter_value;
             p.catalog.sort = sort_value;
             for id in actions.0.drain(..) {
-                let payload = match id {
+                match id {
                     2 => {
                         p.catalog.enabled = true;
-                        request(p, Intent::Refresh)
+                        intents.push(Intent::Refresh);
                     }
-                    3 if !p.catalog.enabled => request(p, Intent::Previous),
-                    4 if !p.catalog.enabled => request(p, Intent::Next),
+                    3 if !p.catalog.enabled => {
+                        intents.push(Intent::Previous);
+                    }
+                    4 if !p.catalog.enabled => {
+                        intents.push(Intent::Next);
+                    }
                     3 => {
                         p.catalog.page = p.catalog.page.saturating_sub(1);
-                        None
                     }
                     4 if p.catalog.page.saturating_add(1).saturating_mul(64) < matching => {
                         p.catalog.page += 1;
-                        None
                     }
-                    _ => None,
-                };
-                if let Some(page) = payload
-                    && commands
-                        .send(PlayCommand::AccountAchievements(page))
-                        .is_err()
-                {
-                    p.pending = None;
-                    p.catalog.collecting = false;
-                    p.error = Some("Session ended");
+                    _ => {}
                 }
-            }
-            if let Some(page) = catalog_next_request(p)
-                && commands
-                    .send(PlayCommand::AccountAchievements(page))
-                    .is_err()
-            {
-                p.pending = None;
-                p.catalog.collecting = false;
-                p.error = Some("Session ended");
             }
             let signature = (
                 p.catalog.revision,
@@ -329,7 +338,10 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
                 SetWindowTextW(header, wide(&format!("{points} points · {earned} earned · {matching} {scope} · Page {page}\r\n{status}")).as_ptr());
                 held = Some(signature);
             }
-            EnableWindow(refresh, i32::from(p.selected && p.pending.is_none()));
+            EnableWindow(
+                refresh,
+                i32::from(ready && p.selected && p.pending.is_none()),
+            );
             EnableWindow(
                 previous,
                 i32::from(if p.catalog.ready {
@@ -349,18 +361,33 @@ fn run(weak: Shared, commands: tokio::sync::mpsc::UnboundedSender<PlayCommand>) 
             for control in [search, filter, sort] {
                 EnableWindow(control, i32::from(p.catalog.ready));
             }
+            for intent in intents {
+                if let Some(command) = backend.request(&mut m, intent)
+                    && commands.send(command).is_err()
+                {
+                    backend.fail(&mut m);
+                }
+            }
+            if let Some(command) = backend.next(&mut m)
+                && commands.send(command).is_err()
+            {
+                backend.fail(&mut m);
+            }
             drop(m);
             std::thread::sleep(std::time::Duration::from_millis(30));
         }
         if IsWindow(h) != 0 {
             DestroyWindow(h);
         }
-        close(&weak);
+        close(&weak, backend);
     }
 }
-fn close(weak: &Shared) {
+fn close(weak: &Shared, backend: Backend) {
     if let Some(m) = weak.upgrade() {
-        lock(&m).achievements.open = false;
+        let mut m = lock(&m);
+        if backend.valid(&m) {
+            backend.panel(&mut m).open = false;
+        }
     }
 }
 unsafe fn ctl(h: HWND, c: &str, t: &str, id: usize, r: [i32; 4], s: u32) -> HWND {

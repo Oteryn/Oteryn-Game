@@ -10,6 +10,10 @@ pub struct CyclopediaCharacterPanel {
     pub misc_resources_due: bool,
     pub auxiliary_pending: bool,
     pub misc_general: Option<oteryn_client_runtime::cyclopedia_character::GeneralStats>,
+    pub achievements: crate::account_achievements::AchievementsPanel,
+    pub achievement_profile: Option<([u8; 16], String)>,
+    pub achievement_pending: bool,
+    pub profile_generation: u64,
     pub offset: u16,
     pub limit: u8,
     pub target: Option<[u8; 16]>,
@@ -34,6 +38,10 @@ impl Default for CyclopediaCharacterPanel {
             misc_resources_due: false,
             auxiliary_pending: false,
             misc_general: None,
+            achievements: Default::default(),
+            achievement_profile: None,
+            achievement_pending: false,
+            profile_generation: 0,
             offset: 0,
             limit: 20,
             target: None,
@@ -61,6 +69,10 @@ impl CyclopediaCharacterPanel {
     pub fn change_target(&mut self, target: Option<[u8; 16]>) {
         if self.target != target {
             self.target = target;
+            self.profile_generation = self.profile_generation.saturating_add(1);
+            self.achievements = Default::default();
+            self.achievement_profile = None;
+            self.achievement_pending = false;
             self.result = None;
             self.general = None;
             self.misc_general = None;

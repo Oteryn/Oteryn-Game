@@ -5,6 +5,9 @@ use oteryn_client_runtime::quest_log::{
 };
 use oteryn_session::GatedSnapshot;
 
+#[path = "list_options.rs"]
+mod list_options;
+
 #[path = "snapshot.rs"]
 mod snapshot;
 

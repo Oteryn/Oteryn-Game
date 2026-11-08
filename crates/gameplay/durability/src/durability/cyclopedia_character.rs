@@ -1,6 +1,9 @@
 //! PAR-P12c Cyclopedia character tabs: a read-only projection of the native owners. A foreign
 //! target is disclosed under the same VIP consent rule as `read_character_info`.
 
+#[path = "cyclopedia_character/achievements.rs"]
+pub mod achievements;
+
 #[path = "cyclopedia_character/combat.rs"]
 pub mod combat;
 
