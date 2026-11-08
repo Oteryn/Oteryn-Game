@@ -3,6 +3,7 @@
 
 mod admission;
 mod bounds;
+mod equipped_storage;
 mod evaluate;
 mod hidden_threats;
 mod item_exchange;
