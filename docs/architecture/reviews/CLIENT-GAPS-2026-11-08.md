@@ -56,7 +56,7 @@ Zasady przeciw dublowaniu:
 |---|---|---|---|---|
 | T148 | Achievements | Account list/points/notices | PARTIAL | Odczyt/notices są; brak pełnego filter/sort regular/secret i wizualnej listy. |
 | T163 | Boss | Difficulty selection / preview/start/cancel | PARTIAL | Komendy są; wybór wymaga context UUID i numeru 0–25 zamiast pełnego kontekstowego selektora. |
-| T164 | Boss | Hazard level i encounter entry | PARTIAL | Query/select/entry są; brak pełnego wizualnego panelu zagrożenia i prowadzenia wejścia. |
+| T164 | Boss | Hazard level i encounter entry | DONE | evidence: apps/client/src/features/0117-boss-encounter/tests/hazard.rs:8 + hazard_confirmation_updates_entry_guide_and_next_selection; crates/client-ui/src/features/0117-boss-encounter/view.rs:48 |
 | O074 | Boss | Cyklopedia: bosstiariusz | PARTIAL | Brakuje przeglądarki bossów z wyszukiwaniem, kategoriami i kartami szczegółów; istnieje lista kluczy bossów i liczników postępu. |
 | T077 | Cyclopedia | Wspólne okno i nawigacja | DONE | evidence: apps/client/src/features/0057-cyclopedia-map/view/actions.rs:84 + cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol (native navigation, all sections, live command queue and wire reply); apps/client/src/features/0057-cyclopedia-map/view.rs:8 |
 | T078 | Cyclopedia | Items: kategorie/search/statystyki/źródła | PARTIAL | Inspect/catalogue/market są; brak kompletnej encyklopedii Items i jej filtrów. |

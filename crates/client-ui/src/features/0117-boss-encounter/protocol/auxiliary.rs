@@ -61,6 +61,7 @@ pub(super) fn summary(panel: &mut BossEncounterPanel, bytes: &[u8]) -> Option<St
         wire::hazard::COMMAND_TYPE_HAZARD => match bytes {
             [unlocked @ 1..=12, selected @ 1..=12] if selected <= unlocked => {
                 panel.hazard = Some((*unlocked, *selected));
+                panel.fields[2] = selected.to_string();
                 Some(format!("Hazard: {selected} | Unlocked: {unlocked}"))
             }
             _ => None,
