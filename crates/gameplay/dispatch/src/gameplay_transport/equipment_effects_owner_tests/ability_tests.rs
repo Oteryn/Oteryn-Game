@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "questpc2_source_profile_cohort.rs"]
+mod questpc2_source_profile_cohort;
+
 #[test]
 fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> TestResult {
     use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
@@ -184,6 +187,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Crystal 201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:9970-9986
     // and data-global/startup/tables/chest.lua:806-811 confirm the single reward and
     // no speed attribute (speed_bonus=0); boots 3554 and shield 3420 already exist.
+    (
+        "QUESTPC2-SOURCE-CLOSURE",
+        questpc2_source_profile_cohort::IDS.len()
+            - questpc2_source_profile_cohort::SHARED_WITH_MAIN.len(),
+    ),
     ("QUESTS3-DEMON-HELMET", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
@@ -407,6 +415,24 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
     }
 
+    // Independently enumerated source admissions already carried by this lane.
+    let source_ids = questpc2_source_profile_cohort::IDS;
+    assert_eq!(
+        source_ids
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        source_ids.len()
+    );
+    for id in source_ids {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let profile = profiles
+            .records
+            .iter()
+            .find(|row| row.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing questpc2 source profile {key}"))?;
+        assert_eq!(profile.attributes.speed_bonus, Some(0), "{key}");
+    }
     assert_eq!(
         profiles.records.len(),
         ORIGINAL_PROFILES

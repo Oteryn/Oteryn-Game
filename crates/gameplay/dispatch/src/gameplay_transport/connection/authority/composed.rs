@@ -5,6 +5,14 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn step_wait_receipts(&self) -> bool {
+        #[cfg(test)]
+        if let Some(enabled) = self.test_step_wait_receipts {
+            return enabled;
+        }
+        crate::gameplay_transport::world_spatial::step_wait_receipts_enabled()
+    }
+
     async fn staff_refresh(&self, admitted: AdmittedSession) -> bool {
         self.refresh_staff(admitted).await
     }
@@ -711,6 +719,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => MovementFacing::East,
             StepDirection::South => MovementFacing::South,
             StepDirection::West => MovementFacing::West,
+            // TURN keeps its existing cardinal-only contract.
+            _ => return false,
         };
         movement.commit_turn(expected, facing).is_ok()
     }

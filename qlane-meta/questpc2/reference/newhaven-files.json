@@ -1,0 +1,114 @@
+[
+  {
+    "name": "#ondroploot_the_corruptor.lua",
+    "path": "data-global/scripts/quests/newhaven/#ondroploot_the_corruptor.lua",
+    "sha": "a6984946eeeda31766f9fc31d1008017ac557b65",
+    "size": 2247,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/%23ondroploot_the_corruptor.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/%23ondroploot_the_corruptor.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a6984946eeeda31766f9fc31d1008017ac557b65",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/%23ondroploot_the_corruptor.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/%23ondroploot_the_corruptor.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/a6984946eeeda31766f9fc31d1008017ac557b65",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/%23ondroploot_the_corruptor.lua"
+    }
+  },
+  {
+    "name": "movement_init_newhaven.lua",
+    "path": "data-global/scripts/quests/newhaven/movement_init_newhaven.lua",
+    "sha": "9d4adb9b1f28d31016c1dbaef68b53e935416108",
+    "size": 448,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_init_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_init_newhaven.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9d4adb9b1f28d31016c1dbaef68b53e935416108",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_init_newhaven.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_init_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9d4adb9b1f28d31016c1dbaef68b53e935416108",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_init_newhaven.lua"
+    }
+  },
+  {
+    "name": "movement_select_vocation.lua",
+    "path": "data-global/scripts/quests/newhaven/movement_select_vocation.lua",
+    "sha": "8366ff4e96404ca207aa731525c2755e4d974f5e",
+    "size": 1592,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_select_vocation.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_select_vocation.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8366ff4e96404ca207aa731525c2755e4d974f5e",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_select_vocation.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_select_vocation.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8366ff4e96404ca207aa731525c2755e4d974f5e",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_select_vocation.lua"
+    }
+  },
+  {
+    "name": "movement_update_tutorial_hunting.lua",
+    "path": "data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua",
+    "sha": "4c3cb41f6a4f98f1dd316c9e3669ae4b7f612d1f",
+    "size": 515,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/4c3cb41f6a4f98f1dd316c9e3669ae4b7f612d1f",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/4c3cb41f6a4f98f1dd316c9e3669ae4b7f612d1f",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/movement_update_tutorial_hunting.lua"
+    }
+  },
+  {
+    "name": "on_death_newhaven.lua",
+    "path": "data-global/scripts/quests/newhaven/on_death_newhaven.lua",
+    "sha": "680ec85a9301d560a9c0b64ce67126abda169842",
+    "size": 660,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_death_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_death_newhaven.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/680ec85a9301d560a9c0b64ce67126abda169842",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_death_newhaven.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_death_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/680ec85a9301d560a9c0b64ce67126abda169842",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_death_newhaven.lua"
+    }
+  },
+  {
+    "name": "on_login_newhaven.lua",
+    "path": "data-global/scripts/quests/newhaven/on_login_newhaven.lua",
+    "sha": "b101507cb10357e076cd8759dc3bde35a3ff5615",
+    "size": 704,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_login_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_login_newhaven.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/b101507cb10357e076cd8759dc3bde35a3ff5615",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_login_newhaven.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_login_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/b101507cb10357e076cd8759dc3bde35a3ff5615",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_login_newhaven.lua"
+    }
+  },
+  {
+    "name": "on_use_newhaven.lua",
+    "path": "data-global/scripts/quests/newhaven/on_use_newhaven.lua",
+    "sha": "b11e9c6a528e3ab5522740e401bfedf3d84d23c8",
+    "size": 569,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_use_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_use_newhaven.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/b11e9c6a528e3ab5522740e401bfedf3d84d23c8",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_use_newhaven.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/newhaven/on_use_newhaven.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/b11e9c6a528e3ab5522740e401bfedf3d84d23c8",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/newhaven/on_use_newhaven.lua"
+    }
+  }
+]

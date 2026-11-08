@@ -51,6 +51,13 @@ impl<S: SessionStream> Session<S> {
         direction: StepDirection,
     ) -> Result<RecoveryState, SessionError> {
         self.ensure_usable()?;
+        if direction.is_diagonal()
+            && !self.is_selected(world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1)
+        {
+            return Err(SessionError::CapabilityNotSelected {
+                capability: world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+            });
+        }
         self.next_command_id
             .checked_add(1)
             .ok_or(SessionError::CommandIdExhausted)?;

@@ -239,6 +239,9 @@ def put_group(definition, group, fields):
     value = copy.deepcopy(old.get("value", {})) if old["state"] == "KNOWN" else {}
     for field, fact in fields.items():
         previous = value.get(field, UNKNOWN)
+        # An older packet's unknown is not evidence against a proven absence.
+        if previous["state"] == "NOT_APPLICABLE" and fact["state"] == "UNKNOWN":
+            continue
         if previous["state"] == "KNOWN" and previous != fact:
             raise ValueError(f"EXISTING_FACT_CONFLICT:{definition['identity']['key']}:{group}.{field}")
         value[field] = fact

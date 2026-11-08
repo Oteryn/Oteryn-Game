@@ -38,6 +38,7 @@ type RecentIntents = VecDeque<u64>;
 #[path = "benevola.rs"]
 mod benevola;
 mod catalogue;
+mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
@@ -54,6 +55,7 @@ mod isle_of_evil;
 mod liquid_black;
 mod marriage;
 mod monk;
+mod npc_item_exchanges;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
@@ -648,6 +650,9 @@ pub(super) async fn npc_bank_talk(
         return outcome;
     }
     if let Some(outcome) = benevola::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
+    if let Some(outcome) = npc_item_exchanges::talk(admission, actor, command, &intent).await {
         return outcome;
     }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {

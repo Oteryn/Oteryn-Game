@@ -1,0 +1,444 @@
+{
+  "items": [
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "StackCapable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43501",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43501",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "the essence of Murcion",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43501",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43501,
+      "source_line": 75234,
+      "weight_evidence": "loader_default_zero"
+    },
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "StackCapable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43502",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43502",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "the essence of Ichgahal",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43502",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43502,
+      "source_line": 75237,
+      "weight_evidence": "loader_default_zero"
+    },
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "StackCapable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43503",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43503",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "the essence of Vemiath",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43503",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43503,
+      "source_line": 75240,
+      "weight_evidence": "loader_default_zero"
+    },
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "StackCapable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43504",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43504",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "the essence of Chagorz",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43504",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43504,
+      "source_line": 75243,
+      "weight_evidence": "loader_default_zero"
+    },
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "NonStackable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43899",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43899",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "cursed wood",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43899",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43899,
+      "source_line": 76732,
+      "weight_evidence": "loader_default_zero"
+    },
+    {
+      "candidate_admission": {
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ],
+        "materializable": true,
+        "stack_class": "NonStackable"
+      },
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43900",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43900",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "darklight geode",
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i43900",
+        "revision_ref": "definition-r1"
+      },
+      "semantics": {
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        }
+      },
+      "source_item_id": 43900,
+      "source_line": 76736,
+      "weight_evidence": "loader_default_zero"
+    }
+  ],
+  "native_admission": false,
+  "schema": "OTERYN_ROTTEN_BLOOD_ITEM_SOURCE_FACTS/v1",
+  "source": {
+    "git_blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+    "path": "data/items/items.xml",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+  },
+  "use_effects_admitted": false
+}

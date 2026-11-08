@@ -219,10 +219,18 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
+        self.owner_from(&harness.root, &harness.node, authority)
+    }
+    fn owner_from<'a, 'f, 's>(
+        &'a self,
+        root: &'a crate::durability::DurabilityRoot,
+        holder: &'a crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        authority: &'a ReconciledCharacterAuthority<'f, 's>,
+    ) -> ComposedFreshAdmission<'a, 'f, 's> {
         let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
-            root: &harness.root,
+            root,
             character: authority,
-            holder: &harness.node,
+            holder,
             evidence: &self.evidence,
             world_id: self.admitted.world_id,
             channel_id: self.admitted.channel_id,

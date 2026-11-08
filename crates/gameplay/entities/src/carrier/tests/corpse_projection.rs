@@ -187,3 +187,62 @@ fn corpse_projection_pins_are_bounded_and_name_retained_projections() {
             .all(|local| carrier.retains_corpse_projection(corpse_actor_at(&continuity, local)))
     );
 }
+
+#[test]
+fn instance_corpse_binding_preserves_scope_generation_replay_and_current_owner() {
+    let world = WorldId::decode(&uuid_v7(20)).expect("world");
+    let scope = RuntimeScopeRefV1::instance(world, uuid_v7(21)).expect("Instance");
+    let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+        scope,
+        node(22),
+        7,
+        3,
+        11,
+        "runtime-scope-assignment:11",
+        4,
+        ChannelContentPin::test(world),
+    )
+    .expect("Instance runtime");
+    let projection = corpse_projection_at(&runtime.continuity, 1);
+    let actor = projection.occurrence.actor;
+    runtime.carrier.retain_corpse_projection(projection);
+    let bind = |runtime: &mut ChannelRuntimeV1, actor, item| {
+        runtime.bind_corpse_item(actor, item, "Item", "fixture:corpse", "r1")
+    };
+    assert_eq!(bind(&mut runtime, actor, uuid_v7(30)), Ok(()));
+    assert_eq!(bind(&mut runtime, actor, uuid_v7(30)), Ok(()));
+    assert_eq!(
+        bind(&mut runtime, actor, uuid_v7(31)),
+        Err(CarrierError::CorpseProjectionConflict)
+    );
+    for (other_scope, generation) in [
+        (
+            RuntimeScopeRefV1::channel(
+                world,
+                ChannelId::decode(&uuid_v7(21)).expect("same local Channel UUID"),
+            ),
+            3,
+        ),
+        (
+            RuntimeScopeRefV1::instance(world, uuid_v7(23)).expect("other Instance"),
+            3,
+        ),
+        (scope, 4),
+    ] {
+        let other = ExactActorRef(ActorRef::from_scoped_owner_parts(
+            other_scope,
+            ScopeOwnershipGeneration::new(generation).expect("generation"),
+            ActorLocalId(1),
+            ActorLocalGeneration(1),
+        ));
+        assert_eq!(
+            bind(&mut runtime, other, uuid_v7(30)),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+    }
+    let before = runtime.carrier.bound_corpses(None);
+    assert_eq!(before.len(), 1);
+    runtime.retire_owner_cycle();
+    assert!(bind(&mut runtime, actor, uuid_v7(30)).is_err());
+    assert_eq!(runtime.carrier.bound_corpses(None), before);
+}

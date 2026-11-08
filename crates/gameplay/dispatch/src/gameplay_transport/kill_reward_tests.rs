@@ -147,6 +147,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         boss_reward: None,
         activity_death: None,
         grizzly: None,
+        objectives: None,
         damage_shares: Vec::new(),
         prey_checkpoint: None,
         activity_observed_at: None,
@@ -155,6 +156,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         creature: "fixture:rat".into(),
         soulpit_experience: None,
         row: Some(row(drops)),
+        encounter_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: std::sync::Arc::new(std::sync::OnceLock::new()),
         ground: DeathGroundContext {

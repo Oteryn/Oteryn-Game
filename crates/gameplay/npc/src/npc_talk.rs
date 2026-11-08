@@ -306,7 +306,7 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
@@ -447,6 +447,56 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if reference.key == "oteryn:npc.seymour" {
+                // TIBIAWIKI_STRUCTURED: Present Quest/Spoiler, Seymour transcript.
+                (
+                    "Hello, |PLAYERNAME|. Welcome to the Academy of Rookgaard. May I sign you up as a student?".into(),
+                    "Good bye, |PLAYERNAME|! And remember: No running up and down in the academy!".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.uzgod" {
+                // Source Obsidian Knife transcript; the confirmed item exchange is native.
+                (
+                    "Hiho |PLAYERNAME|! Wanna weapon, eh?".into(),
+                    "Guut bye. Coming back soon.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.al_dee" {
+                // npc-br snapshot, Al Dee revid420190. Stateful exchange belongs to dispatch.
+                (
+                    "Hello, hello, |PLAYERNAME|! Please come in, look, and buy!".into(),
+                    "Bye, bye |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.yasir" {
+                // TIBIAWIKI_STRUCTURED: npc-br/2026-09-28 snapshot, Yasir
+                // revid433385, npc_lines. Only his literal trade dialogue is
+                // admitted here; P11 grants Si, Ariki! on a committed trade.
+                let keywords = ["ariki", "trade"]
+                    .into_iter()
+                    .map(|word| crate::content::ProjectV2DialogueKeyword {
+                        key: word.into(),
+                        triggers: vec![word.into()],
+                        reply: vec!["Si! Haneka ariki!".into()],
+                        fallback: false,
+                        links: Vec::new(),
+                        only_focus: true,
+                        only_unfocus: false,
+                        reset: false,
+                        ungreet: false,
+                        move_up: None,
+                        children: Vec::new(),
+                    })
+                    .collect();
+                (
+                    "Yasu me halaka. <greets you friendly>".into(),
+                    "Si, jema ze harun. <waves>".into(),
+                    None,
+                    keywords,
+                )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -583,6 +633,10 @@ impl NpcTalkBook {
                         || dark_messages.is_some()
                         || isle_messages.is_some()
                         || reward_callback_npc(&reference.key)
+                        || matches!(
+                            reference.key.as_str(),
+                            "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
+                        )
                         || native_npcs.contains(&reference.key.as_str()),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
@@ -999,6 +1053,39 @@ mod tests {
         assert!(!asks_to_trade("ariki"));
         assert!(asks_to_trade_for("oteryn:npc.sam", "trade"));
         assert!(!asks_to_trade_for(YASIR, "marikina"));
+        Ok(())
+    }
+
+    #[test]
+    fn oriental_trader_committed_dialogue_opens_catalogue_conversation() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let entry = book
+            .get("oteryn:npc.yasir")
+            .ok_or("Yasir conversation missing")?;
+        assert!(!entry.offers().is_empty());
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position: at(101),
+            entry,
+        }];
+        let mut engaged = None;
+        let greeting = talk(at(100), "hi", &npcs, &mut engaged).ok_or("greeting")?;
+        assert_eq!(greeting.text, "Yasu me halaka. <greets you friendly>");
+        assert_eq!(engaged, Some(1));
+        let trade = talk(at(100), "trade", &npcs, &mut engaged).ok_or("trade")?;
+        assert_eq!(trade.text, "Si! Haneka ariki!");
+        let farewell = talk(at(100), "bye", &npcs, &mut engaged).ok_or("farewell")?;
+        assert_eq!(farewell.text, "Si, jema ze harun. <waves>");
+        assert_eq!(engaged, None);
         Ok(())
     }
 

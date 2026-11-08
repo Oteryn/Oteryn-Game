@@ -1,0 +1,222 @@
+{
+  "batch": "main-3020-integration-2026-11-07",
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "state": "GREEN_READY_TO_PUBLISH",
+  "changes": [
+    "Consume authoritative main QENGINE2 0999-1008 unchanged; no QBASE1200-1205 copies.",
+    "Resolve additive merge duplicate catalogue extensions, callbacks, methods, NPC conversations and fixture fields.",
+    "Preserve owned native kill progression, exact source chest custody, return completion and actual journal wire views.",
+    "Regenerate canonical NPC/world outputs, validate materialized tree, refresh pins via repository tooling.",
+    "Explicitly enable receipt rollout in isolated route fixtures; production process default unchanged."
+  ],
+  "red_runs": [
+    {
+      "cases": 39,
+      "passed": 14,
+      "failed": 25,
+      "root_cause": "duplicate reward catalogue extension",
+      "log": "/tmp/red-catalogue-dup-questpc2-3020-focused-nextest.log"
+    },
+    {
+      "cases": 39,
+      "passed": 37,
+      "failed": 2,
+      "root_cause": "route fixture did not select pacing receipt rollout",
+      "log": "/tmp/questpc2-3020-focused-nextest.log"
+    }
+  ],
+  "green_focused": {
+    "cases": 39,
+    "passed": 39,
+    "failed": 0,
+    "runtime_seconds": 390.313,
+    "postgres_version_num": 180006,
+    "required_pg_cases": [
+      {
+        "case": "elvenbane_source_treasure_exit_and_journal_via_wire",
+        "duration_seconds": 150.647
+      },
+      {
+        "case": "annihilator_source_route_earned_reward_exit_and_reentry",
+        "duration_seconds": 128.124
+      },
+      {
+        "case": "desert_dungeon_native_gate_rite_earned_rewards_and_exit",
+        "duration_seconds": 128.457
+      },
+      {
+        "case": "monk_shrines_real_use_persists_once_and_checks_each_level",
+        "duration_seconds": 109.471
+      },
+      {
+        "case": "native_objective_and_xp_share_one_postgres_transaction",
+        "duration_seconds": 84.188
+      },
+      {
+        "case": "stale_native_objective_capture_is_terminal_on_xp_replay",
+        "duration_seconds": 82.298
+      },
+      {
+        "case": "quest_kill_objectives_postgres_content_and_native_authority",
+        "duration_seconds": 7.563
+      },
+      {
+        "case": "elvenbane_native_defenders_capture_refuse_replay_and_cap_per_origin",
+        "duration_seconds": 99.327
+      }
+    ],
+    "markers": [
+      "QUEST_KILL_OBJECTIVES POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "QUEST_KILL_OBJECTIVES POSTGRES_CASE_COMPLETED elapsed_ms=7531",
+      "LIONS_ROCK POSTGRES_CASE_COMPLETED source_entry_refusal single_feedback origin_restored state_unchanged no_receipt no_consumption",
+      "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay",
+      "UNNATURAL_DANCE POSTGRES_CASE_COMPLETED final16to17 achievement_atomic replay_exact stale_lease stale_connection renamed_native_generic_refused",
+      "ELVENBANE_NATIVE_GOALS POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ELVENBANE_NATIVE_GOALS POSTGRES_CASE_COMPLETED duration_seconds=99.285",
+      "ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=126849",
+      "DESERT_PARTY_RITE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "DESERT_EARNED_ROUTE POSTGRES_CASE_COMPLETED duration_seconds=128.426",
+      "ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ELVENBANE_WIRE_COMBAT POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ELVENBANE_EXPLORATION POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ELVENBANE_EXPLORATION POSTGRES_CASE_COMPLETED basement=earned poison=earned dragon_floor=earned elapsed_ms=10220",
+      "ELVENBANE_TREASURE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "ELVENBANE_TREASURE POSTGRES_CASE_COMPLETED roots=4 containers=2 nested_children=5 once_replay=proven exit=earned journal=completed elapsed_ms=42652",
+      "ELVENBANE_WIRE_COMBAT POSTGRES_CASE_COMPLETED source_dragon=earned source_defenders=6 upper_defenders=true elapsed_ms=63515",
+      "ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true stale_capture=true elapsed_ms=238",
+      "ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "NATIVE_OBJECTIVE_ATOMIC POSTGRES_CASE_COMPLETED source_dragon=1 replay=stable same_xact=true stale_capture=false elapsed_ms=189",
+      "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED npc_detour missing_funds exact_coin_bank_fee generic_bypass stale_fence immutable_replay"
+    ],
+    "log": "/tmp/questpc2-3020-focused-green-nextest.log",
+    "nextest_run_id": "dd2f8e88-4b36-405b-a02f-26f8aae393aa",
+    "unselected_cases": 4064,
+    "new_ignored_tests": 0
+  },
+  "clippy": {
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--all-targets",
+      "--keep-going",
+      "-p",
+      "oteryn-architecture-check",
+      "-p",
+      "oteryn-client",
+      "-p",
+      "oteryn-client-assets",
+      "-p",
+      "oteryn-client-domain",
+      "-p",
+      "oteryn-client-runtime",
+      "-p",
+      "oteryn-client-ui",
+      "-p",
+      "oteryn-game-server",
+      "-p",
+      "oteryn-gameplay-combat",
+      "-p",
+      "oteryn-gameplay-content",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "-p",
+      "oteryn-gameplay-domain",
+      "-p",
+      "oteryn-gameplay-durability",
+      "-p",
+      "oteryn-gameplay-encounter-rules",
+      "-p",
+      "oteryn-gameplay-encounters",
+      "-p",
+      "oteryn-gameplay-entities",
+      "-p",
+      "oteryn-gameplay-items",
+      "-p",
+      "oteryn-gameplay-monster-ai",
+      "-p",
+      "oteryn-gameplay-native-admission-source",
+      "-p",
+      "oteryn-gameplay-npc",
+      "-p",
+      "oteryn-gameplay-progression",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-gameplay-social",
+      "-p",
+      "oteryn-gameplay-social-rules",
+      "-p",
+      "oteryn-gameplay-spell",
+      "-p",
+      "oteryn-gameplay-world",
+      "-p",
+      "oteryn-gameplay-world-change",
+      "-p",
+      "oteryn-protocol-oteryn",
+      "-p",
+      "oteryn-session",
+      "-p",
+      "oteryn-synthetic-client-harness",
+      "-p",
+      "oteryn-world-bundle",
+      "-p",
+      "oteryn-world-bundle-compiler",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 746.619
+  },
+  "generation": "CANONICAL_REGENERATION_COMPLETED: /tmp/questpc2-3020-final-regeneration.log",
+  "fmt": "PASS",
+  "duplicate_migrations": "PASS",
+  "owned_migrations": [
+    "apps/game-server/migrations/1240_al_dee_item_exchange.sql",
+    "apps/game-server/migrations/1241_uzgod_obsidian_knife_exchange.sql",
+    "apps/game-server/migrations/1242_seymour_present_exchange.sql",
+    "apps/game-server/migrations/1243_native_encounter_progression_scope.sql",
+    "apps/game-server/migrations/1244_instance_corpse_mint.sql"
+  ],
+  "whole_quest_status": "Elvenbane runtime route and actual journal PG green; canonical authoring admission metadata remains active work, no premature qualification.",
+  "workspace_all_targets": {
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--workspace",
+      "--all-targets",
+      "--keep-going"
+    ],
+    "exit_code": 0,
+    "reported_duration": "14m29s including cargo lock wait",
+    "log": "/tmp/questpc2-3020-workspace-after-npc.log"
+  },
+  "pin_check": {
+    "exit_code": 0,
+    "report": {
+      "inputs_digest": "d65e38a4c120cfb927b5ee9915f7615ae1fd559fb2518f2f2312ccdf2362772e",
+      "pins": [
+        {
+          "bytes": 33604069,
+          "digest": "aa3dab1114ad6ab7036761f91334d66b343b67c22d3f424b27a66f7cfac54341",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "log": "/tmp/questpc2-3020-final-pin-check.log"
+  },
+  "npc_regression": {
+    "case": "qengine_reward_npcs_open_only_source_conversations",
+    "passed": 1,
+    "failed": 0,
+    "duration_seconds": 32.742,
+    "log": "/tmp/questpc2-3020-npc-focused.log"
+  },
+  "publication_target": "claude/happy-davinci-ijz3wy-questpc2"
+}

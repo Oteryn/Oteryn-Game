@@ -539,9 +539,13 @@ async fn prepare_source_reader<'native>(
         .state(proposal.issuer)
         .map(|state| match state.attack_facing() {
             crate::movement::CardinalStep::North => Facing::North,
-            crate::movement::CardinalStep::East => Facing::East,
+            crate::movement::CardinalStep::East
+            | crate::movement::CardinalStep::NorthEast
+            | crate::movement::CardinalStep::SouthEast => Facing::East,
             crate::movement::CardinalStep::South => Facing::South,
-            crate::movement::CardinalStep::West => Facing::West,
+            crate::movement::CardinalStep::West
+            | crate::movement::CardinalStep::NorthWest
+            | crate::movement::CardinalStep::SouthWest => Facing::West,
         })?;
     let (Ok(center), Ok(mut cast_tiles)) = (
         source.cast_center(from, to, Some(facing)),

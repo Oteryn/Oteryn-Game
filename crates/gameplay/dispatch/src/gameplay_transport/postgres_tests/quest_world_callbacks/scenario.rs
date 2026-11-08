@@ -53,7 +53,13 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" { Position{x:32775,y:32254,floor:-8} } else if native_upper {
+    let start = if name == "qengine-rewards-smith-story" {
+        Position {
+            x: 32775,
+            y: 32254,
+            floor: -8,
+        }
+    } else if native_upper {
         super::super::l6_paradox_upper::start(name)
     } else if native_story {
         super::super::l6_paradox_story::start()
@@ -99,14 +105,30 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = matches!(
+        name,
+        "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile"
+    );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
+    let elvenbane = name == "elvenbane-native-goals";
     let monk = name.starts_with("monk-guidance");
-    let feaster=matches!(name,"qengine-rewards-feaster-prefix"|"qengine-rewards-feaster-thaian");
-    let outfit_world=name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let shared_rewards = name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || name == "questpc7-tokens" || name.starts_with("questpc7-hidden-") || name.starts_with("questpc7-outfits-") || name == "l1-warmaster-wardrobe" || name.starts_with("questpc7-eligibility-")
+    let feaster = matches!(
+        name,
+        "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian"
+    );
+    let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
+    let shared_rewards = name == "questpc7-grave"
+        || name == "questpc7-ferumbras"
+        || name == "questpc7-hero"
+        || name == "questpc7-hydra"
+        || name == "questpc7-hoist-story"
+        || name == "questpc7-tokens"
+        || name.starts_with("questpc7-hidden-")
+        || name.starts_with("questpc7-outfits-")
+        || name == "l1-warmaster-wardrobe"
+        || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
@@ -120,8 +142,21 @@ fn scenario_case(
                 | "catalogue-npc-hero"
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
-                | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp"
+                | "catalogue-npc-end"
+                | "catalogue-npc-calendar"
+                | "catalogue-npc-xp"
+                | "questpc2-rotten-source-items"
                 | "classic-quests-npc"
+                | "questpc2-hero-pipes"
+                | "questpc2-oldrak-npc"
+                | "questpc2-henricus-start"
+                | "questpc2-gerimor-assignments"
+                | "questpc2-gnomus-ordnance"
+                | "questpc2-albinius-four-tomes"
+                | "questpc2-albinius-five-tomes"
+                | "questpc2-albinius-combined"
+                | "questpc2-albinius-portals-exact"
+                | "questpc2-albinius-portals-combined"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
                 | "conditional-quest-greetings"
@@ -135,8 +170,42 @@ fn scenario_case(
         callback("ancient-tombs-morguthis-seven-flame-gate")?
     } else if native_room {
         super::super::l6_native_rooms::callback(name)?
-    } else if feaster { callback("questpc7-feaster-entry")? } else if name == "qengine-rewards-forgotten-story" { callback("questpc7-forgotten-energy-entry")? } else if name == "qengine-rewards-heart-story" { callback("questpc7-heart-entry")? } else if name == "qengine-rewards-grimvale-story" { callback("questpc7-grimvale-entry")? } else if name == "questpc7-grave" { callback("questpc7-grave-entry")? } else if name == "questpc7-ferumbras" { callback("questpc7-ferumbras-entry")? } else if name == "questpc7-hero" { callback("questpc7-hero-entry")? } else if name == "questpc7-hydra" { callback("questpc7-hydra-entry")? } else if name == "questpc7-hoist-story" { callback("questpc7-hoist-entry")? } else if name.starts_with("questpc7-hidden-") { callback("questpc7-hidden-entry")? } else if name == "questpc7-outfits-formal" { callback("questpc7-formal-display")? } else if outfit_world { callback(name)? } else if classic_npc { callback("behemoth")? } else if rotten_purchase { callback("rotten-blood/sacrifice")? } else if monk { callback("monk-guidance")? } else if target_swap { callback("fish-napping-key")? } else {
-        callback(if name == "triangle-tower-wall" {
+    } else if feaster {
+        callback("questpc7-feaster-entry")?
+    } else if name == "qengine-rewards-forgotten-story" {
+        callback("questpc7-forgotten-energy-entry")?
+    } else if name == "qengine-rewards-heart-story" {
+        callback("questpc7-heart-entry")?
+    } else if name == "qengine-rewards-grimvale-story" {
+        callback("questpc7-grimvale-entry")?
+    } else if name == "questpc7-grave" {
+        callback("questpc7-grave-entry")?
+    } else if name == "questpc7-ferumbras" {
+        callback("questpc7-ferumbras-entry")?
+    } else if name == "questpc7-hero" {
+        callback("questpc7-hero-entry")?
+    } else if name == "questpc7-hydra" {
+        callback("questpc7-hydra-entry")?
+    } else if name == "questpc7-hoist-story" {
+        callback("questpc7-hoist-entry")?
+    } else if name.starts_with("questpc7-hidden-") {
+        callback("questpc7-hidden-entry")?
+    } else if name == "questpc7-outfits-formal" {
+        callback("questpc7-formal-display")?
+    } else if outfit_world {
+        callback(name)?
+    } else if classic_npc {
+        callback("behemoth")?
+    } else if rotten_purchase {
+        callback("rotten-blood/sacrifice")?
+    } else if monk {
+        callback("monk-guidance")?
+    } else if target_swap {
+        callback("fish-napping-key")?
+    } else {
+        callback(if elvenbane {
+            "elvenbane-basement-entry"
+        } else if name == "triangle-tower-wall" {
             "triangle-tower-lever"
         } else if ancient_instruments {
             "ancient-tombs-diprath-sign-1"
@@ -282,54 +351,209 @@ fn scenario_case(
     if name == "qengine-rewards-questpc4-puzzle-ladder" {
         callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
     }
-    let world = if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
-        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::stalker_objects(),&[])?
+    let world = if matches!(
+        name,
+        "qengine-rewards-goblin-stalkers" | "qengine-rewards-goblin-slug"
+    ) {
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_goblin::stalker_objects(),
+            &[],
+        )?
     } else if name == "qengine-rewards-goblin-trunks" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::trunk_objects(),&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_goblin::trunk_objects(),
+            &[],
+        )?
     } else if name == "qengine-rewards-goblin-pond" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::pond_objects(),&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_goblin::pond_objects(),
+            &[],
+        )?
     } else if name == "qengine-rewards-goblin-signs" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::sign_objects(),&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_goblin::sign_objects(),
+            &[],
+        )?
     } else if feaster {
-        world_with_objects(&callback,trigger,&super::super::questpc7_feaster::objects()?,&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_feaster::objects()?,
+            &[],
+        )?
     } else if name == "qengine-rewards-forgotten-story" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_forgotten_story::objects()?,&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_forgotten_story::objects()?,
+            &[],
+        )?
     } else if name == "qengine-rewards-heart-story" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_heart_story::objects()?,&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_heart_story::objects()?,
+            &[],
+        )?
     } else if name == "qengine-rewards-grimvale-story" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_grimvale_story::objects()?,&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_grimvale_story::objects()?,
+            &[],
+        )?
     } else if name == "questpc7-grave" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_grave::objects()?,&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_grave::objects()?,
+            &[],
+        )?
     } else if name == "questpc7-ferumbras" {
-        world_with_objects(&callback,trigger,&super::super::questpc7_ferumbras::objects(),&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &super::super::questpc7_ferumbras::objects(),
+            &[],
+        )?
     } else if name == "questpc7-hero" {
-        world_with_objects(&callback,trigger,&[(Position{x:33567,y:31950,floor:-14},20476),(Position{x:33568,y:31951,floor:-14},20545),(Position{x:33571,y:31952,floor:-14},1855)],&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &[
+                (
+                    Position {
+                        x: 33567,
+                        y: 31950,
+                        floor: -14,
+                    },
+                    20476,
+                ),
+                (
+                    Position {
+                        x: 33568,
+                        y: 31951,
+                        floor: -14,
+                    },
+                    20545,
+                ),
+                (
+                    Position {
+                        x: 33571,
+                        y: 31952,
+                        floor: -14,
+                    },
+                    1855,
+                ),
+            ],
+            &[],
+        )?
     } else if name == "questpc7-hydra" {
-        world_with_objects(&callback,trigger,&[(Position{x:33004,y:32664,floor:-3},1063)],&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &[(
+                Position {
+                    x: 33004,
+                    y: 32664,
+                    floor: -3,
+                },
+                1063,
+            )],
+            &[],
+        )?
     } else if name == "questpc7-hoist-story" {
-        let mut objects=Vec::new();
-        for x in 32153..=32157 { for y in 31116..=31125 {
-            objects.push((Position{x,y,floor:-9},7066));
-        }}
+        let mut objects = Vec::new();
+        for x in 32153..=32157 {
+            for y in 31116..=31125 {
+                objects.push((Position { x, y, floor: -9 }, 7066));
+            }
+        }
         objects.extend([
-            (Position{x:32154,y:31116,floor:-9},2472),
-            (Position{x:32156,y:31125,floor:-9},5772),
-            (Position{x:32157,y:31125,floor:-9},5770),
-            (Position{x:32157,y:31125,floor:-10},5770),
-            (Position{x:32156,y:31125,floor:-10},2773),
+            (
+                Position {
+                    x: 32154,
+                    y: 31116,
+                    floor: -9,
+                },
+                2472,
+            ),
+            (
+                Position {
+                    x: 32156,
+                    y: 31125,
+                    floor: -9,
+                },
+                5772,
+            ),
+            (
+                Position {
+                    x: 32157,
+                    y: 31125,
+                    floor: -9,
+                },
+                5770,
+            ),
+            (
+                Position {
+                    x: 32157,
+                    y: 31125,
+                    floor: -10,
+                },
+                5770,
+            ),
+            (
+                Position {
+                    x: 32156,
+                    y: 31125,
+                    floor: -10,
+                },
+                2773,
+            ),
         ]);
-        world_with_objects(&callback,trigger,&objects,&[2772])?
+        world_with_objects(&callback, trigger, &objects, &[2772])?
     } else if name == "questpc7-hidden-story" {
-        world_with_objects(&callback,trigger,&[(Position{x:33080,y:32014,floor:-13},2469)],&[])?
+        world_with_objects(
+            &callback,
+            trigger,
+            &[(
+                Position {
+                    x: 33080,
+                    y: 32014,
+                    floor: -13,
+                },
+                2469,
+            )],
+            &[],
+        )?
     } else if name == "questpc7-outfits-formal" {
         // The fixture includes the same admitted entry appearance as the real palace.
         let mut physical = callback.clone();
-        physical.passages.push(oteryn_gameplay_quests::quest::world_callbacks::Passage { create_on_close: None,
-            position: Position { x:32314, y:32170, floor:-6 }, appearance:464,
-            replacement:None, require_state:false,
-        });
+        physical
+            .passages
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                create_on_close: None,
+                position: Position {
+                    x: 32314,
+                    y: 32170,
+                    floor: -6,
+                },
+                appearance: 464,
+                replacement: None,
+                require_state: false,
+            });
         world(&physical, trigger)?
-    } else { world(&callback, trigger)? };
+    } else {
+        world(&callback, trigger)?
+    };
     run(async |admin| {
         let h = if shared_rewards || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await?
@@ -338,7 +562,9 @@ fn scenario_case(
                 .await?
         };
         if name == "qengine-rewards-goblin-signs" {
-            let version: String = sqlx::query_scalar("SHOW server_version").fetch_one(&h.pool).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version")
+                .fetch_one(&h.pool)
+                .await?;
             eprintln!("QUESTPC7_GOBLIN_SIGNS POSTGRES_STARTED version={version}");
         }
         if small_ruby || carried_step || native_tower || name == "triangle-tower-wall" {
@@ -454,30 +680,131 @@ fn scenario_case(
         } else {
             world
         };
+        let world = if elvenbane {
+            super::super::source_world_crop::compiled_region(
+                crate::map::overlay::TilePos {
+                    x: 32584,
+                    y: 31638,
+                    floor: -8,
+                },
+                crate::map::overlay::TilePos {
+                    x: 32599,
+                    y: 31653,
+                    floor: -3,
+                },
+                crate::map::overlay::TilePos {
+                    x: trigger.x,
+                    y: trigger.y,
+                    floor: trigger.floor,
+                },
+                generation.native_gameplay().ok_or("native")?,
+            )?
+        } else {
+            world
+        };
         let world = if name == "qengine-rewards-smith-story" {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_smith::terrain(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_smith::items())?
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_smith::terrain(),
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_smith::items(),
+            )?
         } else if name == "qengine-rewards-hot-corpses" {
-            world_with_objects(&callback,trigger,&super::super::questpc7_hot_corpses::terrain(),&[])?
-        } else if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
-        world_with_objects(&callback,trigger,&super::super::questpc7_goblin::stalker_objects(),&[])?
-    } else if name == "qengine-rewards-goblin-trunks" {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::trunk_objects(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_goblin::trunk_items())?
+            world_with_objects(
+                &callback,
+                trigger,
+                &super::super::questpc7_hot_corpses::terrain(),
+                &[],
+            )?
+        } else if matches!(
+            name,
+            "qengine-rewards-goblin-stalkers" | "qengine-rewards-goblin-slug"
+        ) {
+            world_with_objects(
+                &callback,
+                trigger,
+                &super::super::questpc7_goblin::stalker_objects(),
+                &[],
+            )?
+        } else if name == "qengine-rewards-goblin-trunks" {
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_goblin::trunk_objects(),
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_goblin::trunk_items(),
+            )?
         } else if name == "qengine-rewards-goblin-pond" {
-            let p=Position{x:33134,y:32093,floor:-10};
-            world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::pond_objects(),generation.native_gameplay().ok_or("native")?,&[(p,9527)])?
+            let p = Position {
+                x: 33134,
+                y: 32093,
+                floor: -10,
+            };
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_goblin::pond_objects(),
+                generation.native_gameplay().ok_or("native")?,
+                &[(p, 9527)],
+            )?
         } else if name == "qengine-rewards-goblin-signs" {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_goblin::sign_objects(),generation.native_gameplay().ok_or("native")?,&super::super::questpc7_goblin::sign_native_items())?
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_goblin::sign_objects(),
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_goblin::sign_native_items(),
+            )?
         } else if feaster {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_feaster::objects()?,generation.native_gameplay().ok_or("native")?,&super::super::questpc7_feaster::native_items()?)?
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_feaster::objects()?,
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_feaster::native_items()?,
+            )?
         } else if name == "qengine-rewards-forgotten-story" {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_forgotten_story::objects()?,generation.native_gameplay().ok_or("native")?,&super::super::questpc7_forgotten_story::native_items())?
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_forgotten_story::objects()?,
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_forgotten_story::native_items(),
+            )?
         } else if name == "qengine-rewards-heart-story" {
-            world_with_native_items(&callback,trigger,&super::super::questpc7_heart_story::objects()?,
-                generation.native_gameplay().ok_or("native")?,&super::super::questpc7_heart_story::native_items())?
+            world_with_native_items(
+                &callback,
+                trigger,
+                &super::super::questpc7_heart_story::objects()?,
+                generation.native_gameplay().ok_or("native")?,
+                &super::super::questpc7_heart_story::native_items(),
+            )?
         } else if name == "questpc7-hydra" {
-            world_with_native_items(&callback,trigger,&[(Position{x:33004,y:32664,floor:-3},1063)],
-                generation.native_gameplay().ok_or("native")?,&[(Position{x:33004,y:32664,floor:-3},4839)])?
-        } else {world};
+            world_with_native_items(
+                &callback,
+                trigger,
+                &[(
+                    Position {
+                        x: 33004,
+                        y: 32664,
+                        floor: -3,
+                    },
+                    1063,
+                )],
+                generation.native_gameplay().ok_or("native")?,
+                &[(
+                    Position {
+                        x: 33004,
+                        y: 32664,
+                        floor: -3,
+                    },
+                    4839,
+                )],
+            )?
+        } else {
+            world
+        };
 
         let initial_level: Option<u32> = match name {
             "questpc7-eligibility-high" => Some(1000),
@@ -562,7 +889,9 @@ fn scenario_case(
             1,
             "runtime-scope-assignment:1",
             // These two cases keep five source NPCs and one player alive.
-            if name.starts_with("qengine-rewards-l12-") {128} else if name == "qengine-rewards-grimvale-story" {
+            if name.starts_with("qengine-rewards-l12-") {
+                128
+            } else if name == "qengine-rewards-grimvale-story" {
                 // Player, two retained afflicted guardians, two contacts, one active hunt.
                 6
             } else if name == "questpc7-friends" {
@@ -642,22 +971,33 @@ fn scenario_case(
                 Some(activation),
                 Some(h.root.clone()),
             );
-        let eligibility_premium =
-            if feaster || name == "qengine-rewards-forgotten-story" || name == "qengine-rewards-heart-story" || name == "qengine-rewards-grimvale-story" || name == "questpc7-grave" || name == "questpc7-ferumbras" || name == "questpc7-hero" || name == "questpc7-hydra" || name == "questpc7-hoist-story" || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium")) || name.starts_with("questpc7-outfits-") {
-                use crate::gameplay_transport::spell_premium_coordinator::{
-                    SpellPremiumCoordinator, purchase_fixture,
-                };
-                let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
-                Some(SpellPremiumCoordinator::new(
-                    consumer,
-                    Some(clock),
-                    Some(activation),
-                    Some(h.root.clone()),
-                ))
-            } else {
-                None
+        let eligibility_premium = if feaster
+            || name == "qengine-rewards-forgotten-story"
+            || name == "qengine-rewards-heart-story"
+            || name == "qengine-rewards-grimvale-story"
+            || name == "questpc7-grave"
+            || name == "questpc7-ferumbras"
+            || name == "questpc7-hero"
+            || name == "questpc7-hydra"
+            || name == "questpc7-hoist-story"
+            || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
+            || name.starts_with("questpc7-outfits-")
+        {
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
             };
-        let hydra_reset_drain=crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        } else {
+            None
+        };
+        let hydra_reset_drain =
+            crate::gameplay_transport::gameplay_drain::GameplayDrain::at_reset_epoch(1);
         let mut owner = deps.owner(&h, &authority);
         owner.premium_coordinator = premium.as_ref();
         if mead {
@@ -756,7 +1096,12 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if mead {
+        if elvenbane {
+            super::super::elvenbane_native_goals::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "questpc2-rotten-source-items" {
+            super::super::questpc2_rotten_source_items::exercise(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if mead {
             super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
                 .await?;
         } else if reward_fluids {
@@ -971,7 +1316,8 @@ fn scenario_case(
             )
             .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-end" {
@@ -979,66 +1325,83 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if name == "qengine-rewards-smith-story" {
-            super::super::questpc7_smith::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_smith::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-hot-corpses" {
-            super::super::questpc7_hot_corpses::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_hot_corpses::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-slug" {
-            super::super::questpc7_goblin_slug::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin_slug::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-perfume-items" {
-            super::super::questpc7_goblin::exercise_perfume_items(&mut owner,&mut admitted,&h).await?;
-        } else if matches!(name,"qengine-rewards-goblin-stalkers"|"qengine-rewards-goblin-slug") {
-            super::super::questpc7_goblin::exercise_stalkers(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin::exercise_perfume_items(&mut owner, &mut admitted, &h)
+                .await?;
+        } else if matches!(
+            name,
+            "qengine-rewards-goblin-stalkers" | "qengine-rewards-goblin-slug"
+        ) {
+            super::super::questpc7_goblin::exercise_stalkers(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-trunks" {
-            super::super::questpc7_goblin::exercise_trunks(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin::exercise_trunks(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-pond" {
-            super::super::questpc7_goblin::exercise_pond(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin::exercise_pond(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-signs" {
-            super::super::questpc7_goblin::exercise_signs(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin::exercise_signs(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-goblin-intro" {
-            super::super::questpc7_goblin::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_goblin::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-feaster-thaian" {
-            super::super::questpc7_feaster_thaian::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_feaster_thaian::exercise(&mut owner, &mut admitted, &h).await?;
         } else if feaster {
-            super::super::questpc7_feaster::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_feaster::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-forgotten-story" {
-            super::super::questpc7_forgotten_story::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_forgotten_story::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-heart-story" {
-            super::super::questpc7_heart_story::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_heart_story::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-grimvale-story" {
-            super::super::questpc7_grimvale_story::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_grimvale_story::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "qengine-rewards-grimvale-contacts" {
-            super::super::questpc7_grimvale::contacts(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_grimvale::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_grave::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-ferumbras" {
-            super::super::questpc7_ferumbras::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_ferumbras::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {
-            super::super::questpc7_hero::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_hero::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hydra" {
-            super::super::questpc7_hydra::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_hydra::exercise(&mut owner, &mut admitted, &h).await?;
             // An activated pointer is a boot/reset-consumer precondition, as in
             // world_reset_map_pickup_postgres_tests; no subject quest/custody seed.
             sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$6,$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-11')")
                 .bind(owner.world_id.as_bytes().as_slice()).bind(world.base().digest().as_slice())
                 .bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice())
                 .bind(activated.frame_binding().digest().as_slice()).bind(crate::map::overlay::map_revision(world.base())).execute(&h.pool).await?;
-            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)").bind(owner.world_id.as_bytes().as_slice()).execute(&h.pool).await?;
-            owner.reset_epoch=hydra_reset_drain.epoch();
-            super::super::questpc7_hydra::replenishment(&mut owner,&mut admitted,&h).await?;
-
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,1)")
+                .bind(owner.world_id.as_bytes().as_slice())
+                .execute(&h.pool)
+                .await?;
+            owner.reset_epoch = hydra_reset_drain.epoch();
+            super::super::questpc7_hydra::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
-            super::super::questpc7_hoist_story::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_hoist_story::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {
-            super::super::questpc7_tokens::exercise(&mut owner,&mut admitted,&h).await?;
+            super::super::questpc7_tokens::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name.starts_with("questpc7-hidden-") {
             super::super::questpc7_native_deaths::exercise(&mut owner, &mut admitted, &h).await?;
-            if name == "questpc7-hidden-story" { super::super::questpc7_native_deaths::reward(&mut owner,&mut admitted,&h).await?; }
+            if name == "questpc7-hidden-story" {
+                super::super::questpc7_native_deaths::reward(&mut owner, &mut admitted, &h).await?;
+            }
         } else if name == "questpc7-outfits-formal" {
-            super::super::questpc7_formal::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+            super::super::questpc7_formal::exercise(&mut owner, &mut admitted, &h, &callback)
+                .await?;
         } else if name.starts_with("questpc7-outfits-") {
-            super::super::questpc7_outfit_items::exercise(&mut owner, &mut admitted, &h, name).await?;
+            super::super::questpc7_outfit_items::exercise(&mut owner, &mut admitted, &h, name)
+                .await?;
         } else if name == "l1-warmaster-wardrobe" {
-            super::super::questpc7_world_outfit::exercise(&mut owner, &mut admitted, &h, &callback, deps.actor).await?;
+            super::super::questpc7_world_outfit::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+                deps.actor,
+            )
+            .await?;
         } else if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -1052,7 +1415,16 @@ fn scenario_case(
             super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
         } else if outfit_world {
-            super::super::qengine_access::exercise(&mut owner,&mut admitted,&h,deps.actor,fence,&callback,trigger).await?;
+            super::super::qengine_access::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                trigger,
+            )
+            .await?;
         } else if shared_rewards {
             super::super::qengine_rewards::exercise(
                 &mut owner,
@@ -1157,6 +1529,44 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if name == "questpc2-hero-pipes" {
+            super::super::questpc2_hero_rathleton::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name.starts_with("questpc2-albinius-portals-") {
+            super::super::questpc2_albinius_portals::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
+        } else if name.starts_with("questpc2-albinius-") {
+            super::super::questpc2_albinius::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
+            )
+            .await?;
+        } else if name == "questpc2-gnomus-ordnance" {
+            super::super::questpc2_gnomus::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name == "questpc2-gerimor-assignments" {
+            super::super::questpc2_gerimor::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name == "questpc2-henricus-start" {
+            super::super::questpc2_henricus::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name == "questpc2-oldrak-npc" {
+            super::super::questpc2_oldrak::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if classic_npc {
             super::super::classic_quests::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
@@ -1463,6 +1873,7 @@ fn scenario_case(
                             .read_actor_position(deps.actor)
                             .map_err(debug)?
                             .revision(),
+                        party: Vec::new(),
                     }
                 };
                 owner
@@ -1687,35 +2098,35 @@ fn scenario_case(
                     // Source lever.lua:7-12: the two discordant states do nothing.
                     // Alter only the remote rock through the existing map owner.
                     assert!(world.facts().apply_quest_callback(
-rock,
-0,
-rock_facts,
-&[rock],
-&[],
-false,
-None,
-));
+                        rock,
+                        0,
+                        rock_facts,
+                        &[rock],
+                        &[],
+                        false,
+                        None,
+                    ));
                     assert!(world.facts().base_hidden(rock));
                     for (command, revision, appearance) in [(3, 2, 2772), (4, 3, 2773)] {
                         if command == 4 {
                             assert!(world.facts().apply_quest_callback(
-rock,
-1,
-rock_facts,
-&[rock],
-&[],
-true,
-None,
-));
+                                rock,
+                                1,
+                                rock_facts,
+                                &[rock],
+                                &[],
+                                true,
+                                None,
+                            ));
                             assert!(world.facts().apply_quest_callback(
-key,
-2,
-lever_facts(2773)?,
-&[],
-&[],
-false,
-None,
-));
+                                key,
+                                2,
+                                lever_facts(2773)?,
+                                &[],
+                                &[],
+                                false,
+                                None,
+                            ));
                         }
                         owner.clock_origin = owner
                             .clock_origin
@@ -1742,14 +2153,14 @@ None,
                         assert_eq!(world.facts().base_hidden(rock), appearance == 2772);
                     }
                     assert!(world.facts().apply_quest_callback(
-rock,
-2,
-rock_facts,
-&[rock],
-&[],
-false,
-None,
-));
+                        rock,
+                        2,
+                        rock_facts,
+                        &[rock],
+                        &[],
+                        false,
+                        None,
+                    ));
                     owner.clock_origin = owner
                         .clock_origin
                         .checked_sub(std::time::Duration::from_secs(2))

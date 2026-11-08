@@ -10,6 +10,8 @@ import json
 import re
 from pathlib import Path
 
+import poison_daggers
+
 SOURCE = Path(__file__).with_name('container_native_source.json')
 SOURCE_SHA256 = 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
@@ -103,6 +105,30 @@ def claim_items(pilot_key, items):
     if len(matches) != 1:
         return items
     return {**items, key: native_charge_item(items.get(key), matches[0])}
+
+
+def source_charged_reward(pilot_key, reward, items):
+    """A source charge argument grants one full instance only on an exact native match."""
+    source_id = CHARGED_QUEST_CLAIMS.get(pilot_key)
+    if source_id is None:
+        return reward
+    key = f'oteryn:item.tibia.i{source_id}'
+    original = items.get(key)
+    projected = claim_items(pilot_key, items).get(key)
+    if original is None or projected is original:
+        raise ValueError('QUEST_CHEST_CHARGE_NATIVE_MATCH')
+    charges = fact(projected, 'charges', 'count')
+    result, matched = [], 0
+    for item, count in reward:
+        if item == source_id:
+            if count != charges:
+                raise ValueError('QUEST_CHEST_CHARGE_EXACT_SOURCE')
+            count = 1
+            matched += 1
+        result.append([item, count])
+    if matched != 1:
+        raise ValueError('QUEST_CHEST_CHARGE_SOURCE_CARDINALITY')
+    return result
 
 
 def source():
@@ -287,7 +313,7 @@ def derive(definition, items, stack_problem):
         if (root is None or root['identity'] != reward['container'] or item_id(reward['container']) != setting['container']
                 or stack_problem(root, 1) is not None or type(capacity) is not int or not 1 <= capacity <= 65535):
             return None
-        original = setting['reward']
+        original = poison_daggers.source_reward(ids[0], setting['itemPos'], setting['reward'])
         if ids[0] in ACCEPTED_TWO_STACKS:
             selected = ACCEPTED_TWO_STACKS[ids[0]]
             original = [part for source_id, count in original

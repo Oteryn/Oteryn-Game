@@ -421,12 +421,9 @@ pub fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
     }
 }
 
-/// A death has no durable placement rule yet (out of scope; owned by a
-/// future Ground/room placement decision). This builds the smallest
-/// defensible `GroundPlacement`: the corpse's own local position, and a
-/// `corpse_ref` that is a canonical big-endian encoding of the exact death
-/// key, so two entries of the same death always frame to the same
-/// placement and two different deaths never collide.
+/// Place the corpse at the native death's captured position. The reference
+/// encodes the exact death scope and actor generation, preserving Channel
+/// bytes and tagging Instance custody separately for deterministic replay.
 fn ground_placement(
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,

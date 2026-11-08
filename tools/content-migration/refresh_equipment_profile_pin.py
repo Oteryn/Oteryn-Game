@@ -25,6 +25,13 @@ def keys(document):
     return set(rows)
 
 
+def questpc2_additions(source):
+    if "questpc2_source_profile_cohort::IDS.len()" not in source:
+        return 0
+    from questpc2_equipment_cohort import declared_additions
+    return declared_additions(TEST.with_name("questpc2_source_profile_cohort.rs"))
+
+
 def regenerate(source, base, updates, qengine, npc, starting=None):
     original = int(
         re.search(r"const ORIGINAL_PROFILES: usize = ([\d_]+);", source)[1].replace(
@@ -47,6 +54,7 @@ def regenerate(source, base, updates, qengine, npc, starting=None):
         + sum(counts.values())
         + len(qengine["records"])
         + sum(map(int, extra.groups()))
+        + questpc2_additions(source)
     )
     # The source-qualified pick is shared with the original native provider.
     overlap = '- 1 // the pick already belongs to the base provider' in source

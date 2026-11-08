@@ -241,7 +241,7 @@ def validate_effects(callback, context):
             require(integer(effect['effect'],1,65535), context + ': invalid effect')
         require(callback.get('native_rule') is None or not effects, context + ': native rule has unrelated effects')
         effects = {}
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door', 'party_transfer', 'quest_completion'}
     fields(effects, set(), allowed, context + ': effects')
     require(not (callback.get('outfit_reward') is not None and effects.get('outfit_reward') is not None),
             context + ': duplicate outfit participant')
@@ -249,6 +249,24 @@ def validate_effects(callback, context):
     require(callback.get('native_rule') is None or outfit is None,
             context + ': native rule has unrelated outfit reward')
     require(legacy_facing is None or effects.get('facing') is None, context + ': conflicting destination facings')
+    completion = effects.get('quest_completion')
+    if completion is not None:
+        fields(completion, set(), {'claimed_rewards'}, context + ': completion')
+        claims = completion.get('claimed_rewards', [])
+        require(isinstance(claims, list) and len(claims) <= 8
+                and all(isinstance(key, str) and valid_key(key)
+                        and key.startswith('oteryn:reward-claim.') for key in claims)
+                and len(set(claims)) == len(claims), context + ': completion claims')
+        require(callback['storage'] and any(
+                    not storage.get('preserve', False)
+                    and not storage['minimum'] <= storage['set'] <= storage['maximum']
+                    for storage in callback['storage'])
+                and not callback['reversible'] and callback.get('native_rule') is None
+                and callback.get('monk_reward') is None
+                and all(effects.get(field) is None for field in (
+                    'portals', 'item_cycle', 'encounter', 'reward_door',
+                    'party_transfer', 'outfit_reward')) and outfit is None, context + ': incompatible completion')
+
     if outfit is not None:
         fields(outfit, {'outfit','addons'}, {'outfit','addons'}, context + ': outfit reward')
         require(isinstance(outfit['outfit'],str) and len(outfit['outfit'])<=160
@@ -272,11 +290,47 @@ def validate_effects(callback, context):
         fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
         position(magic['position'], context + ': magic')
         require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
-    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter', 'reward_door', 'party_transfer'))
     require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
-            and callback.get('lever') is not None and not callback['storage']
+            and callback.get('lever') is not None and (not callback['storage'] or effects.get('party_transfer') is not None)
             and not callback['passages'] and callback.get('teleport') is None),
             context + ': incompatible map effects')
+    party = effects.get('party_transfer')
+    if party is not None:
+        fields(party, {'activation_appearance', 'stations'}, {'activation_appearance', 'stations'}, context + ': party transfer')
+        require(integer(party['activation_appearance'], 1, 65535)
+                and party['activation_appearance'] in callback['lever']
+                and callback.get('reversible') is True and callback['storage']
+                and callback.get('minimum_level') is None and callback.get('experience') is None
+                and callback.get('monk_reward') is None and callback.get('native_rule') is None
+                and callback.get('item_on_target') is None
+                and all(effects.get(field) is None for field in ('outfit_reward', 'transform', 'facing', 'magic')),
+                context + ': incompatible party transfer')
+        require(isinstance(party['stations'], list) and 1 <= len(party['stations']) <= MAX_EFFECTS
+                and len(callback['offerings']) == len(party['stations']), context + ': party bounds')
+        origins, destinations, altars = set(), set(), set()
+        for station in party['stations']:
+            names = {'from', 'to', 'vocation', 'offering'}
+            fields(station, names, names, context + ': party station')
+            origin = position(station['from'], context + ': party origin')
+            destination = position(station['to'], context + ': party destination')
+            altar = position(station['offering'], context + ': party altar')
+            require(origin not in origins and destination not in destinations and altar not in altars
+                    and origin != destination and station['vocation'] in ('sorcerer','druid','paladin','knight','monk')
+                    and sum(o['position'] == station['offering'] and o['count'] == 1 for o in callback['offerings']) == 1,
+                    context + ': invalid or duplicated party station')
+            origins.add(origin)
+            destinations.add(destination)
+            altars.add(altar)
+    reward_door = effects.get('reward_door')
+    if reward_door is not None:
+        fields(reward_door, {'claim'}, {'claim'}, context + ': reward door')
+        require(valid_key(reward_door['claim']) and reward_door['claim'].startswith('oteryn:reward-claim.')
+                and callback.get('reversible') is True and callback['selector'].get('action') is not None
+                and callback.get('item_on_target') is None and not callback['offerings']
+                and effects.get('outfit_reward') is None and effects.get('transform') is None
+                and effects.get('facing') is None and effects.get('magic') is None,
+                context + ': incompatible reward door')
     pair = effects.get('portals')
     if pair is not None:
         fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')

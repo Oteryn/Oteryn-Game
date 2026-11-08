@@ -221,8 +221,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // Source-qualified corpse admission also covers five bosses sharing demon, vampire,
-    // and dragon bodies. Their independent loot closure remains mandatory.
+    // Source-qualified quest corpses also expose these ten named boss bodies.
+    // Their independent private-loot closure remains mandatory: five new aliases
+    // (Monk, Demon, Elf and Rotten Blood bodies) do not acquire private loot.
     // Keep each exact admission reason:
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
@@ -259,8 +260,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             if matches!(
                 policy.definition_key.as_str(),
                 "oteryn:creature.an_observer_eye"
+                    | "oteryn:creature.apprentice_sheng"
                     | "oteryn:creature.armenius_creature"
+                    | "oteryn:creature.bakragore"
+                    | "oteryn:creature.bazir"
+                    | "oteryn:creature.dharalion"
                     | "oteryn:creature.grand_mother_foulscale"
+                    | "oteryn:creature.infernatil"
                     | "oteryn:creature.orshabaal"
                     | "oteryn:creature.the_weakened_count"
             ) {
@@ -387,7 +393,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 328, 2));
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 323, 2));
     assert_eq!(
         admitted,
         [
@@ -400,8 +406,13 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         shared_body,
         [
             "oteryn:creature.an_observer_eye",
+            "oteryn:creature.apprentice_sheng",
             "oteryn:creature.armenius_creature",
+            "oteryn:creature.bakragore",
+            "oteryn:creature.bazir",
+            "oteryn:creature.dharalion",
             "oteryn:creature.grand_mother_foulscale",
+            "oteryn:creature.infernatil",
             "oteryn:creature.orshabaal",
             "oteryn:creature.the_weakened_count",
         ]

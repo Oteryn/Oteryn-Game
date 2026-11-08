@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import sys
 import xml.etree.ElementTree as ET
 
 import timed_item_profiles as timed
@@ -32,6 +33,30 @@ QUESTPC4_REWARD_QUESTS = {
     'canary:quest/waterfall_quest', 'canary:quest/wedding_ring_quest',
     'canary:quest/what_a_foolish_quest',
 }
+
+CHEST_PROFILES = 'tools/content-schema/native-gameplay/quest-chest-item-profiles.json'
+CHEST_IDS = {1777, 2436, 2438, 2473, 2474}
+
+
+def admit_map_carriers(root, document):
+    """Retain the exact source physics for restored map chest entries."""
+    overlay = json.loads((root / CHEST_PROFILES).read_bytes())
+    rows = overlay['records']
+    keys = [r['production_definition']['production_key'] for r in rows]
+    if (overlay['schema'] != 'OTERYN_NATIVE_QUEST_CHEST_ITEM_PROFILES/v1'
+            or overlay['source_revision'] != '99902524e052f37574194466c2949c576e4ab269'
+            or len(keys) != len(CHEST_IDS)
+            or set(keys) != {f'oteryn:item.tibia.i{i}' for i in CHEST_IDS}):
+        raise ValueError('QUEST_CHEST_ITEM_PROFILE_SET')
+    existing = {row['production_definition']['production_key']: row
+                for row in document['records']}
+    for row in rows:
+        key = row['production_definition']['production_key']
+        if key in existing:
+            if existing[key] != row:
+                raise ValueError('QUEST_CHEST_ITEM_PROFILE_CONFLICT')
+        else:
+            document['records'].append(row)
 
 
 def complete_native_stack(root, record, definition, binding):
@@ -154,10 +179,12 @@ def grant_semantics(root, definition):
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical, extra_keys=()):
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'content-schema/reward-claim-authoring'))
+    # Keep the selected startup cohort and main's explicit native reward keys.
+    sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
+    from quest_chest_bindings import panpipe_key_claim
+    sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
+
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
@@ -168,6 +195,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     # Crystal201189f chest.lua:508-513: Fanfare's key3520 uses the already
     # admitted bone key2973. Its key-binding hold is separate from Item admission.
     keys.add('oteryn:item.tibia.i2973')
+    # Restored startup chest selectors must carry their exact ready reward into
+    # the native provider too. Otherwise a correctly bound chest has nothing to
+    # mint (notably Nightmare Teddy). This is the selected cohort, not a general
+    # promotion of held source definitions.
+    selected_chests = {
+        row['claim']
+        for path in sorted((root / 'tools/content-schema/world-authoring/samples/quest-chest-bindings').glob('*.json'))
+        for row in json.loads(path.read_bytes())['bindings']
+    }
     keys.update(extra_keys)
     for callback in callbacks['callbacks']:
         item = callback.get('item_on_target')
@@ -180,6 +216,18 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claim*.json')):
         for row in json.loads(path.read_bytes())['records']:
             definition = row['definition']
+            if definition['identity']['key'] in selected_chests:
+                # Filled-container/text claims already enter through the exact
+                # W15b native projection below; selection adds only map binding.
+                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                    keys.update(item['item']['key'] for placement in definition['placements']
+                                for item in placement['reward']['items'])
+                elif (definition.get('readiness') != 'waiting_implementation'
+                      or definition.get('data_holds') != []
+                      or definition.get('native_contents', {}).get('schema')
+                      != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
+                    raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
+                selected_chests.remove(definition['identity']['key'])
             # QUEST-FINISH owner scope: retain the donor record as evidence,
             # but do not admit Dawnport's rewards into the Newhaven start path.
             if definition.get('quest', {}).get('key') == 'canary:quest/dawnport_quest':
@@ -218,6 +266,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                     keys.update(item['item']['key'] for item in placement['reward']['items'])
     # Falcon repeat owner freezes one of these exact seven source rewards.
     keys.update(f'oteryn:item.tibia.i{number}' for number in (9081, 28821, 28823, 9058, 6299, 3052, 3035))
+    if selected_chests:
+        raise ValueError('SELECTED_QUEST_CHEST_MISSING')
     grizzly_path = root / 'content/quests/killing-in-the-name-of.json'
     if grizzly_path.is_file():
         grizzly = json.loads(grizzly_path.read_bytes())
@@ -226,6 +276,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         keys.update(f"oteryn:item.tibia.i{task['item']['source_id']}"
                     for task in grizzly['tasks'] if task.get('item'))
     document = json.loads(generated[profile_path])
+    admit_map_carriers(root, document)
     present = {row['production_definition']['production_key']: row for row in document['records']}
     if len(present) != len(document['records']):
         raise ValueError('QUEST_CALLBACK_DUPLICATE_NATIVE_ITEM')
@@ -252,14 +303,19 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        # Reuse the exact scoped native charge projection from source claim
+        # authoring; the canonical Item remains unchanged and every guard below stays active.
         if key in {f'oteryn:item.tibia.i{item}' for item in container_native.CHARGED_QUEST_CLAIMS.values()}:
-            definition = container_native.native_charge_item(definition, present.get(key))
+            qualified = container_native.native_charge_item(definition, present.get(key))
+            if qualified is definition:
+                raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
+            definition = qualified
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']
                 or definition['stack_class'] not in ('StackCapable', 'NonStackable')
                 or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'):
-            raise ValueError('QUEST_CALLBACK_ITEM_NOT_ADMITTED')
+            raise ValueError(f'QUEST_CALLBACK_ITEM_NOT_ADMITTED: {key}')
         physical = definition['semantics']['physical']
         if (physical['state'] != 'KNOWN'
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}

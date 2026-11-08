@@ -44,6 +44,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 y: position.1,
                 floor: position.2,
             })
+        && callback.selector.position_aliases.is_empty()
         && callback.selector.action == action
         && callback.selector.unique.is_none()
         && callback.selector.appearance.is_none()

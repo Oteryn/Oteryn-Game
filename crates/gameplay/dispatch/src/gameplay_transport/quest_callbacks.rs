@@ -10,6 +10,8 @@ mod effects;
 mod encounter;
 mod execute;
 pub(super) mod monsters;
+mod party_transfer;
+mod reward_door;
 mod rewards;
 mod shared_gate;
 mod soul_war_reward;
@@ -47,6 +49,7 @@ struct Pending {
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
     ingress_settled: bool,
+    participants: Vec<GameSessionId>,
 }
 
 /// A World observation is retained only until the native actor/object CAS. It is
@@ -244,15 +247,16 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         return true;
     }
     let selector = &callback.selector;
-    // A position-registered USE acts on the resolved object the player clicked;
-    // its native placement may be above ground. STEP still selects the floor.
-    selector.position.is_none_or(|p| tile(p) == pos)
-        && (selector.position.is_none()
-            || selector.unique.is_some()
-            || selector.action.is_some()
-            || selector.appearance.is_some()
-            || callback.trigger == Trigger::Use
-            || ordinal == 0)
+    selector.matches_position(Position {
+        x: pos.x,
+        y: pos.y,
+        floor: pos.floor,
+    }) && (selector.position.is_none()
+        || selector.unique.is_some()
+        || selector.action.is_some()
+        || selector.appearance.is_some()
+        || callback.trigger == Trigger::Use
+        || ordinal == 0)
         && map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)
@@ -451,7 +455,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .quest_callbacks
                 .records
                 .lock()
-                .map_or(true, |p| p.contains_key(&session))
+                .map_or(true, |p| {
+                    p.contains_key(&session)
+                        || p.values()
+                            .any(|pending| pending.participants.contains(&session))
+                })
     }
 
     pub(super) fn callback_content(&self) -> &[Callback] {
@@ -502,6 +510,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::StaleState);
             }
             let context = QuestWorldContext {
+                party: Vec::new(),
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                 content_revision: format!(
                     "sha256:{}",
@@ -562,6 +571,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.reconcile_grizzly_boss(session).await {
             return false;
         }
+        let session = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .iter()
+                .find_map(|(owner, pending)| {
+                    pending.participants.contains(&session).then_some(*owner)
+                })
+                .unwrap_or(session),
+            Err(_) => return false,
+        };
         if !self.reconcile_quest_callback_receipts(session).await {
             return false;
         }
@@ -791,7 +809,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if callback.storage.is_empty() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+            let fence = if callback.storage.is_empty() && callback.effects.reward_door.is_none() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none() {
@@ -836,6 +854,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Exhausted;
                     }
                     let context = QuestWorldContext {
+                        party: Vec::new(),
                         map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                         content_revision: format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
                         placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
@@ -1022,6 +1041,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_none()
                 && oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_none()
+                && callback.effects.reward_door.is_none()
                 && world_callbacks::world_change_requirement(&callback.key).is_none()
             {
                 None
@@ -1039,6 +1059,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return entered;
                     }
                     QuestWorldContext {
+                        party: Vec::new(),
                         map_revision: crate::map::overlay::map_revision(map.overlay.base()),
                         content_revision: format!(
                             "sha256:{}",
@@ -1189,6 +1210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         origin: Some(origin),
                         context: None,
                         ingress_settled: false,
+                        participants: Vec::new(),
                     });
                     pending.origin = Some(origin);
                 }

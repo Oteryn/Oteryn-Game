@@ -1,670 +1,6 @@
 {
-  "schema": "OTERYN_GRIZZLY_BOSS_ROOMS/v1",
-  "generator": "tools/content-schema/quest-authoring/grizzly_rooms.py",
-  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "decision": "Oteryn/Oteryn-Game#2770 Q2=B",
-  "rooms": [
-    {
-      "boss_id": 1,
-      "name": "Snapper",
-      "qualified": true,
-      "bounds": [
-        32608,
-        32722,
-        32618,
-        32732,
-        8
-      ],
-      "donor_bounds": [
-        32608,
-        32722,
-        32618,
-        32732,
-        8
-      ],
-      "connected_tiles": 62,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:2"
-    },
-    {
-      "boss_id": 2,
-      "name": "Hide",
-      "qualified": true,
-      "bounds": [
-        32810,
-        32702,
-        32822,
-        32712,
-        8
-      ],
-      "donor_bounds": [
-        32810,
-        32702,
-        32822,
-        32712,
-        8
-      ],
-      "connected_tiles": 90,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:13"
-    },
-    {
-      "boss_id": 3,
-      "name": "Deathbine",
-      "qualified": true,
-      "bounds": [
-        32707,
-        32711,
-        32725,
-        32737,
-        8
-      ],
-      "donor_bounds": [
-        32707,
-        32711,
-        32725,
-        32737,
-        8
-      ],
-      "connected_tiles": 263,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:24"
-    },
-    {
-      "boss_id": 4,
-      "name": "Bloodtusk",
-      "qualified": true,
-      "bounds": [
-        32096,
-        31123,
-        32106,
-        31135,
-        2
-      ],
-      "donor_bounds": [
-        32096,
-        31123,
-        32106,
-        31135,
-        2
-      ],
-      "connected_tiles": 95,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:35"
-    },
-    {
-      "boss_id": 5,
-      "name": "Shardhead",
-      "qualified": true,
-      "bounds": [
-        32150,
-        31129,
-        32160,
-        31143,
-        3
-      ],
-      "donor_bounds": [
-        32150,
-        31129,
-        32160,
-        31143,
-        3
-      ],
-      "connected_tiles": 83,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:46"
-    },
-    {
-      "boss_id": 6,
-      "name": "Esmeralda",
-      "qualified": true,
-      "bounds": [
-        32755,
-        31250,
-        32763,
-        31258,
-        9
-      ],
-      "donor_bounds": [
-        32755,
-        31250,
-        32763,
-        31258,
-        9
-      ],
-      "connected_tiles": 64,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:57"
-    },
-    {
-      "boss_id": 7,
-      "name": "Fleshcrawler",
-      "qualified": true,
-      "bounds": [
-        33097,
-        32776,
-        33127,
-        32802,
-        11
-      ],
-      "donor_bounds": [
-        33097,
-        32776,
-        33127,
-        32802,
-        11
-      ],
-      "connected_tiles": 287,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:68"
-    },
-    {
-      "boss_id": 8,
-      "name": "Ribstride",
-      "qualified": true,
-      "bounds": [
-        33002,
-        32796,
-        33022,
-        32814,
-        13
-      ],
-      "donor_bounds": [
-        33002,
-        32796,
-        33022,
-        32814,
-        13
-      ],
-      "connected_tiles": 325,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:79"
-    },
-    {
-      "boss_id": 9,
-      "name": "Bloodweb",
-      "qualified": true,
-      "bounds": [
-        32011,
-        31021,
-        32034,
-        31044,
-        8
-      ],
-      "donor_bounds": [
-        32012,
-        31022,
-        32034,
-        31044,
-        8
-      ],
-      "connected_tiles": 264,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:90"
-    },
-    {
-      "boss_id": 10,
-      "name": "Thul",
-      "qualified": true,
-      "bounds": [
-        32077,
-        32775,
-        32089,
-        32787,
-        13
-      ],
-      "donor_bounds": [
-        32077,
-        32775,
-        32089,
-        32787,
-        13
-      ],
-      "connected_tiles": 82,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:101"
-    },
-    {
-      "boss_id": 11,
-      "name": "Old Widow",
-      "qualified": true,
-      "bounds": [
-        32796,
-        32271,
-        32806,
-        32286,
-        8
-      ],
-      "donor_bounds": [
-        32796,
-        32271,
-        32806,
-        32281,
-        8
-      ],
-      "connected_tiles": 70,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:112"
-    },
-    {
-      "boss_id": 12,
-      "name": "Hemming",
-      "qualified": true,
-      "bounds": [
-        32997,
-        31438,
-        33015,
-        31453,
-        8
-      ],
-      "donor_bounds": [
-        32997,
-        31438,
-        33015,
-        31452,
-        8
-      ],
-      "connected_tiles": 169,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:123"
-    },
-    {
-      "boss_id": 13,
-      "name": "Tormentor",
-      "qualified": true,
-      "bounds": [
-        32040,
-        31250,
-        32062,
-        31278,
-        11
-      ],
-      "donor_bounds": [
-        32040,
-        31250,
-        32062,
-        31278,
-        11
-      ],
-      "connected_tiles": 284,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:134"
-    },
-    {
-      "boss_id": 14,
-      "name": "Flameborn",
-      "qualified": true,
-      "bounds": [
-        32933,
-        31050,
-        32955,
-        31070,
-        8
-      ],
-      "donor_bounds": [
-        32933,
-        31050,
-        32955,
-        31070,
-        8
-      ],
-      "connected_tiles": 277,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:145"
-    },
-    {
-      "boss_id": 15,
-      "name": "Fazzrah",
-      "qualified": true,
-      "bounds": [
-        32989,
-        31171,
-        33017,
-        31183,
-        7
-      ],
-      "donor_bounds": [
-        32989,
-        31171,
-        33017,
-        31183,
-        7
-      ],
-      "connected_tiles": 218,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:156"
-    },
-    {
-      "boss_id": 16,
-      "name": "Tromphonyte",
-      "qualified": true,
-      "bounds": [
-        33102,
-        31170,
-        33124,
-        31206,
-        8
-      ],
-      "donor_bounds": [
-        33102,
-        31170,
-        33124,
-        31206,
-        8
-      ],
-      "connected_tiles": 288,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:167"
-    },
-    {
-      "boss_id": 17,
-      "name": "Sulphur Scuttler",
-      "qualified": true,
-      "bounds": [
-        33264,
-        31028,
-        33286,
-        31051,
-        9
-      ],
-      "donor_bounds": [
-        33077,
-        31001,
-        33099,
-        31023,
-        8
-      ],
-      "connected_tiles": 226,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:178"
-    },
-    {
-      "boss_id": 18,
-      "name": "Bruise Payne",
-      "qualified": true,
-      "bounds": [
-        33229,
-        31004,
-        33273,
-        31027,
-        2
-      ],
-      "donor_bounds": [
-        33229,
-        31005,
-        33273,
-        31027,
-        2
-      ],
-      "connected_tiles": 504,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:189"
-    },
-    {
-      "boss_id": 19,
-      "name": "Many",
-      "qualified": true,
-      "bounds": [
-        32916,
-        32892,
-        32926,
-        32904,
-        8
-      ],
-      "donor_bounds": [
-        32916,
-        32892,
-        32926,
-        32904,
-        8
-      ],
-      "connected_tiles": 124,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:200"
-    },
-    {
-      "boss_id": 20,
-      "name": "Noxious Spawn",
-      "qualified": true,
-      "bounds": [
-        32838,
-        32665,
-        32848,
-        32675,
-        11
-      ],
-      "donor_bounds": [
-        32838,
-        32665,
-        32848,
-        32675,
-        11
-      ],
-      "connected_tiles": 93,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:211"
-    },
-    {
-      "boss_id": 21,
-      "name": "Gorgo",
-      "qualified": true,
-      "bounds": [
-        32750,
-        32430,
-        32768,
-        32450,
-        11
-      ],
-      "donor_bounds": [
-        32750,
-        32430,
-        32768,
-        32450,
-        11
-      ],
-      "connected_tiles": 183,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:222"
-    },
-    {
-      "boss_id": 22,
-      "name": "Stonecracker",
-      "qualified": true,
-      "bounds": [
-        33254,
-        31693,
-        33265,
-        31707,
-        15
-      ],
-      "donor_bounds": [
-        33254,
-        31663,
-        33264,
-        31677,
-        15
-      ],
-      "connected_tiles": 110,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:233"
-    },
-    {
-      "boss_id": 23,
-      "name": "Leviathan",
-      "qualified": true,
-      "bounds": [
-        31901,
-        31065,
-        31917,
-        31079,
-        10
-      ],
-      "donor_bounds": [
-        31901,
-        31065,
-        31917,
-        31079,
-        10
-      ],
-      "connected_tiles": 150,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:244"
-    },
-    {
-      "boss_id": 24,
-      "name": "Kerberos",
-      "qualified": true,
-      "bounds": [
-        32030,
-        32556,
-        32052,
-        32582,
-        15
-      ],
-      "donor_bounds": [
-        32030,
-        32556,
-        32052,
-        32582,
-        15
-      ],
-      "connected_tiles": 475,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:255"
-    },
-    {
-      "boss_id": 25,
-      "name": "Ethershreck",
-      "qualified": true,
-      "bounds": [
-        33077,
-        31001,
-        33099,
-        31023,
-        8
-      ],
-      "donor_bounds": [
-        33077,
-        31001,
-        33099,
-        31023,
-        8
-      ],
-      "connected_tiles": 159,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:266"
-    },
-    {
-      "boss_id": 26,
-      "name": "Paiz the Pauperizer",
-      "qualified": true,
-      "bounds": [
-        33068,
-        31104,
-        33084,
-        31116,
-        1
-      ],
-      "donor_bounds": [
-        33068,
-        31104,
-        33084,
-        31116,
-        1
-      ],
-      "connected_tiles": 169,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:277"
-    },
-    {
-      "boss_id": 27,
-      "name": "Bretzecutioner",
-      "qualified": true,
-      "bounds": [
-        31958,
-        31167,
-        31988,
-        31187,
-        10
-      ],
-      "donor_bounds": [
-        31958,
-        31167,
-        31988,
-        31187,
-        10
-      ],
-      "connected_tiles": 273,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:288"
-    },
-    {
-      "boss_id": 28,
-      "name": "Zanakeph",
-      "qualified": true,
-      "bounds": [
-        33064,
-        31039,
-        33090,
-        31060,
-        12
-      ],
-      "donor_bounds": [
-        33064,
-        31040,
-        33090,
-        31060,
-        12
-      ],
-      "connected_tiles": 313,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:299"
-    },
-    {
-      "boss_id": 29,
-      "name": "tiquandas revenge",
-      "qualified": true,
-      "bounds": [
-        32881,
-        32578,
-        32892,
-        32588,
-        4
-      ],
-      "donor_bounds": [
-        32740,
-        32286,
-        32756,
-        32300,
-        10
-      ],
-      "connected_tiles": 63,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:310"
-    },
-    {
-      "boss_id": 30,
-      "name": "demodras",
-      "qualified": true,
-      "bounds": [
-        32740,
-        32286,
-        32756,
-        32299,
-        10
-      ],
-      "donor_bounds": [
-        32881,
-        32578,
-        32893,
-        32588,
-        4
-      ],
-      "connected_tiles": 162,
-      "reason": null,
-      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:321"
-    }
-  ],
+  "generator": "tools/content-schema/quest-authoring/grizzly_rooms.py",
   "inputs_sha256": {
     "content/items/definitions/spell-native-profiles.json": "0545681cf533ca93475e94d3428df14c2d3921ac8ddbfcad9f2823f6ae32c256",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
@@ -708,7 +44,7 @@
     "content/world/placements/region-z08-x127-y127.b3": "ef0c6895af31d8814753d4ed3a1c80aff976ef4f3775a3add46b25e895b27e4f",
     "content/world/placements/region-z08-x128-y121.b3": "7b81fad51529c1aa476a8d4b4a686cdcc9ac116138d1535695178be6b2ed9c9c",
     "content/world/placements/region-z08-x128-y122.b3": "4becdd2ee1626518d1e449346c20bbe758f2f43a7cb6282e03a3ff96295b1d5c",
-    "content/world/placements/region-z08-x128-y126.b3": "e29d8f1ed7412c6fa2cc18775519bf5b0c668b644808ae966646b895cb351a48",
+    "content/world/placements/region-z08-x128-y126.b3": "6c2270332869c256c7c6fbc3d3295e43342b2252afdf1af7e1f02b7f44483179",
     "content/world/placements/region-z08-x128-y127.b3": "195ca8316300fd9c390ce15c2d16c1b3faee065b295b26ffa80da3aaa9e46a70",
     "content/world/placements/region-z08-x128-y128.b3": "7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
     "content/world/placements/region-z08-x129-y121.b3": "824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4",
@@ -726,7 +62,7 @@
     "content/world/placements/region-z13-x125-y128.b3": "e6e84f02f0cdce08ee23bf6ca35250af939580bf1fe6c6c81c8c74dea606dd40",
     "content/world/placements/region-z13-x128-y128.b3": "7650ba15c3448a0959cc5af22d51c9a257666bd05f91c5e072f57b72c1b49647",
     "content/world/placements/region-z15-x125-y127.b3": "7acf15bea934848e198578f1dc2c2b0186cbd9887fc58967da1fcd18328ce79f",
-    "content/world/placements/region-z15-x129-y123.b3": "e6d57673d1b3700753a1846103ec154ed68819965e8414c467f2fa776789b0f1",
+    "content/world/placements/region-z15-x129-y123.b3": "b0db1844f78d0efc039b13c98cab061dd35b447ee5036b7b0f1cd3e8e6ae4039",
     "content/world/terrain/terrain-00000-00499.json": "d54273ee59a6703392a27ecc0ea0778961b66a2abdcba52167beb7548badfd21",
     "content/world/terrain/terrain-00500-00999.json": "21dff9929f9e287eb070ac7b2c6666c4e3fb2002614dee22707daad6d0be033d",
     "content/world/terrain/terrain-01000-01499.json": "f2c02951b6e217960127adac3e99f7a2835d8220cdec5e3149be7f4ec5cb111b",
@@ -751,5 +87,669 @@
     "content/world/terrain/terrain-08613-08613.json": "aefdac30e8f0a33bbb52acd1d4e160b33c7f40ce9d8d447496ba95d525b182aa",
     "content/world/terrain/terrain-08614-08668.json": "dfd54e670a7de3eb8b5a444df9c8efc15faf8ddafadab761347338d80141f820",
     "content/world/terrain/terrain-08614-08692.json": "aee31f886f134c8dd308e06cccaee0960fd570c4b5bfd2af95327e660ce04562"
-  }
+  },
+  "rooms": [
+    {
+      "boss_id": 1,
+      "bounds": [
+        32608,
+        32722,
+        32618,
+        32732,
+        8
+      ],
+      "connected_tiles": 62,
+      "donor_bounds": [
+        32608,
+        32722,
+        32618,
+        32732,
+        8
+      ],
+      "name": "Snapper",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:2"
+    },
+    {
+      "boss_id": 2,
+      "bounds": [
+        32810,
+        32702,
+        32822,
+        32712,
+        8
+      ],
+      "connected_tiles": 90,
+      "donor_bounds": [
+        32810,
+        32702,
+        32822,
+        32712,
+        8
+      ],
+      "name": "Hide",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:13"
+    },
+    {
+      "boss_id": 3,
+      "bounds": [
+        32707,
+        32711,
+        32725,
+        32737,
+        8
+      ],
+      "connected_tiles": 265,
+      "donor_bounds": [
+        32707,
+        32711,
+        32725,
+        32737,
+        8
+      ],
+      "name": "Deathbine",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:24"
+    },
+    {
+      "boss_id": 4,
+      "bounds": [
+        32096,
+        31123,
+        32106,
+        31135,
+        2
+      ],
+      "connected_tiles": 95,
+      "donor_bounds": [
+        32096,
+        31123,
+        32106,
+        31135,
+        2
+      ],
+      "name": "Bloodtusk",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:35"
+    },
+    {
+      "boss_id": 5,
+      "bounds": [
+        32150,
+        31129,
+        32160,
+        31143,
+        3
+      ],
+      "connected_tiles": 83,
+      "donor_bounds": [
+        32150,
+        31129,
+        32160,
+        31143,
+        3
+      ],
+      "name": "Shardhead",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:46"
+    },
+    {
+      "boss_id": 6,
+      "bounds": [
+        32755,
+        31250,
+        32763,
+        31258,
+        9
+      ],
+      "connected_tiles": 64,
+      "donor_bounds": [
+        32755,
+        31250,
+        32763,
+        31258,
+        9
+      ],
+      "name": "Esmeralda",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:57"
+    },
+    {
+      "boss_id": 7,
+      "bounds": [
+        33097,
+        32776,
+        33127,
+        32802,
+        11
+      ],
+      "connected_tiles": 287,
+      "donor_bounds": [
+        33097,
+        32776,
+        33127,
+        32802,
+        11
+      ],
+      "name": "Fleshcrawler",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:68"
+    },
+    {
+      "boss_id": 8,
+      "bounds": [
+        33002,
+        32796,
+        33022,
+        32814,
+        13
+      ],
+      "connected_tiles": 325,
+      "donor_bounds": [
+        33002,
+        32796,
+        33022,
+        32814,
+        13
+      ],
+      "name": "Ribstride",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:79"
+    },
+    {
+      "boss_id": 9,
+      "bounds": [
+        32011,
+        31021,
+        32034,
+        31044,
+        8
+      ],
+      "connected_tiles": 264,
+      "donor_bounds": [
+        32012,
+        31022,
+        32034,
+        31044,
+        8
+      ],
+      "name": "Bloodweb",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:90"
+    },
+    {
+      "boss_id": 10,
+      "bounds": [
+        32077,
+        32775,
+        32089,
+        32787,
+        13
+      ],
+      "connected_tiles": 82,
+      "donor_bounds": [
+        32077,
+        32775,
+        32089,
+        32787,
+        13
+      ],
+      "name": "Thul",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:101"
+    },
+    {
+      "boss_id": 11,
+      "bounds": [
+        32796,
+        32271,
+        32806,
+        32286,
+        8
+      ],
+      "connected_tiles": 70,
+      "donor_bounds": [
+        32796,
+        32271,
+        32806,
+        32281,
+        8
+      ],
+      "name": "Old Widow",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:112"
+    },
+    {
+      "boss_id": 12,
+      "bounds": [
+        32997,
+        31438,
+        33015,
+        31453,
+        8
+      ],
+      "connected_tiles": 169,
+      "donor_bounds": [
+        32997,
+        31438,
+        33015,
+        31452,
+        8
+      ],
+      "name": "Hemming",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:123"
+    },
+    {
+      "boss_id": 13,
+      "bounds": [
+        32040,
+        31250,
+        32062,
+        31278,
+        11
+      ],
+      "connected_tiles": 284,
+      "donor_bounds": [
+        32040,
+        31250,
+        32062,
+        31278,
+        11
+      ],
+      "name": "Tormentor",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:134"
+    },
+    {
+      "boss_id": 14,
+      "bounds": [
+        32933,
+        31050,
+        32955,
+        31070,
+        8
+      ],
+      "connected_tiles": 277,
+      "donor_bounds": [
+        32933,
+        31050,
+        32955,
+        31070,
+        8
+      ],
+      "name": "Flameborn",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:145"
+    },
+    {
+      "boss_id": 15,
+      "bounds": [
+        32989,
+        31171,
+        33017,
+        31183,
+        7
+      ],
+      "connected_tiles": 218,
+      "donor_bounds": [
+        32989,
+        31171,
+        33017,
+        31183,
+        7
+      ],
+      "name": "Fazzrah",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:156"
+    },
+    {
+      "boss_id": 16,
+      "bounds": [
+        33102,
+        31170,
+        33124,
+        31206,
+        8
+      ],
+      "connected_tiles": 288,
+      "donor_bounds": [
+        33102,
+        31170,
+        33124,
+        31206,
+        8
+      ],
+      "name": "Tromphonyte",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:167"
+    },
+    {
+      "boss_id": 17,
+      "bounds": [
+        33264,
+        31028,
+        33286,
+        31051,
+        9
+      ],
+      "connected_tiles": 226,
+      "donor_bounds": [
+        33077,
+        31001,
+        33099,
+        31023,
+        8
+      ],
+      "name": "Sulphur Scuttler",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:178"
+    },
+    {
+      "boss_id": 18,
+      "bounds": [
+        33229,
+        31004,
+        33273,
+        31027,
+        2
+      ],
+      "connected_tiles": 504,
+      "donor_bounds": [
+        33229,
+        31005,
+        33273,
+        31027,
+        2
+      ],
+      "name": "Bruise Payne",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:189"
+    },
+    {
+      "boss_id": 19,
+      "bounds": [
+        32916,
+        32892,
+        32926,
+        32904,
+        8
+      ],
+      "connected_tiles": 124,
+      "donor_bounds": [
+        32916,
+        32892,
+        32926,
+        32904,
+        8
+      ],
+      "name": "Many",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:200"
+    },
+    {
+      "boss_id": 20,
+      "bounds": [
+        32838,
+        32665,
+        32848,
+        32675,
+        11
+      ],
+      "connected_tiles": 93,
+      "donor_bounds": [
+        32838,
+        32665,
+        32848,
+        32675,
+        11
+      ],
+      "name": "Noxious Spawn",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:211"
+    },
+    {
+      "boss_id": 21,
+      "bounds": [
+        32750,
+        32430,
+        32768,
+        32450,
+        11
+      ],
+      "connected_tiles": 183,
+      "donor_bounds": [
+        32750,
+        32430,
+        32768,
+        32450,
+        11
+      ],
+      "name": "Gorgo",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:222"
+    },
+    {
+      "boss_id": 22,
+      "bounds": [
+        33254,
+        31693,
+        33265,
+        31707,
+        15
+      ],
+      "connected_tiles": 110,
+      "donor_bounds": [
+        33254,
+        31663,
+        33264,
+        31677,
+        15
+      ],
+      "name": "Stonecracker",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:233"
+    },
+    {
+      "boss_id": 23,
+      "bounds": [
+        31901,
+        31065,
+        31917,
+        31079,
+        10
+      ],
+      "connected_tiles": 150,
+      "donor_bounds": [
+        31901,
+        31065,
+        31917,
+        31079,
+        10
+      ],
+      "name": "Leviathan",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:244"
+    },
+    {
+      "boss_id": 24,
+      "bounds": [
+        32030,
+        32556,
+        32052,
+        32582,
+        15
+      ],
+      "connected_tiles": 475,
+      "donor_bounds": [
+        32030,
+        32556,
+        32052,
+        32582,
+        15
+      ],
+      "name": "Kerberos",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:255"
+    },
+    {
+      "boss_id": 25,
+      "bounds": [
+        33077,
+        31001,
+        33099,
+        31023,
+        8
+      ],
+      "connected_tiles": 159,
+      "donor_bounds": [
+        33077,
+        31001,
+        33099,
+        31023,
+        8
+      ],
+      "name": "Ethershreck",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:266"
+    },
+    {
+      "boss_id": 26,
+      "bounds": [
+        33068,
+        31104,
+        33084,
+        31116,
+        1
+      ],
+      "connected_tiles": 169,
+      "donor_bounds": [
+        33068,
+        31104,
+        33084,
+        31116,
+        1
+      ],
+      "name": "Paiz the Pauperizer",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:277"
+    },
+    {
+      "boss_id": 27,
+      "bounds": [
+        31958,
+        31167,
+        31988,
+        31187,
+        10
+      ],
+      "connected_tiles": 273,
+      "donor_bounds": [
+        31958,
+        31167,
+        31988,
+        31187,
+        10
+      ],
+      "name": "Bretzecutioner",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:288"
+    },
+    {
+      "boss_id": 28,
+      "bounds": [
+        33064,
+        31039,
+        33090,
+        31060,
+        12
+      ],
+      "connected_tiles": 313,
+      "donor_bounds": [
+        33064,
+        31040,
+        33090,
+        31060,
+        12
+      ],
+      "name": "Zanakeph",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:299"
+    },
+    {
+      "boss_id": 29,
+      "bounds": [
+        32881,
+        32578,
+        32892,
+        32588,
+        4
+      ],
+      "connected_tiles": 63,
+      "donor_bounds": [
+        32740,
+        32286,
+        32756,
+        32300,
+        10
+      ],
+      "name": "tiquandas revenge",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:310"
+    },
+    {
+      "boss_id": 30,
+      "bounds": [
+        32740,
+        32286,
+        32756,
+        32299,
+        10
+      ],
+      "connected_tiles": 162,
+      "donor_bounds": [
+        32881,
+        32578,
+        32893,
+        32588,
+        4
+      ],
+      "name": "demodras",
+      "qualified": true,
+      "reason": null,
+      "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:321"
+    }
+  ],
+  "schema": "OTERYN_GRIZZLY_BOSS_ROOMS/v1",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8"
 }

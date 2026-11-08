@@ -90,6 +90,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
@@ -490,6 +491,17 @@ def repin_rust_inventory() -> None:
     if count != 1:
         raise SystemExit(f"{npc_test.name}: source_tree_digest pin not found")
     npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
+    # Client map loading pins the same index that the canonical World tooling writes.
+    client = ROOT / "crates/client-assets/src/world.rs"
+    placement_digest = hashlib.sha256((WORLD / "placements/index.json").read_bytes()).hexdigest()
+    client_text, count = re.subn(
+        r'(pub const PLACEMENT_INDEX_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+        lambda match: match.group(1) + placement_digest + match.group(2),
+        client.read_text(encoding="utf-8"),
+    )
+    if count != 1:
+        raise SystemExit("client World placement index pin not found")
+    client.write_text(client_text, encoding="utf-8", newline="\n")
 
 
 def unresolved_worktree_paths() -> list[str]:
@@ -559,12 +571,14 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])
     refresh_quest_callback_proof()
     # Source-backed field regeneration uses the same explicit source root as its tests.
     # Without local donor checkouts the committed, pinned source catalogue is retained.
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
+    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     materialize_world()
     import questpc7_thaian_authoring
     questpc7_thaian_authoring.install(ROOT)

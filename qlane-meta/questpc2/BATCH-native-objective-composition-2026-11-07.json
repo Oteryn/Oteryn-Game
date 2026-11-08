@@ -1,0 +1,50 @@
+{
+  "batch_id": "native-objective-composition-2026-11-07",
+  "state": "GREEN_COMPOSITION_SLICE",
+  "lifecycle": "AUTHORING",
+  "base_sha": "f7aec7289",
+  "scope": "Compose same-death, same-quest native goals and existing objectives in one bounded Character revision receipt; not whole Elvenbane qualification.",
+  "red": {
+    "postgres_version": 180006,
+    "seconds": 73.89,
+    "error": "Unavailable(CommitRejected): quest receipt is not at the current Character root revision",
+    "guard_evidence": "0056 receipt unique original/committed Character revision; deferred receipt guard requires current root."
+  },
+  "green": {
+    "postgres_version": 180006,
+    "atomic_seconds": 78.1,
+    "atomic_marker_ms": 171,
+    "authority_seconds": 4.61,
+    "authority_marker_ms": 4599,
+    "defender_cases": 2,
+    "defenders_seconds": 82.78,
+    "check_seconds": 37.12,
+    "clippy_seconds": 42.4,
+    "check_scope": "durability+dispatch",
+    "clippy_scope": "all-targets all-features -D warnings",
+    "fmt": "PASS",
+    "focused_pg_cases": 4
+  },
+  "logs": {
+    "atomic": "/tmp/questpc2-native-batch-composition-green-pg.log",
+    "authority": "/tmp/questpc2-native-batch-authority-green-pg.log",
+    "defenders": "/tmp/questpc2-native-batch-defenders-green-pg.log",
+    "check": "/tmp/questpc2-native-batch-composition-check.log",
+    "clippy": "/tmp/questpc2-native-batch-composition-clippy.log",
+    "fmt": "/tmp/questpc2-native-batch-composition-fmt.log",
+    "red": "/tmp/questpc2-native-batch-counter-red-pg.log"
+  },
+  "implementation": [
+    "Sort and bind every closed captured component and sealed native death/origin proof. Same quest/death/principal, current session/lease, fresh XP audit and catalogue pin/hash remain required.",
+    "Evaluate every component under the same sorted locked track snapshot; merge compatible effects within existing eight-effect bound, refuse conflicting writes. One Quest receipt and one Character revision commit with XP.",
+    "Single-component request binding remains unchanged. Composite binding seals the exact component list and all source proofs.",
+    "Generic Command/arbitrary CreatureDeath causes remain refused; no SQL guard or migration changed."
+  ],
+  "test_refinement": "Retain every original objective receipt, phase and replay assertion. New exact-origin proof asserts actual counter1 and same XP xmin, rather than incorrectly require a second receipt prohibited by the existing schema. Refined case ran PG RED73.89s before this implementation, GREEN78.10s after.",
+  "self_review": "Reviewed capture principal/session/lease, proof/source binding, ordered row locks, fresh-audit authorization, component compatibility, eight-effect cap, single revision persistence and replay. No ignored/weakened original tests, full suites, content/pin edits or readiness claim.",
+  "next": [
+    "Add focused stale-captured eligibility/retry PostgreSQL proof and close any terminal replay gap without granting capped progress.",
+    "Activate exact goal cohort from earned actual basement landing; source-wire six-defender combat, atomic seven-item treasure/replay and source exit/journal.",
+    "Continue remaining27 owned unfinished entries; no final while scope remains."
+  ]
+}

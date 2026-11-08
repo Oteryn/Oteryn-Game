@@ -1,0 +1,14 @@
+{
+  "id": 371,
+  "name": "DIAGONAL_MOVEMENT_V1",
+  "owner_decision": "questpc2 owner shared-engine authorization 2026-11-07; source eight-neighbour movement required by Desert Dungeon source stations",
+  "owner": "current ChannelRuntime Movement owner",
+  "requires": [],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only. Extends command1 intent with NE=5,SE=6,SW=7,NW=8. Without selection those values fail closed. One source destination proof, target collision/PZ/floor/lease checks retained. Three rounded cardinal durations per diagonal. With capability13, maximum receipt333450ms; legacy13 maximum111150 unchanged. State/entity facing remains NORTH..WEST.",
+  "extends_core_commands": [
+    1
+  ]
+}

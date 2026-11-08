@@ -424,7 +424,7 @@ world_change: None,
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,
-                selector: Selector {
+                selector: Selector { position_aliases: Vec::new(),
                     native: None,
                     position: Some(position(trigger)),
                     unique: None,

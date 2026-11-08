@@ -1,0 +1,82 @@
+{
+  "content/content.lock.json": {
+    "changed_paths": [
+      "/spell_import/collections/Item/0/record_count",
+      "/spell_import/collections/Item/0/sha256"
+    ]
+  },
+  "content/encounters/raids/catalogue.json": {
+    "changed_paths": [
+      "/records/35/donor_cycle/areas/3/area/regions/0/sha256",
+      "/records/105/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/115/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/140/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/165/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/165/variants/0/waves/1/entries/0/area/regions/0/sha256",
+      "/records/211/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/211/variants/0/waves/1/entries/0/area/regions/0/sha256",
+      "/records/211/variants/0/waves/2/entries/0/area/regions/0/sha256",
+      "/records/212/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/220/variants/0/waves/0/entries/0/area/regions/0/sha256",
+      "/records/225/variants/0/waves/0/entries/0/area/regions/1/sha256"
+    ]
+  },
+  "content/encounters/raids/index.json": {
+    "changed_paths": [
+      "/catalogue_sha256"
+    ]
+  },
+  "content/interactions/reward_claims/reward-claim-variants-00000-00099.json": {
+    "changed_paths": [
+      "/records/18/definition/native_contents/placements/0/contents",
+      "/records/18/definition/placements/0/reward/items"
+    ]
+  },
+  "content/items/definitions/spell-native-profiles.json": {
+    "changed_paths": [
+      "/records"
+    ]
+  },
+  "content/items/index.json": {
+    "changed_paths": [
+      "/spell_imports/0/record_count",
+      "/spell_imports/0/sha256"
+    ]
+  },
+  "content/manifest.json": {
+    "changed_paths": [
+      "/spell_import/collections/Item/0/record_count",
+      "/spell_import/collections/Item/0/sha256"
+    ]
+  },
+  "content/spells.manifest.json": {
+    "changed_paths": [
+      "/item_profiles/sha256"
+    ]
+  },
+  "content/world/pins/oteryn.json": {
+    "changed_paths": [
+      "/digest"
+    ]
+  },
+  "content/world/placements/index.json": {
+    "changed_paths": [
+      "/regions/532/sha256",
+      "/regions/562/sha256",
+      "/regions/620/sha256",
+      "/regions/628/sha256",
+      "/regions/639/sha256",
+      "/regions/724/sha256",
+      "/regions/725/sha256",
+      "/regions/734/sha256",
+      "/regions/793/sha256",
+      "/regions/867/sha256",
+      "/regions/890/sha256",
+      "/regions/901/sha256",
+      "/regions/943/sha256",
+      "/regions/1152/sha256",
+      "/regions/1176/sha256",
+      "/source"
+    ]
+  }
+}

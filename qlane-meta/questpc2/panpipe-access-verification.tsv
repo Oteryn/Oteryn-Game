@@ -1,0 +1,15 @@
+panpipe-access-clippy	PASS
+panpipe-access-bag-regression	PASS
+panpipe-access-naginata-regression	PASS
+panpipe-access-selectors	PASS
+panpipe-access-bindings	PASS
+panpipe-access-world-facts	PASS
+panpipe-access-content-claims	PASS
+panpipe-access-npc-dialogue	PASS
+panpipe-access-oriental-regression	PASS
+panpipe-access-server-content	PASS
+panpipe-access-server-world	PASS
+panpipe-access-pin-check	PASS
+panpipe-access-final-fmt	PASS
+panpipe-access-fixture-fmt	PASS
+panpipe-access-final-whitespace	PASS

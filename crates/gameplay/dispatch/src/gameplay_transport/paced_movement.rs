@@ -51,6 +51,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
         };
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot

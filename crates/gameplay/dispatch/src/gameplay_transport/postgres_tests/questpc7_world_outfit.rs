@@ -124,6 +124,7 @@ pub(super) async fn exercise(
         let expected = runtime.read_actor_position(actor).map_err(debug)?;
         let map = owner.bundle_map().ok_or("map")?;
         crate::durability::quest_world_callback::QuestWorldContext {
+            party: Vec::new(),
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
             content_revision: format!(
                 "sha256:{}",
@@ -169,16 +170,16 @@ pub(super) async fn exercise(
     );
     let denied = slot
         .commit_world_callback(
-owner.root,
-owner.character,
-owner.holder,
-fence,
-request,
-owner.quest_catalogue.clone().ok_or("catalogue")?,
-&permit,
-context,
-None,
-)
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            request,
+            owner.quest_catalogue.clone().ok_or("catalogue")?,
+            &permit,
+            context,
+            None,
+        )
         .await
         .map_err(debug)?;
     assert!(

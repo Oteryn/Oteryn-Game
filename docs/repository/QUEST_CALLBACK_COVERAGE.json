@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 172,
+    "dispatch_pg_qualified": 189,
     "not_playable": 2,
-    "supported_unqualified": 162
+    "supported_unqualified": 145
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -4814,8 +4814,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_naginata_use_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/naginata_quest"
@@ -4880,8 +4880,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_nightmare_teddy_use_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/nightmare_teddy_quest"
@@ -4913,8 +4913,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_noble_armor_use_once_and_replay",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.noblearmor2",
@@ -4941,8 +4941,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_noble_armor_crown_helmet_use_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/noble_armor_quest"
@@ -4974,8 +4974,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.orcfortress2",
@@ -5002,8 +5002,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.orcfortress3",
@@ -5030,8 +5030,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/orc_fortress_quest"
@@ -5063,8 +5063,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_orc_shaman_bag_exact_contents",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/orc_shaman_quest"
@@ -5190,8 +5190,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_panpipe_bag_exact_contents",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.quest.key.id4055",
@@ -5218,8 +5218,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_panpipe_key_4055_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/panpipe_quest"
@@ -5251,8 +5251,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_two_parchment_room_key_bag",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/parchment_room_quest"
@@ -5284,8 +5284,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_plate_armor_coffin_once_and_replay",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/plate_armor_quest"
@@ -5304,21 +5304,23 @@
               "sources": [
                 {
                   "citation": "canary:data-otservbr-global/startup/tables/chest.lua:790",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "canary",
                   "unique_id": 6068
                 },
                 {
+                  "accepted_override": "Target Wiki2026-11-06 and both donor comments: two quantity1 daggers; retain numeric donor one in source_variant",
                   "citation": "crystal:data-global/startup/tables/chest.lua:1089",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6068
                 }
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay",
+          "status": "dispatch_pg_qualified",
+          "target_correction": "Target Wiki2026-11-06 and both donor comments specify two daggers. The native recipe mints two distinct quantity1 instances; source_variant preserves the donor numeric recipe of one."
         }
       ],
       "quest": "canary:quest/poison_daggers_quest"
@@ -5350,8 +5352,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.powerbolt2",
@@ -5379,7 +5381,7 @@
             }
           ],
           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
-          "reason": "quest_container_chests_leaf_text_is_frozen_and_replayed",
+          "reason": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
           "status": "dispatch_pg_qualified"
         }
       ],
@@ -5506,8 +5508,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.purpletome2",
@@ -5534,8 +5536,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.purpletome3",
@@ -5562,8 +5564,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/purple_tome_quest"

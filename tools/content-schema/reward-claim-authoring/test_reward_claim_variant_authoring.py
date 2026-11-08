@@ -148,6 +148,22 @@ class CanonicalVariantTests(unittest.TestCase):
         self.assertEqual(len(errors), 27)
         # Combined ITEMHOLD-Q and QUESTPC4 admissions retain the same source witnesses.
         self.assertEqual(len(self.records), 105)
+        admitted = {r['definition']['identity']['key']: r['definition']['native_contents']
+                    for r in self.records if 'native_contents' in r['definition']}
+        self.assertEqual(len(admitted), 78)
+        for key, uid, root, items in (
+                ('desert2', 6158, 2857, [3084, 3098, 3046, 3077]),
+                ('draconia1', 6023, 2853, [3284, 3297])):
+            contents = admitted['oteryn:reward-claim.kv.' + key]
+            self.assertEqual(contents['source_sha256'],
+                             'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757')
+            self.assertEqual(len(contents['placements']), 1)
+            placement = contents['placements'][0]
+            self.assertEqual((placement['unique_id'], placement['capacity']), (uid, 8))
+            self.assertEqual(placement['root']['key'], f'oteryn:item.tibia.i{root}')
+            self.assertEqual([(r['item']['key'], r['count']) for r in placement['contents']],
+                             [(f'oteryn:item.tibia.i{i}', 1) for i in items])
+
         self.assertTrue(all(e['code'] == 'REWARD_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED' and e['pending'] for e in errors))
 
     def test_committed_family_reproduces_with_separate_holds(self):

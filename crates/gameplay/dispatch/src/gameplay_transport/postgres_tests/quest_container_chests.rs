@@ -1,7 +1,7 @@
 //! Pinned source selectors -> literal USE -> existing once-claim owner -> full
 //! container custody, key/achievement facts, replay and atomic refusal.
 use super::fixture::{Harness, debug, id, run};
-use super::quest_callbacks::{source_world, source_world_choices, wire_use_targets, wire_uses};
+use super::quest_callbacks::{source_world, wire_use_targets, wire_uses};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -17,6 +17,8 @@ enum Case {
     Bear,
     Key,
     Choice,
+    ChoiceDoor,
+    ChoiceCaptured,
     Text,
     RootText,
     CrystalKey,
@@ -54,6 +56,16 @@ fn quest_container_chests_key_attributes_are_atomic() -> TestResult {
 #[test]
 fn quest_container_chests_annihilator_choices_share_storage_and_achievement() -> TestResult {
     execute(Case::Choice, "W15B_STORAGE_CHOICE")
+}
+#[test]
+fn annihilator_reward_door_tracks_the_real_shared_claim() -> TestResult {
+    assert!(std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some());
+    execute(Case::ChoiceDoor, "ANNIHILATOR_REWARD_DOOR")
+}
+#[test]
+fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
+    assert!(std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some());
+    execute(Case::ChoiceCaptured, "ANNIHILATOR_CAPTURED_CHESTS")
 }
 #[test]
 fn quest_container_chests_authored_book_text_survives_replay() -> TestResult {
@@ -186,7 +198,7 @@ fn scenario_case(
                 ("oteryn:item.tibia.i3598", 27, 0),
             ],
         ),
-        Case::Choice => (
+        Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured => (
             "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
             (33233, 31656, -13),
             6088,
@@ -226,6 +238,29 @@ fn scenario_case(
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        if matches!(case, Case::ChoiceDoor) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&harness.pool)
+                .await?;
+            println!("ANNIHILATOR_REWARD_DOOR POSTGRES_CASE_OBSERVED server_version_num={version}");
+            assert!(
+                oteryn_gameplay_quests::quest::world_callbacks::load()?
+                    .iter()
+                    .any(|row| row.key == "oteryn:quest-callback/annihilator-reward-door"),
+                "source reward door callback missing"
+            );
+        }
+        let captured_choices = if matches!(case, Case::ChoiceCaptured) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&harness.pool)
+                .await?;
+            println!(
+                "ANNIHILATOR_CAPTURED_CHESTS POSTGRES_CASE_OBSERVED server_version_num={version}"
+            );
+            Some(super::annihilator_door::captured_chest_selectors()?)
+        } else {
+            None
+        };
         let mut deps = Dependencies::new()?;
         let owned_activation;
         let (controller, activated_pin) = if let Some(activation) = activation {
@@ -239,11 +274,17 @@ fn scenario_case(
         };
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Case::Choice) {
-            source_world_choices(
+        let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+            super::quest_callbacks::source_world_choices_with_door(
                 chest,
-                &[(33227, 6085), (33229, 6086), (33231, 6087), (33233, 6088)],
+                captured_choices.as_deref().unwrap_or(&[
+                    (33227, 6085),
+                    (33229, 6086),
+                    (33231, 6087),
+                    (33233, 6088),
+                ]),
                 2472,
+                matches!(case, Case::ChoiceDoor).then_some(native),
             )?
         } else if let Some(chest) = catalogue {
             super::quest_catalogue_chests::catalogue_source_world(chest)?
@@ -269,7 +310,11 @@ fn scenario_case(
             "source namespace must match the native World binder"
         );
         let cells = world
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(if matches!(case, Case::ChoiceDoor) {
+                activated_pin.qualified_room().movement_cells()
+            } else {
+                deps.room.movement_cells()
+            })
             .map_err(debug)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
@@ -304,7 +349,7 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - 1,
+                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
                     y: i32::from(chest.1),
                     floor: -i16::from(chest.2),
                 },
@@ -361,6 +406,37 @@ fn scenario_case(
             })
         };
         let target = target_at(chest.0)?;
+        if matches!(case, Case::ChoiceDoor) {
+            {
+                let mut owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(generation);
+                owner.movement_cells = (&cells).into();
+                owner.admit_progression_session(&mut admitted).await;
+                deps.initialize(&owner).await;
+                let key =
+                    oteryn_world_bundle::bundle::placement_key(chest.2, chest.0 - 1, chest.1, 1)
+                        .ok_or("door")?;
+                super::annihilator_door::exercise(&owner, &mut admitted, deps.actor, &target, key)
+                    .await?;
+                let bag = harness
+                    .root
+                    .read_character_backpack(&authority, fence.character_id)
+                    .await
+                    .map_err(debug)?
+                    .ok_or("backpack")?;
+                assert_eq!(bag.entries.len(), 1);
+                assert_eq!(bag.entries[0].item.definition.production_key, root_key);
+                let counts: (i64, i64, i64) = sqlx::query_as("SELECT \
+                    (SELECT count(*) FROM game_reward_claims WHERE claim_production_key=$1), \
+                    (SELECT count(*) FROM game_item_nested_entries), \
+                    (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/annihilator')")
+                    .bind(claim).fetch_one(&harness.pool).await?;
+                assert_eq!(counts, (1, 1, 1));
+            }
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
@@ -456,7 +532,7 @@ fn scenario_case(
             };
             for (index, (item, quantity)) in burdens.into_iter().enumerate() {
                 let request = RewardClaimMintRequest {
-        backpack_outputs: false,
+                    backpack_outputs: false,
                     command: CommandRef::new(
                         admitted.game_session_id,
                         CommandId::new(100 + u64::try_from(index)?).map_err(debug)?,
@@ -553,11 +629,12 @@ fn scenario_case(
                 .bind(claim).fetch_one(&harness.pool).await?;
             assert_eq!(counts, (0, 0), "unbound donor UID must mint nothing");
         } else {
-            let alternate = if matches!(case, Case::Choice) {
-                target_at(33231)?
-            } else {
-                target.clone()
-            };
+            let alternate =
+                if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+                    target_at(33231)?
+                } else {
+                    target.clone()
+                };
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
@@ -632,7 +709,12 @@ fn scenario_case(
                     let mut expected_texts = chest.texts.clone();
                     expected_texts.sort();
                     assert_eq!(texts, expected_texts, "complete source text plan");
-                    super::quest_catalogue_chests::assert_charges(&harness.pool, root.item_instance_id, chest).await?;
+                    super::quest_catalogue_chests::assert_charges(
+                        &harness.pool,
+                        root.item_instance_id,
+                        chest,
+                    )
+                    .await?;
                     let fluids: Vec<(String, i32)> = sqlx::query_as("SELECT i.definition_production_key,f.fluid_subtype::integer FROM game_item_fluid_states f JOIN game_item_instances i USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid OR i.item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) ORDER BY i.definition_production_key")
                         .bind(root.item_instance_id.as_slice()).fetch_all(&harness.pool).await?;
                     let mut expected_fluids = chest.fluids.clone();
@@ -653,7 +735,9 @@ fn scenario_case(
                         ("oteryn:item.tibia.i3284", 1),
                     ] {
                         if chest.charges.iter().any(|(partial, _)| partial == key)
-                            || (root_key != key && !expected.iter().any(|(child, _, _)| *child == key)) {
+                            || (root_key != key
+                                && !expected.iter().any(|(child, _, _)| *child == key))
+                        {
                             continue;
                         }
                         use crate::content::ReferenceItemField::Known;
@@ -769,7 +853,7 @@ fn scenario_case(
             assert_eq!(
                 achievements,
                 i64::from(
-                    matches!(case, Case::Choice)
+                    matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured)
                         || catalogue.is_some_and(|chest| chest.achievement)
                 )
             );

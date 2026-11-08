@@ -161,6 +161,22 @@ pub(super) async fn walk(
             StepDirection::West => expected.x -= 1,
             StepDirection::South => expected.y += 1,
             StepDirection::North => expected.y -= 1,
+            StepDirection::NorthEast => {
+                expected.x += 1;
+                expected.y -= 1;
+            }
+            StepDirection::SouthEast => {
+                expected.x += 1;
+                expected.y += 1;
+            }
+            StepDirection::SouthWest => {
+                expected.x -= 1;
+                expected.y += 1;
+            }
+            StepDirection::NorthWest => {
+                expected.x -= 1;
+                expected.y -= 1;
+            }
         }
         step(owner, a, d).await?;
         // Every passage displacement, including a short same-floor teleport,

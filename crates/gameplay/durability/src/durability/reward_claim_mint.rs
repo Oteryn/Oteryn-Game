@@ -120,6 +120,7 @@ pub mod boss_reward;
 mod charges;
 mod contents;
 mod fluid;
+mod claimed;
 pub mod falcon;
 pub(in crate::durability) mod fathers_burden;
 mod grizzly;

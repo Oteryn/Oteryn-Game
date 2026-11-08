@@ -1,0 +1,13 @@
+apps/game-server/migrations/1242_seymour_present_exchange.sql
+crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/npc_item_exchanges.rs
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs
+crates/gameplay/durability/src/durability/npc_trade.rs
+crates/gameplay/durability/src/durability/npc_trade/grizzly.rs
+crates/gameplay/durability/src/durability/npc_trade/pick_exchange.rs
+crates/gameplay/durability/src/durability/npc_trade/present_exchange.rs
+crates/gameplay/durability/src/durability/npc_trade/tests.rs
+crates/gameplay/durability/src/durability/npc_trade_audit.rs
+crates/gameplay/durability/src/durability/npc_trade_audit/pick_exchange.rs
+crates/gameplay/npc/src/npc_talk.rs

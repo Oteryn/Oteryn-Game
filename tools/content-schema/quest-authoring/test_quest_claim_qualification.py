@@ -29,9 +29,27 @@ class QualificationTests(unittest.TestCase):
     def test_checked_in_ledger_is_valid(self):
         errors, counts = qualification.validate()
         self.assertEqual(errors, [])
-        # 172 source claims have focused dispatch PG proof; only the
+        # 189 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
-        self.assertEqual(sum(counts.values()), 162)
+        self.assertEqual(sum(counts.values()), 145)
+        coverage = qualification.read_json(qualification.COVERAGE)
+        self.assertEqual(coverage['counts'], {
+            'dispatch_pg_qualified': 189, 'not_playable': 2, 'supported_unqualified': 145})
+        self.assertEqual(sum(coverage['counts'].values()), 336)
+        selected = {
+            'oteryn:reward-claim.kv.nightmare_teddy_quest',
+            'oteryn:reward-claim.kv.purpletome1',
+            'oteryn:reward-claim.kv.purpletome2',
+            'oteryn:reward-claim.kv.purpletome3',
+            'oteryn:reward-claim.quest.key.id4055',
+        }
+        claims = {c['claim']: c for q in coverage['quests'] for c in q['chests']}
+        for key in selected:
+            self.assertEqual(claims[key]['status'], 'dispatch_pg_qualified')
+            self.assertTrue(claims[key]['reason'])
+            self.assertTrue(all(source['reward_matches_current_source']
+                                for placement in claims[key]['placements']
+                                for source in placement['sources']))
         ledger = qualification.read_json(qualification.LEDGER)
         for key in qualification.ITEMHOLD_ADMISSIONS:
             self.assertNotIn(key, ledger["claims"])

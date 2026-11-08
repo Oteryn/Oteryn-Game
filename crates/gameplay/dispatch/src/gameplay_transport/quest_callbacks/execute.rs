@@ -33,6 +33,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        if callback.effects.party_transfer.is_some()
+            && self
+                .states
+                .quest_callbacks
+                .records
+                .lock()
+                .map_or(true, |records| {
+                    records.iter().any(|(owner, pending)| {
+                        *owner != session && pending.key == key && !pending.participants.is_empty()
+                    })
+                })
+        {
+            return UseDisposition::Rejected;
+        }
         let (pos, mut after) =
             if oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some() {
                 let Some(source) = shared_added_source(map, callback, key) else {
@@ -63,6 +77,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
+        }
+        if callback.effects.reward_door.is_some() {
+            return self
+                .execute_reward_door(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    fence,
+                    optional_pvp,
+                )
+                .await;
         }
         let close = callback.trigger == Trigger::StepOut
             || callback
@@ -296,6 +326,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 reset_epoch: self.reset_epoch,
                 actor_placement: actor.placement_identity(),
                 movement_revision: expected.revision(),
+                party: Vec::new(),
             };
             let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                 let pending = records.entry(session).or_insert(Pending {
@@ -309,6 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    participants: Vec::new(),
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -426,6 +458,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 reset_epoch: self.reset_epoch,
                 actor_placement: actor.placement_identity(),
                 movement_revision: expected.revision(),
+                party: Vec::new(),
             };
             let context = if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                 let pending = records.entry(session).or_insert(Pending {
@@ -439,6 +472,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    participants: Vec::new(),
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -581,6 +615,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        let party = if let Some(party) = &callback.effects.party_transfer {
+            if after.appearance_id != party.activation_appearance {
+                return if map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    after,
+                    &[],
+                    &[],
+                    close,
+                    None,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::StaleState
+                };
+            }
+            match self.prepare_party_transfer(runtime, states, &closed, callback, session) {
+                Ok(plan) => Some(plan),
+                Err(refusal) => {
+                    // Source toggles before validating the rite. Refusal changes
+                    // only that appearance; no participant or offering changes.
+                    return if map.facts.apply_quest_callback(
+                        key,
+                        expected_revision,
+                        after,
+                        &[],
+                        &[],
+                        close,
+                        None,
+                    ) {
+                        refusal
+                    } else {
+                        UseDisposition::StaleState
+                    };
+                }
+            }
+        } else {
+            None
+        };
+        let party_context = if let Some(plan) = &party {
+            let Some(context) = self.party_context(runtime, plan).await else {
+                return UseDisposition::Rejected;
+            };
+            context
+        } else {
+            Vec::new()
+        };
         let durable = !callback.storage.is_empty()
             && !(close && callback.opening_only)
             && !callback.is_read_only();
@@ -605,6 +686,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 reset_epoch: self.reset_epoch,
                 actor_placement: actor.placement_identity(),
                 movement_revision: expected.revision(),
+                party: party_context,
             };
             let context = if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                 let record = pending.entry(session).or_insert(Pending {
@@ -618,6 +700,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     origin: None,
                     context: None,
                     ingress_settled: false,
+                    participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                 });
                 record.context.get_or_insert(context).clone()
             } else {
@@ -702,12 +785,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {
+                            // A reconciled old receipt must not roll a newer copy back.
+                            if copy.character_revision().is_some_and(|revision|
+                                revision.get() >= committed.committed_character_revision.get()) {
+                                return Some(copy);
+                            }
                             let next = entry.version.checked_add(1)?;
                             if !copy.apply(committed) { return None; }
                             entry.version = next;
                             Some(copy)
                         });
                     }
+                    self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
+                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
@@ -725,9 +815,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         self.states.chat.push_quest_feedback(session, message);
                     }
+                    if party.is_some() {
+                        // The source lever still flips on a missing sacrifice.
+                        map.facts.apply_quest_callback(key, expected_revision, after, &[], &[], close, None);
+                    }
                     return UseDisposition::Rejected;
                 }
             }
+        }
+        if let Some(plan) = party {
+            return self.commit_party_transfer(
+                runtime,
+                states,
+                map,
+                plan,
+                key,
+                expected_revision,
+                after,
+                close,
+                session,
+                optional_pvp,
+            );
         }
         if callback.effects.encounter.is_some() {
             return self.execute_quest_encounter(

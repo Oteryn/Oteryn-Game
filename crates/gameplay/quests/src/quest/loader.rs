@@ -199,6 +199,13 @@ pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
     let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    // Native goals own their zero-based counters before callbacks add read-only guards.
+    lowered.catalogue =
+        super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::kill_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -261,6 +268,7 @@ pub fn load_embedded_quest_state(
         "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
         "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
     );
+    super::native_kill_goals::validate_closed(&lowered.catalogue).map_err(QuestLoadError::Json)?;
     // Authored world programmes lower their tracks from the pinned canonical recipe.
     // Register that evidence after legacy NPC alias compilation, retaining every
     // existing donor storage binding and never presenting a new track as Lua storage.

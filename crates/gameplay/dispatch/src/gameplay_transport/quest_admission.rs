@@ -100,6 +100,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("quest_experience_deferred reason=no_progression_binding");
         }
         self.refresh_grizzly_kill_snapshot(session).await;
+        self.refresh_native_objective_snapshot(session).await;
         if self.refresh_quest_guardians(session).await
             && let Ok(mut sessions) = self.states.quest_sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)

@@ -338,6 +338,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     floor_assembly_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import key_door_item_profiles
     key_door_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import source_gate_item_profiles
+    source_gate_item_profiles.admit(root, generated, spell_import.canonical_bytes)
+    import party_rite_item_profiles
+    party_rite_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import tool_item_profiles
     tool_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import forge_creature_profiles
@@ -463,6 +467,20 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     # Carry the exact explicit-empty Lua witness into the frozen native provider too.
     import primal_reference_overlay
     primal_reference_overlay.apply_native(root, generated, NATIVE_MANIFEST, spell_import.canonical_bytes)
+    # A known shield in the first hand must not hide the equipped melee weapon.
+    # Complete only unknown kinds from agreeing admitted taxonomy and pinned XML.
+    import hand_weapon_kinds
+    hand_weapon_kinds.apply_native(root, generated, spell_import.canonical_bytes)
+    import sys
+    sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
+    import native_goal_corpse_items
+    native_goal_corpse_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import native_goal_loot_items
+    native_goal_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc2_soul_loot_items
+    questpc2_soul_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import questpc2_rotten_loot_items
+    questpc2_rotten_loot_items.admit_native(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
     from bind_monster_source_definitions import bind_definitions

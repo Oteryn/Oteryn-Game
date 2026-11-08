@@ -1,0 +1,524 @@
+{
+  "state": "GREEN",
+  "lane": "questpc2",
+  "published_base_sha": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+  "engine_reuse_sha": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e",
+  "qualification_scope": "Generic native Instance physical-corpse mechanism; not whole-quest qualification. Whole L3 counts unchanged.",
+  "implementation": [
+    "Scope-discriminated full death cause and forward migration1024; legacy Channel key/wire preservation.",
+    "Exact scope permits, current assignment/node fence, corpse cap and Ground/corpse-parent custody.",
+    "Closed death provenance, Ground and EventEnvelope namespace; no origin-Channel substitution.",
+    "Current-owner runtime corpse binding, exact retained-death scope/generation, idempotency and conflict protection.",
+    "Independent W03 reward entitlement/collection; no ordinary loot duplicate."
+  ],
+  "postgres_backend": "18.6; shared real-PG harness asserts server_version_num=180006 before migrations.",
+  "proofs": [
+    {
+      "phase": "pre-merge RED",
+      "seconds": 96.81,
+      "executed": 1,
+      "failed": 1,
+      "marker": "INSTANCE_CORPSE POSTGRES_CASE_OBSERVED corpse_mints=0",
+      "log": "/tmp/questpc2-instance-corpse-red.log"
+    },
+    {
+      "phase": "merged-tree RED",
+      "seconds": 110.13,
+      "executed": 1,
+      "failed": 1,
+      "marker": "INSTANCE_CORPSE POSTGRES_CASE_OBSERVED corpse_mints=0 elapsed_ms=2",
+      "log": "/tmp/questpc2-instance-corpse-merged-red.log"
+    },
+    {
+      "phase": "intermediate PG failure",
+      "seconds": 108.91,
+      "executed": 1,
+      "failed": 1,
+      "reason": "Tagged Instance parameter incorrectly cast to Channel UUID; repaired predicate extracts UUID before casting.",
+      "log": "/tmp/questpc2-instance-corpse-green-attempt2.log"
+    },
+    {
+      "phase": "database-only GREEN, incomplete mechanism",
+      "seconds": 108.6,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "reason": "Durable scoped MINT/audit/immutability/replay and private reward passed; runtime binding still emitted WrongScope, so not accepted as complete bridge.",
+      "log": "/tmp/questpc2-instance-corpse-green-attempt4.log"
+    },
+    {
+      "phase": "runtime-view RED",
+      "seconds": 108.78,
+      "executed": 1,
+      "failed": 1,
+      "reason": "Database corpse1, runtime visible corpse0.",
+      "log": "/tmp/questpc2-instance-corpse-binding-red.log"
+    },
+    {
+      "phase": "full native GREEN",
+      "seconds": 107.38,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "marker": "INSTANCE_CORPSE POSTGRES_CASE_DURATION elapsed_ms=107374 success=true",
+      "log": "/tmp/questpc2-instance-corpse-binding-green.log"
+    },
+    {
+      "phase": "final full native GREEN after audit-helper refinement",
+      "seconds": 106.898,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "marker": "INSTANCE_CORPSE POSTGRES_CASE_DURATION elapsed_ms=106898 success=true",
+      "log": "/tmp/questpc2-scoped-mint-instance-full-final.log"
+    }
+  ],
+  "non_proof_build_failures": [
+    "No-space build: removed only generated incremental caches for four changed crates, kept normal profiles/settings.",
+    "Test helper fresh-scope constructor returns Result; test helper handles validated typed scope.",
+    "Negative SQL test uses repository AssertSqlSafe wrapper for two fixed test statements.",
+    "Entities standalone unit invocation lacked existing test-support feature; reran with that supported feature,8 corpse-owner tests passed."
+  ],
+  "additional_checks": {
+    "qengine_authoring": {
+      "passed": 15,
+      "seconds": 5.733,
+      "log": "/tmp/questpc2-qengine-authoring-green2.log"
+    },
+    "world_access_bindings": {
+      "passed": 4,
+      "seconds": 0.721,
+      "log": "/tmp/questpc2-engine-world-binding-tests.log"
+    }
+  },
+  "regeneration": {
+    "method": "Repository regenerate_content --resolve; failed stale exact registration count repaired to require42 and the specific new qengine proof file. Reran failed parent and every remaining CHECKS step plus repository pin-refresh.",
+    "registration_test_seconds": 82.172,
+    "starter_kit_history_base": "f304dda7cae995b1ef564e6997ea20fbeeb4d53e",
+    "pin": "f11e3f836b7b742c69126d7a088001b579f3f9c6fd2ca1da5a42621a634dff1a",
+    "logs": [
+      "/tmp/questpc2-qengine-merge-regen.log",
+      "/tmp/questpc2-qengine-registration-green.log",
+      "/tmp/questpc2-qengine-merge-regen-remaining.log",
+      "/tmp/questpc2-qengine-seal-history.log"
+    ]
+  },
+  "allocation": {
+    "migration": 1024,
+    "owner_reserved_range": "1020-1039",
+    "main_sha": "91afbe0ba172181e6d5b2e8f2f0bbdf8775f3726",
+    "log": "/tmp/questpc2-instance-corpse-numbers-final.log"
+  },
+  "validation": [
+    {
+      "name": "queue",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "kill_reward::tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.315,
+      "counts": [
+        [
+          "47",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-queue.log"
+    },
+    {
+      "name": "annihilator-entry",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_annihilator_party_encounter_fail_closed",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 55.283,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "POSTGRES_CASE_COMPLETED annihilator-entry",
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-annihilator-entry.log"
+    },
+    {
+      "name": "npc-reward",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_pirate_outfit",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 93.431,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-pirate",
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-npc-reward.log"
+    },
+    {
+      "name": "channel-native",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 169.436,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "CHANNEL_NATIVE_CORPSE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-channel-native.log"
+    },
+    {
+      "name": "corpse-owner",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-entities",
+        "--features",
+        "test-support",
+        "--lib",
+        "corpse",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 40.446,
+      "counts": [
+        [
+          "8",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-corpse-owner.log"
+    },
+    {
+      "name": "scope-key",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "scoped_death_tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.242,
+      "counts": [
+        [
+          "2",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-scope-key.log"
+    },
+    {
+      "name": "migration-numbers",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "migration_numbers_are_unique_and_match_embedded_migrator",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.237,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-migration-numbers.log"
+    },
+    {
+      "name": "audit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "item_mint_audit::tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.313,
+      "counts": [
+        [
+          "30",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-audit.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 15.429,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 202.202,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-clippy.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.129,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-fmt.log"
+    },
+    {
+      "name": "instance-full-final",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "instance_corpse_postgres_native_scope_mint_audit_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 361.356,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "INSTANCE_CORPSE POSTGRES_CASE_DURATION",
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-instance-full-final.log"
+    },
+    {
+      "name": "endgame-regressions",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "l3_instance_endgame",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 511.993,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_markers": 5,
+      "passed": true,
+      "log": "/tmp/questpc2-scoped-mint-endgame.log"
+    }
+  ],
+  "proof_collection_correction": "Existing Channel test passed in107.48s but emitted no marker; collector rejected the record. Added explicit PG completion/duration marker and reran:1 passed in104.09s, elapsed_ms104093 success=true.",
+  "lint_refinement": "Clippy type_complexity on the audit scope tuple was fixed with a named structure;30 codec tests,10-crate compile check and all-target/all-feature clippy -D warnings pass. No lint was allowed or skipped.",
+  "cache_management": "Only inactive generated incremental caches were removed to stay within disk capacity; normal build settings and compiled artifacts retained.",
+  "endgame_postgres_markers": [
+    "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=1054",
+    "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=269",
+    "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=188",
+    "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_megalomania_green elapsed_ms=170",
+    "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=170"
+  ],
+  "next_source_facts": [
+    {
+      "item": 33867,
+      "capacity": 48,
+      "decay_to": 33866,
+      "duration_seconds": 10,
+      "source": "imports/canary/items-xml/items.xml:63232",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "item": 39530,
+      "capacity": 30,
+      "decay_to": 39529,
+      "duration_seconds": 10,
+      "source": "imports/canary/items-xml/items.xml:73137",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "item": 44012,
+      "capacity": 30,
+      "decay_to": 44013,
+      "duration_seconds": 60,
+      "source": "imports/canary/items-xml/items.xml:76397",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    }
+  ],
+  "publication_target": "origin/claude/happy-davinci-ijz3wy-questpc2; commit and FF push this checkpoint after fetch; verify remote before resuming."
+}

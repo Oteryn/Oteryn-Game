@@ -1,0 +1,3208 @@
+{
+ "id": "L3",
+ "mechanisms": [
+  "encounter_party_admission_settlement",
+  "live_creature_capture_item_custody"
+ ],
+ "entries": [
+  {
+   "canonical": "oteryn:quest.25_years_of_tibia_quest",
+   "title": "25 Years of Tibia Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "25 Years of Tibia Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The time-machine memory route and Lord Retro encounter lack selected native occurrence and reward-delivery bindings; the retained recipe is a chosen-source approximation.",
+    "source": ".questpc4/evidence/wiki/25 Years of Tibia Quest_Spoiler.wiki:15",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/67/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/25 Years of Tibia Quest_Spoiler.wiki:15; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/67/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "25 Years of Tibia Quest",
+     "canonical": "oteryn:quest.25_years_of_tibia_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The time-machine memory route and Lord Retro encounter lack selected native occurrence and reward-delivery bindings; the retained recipe is a chosen-source approximation.",
+      "source": ".questpc4/evidence/wiki/25 Years of Tibia Quest_Spoiler.wiki:15",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/67/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/25 Years of Tibia Quest_Spoiler.wiki:15; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/67/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/1",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/1"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.asura_palace_quest",
+   "title": "Asura Palace Quest",
+   "from_lane": "questpc5",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Asura Palace Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc5"
+   ],
+   "blocker": {
+    "missing_piece": "Personal encounter admission and kill-to-door completion for the Destroyer/Greater Elemental groups and Flaming Orchid. Callback supports USE/STEP, map effects and character storage, but carries no participant-bound encounter token or eligible-kill completion callback. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+    "evidence": [
+     ".questpc5/NOTE-coordination.md:16",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+     "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+     "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+     "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition"
+    ],
+    "attempts": [
+     "Checked current wiki source (wiki-current/Asura Palace Quest_Spoiler.wiki), the chosen sequential kill gates, Callback schema and the kill settlement participants. The existing Soul War/Rotten Blood/Grizzly adapters are closed owners and cannot authorize Asura gates.",
+     "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+    ],
+    "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Asura Palace Quest",
+     "canonical": "oteryn:quest.authored.asura_palace_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Asura Palace) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Asura Palace Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/3"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/15",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Asura Palace Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/3"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter and inspect the Asura Palace chambers",
+      "targets": [
+       "Asura Palace"
+      ]
+     }
+    },
+    {
+     "title": "Asura Palace Quest",
+     "canonical": "oteryn:quest.authored.asura_palace_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc5",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Personal encounter admission and kill-to-door completion for the Destroyer/Greater Elemental groups and Flaming Orchid. Callback supports USE/STEP, map effects and character storage, but carries no participant-bound encounter token or eligible-kill completion callback. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+       ".questpc5/NOTE-coordination.md:16",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+       "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+       "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+       "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition"
+      ],
+      "attempts": [
+       "Checked current wiki source (wiki-current/Asura Palace Quest_Spoiler.wiki), the chosen sequential kill gates, Callback schema and the kill settlement participants. The existing Soul War/Rotten Blood/Grizzly adapters are closed owners and cannot authorize Asura gates.",
+       "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc5.json#/14",
+     "evidence": [
+      ".questpc5/NOTE-coordination.md:16",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+      "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+      "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+      "content/quests/definitions/quests-00200-00299.json:1#/records/87/definition"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter and inspect the Asura Palace chambers",
+      "targets": [
+       "Asura Palace"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/15",
+    "in/questpc5.json#/14"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.barbarian_arena_quest",
+   "title": "Barbarian Arena Quest",
+   "from_lane": "questpc5",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Barbarian Arena Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc5"
+   ],
+   "blocker": {
+    "missing_piece": "Participant-bound arena encounter admission and per-room kill completion across Greenhorn/Scrapper/Warlord. Existing source reward claims grant the nine reward choices, but neither Callback nor the generic NPC storage writer owns arena occupancy, combatant identity or exit/completion eligibility. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+    "evidence": [
+     ".questpc5/NOTE-coordination.md:16",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+     "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+     "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+     "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition"
+    ],
+    "attempts": [
+     "Read all three ten-fight stages and retained nine chest receipts. Traced generic world callbacks and the production death/party settlement consumers; none is an arena encounter owner. Existing PvP arena_match does not authorize the source PvE arena rooms.",
+     "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+    ],
+    "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Barbarian Arena Quest",
+     "canonical": "oteryn:quest.barbarian_arena_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "Halvar admission, ten sequential fights per tier, encounter ownership and exit/reset must compose before the Greenhorn/Scrapper/Warlord reward sources constitute a whole quest. QENGINE owns the shared encounter/reset pieces; reward sources are independently qualified.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/219",
+       "content/quests/missions/completion-binding-plan.json:1"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/18",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/219",
+      "content/quests/missions/completion-binding-plan.json:1"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat the ten Greenhorn arena combatants.",
+      "targets": [
+       "Greenhorn arena combatants"
+      ]
+     }
+    },
+    {
+     "title": "Barbarian Arena Quest",
+     "canonical": "oteryn:quest.barbarian_arena_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc5",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Participant-bound arena encounter admission and per-room kill completion across Greenhorn/Scrapper/Warlord. Existing source reward claims grant the nine reward choices, but neither Callback nor the generic NPC storage writer owns arena occupancy, combatant identity or exit/completion eligibility. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+       ".questpc5/NOTE-coordination.md:16",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+       "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+       "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+       "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition"
+      ],
+      "attempts": [
+       "Read all three ten-fight stages and retained nine chest receipts. Traced generic world callbacks and the production death/party settlement consumers; none is an arena encounter owner. Existing PvP arena_match does not authorize the source PvE arena rooms.",
+       "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc5.json#/17",
+     "evidence": [
+      ".questpc5/NOTE-coordination.md:16",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+      "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+      "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+      "content/quests/definitions/quests-00100-00199.json:1#/records/12/definition"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat the ten Greenhorn arena combatants.",
+      "targets": [
+       "Greenhorn arena combatants"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/18",
+    "in/questpc5.json#/17"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.bewitched",
+   "title": "Bewitched",
+   "from_lane": "questpc5",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Bewitched"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc5"
+   ],
+   "blocker": {
+    "missing_piece": "Cauldron encounter admission/reset and Bane Bringer kill-to-completion eligibility for the fixed daily contribution. Callback has no encounter lifecycle, and reusing a plain XP-bearing USE would grant1000XP before the required boss kill. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+    "evidence": [
+     ".questpc5/NOTE-coordination.md:16",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+     "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+     "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+     "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition"
+    ],
+    "attempts": [
+     "Read the selected fixed ingredients/daily adaptation and1000XP intent, checked current Callback effect/trigger schema and the production kill settlement adapters. No existing adapter binds a Bane Bringer death to this cauldron contribution and daily reset.",
+     "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+    ],
+    "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Bewitched",
+     "canonical": "oteryn:quest.authored.bewitched",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Green Claw Swamp cauldron) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Bewitched",
+       "content/quests/missions/completion-binding-plan.json:1#/records/5"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/30",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Bewitched",
+      "content/quests/missions/completion-binding-plan.json:1#/records/5"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the witch cauldron beneath Green Claw Swamp",
+      "targets": [
+       "Green Claw Swamp cauldron"
+      ]
+     }
+    },
+    {
+     "title": "Bewitched",
+     "canonical": "oteryn:quest.authored.bewitched",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc5",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Cauldron encounter admission/reset and Bane Bringer kill-to-completion eligibility for the fixed daily contribution. Callback has no encounter lifecycle, and reusing a plain XP-bearing USE would grant1000XP before the required boss kill. This requires the shared encounter/reset owner allocated to QENGINE (NOTE-coordination.md:16), including shared callback/capture integration; it cannot be supplied by an isolated quest module or by test-only progress injection without duplicating that owner.",
+      "evidence": [
+       ".questpc5/NOTE-coordination.md:16",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+       "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+       "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+       "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition"
+      ],
+      "attempts": [
+       "Read the selected fixed ingredients/daily adaptation and1000XP intent, checked current Callback effect/trigger schema and the production kill settlement adapters. No existing adapter binds a Bane Bringer death to this cauldron contribution and daily reset.",
+       "Checked the allowed lane-local callback/NPC hooks: they consume current quest state but do not own encounter participant capture, reset, occupancy or eligible-death settlement. Did not inject SQL progress, invent a source selector or duplicate the explicitly allocated shared lifecycle."
+      ],
+      "owner_dependency": "qengine: encounter/party access and reset/pickup lifecycle",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc5.json#/24",
+     "evidence": [
+      ".questpc5/NOTE-coordination.md:16",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:25",
+      "crates/gameplay/dispatch/src/gameplay_transport/party_kill_settlement.rs:506",
+      "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1828",
+      "content/quests/definitions/quests-00200-00299.json:1#/records/89/definition"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the witch cauldron beneath Green Claw Swamp",
+      "targets": [
+       "Green Claw Swamp cauldron"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/30",
+    "in/questpc5.json#/24"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+   "title": "Chakoya Iceberg Mini World Change",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Chakoya Iceberg Mini World Change"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Personal iceberg encounter/access owner: the chosen fixed expedition needs a Character-scoped route and credited Chakoya encounter occurrences. The current callback schema has no encounter/access scope or spawn lifecycle. An NPC-only module cannot supply that shared map/combat authority; qengine owns encounter/access.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Chakoya Iceberg Mini World Change",
+     "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Chakoya Iceberg) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Chakoya Iceberg Mini World Change",
+       "content/quests/missions/completion-binding-plan.json:1#/records/8"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/42",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Chakoya Iceberg Mini World Change",
+      "content/quests/missions/completion-binding-plan.json:1#/records/8"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the iceberg north of Port Hope",
+      "targets": [
+       "Chakoya Iceberg"
+      ]
+     }
+    },
+    {
+     "title": "Chakoya Iceberg Mini World Change",
+     "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Personal iceberg encounter/access owner: the chosen fixed expedition needs a Character-scoped route and credited Chakoya encounter occurrences. The current callback schema has no encounter/access scope or spawn lifecycle. An NPC-only module cannot supply that shared map/combat authority; qengine owns encounter/access.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/0",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/92/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the iceberg north of Port Hope",
+      "targets": [
+       "Chakoya Iceberg"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/42",
+    "in/questpc6.json#/0"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+   "title": "Child of Destiny Quest",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Child of Destiny Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Training encounter owner for Party Skeleton combat, spear-target hit and spell-target hit events. USE/StepIn callbacks cannot observe those authoritative combat events or close a training encounter; qengine owns encounter/access. NPC talk progress alone would bypass the three training exercises.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Child of Destiny Quest",
+     "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (kill: Party Skeleton) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Child of Destiny Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/9"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/43",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Child of Destiny Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/9"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Practise melee against one training skeleton",
+      "targets": [
+       "Party Skeleton"
+      ]
+     }
+    },
+    {
+     "title": "Child of Destiny Quest",
+     "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Training encounter owner for Party Skeleton combat, spear-target hit and spell-target hit events. USE/StepIn callbacks cannot observe those authoritative combat events or close a training encounter; qengine owns encounter/access. NPC talk progress alone would bypass the three training exercises.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/1",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/93/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Practise melee against one training skeleton",
+      "targets": [
+       "Party Skeleton"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/43",
+    "in/questpc6.json#/1"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.cults_of_tibia_quest",
+   "title": "Cults of Tibia Quest",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Cults of Tibia Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/party access and summon lifecycle for the cult boss rooms and Essence of Malice completion. Orc entry/exit travel and source chests can execute; the callback schema cannot own boss participants, spawned entities, room cleanup or encounter completion. These are shared qengine authority, not missing tests.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Cults of Tibia Quest",
+     "canonical": "oteryn:quest.cults_of_tibia_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Barkless exit AIDs5530/5531 require source StepOut with fromPosition-dependent sulphur/tar refusal and teleport; Trigger only supports Use/StepIn. Shared StepOut belongs to QENGINE.",
+      "evidence": [
+       ".questpc/source-engine-gaps/cults_of_tibia-movements_tar.lua:124",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc/NOTE-coordination.md:16",
+       ".questpc/restart12-source-packets.json"
+      ],
+      "attempts": [
+       "Read hash-verified source callback from retained pinned donor corpus.",
+       "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
+       "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/54",
+     "evidence": [
+      ".questpc/source-engine-gaps/cults_of_tibia-movements_tar.lua:124",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc/NOTE-coordination.md:16",
+      ".questpc/restart12-source-packets.json"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Visit the Barkless and Misguided hideouts.",
+      "targets": [
+       "Barkless hideout",
+       "Misguided hideout"
+      ]
+     }
+    },
+    {
+     "title": "Cults of Tibia Quest",
+     "canonical": "oteryn:quest.cults_of_tibia_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/party access and summon lifecycle for the cult boss rooms and Essence of Malice completion. Orc entry/exit travel and source chests can execute; the callback schema cannot own boss participants, spawned entities, room cleanup or encounter completion. These are shared qengine authority, not missing tests.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/8",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/26/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "explore",
+      "objective": "Visit the Barkless and Misguided hideouts.",
+      "targets": [
+       "Barkless hideout",
+       "Misguided hideout"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/54",
+    "in/questpc6.json#/8"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.dangerous_depths_quest",
+   "title": "Dangerous Depths Quest",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Dangerous Depths Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/party access owner for Warzone IV/V/VI entry, boss summon/cleanup and successful-room completion. Neither a personal quest track nor a literal USE callback supplies group admission and authoritative encounter lifecycle; qengine owns this shared piece.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Dangerous Depths Quest",
+     "canonical": "oteryn:quest.dangerous_depths_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (use: Ordnance, Gnomal Warming Measurements, Uncharted Territory) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/228"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/55",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/228"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Complete Ordnance, Gnomal Warming and Uncharted Territory tasks.",
+      "targets": [
+       "Ordnance",
+       "Gnomal Warming Measurements",
+       "Uncharted Territory"
+      ]
+     }
+    },
+    {
+     "title": "Dangerous Depths Quest",
+     "canonical": "oteryn:quest.dangerous_depths_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/party access owner for Warzone IV/V/VI entry, boss summon/cleanup and successful-room completion. Neither a personal quest track nor a literal USE callback supplies group admission and authoritative encounter lifecycle; qengine owns this shared piece.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/9",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/27/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Complete Ordnance, Gnomal Warming and Uncharted Territory tasks.",
+      "targets": [
+       "Ordnance",
+       "Gnomal Warming Measurements",
+       "Uncharted Territory"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/55",
+    "in/questpc6.json#/9"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.deeplings_worldchange",
+   "title": "Deeplings World Change",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Deeplings World Change"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Fiehonja encounter/access stage owner: the three served boss teleports only READ the crystal track at13; they do not own the world stage, boss encounter or stage reset. The shared encounter/reset owner is reserved to qengine. Writing13 directly would bypass the world change.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16",
+     "content/quests/world-callbacks.json:1"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Deeplings World Change",
+     "canonical": "oteryn:quest.deeplings_worldchange",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Fiehonja first-stage area) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/230"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/63",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/230"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Survey the initially accessible part of Fiehonja.",
+      "targets": [
+       "Fiehonja first-stage area"
+      ]
+     }
+    },
+    {
+     "title": "Deeplings World Change",
+     "canonical": "oteryn:quest.deeplings_worldchange",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Fiehonja encounter/access stage owner: the three served boss teleports only READ the crystal track at13; they do not own the world stage, boss encounter or stage reset. The shared encounter/reset owner is reserved to qengine. Writing13 directly would bypass the world change.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16",
+       "content/quests/world-callbacks.json:1"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/14",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/30/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16",
+      "content/quests/world-callbacks.json:1"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Survey the initially accessible part of Fiehonja.",
+      "targets": [
+       "Fiehonja first-stage area"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/63",
+    "in/questpc6.json#/14"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.demon_wars_world_change",
+   "title": "Demon Wars World Change",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Demon Wars World Change"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/access and faction-war reset owner for Shaburak Demon/Lord/Prince progression. A quest NPC module cannot establish the shared combat occurrence and faction encounter scope. The callback schema has no encounter lifecycle; qengine owns encounter/access and reset.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Demon Wars World Change",
+     "canonical": "oteryn:quest.authored.demon_wars_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (kill: Shaburak Demon) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Demon Wars World Change",
+       "content/quests/missions/completion-binding-plan.json:1#/records/12"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/66",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Demon Wars World Change",
+      "content/quests/missions/completion-binding-plan.json:1#/records/12"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat twenty Shaburak demons",
+      "targets": [
+       "Shaburak Demon"
+      ]
+     }
+    },
+    {
+     "title": "Demon Wars World Change",
+     "canonical": "oteryn:quest.authored.demon_wars_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/access and faction-war reset owner for Shaburak Demon/Lord/Prince progression. A quest NPC module cannot establish the shared combat occurrence and faction encounter scope. The callback schema has no encounter lifecycle; qengine owns encounter/access and reset.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/17",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/95/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "kill",
+      "objective": "Defeat twenty Shaburak demons",
+      "targets": [
+       "Shaburak Demon"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/66",
+    "in/questpc6.json#/17"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+   "title": "Devovorga's Essence Mini World Change",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Devovorga's Essence Mini World Change"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/party access owner for the Vengoth incarnation offering, Anmothra spawn, participant admission and terminal boss cleanup. Static callbacks cannot own the incarnation encounter lifecycle; qengine owns encounter/access.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Devovorga's Essence Mini World Change",
+     "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Vengoth incarnation entrance) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Devovorga's Essence Mini World Change",
+       "content/quests/missions/completion-binding-plan.json:1#/records/13"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/70",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Devovorga's Essence Mini World Change",
+      "content/quests/missions/completion-binding-plan.json:1#/records/13"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the incarnation entrance in Vengoth",
+      "targets": [
+       "Vengoth incarnation entrance"
+      ]
+     }
+    },
+    {
+     "title": "Devovorga's Essence Mini World Change",
+     "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/party access owner for the Vengoth incarnation offering, Anmothra spawn, participant admission and terminal boss cleanup. Static callbacks cannot own the incarnation encounter lifecycle; qengine owns encounter/access.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/20",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/97/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Find the incarnation entrance in Vengoth",
+      "targets": [
+       "Vengoth incarnation entrance"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/70",
+    "in/questpc6.json#/20"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+   "title": "Down the Drain Mini World Change",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Down the Drain Mini World Change"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Flooded-island encounter/access and reset owner for the Water Elemental dungeon. The accepted personal route still needs authoritative entry and encounter completion, while current callbacks only process individual map interactions. qengine owns encounter/access and reset.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Down the Drain Mini World Change",
+     "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Outlaw Camp flooded island) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Down the Drain Mini World Change",
+       "content/quests/missions/completion-binding-plan.json:1#/records/14"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/73",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Down the Drain Mini World Change",
+      "content/quests/missions/completion-binding-plan.json:1#/records/14"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the flooded island south of Outlaw Camp",
+      "targets": [
+       "Outlaw Camp flooded island"
+      ]
+     }
+    },
+    {
+     "title": "Down the Drain Mini World Change",
+     "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Flooded-island encounter/access and reset owner for the Water Elemental dungeon. The accepted personal route still needs authoritative entry and encounter completion, while current callbacks only process individual map interactions. qengine owns encounter/access and reset.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/21",
+     "evidence": [
+      "content/quests/definitions/quests-00200-00299.json:1#/records/98/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach the flooded island south of Outlaw Camp",
+      "targets": [
+       "Outlaw Camp flooded island"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/73",
+    "in/questpc6.json#/21"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.elemental_spheres_quest",
+   "title": "Elemental Spheres Quest",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Elemental Spheres Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/party access owner for the four sphere participants, machines and Lord of the Elements summon/cleanup. Existing lord-room exit only resets four storage tracks; it cannot establish participant admission or own the boss lifecycle. qengine owns encounter/access.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16",
+     "content/quests/world-callbacks.json:1"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Elemental Spheres Quest",
+     "canonical": "oteryn:quest.elemental_spheres_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Dropping the matching overlord corpse onto a charged altar must atomically inspect all seven charged positions, consume corpse, summon boss, and fence global storage. onAddItem and shared encounter/altar occupancy are absent from Trigger and assigned to QENGINE.",
+      "evidence": [
+       ".questpc/source-engine-gaps/elemental_spheres-movements_summon_overlord.lua:83",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc/NOTE-coordination.md:16",
+       ".questpc/restart12-source-packets.json"
+      ],
+      "attempts": [
+       "Read hash-verified source callback from retained pinned donor corpus.",
+       "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
+       "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/85",
+     "evidence": [
+      ".questpc/source-engine-gaps/elemental_spheres-movements_summon_overlord.lua:83",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc/NOTE-coordination.md:16",
+      ".questpc/restart12-source-packets.json"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather twenty enchanted gems for the chosen sphere route.",
+      "targets": [
+       "Small Enchanted Ruby",
+       "Small Enchanted Emerald",
+       "Small Enchanted Amethyst",
+       "Small Enchanted Sapphire"
+      ]
+     }
+    },
+    {
+     "title": "Elemental Spheres Quest",
+     "canonical": "oteryn:quest.elemental_spheres_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/party access owner for the four sphere participants, machines and Lord of the Elements summon/cleanup. Existing lord-room exit only resets four storage tracks; it cannot establish participant admission or own the boss lifecycle. qengine owns encounter/access.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16",
+       "content/quests/world-callbacks.json:1"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/30",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/37/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16",
+      "content/quests/world-callbacks.json:1"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Gather twenty enchanted gems for the chosen sphere route.",
+      "targets": [
+       "Small Enchanted Ruby",
+       "Small Enchanted Emerald",
+       "Small Enchanted Amethyst",
+       "Small Enchanted Sapphire"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/85",
+    "in/questpc6.json#/30"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.elvenbane_quest",
+   "title": "Elvenbane Quest",
+   "from_lane": "questpc6",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Elvenbane Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc6"
+   ],
+   "blocker": {
+    "missing_piece": "Encounter/access owner for the mandatory Dragon and five upper-floor defenders before terminal loot. Literal callbacks cannot prove combat completion or own the chosen personal encounter route; qengine owns encounter/access. Giving terminal loot from an NPC would bypass the required defenders.",
+    "reserved_engine_owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+     ".questpc6/NOTE-coordination.md:16"
+    ],
+    "attempts": [
+     "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+     "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+     "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+    ],
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Elvenbane Quest",
+     "canonical": "oteryn:quest.authored.elvenbane_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (explore: Elvenbane Castle, stone-ring basement) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Elvenbane Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/17"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/88",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Elvenbane Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/17"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach Elvenbane from Ab'Dendriel and enter the stone-ring basement entrance.",
+      "targets": [
+       "Elvenbane Castle",
+       "stone-ring basement"
+      ]
+     }
+    },
+    {
+     "title": "Elvenbane Quest",
+     "canonical": "oteryn:quest.authored.elvenbane_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc6",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Encounter/access owner for the mandatory Dragon and five upper-floor defenders before terminal loot. Literal callbacks cannot prove combat completion or own the chosen personal encounter route; qengine owns encounter/access. Giving terminal loot from an NPC would bypass the required defenders.",
+      "reserved_engine_owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc6/NOTE-coordination.md:16"
+      ],
+      "attempts": [
+       "Read this canonical source definition, the separately chosen recipe stages and the inherited binding record.",
+       "Traced the production callback and NPC durable APIs against the specific missing effect/event; source evaluation and a quest flag do not supply the absent authority.",
+       "Checked the concrete shared engine reservation; retained the dependency rather than duplicating the qengine/qengine2 owner in a lane module."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc6.json#/32",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/1/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc6/NOTE-coordination.md:16"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Reach Elvenbane from Ab'Dendriel and enter the stone-ring basement entrance.",
+      "targets": [
+       "Elvenbane Castle",
+       "stone-ring basement"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/88",
+    "in/questpc6.json#/32"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.forgotten_knowledge_quest",
+   "title": "Forgotten Knowledge Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Forgotten Knowledge Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.encounter_party_access",
+    "missing_piece": "The Lloyd/Lady Tenebris/Dragon King/Time Guardian/Last Lore Keeper path requires shared encounter admission and a frozen participant death-settlement owner before powerful imbuing access can be earned. The world callback interface has a fixed player teleport but no encounter admission/participant capture operation. That shared engine is assigned to qengine; a local NPC response or a reward claim cannot substitute for it.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+     "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+    ],
+    "attempts": [
+     "Inspected the selected boss stages, current callback operation shape and frozen kill entry; selected all eight exact reward claims for independent real-USE qualification."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Forgotten Knowledge Quest",
+     "canonical": "oteryn:quest.forgotten_knowledge_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (collect: Heavy Old Tome) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/238"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/103",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/238"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover one Heavy Old Tome to restore the temple record.",
+      "targets": [
+       "Heavy Old Tome"
+      ]
+     }
+    },
+    {
+     "title": "Forgotten Knowledge Quest",
+     "canonical": "oteryn:quest.forgotten_knowledge_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.encounter_party_access",
+      "missing_piece": "The Lloyd/Lady Tenebris/Dragon King/Time Guardian/Last Lore Keeper path requires shared encounter admission and a frozen participant death-settlement owner before powerful imbuing access can be earned. The world callback interface has a fixed player teleport but no encounter admission/participant capture operation. That shared engine is assigned to qengine; a local NPC response or a reward claim cannot substitute for it.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+       "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+      ],
+      "attempts": [
+       "Inspected the selected boss stages, current callback operation shape and frozen kill entry; selected all eight exact reward claims for independent real-USE qualification."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/9",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/45/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+      "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "collect",
+      "objective": "Recover one Heavy Old Tome to restore the temple record.",
+      "targets": [
+       "Heavy Old Tome"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/103",
+    "in/questpc7.json#/9"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.grimvale_quest",
+   "title": "Grimvale Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Grimvale Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.encounter_party_access",
+    "missing_piece": "Feroxa and the subsequent named were-creature bosses require encounter admission, frozen participants and repeat/reset-safe death settlement. The ordinary callback schema has no encounter/party entry operation. Those shared operations are assigned to qengine; completing local dialogue or counting unrelated ordinary Werewolf deaths cannot qualify the encounter path.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+     "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+    ],
+    "attempts": [
+     "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Grimvale Quest",
+     "canonical": "oteryn:quest.grimvale_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s1 (collect: Purple Nightshade Blossom) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/244"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/119",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/244"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "collect",
+      "objective": "Gather five Purple Nightshade Blossoms for the curse investigation.",
+      "targets": [
+       "Purple Nightshade Blossom"
+      ]
+     }
+    },
+    {
+     "title": "Grimvale Quest",
+     "canonical": "oteryn:quest.grimvale_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.encounter_party_access",
+      "missing_piece": "Feroxa and the subsequent named were-creature bosses require encounter admission, frozen participants and repeat/reset-safe death settlement. The ordinary callback schema has no encounter/party entry operation. Those shared operations are assigned to qengine; completing local dialogue or counting unrelated ordinary Werewolf deaths cannot qualify the encounter path.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+       "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+      ],
+      "attempts": [
+       "Checked the Liquid Silver Trap, Feroxa, four named bosses and ritual stages against the current fixed teleport and frozen kill-entry interfaces."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/20",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/55/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98",
+      "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "collect",
+      "objective": "Gather five Purple Nightshade Blossoms for the curse investigation.",
+      "targets": [
+       "Purple Nightshade Blossom"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/119",
+    "in/questpc7.json#/20"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.heart_of_destruction_quest",
+   "title": "Heart of Destruction Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Heart of Destruction Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.encounter_party_access_and_room_death",
+    "missing_piece": "The source boss-room death/vortex effects require encounter admission and the room participant capture/settlement adapter. The exact native-death packet is explicitly runtime_enabled=false and names the missing capture/settle functions. Re-enabling its JSON cannot provide that shared engine, and the owner assigns encounter/party access to qengine.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+     "content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json:1",
+     "content/quests/heart-of-destruction-deaths.json:1",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+    ],
+    "attempts": [
+     "Read all six exact room-death rules and their scope block; traced the existing kill-settlement interface and checked that no production native-death consumer loads this packet. Kept runtime_enabled=false."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Heart of Destruction Quest",
+     "canonical": "oteryn:quest.heart_of_destruction_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Vortex crackler four-player plate ownership is cancelled by StepOut23471. Trigger has no StepOut and the local callback has no shared party occupancy owner; QENGINE owns both.",
+      "evidence": [
+       ".questpc/source-engine-gaps/heart_of_destruction-movements_vortex_crackler.lua:95",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+       ".questpc/NOTE-coordination.md:16",
+       ".questpc/restart12-source-packets.json"
+      ],
+      "attempts": [
+       "Read hash-verified source callback from retained pinned donor corpus.",
+       "Inspected production Trigger and callback schema; Use/StepIn cannot observe leaving a tile or item arrival.",
+       "Kept source requirements intact; no StepIn approximation or synthetic completion was substituted. Shared engine ownership prevents implementing it in this lane."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/121",
+     "evidence": [
+      ".questpc/source-engine-gaps/heart_of_destruction-movements_vortex_crackler.lua:95",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:24",
+      ".questpc/NOTE-coordination.md:16",
+      ".questpc/restart12-source-packets.json"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Otherworld through the chosen Zao breach.",
+      "targets": [
+       "Zao Steppe Otherworld breach"
+      ]
+     }
+    },
+    {
+     "title": "Heart of Destruction Quest",
+     "canonical": "oteryn:quest.heart_of_destruction_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.encounter_party_access_and_room_death",
+      "missing_piece": "The source boss-room death/vortex effects require encounter admission and the room participant capture/settlement adapter. The exact native-death packet is explicitly runtime_enabled=false and names the missing capture/settle functions. Re-enabling its JSON cannot provide that shared engine, and the owner assigns encounter/party access to qengine.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+       "content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json:1",
+       "content/quests/heart-of-destruction-deaths.json:1",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+       "Read all six exact room-death rules and their scope block; traced the existing kill-settlement interface and checked that no production native-death consumer loads this packet. Kept runtime_enabled=false."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/22",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
+      "content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json:1",
+      "content/quests/heart-of-destruction-deaths.json:1",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Enter the Otherworld through the chosen Zao breach.",
+      "targets": [
+       "Zao Steppe Otherworld breach"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/121",
+    "in/questpc7.json#/22"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.hero_of_rathleton_quest",
+   "title": "Hero of Rathleton Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Hero of Rathleton Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.encounter_party_access",
+    "missing_piece": "Jaccus Maxxen's dungeon path needs the shared encounter/party admission and boss settlement owner before the blueprint/bag/access rewards can be earned. Literal Strange Pipe greetings and the existing stateless terrain callbacks carry no participant or encounter admission operation. That engine is allocated to qengine; the earlier greeting receipt is retained only as a partial slice.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+     "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:1",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+    ],
+    "attempts": [
+     "Read the full selected item/combat/dungeon stages and the held world callback packet; distinguished its literal callbacks and retained greeting proof from the shared encounter admission operation."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Hero of Rathleton Quest",
+     "canonical": "oteryn:quest.hero_of_rathleton_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "The native source map has no action24872 placement for hero-rathleton-exit. BundleFacts requires the stored source attribute; an NPC module cannot create the absent source world placement or guess its position. Owning map/import binding is required before the complete path is executable.",
+      "evidence": [
+       "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:37",
+       "crates/gameplay/world/src/map/facts/quest_callbacks.rs:305",
+       ".questpc/restart11-map-binding-reconciliation.json:1"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary.",
+       "Read retained source/map holds and traced current production movement ordering and exact native selector matching.",
+       "Compared all1208 region declarations and every palette source ID against retained map revision798e5b1; unchanged encoded region identities preserve the full-map selector result. Pirate origin/destination region bytes independently match their retained SHA256 witnesses.",
+       "Kept original source selectors; an invented placement or quest track write cannot repair an absent source attribute or bypass native teleport precedence."
+      ],
+      "other_unfinished_composition": "The pipe greeting/access receipt is proven separately; later item, combat and held world callbacks lack a complete composed dispatch proof.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/123",
+     "evidence": [
+      "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:37",
+      "crates/gameplay/world/src/map/facts/quest_callbacks.rs:305",
+      ".questpc/restart11-map-binding-reconciliation.json:1"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Investigate the voice in the darkness beneath Rathleton.",
+      "targets": [
+       "Rathleton underground voice"
+      ]
+     }
+    },
+    {
+     "title": "Hero of Rathleton Quest",
+     "canonical": "oteryn:quest.hero_of_rathleton_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.encounter_party_access",
+      "missing_piece": "Jaccus Maxxen's dungeon path needs the shared encounter/party admission and boss settlement owner before the blueprint/bag/access rewards can be earned. Literal Strange Pipe greetings and the existing stateless terrain callbacks carry no participant or encounter admission operation. That engine is allocated to qengine; the earlier greeting receipt is retained only as a partial slice.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+       "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:1",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+       "Read the full selected item/combat/dungeon stages and the held world callback packet; distinguished its literal callbacks and retained greeting proof from the shared encounter admission operation."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/23",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/58/definition",
+      "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json:1",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+     ],
+     "first_unqualified_stage": {
+      "key": "s1",
+      "kind": "explore",
+      "objective": "Investigate the voice in the darkness beneath Rathleton.",
+      "targets": [
+       "Rathleton underground voice"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/123",
+    "in/questpc7.json#/23"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.make_believe_quest",
+   "title": "Make Believe Quest",
+   "from_lane": "questpc8",
+   "status": "BLOCKED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Make Believe Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc8"
+   ],
+   "blocker": {
+    "missing_piece": "Mimar Haffar needs short-lived crystal/cannon charge cycles and shield windows; Maior Domus needs vocation-specific charge windows; Phosphorus requires eight simultaneous petrified adds and persistent arena hazards. Current callback effects have neither encounter lifecycle nor timed multi-actor state authority. Encounter/party access is expressly reserved to qengine; no boss-victory storage is fabricated.",
+    "owner": "qengine",
+    "evidence": [
+     "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:99"
+    ],
+    "attempts": [
+     "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+     "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+     "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+    ],
+    "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Make Believe Quest",
+     "canonical": "oteryn:quest.authored.make_believe_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (use: cargo crate, storehouse guards, noisy grates, sneeze-triggering webs, Venore supply storehouse portal) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+       "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Make Believe Quest",
+       "content/quests/missions/completion-binding-plan.json:1#/records/31"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/168",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+      "tools/content-schema/quest-authoring/samples/authored68/recipes.json:1#Make Believe Quest",
+      "content/quests/missions/completion-binding-plan.json:1#/records/31"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse while Powerless, avoiding guards, noisy grates and sneeze-triggering webs before entering the loading teleport.",
+      "targets": [
+       "cargo crate",
+       "storehouse guards",
+       "noisy grates",
+       "sneeze-triggering webs",
+       "Venore supply storehouse portal"
+      ]
+     }
+    },
+    {
+     "title": "Make Believe Quest",
+     "canonical": "oteryn:quest.authored.make_believe_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc8",
+     "status": "BLOCKED",
+     "blocker": {
+      "missing_piece": "Mimar Haffar needs short-lived crystal/cannon charge cycles and shield windows; Maior Domus needs vocation-specific charge windows; Phosphorus requires eight simultaneous petrified adds and persistent arena hazards. Current callback effects have neither encounter lifecycle nor timed multi-actor state authority. Encounter/party access is expressly reserved to qengine; no boss-victory storage is fabricated.",
+      "owner": "qengine",
+      "evidence": [
+       "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:99"
+      ],
+      "attempts": [
+       "Reopened the inherited no-test/not-composed row; read this titles complete pinned chosen recipe and retained source obligations.",
+       "Traced the real production consumer and its durable/map authority, including existing native special-case adapters; no test-only planner was treated as a production owner.",
+       "Checked whether a lane-only module could supply the required fact atomically. The cited shared transaction/type boundary or explicit owner exclusion prevents that route; no equivalent shared owner was copied and no guard was weakened."
+      ],
+      "recheck": "Reopen when qengine supplies the cited engine/contract; then compose the quest and run filtered real-dispatch PG. This row is not qualification.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc8.json#/26",
+     "evidence": [
+      "content/quests/definitions/quests-00300-00351.json:1#/records/15/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:99"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse while Powerless, avoiding guards, noisy grates and sneeze-triggering webs before entering the loading teleport.",
+      "targets": [
+       "cargo crate",
+       "storehouse guards",
+       "noisy grates",
+       "sneeze-triggering webs",
+       "Venore supply storehouse portal"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/168",
+    "in/questpc8.json#/26"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.ravenous_madness_quest",
+   "title": "Ravenous Madness Quest",
+   "from_lane": "questpc3",
+   "status": "IN_PROGRESS",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Ravenous Madness Quest"
+   ],
+   "from_lanes": [
+    "questpc3"
+   ],
+   "blocker": {
+    "missing_piece": "Quest-bound corpse Item/progress and Trollwut encounter/access composition.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Ravenous Madness Quest",
+     "canonical": "oteryn:quest.authored.ravenous_madness_quest",
+     "canonical_resolution": "input canonical_packets.quest_key",
+     "from_lane": "questpc3",
+     "status": "IN_PROGRESS",
+     "blocker": {
+      "missing_piece": "Quest-bound corpse Item/progress and Trollwut encounter/access composition.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc3.json#/quests/3",
+     "evidence": "crates/gameplay/dispatch/src/gameplay_transport/npc_command/quest_dialogue.rs:1; crates/gameplay/durability/src/durability/item_craft/npc_exchange.rs:97",
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc3.json#/quests/3"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.authored.rise_of_devovorga",
+   "title": "Rise of Devovorga",
+   "from_lane": "questpc3",
+   "status": "IN_PROGRESS",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Rise of Devovorga"
+   ],
+   "from_lanes": [
+    "questpc3"
+   ],
+   "blocker": {
+    "missing_piece": "Shared seasonal stage/reset, coordinated encounter and participant-reward owner.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Rise of Devovorga",
+     "canonical": "oteryn:quest.authored.rise_of_devovorga",
+     "canonical_resolution": "input canonical_packets.quest_key",
+     "from_lane": "questpc3",
+     "status": "IN_PROGRESS",
+     "blocker": {
+      "missing_piece": "Shared seasonal stage/reset, coordinated encounter and participant-reward owner.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc3.json#/quests/10",
+     "evidence": "crates/gameplay/world-change/src/content.rs:117; crates/gameplay/world-change/src/daily.rs:96",
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc3.json#/quests/10"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.rotten_blood_quest",
+   "title": "Rotten Blood Quest",
+   "from_lane": "questpc3",
+   "status": "IN_PROGRESS",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Rotten Blood Quest"
+   ],
+   "from_lanes": [
+    "questpc3"
+   ],
+   "blocker": {
+    "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/payment owners remain.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Rotten Blood Quest",
+     "canonical": "oteryn:quest.rotten_blood_quest",
+     "canonical_resolution": "input canonical_packets.quest_key",
+     "from_lane": "questpc3",
+     "status": "IN_PROGRESS",
+     "blocker": {
+      "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/payment owners remain.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc3.json#/quests/14",
+     "evidence": "crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:93",
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc3.json#/quests/14"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.soul_war_quest",
+   "title": "Soul War Quest",
+   "from_lane": "questpc3",
+   "status": "IN_PROGRESS",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Soul War Quest"
+   ],
+   "from_lanes": [
+    "questpc3"
+   ],
+   "blocker": {
+    "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/reward owners remain.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Soul War Quest",
+     "canonical": "oteryn:quest.soul_war_quest",
+     "canonical_resolution": "input canonical_packets.quest_key",
+     "from_lane": "questpc3",
+     "status": "IN_PROGRESS",
+     "blocker": {
+      "missing_piece": "Qualified W02 encounter admission: endgame_entry.rs still returns ContentUnavailable; existing progression/reward owners remain.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc3.json#/quests/39",
+     "related_canonicals": [
+      "oteryn:quest.revenant_outfits_quest"
+     ],
+     "evidence": "crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs:93",
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc3.json#/quests/39"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_annihilator_quest",
+   "title": "The Annihilator Quest",
+   "from_lane": "questpc4",
+   "status": "QUALIFIED",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Annihilator Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "sources": [
+    {
+     "title": "The Annihilator Quest",
+     "canonical": "oteryn:quest.the_annihilator_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The four-player lever needs party admission, encounter occupancy, demons and timed escape; the four reward choices have separate PG evidence only.",
+      "source": ".questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4",
+      "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+      "canonical_json_pointer": "/records/88/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/88/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/6",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/6"
+   ],
+   "resolved_blocker": {
+    "missing_piece": "The four-player lever needs party admission, encounter occupancy, demons and timed escape; the four reward choices have separate PG evidence only.",
+    "source": ".questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/88/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Annihilator Quest_Spoiler.wiki:4; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/88/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "qualification": {
+    "record": "BATCH-annihilator-complete-source-route-2026-11-07.json",
+    "postgres_version": 180006,
+    "duration_seconds": 108.32,
+    "note": "Actual retained donor route has no invented timed escape or six-kill completion predicate. Historical imported blockers remain provenance only."
+   }
+  },
+  {
+   "canonical": "oteryn:quest.demon_oak",
+   "title": "The Demon Oak Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Demon Oak Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Hallowed Axe use on all four Oak parts must compose progress, defender waves and final reward entitlement; the existing square/grave callbacks do not supply this sequence.",
+    "source": ".questpc4/evidence/wiki/The Demon Oak Quest_Spoiler.wiki:16",
+    "canonical_location": "content/quests/definitions/quests-00100-00199.json:1",
+    "canonical_json_pointer": "/records/31/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Demon Oak Quest_Spoiler.wiki:16; checked the selected canonical definition at content/quests/definitions/quests-00100-00199.json:1 (/records/31/definition).",
+     "Compared the current native callback registry: 6 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/demon-oak-reward-grave",
+     "oteryn:quest-callback/demon-oak-square-1",
+     "oteryn:quest-callback/demon-oak-square-2",
+     "oteryn:quest-callback/demon-oak-square-3",
+     "oteryn:quest-callback/demon-oak-square-4",
+     "oteryn:quest-callback/demon-oak-square-5"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Demon Oak Quest",
+     "canonical": "oteryn:quest.demon_oak",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Hallowed Axe use on all four Oak parts must compose progress, defender waves and final reward entitlement; the existing square/grave callbacks do not supply this sequence.",
+      "source": ".questpc4/evidence/wiki/The Demon Oak Quest_Spoiler.wiki:16",
+      "canonical_location": "content/quests/definitions/quests-00100-00199.json:1",
+      "canonical_json_pointer": "/records/31/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Demon Oak Quest_Spoiler.wiki:16; checked the selected canonical definition at content/quests/definitions/quests-00100-00199.json:1 (/records/31/definition).",
+       "Compared the current native callback registry: 6 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/demon-oak-reward-grave",
+       "oteryn:quest-callback/demon-oak-square-1",
+       "oteryn:quest-callback/demon-oak-square-2",
+       "oteryn:quest-callback/demon-oak-square-3",
+       "oteryn:quest-callback/demon-oak-square-4",
+       "oteryn:quest-callback/demon-oak-square-5"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/13",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/13"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.desert_dungeon_quest",
+   "title": "The Desert Dungeon Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Desert Dungeon Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The multi-vocation offering stations and central lever need one atomic party/item/access occurrence; the chosen targets remain unbound.",
+    "source": ".questpc4/evidence/wiki/The Desert Dungeon Quest_Spoiler.wiki:6",
+    "canonical_location": "content/quests/definitions/quests-00100-00199.json:1",
+    "canonical_json_pointer": "/records/33/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Desert Dungeon Quest_Spoiler.wiki:6; checked the selected canonical definition at content/quests/definitions/quests-00100-00199.json:1 (/records/33/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Desert Dungeon Quest",
+     "canonical": "oteryn:quest.desert_dungeon_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The multi-vocation offering stations and central lever need one atomic party/item/access occurrence; the chosen targets remain unbound.",
+      "source": ".questpc4/evidence/wiki/The Desert Dungeon Quest_Spoiler.wiki:6",
+      "canonical_location": "content/quests/definitions/quests-00100-00199.json:1",
+      "canonical_json_pointer": "/records/33/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Desert Dungeon Quest_Spoiler.wiki:6; checked the selected canonical definition at content/quests/definitions/quests-00100-00199.json:1 (/records/33/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/14",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/14"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_dream_courts_quest",
+   "title": "The Dream Courts Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Dream Courts Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack a composed source-qualified native storyline; return portals alone are insufficient.",
+    "source": ".questpc4/evidence/wiki/The Dream Courts Quest_Spoiler.wiki:47",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/21/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Dream Courts Quest_Spoiler.wiki:47; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/21/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Dream Courts Quest",
+     "canonical": "oteryn:quest.the_dream_courts_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Ice/Sun Ward Stones, dream access and Nightmare Beast completion lack a composed source-qualified native storyline; return portals alone are insufficient.",
+      "source": ".questpc4/evidence/wiki/The Dream Courts Quest_Spoiler.wiki:47",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/21/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Dream Courts Quest_Spoiler.wiki:47; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/21/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/17",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/17"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_inquisition_quest",
+   "title": "The Inquisition Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Inquisition Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The interrogation/holy-water chain and Shadow Nexus boss completion need their exact native event-to-quest composition; the reward books and return portals are only partial paths.",
+    "source": ".questpc4/evidence/wiki/The Inquisition Quest_Spoiler.wiki:146",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/28/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Inquisition Quest_Spoiler.wiki:146; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/28/definition).",
+     "Compared the current native callback registry: 19 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/inquisition-portal-2152",
+     "oteryn:quest-callback/inquisition-portal-2154",
+     "oteryn:quest-callback/inquisition-portal-2155",
+     "oteryn:quest-callback/inquisition-portal-2156",
+     "oteryn:quest-callback/inquisition-portal-2158",
+     "oteryn:quest-callback/inquisition-portal-2160",
+     "oteryn:quest-callback/inquisition-portal-2161",
+     "oteryn:quest-callback/inquisition-portal-2163",
+     "oteryn:quest-callback/inquisition-portal-2165",
+     "oteryn:quest-callback/inquisition-portal-2166",
+     "oteryn:quest-callback/inquisition-portal-2167",
+     "oteryn:quest-callback/inquisition-portal-2169",
+     "oteryn:quest-callback/inquisition-portal-2171",
+     "oteryn:quest-callback/inquisition-portal-2172",
+     "oteryn:quest-callback/inquisition-portal-2173",
+     "oteryn:quest-callback/inquisition-portal-2175",
+     "oteryn:quest-callback/inquisition-portal-2177",
+     "oteryn:quest-callback/inquisition-portal-2179",
+     "oteryn:quest-callback/inquisition-portal-2180"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Inquisition Quest",
+     "canonical": "oteryn:quest.the_inquisition_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The interrogation/holy-water chain and Shadow Nexus boss completion need their exact native event-to-quest composition; the reward books and return portals are only partial paths.",
+      "source": ".questpc4/evidence/wiki/The Inquisition Quest_Spoiler.wiki:146",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/28/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Inquisition Quest_Spoiler.wiki:146; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/28/definition).",
+       "Compared the current native callback registry: 19 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/inquisition-portal-2152",
+       "oteryn:quest-callback/inquisition-portal-2154",
+       "oteryn:quest-callback/inquisition-portal-2155",
+       "oteryn:quest-callback/inquisition-portal-2156",
+       "oteryn:quest-callback/inquisition-portal-2158",
+       "oteryn:quest-callback/inquisition-portal-2160",
+       "oteryn:quest-callback/inquisition-portal-2161",
+       "oteryn:quest-callback/inquisition-portal-2163",
+       "oteryn:quest-callback/inquisition-portal-2165",
+       "oteryn:quest-callback/inquisition-portal-2166",
+       "oteryn:quest-callback/inquisition-portal-2167",
+       "oteryn:quest-callback/inquisition-portal-2169",
+       "oteryn:quest-callback/inquisition-portal-2171",
+       "oteryn:quest-callback/inquisition-portal-2172",
+       "oteryn:quest-callback/inquisition-portal-2173",
+       "oteryn:quest-callback/inquisition-portal-2175",
+       "oteryn:quest-callback/inquisition-portal-2177",
+       "oteryn:quest-callback/inquisition-portal-2179",
+       "oteryn:quest-callback/inquisition-portal-2180"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/28",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/28"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_order_of_the_lion_quest",
+   "title": "The Order of the Lion Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Order of the Lion Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Fugue encounter/reward composition and the unqualified Bounac stair collision route remain outside the seven admitted callbacks; the batch-four exclusions retain the stair pair.",
+    "source": ".questpc4/evidence/wiki/The Order of the Lion Quest_Spoiler.wiki:79",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/33/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Order of the Lion Quest_Spoiler.wiki:79; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/33/definition).",
+     "Compared the current native callback registry: 7 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [
+     "oteryn:quest-callback/lion-bounac-return",
+     "oteryn:quest-callback/lion-castle-enter-32480",
+     "oteryn:quest-callback/lion-castle-enter-32481",
+     "oteryn:quest-callback/lion-castle-exit-32480",
+     "oteryn:quest-callback/lion-castle-exit-32481",
+     "oteryn:quest-callback/lion-elevator-down",
+     "oteryn:quest-callback/lion-elevator-up"
+    ],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Order of the Lion Quest",
+     "canonical": "oteryn:quest.the_order_of_the_lion_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Fugue encounter/reward composition and the unqualified Bounac stair collision route remain outside the seven admitted callbacks; the batch-four exclusions retain the stair pair.",
+      "source": ".questpc4/evidence/wiki/The Order of the Lion Quest_Spoiler.wiki:79",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/33/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Order of the Lion Quest_Spoiler.wiki:79; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/33/definition).",
+       "Compared the current native callback registry: 7 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [
+       "oteryn:quest-callback/lion-bounac-return",
+       "oteryn:quest-callback/lion-castle-enter-32480",
+       "oteryn:quest-callback/lion-castle-enter-32481",
+       "oteryn:quest-callback/lion-castle-exit-32480",
+       "oteryn:quest-callback/lion-castle-exit-32481",
+       "oteryn:quest-callback/lion-elevator-down",
+       "oteryn:quest-callback/lion-elevator-up"
+      ],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/36",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/36"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_pits_of_inferno_quest",
+   "title": "The Pits of Inferno Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Pits of Inferno Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The vocation flame/lever route, seven throne conditions and final reward-room admission are not composed into the already-qualified chest choices.",
+    "source": ".questpc4/evidence/wiki/The Pits of Inferno Quest_Spoiler.wiki:15",
+    "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+    "canonical_json_pointer": "/records/89/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Pits of Inferno Quest_Spoiler.wiki:15; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/89/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Pits of Inferno Quest",
+     "canonical": "oteryn:quest.the_pits_of_inferno_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The vocation flame/lever route, seven throne conditions and final reward-room admission are not composed into the already-qualified chest choices.",
+      "source": ".questpc4/evidence/wiki/The Pits of Inferno Quest_Spoiler.wiki:15",
+      "canonical_location": "content/quests/definitions/quests-00000-00099.json:1",
+      "canonical_json_pointer": "/records/89/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Pits of Inferno Quest_Spoiler.wiki:15; checked the selected canonical definition at content/quests/definitions/quests-00000-00099.json:1 (/records/89/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/40",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/40"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.the_roost_of_the_graveborn_quest",
+   "title": "The Roost of the Graveborn Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "The Roost of the Graveborn Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The dragon-head ritual, S'Zallar M'Andar progression and multi-boss finale lack native actor/item/access bindings in the selected recipe.",
+    "source": ".questpc4/evidence/wiki/The Roost of the Graveborn Quest_Spoiler.wiki:5",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/81/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/The Roost of the Graveborn Quest_Spoiler.wiki:5; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/81/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "The Roost of the Graveborn Quest",
+     "canonical": "oteryn:quest.the_roost_of_the_graveborn_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The dragon-head ritual, S'Zallar M'Andar progression and multi-boss finale lack native actor/item/access bindings in the selected recipe.",
+      "source": ".questpc4/evidence/wiki/The Roost of the Graveborn Quest_Spoiler.wiki:5",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/81/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/The Roost of the Graveborn Quest_Spoiler.wiki:5; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/81/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/45",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/45"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.tower_defence_quest",
+   "title": "Tower Defence Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Tower Defence Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Bunny Bonecrusher's parcel delivery, Fire Bug bed burn and wave-completion rewards lack native source-qualified item/encounter composition.",
+    "source": ".questpc4/evidence/wiki/Tower Defence Quest_Spoiler.wiki:9",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/55/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Tower Defence Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/55/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Tower Defence Quest",
+     "canonical": "oteryn:quest.tower_defence_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Bunny Bonecrusher's parcel delivery, Fire Bug bed burn and wave-completion rewards lack native source-qualified item/encounter composition.",
+      "source": ".questpc4/evidence/wiki/Tower Defence Quest_Spoiler.wiki:9",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/55/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Tower Defence Quest_Spoiler.wiki:9; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/55/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/72",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/72"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+   "title": "Twenty Miles Beneath the Sea Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Twenty Miles Beneath the Sea Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "The seaman-skull, Nacre Altar and cursed-gold finale lack source-qualified item/encounter/reward bindings; the recipe's named targets are not native USE selectors.",
+    "source": ".questpc4/evidence/wiki/Twenty Miles Beneath the Sea Quest_Spoiler.wiki:35",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/59/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Twenty Miles Beneath the Sea Quest_Spoiler.wiki:35; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/59/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Twenty Miles Beneath the Sea Quest",
+     "canonical": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "The seaman-skull, Nacre Altar and cursed-gold finale lack source-qualified item/encounter/reward bindings; the recipe's named targets are not native USE selectors.",
+      "source": ".questpc4/evidence/wiki/Twenty Miles Beneath the Sea Quest_Spoiler.wiki:35",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/59/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Twenty Miles Beneath the Sea Quest_Spoiler.wiki:35; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/59/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/79",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/79"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.within_the_tides_quest",
+   "title": "Within the Tides Quest",
+   "from_lane": "questpc4",
+   "status": "ACTIONABLE",
+   "mechanism": "encounter_party_admission_settlement",
+   "titles": [
+    "Within the Tides Quest"
+   ],
+   "from_lanes": [
+    "questpc4"
+   ],
+   "blocker": {
+    "missing_piece": "Tarun's Refiner of Magic and Giant Beaver/trapped-water missions lack exact native item/boss/access composition; the prerequisites and chosen stage names do not bind them.",
+    "source": ".questpc4/evidence/wiki/Within the Tides Quest_Spoiler.wiki:54",
+    "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+    "canonical_json_pointer": "/records/83/definition",
+    "native_evidence": [],
+    "tried": [
+     "Read retained source at .questpc4/evidence/wiki/Within the Tides Quest_Spoiler.wiki:54; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/83/definition).",
+     "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+     "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+    ],
+    "native_callbacks_present": [],
+    "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+    "kind": null,
+    "dependency": null
+   },
+   "sources": [
+    {
+     "title": "Within the Tides Quest",
+     "canonical": "oteryn:quest.within_the_tides_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc4",
+     "status": "ACTIONABLE",
+     "blocker": {
+      "missing_piece": "Tarun's Refiner of Magic and Giant Beaver/trapped-water missions lack exact native item/boss/access composition; the prerequisites and chosen stage names do not bind them.",
+      "source": ".questpc4/evidence/wiki/Within the Tides Quest_Spoiler.wiki:54",
+      "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+      "canonical_json_pointer": "/records/83/definition",
+      "native_evidence": [],
+      "tried": [
+       "Read retained source at .questpc4/evidence/wiki/Within the Tides Quest_Spoiler.wiki:54; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/83/definition).",
+       "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+       "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+      ],
+      "native_callbacks_present": [],
+      "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc4.json#/quests/96",
+     "evidence": null,
+     "first_unqualified_stage": null
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": false,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc4.json#/quests/96"
+   ]
+  },
+  {
+   "canonical": "oteryn:quest.goblin_merchant_quest",
+   "title": "Goblin Merchant Quest",
+   "from_lane": "questpc7",
+   "status": "BLOCKED",
+   "mechanism": "live_creature_capture_item_custody",
+   "titles": [
+    "Goblin Merchant Quest"
+   ],
+   "from_lanes": [
+    "questpc",
+    "questpc7"
+   ],
+   "blocker": {
+    "kind": "shared_engine_dependency",
+    "dependency": "qengine.creature_capture_and_pickup",
+    "missing_piece": "The Guardcatcher/Adventurer stage consumes a carried tool while capturing/removing the exact live creature and delivering its captured form; related Rafzan tasks also change world objects. ItemOnTarget exposes one item string, count and replacements, and its target is a map object, with no transactional captured-creature/pickup operation. The shared pickup/reset/world-operation owner is assigned to qengine; a questpc7 NPC reply cannot authorize an actor despawn.",
+    "evidence": [
+     "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+     "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+    ],
+    "attempts": [
+     "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
+    ],
+    "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+   },
+   "sources": [
+    {
+     "title": "Goblin Merchant Quest",
+     "canonical": "oteryn:quest.goblin_merchant_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc",
+     "status": "UNFINISHED",
+     "blocker": {
+      "missing_piece": "No complete real-dispatch PG qualification for s2 (use: Advertisement Sign, Cracked Stone) and the subsequent completion/reward composition. The identity/binding queue remains non-executable evidence; existing source reward receipts do not prove this stage.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+       "content/quests/missions/completion-binding-plan.json:1#/records/120"
+      ],
+      "attempts": [
+       "Read this canonical definition and chosen recipe, including source references.",
+       "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+       "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+      ],
+      "kind": null,
+      "dependency": null
+     },
+     "source": "in/questpc.json#/quests/113",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+      "content/quests/missions/completion-binding-plan.json:1#/records/120"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Place three Advertisement Signs on cracked swamp stones.",
+      "targets": [
+       "Advertisement Sign",
+       "Cracked Stone"
+      ]
+     }
+    },
+    {
+     "title": "Goblin Merchant Quest",
+     "canonical": "oteryn:quest.goblin_merchant_quest",
+     "canonical_resolution": "input canonical",
+     "from_lane": "questpc7",
+     "status": "BLOCKED",
+     "blocker": {
+      "kind": "shared_engine_dependency",
+      "dependency": "qengine.creature_capture_and_pickup",
+      "missing_piece": "The Guardcatcher/Adventurer stage consumes a carried tool while capturing/removing the exact live creature and delivering its captured form; related Rafzan tasks also change world objects. ItemOnTarget exposes one item string, count and replacements, and its target is a map object, with no transactional captured-creature/pickup operation. The shared pickup/reset/world-operation owner is assigned to qengine; a questpc7 NPC reply cannot authorize an actor despawn.",
+      "evidence": [
+       "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+       "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+      ],
+      "attempts": [
+       "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
+      ],
+      "boundary": "Current user reserves the shared engine to qengine/qengine2; the lane may not build a duplicate owner."
+     },
+     "source": "in/questpc7.json#/16",
+     "evidence": [
+      "content/quests/definitions/quests-00100-00199.json:1#/records/51/definition",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:81",
+      "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+     ],
+     "first_unqualified_stage": {
+      "key": "s2",
+      "kind": "use",
+      "objective": "Place three Advertisement Signs on cracked swamp stones.",
+      "targets": [
+       "Advertisement Sign",
+       "Cracked Stone"
+      ]
+     }
+    }
+   ],
+   "other_observed_mechanisms": [],
+   "classification_note": "One primary mechanism for routing; all source blockers remain obligations. Generic missing-PG evidence alone is not a missing engine.",
+   "depends_on_qengine2": true,
+   "additional_mechanism_dependencies": [],
+   "classification_evidence_sources": [
+    "in/questpc.json#/quests/113",
+    "in/questpc7.json#/16"
+   ]
+  }
+ ],
+ "count": 35,
+ "depends_on_qengine2": true,
+ "qengine2_primary_consumer": false,
+ "qualification_only_count": 0
+}

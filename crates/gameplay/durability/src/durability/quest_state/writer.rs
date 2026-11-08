@@ -52,7 +52,10 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_native(authority, node, fence, request, catalogue, permit, context, native).await
+        self.commit_character_world_callback_with_native(
+            authority, node, fence, request, catalogue, permit, context, native,
+        )
+        .await
     }
 
     /// A content-bound world callback uses the same fenced quest writer and receipt.
@@ -68,12 +71,25 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_character_world_callback_with_native_and_gate(authority,node,fence,request,catalogue,permit,context,native,&grizzly::NoGrizzlyPremium).await
+        self.commit_character_world_callback_with_native_and_gate(
+            authority,
+            node,
+            fence,
+            request,
+            catalogue,
+            permit,
+            context,
+            native,
+            &grizzly::NoGrizzlyPremium,
+        )
+        .await
     }
 
     /// A content-bound world callback uses the same fenced quest writer and receipt.
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_native_and_gate<G: grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_character_world_callback_with_native_and_gate<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -140,7 +156,9 @@ impl DurabilityRoot {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn commit_character_world_callback_with_reward_and_gate<G: grizzly::GrizzlyPremiumGate>(
+    pub async fn commit_character_world_callback_with_reward_and_gate<
+        G: grizzly::GrizzlyPremiumGate,
+    >(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -305,8 +323,13 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        if context.is_none() && reward_callback.is_none() && benevola.is_none() && catalogue.transition(&request.transition_key)
-            .is_some_and(|t|t.effects.is_empty() && !t.completes) {
+        if context.is_none()
+            && reward_callback.is_none()
+            && benevola.is_none()
+            && catalogue
+                .transition(&request.transition_key)
+                .is_some_and(|t| t.effects.is_empty() && !t.completes)
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let reward_achievement =
@@ -315,6 +338,18 @@ impl DurabilityRoot {
         if (request.transition_key
             == super::super::world_event::changes::counters::benevola::HANDOVER)
             != benevola.is_some()
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        if oteryn_gameplay_quests::quest::kill_objectives::binding(&request.transition_key)
+            .is_some()
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        // Only the sealed native-death XP transaction may write these counters.
+        if request
+            .transition_key
+            .starts_with("oteryn:quest-transition/native-kill/")
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -363,9 +398,7 @@ impl DurabilityRoot {
         } else {
             None
         };
-        let world_reward = callback
-            .as_ref()
-            .and_then(|c| c.item_reward().as_ref());
+        let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
             || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
@@ -376,7 +409,10 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
             .map_err(|_| CharacterProgressionError::InvalidInput)?;
-        if context.is_some() && (callback.as_ref().is_some_and(|c| c.item_reward().is_some()) != reward_admission.is_some()) {
+        if context.is_some()
+            && (callback.as_ref().is_some_and(|c| c.item_reward().is_some())
+                != reward_admission.is_some())
+        {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
@@ -411,8 +447,12 @@ impl DurabilityRoot {
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
-                                || c.effects.outfit_reward.is_some() || c.item_reward().is_some() || c.reward_bundle || !c.achievements.is_empty()
-                                || c.requirements.is_some() || c.completes)
+                                || c.effects.outfit_reward.is_some()
+                                || c.item_reward().is_some()
+                                || c.reward_bundle
+                                || !c.achievements.is_empty()
+                                || c.requirements.is_some()
+                                || c.completes)
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -564,6 +604,16 @@ impl DurabilityRoot {
                         if !grizzly_gate.task_permitted(&mut tx, uuid_text(&account)?).await? {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if let Some(callback) = &callback
+                        && !super::super::quest_world_callback::completion_claims_are_current(&mut tx, fence, callback).await?
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    }
+                    if let (Some(callback), Some((_, context, _))) = (&callback, &context)
+                        && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, context).await?
+                    {
+                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(
@@ -1029,140 +1079,17 @@ impl DurabilityRoot {
                             "oteryn:quest-world-reward", &occurrence,
                         ).await?;
                     }
-                    let committed_revision = root
-                        .revision
-                        .checked_add(1)
-                        .ok_or(DurabilityError::InvalidStoredState)?;
                     if let Some(recipe) = timer_recipe {
-                        server_timer::record(&mut tx,fence,&request,recipe,changes.first().ok_or(DurabilityError::InvalidStoredState)?.before,Some(committed_revision)).await?;
+                        let successor = root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
+                        server_timer::record(&mut tx, fence, &request, recipe,
+                            changes.first().ok_or(DurabilityError::InvalidStoredState)?.before,
+                            Some(successor)).await?;
                     }
-                    let (original, committed) =
-                        (root.revision.to_string(), committed_revision.to_string());
-                    for successor in [
-                        "UPDATE game_character_roots \
-                            SET character_revision = $2::text::numeric(20,0) \
-                          WHERE character_id = encode($1,'hex')::uuid \
-                            AND character_revision = $3::text::numeric(20,0)",
-                        "UPDATE game_character_progression_state \
-                            SET character_revision = $2::text::numeric(20,0) \
-                          WHERE character_id = encode($1,'hex')::uuid \
-                            AND character_revision = $3::text::numeric(20,0)",
-                    ] {
-                        let updated = sqlx::query(successor)
-                            .bind(id)
-                            .bind(&committed)
-                            .bind(&original)
-                            .execute(&mut *tx)
-                            .await?;
-                        if updated.rows_affected() != 1 {
-                            return Err(DurabilityError::InvalidStoredState);
-                        }
-                    }
-                    let (cause_id, ordinal) = request.cause.key();
-                    let track_keys: Vec<&str> =
-                        changes.iter().map(|change| change.track.as_str()).collect();
-                    let before: Vec<i64> = changes.iter().map(|change| change.before).collect();
-                    let after: Vec<i64> = changes.iter().map(|change| change.after).collect();
-                    let receipt = sqlx::query(
-                        "INSERT INTO game_character_quest_receipts(\
-                           character_id, cause_kind, cause_id, cause_ordinal, transition_key, \
-                           quest_key, request_binding, pinned_content_revision, definition_hash, \
-                           completes, track_keys, values_before, values_after, \
-                           original_character_revision, committed_character_revision, \
-                           level_before, level_after, experience_before, experience_after, \
-                           profile_revision, ruleset_revision, content_revision, \
-                           simulation_revision, evidence_revision, declaration_revision, \
-                           policy_revision, reward_revision, committed_at) \
-                         SELECT s.character_id, $2, encode($3,'hex')::uuid, \
-                           $4::text::numeric(20,0), $5, $6, $7, $8, $9, $10, $11::text[], \
-                           $12::bigint[], $13::bigint[], $14::text::numeric(20,0), \
-                           $15::text::numeric(20,0), s.level, s.level, s.total_experience, \
-                           s.total_experience, s.profile_revision, s.ruleset_revision, \
-                           s.content_revision, s.simulation_revision, s.evidence_revision, \
-                           s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
-                           FROM game_character_progression_state s \
-                          WHERE s.character_id = encode($1,'hex')::uuid",
-                    )
-                    .bind(id)
-                    .bind(request.cause.kind())
-                    .bind(cause_id.as_slice())
-                    .bind(ordinal.to_string())
-                    .bind(&request.transition_key)
-                    .bind(quest)
-                    .bind(binding.as_slice())
-                    .bind(&pin)
-                    .bind(hash.as_slice())
-                    .bind(transition.completes)
-                    .bind(&track_keys)
-                    .bind(&before)
-                    .bind(&after)
-                    .bind(&original)
-                    .bind(&committed)
-                    .execute(&mut *tx)
-                    .await?;
-                    if receipt.rows_affected() != 1 {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    for change in &changes {
-                        let written = sqlx::query(
-                            "INSERT INTO game_character_quest_tracks(character_id, track_key, \
-                               quest_key, value, committed_character_revision) \
-                             VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
-                               $5::text::numeric(20,0)) \
-                             ON CONFLICT (character_id, track_key) DO UPDATE \
-                               SET value = EXCLUDED.value, \
-                                   committed_character_revision = \
-                                     EXCLUDED.committed_character_revision",
-                        )
-                        .bind(id)
-                        .bind(&change.track)
-                        .bind(quest)
-                        .bind(change.after)
-                        .bind(&committed)
-                        .execute(&mut *tx)
-                        .await?;
-                        if written.rows_affected() != 1 {
-                            return Err(DurabilityError::InvalidStoredState);
-                        }
-                    }
-                    let completed = transition.completes.then_some(committed.as_str());
-                    let written = if stored_state.is_some() {
-                        sqlx::query(
-                            "UPDATE game_character_quest_states \
-                                SET committed_character_revision = $3::text::numeric(20,0), \
-                                    completed_character_revision = coalesce(\
-                                      completed_character_revision, $4::text::numeric(20,0)) \
-                              WHERE character_id = encode($1,'hex')::uuid AND quest_key = $2",
-                        )
-                        .bind(id)
-                        .bind(quest)
-                        .bind(&committed)
-                        .bind(completed)
-                        .execute(&mut *tx)
-                        .await?
-                    } else {
-                        sqlx::query(
-                            "INSERT INTO game_character_quest_states(character_id, quest_key, \
-                               pinned_content_revision, definition_hash, \
-                               started_character_revision, completed_character_revision, \
-                               committed_character_revision) \
-                             VALUES (encode($1,'hex')::uuid, $2, $3, $4, \
-                               $5::text::numeric(20,0), $6::text::numeric(20,0), \
-                               $5::text::numeric(20,0))",
-                        )
-                        .bind(id)
-                        .bind(quest)
-                        .bind(&pin)
-                        .bind(hash.as_slice())
-                        .bind(&committed)
-                        .bind(completed)
-                        .execute(&mut *tx)
-                        .await?
-                    };
-                    if written.rows_affected() != 1 {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
+                    let committed_revision = super::persist::persist(&mut tx, super::persist::QuestWrite {
+                        character, root_revision: root.revision, request: &request,
+                        transition, pin: &pin, hash: &hash, changes: &changes,
+                        binding: &binding, state_exists: stored_state.is_some(),
+                    }).await?;
                     let experience = match reward_experience {
                         Some(amount) => Some(
                             insert_xp_obligation(

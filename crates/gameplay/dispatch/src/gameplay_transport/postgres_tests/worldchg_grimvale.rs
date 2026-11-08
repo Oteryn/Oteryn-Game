@@ -312,6 +312,7 @@ fn scenario() -> TestResult {
             let runtime = owner.runtime.lock().await;
             let snapshot = runtime.read_actor_position(deps.actor).map_err(debug)?;
             crate::durability::quest_world_callback::QuestWorldContext {
+                party: Vec::new(),
                 map_revision: crate::map::overlay::map_revision(
                     owner.bundle_map().ok_or("map")?.overlay.base(),
                 ),

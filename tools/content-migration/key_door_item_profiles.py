@@ -1,9 +1,9 @@
-"""Admit the bounded source-derived M06 keys, locked door and level-door pair."""
+"""Admit the bounded source-derived keys, M06/Panpipe locked doors and level-door pairs."""
 import hashlib
 import json
 
 PATH = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1646, 1647, 2967, 2968, 5102, 5103}
+IDS = {1628, 1631, 1646, 1647, 2967, 2968, 5102, 5103, 6264, 6265}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

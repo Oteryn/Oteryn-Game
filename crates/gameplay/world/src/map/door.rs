@@ -295,6 +295,10 @@ impl DoorBook {
 
     /// Whether a door entry of `pos` is solid in its current state.
     pub fn blocks(&self, pos: TilePos) -> bool {
+        self.blocks_except(pos, None)
+    }
+
+    pub(super) fn blocks_except(&self, pos: TilePos, except: Option<u64>) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -302,7 +306,7 @@ impl DoorBook {
         self.doors[start..]
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
-            .any(Door::solid)
+            .any(|door| Some(door.key) != except && door.solid())
     }
 
     /// Whether any door entry of `pos` exists.

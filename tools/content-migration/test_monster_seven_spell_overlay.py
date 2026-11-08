@@ -43,10 +43,11 @@ class AcceptedOverlayTests(unittest.TestCase):
         # registers the pinned item-profile supplement. QENGINE2 adds its
         # source-qualified reward Item proof alongside those 42 outputs.
         # WORLDCHG adds the three admitted source-loot closures as one output.
-        self.assertEqual(len(actual),44 + 2)
+        self.assertEqual(len(actual),47)
         for cohort in ('marsh', 'slug'):
             self.assertIn(f'tools/content-schema/native-gameplay/questpc7-{cohort}-corpse-profiles.json', actual)
         self.assertIn('tools/content-schema/native-gameplay/loot-tables.json',actual.keys())
+        self.assertIn('tools/content-schema/native-gameplay/source-gate-item-profiles.json',actual)
         self.assertIn('tools/content-schema/native-gameplay/qengine-reward-item-profiles.json',actual)
         self.assertIn('content/items/definitions/srx1-item-updates.json',actual)
         self.assertIn('content/items/definitions/starting-loadout-profiles.json',actual)

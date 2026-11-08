@@ -1,0 +1,370 @@
+[
+  {
+    "name": "chest.lua",
+    "path": "data-global/startup/tables/chest.lua",
+    "sha": "7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+    "size": 93109,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/chest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/chest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/7b9f823542f9b8d5f99fb6960abe070324c89b8e",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua"
+    }
+  },
+  {
+    "name": "container_books_1.lua",
+    "path": "data-global/startup/tables/container_books_1.lua",
+    "sha": "d93503fb8fc6e38c77a61855cee511d83946d471",
+    "size": 400523,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_1.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_1.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d93503fb8fc6e38c77a61855cee511d83946d471",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_1.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_1.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d93503fb8fc6e38c77a61855cee511d83946d471",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_1.lua"
+    }
+  },
+  {
+    "name": "container_books_2.lua",
+    "path": "data-global/startup/tables/container_books_2.lua",
+    "sha": "5b75cedded96301bc807538e27cf2c5c44423681",
+    "size": 538936,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_2.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_2.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5b75cedded96301bc807538e27cf2c5c44423681",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_2.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_2.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5b75cedded96301bc807538e27cf2c5c44423681",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_2.lua"
+    }
+  },
+  {
+    "name": "container_books_3.lua",
+    "path": "data-global/startup/tables/container_books_3.lua",
+    "sha": "9f872ca6faefff9e4f96831cd424e8c96556793c",
+    "size": 233986,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_3.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_3.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9f872ca6faefff9e4f96831cd424e8c96556793c",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_3.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_3.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9f872ca6faefff9e4f96831cd424e8c96556793c",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_3.lua"
+    }
+  },
+  {
+    "name": "container_books_4.lua",
+    "path": "data-global/startup/tables/container_books_4.lua",
+    "sha": "8a1eaa48f9a08393772a0775031840fb237ee4b9",
+    "size": 68478,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_4.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_4.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8a1eaa48f9a08393772a0775031840fb237ee4b9",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_4.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_books_4.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8a1eaa48f9a08393772a0775031840fb237ee4b9",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_books_4.lua"
+    }
+  },
+  {
+    "name": "container_misc.lua",
+    "path": "data-global/startup/tables/container_misc.lua",
+    "sha": "fbb988e2f836cc3b5a2ca611e2dbe38ee0b28bef",
+    "size": 45124,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_misc.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_misc.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fbb988e2f836cc3b5a2ca611e2dbe38ee0b28bef",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_misc.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_misc.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fbb988e2f836cc3b5a2ca611e2dbe38ee0b28bef",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_misc.lua"
+    }
+  },
+  {
+    "name": "container_quest.lua",
+    "path": "data-global/startup/tables/container_quest.lua",
+    "sha": "78bc8ab7617f966f5b1c511c87543453cc5d493b",
+    "size": 24346,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_quest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_quest.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/78bc8ab7617f966f5b1c511c87543453cc5d493b",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_quest.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/container_quest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/78bc8ab7617f966f5b1c511c87543453cc5d493b",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/container_quest.lua"
+    }
+  },
+  {
+    "name": "corpse.lua",
+    "path": "data-global/startup/tables/corpse.lua",
+    "sha": "dc19373494f7b06943dcb2e02972cd8e8e5d48b2",
+    "size": 3109,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/corpse.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/corpse.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/dc19373494f7b06943dcb2e02972cd8e8e5d48b2",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/corpse.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/corpse.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/dc19373494f7b06943dcb2e02972cd8e8e5d48b2",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/corpse.lua"
+    }
+  },
+  {
+    "name": "create_item.lua",
+    "path": "data-global/startup/tables/create_item.lua",
+    "sha": "0cc2fba2941bfea00ff0514239bf006001099861",
+    "size": 6283,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/create_item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/create_item.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0cc2fba2941bfea00ff0514239bf006001099861",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/create_item.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/create_item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0cc2fba2941bfea00ff0514239bf006001099861",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/create_item.lua"
+    }
+  },
+  {
+    "name": "door_key.lua",
+    "path": "data-global/startup/tables/door_key.lua",
+    "sha": "61414780c50287cb7982e4286eafa1224b7e2b65",
+    "size": 6782,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_key.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_key.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61414780c50287cb7982e4286eafa1224b7e2b65",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_key.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_key.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61414780c50287cb7982e4286eafa1224b7e2b65",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_key.lua"
+    }
+  },
+  {
+    "name": "door_level.lua",
+    "path": "data-global/startup/tables/door_level.lua",
+    "sha": "0d1a38cf3b0309d81ce8a08c6fc495df74c86444",
+    "size": 5076,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_level.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_level.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0d1a38cf3b0309d81ce8a08c6fc495df74c86444",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_level.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_level.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0d1a38cf3b0309d81ce8a08c6fc495df74c86444",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_level.lua"
+    }
+  },
+  {
+    "name": "door_quest.lua",
+    "path": "data-global/startup/tables/door_quest.lua",
+    "sha": "d9bbe974804ad7555ff35f400f3b1e62a3d5ddf2",
+    "size": 32820,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_quest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_quest.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d9bbe974804ad7555ff35f400f3b1e62a3d5ddf2",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_quest.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/door_quest.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d9bbe974804ad7555ff35f400f3b1e62a3d5ddf2",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/door_quest.lua"
+    }
+  },
+  {
+    "name": "item.lua",
+    "path": "data-global/startup/tables/item.lua",
+    "sha": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
+    "size": 121248,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5d5323401d243df8416a38aba33c3d6e738b2d1a",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/5d5323401d243df8416a38aba33c3d6e738b2d1a",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua"
+    }
+  },
+  {
+    "name": "item_daily_reward.lua",
+    "path": "data-global/startup/tables/item_daily_reward.lua",
+    "sha": "9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+    "size": 23,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item_daily_reward.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_daily_reward.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_daily_reward.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item_daily_reward.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9decb4dc89863d18f7b6351f3abda96ec4758bc4",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_daily_reward.lua"
+    }
+  },
+  {
+    "name": "item_unmovable.lua",
+    "path": "data-global/startup/tables/item_unmovable.lua",
+    "sha": "00e20eb1b5aec2faa4bbe268f9aa8636abc29dbc",
+    "size": 18184,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item_unmovable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_unmovable.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/00e20eb1b5aec2faa4bbe268f9aa8636abc29dbc",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_unmovable.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/item_unmovable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/00e20eb1b5aec2faa4bbe268f9aa8636abc29dbc",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item_unmovable.lua"
+    }
+  },
+  {
+    "name": "lever.lua",
+    "path": "data-global/startup/tables/lever.lua",
+    "sha": "31643d019244bd228c0355c9aed8522bce45aaf0",
+    "size": 23980,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/31643d019244bd228c0355c9aed8522bce45aaf0",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/31643d019244bd228c0355c9aed8522bce45aaf0",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/lever.lua"
+    }
+  },
+  {
+    "name": "load.lua",
+    "path": "data-global/startup/tables/load.lua",
+    "sha": "fa6202b548fed9631e8d24acf0ccc4be07de9de9",
+    "size": 1327,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/load.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/load.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa6202b548fed9631e8d24acf0ccc4be07de9de9",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/load.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/load.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fa6202b548fed9631e8d24acf0ccc4be07de9de9",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/load.lua"
+    }
+  },
+  {
+    "name": "storage_keys_update.lua",
+    "path": "data-global/startup/tables/storage_keys_update.lua",
+    "sha": "8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+    "size": 11687,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/storage_keys_update.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/storage_keys_update.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/storage_keys_update.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/storage_keys_update.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/8b4eab2d4de187112f606c3b5168b5c2b24c27e2",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/storage_keys_update.lua"
+    }
+  },
+  {
+    "name": "teleport.lua",
+    "path": "data-global/startup/tables/teleport.lua",
+    "sha": "cfbfc04755c4cfd2665aa1d963bcc7416e23707d",
+    "size": 18837,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/teleport.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cfbfc04755c4cfd2665aa1d963bcc7416e23707d",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/teleport.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cfbfc04755c4cfd2665aa1d963bcc7416e23707d",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua"
+    }
+  },
+  {
+    "name": "teleport_item.lua",
+    "path": "data-global/startup/tables/teleport_item.lua",
+    "sha": "9341960605fc6b61956a209bd96c9ed095505438",
+    "size": 3350,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/teleport_item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport_item.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9341960605fc6b61956a209bd96c9ed095505438",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport_item.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/teleport_item.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9341960605fc6b61956a209bd96c9ed095505438",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport_item.lua"
+    }
+  },
+  {
+    "name": "tile.lua",
+    "path": "data-global/startup/tables/tile.lua",
+    "sha": "e8780ad80e10d09eba2db1138e1cac4ba1d4b67b",
+    "size": 59827,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/tile.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e8780ad80e10d09eba2db1138e1cac4ba1d4b67b",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/tile.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e8780ad80e10d09eba2db1138e1cac4ba1d4b67b",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile.lua"
+    }
+  },
+  {
+    "name": "tile_pick.lua",
+    "path": "data-global/startup/tables/tile_pick.lua",
+    "sha": "9b7f1cb43878b2f34a5a99efc77f14a784799647",
+    "size": 1790,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/tile_pick.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile_pick.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9b7f1cb43878b2f34a5a99efc77f14a784799647",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile_pick.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/tile_pick.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/9b7f1cb43878b2f34a5a99efc77f14a784799647",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/tile_pick.lua"
+    }
+  },
+  {
+    "name": "writeable.lua",
+    "path": "data-global/startup/tables/writeable.lua",
+    "sha": "eb256895b3c761f4c51f01fa0eb2c53143302b4a",
+    "size": 71442,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/writeable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/writeable.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/eb256895b3c761f4c51f01fa0eb2c53143302b4a",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/writeable.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/startup/tables/writeable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/eb256895b3c761f4c51f01fa0eb2c53143302b4a",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/writeable.lua"
+    }
+  }
+]

@@ -25,13 +25,17 @@ class NativeClaimSourceReadinessTests(unittest.TestCase):
         self.assertEqual(native[desert]['data_holds'], [])
         self.assertIn('native_contents', native[desert])
         self.assertEqual(source[desert]['data_holds'][0]['item'], 'oteryn:item.tibia.i3084')
+        draconia = 'oteryn:reward-claim.kv.draconia1'
+        self.assertEqual(native[draconia]['data_holds'], [])
+        self.assertEqual(source[draconia]['_source_hold_categories'], ['item'])
+        self.assertEqual(source[draconia]['native_contents'], native[draconia]['native_contents'])
         # False private compiler annotations do not change the SOURCE witness.
         comparison = {key: {field: value for field, value in row.items()
                             if field != '_source_baseline_item_hold' or value}
                       for key, row in source.items()}
         changed = {key for key in native if native[key] != comparison[key]}
         self.assertEqual(changed, {
-            'oteryn:reward-claim.kv.madmageroom3', triangle, desert,
+            'oteryn:reward-claim.kv.madmageroom3', triangle, desert, draconia,
             'oteryn:reward-claim.kv.ornamentedshield',
             'oteryn:reward-claim.kv.present_box', 'oteryn:reward-claim.kv.powerring2',
             'oteryn:reward-claim.kv.timering3', 'oteryn:reward-claim.kv.trollcave1',

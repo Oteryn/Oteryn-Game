@@ -997,6 +997,22 @@ pub(crate) async fn committed_fresh_player_owned(
 ) -> TestResult<
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
 > {
+    committed_fresh_player_with_operation(h, character, account, session, now)
+        .await
+        .map(|(current, _)| current)
+}
+
+/// Preserve the actual committed operation for ordinary equipment admission.
+pub(crate) async fn committed_fresh_player_with_operation(
+    h: &FreshPlayerOwners<'_>,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+) -> TestResult<(
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+    crate::foundation::fresh_admission_durability::FreshAdmissionOperationV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
@@ -1049,7 +1065,7 @@ pub(crate) async fn committed_fresh_player_owned(
     );
     assert_eq!(current.current_connection_generation().get(), 1);
     assert_eq!(current.current_character_lease().generation(), 2);
-    Ok(current)
+    Ok((current, request.operation().clone()))
 }
 
 /// D88 initialization and A13 vocation choice use the actual Character writers. The

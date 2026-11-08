@@ -258,7 +258,7 @@ impl ItemMintCause {
     }
 }
 
-/// Actual typed Ground in the death's own World/Channel and generation.
+/// Actual typed Ground in the death's own World and runtime scope and generation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroundPlacement {
     pub spatial_position: Vec<u8>,
@@ -336,10 +336,6 @@ impl ItemMintCandidate {
     #[allow(
         dead_code,
         reason = "used only by the PostgreSQL item-writer test support"
-    )]
-    #[allow(
-        clippy::expect_used,
-        reason = "a fresh native death lane has no retained failure state"
     )]
     pub async fn fresh_death_lane_permit(&self) -> SpellLanePermit {
         SpellLanePermit::of_fresh_scope_lane(self.request.cause.death.runtime_scope).await
@@ -1145,18 +1141,25 @@ impl DurabilityRoot {
                 || claim.items().iter().enumerate().any(|(offset, id)| {
                     let key = format!("oteryn:item.tibia.i{id}");
                     let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
-                    let mut selected = frozen_children.iter().filter(|(child, _)|
-                        child.request.cause.purpose_key == purpose);
+                    let mut selected = frozen_children
+                        .iter()
+                        .filter(|(child, _)| child.request.cause.purpose_key == purpose);
                     match (selected.next(), selected.next()) {
-                        (Some((child, placement)), None) => child.request.item.production_key != key
-                            || child.request.quantity != 1
-                            || child.request.cause.draw_ordinal != u32::try_from(offset).unwrap_or(u32::MAX)
-                            || placement.corpse_item_instance_id != candidate.item_instance_id
-                            || placement.placement_ordinal != u32::try_from(offset + 1).unwrap_or(u32::MAX),
+                        (Some((child, placement)), None) => {
+                            child.request.item.production_key != key
+                                || child.request.quantity != 1
+                                || child.request.cause.draw_ordinal
+                                    != u32::try_from(offset).unwrap_or(u32::MAX)
+                                || placement.corpse_item_instance_id != candidate.item_instance_id
+                                || placement.placement_ordinal
+                                    != u32::try_from(offset + 1).unwrap_or(u32::MAX)
+                        }
                         _ => true,
                     }
                 })
-            { return Err(ItemMintError::InvalidInput); }
+            {
+                return Err(ItemMintError::InvalidInput);
+            }
         }
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
@@ -1210,8 +1213,12 @@ impl DurabilityRoot {
                     // batch locks and qualifies its Character before any item row.
                     if let Some(claim) = &tutorial_corruptor
                         && super::character_progression::assert_gameplay_fence(
-                            &mut tx, &claim.fence, &node,
-                        ).await?.is_err()
+                            &mut tx,
+                            &claim.fence,
+                            &node,
+                        )
+                        .await?
+                        .is_err()
                     {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
@@ -1344,7 +1351,8 @@ impl DurabilityRoot {
                         }));
                     }
                     if let Some(claim) = &tutorial_corruptor {
-                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim).await?;
+                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim)
+                            .await?;
                     }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
@@ -1994,6 +2002,7 @@ async fn fence_is_live(
            AND ownership_generation = $4::text::numeric(20,0) \
            AND holder_node_id = encode($5,'hex')::uuid \
            AND holder_registration_revision = $6::text::numeric(20,0) \
+           AND ($7::bytea IS NULL OR game_runtime_scope_assignment_history_valid()) \
          FOR SHARE",
     )
     .bind(assignment_scope_key(death.runtime_scope).as_slice())
@@ -2128,7 +2137,11 @@ async fn insert_corpse_loot_mint(
     let Some(root) = root else {
         return Err(DurabilityError::InvalidStoredState);
     };
-    permit.check_scope(decode_ground_scope(&root)?)?;
+    let root_scope = decode_ground_scope(&root)?;
+    if root_scope != death.runtime_scope {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    permit.check_scope(root_scope)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_corpse_container_entries(item_instance_id, world_id, \

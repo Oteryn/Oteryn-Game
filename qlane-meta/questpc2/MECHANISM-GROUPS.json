@@ -1,0 +1,261 @@
+{
+  "task_id": "questpc2",
+  "source_ledger": ".questpc2/QUEST-STATUS.json",
+  "observed_quests": 39,
+  "observed_legacy_blocked": 25,
+  "requested_blocked": 94,
+  "missing_inputs": [
+    "94-quest ledger",
+    "OWNER-DECISIONS.md",
+    "specific in-flight ITEMHOLD/WORLDCHG ownership"
+  ],
+  "rule": "Game implementation gaps are actionable work; saved BLOCKED labels are historical, not accepted final dispositions. Do not assign external ownership without evidence.",
+  "groups": {
+    "kill_credit_and_atomic_item_xp_mission_completion": [
+      {
+        "quest": "Newhaven Legion Helmet Quest",
+        "saved_missing_piece": "Both source prerequisites must complete: Gustavo Protect the Village and Viola Lost Wisdom. Their Guardian Ring52732/Scarf3572 rewards are canonically nonmaterializable, so granting prerequisite progress alone would bypass required item/XP completion.",
+        "evidence": [
+          ".questpc2/wiki/Newhaven Legion Helmet Quest_Spoiler.wiki:5",
+          ".questpc2/next-newhaven-source.md:7",
+          "content/items/definitions/items-28500-28999.json:1 /records/109",
+          "content/items/definitions/items-21000-21499.json:1 /records/419"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Newhaven Quest",
+        "saved_missing_piece": "The required Guardian Ring52732 and Scarf3572 are not materializable in the canonical Item catalogue. Their NPC reward/XP completion cannot be qualified using held rewards.",
+        "evidence": [
+          "content/items/definitions/items-28500-28999.json:1 /records/109",
+          "content/items/definitions/items-21000-21499.json:1 /records/419"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "world_activation_counters_and_item_callbacks": [
+      {
+        "quest": "Nightmare Isles Mini World Change",
+        "saved_missing_piece": "Native W1 activation cannot consume the selection-source candidate: all six binding gaps remain, including native island layers, spawn/raid identities and compiler/bundle bindings. The runtime boundary explicitly returns WorldChangeBindingsUnavailable; a lane-local portal must not invent the excluded W14 world-change authority.",
+        "evidence": [
+          "crates/gameplay/world-change/src/content.rs:114",
+          "content/encounters/world-changes/nightmare_isles/selection-source.json:11",
+          "apps/game-server/src/node/serve/daily_world_changes.rs:39"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Nomads Mini World Change",
+        "saved_missing_piece": "The exact southern-camp reward needs Silver Amulet3054, which is canonically nonmaterializable. Ham/Fish are still ambiguous in the selected recipe; splitting the Fur Bag into independent rewards would also change the source container.",
+        "evidence": [
+          "content/items/definitions/items-17500-17999.json:1 /records/428",
+          "content/quests/definitions/quests-00300-00351.json:1 /records/21/definition/recipe/reward_intents",
+          ".questpc2/wiki/Nomads Mini World Change_Spoiler.wiki:30"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Noodles is Gone Mini World Change",
+        "saved_missing_piece": "Required Dog Collar14156 is canonically nonmaterializable; the King cannot issue an admitted collar and the capture cannot burn one. The source also requires a two-week repeat gate and NPC-target USE, not a dialogue success line.",
+        "evidence": [
+          "content/items/definitions/items-04000-04499.json:1 /records/151",
+          ".questpc2/wiki/Noodles is Gone Mini World Change_Spoiler.wiki:6"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Overhunting World Change",
+        "saved_missing_piece": "The required Captured Wolf12369 is canonically nonmaterializable. The saved source gives relative capture-versus-kill effectiveness but no numeric global transition threshold. A fabricated threshold or generic item cannot qualify restoration.",
+        "evidence": [
+          "content/items/definitions/items-02000-02499.json:1 /records/400",
+          ".questpc2/wiki/Overhunting World Change_Spoiler.wiki:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Poacher Caves Mini World Change",
+        "saved_missing_piece": "The W14 World-change definition/activation bindings for the three mutually exclusive cave populations are absent. DailyWorldChanges has no Poacher selection and the live boot does not bind these variants to creature populations; a quest-only NPC/command module cannot supply the excluded World-level population owner.",
+        "evidence": [
+          "crates/gameplay/world-change/src/daily.rs:94",
+          "apps/game-server/src/node/serve/daily_world_changes.rs:39",
+          "crates/gameplay/world-change/src/content.rs:114",
+          ".questpc2/wiki/Poacher Caves Mini World Change_Spoiler.wiki:17"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "outfit_admission_and_atomic_mission_grants": [
+      {
+        "quest": "Nightmare Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "No Rest for the Wicked Quest",
+        "saved_missing_piece": "Source completion includes the Fiend Slayer base Outfit. Its canonical family remains READY_UNPOPULATED; the later Demon Claws/Skull are also held Items. Ritual/mission code cannot replace the required appearance grant.",
+        "evidence": [
+          ".questpc2/wiki/No Rest for the Wicked Quest.wiki:4",
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Nobleman Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Norseman Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Orcsoberfest",
+        "saved_missing_piece": "Both the source and selected programme finish with Orcsoberfest Garb. The canonical Outfit/addon family remains READY_UNPOPULATED; implementing minigames or points would leave the selected final reward unadmitted.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7",
+          "content/quests/definitions/quests-00300-00351.json:1 /records/23/definition/recipe/reward_intents"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Oriental Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Pirate Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Podzilla Quest",
+        "saved_missing_piece": "Source completion grants the Rootwalker Outfit, whose canonical family is READY_UNPOPULATED. Amber Sickle and its timed root/encounter path cannot replace that final appearance grant.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7",
+          ".questpc2/wiki/Podzilla Quest.wiki:4"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Poltergeist Outfits Quest",
+        "saved_missing_piece": "Canonical Outfit/addon definitions and acquisition identities are READY_UNPOPULATED; source transcripts cannot mint unadmitted outfits.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Primal Ordeal Quest",
+        "saved_missing_piece": "The source main reward needs the unpopulated Fire-Fighter Outfit catalogue; the selected Primal Bag39546 is also nonmaterializable. Within the Tides is a prerequisite outside N..Q.",
+        "evidence": [
+          "content/cosmetics/outfits/index.json:7",
+          "content/items/definitions/items-24000-24499.json:1 /records/403",
+          ".questpc2/wiki/Primal Ordeal Quest.wiki:5"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "creature_item_admission_and_raid_composition": [
+      {
+        "quest": "Nimmersatt's Lair",
+        "saved_missing_piece": "The selected Bottled Dragon Breath44179 reward is canonically nonmaterializable. Lava Wall/Dragon Bride have no canonical Creature identity in the current catalogue, while the saved source omits numeric wall health/damage. A calendar owner alone cannot qualify the raid.",
+        "evidence": [
+          "content/items/definitions/items-25500-25999.json:1 /records/159",
+          "content/quests/definitions/quests-00300-00351.json:1 /records/19/definition/recipe",
+          ".questpc2/wiki/Nimmersatt's Lair_Spoiler.wiki:5"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "quest_item_identity_and_stealth_composition": [
+      {
+        "quest": "Nomads Land Quest",
+        "saved_missing_piece": "The mandatory Sacred Casket/Book Native Item identity is unresolved. The saved Muhad donor has the start but no casket completion branch; the Wiki confirms a second completion path when the casket is outside the backpack. A guessed generic box or forced consume would change the source.",
+        "evidence": [
+          "content/quests/definitions/quests-00300-00351.json:1 /records/20/definition/recipe/reward_intents",
+          ".questpc2/reference/data-global/npc/muhad.lua:68",
+          ".questpc2/wiki/Nomads Land Quest_Spoiler.wiki:98"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "item_identity_and_vision_callbacks": [
+      {
+        "quest": "Opticording Sphere Quest",
+        "saved_missing_piece": "The authored sphere target is ambiguous, multiple vision targets have no Native identity, and final Monolith Kit33330 is not materializable. Bigfoot prerequisite alone cannot make these targets authoritative.",
+        "evidence": [
+          "content/items/definitions/items-20000-20499.json:1 /records/389",
+          ".questpc2/restart-content-holds.json:1"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "root_identity_and_occurrence_counters": [
+      {
+        "quest": "Oramond Quest",
+        "saved_missing_piece": "The selected root-gathering stage requests Oramond roots with item_resolution=unresolved; the canonical recipe has no exact Native Item join for that input. Unrelated same-name Item33938 is held and cannot be selected by label.",
+        "evidence": [
+          "content/quests/definitions/quests-00100-00199.json:1 /records/79/definition/oteryn_recipe/payload/recipe/stages/1/target_items"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "exact_container_admission_and_atomic_hand_in": [
+      {
+        "quest": "Ornamented Shield Quest",
+        "saved_missing_piece": "The required garlic-necklace child3083 remains nonmaterializable with its charge mismatch. The filled container and keyed access cannot be qualified by minting only the ready shield.",
+        "evidence": [
+          "content/items/definitions/items-18000-18499.json:1 /records/159",
+          "docs/repository/QUEST_CALLBACK_COVERAGE.json:1 /quests/76"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Power Ring Quest",
+        "saved_missing_piece": "The canonical bronze-amulet child3056 is not materializable; UID6151 is gold in both numeric donors, and UID6152 still disagrees with the current source recipe. A Power Ring substitution would erase an explicit source conflict.",
+        "evidence": [
+          "content/items/definitions/items-17500-17999.json:1 /records/430",
+          "docs/repository/QUEST_CALLBACK_COVERAGE.json:1 /quests/82"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      },
+      {
+        "quest": "Present Quest",
+        "saved_missing_piece": "The required source backpack includes Item2882 and2881 with explicit ITEM_SEMANTICS_MISSING holds. Granting just the present would change the exact source reward; the Seymour exchange alone cannot qualify the quest.",
+        "evidence": [
+          "content/interactions/reward_claims/reward-claim-variants-00000-00099.json:1 /records/21/definition/data_holds"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ],
+    "blessing_service_admission_and_ordered_visits": [
+      {
+        "quest": "Pilgrimage of Ashes Quest",
+        "saved_missing_piece": "The four free regular blessing Service identities (Spiritual Shielding, Embrace of Tibia, Fire of the Suns, Spark of the Phoenix) are absent from the canonical Service.Blessing family. The ruleset price names are not canonical service declarations. The closed native blessing purchase owner admits premium services only and its fee/receipt guards lack those bindings. A lane-local mission handler cannot grant unadmitted Services; changing the selected recipe to dialogue-only would remove the source blessings.",
+        "evidence": [
+          "content/services/blessings/blessing-00000-00003.json:1",
+          "crates/gameplay/durability/src/durability/blessing_purchase.rs:48",
+          "apps/game-server/migrations/0133_character_promotion_purchases.sql:14",
+          ".questpc2/wiki/Pilgrimage of Ashes Quest_Spoiler.wiki:5"
+        ],
+        "owner": "questpc2; external ownership not established by local records"
+      }
+    ]
+  }
+}
