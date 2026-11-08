@@ -480,6 +480,19 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     let (family, steps, look): (&str, &[StoryStep], u16) = match name {
+        "qengine-rewards-l2-wizard-skull-story" => (
+            "wizard",
+            &[
+                ("start", None, None, None),
+                ("shield", Some((3436, 1)), None, None),
+                ("mail", Some((3386, 1)), None, None),
+                ("legs", Some((3382, 1)), None, None),
+                ("skull", Some((3006, 1)), None, Some(2)),
+                ("flowers-start", None, None, None),
+                ("flowers", Some((5922, 50)), None, Some(1)),
+            ],
+            149,
+        ),
         "qengine-rewards-l2-battle-mage-story" => (
             "battle-mage",
             &[
@@ -1431,6 +1444,12 @@ pub(super) async fn exercise(
         }
     } else if family == "assassin" {
         let keys = ["oteryn:npc.vescu", "oteryn:npc.erayo", "oteryn:npc.atrad"];
+        let actors = super::classic_quests::install(owner, admitted, keys).await?;
+        for (key, actor) in keys.into_iter().zip(actors) {
+            npcs.insert(key.to_owned(), actor);
+        }
+    } else if family == "wizard" {
+        let keys = ["oteryn:npc.lugri", "oteryn:npc.the_queen_of_the_banshees"];
         let actors = super::classic_quests::install(owner, admitted, keys).await?;
         for (key, actor) in keys.into_iter().zip(actors) {
             npcs.insert(key.to_owned(), actor);

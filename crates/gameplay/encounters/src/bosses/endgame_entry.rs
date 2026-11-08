@@ -178,9 +178,25 @@ pub enum EntryRefusal {
     ContentUnavailable,
 }
 
-/// Delegates to the one shared owner after checking every participant.
-/// The current base supplies a ContentUnavailable owner until W02 is composed (PR #2784,
-/// answer 6547426887). The callback is the integration seam, not another activity owner.
+// Crystal 201189f data/libs/functions/boss_lever.lua:183-218 checks the full roster.
+// The same failed prerequisite must retain its reason for a party member and
+// the initiating player; the activity owner remains the admission authority.
+impl From<EntryRefusal>
+    for oteryn_gameplay_durability::durability::activity_handoff::ActivityRefusal
+{
+    fn from(reason: EntryRefusal) -> Self {
+        match reason {
+            EntryRefusal::InvalidInput => Self::InvalidInput,
+            EntryRefusal::Level => Self::Level,
+            EntryRefusal::QuestAccess | EntryRefusal::BossChain => Self::AuthorityRejected,
+            EntryRefusal::ContentUnavailable => Self::ContentUnavailable,
+        }
+    }
+}
+
+/// Delegates to the shared activity owner after checking every participant.
+/// The callback consumes prerequisite facts; it must still revalidate current
+/// participants and perform the qualified native scope handoff.
 pub async fn enter<T, F, Fut>(
     encounter: Encounter,
     participants: &[EntryFacts],

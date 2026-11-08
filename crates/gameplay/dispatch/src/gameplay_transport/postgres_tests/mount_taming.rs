@@ -15,6 +15,8 @@ use postgres_fixture::{Harness, TestResult, configured_admin, debug, id, item_fe
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+#[path = "mount_taming/construction.rs"]
+mod construction;
 #[path = "mount_taming/fixture.rs"]
 mod fixture;
 #[path = "mount_taming/outcomes.rs"]
@@ -106,80 +108,18 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
 }
 
 fn cosmetics() -> TestResult<Vec<u8>> {
-    let mut packet =
-        crate::content::native_gameplay::test_support::cosmetics_fixture::cosmetics_test_packet();
-    let author = &mut packet["authoring"];
-    author["document"]["content_revision"] = "content-1".into();
-    let template = author["document"]["mounts"][0].clone();
-    let mounts: std::collections::BTreeSet<_> =
-        crate::content::native_gameplay::mount_taming::rules()
-            .iter()
-            .map(|r| &r.mount_key)
-            .collect();
-    let mount_rows: Vec<_> = mounts
-        .iter()
-        .map(|key| {
-            let mut row = template.clone();
-            row["key"] = (**key).clone().into();
-            row
-        })
-        .collect();
-    author["document"]["mounts"] = mount_rows.into();
-    let mappings: Vec<_> = mounts.iter().map(|key| {
-        let rule = crate::content::native_gameplay::mount_taming::rules().iter().find(|r| r.mount_key==**key).expect("rule");
-        serde_json::json!({"grant_key":rule.grant_key,"target":{"kind":"Mount","mount_key":rule.mount_key},"compatible_provenance":[crate::content::native_gameplay::mount_taming::PROVENANCE]})
-    }).collect();
-    author["document"]["grant_mappings"] = mappings.into();
-    let mut template_promotion = author["promotions"][0].clone();
-    let mount_promotions: Vec<_> = author["promotions"]
-        .as_array()
-        .ok_or("promotions")?
-        .iter()
-        .filter(|p| {
-            p["path"]
-                .as_str()
-                .is_some_and(|s| s.starts_with("/mounts/0/"))
-        })
-        .cloned()
-        .collect();
-    author["promotions"]
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest)
+        .map_err(debug)?;
+    let mut packet: serde_json::Value = serde_json::from_slice(&input.cosmetics.bytes)?;
+    // Bind the unchanged production definitions to the harness's historical revision.
+    // No cosmetic identity, source look, entitlement or provenance is substituted.
+    packet["authoring"]["document"]["content_revision"] = "content-1".into();
+    for promotion in packet["authoring"]["promotions"]
         .as_array_mut()
         .ok_or("promotions")?
-        .retain(|p| {
-            !p["path"]
-                .as_str()
-                .is_some_and(|s| s.starts_with("/mounts/") || s == "/grant_mappings")
-        });
-    for (i, mount) in author["document"]["mounts"]
-        .as_array()
-        .ok_or("mounts")?
-        .clone()
-        .iter()
-        .enumerate()
     {
-        for original in &mount_promotions {
-            let field = original["path"]
-                .as_str()
-                .ok_or("path")?
-                .rsplit('/')
-                .next()
-                .ok_or("field")?;
-            let mut promotion = original.clone();
-            promotion["path"] = format!("/mounts/{i}/{field}").into();
-            promotion["value"] = mount[field].clone();
-            author["promotions"]
-                .as_array_mut()
-                .ok_or("promotions")?
-                .push(promotion);
-        }
-    }
-    template_promotion["path"] = "/grant_mappings".into();
-    template_promotion["value"] = author["document"]["grant_mappings"].clone();
-    author["promotions"]
-        .as_array_mut()
-        .ok_or("promotions")?
-        .push(template_promotion);
-    for promotion in author["promotions"].as_array_mut().ok_or("promotions")? {
         if promotion["path"] == "/content_revision" {
             promotion["value"] = "content-1".into();
         }
@@ -292,9 +232,15 @@ async fn quantity(h: &Harness) -> TestResult<i64> {
 
 #[derive(Clone, Copy)]
 enum Cases {
+    Construction,
     Outcomes,
     Items,
     MusicBox,
+}
+
+#[test]
+fn mount_taming_postgres_construction_hotkeys_use_production_catalogue() -> TestResult {
+    run_pairs(Cases::Construction)
 }
 
 #[test]
@@ -311,7 +257,8 @@ fn run_pairs(cases: Cases) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
-    std::thread::Builder::new()
+    let started = std::time::Instant::now();
+    let result = std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
             postgres_fixture::runtime()
@@ -321,5 +268,11 @@ fn run_pairs(cases: Cases) -> TestResult {
         })?
         .join()
         .map_err(|_| "mount taming e2e panicked")?
-        .map_err(Into::into)
+        .map_err(Into::into);
+    eprintln!(
+        "SRVGAP2_TAMING POSTGRES_CASE_COMPLETED duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
 }
