@@ -406,6 +406,8 @@ impl DurabilityRoot {
             reward_admission,
             benevola,
         );
+        #[cfg(any(test, feature = "test-support"))]
+        let test_clock = self.quest_test_clock_handle();
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy, reward_admission, benevola)| {
                 Box::pin(async move {
@@ -729,6 +731,11 @@ impl DurabilityRoot {
                         sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
                             .fetch_one(&mut *tx)
                             .await?;
+                    #[cfg(any(test, feature = "test-support"))]
+                    let now = test_clock.as_ref().map_or(now, |clock| {
+                        let configured = clock.load(std::sync::atomic::Ordering::Acquire);
+                        if configured >= 0 { configured } else { now }
+                    });
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || catalogue.evaluate(transition, &stored, now),
