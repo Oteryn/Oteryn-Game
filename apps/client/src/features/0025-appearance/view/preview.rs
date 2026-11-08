@@ -72,6 +72,16 @@ impl PreviewAssets {
         }
         Ok((digest, mounts))
     }
+    pub(super) fn render_memorial(
+        &mut self,
+        panel: &oteryn_client_ui::appearance::MemorialPanel,
+    ) -> Result<Image, String> {
+        let mut image = Image {
+            rgba: [32, 32, 32, 255].repeat(128 * 128),
+        };
+        self.draw_look(panel.look(), panel.addons, None, false, &mut image)?;
+        Ok(image)
+    }
     pub(super) fn render(&mut self, panel: &Panel) -> Result<Image, String> {
         let catalogue = panel
             .catalogue
@@ -194,3 +204,6 @@ mod tests {
         Ok(())
     }
 }
+#[cfg(test)]
+#[path = "memorial_art_tests.rs"]
+mod memorial_art_tests;

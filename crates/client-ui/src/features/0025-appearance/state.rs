@@ -4,6 +4,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub memorial: super::MemorialPanel,
     pub selected: bool,
     pub open: bool,
     pub preview_open: bool,

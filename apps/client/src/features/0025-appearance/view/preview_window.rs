@@ -24,7 +24,7 @@ pub(super) fn open(link: &PlayLink) {
     {
         let mut mailbox = lock(&link.mailbox);
         let panel = &mut mailbox.properties.appearance;
-        if !panel.open || panel.preview_open {
+        if (!panel.open && !panel.memorial.open) || panel.preview_open {
             return;
         }
         panel.preview_open = true;
@@ -102,11 +102,12 @@ fn run(weak: WeakMailbox) {
             let signature = {
                 let mailbox = lock(&shared);
                 let panel = &mailbox.properties.appearance;
-                if !panel.open || !panel.selected {
+                if (!panel.open && !panel.memorial.open) || !panel.selected {
                     break;
                 }
                 (
                     panel.fields.clone(),
+                    panel.memorial.clone(),
                     panel
                         .catalogue
                         .as_ref()
@@ -116,6 +117,7 @@ fn run(weak: WeakMailbox) {
             if held.as_ref() != Some(&signature) {
                 let panel = lock(&shared).properties.appearance.clone();
                 let image = match &mut assets {
+                    Ok(assets) if panel.memorial.open => assets.render_memorial(&panel.memorial),
                     Ok(assets) => assets.render(&panel),
                     Err(_) => Err("Appearance artwork unavailable".into()),
                 };
@@ -125,15 +127,19 @@ fn run(weak: WeakMailbox) {
                             pixel.swap(0, 2);
                         }
                         pixels = Some(image.rgba);
-                        format!(
-                            "{}\r\nMount: {}",
-                            panel.fields[0],
-                            if panel.fields[2].is_empty() {
-                                "None"
-                            } else {
-                                &panel.fields[2]
-                            }
-                        )
+                        if panel.memorial.open {
+                            format!("{} (preview only)", panel.memorial.offer().label)
+                        } else {
+                            format!(
+                                "{}\r\nMount: {}",
+                                panel.fields[0],
+                                if panel.fields[2].is_empty() {
+                                    "None"
+                                } else {
+                                    &panel.fields[2]
+                                }
+                            )
+                        }
                     }
                     Err(error) => {
                         pixels = None;

@@ -30,6 +30,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Addon 2",
                 "Previous mount",
                 "Next mount",
+                "Outfit Memorial",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.appearance;
@@ -42,6 +43,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.properties.appearance.open = value,
             submit: |mailbox, commands, action, values| {
+                if action == 11 {
+                    // Open from the appearance UI; the worker is started after releasing the mailbox.
+                    mailbox.properties.appearance.memorial.requested = true;
+                    return;
+                }
                 let panel = &mut mailbox.properties.appearance;
                 if panel.pending {
                     return;
@@ -74,6 +80,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
     preview_window::open(link);
+    memorial::watch(link);
 }
 
 #[cfg(any(windows, test))]
@@ -83,3 +90,6 @@ pub(in crate::play) mod preview;
 #[cfg(windows)]
 #[path = "view/preview_window.rs"]
 mod preview_window;
+
+#[path = "view/memorial.rs"]
+pub(in crate::play) mod memorial;

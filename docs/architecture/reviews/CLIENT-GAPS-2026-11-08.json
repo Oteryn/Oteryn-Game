@@ -1087,10 +1087,10 @@
   "src": "TIBAUD-1",
   "area": "Appearance",
   "feature": "Outfit Memorial golden/token outfits",
-  "status": "PARTIAL",
-  "gap": "Brak zakładek token exchange i preview memorial outfits.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/features/0025-appearance/state/memorial.rs:16 + memorial_token_preview_requires_explicit_offer_and_balance; PARTIAL: server exchange and native memorial tabs remain"
+  "evidence": "apps/client/src/features/0025-appearance/view/memorial.rs:11 + memorial_tabs_and_explicit_exchange_cross_the_real_npc_session_caller; native Golden/Token tabs and pinned memorial sprite previews; explicit existing NPC talk wire for server-authoritative exchanges; artwork test memorial_golden_and_token_previews_draw_real_pinned_artwork"
  },
  {
   "id": "T151",
