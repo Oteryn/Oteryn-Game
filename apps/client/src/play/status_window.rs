@@ -12,7 +12,7 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
-use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
@@ -142,15 +142,17 @@ fn run<P: StatusPanel>(
     // SAFETY: controls and userdata remain confined to this thread; Win32 copies strings.
     // The boxed refresh flag stays alive until after DestroyWindow.
     unsafe {
+        let mut bounds =
+            crate::window_layout::restore(title, [CW_USEDEFAULT, CW_USEDEFAULT, 600, 620]);
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
             wide(title).as_ptr(),
-            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            600,
-            620,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE | WS_THICKFRAME,
+            bounds[0],
+            bounds[1],
+            bounds[2],
+            bounds[3],
             null_mut(),
             null_mut(),
             null_mut(),
@@ -208,6 +210,15 @@ fn run<P: StatusPanel>(
         let mut held = None;
         let mut refreshed = Instant::now();
         loop {
+            let mut rect: RECT = std::mem::zeroed();
+            if GetWindowRect(hwnd, &mut rect) != 0 && IsIconic(hwnd) == 0 {
+                bounds = [
+                    rect.left,
+                    rect.top,
+                    rect.right - rect.left,
+                    rect.bottom - rect.top,
+                ];
+            }
             let mut message: MSG = std::mem::zeroed();
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 TranslateMessage(&message);
@@ -241,6 +252,7 @@ fn run<P: StatusPanel>(
             drop(mailbox);
             std::thread::sleep(Duration::from_millis(30));
         }
+        crate::window_layout::remember(title, bounds);
         if IsWindow(hwnd) != 0 {
             DestroyWindow(hwnd);
         }
