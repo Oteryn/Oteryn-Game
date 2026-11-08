@@ -1,4 +1,4 @@
-"""Capture the pinned Stag sword profile; admission never enables custom use logic."""
+"""Capture the pinned Stag sword and compass profiles; admission never enables custom use logic."""
 
 from __future__ import annotations
 
@@ -15,8 +15,9 @@ import questpc4_stag_item_profiles as scoped
 
 ROOT = Path(__file__).resolve().parents[2]
 PROOF = "tools/content-schema/native-gameplay/questpc4-stag-item-profiles.json"
-SCHEMA = "OTERYN_QUESTPC4_STAG_ITEM_PROFILES/v1"
-KEY = "oteryn:item.tibia.i52824"
+SCHEMA = "OTERYN_QUESTPC4_STAG_ITEM_PROFILES/v2"
+ITEMS = (52759, 52824)
+KEYS = {i: f"oteryn:item.tibia.i{i}" for i in ITEMS}
 
 
 def digest(value):
@@ -32,11 +33,11 @@ def definition(root):
         row["definition"]
         for path in (root / "content/items/definitions").glob("items-*.json")
         for row in json.loads(path.read_bytes())["records"]
-        if row["definition"]["identity"]["key"] == KEY
+        if row["definition"]["identity"]["key"] in KEYS.values()
     ]
-    if len(found) != 1:
+    if len(found) != len(ITEMS):
         raise ValueError("STAG_ITEM_CANONICAL_SET")
-    return found[0]
+    return {row["identity"]["key"]: row for row in found}
 
 
 def capture(source_root, root=ROOT):
@@ -48,14 +49,28 @@ def capture(source_root, root=ROOT):
     ):
         raise ValueError("STAG_ITEM_SOURCE_PIN")
     native = source_owner.source
-    node = native.xml_index(xml_raw)[52824]
-    appearance = native.engine_items.load_appearance_objects(client_raw)[52824]
-    physical = next(iter(native.policies(client_raw, xml_raw, {52824})))
+    nodes = native.xml_index(xml_raw)
+    appearances = native.engine_items.load_appearance_objects(client_raw)
+    physical = {
+        row["server_item_id"]: row
+        for row in native.policies(client_raw, xml_raw, set(ITEMS))
+    }
     bindings = native.binding_index(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
     canonical = definition(root)
-    record = scoped.qualify(52824, node, appearance, physical, bindings, canonical)
+    records = [
+        scoped.qualify(
+            item_id,
+            nodes[item_id],
+            appearances[item_id],
+            physical[item_id],
+            bindings,
+            canonical[KEYS[item_id]],
+        )
+        for item_id in ITEMS
+    ]
+    lines = batch.xml_lines(xml_raw)
     return {
         "schema": SCHEMA,
         "producer": "tools/content-migration/build_questpc4_stag_item_profiles.py",
@@ -65,17 +80,25 @@ def capture(source_root, root=ROOT):
                 "revision": batch.REVISION,
                 "path": "data/items/items.xml",
                 "sha256": batch.XML_SHA256,
-                "line": batch.xml_lines(xml_raw)[52824],
-                "item_record_sha256": hashlib.sha256(
-                    ET.tostring(node, encoding="utf-8")
-                ).hexdigest(),
+                "items": [
+                    {
+                        "id": item_id,
+                        "line": lines[item_id],
+                        "item_record_sha256": hashlib.sha256(
+                            ET.tostring(nodes[item_id], encoding="utf-8")
+                        ).hexdigest(),
+                    }
+                    for item_id in ITEMS
+                ],
             },
             {"path": shared.CLIENT, "sha256": shared.CLIENT_SHA},
         ],
-        "definition_sha256": digest(canonical),
-        "binding_sha256": digest(bindings["52824"]),
-        "record_sha256": digest(record),
-        "records": [record],
+        "definition_sha256": {key: digest(value) for key, value in canonical.items()},
+        "binding_sha256": {str(i): digest(bindings[str(i)]) for i in ITEMS},
+        "record_sha256": {
+            r["production_definition"]["production_key"]: digest(r) for r in records
+        },
+        "records": records,
     }
 
 
@@ -86,24 +109,28 @@ def admit(root, generated, profile_path, manifest_path, order, canonical_bytes):
     )
     if (
         packet["schema"] != SCHEMA
-        or len(packet["records"]) != 1
-        or packet["records"][0]["production_definition"]["production_key"] != KEY
-        or packet["definition_sha256"] != digest(definition(root))
-        or packet["binding_sha256"] != digest(bindings["52824"])
+        or len(packet["records"]) != len(ITEMS)
+        or [r["production_definition"]["production_key"] for r in packet["records"]]
+        != list(KEYS.values())
+        or packet["definition_sha256"]
+        != {key: digest(value) for key, value in definition(root).items()}
+        or packet["binding_sha256"] != {str(i): digest(bindings[str(i)]) for i in ITEMS}
         or packet["sources"][0]["sha256"] != batch.XML_SHA256
         or packet["sources"][1]["sha256"] != shared.CLIENT_SHA
     ):
         raise ValueError("STAG_ITEM_PROOF_DRIFT")
-    record = packet["records"][0]
-    if (
-        packet["record_sha256"] != digest(record)
-        or packet["sources"][0]["revision"] != batch.REVISION
-        or record["semantics"]["protection"]["value"]["armor"]
-        != source_owner.source.K(0)
-        or record["admission"]["legal_destinations"] != ["CharacterInventory", "Ground"]
-        or not record["admission"]["materializable"]
-    ):
-        raise ValueError("STAG_ITEM_CAPTURE_FACT_DRIFT")
+    for record in packet["records"]:
+        key = record["production_definition"]["production_key"]
+        if (
+            packet["record_sha256"][key] != digest(record)
+            or packet["sources"][0]["revision"] != batch.REVISION
+            or record["semantics"]["protection"]["value"]["armor"]
+            != source_owner.source.K(0)
+            or record["admission"]["legal_destinations"]
+            != ["CharacterInventory", "Ground"]
+            or not record["admission"]["materializable"]
+        ):
+            raise ValueError("STAG_ITEM_CAPTURE_FACT_DRIFT")
     shared.admit_records(
         root,
         generated,

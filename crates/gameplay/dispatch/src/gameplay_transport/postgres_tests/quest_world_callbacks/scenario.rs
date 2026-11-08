@@ -99,7 +99,13 @@ fn scenario_case(
     };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
-    let floor_profiles = matches!(name, "l6-floor-profiles" | "l6-ruby-profile" | "l6-stag-item-profile");
+    let floor_profiles = matches!(
+        name,
+        "l6-floor-profiles"
+            | "l6-ruby-profile"
+            | "l6-stag-item-profile"
+            | "l6-stag-compass-profile"
+    );
     let room_raise = name.starts_with("l6-room-raise-");
     let floor_assembly = name.starts_with("l6-floor-assembly");
     let reusable_tool = name.starts_with("l6-reusable-tool");
@@ -109,7 +115,11 @@ fn scenario_case(
     let classic_npc = qengine_reward
         || matches!(
             name,
-            "catalogue-npc" | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp" | "nx6-wayfarer"
+            "catalogue-npc"
+                | "catalogue-npc-end"
+                | "catalogue-npc-calendar"
+                | "catalogue-npc-xp"
+                | "nx6-wayfarer"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -698,7 +708,11 @@ fn scenario_case(
                 return h.cleanup().await;
             }
         } else if name == "l6-stag-item-profile" {
-            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence).await?;
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52824)
+                .await?;
+        } else if name == "l6-stag-compass-profile" {
+            super::super::l6_stag_item::exercise(&mut owner, &mut admitted, &h, fence, 52759)
+                .await?;
         } else if name == "l6-ruby-profile" {
             super::super::l6_ruby_profile::exercise(&owner, &h).await?;
         } else if floor_profiles {
@@ -822,7 +836,8 @@ fn scenario_case(
             )
             .await?;
         } else if name == "catalogue-npc-xp" {
-            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority)
+                .await?;
         } else if name == "catalogue-npc-calendar" {
             super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
         } else if name == "catalogue-npc-end" {
@@ -830,7 +845,6 @@ fn scenario_case(
         } else if name == "catalogue-npc" {
             super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if outfit_world {
-
             super::super::qengine_access::exercise(
                 &mut owner,
                 &mut admitted,

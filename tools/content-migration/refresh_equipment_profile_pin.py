@@ -9,6 +9,8 @@ import re
 import tempfile
 from pathlib import Path
 
+import questpc4_stag_equipment_pin
+
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
     ROOT
@@ -78,13 +80,22 @@ def main():
         "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json",
         "content/items/definitions/starting-loadout-profiles.json",
     )
-    source = TEST.read_text()
+    original = TEST.read_text()
+    source = questpc4_stag_equipment_pin.refresh(
+        original,
+        json.loads(
+            (
+                ROOT
+                / "tools/content-schema/native-gameplay/questpc4-stag-item-profiles.json"
+            ).read_text()
+        ),
+    )
     generated, count = regenerate(
         source, *(json.loads((ROOT / p).read_text()) for p in paths)
     )
-    if args.check and generated != source:
+    if args.check and generated != original:
         raise SystemExit("equipment cohort pin is stale")
-    if not args.check and generated != source:
+    if not args.check and generated != original:
         with tempfile.NamedTemporaryFile("w", dir=TEST.parent, delete=False) as output:
             output.write(generated)
             temporary = output.name

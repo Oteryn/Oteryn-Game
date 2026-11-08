@@ -10815,6 +10815,45 @@
     },
     "workspace_check": "cargo check --workspace --all-targets --keep-going PASS8m19s; /tmp/questpc4-b386-workspace-check.log",
     "duplicate_migrations": 0,
-    "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes."
+    "publication": "One pending authorized push includes CI repair3c104f740 and normal main merge14a8f69b1. Fresh fetch behindmain0; retained lane diff309files/+58056/-704 before final notes.",
+    "postpublication_followup": "Repeated clippy PASS5m50s. Dispatch units interrupted before switching continuation input tree:707 passed,4 SIGTERM,2138 not run; no complete pass claimed."
+  },
+  "continuation_branch": {
+    "branch": "claude/happy-davinci-ijz3wy-questpc4b",
+    "started_from": "c54b4cfe98a6f530060e5ac467993b57b959a689",
+    "frozen_pr_branch": "claude/happy-davinci-ijz3wy-questpc4",
+    "rule": "Push frozen branch only for owner-sent CI repairs or requested main merge. New work and cadence belong to questpc4b.",
+    "integrated_pr_head": "8edc2d297a3668dfda1aab8c6105b9bcdd7135c2",
+    "current_slice": {
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "scope": "Exact source compass52759 physical custody and neutral ammo-slot admission; reuse qualified sword52824. Whole quest remains IN_PROGRESS.",
+      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:88349-88356; immutable XML digest retained in generated capture.",
+      "validation": "12 qualifier/pin-generator controls PASS4.945s; source capture --check PASS. PG RED build running before native admission.",
+      "engine_reuse_check": "Fetched qengine2 e6bacdda6; no Stag item profiles and no changes to NPC effect guards. No competing generic engine implementation authored.",
+      "engine_request": "NPC teleport and outfit/achievement native effects remain required for Paradox/Stag; existing source program reused.",
+      "red_postgres": "PG18.6 native compass policy missing,42.938s; explicit database/version marker and nextest exit100. /tmp/questpc4b-compass-pg-red.log",
+      "red_equipment_pin": "Independent source cohort3764 vs current generated union3763; refresh --check exits1 before native admission.",
+      "green_postgres": {
+        "compass_seconds": 44.646906479,
+        "sword_seconds": 45.285936913,
+        "total_seconds": 89.93,
+        "passed": 2,
+        "failed": 0,
+        "proof": "PostgreSQL18.6 version markers and STAG_PG_EXIT=0; identity-preserving drop and exact replay assertions unchanged. /tmp/questpc4b-stag-pg-green.log"
+      },
+      "profile_delta": "3725->3726 raw; only compass52759 added, no prior profile changed or removed. Assembled equipment3764; source-derived cohort refresh/check PASS.",
+      "generated": "Native providers, source capture, completion matrix and world pin refreshed with repository tooling. SRX1 and Grizzly-room changes are input hashes only.",
+      "publication_checks": {
+        "workspace": "cargo check --workspace --all-targets --keep-going PASS4m19s",
+        "clippy": "dispatch alltargets/allfeatures -Dwarnings PASS3m39s",
+        "fmt": "cargo fmt --all --check PASS",
+        "native_freshness": "register_spell_families.py --check EXIT0",
+        "source_capture": "build_questpc4_stag_item_profiles.py --source-root /tmp/questpc4-crystal201189 --check PASS",
+        "python": "9 source qualification controls plus3 new pin controls PASS4.945s; existing/new pin tests8/8 PASS0.005s; RuffPASS",
+        "duplicate_migrations": 0,
+        "unit_crates": "content and dispatch nextest --all-features compiling at publication; explicitly pending under PREPUSH-2 step3 cadence allowance"
+      },
+      "state": "Physical custody slice qualified; whole Stag remains IN_PROGRESS. Publish only continuation branch."
+    }
   }
 }

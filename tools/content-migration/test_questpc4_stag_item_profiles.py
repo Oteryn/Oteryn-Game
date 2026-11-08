@@ -13,20 +13,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class StagPhysicalItemTests(unittest.TestCase):
-    def fixture(self):
+    def fixture(self, item_id=52824):
         document = json.loads(
             (ROOT / "content/items/definitions/items-28500-28999.json").read_bytes()
         )
         definition = next(
             r["definition"]
             for r in document["records"]
-            if r["definition"]["identity"]["key"] == "oteryn:item.tibia.i52824"
+            if r["definition"]["identity"]["key"] == f"oteryn:item.tibia.i{item_id}"
         )
         bindings = source_owner.source.binding_index(
             (ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
         )
         node = ET.fromstring(
-            '<item id="52824" name="fixture"><attribute key="description" value="fixture"/>'
+            f'<item id="{item_id}" name="fixture"><attribute key="description" value="fixture"/>'
             '<attribute key="armor" value="0"/><attribute key="weight" value="3000"/>'
             '<attribute key="script" value="moveevent"><attribute key="slot" value="ammo"/></attribute></item>'
         )
@@ -37,7 +37,7 @@ class StagPhysicalItemTests(unittest.TestCase):
             "block_projectile": False,
             "has_height": False,
         }
-        return [52824, node, {"flags": {}}, physical, bindings, definition]
+        return [item_id, node, {"flags": {}}, physical, bindings, definition]
 
     def test_exact_neutral_source_keeps_armor_and_ammo_semantics(self):
         record = qualifier.qualify(*self.fixture())
@@ -57,6 +57,17 @@ class StagPhysicalItemTests(unittest.TestCase):
         )
         self.assertEqual(
             record["admission"]["legal_destinations"], ["CharacterInventory", "Ground"]
+        )
+
+    def test_compass_keeps_exact_identity_and_neutral_equipment(self):
+        record = qualifier.qualify(*self.fixture(52759))
+        self.assertEqual(
+            record["production_definition"]["production_key"],
+            "oteryn:item.tibia.i52759",
+        )
+        self.assertEqual(
+            record["semantics"]["protection"]["value"]["armor"],
+            {"state": "KNOWN", "value": 0},
         )
 
     def test_nonzero_armor_is_not_dropped(self):
