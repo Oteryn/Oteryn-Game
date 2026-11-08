@@ -101,6 +101,20 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     println!("POSTGRES_PLAYER_JOURNEY {name} server_version={version}");
+    use sha2::Digest;
+    let checksum: Vec<u8> =
+        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version=2020 AND success")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        checksum.as_slice(),
+        sha2::Sha384::digest(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/game-server/migrations/2020_quest_reward_quantity_variable.sql"
+        )))
+        .as_slice(),
+        "the quantity guard repair actually ran"
+    );
     assert_eq!(stage(h, BONE).await?, None, "no seeded mission progress");
     let mut selected = admitted
         .continuity
