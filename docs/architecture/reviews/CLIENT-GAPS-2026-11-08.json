@@ -76,9 +76,10 @@
   "src": "TIBAUD-1",
   "area": "PvP",
   "feature": "Unjustified points i skull timer",
-  "status": "PARTIAL",
-  "gap": "Są stany PvP/warunki; brak pełnego Unjustified Points widget.",
-  "lane": "cg_ui"
+  "status": "DONE",
+  "gap": "",
+  "lane": "cg_ui",
+  "evidence": "apps/client/src/features/0134-party-skull/pvp_status.rs:3 + own_pvp_status_crosses_session_caller_and_rejects_bad_replies; crates/gameplay/dispatch/src/gameplay_transport/party_skull/status.rs:5 + own_pvp_route_preserves_legacy_query_and_gates_current_status"
  },
  {
   "id": "T022",

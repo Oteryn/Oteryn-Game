@@ -184,6 +184,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn observe_pvp_status(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::party_skull::PvpStatus> {
+        self.observe_own_pvp(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
