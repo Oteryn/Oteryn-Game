@@ -31,5 +31,6 @@
 | Quest-cycle-scoped repeatable World Item MINT using a preserved, fenced local epoch (no command-created cycles or fabricated price) | engitem | none; existing range1640–1659 retained | Oramond Quest (repeatable item reward boundary; random/reset owners remain separate) | CLAIMED; assigned ENGITEM work already has an isolated real PG green40.331345675s, focused package validation next |
 
 | Annual UTC month/day window for source NPC dialogue, derived from the transaction clock | SRVWLD | none planned; retained range 1110–1119 | The First Dragon Quest (Tamoril Jan 14–Feb 12 opening only; other encounter/binding gaps remain) | CLAIMED |
+| Quest item-look disguise and exact exit restoration through the existing condition/appearance owner | srvgap1108 | 1669–1670 reserved if required; retained original range 1660–1679 | Wrath of the Emperor (carried crate USE and restoration step); reusable adapter for Last Creep Standing, whose form/portal identities remain unresolved | CLAIMED |
 
 | Inclusive annual NPC dialogue date-window predicate evaluated from the authoritative transaction clock | SEASON | none planned; retained range 1160–1169 only | The First Dragon Quest (Tamoril seasonal dialogue admission; encounter remains separate) | CLAIMED |
