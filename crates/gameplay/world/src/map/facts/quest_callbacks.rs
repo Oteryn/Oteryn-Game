@@ -1,6 +1,10 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
 
+#[path = "quest_item_batch.rs"]
+mod item_batch;
+pub use item_batch::QuestMapItemMove;
+
 #[derive(Clone, Debug)]
 struct MovementDecay {
     revision: u64,
@@ -46,6 +50,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
 }
 
@@ -214,6 +219,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
@@ -985,7 +991,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos) {
+        if states.solid_items.contains(&pos) || states.batch_blockers.contains(&pos) {
             return true;
         }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {

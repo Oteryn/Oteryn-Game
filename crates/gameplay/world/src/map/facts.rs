@@ -42,7 +42,7 @@ pub use source_containers::CapturedMapItem;
 mod quest_callbacks;
 mod world_change_phases;
 use quest_callbacks::CallbackStates;
-pub use quest_callbacks::QuestCallbackProjection;
+pub use quest_callbacks::{QuestCallbackProjection, QuestMapItemMove};
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
