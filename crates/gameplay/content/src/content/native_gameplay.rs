@@ -69,12 +69,16 @@ const MAX_SELECTION: usize = 256 * 1024;
 const MAX_PROFILES: usize = 8 * 1024 * 1024;
 /// The item-profile section alone: the production file passed 8 MiB once the Soulpit
 /// (#2786) and Task Board records were both present (2210 records, 8_742_152 bytes).
-/// MAX_RECORDS still bounds the record count.
+/// MAX_ITEM_RECORDS separately bounds the Item record count.
 const MAX_ITEM_PROFILES: usize = 16 * 1024 * 1024;
 // W01c: the measured 1,863 canonical attack closures add ~19 MiB to the ~7 MiB
 // serving Creature provider. Keep this bound separate from all other profiles.
 const MAX_CREATURE_PROFILES: usize = 32 * 1024 * 1024;
 const MAX_RECORDS: usize = 4096;
+/// W18's admitted furniture and bed cohorts bring the native Item provider to
+/// 4,956 records. Keep the existing 16 MiB Item byte bound and the other families'
+/// 4,096-record bound; only this source-backed Item cohort needs more entries.
+const MAX_ITEM_RECORDS: usize = 8192;
 const LIMITS: [usize; 5] = [
     super::production::FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES,
     MAX_CATALOG,
@@ -337,6 +341,12 @@ pub struct NativeItemAttributes {
     pub rune_consumption: Option<NativeRuneConsumption>,
     pub field_replaceable: Option<bool>,
     pub has_height: Option<bool>,
+    /// Crystal items.cpp:203-208: clip/top/bottom select orders 1/3/2.
+    /// Missing remains unknown and cannot authorize automatic carpet removal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub always_on_top: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub always_on_top_order: Option<u8>,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -1136,7 +1146,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     let items = if is_v2 {
         let items: ItemProfilesDocument = serde_json::from_slice(sections[5])
             .map_err(|_| invalid("native gameplay item profiles"))?;
-        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1" || items.records.len() > MAX_RECORDS {
+        if items.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1"
+            || items.records.len() > MAX_ITEM_RECORDS
+        {
             return Err(invalid(
                 "native gameplay item profile discriminator or bounds",
             ));
@@ -1350,6 +1362,15 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;
+            if !matches!(
+                (
+                    record.attributes.always_on_top,
+                    record.attributes.always_on_top_order
+                ),
+                (None, None) | (Some(false), Some(0)) | (Some(true), Some(1..=3))
+            ) {
+                return Err(invalid("native gameplay item top-order source facts"));
+            }
             // WRITE0-RL-01: text belongs to a single item. Unmaterializable map
             // carriers may retain unknown stack facts; they grant no mint permission.
             if let super::ReferenceItemField::Known(text) = &record.semantics.readable_writeable {
@@ -2086,6 +2107,55 @@ mod tests {
         assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
     }
 
+    #[test]
+    fn w18_native_item_top_order_and_furniture_cohort_keep_input_bounds() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        let mut profiles: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))
+        .unwrap();
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let carpet = decoded
+            .state
+            .item_policy("oteryn:item.tibia.i37365", "definition-r1")
+            .unwrap();
+        let attributes = &carpet.record().attributes;
+        assert_eq!(
+            attributes.always_on_top,
+            attributes.always_on_top_order.map(|order| order != 0)
+        );
+        assert!(attributes.always_on_top_order.is_some());
+
+        profiles["records"][0]["attributes"]["always_on_top"] = true.into();
+        profiles["records"][0]["attributes"]["always_on_top_order"] = 0.into();
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        assert!(
+            matches!(compile_native_gameplay(baseline.compiled(), &supplied),
+            Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item top-order source facts")
+        );
+
+        // Exercise the Item record bound separately from the unchanged 16 MiB
+        // byte bound. Duplicate identities would fail later; count must refuse first.
+        let smallest = profiles["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .min_by_key(|record| serde_json::to_vec(record).unwrap().len())
+            .unwrap()
+            .clone();
+        profiles["records"] = Value::Array(vec![smallest; MAX_ITEM_RECORDS + 1]);
+        let bytes = serde_json::to_vec(&profiles).unwrap();
+        assert!(bytes.len() <= MAX_ITEM_PROFILES);
+        supplied.item_profiles = Some(pinned(&bytes));
+        assert!(
+            matches!(compile_native_gameplay(baseline.compiled(), &supplied),
+            Err(ContentError::InvalidArtifact(reason)) if reason == "native gameplay item profile discriminator or bounds")
+        );
+    }
     #[test]
     fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
         use super::super::ReferenceItemField as F;

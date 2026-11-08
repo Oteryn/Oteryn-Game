@@ -15,6 +15,8 @@ import hashlib
 import json
 import re
 import sys
+
+import seasonal_raids
 from pathlib import Path
 from xml.parsers import expat
 
@@ -577,6 +579,9 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     evidence = json.loads(staged[EVIDENCE])
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
                             creature_catalogue(root), load(root, PLACEMENTS))
+    if (root / seasonal_raids.CAPTURE).is_file():
+        records.extend(seasonal_raids.records(root, qualify, bind_area, citation, creature_catalogue(root), load(root, PLACEMENTS)))
+        records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}
               for kind in ("city", "area", "boss", "multi_variant", "calendar")}
@@ -590,7 +595,8 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
                              "generator": "tools/content-migration/raid_catalogue.py",
                              "catalogue_sha256": hashlib.sha256(result[CATALOGUE]).hexdigest(),
                              "apply_plan_sha256": hashlib.sha256((root / APPLY_PLAN).read_bytes()).hexdigest(),
-                             "source_capture_sha256": hashlib.sha256((root / CAPTURE).read_bytes()).hexdigest()})
+                             "source_capture_sha256": hashlib.sha256((root / CAPTURE).read_bytes()).hexdigest(),
+                             "seasonal_source_capture_sha256": hashlib.sha256((root / seasonal_raids.CAPTURE).read_bytes()).hexdigest() if (root / seasonal_raids.CAPTURE).is_file() else None})
     if register:
         names = ("project", "manifest", "content.lock")
         for name, value in zip(names, registered(*(load(root, f"content/{n}.json") for n in names), len(records)), strict=True):

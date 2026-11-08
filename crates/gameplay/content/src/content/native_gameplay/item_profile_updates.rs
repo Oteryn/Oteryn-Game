@@ -55,7 +55,7 @@ pub(super) fn merge(
             items.records.push(record);
         }
     }
-    if items.records.len() > super::MAX_RECORDS {
+    if items.records.len() > super::MAX_ITEM_RECORDS {
         return Err(invalid("Item updates combined bounds"));
     }
     let bytes = serde_json::to_vec(&items).map_err(|_| invalid("Item updates encoding"))?;

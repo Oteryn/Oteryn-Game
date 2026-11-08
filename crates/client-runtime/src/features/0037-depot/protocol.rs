@@ -28,8 +28,12 @@ pub fn items<S: SessionStream>(session: &Session<S>) -> Items {
         views: session
             .gated_snapshot(14)
             .and_then(|s| {
-                container_tree::decode_container_views_for(&s.payload, session.is_selected(230))
-                    .ok()
+                container_tree::decode_container_views_with_house_capacity(
+                    &s.payload,
+                    session.is_selected(230),
+                    session.is_selected(446),
+                )
+                .ok()
             })
             .map(|v| {
                 carried_entries(

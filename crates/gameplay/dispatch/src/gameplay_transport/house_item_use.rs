@@ -9,6 +9,9 @@ use crate::durability::consume_transform::{ConsumeTransformRequest, HouseActionC
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[path = "house_item_use/presentation.rs"]
+mod presentation;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn use_house_event_item(
         &self,
@@ -25,7 +28,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if !matches!(intent.target, UseTarget::Item(_))
             || intent.use_with.is_some()
-            || intent.use_with_map_item.is_some()
+            || matches!(
+                intent.use_with_map_item.as_ref(),
+                Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
+            )
             || intent.use_with_position.is_some()
         {
             return Ok(None);
@@ -40,7 +46,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(refuse(UseDisposition::NotPossible));
         };
         let _lane = self.spell_lane_permit().await.ok_or(())?;
-        let context = {
+        let mut context = {
             let runtime = self.runtime.lock().await;
             if super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_none() {
                 return Ok(refuse(UseDisposition::StaleState));
@@ -69,11 +75,117 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
                 .map_err(|_| ())?,
         };
+        if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
+            intent.use_with_map_item.as_ref()
+        {
+            // A successful bed use consumed its source kit and changed both bed
+            // revisions. Probe history before resolving either current handle.
+            if let Some(replay) = self
+                .root
+                .replay_house_item_action(self.holder, &context, &request)
+                .await
+                .map_err(|_| ())?
+            {
+                return Ok(refuse(replay.disposition));
+            }
+            if !self
+                .root
+                .house_source_is_bed_kit(self.holder, &context, request.source)
+                .await
+                .map_err(|_| ())?
+            {
+                return Ok(None);
+            }
+            let Some(target) = self.prepare_house_bed_changes(&context, target).await else {
+                return Ok(refuse(UseDisposition::NotPossible));
+            };
+            context = context.with_bed_target(target);
+        }
+        // Crystal carpets.lua:185-201 uses the actual tile stack. Capture only
+        // native base entries; Channel-created items cannot become House facts.
+        if let Some(map) = self.bundle_map() {
+            let changes = self
+                .house_base_decoration_facts(&context, map.overlay.base().digest())
+                .await
+                .ok_or(())?;
+            let base = map.facts.base_only();
+            let facts = super::world_map::DecoratedFacts {
+                base: &base,
+                changes: &changes,
+            };
+            let index = native.item_index().ok_or(())?;
+            let at = context.position();
+            let mut base_items = Vec::new();
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    let Some(x) = at[0].checked_add(dx).and_then(|x| u16::try_from(x).ok()) else {
+                        continue;
+                    };
+                    let Some(y) = at[1].checked_add(dy).and_then(|y| u16::try_from(y).ok()) else {
+                        continue;
+                    };
+                    let Some(floor) = i8::try_from(at[2]).ok().and_then(i8::checked_neg) else {
+                        continue;
+                    };
+                    let position = crate::map::overlay::TilePos { x, y, floor };
+                    let mut entries = Vec::new();
+                    crate::map::view::compose_into(
+                        map.overlay.base(),
+                        None,
+                        &facts,
+                        position,
+                        &mut entries,
+                    )
+                    .map_err(|_| ())?;
+                    for (ordinal, entry) in entries.iter().enumerate() {
+                        if entry.facts.terrain_kind.is_some() {
+                            continue;
+                        }
+                        let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
+                            entry.facts.definition
+                        else {
+                            continue;
+                        };
+                        let definition =
+                            super::item_look::typed_definition(index, reference).ok_or(())?;
+                        base_items.push(
+                            crate::durability::consume_transform::HouseDecorationBaseItem {
+                                position: [i32::from(x), i32::from(y), at[2]],
+                                ordinal: ordinal as u64,
+                                definition,
+                            },
+                        );
+                    }
+                }
+            }
+            context = context.with_decoration_base_items(base_items);
+        }
+        let publication_house = context.house().clone();
         let result = self
             .root
             .consume_transform_in_house(self.holder, context, request, native)
             .await
             .map_err(|_| ())?;
+        if result.fresh
+            && result
+                .effects
+                .get("kind")
+                .and_then(serde_json::Value::as_str)
+                == Some("house_decoration")
+        {
+            presentation::publish(
+                &self.runtime,
+                &self.states.spell_states,
+                &self.states.chat,
+                presentation::Publication {
+                    actor,
+                    fence,
+                    house: &publication_house,
+                    effects: &result.effects,
+                },
+            )
+            .await;
+        }
         // A current House source that disappeared or changed custody has a
         // definite refusal. Do not fall through to Channel-only item handlers.
         if result.recipe.is_none() && result.disposition == UseDisposition::NothingToUse {
@@ -107,6 +219,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::item_ref_admission::pinned_index(&runtime, self.active_generation)?,
             )
         };
+        if !self
+            .root
+            .settle_house_timed_decorations(self.holder, fence, context.house().clone())
+            .await
+            .ok()?
+        {
+            return None;
+        }
         let at = context.position();
         let map = self.bundle_map()?;
         let snapshot = self
@@ -176,7 +296,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             });
         }
-        let facts = map.facts.base_only();
+        let base_changes = self
+            .house_base_decoration_facts(&context, map.overlay.base().digest())
+            .await?;
+        let base_facts = map.facts.base_only();
+        let facts = super::world_map::DecoratedFacts {
+            base: &base_facts,
+            changes: &base_changes,
+        };
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &facts,
