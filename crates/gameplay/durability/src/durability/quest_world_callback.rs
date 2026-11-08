@@ -1,5 +1,4 @@
 //! World callback inputs share one atomic quest receipt and consumption proof path.
-mod npc_carried_input;
 use super::{
     DurabilityError, character_progression::CurrentCharacterGameplayFence,
     spell_owner_commit::SpellLanePermit,
@@ -300,6 +299,16 @@ pub(super) async fn consume(
     {
         return Ok(false);
     }
+    if !super::world_event::changes::callbacks::require(
+        tx,
+        world_id,
+        context.reset_epoch,
+        &callback.key,
+    )
+    .await?
+    {
+        return Ok(false);
+    }
     if let Some(minimum) = callback.minimum_level {
         let level: Option<i64> = sqlx::query_scalar(
             "SELECT level FROM game_character_progression_state \
@@ -390,6 +399,23 @@ pub(super) async fn context_is_current(
         return Ok(false);
     };
     permit.check_channel(world_id, channel_id)?;
+    context_facts_are_current(tx, fence, context).await
+}
+
+/// Current persisted map/reset facts, shared by stateful and stateless callbacks.
+/// The caller has checked and retains the live lane permit for this exact scope.
+pub(super) async fn context_facts_are_current(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    context: &QuestWorldContext,
+) -> Result<bool, DurabilityError> {
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Ok(false);
+    };
     let epoch: String = sqlx::query_scalar(
         "SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active \
          WHERE world_id=encode($1,'hex')::uuid),0)::text",
@@ -579,6 +605,59 @@ async fn consume_inputs(
     Ok(true)
 }
 
+/// Closed native NPC handover reuses the existing carried Quest consumption owner.
+/// The Quest writer owns its command receipt; this participant never commits.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn consume_native_npc_one(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::quest_state::QuestTransitionRequest,
+    command: crate::foundation::CommandRef,
+    key: &str,
+    source: &serde_json::Value,
+) -> Result<bool, DurabilityError> {
+    if request.transition_key != super::world_event::changes::counters::benevola::HANDOVER
+        || key != super::world_event::changes::counters::benevola::WOLF
+        || request.cause != super::quest_state::QuestCause::Command(command)
+    {
+        return Ok(false);
+    }
+    let row = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 AND i.quantity>=1 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .bind(key).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else {
+        return Ok(false);
+    };
+    let input = Input {
+        item: row.try_get("item")?,
+        before: row.try_get("before_item")?,
+        location: row.try_get("location")?,
+        kind: row.try_get("kind")?,
+        quantity: row.try_get("quantity")?,
+        count: 1,
+        replacement: None,
+    };
+    lock_location(tx, &input).await?;
+    let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    let proof = serde_json::to_vec(&serde_json::json!({"native_npc": source,
+        "character": fence.character_id.as_bytes(), "session": command.game_session_id().as_bytes(),
+        "command": command.command_id().get(), "connection": fence.connection_generation.get(),
+        "lease": fence.character_lease_generation, "scope": fence.scope_ownership_generation.get(),
+        "before": input.before, "location": input.location, "kind": input.kind, "count": 1
+    }))
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
+    sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind,replacement) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,1,$8,sha256($8),$9,$10,NULL)")
+        .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice())
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+        .bind(&request.transition_key).bind(&input.before).bind(proof).bind(&input.location).bind(&input.kind)
+        .execute(&mut **tx).await?;
+    apply_input(tx, permit, fence, &input, &transaction).await?;
+    Ok(true)
+}
+
 fn location_queries(kind: &str) -> Result<(&'static str, &'static str), DurabilityError> {
     match kind {
         "container" => Ok((
@@ -625,31 +704,16 @@ async fn lock_location(
     Ok(())
 }
 
-async fn apply_input(
+mod input_authority;
+
+async fn apply_input<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &SpellLanePermit,
+    permit: impl Into<input_authority::InputPermit<'a>>,
     fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    let crate::foundation::RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(DurabilityError::InvalidStoredState);
-    };
-    permit.check_channel(world_id, channel_id)?;
-    apply_input_rows(tx, input, transaction).await
-}
-
-/// Applies the row changes of one consumed input once the caller has proven
-/// its authority (spell lane channel check or the NPC item permit).
-async fn apply_input_rows(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    input: &Input,
-    transaction: &str,
-) -> Result<(), DurabilityError> {
+    permit.into().check(fence)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
@@ -682,7 +746,7 @@ async fn apply_input_rows(
 
 pub(super) async fn consume_npc_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &super::quest_state::npc_program::NpcItemPermit,
+    permit: &super::quest_state::npc_program::NpcItemPermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
@@ -763,7 +827,9 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        npc_carried_input::apply(tx, _permit, &input, &transaction).await?;
+        // NPC inputs remain carried-only under main's separately branded permit.
+        location_queries(&input.kind)?;
+        apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
 }

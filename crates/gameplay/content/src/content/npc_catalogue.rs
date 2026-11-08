@@ -15,11 +15,15 @@ use super::{
     WorldProject, capture_world_project,
 };
 pub mod grizzly_shop;
+pub mod healing;
 pub mod premium_services;
 pub mod quest_shops;
 pub mod replies;
+mod s10_nonquest;
 pub mod service;
+pub mod subtype_trades;
 pub mod travel;
+pub mod walk_terrain;
 #[allow(
     unused_imports,
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
