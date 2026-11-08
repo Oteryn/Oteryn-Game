@@ -11486,7 +11486,7 @@
       }
     },
     "typed5_slice": {
-      "status": "QUALIFIED_COMPONENTS_PENDING_MAIN_INTEGRATION",
+      "status": "QUALIFIED_COMPONENTS",
       "items": [
         5949,
         24382,
@@ -11632,7 +11632,23 @@
           52632
         ]
       },
-      "main_integration": "origin/main advancedc77d436d8(QREADY1+2),11nativeadditionsnoneoverlaptyped5. SavecompilevalidatedsliceandmergeMainnormally,retainbothprofilecohorts,regeneratebothpinowners,rerunworkspace/fmt. NoQREADYquestauthoringbythislane."
+      "main_integration": "origin/main advancedc77d436d8(QREADY1+2),11nativeadditionsnoneoverlaptyped5. SavecompilevalidatedsliceandmergeMainnormally,retainbothprofilecohorts,regeneratebothpinowners,rerunworkspace/fmt. NoQREADYquestauthoringbythislane.",
+      "publication_gates": {
+        "workspace": "TYPED5_MAIN_CHECK=0 duration=246s",
+        "fmt": "TYPED5_MAIN_FMT=0",
+        "clippy": "TYPED5_MAIN_CLIPPY=0 duration=233s",
+        "freshness": "MAIN_QREADY_PIN=0 EQUIPMENT=0 NATIVE=0 VARIANT=0 COMPLETION=0 WORLD_METADATA=0 DONOR_INPUTS_UNCHANGED=0",
+        "postgres": "OwnsevenPG18.6GREENbeforeMainmerge42.580-57.019s;fiveREDbeforeadmissionandsixpriorregressionsGREEN. Freshpostmergeeleven-casePG/centralunitrerunqueued/running,pendingunderPREPUSH-2cadenceallowance.",
+        "merged_inventory": "Exact3773nativeunionverifiedincludingallownadmissions,11MainadditionsandoneMainexistingrowrevision;equipment3811;noauthoritativeownrevisionconflict.",
+        "broad_units": "Fullbroadcrateunitsremainpending; prior579PASS/2SIGINTnotafullpass. Source39controlsPASS58.506s;sevennewcontrolsPASS10.338s;RuffPASS."
+      }
+    },
+    "typed5_main_c77": {
+      "main": "c77d436d8be39f348924e66d97928ffd69e61a8c",
+      "scope": "Reuse QREADY1+2 content and claim bindings as-is; no QREADY quest authored by this lane.",
+      "resolution": "Six generated-file conflicts resolved by repository regenerate_content.resolve_conflicts; main topology used as regeneration input. MainQREADY pin tool plus ownnative/equipment generator derivecompletecohorts; stage resolved outputs before pinrefresh. No hand-edited pin values.",
+      "preservation": "Exact3773-recordunion verified: own3762 checkpoint plus11main additions and1authoritative main existing-row revision; no overlapping revised ownrows. Equipment3811.",
+      "validation": "Normalmergecomplete;workspace/alltargets+fmt+clippychangedcratesPASS;native/equipment/QREADYpin/variant/completion/worldmetadata/donorinputchecksPASS;duplicate migrations0. FreshpostmergePG/unitexecutionpendingexplicitcadenceallowance."
     }
   }
 }
