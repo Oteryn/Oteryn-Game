@@ -3,6 +3,10 @@ import hashlib
 import json
 from pathlib import PurePosixPath
 
+# Match native_cosmetics/provisioning.rs and cosmetics_authoring.py. QENGINE2's
+# source-backed catalogue (804,946 bytes) outgrew the historical NX-5 sample cap.
+MAX_AUTHORING_BYTES = 8 * 1024 * 1024
+
 
 def select_cosmetics_inputs(document, manifest, repo_root, selected):
     pin = document.get("cosmetics")
@@ -35,7 +39,7 @@ def select_cosmetics_inputs(document, manifest, repo_root, selected):
         selected[name] = data
         return source, data
 
-    select(locator.parent, descriptor["authoring"], 200_000)
+    select(locator.parent, descriptor["authoring"], MAX_AUTHORING_BYTES)
     source, data = select(locator.parent, descriptor["source_manifest"], 16 * 1024)
     total = len(data)
     for file_pin in json.loads(data)["files"]:
