@@ -23,6 +23,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
+        if encounter.timing.is_some() {
+            return self.schedule_timed_quest_encounter(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                after,
+            );
+        }
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
@@ -65,7 +78,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
             let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
-                self.movement_cells,
+                &self.movement_cells,
                 who,
                 member_session,
                 expected,

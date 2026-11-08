@@ -19,7 +19,7 @@ pub(super) async fn scenario(harness: &Harness) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, AttackCase::TheMonster)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, deps.admitted.channel_id),

@@ -92,7 +92,7 @@ fn scenario(item: u32, family: usize) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let mut rates = TrainingRates::from_json(include_bytes!(
             "../../../../../../rulesets/training/crystal-201189f-v1.json"

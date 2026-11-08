@@ -82,7 +82,9 @@ pub fn encode_death_key(death: crate::foundation::CreatureDeathOccurrenceKey) ->
     key
 }
 
-fn decoded_death_scope(death: &[u8]) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
+pub(crate) fn decoded_death_scope(
+    death: &[u8],
+) -> Option<(crate::foundation::RuntimeScopeRefV1, u64)> {
     use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
     let (instance, fields) = match death {
         bytes if bytes.len() == 52 => (false, bytes),
@@ -266,6 +268,7 @@ pub async fn commit_in_transaction<const N: usize>(
         .bind(input.party_id.as_ref().map(|id|id.as_slice())).bind(input.party_revision.map(|r|r.to_string()))
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     super::world_event_outcomes::capture_kill(tx, &input).await?;
+    super::world_event::capture_kill(tx, &input).await?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
         let forge_dust = if let Some(amount) = member.forge_dust {

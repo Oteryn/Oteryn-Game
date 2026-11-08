@@ -234,7 +234,7 @@ fn scenario(case: Case) -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -361,7 +361,7 @@ fn scenario(case: Case) -> TestResult {
         drop(owner);
         owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         // A bounded pass can retire the sole holder before the reconnect snapshot.
         // Exercise that load-dependent state deterministically in every seed case.
@@ -671,7 +671,7 @@ fn scenario(case: Case) -> TestResult {
             .map_err(debug)?;
         let mut restored = deps.owner(&harness, &authority);
         restored.active_generation = Some(active);
-        restored.movement_cells = &restored_cells;
+        restored.movement_cells = (&restored_cells).into();
         deps.initialize(&restored).await;
         maintain_ready(&restored).await?;
         restored.refresh_terrain_tools().await;
@@ -749,6 +749,30 @@ async fn drop_exchange(
     count: u8,
     expect_disconnect: bool,
 ) -> TestResult<(AdmittedSession, Option<ItemMoveOutcome>, Vec<u8>)> {
+    drop_exchange_at(
+        owner,
+        admitted,
+        command_id,
+        replay,
+        seed,
+        count,
+        expect_disconnect,
+        WorldTilePosition { x: 7, y: 0, floor: -7 },
+    ).await
+}
+
+// Preserve the existing wire probe controls while varying only its target tile.
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn drop_exchange_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    replay: Option<Vec<u8>>,
+    seed: std::num::NonZeroU32,
+    count: u8,
+    expect_disconnect: bool,
+    destination: WorldTilePosition,
+) -> TestResult<(AdmittedSession, Option<ItemMoveOutcome>, Vec<u8>)> {
     maintain_ready(owner).await?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
@@ -781,11 +805,7 @@ async fn drop_exchange(
         } else {
             let intent = ItemMoveIntent {
                 source: source.ok_or("current seed handle")?,
-                destination: ItemMoveDestination::Ground(WorldTilePosition {
-                    x: 7,
-                    y: 0,
-                    floor: -7,
-                }),
+                destination: ItemMoveDestination::Ground(destination),
             };
             let mut payload = encode_item_move_intent_for(
                 &intent,

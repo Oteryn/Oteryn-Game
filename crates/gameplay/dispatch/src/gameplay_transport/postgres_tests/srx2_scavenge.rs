@@ -138,7 +138,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -789,11 +789,10 @@ async fn entity_target(
         floor: 7,
     };
     assert_eq!(
-        owner
-            .movement_cells
+        owner.movement_cells()
             .index()
             .lookup(
-                owner.movement_cells.scope(),
+                owner.movement_cells().scope(),
                 crate::content::LogicalCell { x: 7, y: 0, z: 7 }
             )
             .map_err(debug)?,

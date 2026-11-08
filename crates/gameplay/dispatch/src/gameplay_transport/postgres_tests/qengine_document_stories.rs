@@ -89,6 +89,7 @@ pub(super) async fn exercise(
         .ok_or("independent Dreamer qualification")?;
     let parent_key = "oteryn:quest-transition/qengine2-story/document-parent";
     transitions.push(QuestTransition {
+        world_change: None,
         key: parent_key.into(),
         quest: parent_track.quest.clone(),
         effects: vec![QuestEffect {
@@ -179,6 +180,8 @@ pub(super) async fn exercise(
             } else {
                 vec![
                     oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                        fluid_subtype: None,
+
                         item: "oteryn:item.tibia.i6499".into(),
                         count: price,
                     },
@@ -198,6 +201,8 @@ pub(super) async fn exercise(
                 admitted,
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i6499".into(),
                     count: price,
                 },

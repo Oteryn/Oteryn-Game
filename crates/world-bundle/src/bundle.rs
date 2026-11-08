@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v7`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v8`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,8 +14,8 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v7";
-pub const VERSION: u16 = 7;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v8";
+pub const VERSION: u16 = 8;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
@@ -126,7 +126,8 @@ pub enum TerrainKind {
 pub const MAX_GROUND_SPEED: u16 = 1000;
 
 /// The terrain semantics of a Terrain-routed palette entry (format v2): `walkable` and
-/// `ground_speed` are set for `ground` and `null` for every other kind. A walkable ground has a
+/// `ground_speed` are set for `ground`; other layers may retain a known walkable flag, with
+/// `ground_speed=null`. Existing `walkable=null` retains its prior kind semantics. A walkable ground has a
 /// speed of at least 1; a non-walkable ground may have any speed in `0..=1000`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -136,6 +137,9 @@ pub struct Terrain {
     pub walkable: Option<bool>,
     #[serde(deserialize_with = "required")]
     pub ground_speed: Option<u16>,
+    /// Exact source projectile fact; absent preserves legacy wall interpretation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blocks_projectile: Option<bool>,
 }
 
 impl Terrain {
@@ -146,7 +150,7 @@ impl Terrain {
                 speed <= MAX_GROUND_SPEED && !(walkable && speed == 0)
             }
             (TerrainKind::Ground, ..) => false,
-            (_, walkable, speed) => walkable.is_none() && speed.is_none(),
+            (_, _, speed) => speed.is_none(),
         }
     }
 }
@@ -633,7 +637,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v7",
+        "not an OTERYN_WORLD_BUNDLE/v8",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);

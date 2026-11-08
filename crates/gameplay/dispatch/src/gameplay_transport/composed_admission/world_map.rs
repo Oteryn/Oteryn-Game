@@ -6,7 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.
     pub(in crate::gameplay_transport) fn bundle_map(&self) -> Option<&crate::map::boot::BundleMap> {
-        match self.movement_cells.index() {
+        match self.movement_cells().index() {
             crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
                 Some(index.map())
             }
@@ -123,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &runtime,
             self.active_generation,
         ))
+        .chain(self.source_volatile_entities(&runtime))
         .collect();
         // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
         // runtime actor-condition owner (players and creatures) and, for a player, its spell

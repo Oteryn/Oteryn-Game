@@ -359,16 +359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
                     let death = key(entry);
-                    // W10/W11 still require Channel death authority. Other mechanics
-                    // retain the native owner's tagged Instance receipt format.
-                    let endgame_death = if endgame_kill {
-                        let Ok(key) = <[u8; 52]>::try_from(death.as_slice()) else {
-                            return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                        };
-                        Some(key)
-                    } else {
-                        None
-                    };
+                    // Preserve the native owner's tagged Instance namespace. All
+                    // endgame consumers independently re-prove this scope and generation.
+                    let endgame_death = endgame_kill.then(|| death.clone());
 
                     if let Some(awards) = party_kill_xp::reconcile_in_transaction(
                         &mut tx,
@@ -379,11 +372,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entry.creature,
-                        entry
-                            .row
-                            .as_ref()
-                            .ok_or(DurabilityError::InvalidStoredState)?
-                            .xp_amount
+                        entry.experience().ok_or(DurabilityError::InvalidStoredState)?
                             .get(),
                         (
                             entry.facts.death_at_ms,
@@ -481,11 +470,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                             creature: entry.creature.clone(),
-                            base_xp: entry
-                                .row
-                                .as_ref()
-                                .ok_or(DurabilityError::InvalidStoredState)?
-                                .xp_amount
+                            base_xp: entry.experience().ok_or(DurabilityError::InvalidStoredState)?
                                 .get(),
                             death_at_ms: entry.facts.death_at_ms,
                             death_at_us: entry
@@ -503,7 +488,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
-                    if let Some(death) = endgame_death.as_ref() {
+                    if let Some(death) = endgame_death.as_deref() {
                         // Quest/Hazard gains observe pre-gain XP and commit in the same
                         // transaction. There is no post-XP logout/crash gap to lose a taint.
                         if let Err(error) = crate::durability::quest_state::soul_war::apply_soul_war_kill_in_transaction(

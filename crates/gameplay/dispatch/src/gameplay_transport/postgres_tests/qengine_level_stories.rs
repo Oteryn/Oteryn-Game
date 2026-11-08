@@ -189,6 +189,7 @@ pub(super) async fn exercise(
         let track = tracks.get(key).ok_or("parent owner")?;
         let transition = format!("oteryn:quest-transition/qengine2-story/l11-parent-{index}");
         transitions.push(QuestTransition {
+            world_change: None,
             key: transition.clone(),
             quest: track.quest.clone(),
             effects: vec![QuestEffect {
@@ -363,6 +364,8 @@ pub(super) async fn exercise(
         assert_eq!(
             callback.take,
             vec![ItemAmount {
+                fluid_subtype: None,
+
                 item: format!("oteryn:item.tibia.i{id}"),
                 count: needed
             }]

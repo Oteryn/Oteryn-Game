@@ -12,6 +12,10 @@ pub struct DisplayTile {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PublicMedia {
+    /// Display plane only; no world position or authority identity.
+    Camera {
+        floor: i16,
+    },
     Map {
         reset: bool,
         last: bool,
@@ -28,6 +32,14 @@ impl PublicMedia {
     pub fn encode(&self) -> Result<Vec<u8>, WireError> {
         let mut b = Vec::new();
         match self {
+            Self::Camera { floor } => {
+                if !(-15..=0).contains(floor) {
+                    return Err(WireError::Malformed);
+                }
+                // CLCAST lane: next free nested kind 4 + 30 = 34.
+                push_varint_field(&mut b, 1, 34);
+                push_varint_field(&mut b, 2, (*floor + 15) as u64);
+            }
             Self::Map { reset, last, tiles } => {
                 if tiles.len() > 32 {
                     return Err(WireError::LimitExceeded);
@@ -100,6 +112,9 @@ impl PublicMedia {
     pub fn decode(bytes: &[u8]) -> Result<Self, WireError> {
         let mut r = Reader { bytes, cursor: 0 };
         let value = match r.var(1)? {
+            34 => Self::Camera {
+                floor: i16::try_from(r.var(2)?).map_err(|_| WireError::Malformed)? - 15,
+            },
             1 => {
                 let reset = r.boolean(2)?;
                 let last = r.boolean(3)?;

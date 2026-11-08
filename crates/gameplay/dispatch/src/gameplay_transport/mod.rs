@@ -82,6 +82,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod hive_shared_kills;
 mod house_destroy;
 mod house_furnishing;
 mod house_item_use;
@@ -109,6 +110,7 @@ mod loop_move;
 mod loop_training;
 pub mod mail;
 mod map_door;
+mod map_ladder;
 mod mining;
 mod monk_save;
 mod monster_ai_cycle;
@@ -140,10 +142,13 @@ mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
 mod player_death_items;
+mod primal_menace;
+mod primal_pods;
 mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
+mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
@@ -151,6 +156,7 @@ mod quest_admission;
 mod quest_callbacks;
 mod quest_kills;
 mod quest_log_source;
+mod quest_timer_cycle;
 mod raid_live;
 mod raid_live_world;
 mod raid_notices;
@@ -172,6 +178,7 @@ pub use soulpit::{
 };
 mod source_item_cycle;
 mod source_pvp_expiry;
+mod source_volatile_items;
 pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;
@@ -358,6 +365,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
         &'a [crate::content::bosses::activity_template::QualifiedActivityRoomTemplate],
+    pub soulpit_template:
+        Option<&'a crate::content::soulpit_activity::QualifiedSoulpitActivityTemplate>,
     pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     pub store_purchases: StorePurchaseMode,
     pub store: Option<crate::native_admission_source::store::StoreClient>,
@@ -563,7 +572,7 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub runtime: activity_runtime::SharedOwner<'a, Mutex<ChannelRuntimeV1>>,
-    pub movement_cells: &'a NativeEntryMovementCells,
+    pub movement_cells: activity_runtime::SharedOwner<'a, NativeEntryMovementCells>,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
     /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
     /// other.
@@ -607,6 +616,15 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
     pub store: Option<store::StorePlatform>,
     pub store_purchases: StorePurchaseMode,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
+    }
+    pub(super) fn rooms(&self) -> &SeamRooms<'_> {
+        &self.rooms
+    }
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -1358,8 +1376,22 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
         match self.root {
             Some(root) => {
-                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + self.backoff)
-                    .await;
+                let earliest = now + HOLDER_RETRY_FLOOR;
+                let latest = now + self.backoff;
+                if root.is_ready() {
+                    root.wait_holder_retry(earliest, latest).await;
+                } else {
+                    // A retired holder cannot emit a return notification. Service
+                    // real readiness within this same retry window, then retry on
+                    // its observed return; neither deadline nor refusal changes.
+                    let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
+                    let retry_at = if matches!(ready, Ok(Ok(()))) {
+                        earliest.min(latest)
+                    } else {
+                        latest
+                    };
+                    tokio::time::sleep_until(retry_at).await;
+                }
             }
             None => tokio::time::sleep(self.backoff).await,
         }
@@ -1595,6 +1627,7 @@ fn player_death_request<const N: usize>(
         .map(|byte| format!("{byte:02x}"))
         .collect();
     crate::durability::character_death::CharacterDeathRequest {
+        public_cause: death.public_cause,
         pvp_contributors: Vec::new(),
         occurrence: death.occurrence,
         context: progression.context.clone(),

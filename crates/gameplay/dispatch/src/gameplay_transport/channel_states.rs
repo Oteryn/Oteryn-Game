@@ -42,6 +42,7 @@ pub struct ChannelSessionStates {
     pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
     pub(super) grizzly_boss: super::grizzly_boss::GrizzlyBossSessions,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,
     pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
@@ -60,6 +61,8 @@ pub struct ChannelSessionStates {
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
     pub(super) player_trades: super::player_trade::TradeBook,
+    pub(super) primal_menace: super::primal_menace::PrimalMenace,
+    pub(super) primal_pods: super::primal_pods::State,
     /// PROF-WIRE-1: durable tracks installed for each admitted session. The leaf lock is never
     /// held across a database await.
     pub(super) proficiencies: std::sync::Mutex<
@@ -88,11 +91,15 @@ pub struct ChannelSessionStates {
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
     pub(super) soul_kills: super::soul_kill_live::SoulKills,
+    pub(super) source_volatile_items: super::source_volatile_items::SourceVolatileItems,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     /// NX-1: current-session staff flags and uncertain world-effect receipts.
     pub(super) staff_world: super::staff_tools::WorldTools,
+    /// Per-owner simulation clock control for native timer scenarios, never SQL time.
+    #[cfg(test)]
+    pub(super) test_owner_time: std::sync::atomic::AtomicU64,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title

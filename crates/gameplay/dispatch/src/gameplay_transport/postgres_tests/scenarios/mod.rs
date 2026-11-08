@@ -359,7 +359,10 @@ async fn peer(
                     fence.game_session_id,
                     crate::spell::cast::CharacterCastFacts {
                         vocation: crate::spell::Vocation::Knight,
-                        level: 1,
+                        // Match the leader's level-50 combat fixture: the weakest
+                        // fist hit must penetrate Rat defense/armor/mitigation.
+                        // Durable progression remains owned by admission below.
+                        level: 50,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -494,10 +497,63 @@ async fn kill_rat(
         runtime
             .set_test_creature_health(creature, 1000)
             .map_err(debug)?;
+        // ATTACK-0 / TibiaTools damage.ts:13-25 bounds precede Canary
+        // 99902524 creature.cpp:958-1007 defense, armor and mitigation. Establish positive
+        // worst-case damage from the actual qualified target and live peer facts;
+        // more RNG attempts cannot repair an underpowered fixture.
+        {
+            use crate::combat_attack::{
+                AttackConstants, FightMode, armor_reduction_bounds, player_fist_formula,
+            };
+            let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+            let states = owner.states.spell_states.lock().await;
+            let peer = states
+                .get(
+                    &runtime,
+                    other.runtime_actor.ok_or("peer")?,
+                    other.game_session_id,
+                )
+                .ok_or("peer spell state")?;
+            let facts = peer.character_facts();
+            let skill = peer
+                .swing_skills(0, owner.owner_now().get())
+                .ok_or("peer swing skills")?
+                .map_or(constants.starting_skill, |skills| skills.attack);
+            let (minimum, _) = player_fist_formula(constants)
+                .bounds(&crate::spell::formula::FormulaInputs {
+                    level: facts.level,
+                    magic_level: facts.magic_level,
+                    base_power: None,
+                    attack_skill: skill,
+                    attack_value: constants.fist.attack,
+                    attack_factor: constants.fight_mode(FightMode::Balanced).attack_factor,
+                    shielding_skill: 10,
+                    shield_defense: None,
+                })
+                .map_err(debug)?;
+            let target = runtime.companion_snapshot(creature).map_err(debug)?;
+            let policy = &target.state.policy;
+            let defense = policy.defense.ok_or("Rat defense")?;
+            let (_, maximum_armor) =
+                armor_reduction_bounds(constants, policy.armor.ok_or("Rat armor")?);
+            let after_blocks = minimum
+                .saturating_sub(i64::from(defense))
+                .saturating_sub(i64::from(maximum_armor))
+                .max(0);
+            assert!(
+                oteryn_gameplay_combat_rules::resolution::creature_physical_response(
+                    policy,
+                    after_blocks
+                )
+                .ok_or("Rat physical response")?
+                    > 0,
+                "the peer's minimum real fist hit must penetrate the qualified Rat defenses"
+            );
+        }
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 other.runtime_actor.ok_or("peer actor")?,
                 other.game_session_id,
                 owner.owner_now(),
@@ -532,7 +588,7 @@ async fn kill_rat(
         let mut runtime = owner.runtime.lock().await;
         owner.states.attack.lock().await.set_target(
             &runtime,
-            owner.rooms.gate_auto_attack(),
+            owner.rooms().gate_auto_attack(),
             other.runtime_actor.ok_or("peer")?,
             other.game_session_id,
             owner.owner_now(),
@@ -548,7 +604,7 @@ async fn kill_rat(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 admitted.game_session_id,
                 owner.owner_now(),

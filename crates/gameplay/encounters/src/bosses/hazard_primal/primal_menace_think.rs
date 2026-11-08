@@ -1,21 +1,9 @@
 //! Crystal the_primal_menace.lua:156-347 (onThink): beast and pod waves and beast decay.
 use oteryn_gameplay_entities::MovementLocalPosition;
 
-pub const PRIMAL_MENACE_KEY: &str = "oteryn:creature.the_primal_menace";
-pub const FUNGOSAURUS_KEY: &str = "oteryn:creature.fungosaurus";
-pub const PRIMAL_BEAST_POOL: [&str; 11] = [
-    "oteryn:creature.emerald_tortoise_primal",
-    "oteryn:creature.gore_horn_primal",
-    "oteryn:creature.gorerilla_primal",
-    "oteryn:creature.headpecker_primal",
-    "oteryn:creature.hulking_prehemoth_primal",
-    "oteryn:creature.mantosaurus_primal",
-    "oteryn:creature.nighthunter_primal",
-    "oteryn:creature.noxious_ripptor_primal",
-    "oteryn:creature.sabretooth_primal",
-    "oteryn:creature.stalking_stalk_primal",
-    "oteryn:creature.sulphider_primal",
-];
+pub use oteryn_gameplay_content::content::bosses::primal_closure::{
+    FUNGOSAURUS_KEY, PRIMAL_BEAST_POOL, PRIMAL_MENACE_KEY,
+};
 pub const SPAWN_RADIUS_TILES: u32 = 5;
 pub const SPAWN_ATTEMPTS: u8 = 6;
 pub const SPAWN_WARMUP_MS: u64 = 3_000;

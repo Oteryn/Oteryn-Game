@@ -120,6 +120,7 @@ pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
 pub mod newhaven_travel;
+pub mod npc_marriage;
 pub mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;
@@ -212,6 +213,10 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SqlxFailureClass {
     Configuration,
+    /// PostgreSQL lock refusal (55P03), statement cancellation (57014),
+    /// or transaction timeout (25P04).
+    /// Only a caller that knows its operation is read-only may retry this class.
+    RetryableStatement,
     /// A database-raised error, with its registered SQLSTATE kind when it has one; the payload
     /// itself is never kept.
     Database(Option<sqlstate_codes::SqlstateKind>),
@@ -230,12 +235,10 @@ impl SqlxFailureClass {
     fn classify(error: &sqlx::Error) -> Self {
         match error {
             sqlx::Error::Configuration(_) | sqlx::Error::InvalidArgument(_) => Self::Configuration,
-            sqlx::Error::Database(database) => Self::Database(
-                database
-                    .code()
-                    .as_deref()
-                    .and_then(sqlstate_codes::SqlstateKind::from_sqlstate),
-            ),
+            sqlx::Error::Database(database) => match database.code().as_deref() {
+                Some("55P03" | "57014" | "25P04") => Self::RetryableStatement,
+                code => Self::Database(code.and_then(sqlstate_codes::SqlstateKind::from_sqlstate)),
+            },
             sqlx::Error::Io(_) => Self::Transport,
             sqlx::Error::Tls(_) => Self::Tls,
             sqlx::Error::Protocol(_) => Self::Protocol,
@@ -371,7 +374,10 @@ impl DurabilityError {
     pub fn from_commit_error(error: sqlx::Error) -> Self {
         let class = SqlxFailureClass::classify(&error);
         drop(error);
-        if matches!(class, SqlxFailureClass::Database(_)) {
+        if matches!(
+            class,
+            SqlxFailureClass::Database(_) | SqlxFailureClass::RetryableStatement
+        ) {
             Self::CommitRejected
         } else {
             Self::CommitOutcomeUnknown

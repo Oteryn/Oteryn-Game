@@ -177,7 +177,7 @@ fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult
                 )?;
                 let mut owner = deps.owner(&h, &authority);
                 owner.active_generation = Some(active);
-                owner.movement_cells = &cells;
+                owner.movement_cells = (&cells).into();
                 admit(&owner, &deps, &request).await?;
                 let mut actual: Vec<(String,i64,i16)> = sqlx::query_as(
                 "SELECT i.definition_production_key,i.quantity,COALESCE(e.slot,0)::smallint FROM game_item_instances i \
@@ -448,7 +448,7 @@ fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult
                     )?;
                     let mut owner = restored.owner(&h, &reopened);
                     owner.active_generation = Some(active);
-                    owner.movement_cells = &cells;
+                    owner.movement_cells = (&cells).into();
                     admit(&owner, &restored, &request).await?;
                     let (_, (x, y, floor)) =
                         starting_loadout::departure(unique).ok_or("restored door")?;

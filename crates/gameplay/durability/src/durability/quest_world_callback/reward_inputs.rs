@@ -15,6 +15,17 @@ pub(super) async fn apply(
     if inputs.is_empty() {
         return Ok(true);
     }
+    // Each stack executes the same parameterized custody guards, including the
+    // deferred guards at COMMIT (0268_quest_callback_carried.sql:110). Avoid
+    // repeatedly planning their alternative proof joins for the first five rows
+    // and JIT-compiling bounded OLTP queries inside the semantic pass deadline.
+    // Both settings are transaction-local; every custody/receipt guard still runs.
+    sqlx::query("SET LOCAL plan_cache_mode = force_generic_plan")
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("SET LOCAL jit = off")
+        .execute(&mut **tx)
+        .await?;
     let ids = inputs
         .iter()
         .map(|input| input.item.parse::<Uuid>())

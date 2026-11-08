@@ -49,6 +49,8 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
   NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
+source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
+NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
@@ -258,7 +260,7 @@ PY_STAGE
   sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
   sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
   sudo chmod -R a+rX "$BASE/gameplay"
-  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1)"
+  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
@@ -373,6 +375,14 @@ client_certificate_file = "$BASE/node/secrets/platform-client.crt"
 client_key_file = "$BASE/node/secrets/platform-client.key"
 descriptor_revision = 1
 installed_at = $DESCRIPTOR_INSTALLED_AT
+[platform.public_projections]
+enabled = false
+character_online_sessions_enabled = false
+world_daily_kills_enabled = false
+source_authority = "oteryn:game:primary"
+client_certificate_file = "$BASE/node/secrets/public-projections.crt"
+client_key_file = "$BASE/node/secrets/public-projections.key"
+epoch_fence_file = "$BASE/public-projections/epoch-fence"
 [launch]
 authorization_file = "$BASE/state/$1"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"
@@ -511,13 +521,16 @@ VALUES ('$WORLD_ID', 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949
 SQL
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+  await_log "event=readiness .*ready=true" 60
+  # The canonical manifest makes each validation substantial. Prove the same
+  # stale-predecessor rejection against the now-active sequence 1, without
+  # spending the unassigned node's unchanged wait on this independent negative.
   code=0
   ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
-  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
-  await_log "event=content_activated .*activation_sequence=1 " 60
-  await_log "event=readiness .*ready=true" 60
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
@@ -628,7 +641,7 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   remember node_c "$node"
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
-  await_log "event=content_activated .*activation_sequence=1 " 60
+  await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
   sudo kill -TERM "$NODE_PID"
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done

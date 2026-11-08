@@ -5,7 +5,7 @@
 //! source hook. Unknown map cells or custom hooks never become a vanilla boss.
 use crate::content::{
     ActiveGeneration, ContentActivationController, LogicalCell, QualifiedNativeEntryRoom,
-    channel_content_pin::ChannelContentPin, digest::sha256, project::ProjectV2AuthoringProfileData,
+    channel_content_pin::ChannelContentPin, project::ProjectV2AuthoringProfileData,
 };
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,18 @@ pub struct BossLeverCandidate {
     pub after_kill_seconds: Option<u32>,
 }
 
+impl BossLeverCandidate {
+    /// Crystal 201189f actions/bosses_levers/the_primal_manace.lua:2-4:
+    /// the lever boss name identifies the captured creature; the room keeps
+    /// that source identity in the boss namespace.
+    pub fn boss_key(&self) -> Option<String> {
+        self.creature_key
+            .as_deref()?
+            .strip_prefix("oteryn:creature.")
+            .map(|suffix| format!("oteryn:boss.{suffix}"))
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CandidateDocument {
@@ -65,6 +77,35 @@ pub enum ActivityTemplateRefusal {
 pub struct ActivityTemplateDiagnostic {
     pub path: String,
     pub reason: ActivityTemplateRefusal,
+    pub unavailable_source_hooks: Vec<String>,
+}
+
+impl ActivityTemplateDiagnostic {
+    fn rejected(candidate: &BossLeverCandidate, reason: ActivityTemplateRefusal) -> Self {
+        Self {
+            path: candidate.path.clone(),
+            reason,
+            unavailable_source_hooks: if reason == ActivityTemplateRefusal::SourceHookUnavailable {
+                unavailable_source_hooks(candidate)
+                    .map(str::to_owned)
+                    .collect()
+            } else {
+                Vec::new()
+            },
+        }
+    }
+}
+
+fn unavailable_source_hooks(candidate: &BossLeverCandidate) -> impl Iterator<Item = &str> {
+    // Crystal 201189f data-global/monster/quests/primal_ordeal_quest/
+    // the_primal_menace.lua:66-69,338-347: captured death and think callbacks
+    // require native owners. A diagnostic must not imply BossLeverOnDeath
+    // implements those distinct source hooks.
+    candidate
+        .required_callbacks
+        .iter()
+        .map(String::as_str)
+        .filter(|hook| *hook != "BossLeverOnDeath")
 }
 
 /// Produced only by the active Content owner, never by a client or SQL catalogue
@@ -92,9 +133,13 @@ pub struct QualifiedActivityRoomTemplate {
     activation_sequence: u64,
     server_digest: [u8; 32],
     client_digest: [u8; 32],
+    activation_frame_binding_digest: [u8; 32],
 }
 
 impl QualifiedActivityRoomTemplate {
+    pub fn activation_frame_binding_digest(&self) -> [u8; 32] {
+        self.activation_frame_binding_digest
+    }
     pub fn boss_key(&self) -> &str {
         &self.boss_key
     }
@@ -194,11 +239,10 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
 }
 
 impl ContentActivationController {
-    /// Deterministic initial selection authorized by PR2769 ANSWER6543189919.
-    /// Every earlier refusal is retained; only the first complete qualified
-    /// template can be registered by the gameplay seam.
+    /// Qualify every captured room; preserve a diagnostic for every rejection.
     pub fn qualify_initial_activity_template(
         &self,
+        parent: &QualifiedNativeEntryRoom,
         room: &QualifiedNativeEntryRoom,
         content_revision: &str,
         candidates: &[BossLeverCandidate],
@@ -207,29 +251,31 @@ impl ContentActivationController {
         Vec<ActivityTemplateDiagnostic>,
     ) {
         let mut diagnostics = Vec::new();
+        let mut templates = Vec::new();
         if !self.is_ready() || self.active().is_none() {
             diagnostics.push(ActivityTemplateDiagnostic {
                 path: String::new(),
                 reason: ActivityTemplateRefusal::NoActiveGeneration,
+                unavailable_source_hooks: Vec::new(),
             });
             return (Vec::new(), diagnostics);
         }
         let mut ordered: Vec<_> = candidates.iter().collect();
         ordered.sort_by(|a, b| a.path.cmp(&b.path));
         for candidate in ordered {
-            match self.qualify_activity_template(room, content_revision, candidate) {
-                Ok(template) => return (vec![template], diagnostics),
-                Err(reason) => diagnostics.push(ActivityTemplateDiagnostic {
-                    path: candidate.path.clone(),
-                    reason,
-                }),
+            match self.qualify_activity_template(parent, room, content_revision, candidate) {
+                Ok(template) => templates.push(template),
+                Err(reason) => {
+                    diagnostics.push(ActivityTemplateDiagnostic::rejected(candidate, reason))
+                }
             }
         }
-        (Vec::new(), diagnostics)
+        (templates, diagnostics)
     }
 
     pub fn qualify_activity_template(
         &self,
+        parent: &QualifiedNativeEntryRoom,
         room: &QualifiedNativeEntryRoom,
         content_revision: &str,
         candidate: &BossLeverCandidate,
@@ -253,6 +299,9 @@ impl ContentActivationController {
             || candidate.path.is_empty()
             || candidate.path.starts_with('/')
             || candidate.path.split('/').any(|s| s == ".." || s.is_empty())
+            || parent.compiled().server_digest() != active.identity().server_artifact_digest()
+            || parent.compiled().client_digest() != active.identity().client_artifact_digest()
+            || parent.movement_cells().scope().world_id != room.movement_cells().scope().world_id
             || room.compiled().server_digest() != active.identity().server_artifact_digest()
             || room.compiled().client_digest() != active.identity().client_artifact_digest()
         {
@@ -296,32 +345,63 @@ impl ContentActivationController {
         {
             return Err(R::IncompleteLayout);
         }
-        let source = room.source_world().ok_or(R::SourceMapUnavailable)?;
-        let frame: SourceFrameDocument = serde_json::from_slice(
-            active
-                .native_source_world()
-                .ok_or(R::SourceMapUnavailable)?,
-        )
-        .map_err(|_| R::SourceMapUnavailable)?;
-        if frame.native_frame.floor_transform != "native_floor=-source_z" {
+        let source = room.source_world();
+        let frame = if source.is_some() {
+            let frame_document =
+                crate::content::project::native_spell_world::channel_source_document(
+                    active
+                        .native_source_world()
+                        .ok_or(R::SourceMapUnavailable)?,
+                )
+                .map_err(|_| R::SourceMapUnavailable)?;
+            let frame: SourceFrameDocument =
+                serde_json::from_slice(&frame_document).map_err(|_| R::SourceMapUnavailable)?;
+            if frame.native_frame.floor_transform != "native_floor=-source_z"
+                || parent.frame_binding().digest() != room.frame_binding().digest()
+            {
+                return Err(R::SourceMapUnavailable);
+            }
+            Some(frame.native_frame)
+        } else if matches!(
+            room.movement_cells().index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ) {
+            None
+        } else {
             return Err(R::SourceMapUnavailable);
-        }
+        };
+        // Crystal data/libs/functions/boss_lever.lua:63-76,190-225 keeps literal
+        // source positions. Bundle runtime cells retain source x/y/+z; the
+        // separately qualified Canary capture uses its own translated x/y/-z.
         let project = |[x, y, z]: [i32; 3]| -> Result<LogicalCell, R> {
-            let cell = LogicalCell {
-                x: x.checked_sub(frame.native_frame.origin_x)
-                    .ok_or(R::OutsideQualifiedMap)?,
-                y: y.checked_sub(frame.native_frame.origin_y)
-                    .ok_or(R::OutsideQualifiedMap)?,
-                z: z.checked_neg().ok_or(R::OutsideQualifiedMap)?,
+            let cell = if let Some(frame) = &frame {
+                LogicalCell {
+                    x: x.checked_sub(frame.origin_x)
+                        .ok_or(R::OutsideQualifiedMap)?,
+                    y: y.checked_sub(frame.origin_y)
+                        .ok_or(R::OutsideQualifiedMap)?,
+                    z: z.checked_neg().ok_or(R::OutsideQualifiedMap)?,
+                }
+            } else {
+                LogicalCell { x, y, z }
             };
-            if i16::try_from(cell.z).is_err() || !source.contains_capture_cell(cell) {
+            if i16::try_from(cell.z).is_err()
+                || source.is_some_and(|source| !source.contains_capture_cell(cell))
+            {
                 return Err(R::OutsideQualifiedMap);
             }
             Ok(cell)
         };
         let from = project(low)?;
         let to = project(high)?;
-        let bounds = [from.x, from.y, to.x, to.y, to.z, from.z];
+        let bounds = [
+            from.x,
+            from.y,
+            to.x,
+            to.y,
+            from.z.min(to.z),
+            from.z.max(to.z),
+        ];
         let boss = project(boss)?;
         let exit = project(exit)?;
         let levers = candidate
@@ -353,32 +433,41 @@ impl ContentActivationController {
             .copied()
             .chain([boss, exit])
         {
-            if source.lookup(source.scope(), position).ok()
+            if room
+                .movement_cells()
+                .index()
+                .lookup(room.movement_cells().scope(), position)
+                .ok()
                 != Some(crate::content::CollisionClass::Walkable)
             {
                 return Err(R::UnknownPlacement);
             }
         }
-        if !candidate.blockers.is_empty()
-            || !candidate.callbacks_known
-            || candidate
-                .required_callbacks
-                .iter()
-                .any(|hook| hook != "BossLeverOnDeath")
-        {
-            return Err(R::SourceHookUnavailable);
-        }
         let native = active
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
+        let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
+            .then(|| super::primal_closure::qualify(native))
+            .flatten();
+        if !candidate.blockers.is_empty()
+            || !candidate.callbacks_known
+            || unavailable_source_hooks(candidate).any(|hook| {
+                primal
+                    .as_ref()
+                    .is_none_or(|closure| !closure.implements(hook))
+            })
+        {
+            return Err(R::SourceHookUnavailable);
+        }
         let record = native
             .creature_profiles()
             .records
             .iter()
             .find(|record| record.profile.target.key == creature)
             .ok_or(R::CreatureClosureUnavailable)?;
-        let value = serde_json::to_value(record).map_err(|_| R::SourceProfileChanged)?;
-        let fingerprint = sha256(&serde_json::to_vec(&value).map_err(|_| R::SourceProfileChanged)?);
+        let fingerprint = native
+            .creature_profile_fingerprint(creature)
+            .ok_or(R::SourceProfileChanged)?;
         let fingerprint: String = fingerprint
             .iter()
             .map(|byte| format!("{byte:02x}"))
@@ -386,65 +475,38 @@ impl ContentActivationController {
         if candidate.native_profile_sha256.as_deref() != Some(fingerprint.as_str()) {
             return Err(R::SourceProfileChanged);
         }
-        qualify_instance_death_descendant(&record.profile.data)?;
-        // The existing native death dispatcher captures its descendants from an
-        // admitted reward row. Missing rows cannot be promoted by a room template.
-        native
+        // The native death dispatcher captures its descendants from this exact
+        // admitted reward row. A template cannot promote an unadmitted corpse.
+        let rewards = native
             .reward_table()
             .row(creature)
             .map_err(|_| R::CreatureClosureUnavailable)?;
-        let Some(crate::content::project::ProjectV2AuthoringProfile {
-            data: ProjectV2AuthoringProfileData::Behavior(behavior),
-            ..
-        }) = &record.behavior
-        else {
-            return Err(R::CreatureClosureUnavailable);
-        };
-        if behavior.summons.is_some()
-            || !behavior.event_bindings.is_empty()
-            || behavior
-                .attacks
-                .iter()
-                .chain(behavior.defenses.iter())
-                .any(|attack| {
-                    !record
-                        .monster_melee
-                        .as_ref()
-                        .is_some_and(|melee| melee.ability == attack.ability)
-                        && !record
-                            .source_item_abilities
-                            .iter()
-                            .any(|profile| profile.target == attack.ability)
-                        && !record
-                            .attack_definitions
-                            .as_ref()
-                            .is_some_and(|definitions| {
-                                definitions
-                                    .profiles
-                                    .iter()
-                                    .any(|profile| profile.target == attack.ability)
-                            })
-                })
-        {
+        qualify_instance_death_descendant(&record.profile.data, &rewards)?;
+        if !super::primal_closure::abilities_closed(record) {
             return Err(R::CreatureClosureUnavailable);
         }
-        let cropped = source
-            .activity_region(bounds)
-            .ok_or(R::OutsideQualifiedMap)?;
         let first = entries[0];
         let start = crate::content::NativeEntryStart {
             x: first.x,
             y: first.y,
             floor: i16::try_from(first.z).map_err(|_| R::IncompleteLayout)?,
         };
-        let view = room
-            .activity_view(cropped, start)
-            .ok_or(R::SourceMapUnavailable)?;
+        let view = if let Some(source) = source {
+            room.activity_view(
+                source
+                    .activity_region(bounds)
+                    .ok_or(R::OutsideQualifiedMap)?,
+                start,
+            )
+        } else {
+            room.bundle_activity_view(bounds, start)
+        }
+        .ok_or(R::SourceMapUnavailable)?;
         let suffix = creature
             .strip_prefix("oteryn:creature.")
             .ok_or(R::InvalidSourceCapture)?;
         Ok(QualifiedActivityRoomTemplate {
-            boss_key: format!("oteryn:boss.{suffix}"),
+            boss_key: candidate.boss_key().ok_or(R::InvalidSourceCapture)?,
             template_key: format!("oteryn:room.boss.{suffix}"),
             template_revision: format!("crystal-{}", candidate.sha256),
             content_revision: content_revision.into(),
@@ -464,6 +526,7 @@ impl ContentActivationController {
             activation_sequence: active.activation_sequence(),
             server_digest: active.identity().server_artifact_digest(),
             client_digest: active.identity().client_artifact_digest(),
+            activation_frame_binding_digest: parent.frame_binding().digest(),
         })
     }
 }
@@ -480,10 +543,11 @@ struct SourceFrame {
 }
 /// Crystal creature.cpp:711-721,777-782 still creates the physical corpse for
 /// reward bosses. A private reward entitlement does not implement that descendant.
-/// ANSWER 6545304220 keeps its Instance MINT cause/reservation/audit/receipt bridge
-/// as a separate DUR-03 extension, so no template may silently discard it.
+/// The scoped DUR-03 MINT bridge preserves that physical descendant in the
+/// Instance. Qualification still requires the exact generation's admitted Item.
 fn qualify_instance_death_descendant(
     data: &ProjectV2AuthoringProfileData,
+    rewards: &crate::content::creature_reward::CreatureRewardRow,
 ) -> Result<(), ActivityTemplateRefusal> {
     use ActivityTemplateRefusal as R;
     let ProjectV2AuthoringProfileData::Creature(creature) = data else {
@@ -493,8 +557,15 @@ fn qualify_instance_death_descendant(
         .details
         .as_ref()
         .ok_or(R::CreatureClosureUnavailable)?;
-    if details.corpse_item.is_some() {
-        return Err(R::InstanceCorpseMintUnavailable);
+    let corpse = details
+        .corpse_item
+        .as_ref()
+        .ok_or(R::CreatureClosureUnavailable)?;
+    if rewards.corpse_item.family != "Item"
+        || rewards.corpse_item.production_key != corpse.key
+        || rewards.corpse_item.revision_ref != corpse.revision
+    {
+        return Err(R::CreatureClosureUnavailable);
     }
     Ok(())
 }
@@ -523,7 +594,7 @@ mod tests {
     }
 
     #[test]
-    fn physical_corpse_requirement_blocks_both_ordinary_and_reward_boss_templates()
+    fn physical_corpse_requires_exact_admitted_item_for_ordinary_and_reward_boss_templates()
     -> Result<(), String> {
         let world = test_world()?;
         for reward_boss in [false, true] {
@@ -552,9 +623,19 @@ mod tests {
             let details = creature.details.as_ref().ok_or("source creature details")?;
             assert_eq!(details.system_eligibility.reward_boss, reward_boss);
             assert!(details.corpse_item.is_some());
+            let rewards = native
+                .reward_table()
+                .row("oteryn:creature.rat")
+                .map_err(debug)?;
             assert_eq!(
-                qualify_instance_death_descendant(&record.profile.data),
-                Err(ActivityTemplateRefusal::InstanceCorpseMintUnavailable)
+                qualify_instance_death_descendant(&record.profile.data, &rewards),
+                Ok(())
+            );
+            let mut mismatched = rewards.as_ref().clone();
+            mismatched.corpse_item.production_key = "oteryn:item.unadmitted_corpse".into();
+            assert_eq!(
+                qualify_instance_death_descendant(&record.profile.data, &mismatched),
+                Err(ActivityTemplateRefusal::CreatureClosureUnavailable)
             );
         }
         Ok(())
@@ -568,6 +649,7 @@ mod tests {
             crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
         let candidates = captured_boss_levers().map_err(debug)?;
         let (templates, diagnostics) = controller.qualify_initial_activity_template(
+            pin.qualified_room(),
             pin.qualified_room(),
             "rev-1",
             &candidates,
@@ -600,9 +682,45 @@ mod tests {
             .clone();
         forged.boss_position = Some([5854, 5298, 5]);
         assert!(matches!(
-            controller.qualify_activity_template(pin.qualified_room(), "rev-1", &forged),
+            controller.qualify_activity_template(
+                pin.qualified_room(),
+                pin.qualified_room(),
+                "rev-1",
+                &forged
+            ),
             Err(ActivityTemplateRefusal::InvalidSourceCapture)
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn primal_hook_diagnostic_names_the_captured_unimplemented_callbacks() -> Result<(), String> {
+        let candidates = captured_boss_levers().map_err(debug)?;
+        let primal = candidates
+            .iter()
+            .find(|candidate| candidate.path.ends_with("/the_primal_manace.lua"))
+            .ok_or("captured Primal lever")?;
+        let diagnostic = ActivityTemplateDiagnostic::rejected(
+            primal,
+            ActivityTemplateRefusal::SourceHookUnavailable,
+        );
+        assert_eq!(
+            diagnostic.unavailable_source_hooks,
+            vec![
+                "ThePrimalMenaceDeath",
+                "ThePrimeOrdealBossDeath",
+                "mType.onThink",
+            ]
+        );
+        let map_rejection = ActivityTemplateDiagnostic::rejected(
+            primal,
+            ActivityTemplateRefusal::OutsideQualifiedMap,
+        );
+        assert!(map_rejection.unavailable_source_hooks.is_empty());
+        assert_eq!(
+            map_rejection.reason,
+            ActivityTemplateRefusal::OutsideQualifiedMap
+        );
         Ok(())
     }
 

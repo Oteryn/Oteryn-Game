@@ -138,7 +138,7 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.premium_coordinator = premium.as_ref();
-    owner.movement_cells = room.movement_cells();
+    owner.movement_cells = (room.movement_cells()).into();
     // No qualified room: the same accessor path a bundle World uses.
     owner.rooms = SeamRooms::new(None, Some(room));
     let mut admitted = deps.admitted;

@@ -52,6 +52,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_shared_callback_handle(actor, command, source, target)
+            .await
+        {
+            return Some(outcome);
+        }
         match self
             .use_dispenser(actor, command, &intent, source, target)
             .await
@@ -204,7 +210,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 let mut runtime = self.runtime.lock().await;
                 let index = pinned_index(&runtime, self.active_generation)?;
-                let at = super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+                let at = super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
                 let facts = at.map.facts.pinned();
                 let map = super::world_map::MapViewSource {
                     overlay: &at.map.overlay,

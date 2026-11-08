@@ -49,6 +49,15 @@ pub mod player_report;
 #[path = "features/0039-timed-item/protocol.rs"]
 pub mod timed_item;
 
+/// Cast wire values pass through the session boundary.
+pub use oteryn_session::cast;
+pub use oteryn_session::cast_chat::decode_line as decode_cast_caster_line;
+pub use oteryn_session::cast_chat::{CasterLine as CastCasterLine, Roster as CastRoster};
+pub use oteryn_session::cast_viewer::CastViewerSession;
+
+#[path = "features/0289-cast-view/protocol.rs"]
+pub mod cast_view;
+
 pub mod connection;
 mod cursor_spell;
 #[path = "features/0037-depot/protocol.rs"]

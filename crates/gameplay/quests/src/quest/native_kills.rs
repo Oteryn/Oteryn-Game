@@ -15,6 +15,30 @@ pub struct Counter {
     pub maximum: i64,
 }
 
+impl Counter {
+    pub(crate) fn transition(self) -> QuestTransition {
+        QuestTransition {
+            world_change: None,
+            key: self.transition.into(),
+            quest: self.quest.into(),
+            effects: vec![
+                QuestEffect {
+                    track: self.gate.into(),
+                    from: QuestComparison::Eq(1),
+                    effect: QuestEffectKind::Add(0),
+                },
+                QuestEffect {
+                    track: self.track.into(),
+                    from: QuestComparison::Between(0, self.maximum - 1),
+                    effect: QuestEffectKind::Add(1),
+                },
+            ],
+            completes: false,
+            experience: None,
+        }
+    }
+}
+
 pub const COUNTERS: &[Counter] = &[
     Counter {
         transition: "oteryn:quest-transition/native-kills/dragon-slayer-dragon",
@@ -77,24 +101,7 @@ pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     for counter in COUNTERS {
-        transitions.push(QuestTransition {
-            key: counter.transition.into(),
-            quest: counter.quest.into(),
-            effects: vec![
-                QuestEffect {
-                    track: counter.gate.into(),
-                    from: QuestComparison::Eq(1),
-                    effect: QuestEffectKind::Add(0),
-                },
-                QuestEffect {
-                    track: counter.track.into(),
-                    from: QuestComparison::Between(0, counter.maximum - 1),
-                    effect: QuestEffectKind::Add(1),
-                },
-            ],
-            completes: false,
-            experience: None,
-        });
+        transitions.push(counter.transition());
     }
     QuestStateCatalogue::new(
         catalogue.content_revision,

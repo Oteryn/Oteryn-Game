@@ -504,9 +504,39 @@ def validate_record(record):
     if errors:
         return errors
     if "item_pointer" not in record["provenance"]:
+        import soulpit_static
+
+        if (
+            record["provenance"]["source"].get("profile") == soulpit_static.PROFILE
+            or record["provenance"]["source_item_id"] in soulpit_static.IDS
+        ):
+            expected = next(
+                (
+                    row
+                    for row in soulpit_static.records()
+                    if row["provenance"]["source_item_id"]
+                    == record["provenance"]["source_item_id"]
+                ),
+                None,
+            )
+            return (
+                []
+                if record == expected
+                else [
+                    "Soulpit static Terrain differs from its qualified official source"
+                ]
+            )
         import grizzly_ground
+        import sugar_room
         import summer_ground
 
+        if record["provenance"]["source_item_id"] in sugar_room.IDS:
+            expected = json.loads(sugar_room.outputs()[sugar_room.SHARD])["records"]
+            return (
+                []
+                if record in expected
+                else ["Sugar room differs from its exact official source"]
+            )
         ground = (
             grizzly_ground
             if record["provenance"]["source_item_id"] == grizzly_ground.IDENTIFIER

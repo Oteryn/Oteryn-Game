@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));
         };
-        let Some(room) = self.rooms.gate_native_combat_cast() else {
+        let Some(room) = self.rooms().gate_native_combat_cast() else {
             return Err(NativeCastDispatch::Outcome(
                 super::super::actor_spell::SpellCastOutcome::rejected(),
             ));

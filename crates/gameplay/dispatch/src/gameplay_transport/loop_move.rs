@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -190,12 +191,13 @@ impl LoopGroundOverlay {
         let mut facts = HashMap::new();
         for entry in items {
             let mut item = entry.item;
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 if item.ground.map_revision != field_revision
                     || item.ground.content_revision != field_content
                     || item.ground.native_room_placement_context.as_slice()
                         != field_pin.1.as_slice()
-                    || item.runtime_scope_ownership_generation != field_pin.2
+                    || (entry.field_collision.is_some()
+                        && item.runtime_scope_ownership_generation != field_pin.2)
                 {
                     continue;
                 }
@@ -213,12 +215,12 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .is_some_and(|(_, projectile)| projectile),
-                pickupable: entry.field_collision.is_none(),
+                pickupable: entry.field_collision.is_none() && !entry.native_corpse,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
-            if entry.field_collision.is_some() {
+            if entry.field_collision.is_some() || entry.native_corpse {
                 let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
                     &item.ground.spatial_position,
                 ) else {
@@ -266,6 +268,14 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_item(&self, id: u64) -> Option<(TilePos, EntryId)> {
+        self.inner.movement_item(id)
+    }
+
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
+
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }
@@ -545,7 +555,7 @@ pub(super) async fn move_loop_item(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, seed_target) = {
+    let (native, pins, index, mailbox, seed_target, assembly_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -559,8 +569,9 @@ pub(super) async fn move_loop_item(
         let placement_context = pin.frame_binding_digest().to_vec();
         let mut mailbox = None;
         let mut seed_target = None;
+        let mut assembly_target = None;
         let pins =
-            super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
+            super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
                 if let (LoopTarget::Ground(to), Some(index)) = (&request.target, index)
                     && let (Ok(x), Ok(y), Ok(floor)) = (
@@ -572,6 +583,8 @@ pub(super) async fn move_loop_item(
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
                     seed_target =
                         seed_drop::target(at.map, *to, content_digest, admission.reset_epoch);
+                    assembly_target =
+                        floor_assembly::target(at.map, *to, content_digest, admission.reset_epoch);
                 }
                 (
                     at.map.overlay.base().clone(),
@@ -580,7 +593,7 @@ pub(super) async fn move_loop_item(
                     placement_context,
                 )
             });
-        (native, pins, index, mailbox, seed_target)
+        (native, pins, index, mailbox, seed_target, assembly_target)
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -690,6 +703,25 @@ pub(super) async fn move_loop_item(
     };
     let committed = match seed_result {
         Ok(Some(result)) => Ok(result),
+        Ok(None) if assembly_target.is_some() => {
+            let Some(target) = assembly_target else {
+                return refused(LoopMoveRefusal::Rejected);
+            };
+            admission
+                .root
+                .commit_item_loop_floor_assembly(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    native,
+                    loop_request,
+                    target,
+                )
+                .await
+        }
         Ok(None) => {
             admission
                 .root
@@ -706,6 +738,22 @@ pub(super) async fn move_loop_item(
         }
         Err(error) => Err(error),
     };
+    // Consequence metadata is returned only after the physical transaction commits.
+    // Replay and ordinary drops carry none, so neither can repeat source presentation.
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && let Some(effect) = receipt.floor_effect
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(map) = admission.bundle_map()
+        && let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(to.x),
+            u16::try_from(to.y),
+            i8::try_from(to.floor),
+        )
+    {
+        map.facts
+            .emit_movement_effect(TilePos { x, y, floor }, effect);
+    }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
     if touches_ground && matches!(committed, Ok(Ok(_))) {
@@ -951,7 +999,7 @@ pub(super) async fn observe_container(
             let pin = runtime.content_pin();
             let content_revision = sha256_revision(pin.server_artifact_digest());
             let placement_context = pin.frame_binding_digest().to_vec();
-            let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+            let at = super::bundle_map_position(&mut runtime, admission.movement_cells(), actor)?;
             (
                 at.map.overlay.base().clone(),
                 (at.at.x, at.at.y, at.at.floor),
@@ -1071,6 +1119,81 @@ pub(super) async fn observe_container(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn committed_corpse_survives_owner_generation_but_not_foreign_frame_or_scope()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::durability::item_loop_move::LoopGroundItem;
+        use crate::durability::item_mint::{GroundItemInstance, GroundPlacement};
+        let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
+        let world = WorldId::decode(&id(1))?;
+        let scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(2),
+        };
+        let index = ItemDefinitionIndex::decode(br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i3031","definition-r1"],["oteryn:item.tibia.i48416","definition-r1"]]}"#)?;
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+            ("oteryn:item.tibia.i48416", 1),
+            ("oteryn:item.tibia.i3031", 0),
+        );
+        let base = Arc::new(crate::map::load(&bytes, &pins)?);
+        let pin = ([7; 32], [8; 32], 2);
+        let item = LoopGroundItem {
+            native_corpse: true,
+            field_collision: None,
+            stack_ordinal: 1,
+            item: GroundItemInstance {
+                item_instance_id: id(3),
+                world_id: world,
+                runtime_scope: scope,
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "oteryn:item.tibia.i48416".into(),
+                    revision_ref: "definition-r1".into(),
+                },
+                quantity: 1,
+                runtime_scope_ownership_generation: 1,
+                ground: GroundPlacement {
+                    spatial_position: ground_cell(1, 0, 7),
+                    corpse_ref: vec![1],
+                    map_revision: sha256_revision(
+                        Sha256::digest(map_revision(&base).as_bytes()).into(),
+                    ),
+                    content_revision: sha256_revision(pin.0),
+                    native_room_placement_context: pin.1.to_vec(),
+                },
+                minted_transaction_id: id(4),
+            },
+        };
+        let tile = TilePos {
+            x: 1,
+            y: 0,
+            floor: -7,
+        };
+        let project =
+            |item| LoopGroundOverlay::build_for_scope(base.clone(), scope, &index, pin, vec![item]);
+        assert!(
+            project(item.clone()).overlay().has_added_item(tile),
+            "accepted corpse history survives owner replacement"
+        );
+        let mut foreign = item.clone();
+        foreign.item.ground.native_room_placement_context = vec![9; 32];
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut foreign = item.clone();
+        foreign.item.runtime_scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: id(5),
+        };
+        assert!(!project(foreign).overlay().has_added_item(tile));
+        let mut field = item;
+        field.native_corpse = false;
+        field.field_collision = Some((false, false));
+        assert!(
+            !project(field).overlay().has_added_item(tile),
+            "fields still require the live owner generation"
+        );
+        Ok(())
+    }
 
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>

@@ -828,6 +828,8 @@ pub(super) async fn exercise(
             .ok_or_else(|| format!("missing story reward {key}"))?;
         let amount =
             |item: &(u16, u16)| oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                fluid_subtype: None,
+
                 item: format!("oteryn:item.tibia.i{}", item.0),
                 count: item.1,
             };
@@ -1105,7 +1107,8 @@ pub(super) async fn exercise(
             if let oteryn_gameplay_quests::quest::reward_callbacks::StateCondition::ElapsedAtLeast { seconds } = operation.from {
                 let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint").fetch_one(&h.pool).await?;
                 let key=format!("oteryn:quest-transition/qengine2-story/clock-advance-{}",clock_fixtures.len());
-                transitions.push(QuestTransition {key:key.clone(),quest:callback.quest.clone(),
+                transitions.push(QuestTransition {
+                    world_change: None, key:key.clone(),quest:callback.quest.clone(),
                     effects:vec![QuestEffect {track:operation.track.clone(),from:QuestComparison::Any,
                         effect:QuestEffectKind::Set(now-i64::from(seconds)-1)}],completes:false,experience:None});
                 clock_fixtures.insert(callback.key.clone(),(operation.track.clone(),seconds,key));
@@ -1204,6 +1207,7 @@ pub(super) async fn exercise(
         let key = format!("oteryn:quest-transition/qengine2-story/setup-{index}");
         setup_keys.push(key.clone());
         transitions.push(QuestTransition {
+            world_change: None,
             key,
             quest,
             effects,
@@ -1219,6 +1223,7 @@ pub(super) async fn exercise(
             ("restore", required.minimum),
         ] {
             transitions.push(QuestTransition {
+            world_change: None,
                 key: format!("oteryn:quest-transition/qengine2-story/{key}"),
                 quest: track.quest.clone(),
                 effects: vec![QuestEffect {
@@ -1233,6 +1238,7 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-l3-dark-trails-story" {
         transitions.push(QuestTransition {
+            world_change: None,
             key: "oteryn:quest-transition/qengine2-story/vote-six".into(),
             quest: tracks.get(VOTES).ok_or("votes owner")?.quest.clone(),
             effects: vec![QuestEffect {
@@ -1746,6 +1752,8 @@ pub(super) async fn exercise(
                 admitted,
                 h,
                 &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                    fluid_subtype: None,
+
                     item: "oteryn:item.tibia.i3043".into(),
                     count: u16::try_from(fee.gold / 10000).map_err(debug)?,
                 },

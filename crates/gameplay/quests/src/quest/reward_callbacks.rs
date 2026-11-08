@@ -9,6 +9,10 @@ use std::collections::{BTreeMap, BTreeSet};
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -16,11 +20,17 @@ pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 pub struct ItemAmount {
     pub item: String,
     pub count: u16,
+    /// A freshly minted variable-fluid vessel; never an intake matching shortcut.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fluid_subtype: Option<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemReward {
+    /// Recheck the live account gate before a fresh value grant.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub premium: bool,
     pub item: String,
     pub count: u16,
     #[serde(default)]
@@ -118,6 +128,9 @@ pub struct RewardCallback {
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
+    /// Complete this owning quest in the same receipt as its final dialogue.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub completes: bool,
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub state_ops: Vec<StateOperation>,
@@ -228,18 +241,38 @@ struct Document {
     callbacks: Vec<RewardCallback>,
 }
 
+const DOCUMENTS: &[&str] = &[
+    include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
+];
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    parse(include_str!(
-        "../../../../../content/quests/shared-reward-callbacks.json"
-    ))
+    parse_documents(DOCUMENTS).map(|document| document.callbacks)
 }
 
+fn parse_documents(sources: &[&str]) -> Result<Document, String> {
+    let mut combined = Document {
+        schema: 1,
+        tracks: Vec::new(),
+        callbacks: Vec::new(),
+    };
+    for source in sources {
+        let document: Document = serde_json::from_str(source).map_err(|e| e.to_string())?;
+        if document.schema != 1 {
+            return Err("reward callback schema".into());
+        }
+        combined.tracks.extend(document.tracks);
+        combined.callbacks.extend(document.callbacks);
+    }
+    validate_document(combined)
+}
+
+#[cfg(test)]
 fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
-    parse_document(text).map(|document| document.callbacks)
+    parse_documents(&[text]).map(|document| document.callbacks)
 }
 
-fn parse_document(text: &str) -> Result<Document, String> {
-    let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
+fn validate_document(document: Document) -> Result<Document, String> {
     let mut keys = BTreeSet::new();
     let slug = |value: &str, prefix: &str, alphabet: &[u8], maximum: usize| {
         value.len() <= maximum
@@ -368,6 +401,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     != [ItemAmount {
                         item: item.clone(),
                         count: 1,
+                        fluid_subtype: None,
                     }]
                     || c.give.is_some()
                     || c.fee.is_some()
@@ -380,6 +414,7 @@ fn parse_document(text: &str) -> Result<Document, String> {
                 .any(|key| !slug(key, "oteryn:outfit.", b"_", 128))
             || (c.storage.is_empty() && c.state_ops.is_empty() && !c.value_only_guarded())
             || c.storage.len() > 8
+            || c.minimum_level == Some(0)
             || tracks.len() != c.storage.len()
             || c.requires_actor_conditions.len() > 8
             || c.requires_actor_conditions
@@ -443,15 +478,21 @@ fn parse_document(text: &str) -> Result<Document, String> {
                         )
                     })
             })
+            || c.present.iter().any(|item| item.fluid_subtype.is_some())
             || c.take.len() > 16
             || inputs.len() != c.take.len()
-            || c.take
-                .iter()
-                .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.take.iter().any(|s| {
+                !slug(&s.item, "oteryn:item.", b"._/:-", 256)
+                    || (s.count == 0 || s.fluid_subtype.is_some())
+            })
             || c.give.as_ref().is_some_and(|r| {
                 !item(&r.item, r.count)
                     || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
+                    || r.contents.iter().any(|s| {
+                        !item(&s.item, s.count)
+                            || s.fluid_subtype
+                                .is_some_and(|fluid| fluid == 0 || s.count != 1)
+                    })
             })
             || (!c.outfits.is_empty() && c.outfit.is_some())
             || c.outfits.len() > 4
@@ -496,6 +537,23 @@ fn parse_document(text: &str) -> Result<Document, String> {
     Ok(document)
 }
 
+// Ungated published callbacks retain their original Set encoding. For newly
+// gated callbacks, reuse PC3's bound Set so changing admission/value terms also
+// changes the owning unfinished quest pin; speech/citations are not reward terms.
+/// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
+pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
+    if callback.minimum_level.is_none() {
+        return Ok(None);
+    }
+    use sha2::{Digest, Sha256};
+    let mut terms = serde_json::to_value(callback).map_err(|e| e.to_string())?;
+    let terms = terms.as_object_mut().ok_or("reward terms")?;
+    terms.remove("reply");
+    terms.remove("sources");
+    let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
+    Ok(Some(Sha256::digest(bytes).into()))
+}
+
 pub fn participant_key(callback: &str, index: usize) -> String {
     format!("{callback}/participant/{index}")
 }
@@ -503,9 +561,7 @@ pub fn participant_key(callback: &str, index: usize) -> String {
 pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let mut tracks: Vec<_> = catalogue.tracks.values().cloned().collect();
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
-    let document = parse_document(include_str!(
-        "../../../../../content/quests/shared-reward-callbacks.json"
-    ))?;
+    let document = parse_documents(DOCUMENTS)?;
     for declaration in document.tracks {
         let declared = QuestTrack {
             key: declaration.key,
@@ -565,6 +621,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -607,26 +664,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
-        transitions.push(QuestTransition {
-            key: callback.key.clone(),
-            quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .map(|s| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: if s.preserve {
-                        QuestEffectKind::Add(0)
-                    } else {
-                        QuestEffectKind::Set(s.set)
-                    },
-                })
-                .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
-                .collect(),
-            completes: false,
-            experience: None,
-        });
+        transitions.push(primary_transition(callback)?);
     }
     if let Some(required) = requires
         .iter()
@@ -636,6 +674,39 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+/// Exact primary state operation shared by lowering and bound admission validation.
+pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
+    let binding = gated_binding(callback)?;
+    let bound_effect = callback.storage.iter().position(|state| !state.preserve);
+    Ok(QuestTransition {
+        world_change: None,
+        key: callback.key.clone(),
+        quest: callback.quest.clone(),
+        effects: callback
+            .storage
+            .iter()
+            .enumerate()
+            .map(|(index, state)| QuestEffect {
+                track: state.track.clone(),
+                from: QuestComparison::Between(state.minimum, state.maximum),
+                effect: if state.preserve {
+                    QuestEffectKind::Add(0)
+                } else if let Some(binding) = binding.filter(|_| Some(index) == bound_effect) {
+                    QuestEffectKind::SetWithBinding {
+                        value: state.set,
+                        binding,
+                    }
+                } else {
+                    QuestEffectKind::Set(state.set)
+                },
+            })
+            .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+            .collect(),
+        completes: callback.completes,
+        experience: None,
+    })
 }
 
 #[cfg(test)]
@@ -1010,6 +1081,104 @@ mod tests {
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+    #[test]
+    fn gated_terms_bind_level_and_value_but_not_display_text() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.minimum_level == Some(30))
+            .ok_or("gated callback")?;
+        let binding = gated_binding(&original)?.ok_or("binding")?;
+        let mut changed = original.clone();
+        changed.minimum_level = Some(31);
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.requires_premium = !changed.requires_premium;
+        assert_ne!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original.clone();
+        changed.reply = vec!["Different wording".into()];
+        changed.sources = vec!["Different citation".into()];
+        assert_eq!(gated_binding(&changed)?, Some(binding));
+        let mut changed = original;
+        changed.minimum_level = None;
+        assert_eq!(gated_binding(&changed)?, None);
+        let mut invalid = serde_json::to_value(changed).map_err(|e| e.to_string())?;
+        invalid["minimum_level"] = 0.into();
+        assert!(parse(&serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn published_ungated_quest_hash_baseline() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        for (key, expected) in [
+            (
+                "oteryn:quest.outfit_and_addon_quests",
+                "87f6476714ed0ad9ea3a2eb7c54e0a2d34f263f536be9d6c143153629d2f328d",
+            ),
+            (
+                "oteryn:quest.the_ice_islands_quest",
+                "4d8180299446394b3a47bad282c4fd8d3faf51871aa4f335aad8ff252f3c686d",
+            ),
+            (
+                "oteryn:quest.the_spirit_will_get_you_quest",
+                "0df1f07a25989a00e27d16a890e8598556f37bcb08deb2a3b2feab8958747414",
+            ),
+        ] {
+            let hash = lowered
+                .catalogue()
+                .definition_hash(key)
+                .ok_or("published quest")?;
+            assert_eq!(
+                hash.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+                expected,
+                "published ungated quest {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn authored_shards_complete_only_the_selected_quest_and_preserve_old_plans()
+    -> Result<(), String> {
+        let legacy = parse(DOCUMENTS[0])?;
+        for callback in &legacy {
+            assert!(!callback.completes);
+            assert!(
+                serde_json::to_value(callback)
+                    .map_err(|e| e.to_string())?
+                    .get("completes")
+                    .is_none()
+            );
+        }
+        let callbacks = load()?;
+        let completion = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-reward/l6-spirit-confession")
+            .ok_or("authored completion")?;
+        assert!(completion.completes);
+        assert_eq!(
+            completion.quest,
+            "oteryn:quest.the_spirit_will_get_you_quest"
+        );
+        assert!(completion.take.is_empty());
+        assert_eq!(completion.present[0].count, 3);
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(
+            catalogue
+                .catalogue()
+                .transition(&completion.key)
+                .ok_or("completion transition")?
+                .completes
+        );
+        assert!(parse_documents(&[DOCUMENTS[0], DOCUMENTS[0]]).is_err());
+        let mut malformed: serde_json::Value =
+            serde_json::from_str(DOCUMENTS[1]).map_err(|e| e.to_string())?;
+        malformed["callbacks"][0]["completes"] = "yes".into();
+        assert!(parse(&malformed.to_string()).is_err());
         Ok(())
     }
 }

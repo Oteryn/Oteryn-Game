@@ -91,11 +91,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        // Resolve steering before any direction-dependent field/floor read. Pass
+        // this same frozen `now` to the common movement owner after preflight.
+        let cardinal = match states.drome_step_direction(&runtime, actor, session, now, cardinal) {
+            Ok(direction) => direction,
+            Err(MovementError::Blocked) => {
+                return (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                );
+            }
+            Err(_) => return (StepOutcome::rejected(), None),
+        };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
@@ -110,10 +125,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: self.movement_cells(),
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
+        let callback_portals = super::quest_callbacks::CallbackPortals {
+            inner: &pvp_blocking,
+            map: self.bundle_map(),
+            callbacks: self.callback_content(),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
@@ -131,7 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             states.step_with_creature_field_contact(
                 &mut runtime,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
                 session,
                 now,
@@ -157,6 +177,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match outcome {
             Ok((snapshot, duration)) => {
+                // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
+                // the exact physical pod, with HP owned by this same player turn.
+                super::primal_pods::step(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    now / 1000,
+                );
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {

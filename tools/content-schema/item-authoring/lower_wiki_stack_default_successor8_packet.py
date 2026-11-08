@@ -11,10 +11,10 @@ ROOT = Path(__file__).resolve().parents[3]
 
 base = context.base
 IDS = frozenset({23229, 23230, 23231, 23232, 23295, 23299, 23335, 23339})
-PROOF = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v2.json"
-PROOF_SHA = "70b20b01124e3c28fa6d8f0253fb0fb83864022440bddd7be7ca089e4e975495"
-RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v10.json"
-RECEIPT_SHA = "741d418904ef067643adb7c1e10c370ec2e106eb2b3cd3e3ae5409e67fc25348"
+PROOF = "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v4.json"
+PROOF_SHA = "f914cc875b6d86381e9a554168268213055d1791ca4b2b229cbc3acd5219888a"
+RECEIPT = "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v12.json"
+RECEIPT_SHA = "cf2e2dceb2b15fb29ec4bb10790c2ba75ff6ad6846f8f628b743986901dd3b01"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )

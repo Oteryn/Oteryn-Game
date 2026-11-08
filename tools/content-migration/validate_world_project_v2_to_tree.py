@@ -43,7 +43,7 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 2, "Service.Promotion": 7, "Service.Blessing": 10}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
@@ -197,7 +197,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "afbcf3199b59acb4fbb15bafcbec70072246a66ff0e03f852c50368a73c0ec1d", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "8a0b27274f4c3344dd9fea3ef215913c8883407a0de056cc5e61a6dca003be67", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -206,7 +206,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "c06141f020ef1a697c839aa4f42d64da85d4fc36b6d6886f9aa69c977666b2bb", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "09b18b0c7da8287c5b4447f1fccebfa74ca4371a631e5051ad21536ab289553e", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -246,7 +246,7 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "c06141f020ef1a697c839aa4f42d64da85d4fc36b6d6886f9aa69c977666b2bb", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "09b18b0c7da8287c5b4447f1fccebfa74ca4371a631e5051ad21536ab289553e", "USE_OBSERVATION_PACKET_DIGEST")
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
 
 
@@ -476,7 +476,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
 
 
 def validate_native_bank_admission(declarations: Any) -> None:
-    """One closed native admission; profession and arbitrary source callbacks grant no service."""
+    """Closed Paulie admission plus S10 registered-source BANK0 consumers."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json").read_bytes()
     require(hashlib.sha256(raw).hexdigest() == "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204", "BANK_ADMISSION_PACKET_DIGEST")
     packet = json.loads(raw)
@@ -484,10 +484,27 @@ def validate_native_bank_admission(declarations: Any) -> None:
             and packet["scope"] == ["oteryn:npc.paulie"], "BANK_ADMISSION_PACKET_SCOPE")
     bank = [row for row in declarations["records"] if row.get("kind") == "Service"
             and ("bank" in row or row["identity"]["key"].startswith("oteryn:service.bank."))]
-    require(bank == [packet["service"]], "BANK_SERVICE_CLOSED_ADMISSION")
+    standard = {"kind": "Service", "identity": {"key": "oteryn:service.bank.standard", "revision": "definition-r1"},
+                "bank": True, "fields": []}
+    require(bank == [packet["service"], standard], "BANK_SERVICE_CLOSED_ADMISSION")
+    s10 = load(ROOT / "content/npcs/s10-nonquest.json")
+    keys = {row["key"] for row in s10["bankers"]}
+    expected_keys = {"oteryn:npc." + key for key in (
+        "atur ebenizer eighty elgar eva ferks finarfin gnomillion jefrey jessica kaya kepar lokur murim "
+        "muzir naji raffael rokyn siestaar sissek suzy tesha virgil znozel wentworth").split()}
+    require(keys == expected_keys and len(s10["bankers"]) == len(keys), "S10_BANK_CLOSED_SOURCE_SET")
+    standard_ref = {"family": "Service", **standard["identity"]}
+    consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
+                 and standard_ref in row.get("services", [])]
+    require({row["identity"]["key"] for row in consumers} == keys and len(consumers) == len(keys)
+            and all(row["services"].count(standard_ref) == 1 for row in consumers),
+            "S10_BANK_CLOSED_CONSUMERS")
     reference = {"family": "Service", **packet["service"]["identity"]}
     expected_npc = json.loads(json.dumps(packet["before_npc"]))
     expected_npc["services"].append(reference)
+    if any(field["field_path"] == "oteryn:source.npc.base_speed" for field in expected_npc["fields"]):
+        expected_npc["fields"].append({"field_path": "oteryn:source.npc.walk_height_sha256", "value": {
+            "type": "Text", "value": hashlib.sha256((ROOT / "content/npcs/s10-walk-heights.json").read_bytes()).hexdigest()}})
     consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
                  and reference in row.get("services", [])]
     require(consumers == [expected_npc], "BANK_NPC_CLOSED_CONSUMER")
@@ -671,6 +688,11 @@ def main() -> int:
         require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
                 f"SPELL_IMPORT_DRIFT:{relative}")
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal201189f the_primal_menace.lua:79,118 explicitly declares corpse
+    # 39530 and loot={}; replay the same hash-checked tree-first admission as
+    # the producer before exact family/definition equivalence. Legacy stays raw.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
     # Equivalence is protected legacy plus the accepted tree-first reward Item packet.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions([row for row in reference["records"] if row["identity"]["family"] == "Item"], ROOT)

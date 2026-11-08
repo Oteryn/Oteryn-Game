@@ -323,6 +323,17 @@ class ConvertAndValidateTest(unittest.TestCase):
         ):
             convert.build(blobs, ITEMS_BY_SERVER_ID)
 
+    def test_default_qready2_capture_still_requires_all_committed_rows(self):
+        import qready2_chest_bindings as qready2
+
+        blobs = {
+            key: value for key, value in self.blobs.items() if key != qready2.CAPTURE
+        }
+        with self.assertRaisesRegex(
+            ValueError, "quest access capture did not bind completely"
+        ):
+            convert.build(blobs, ITEMS_BY_SERVER_ID)
+
     def test_fixture_converts_to_a_valid_family(self):
         self.assertEqual(self.errors(), [])
         index = self.index()
@@ -1005,6 +1016,48 @@ class ConvertAndValidateTest(unittest.TestCase):
 
     def test_conversion_is_deterministic(self):
         self.assertEqual(convert.build(self.blobs, ITEMS_BY_SERVER_ID), self.out)
+
+    def test_palette_receipt_recounts_promotion_without_rewriting_regions(self):
+        xml = self.root / convert.ITEMS_XML
+        xml.parent.mkdir(parents=True)
+        xml.write_bytes(ITEMS_XML)
+        pin = {
+            "path": convert.ITEMS_XML,
+            "sha256": validate.hashlib.sha256(ITEMS_XML).hexdigest(),
+        }
+        index = self.index()
+        row = next(row for row in index["palette"] if row["source_item_id"] == 1949)
+        row.update(key="oteryn:terrain.tibia.i1949", provisional=False)
+        self.write_index(index)
+        original_regions = {
+            r["path"]: (self.root / r["path"]).read_bytes() for r in index["regions"]
+        }
+        with mock.patch.object(convert, "SOURCE", {"files": [pin]}):
+            actual = json.loads(convert.palette_summary(self.root, self.root))
+            expected = self.summary()
+            self.assertEqual(
+                actual["palette"]["families"]["terrain"],
+                {"entries": 1, "occurrences": 2},
+            )
+            self.assertEqual(actual["palette"]["provisional"]["entries"], 0)
+            self.assertEqual(
+                actual["palette"]["provisional"]["in_items_xml"],
+                expected["palette"]["provisional"]["in_items_xml"],
+            )
+            actual.pop("palette")
+            expected.pop("palette")
+            self.assertEqual(actual, expected)
+            self.assertEqual(
+                original_regions,
+                {p: (self.root / p).read_bytes() for p in original_regions},
+            )
+            xml.write_bytes(ITEMS_XML + b" ")
+            with self.assertRaisesRegex(convert.ConvertError, "pinned source"):
+                convert.palette_summary(self.root, self.root)
+            xml.write_bytes(ITEMS_XML)
+            self.region.write_bytes(self.region.read_bytes() + b" ")
+            with self.assertRaisesRegex(convert.ConvertError, "palette summary"):
+                convert.palette_summary(self.root, self.root)
 
     def test_split_of_provisional_ids_follows_items_xml(self):
         blobs = {**self.blobs, convert.ITEMS_XML: ITEMS_XML_WITH_TELEPORT}

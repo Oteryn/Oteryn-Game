@@ -169,6 +169,9 @@ def main() -> int:
         spec.loader.exec_module(module)
         cosmetics_outputs = module.materialized_outputs(ROOT)
     reference = load(LEGACY / "definitions" / "reference.json")
+    # Crystal's explicit monster.loot={} is distinct from unavailable loot data.
+    from primal_reference_overlay import apply_reference as apply_primal_reference
+    apply_primal_reference(reference["records"], ROOT)
     declarations = load(LEGACY / "definitions" / "declarations.json")
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
@@ -534,7 +537,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 389:
+    if len(service_records) != 399:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

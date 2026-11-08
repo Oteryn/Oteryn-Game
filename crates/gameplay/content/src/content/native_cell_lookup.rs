@@ -88,12 +88,38 @@ impl NativeStaticCellLookup for NativeMovementCollisionIndex {
 
 /// Read-only bundle collision supplied by the World owner.
 pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
+    /// A bounded activity keeps its already qualified map owner as its parent.
+    /// Consumers needing the concrete map follow this link, while collision
+    /// continues to use the child's clipped lookup.
+    fn parent_index(&self) -> Option<&BundleCollisionIndex> {
+        None
+    }
     fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError>;
+    /// Complete House-marker evidence from this exact loaded bundle scope.
+    /// Older or unqualified ports provide no absence proof.
+    fn house_tiles_present(
+        &self,
+        _scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        Err(StaticCellEngineError::Unqualified)
+    }
     fn same_index(&self, other: &dyn BundleCollisionLookup) -> bool;
+    /// A bounded read-only template, or fresh map state for an already allocated Instance.
+    fn activity_region(
+        &self,
+        _bounds: [i32; 6],
+        _instance: Option<[u8; 16]>,
+        _start: [i32; 3],
+    ) -> Option<BundleCollisionIndex> {
+        None
+    }
+    fn for_activity_instance(&self, _instance: [u8; 16]) -> Option<BundleCollisionIndex> {
+        None
+    }
 }
 
 /// A shared bundle collision port. The World owner retains its concrete map view.
@@ -106,11 +132,29 @@ impl PartialEq for BundleCollisionIndex {
 }
 impl Eq for BundleCollisionIndex {}
 impl BundleCollisionIndex {
+    pub fn activity_region(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+    ) -> Option<Self> {
+        self.0.activity_region(bounds, instance, start)
+    }
+    pub fn for_activity_instance(&self, instance: [u8; 16]) -> Option<Self> {
+        self.0.for_activity_instance(instance)
+    }
     pub fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.0.lookup(scope, cell)
+    }
+
+    pub fn house_tiles_present(
+        &self,
+        scope: &EngineeringStaticCellScope,
+    ) -> Result<bool, StaticCellEngineError> {
+        self.0.house_tiles_present(scope)
     }
 }

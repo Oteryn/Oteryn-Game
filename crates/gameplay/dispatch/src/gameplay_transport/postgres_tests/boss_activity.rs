@@ -34,6 +34,8 @@ const BOSS: &str = "oteryn:boss.native_activity";
 const CREATURE: &str = "fixture:activity_boss";
 const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
+#[path = "boss_activity/endgame_receipts.rs"]
+mod endgame_receipts;
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
@@ -51,7 +53,9 @@ mod state_effects;
 enum Case {
     Entry,
     AwardContinuity,
+    EndgameReceipts,
     Rewards,
+    ProductionRewards,
     LateRewards,
     NonRewardDefeat,
     Recovery,
@@ -60,6 +64,11 @@ enum Case {
     CapabilityMismatch,
     OfflineDeathMismatch,
     OfflineDeathDeadline,
+}
+
+#[test]
+fn boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences() -> TestResult {
+    run_scenario(Case::EndgameReceipts)
 }
 
 #[test]
@@ -75,6 +84,12 @@ fn boss_activity_postgres_native_award_effects_follow_return_and_apply_once() ->
 #[test]
 fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -> TestResult {
     run_scenario(Case::Rewards)
+}
+
+#[test]
+fn boss_activity_postgres_production_reward_boss_instance_corpse_and_personal_custody() -> TestResult
+{
+    run_scenario(Case::ProductionRewards)
 }
 
 #[test]
@@ -133,9 +148,10 @@ fn run_scenario(case: Case) -> TestResult {
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
+        let with_live_progression = matches!(case, Case::AwardContinuity | Case::EndgameReceipts);
         let with_rewards = matches!(
             case,
-            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+Case::Rewards | Case::ProductionRewards | Case::LateRewards | Case::AwardContinuity | Case::EndgameReceipts
         );
         let late = case == Case::LateRewards;
         let with_death = matches!(
@@ -145,15 +161,17 @@ fn scenario(case: Case) -> TestResult {
         reset();
         // Real progression cases let the current Character admission owner
         // initialize its pinned policy instead of seeding the harness XP table.
-        let initialized = !with_death && case != Case::AwardContinuity;
+        let initialized = !with_death && !with_live_progression;
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
-        let (controller, source_pin) = if case == Case::AwardContinuity {
+        let (controller, source_pin) = if with_live_progression {
             state_effects::generation(world, "content-1")?
+        } else if case == Case::ProductionRewards {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
@@ -185,7 +203,7 @@ fn scenario(case: Case) -> TestResult {
         owner.active_generation = controller.active();
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let (boss_key, policy) = if with_rewards {
-            rewards::source_boss(&owner)?
+            rewards::source_boss(&owner, case == Case::ProductionRewards)?
         } else if case == Case::NonRewardDefeat {
             nonreward::source_creature(&owner)?
         } else {
@@ -237,7 +255,7 @@ fn scenario(case: Case) -> TestResult {
         if with_death {
             offline_death::prepare_source(&h, &mut owner, &mut admitted).await?;
         }
-        if case == Case::AwardContinuity {
+        if with_live_progression {
             state_effects::prepare_source(&h, &mut owner, &mut admitted).await?;
         } else {
             deps.initialize(&owner).await;
@@ -284,8 +302,10 @@ fn scenario(case: Case) -> TestResult {
             .ok_or("allocated Instance")?;
         // Two independent test activation invocations produce equal qualified
         // content. Production uses the consumed activity-template activation API.
-        let (_instance_controller, instance_pin) = if case == Case::AwardContinuity {
+        let (_instance_controller, instance_pin) = if with_live_progression {
             state_effects::generation(world, "content-1")?
+        } else if case == Case::ProductionRewards {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
@@ -397,7 +417,7 @@ fn scenario(case: Case) -> TestResult {
                 runtime,
                 door,
                 ActivityRuntimeAssets {
-                    movement_cells: cells,
+                    movement_cells: cells.into(),
                     rooms: SeamRooms::new(Some(&instance_room), Some(&instance_room)),
                 },
             )
@@ -578,7 +598,10 @@ fn scenario(case: Case) -> TestResult {
             crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation + 1)
                 .map_err(debug)?;
         assert!(owner.resolve_runtime_view(forged).await.is_err());
-        if matches!(case, Case::Rewards | Case::LateRewards) {
+        if matches!(
+            case,
+            Case::Rewards | Case::ProductionRewards | Case::LateRewards
+        ) {
             rewards::settle_and_collect(&h, &owner, &destination, admitted, &policy, late).await?;
             if late {
                 eprintln!("BOSS_ACTIVITY_LATE_REWARD_TIMEOUT POSTGRES_CASE_COMPLETED");
@@ -587,6 +610,7 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::EndgameReceipts => endgame_receipts::assert_receipts(&h, &destination, admitted).await?,
             Case::Entry => {
                 state_continuity::assert_entry_and_timeout_return(
                     &h,
@@ -683,9 +707,18 @@ fn fixture_policy() -> crate::foundation::CompiledCreaturePolicy {
     }
 }
 
-async fn issue_content_and_reset(
+pub(super) async fn issue_content_and_reset(
     h: &Harness,
     pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+) -> TestResult {
+    issue_content_and_reset_with_runtime_pin(h, pin, pin, "activity-fixture").await
+}
+
+pub(super) async fn issue_content_and_reset_with_runtime_pin(
+    h: &Harness,
+    pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    runtime_pin: &oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+    runtime_map_revision: &str,
 ) -> TestResult {
     let RuntimeScopeRefV1::Channel {
         world_id,
@@ -702,9 +735,9 @@ async fn issue_content_and_reset(
         .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
     // Initial reset fixture follows the existing kill-reward PG harness. Runtime
     // entry never writes a control grant, activation or world-reset row.
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'activity-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
-        .bind(world_id.as_bytes().as_slice()).bind(pin.server_artifact_digest().as_slice())
-        .bind(pin.client_artifact_digest().as_slice()).bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,$5,$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
+        .bind(world_id.as_bytes().as_slice()).bind(runtime_pin.server_artifact_digest().as_slice())
+        .bind(runtime_pin.client_artifact_digest().as_slice()).bind(runtime_pin.frame_binding_digest().as_slice()).bind(runtime_map_revision).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
         .bind(world_id.as_bytes().as_slice())
         .execute(&h.pool)
@@ -712,7 +745,7 @@ async fn issue_content_and_reset(
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,
@@ -728,7 +761,7 @@ async fn exchange(
     .await
 }
 
-async fn exchange_command(
+pub(super) async fn exchange_command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     boss: &str,

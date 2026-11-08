@@ -108,7 +108,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if issued.activation_sequence != active.activation_sequence()
             || issued.server_artifact_digest != active.identity().server_artifact_digest()
             || issued.client_artifact_digest != active.identity().client_artifact_digest()
-            || issued.frame_binding_digest != template.room().frame_binding().digest()
+            || issued.frame_binding_digest != template.activation_frame_binding_digest()
         {
             return Err(ActivityRefusal::ContentChanged);
         }
@@ -168,7 +168,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 runtime
                     .realize_activity_boss(template, active)
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
-                let room = template.room();
+                let RuntimeScopeRefV1::Instance { instance_id, .. } = allocation.scope else {
+                    continue;
+                };
+                let room = std::sync::Arc::new(
+                    template
+                        .room()
+                        .for_activity_instance(instance_id)
+                        .ok_or(ActivityRefusal::ContentUnavailable)?,
+                );
                 let reference =
                     crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
                         .map_err(|_| ActivityRefusal::ContentUnavailable)?;
@@ -193,13 +201,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     runtime,
                     door,
                     ActivityRuntimeAssets {
-                        movement_cells: room.movement_cells(),
+                        movement_cells: std::sync::Arc::new(room.movement_cells().clone()).into(),
                         // Keep the origin qualification gate: a private Instance
                         // cannot open source-room mechanics for a bundle origin.
-                        rooms: SeamRooms::new(
-                            self.rooms.gate_source_world().map(|_| room),
-                            Some(room),
-                        ),
+                        rooms: SeamRooms::owned(room, self.rooms.gate_source_world().is_some()),
                     },
                 )
                 .await

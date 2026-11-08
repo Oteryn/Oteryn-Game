@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let mut runtime = self.runtime.lock().await;
-        let frame = qualified_source_frame(&runtime, self.movement_cells).unwrap_or("");
+        let frame = qualified_source_frame(&runtime, self.movement_cells()).unwrap_or("");
         runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).is_ok()
             && runtime.install_hazard_level(actor, admitted.game_session_id, selected).is_ok()
     }
@@ -93,7 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some((_, selected, response))) => {
                 let mut runtime = self.runtime.lock().await;
-                let frame = qualified_source_frame(&runtime, self.movement_cells).unwrap_or("");
+                let frame = qualified_source_frame(&runtime, self.movement_cells()).unwrap_or("");
                 if runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).is_err()
                     || runtime.install_hazard_level(actor, admitted.game_session_id, selected).is_err()
                 {

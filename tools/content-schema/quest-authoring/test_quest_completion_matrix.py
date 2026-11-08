@@ -16,6 +16,29 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(373, len(self.result["records"]))
         self.assertTrue(all(row["canonical"] for row in self.result["records"]))
 
+    def test_qready2_every_owned_claim_has_runtime_proof(self):
+        import json
+        packet = json.loads((self.root / "tools/content-schema/quest-authoring/samples/completion-matrix/qready2-cases.json").read_text())
+        titles = {case["wiki_title"] for case in packet["cases"]}
+        self.assertEqual(17, len(titles))
+        self.assertEqual(21, len(packet["cases"]))
+        from quest_reward_use_proofs import load
+        qualified = load(self.root, matrix.load_reward_claims(self.root))
+        self.assertEqual(17, sum(row["wiki_title"] in titles and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
+                                for row in self.result["records"]))
+        for row in self.result["records"]:
+            if row["wiki_title"] in titles and set(row["reward_claim_owner"]["claim_keys"]) <= qualified:
+                self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
+                self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
+                self.assertEqual(set(row["reward_claim_owner"]["claim_keys"]),
+                                 {c["claim_key"] for c in packet["cases"] if c["wiki_title"] == row["wiki_title"]})
+
+    def test_purple_tome_all_three_claims_have_runtime_proof(self):
+        row = next(row for row in self.result["records"] if row["wiki_title"] == "Purple Tome Quest")
+        self.assertEqual("REWARD_CLAIM_USE_VERIFIED", row["implementation_state"])
+        self.assertEqual(3, len(row["reward_claim_owner"]["claim_keys"]))
+        self.assertTrue(all(d["runtime_enabled"] for d in row["canonical"]))
+
     def test_matrix_never_claims_playability(self):
         self.assertEqual(0, self.result["summary"]["playable_verified"])
         self.assertTrue(all(row["playable_verification"] == "NOT_ASSESSED"
@@ -61,7 +84,9 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             row for row in self.result["records"]
             if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
         ]
-        self.assertEqual(42, len(reward_only))
+        enabled = sum(row["work_state"] == "REWARD_CLAIM_USE_ENABLED" for row in self.result["records"])
+        verified = sum(row["work_state"] == "REWARD_CLAIM_USE_VERIFIED" for row in self.result["records"])
+        self.assertEqual(42, len(reward_only) + enabled + verified)
         self.assertTrue(
             all(
                 {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
@@ -71,18 +96,22 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             {
                 "NATIVE_BINDINGS_PENDING": 331,
-                "REWARD_CLAIM_USE_PENDING": 42,
+                "REWARD_CLAIM_USE_PENDING": 42 - enabled - verified,
+                "REWARD_CLAIM_USE_ENABLED": enabled,
+                "REWARD_CLAIM_USE_VERIFIED": verified,
             },
             self.result["summary"]["implementation_state"],
         )
         # ITEMHOLD-Q adds Power Ring's full-charge amulet to W15b's ready claims.
-        self.assertEqual(125, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(128, self.result["summary"]["reward_claim_placements"])
+        self.assertEqual(128, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(132, self.result["summary"]["reward_claim_placements"])
         self.assertEqual(
             {
-                "REWARD_CLAIM_DATA_PENDING": 13,
+                "REWARD_CLAIM_DATA_PENDING": 10,
                 "REWARD_CLAIM_IMPLEMENTATION_PENDING": 42,
-                "REWARD_CLAIM_USE_PENDING": 50,
+                "REWARD_CLAIM_USE_PENDING": 53 - enabled - verified,
+                "REWARD_CLAIM_USE_ENABLED": enabled,
+                "REWARD_CLAIM_USE_VERIFIED": verified,
             },
             self.result["summary"]["reward_claim_owner_state"],
         )

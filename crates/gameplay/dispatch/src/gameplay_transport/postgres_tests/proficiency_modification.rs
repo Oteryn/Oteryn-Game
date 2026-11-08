@@ -90,7 +90,7 @@ fn scenario() -> TestResult {
             .shape
             .track_shape();
         let mut owner = deps.owner(&harness, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         owner.proficiency_catalogue = Some(Arc::clone(&catalogue));
         deps.initialize(&owner).await;
@@ -122,7 +122,7 @@ fn scenario() -> TestResult {
             let mut runtime = deps.runtime.lock().await;
             crate::gameplay_transport::actor_spell::qualified_protection_zone(
                 &mut runtime,
-                owner.movement_cells,
+                owner.movement_cells(),
                 actor,
             ) == Some(true)
         };

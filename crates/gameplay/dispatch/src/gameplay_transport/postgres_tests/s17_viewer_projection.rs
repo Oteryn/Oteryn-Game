@@ -60,7 +60,7 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                         .movement_cells(deps.room.movement_cells())
                         .map_err(debug)?;
                     let mut owner = deps.owner(&h, &authority);
-                    owner.movement_cells = &cells;
+                    owner.movement_cells = (&cells).into();
                     owner.active_generation = Some(generation);
                     let position = MovementLocalPosition {
                         x: i32::from(DOOR_AT.x) - 1,
@@ -89,12 +89,13 @@ fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestRes
                     );
                     assert!(!media.is_empty());
                     let mut found = false;
-                    for (i, m) in media.iter().enumerate() {
+                    assert!(matches!(media.first(),Some(PublicMedia::Camera {floor:-7})));
+                    for (i, m) in media.iter().skip(1).enumerate() {
                         let PublicMedia::Map { reset, last, tiles } = m else {
                             return Err("unexpected map media".into());
                         };
                         assert_eq!(*reset, i == 0);
-                        assert_eq!(*last, i + 1 == media.len());
+                        assert_eq!(*last, i + 2 == media.len());
                         assert!(tiles.len() <= 32);
                         found |= tiles.iter().any(|t| t.appearances.contains(&1629));
                         let envelope = Envelope {

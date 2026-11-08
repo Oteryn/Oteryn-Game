@@ -18,10 +18,19 @@
 
 /// Account achievement query and typed result.
 pub mod account_achievements;
+/// Account-only observer transport; separate from the player Session.
+pub mod cast_chat;
+pub mod cast_viewer;
+
+/// Display and control vocabulary for S17.
+pub use oteryn_protocol_oteryn::cast;
 
 #[path = "achievement_notices.rs"]
 mod achievement_notices_transport;
 pub use oteryn_protocol_oteryn::achievement_notices;
+mod activity_handoff;
+/// Server-committed shared activity scope receipts.
+pub use oteryn_protocol_oteryn::activity_scope;
 pub mod analyser_transport;
 mod appearance_state;
 pub use oteryn_protocol_oteryn::presentation::{

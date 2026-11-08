@@ -158,6 +158,8 @@ struct Track {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Transition {
+    #[serde(default)]
+    world_change: Option<String>,
     key: String,
     quest: String,
     completes: bool,
@@ -200,6 +202,10 @@ pub fn load_embedded_quest_state(
     lowered.catalogue =
         super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::fire_feathered_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::shared_world_progress::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -223,6 +229,7 @@ pub fn load_embedded_quest_state(
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),
@@ -230,6 +237,27 @@ pub fn load_embedded_quest_state(
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_DOOR_TRACK.into(),
         "storage:Quest.U13_20.RottenBlood.AccessDoor".into(),
+    );
+    // These explicitly authored native adaptations carry their own source witnesses;
+    // their progress tracks are absent from the donor-lowered mission catalogue.
+    for callback in super::fire_feathered_native::callbacks()
+        .into_iter()
+        .chain(super::shared_world_progress::callbacks())
+    {
+        for storage in callback.storage {
+            lowered
+                .source_tracks
+                .entry(storage.track)
+                .or_insert_with(|| callback.sources.join(";"));
+        }
+    }
+    lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
+        .map_err(QuestLoadError::Json)?;
+    // Crystal 201189f, data-global/scripts/lib/register_actions.lua:921-926.
+    // This tool-owned auxiliary flag is outside the captured NPC track inventory.
+    lowered.source_tracks.insert(
+        "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03".into(),
+        "storage:Quest.U8_4.InServiceOfYalahar.SewerPipe03".into(),
     );
     Ok(lowered)
 }
@@ -308,6 +336,7 @@ pub fn parse_quest_state(
                     .any(|effect| effect.effect == QuestEffectKind::Computed),
             );
             transitions.push(QuestTransition {
+                world_change: transition.world_change,
                 key: transition.key,
                 quest: transition.quest,
                 effects,
@@ -412,6 +441,13 @@ mod tests {
             (track.quest.as_str(), track.initial, track.min, track.max),
             (QUEST, 0, 0, 1)
         );
+        // Keep the observed completion domain and the pre-existing wider
+        // integer counter domain; the source sentinel must not lower either min.
+        for (suffix, max) in [("status", 2), ("progress", i64::from(i32::MAX))] {
+            let key = format!("oteryn:quest-progress/quest/u8_6/afathers_burden/{suffix}");
+            let track = lowered.catalogue().track(&key).expect("Father track");
+            assert_eq!((track.initial, track.min, track.max), (0, 0, max));
+        }
         assert_eq!(
             lowered.source_track(QUEST_LOG),
             Some("canary:quest-progress/quest/u8_6/afathers_burden/quest_log")

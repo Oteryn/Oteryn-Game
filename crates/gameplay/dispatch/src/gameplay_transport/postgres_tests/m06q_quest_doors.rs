@@ -13,7 +13,7 @@ fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, None).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, None, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06Q wire panic")??;
     Ok(())
@@ -40,7 +40,7 @@ fn closing_case(item: bool, authored: bool) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(true, item, authored, None).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(true, item, authored, None, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06-CLOSE wire panic")??;
     Ok(())
@@ -74,7 +74,7 @@ fn player_ground_case(case: PlayerGroundCase) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(false, false, false, Some(case)).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(false, false, false, Some(case), None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06 player ground move panic")??;
     Ok(())
@@ -85,9 +85,12 @@ fn scenario(
     with_item: bool,
     authored: bool,
     player_case: Option<PlayerGroundCase>,
+    vampire_door: Option<u16>,
 ) -> TestResult {
     run(async |admin| {
-        let harness = Harness::create_with_admission_seed(admin, "m06q_quest", true, false).await?;
+        let harness =
+            Harness::create_with_admission_seed(admin, "m06q_quest", vampire_door.is_none(), false)
+                .await?;
         eprintln!("START M06Q real placed-door USE wire PostgreSQL");
         let started = std::time::Instant::now();
         super::reset();
@@ -99,16 +102,26 @@ fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if vampire_door.is_some() {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         deps.room = pin.qualified_room().clone();
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let door = "oteryn:item.tibia.i5113";
+        let door = if vampire_door.is_some() {
+            "oteryn:item.tibia.i5102"
+        } else {
+            "oteryn:item.tibia.i5113"
+        };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (door, reference(door).ok_or("door")?.get() - 1),
@@ -166,23 +179,36 @@ fn scenario(
             .get_mut(1)
             .ok_or("door entry")?;
         // Read the actual committed world placement, not a test-authored action id.
-        let region = oteryn_world_bundle_compiler::b3::decode_region(
+        let source_bytes = if vampire_door.is_some() {
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z14-x129-y123.b3"
+            ))
+            .as_slice()
+        } else {
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/world/placements/region-z14-x125-y124.b3"
-            )),
+            ))
+            .as_slice()
+        };
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            source_bytes,
             oteryn_world_bundle::bundle::TILE_LIMITS,
             &mut oteryn_world_bundle::sector::Budget {
                 tiles: 65536,
                 entries: 1_000_000,
             },
         )?;
+        let (x, y, appearance, action) =
+            vampire_door.map_or((32246, 31861, 5113, 10089), |x| (x, 31684, 5102, 1070));
         let placed = region
             .sectors
             .iter()
             .flat_map(|(_, _, tiles)| tiles)
-            .find(|tile| tile.x == 32246 && tile.y == 31861)
-            .ok_or("placed quest door")?;
+            .find(|tile| tile.x == x && tile.y == y)
+            .ok_or("placed door")?;
+        assert_eq!(placed.house, 0);
         let palette: serde_json::Value = serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/world/placements/index.json"
@@ -191,10 +217,12 @@ fn scenario(
             .items
             .iter()
             .find(|item| {
-                palette["palette"][item.palette as usize]["source_item_id"].as_u64() == Some(5113)
+                item.depth == 0
+                    && palette["palette"][item.palette as usize]["source_item_id"].as_u64()
+                        == Some(appearance)
             })
-            .ok_or("source quest door")?;
-        assert_eq!(source.attrs.action, Some(10089));
+            .ok_or("source door")?;
+        assert_eq!(source.attrs.action, Some(action));
         entry.attrs = source.attrs.clone();
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
             &data.manifest,
@@ -271,7 +299,7 @@ fn scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -308,6 +336,14 @@ fn scenario(
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
+        if vampire_door.is_some() {
+            owner.admit_progression_session(&mut admitted).await;
+            vampire_gate(&mut owner, admitted, &authority, &map, &payload).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let (next, result, _) =
             super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
@@ -867,4 +903,178 @@ async fn player_ground_state(pool: &sqlx::PgPool) -> Result<serde_json::Value, s
         'mint_reservations',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_map_item_mint_reservations r),\
         'mint_receipts',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_map_item_mint_receipts r))")
         .fetch_one(pool).await
+}
+
+// Crystal door_level.lua:1070 and doors.lua:273: both source doors require level70.
+#[test]
+fn vampire_shield_placed_level_doors_require_seventy_over_wire() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            for x in [33190, 33195] {
+                scenario(false, false, false, None, Some(x)).map_err(|e| e.to_string())?;
+            }
+            Ok::<(), String>(())
+        })?
+        .join()
+        .map_err(|_| "Vampire Shield wire panic")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED vampire_shield_level_doors duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+async fn vampire_gate(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    map: &crate::map::boot::BundleWorld,
+    payload: &[u8],
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let formula = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.training_formula())
+        .ok_or("formula")?;
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_build(
+            owner.root,
+            authority,
+            owner.holder,
+            fence,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before: DurableBuildState::default(),
+                after: convert_vocation(formula, &DurableBuildState::default(), "monk")
+                    .map_err(debug)?,
+                pruned_stance: None,
+            },
+            formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    let key = crate::map::boot::tests::door_key();
+    for (command, level, expected) in [
+        (1, 69, UseDisposition::Locked),
+        (2, 70, UseDisposition::Committed),
+    ] {
+        let binding = owner
+            .progression_binding(admitted.game_session_id)
+            .ok_or("progression")?;
+        let experience = binding
+            .policy
+            .thresholds
+            .iter()
+            .find(|t| t.level == level)
+            .ok_or("threshold")?
+            .minimum_experience
+            .get();
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let current = owner
+            .root
+            .read_character_progression(authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("progression state")?;
+        let outcome = owner
+            .revision_sequencer
+            .acquire(fence.character_id)
+            .await
+            .commit_experience(
+                owner.root,
+                authority,
+                owner.holder,
+                fence,
+                ExperienceAwardRequest {
+                    occurrence: ExperienceRewardOccurrence::from_bytes(id(u8::try_from(level)?))
+                        .map_err(debug)?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(
+                        experience - current.total_experience.get(),
+                    ),
+                    context: binding.context.clone(),
+                    policy_revision: binding.policy_revision.clone(),
+                    reward_revision: binding.reward_revision.clone(),
+                    policy: binding.policy.clone(),
+                },
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
+        owner.states.level_refresh.mark(
+            crate::gameplay_transport::level_up_live::leveled_character(&outcome),
+        );
+        Box::pin(owner.refresh_level_up_vitals(actor, admitted.game_session_id)).await;
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, actor, admitted.game_session_id)
+                    .ok_or("live facts")?
+                    .character_facts()
+                    .level,
+                level
+            );
+        }
+
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let (next, result, _) =
+            super::item_craft::exchange(owner, admitted, command, payload, None).await?;
+        assert_eq!(result, expected, "source level{level}");
+        assert_eq!(
+            map.facts().doors().revision(key),
+            if level == 69 { 0 } else { 1 }
+        );
+        admitted = next;
+    }
+    let (next, result, _) = super::item_craft::exchange(owner, admitted, 2, payload, None).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(map.facts().doors().revision(key), 1, "replay toggled twice");
+    owner.clock_origin -= std::time::Duration::from_secs(1);
+    let (_, result, _) = super::item_craft::exchange(owner, next, 3, payload, None).await?;
+    assert_eq!(result, UseDisposition::StaleState);
+    assert_eq!(map.facts().doors().revision(key), 1);
+    Ok(())
 }

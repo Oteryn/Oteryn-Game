@@ -239,10 +239,13 @@ message OneItemCommandRefV1 {
 // CREATURE-DEATH-OCCURRENCE-IDENTITY-V1 durable, restart-stable death key.
 message CreatureDeathOccurrenceRefV1 {
   bytes world_id = 1;   // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2; // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2; // UUIDv7 for Channel; empty for Instance
   uint64 scope_ownership_generation = 3;
   uint32 actor_local_id = 4;
   uint64 actor_local_generation = 5;
+  // Crystal src/creatures/creature.cpp:711-721,777-782: exact death scope of the physical corpse.
+  // Exactly one Channel or Instance UUIDv7; omitted in historical Channel bytes.
+  optional bytes instance_id = 6;
 }
 
 // The loot output cause (death key, LootTableDefinitionRef, purpose key,
@@ -680,6 +683,8 @@ message OneItemNpcTradeV1 {
   optional OneItemHirelingPackageV1 hireling_package = 16;
   optional string house_key = 17; // world_id + key name the House; channel_id is origin provenance
   optional OneItemHouseFurnitureKitV1 house_furniture_kit = 18; // mutually exclusive with package
+  optional uint32 fluid_subtype = 19; // NPC-TRADE-3: 0..20, Item fluid state, never quantity
+  optional uint32 full_charges = 20; // NPC-TRADE-3: exact pinned native default charges
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using

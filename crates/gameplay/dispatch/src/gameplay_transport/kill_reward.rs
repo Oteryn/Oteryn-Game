@@ -90,9 +90,15 @@ type BossSlotBonuses = Vec<([u8; 16], u16)>;
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
+    pub(super) world_change: Option<(
+        u64,
+        crate::durability::world_event::changes::counters::CreditEvent,
+    )>,
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
     pub row: Option<Arc<CreatureRewardRow>>,
+    /// Crystal player.cpp:6584-6607: Soulpit stack-40 XP has no ordinary loot binding.
+    pub(super) soulpit_experience: Option<oteryn_simulation_determinism::ExactI64>,
     pub bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
     pub(super) boss_slot_bonuses: Arc<OnceLock<BossSlotBonuses>>,
     pub ground: DeathGroundContext,
@@ -130,6 +136,19 @@ pub(super) struct TaskBoardKillRecipient {
     pub occurrence: [u8; 16],
 }
 
+/// Carrier floors use the positive spawn-floor convention; map overlay floors are separate.
+pub(super) fn world_change_credits(
+    creature: &str,
+    position: crate::foundation::MovementLocalPosition,
+) -> Vec<(
+    crate::durability::world_event::changes::counters::CounterKind,
+    crate::durability::world_event::changes::counters::Credit,
+)> {
+    crate::durability::world_event::changes::counters::bindings()
+        .map(|bindings| bindings.credits(creature, (position.x, position.y, position.floor)))
+        .unwrap_or_default()
+}
+
 /// A native death's authored creature identity and first observed wall clock.
 /// The existing kill queue retains this beside the sealed death occurrence.
 #[derive(Debug, Clone)]
@@ -139,6 +158,10 @@ pub(super) struct CapturedActivityDeath {
 }
 
 impl PendingKillSettlement {
+    pub(super) fn experience(&self) -> Option<oteryn_simulation_determinism::ExactI64> {
+        self.soulpit_experience
+            .or_else(|| self.row.as_ref().map(|row| row.xp_amount))
+    }
     #[cfg(test)]
     pub(super) fn captured_talisman(
         &self,
@@ -178,6 +201,7 @@ impl PendingKillSettlement {
             facts,
             creature,
             row: None,
+            soulpit_experience: None,
             bosstiary_only,
             boss_slot_bonuses: Arc::new(OnceLock::new()),
             ground,
@@ -185,6 +209,7 @@ impl PendingKillSettlement {
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
+            world_change: None,
             prey_checkpoint: None,
             forge: None,
             echo: None,
@@ -362,6 +387,7 @@ pub enum TakeOutcome {
 pub struct KillSettlementQueue(
     Arc<Mutex<KillQueueState>>,
     pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+    Arc<super::public_kill_statistics::CaptureQueue>,
 );
 
 #[derive(Debug, Clone)]
@@ -381,6 +407,10 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn statistics(&self) -> &super::public_kill_statistics::CaptureQueue {
+        &self.2
+    }
+
     pub(super) fn analyser_receipts(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -1228,6 +1258,42 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    // Physical statistics precede every reward/principal/Bestiary admission.
+    // The owner-issued lethal receipt proves death even for a no-corpse arena
+    // or Instance; projections and rewards retain their existing independent rules.
+    if let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) {
+        if snapshot.state.master.is_none()
+            && !snapshot.state.policy.is_familiar
+            && !runtime
+                .soulpit_variant(target)
+                .is_some_and(|tag| tag.is_summon)
+        {
+            let creature = snapshot.state.policy.definition_key.clone();
+            let boss = snapshot.state.policy.reward_boss == Some(true)
+                || sink.rewards.boss(&creature).is_some()
+                || runtime
+                    .soulpit_variant(target)
+                    .is_some_and(|tag| tag.boss.is_some());
+            if let Ok(receipt) = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(target)
+                && let Ok(death) = receipt.statistics_death_key()
+            {
+                sink.queue.statistics().capture(
+                    runtime,
+                    target,
+                    death,
+                    &creature,
+                    boss,
+                    super::npc_trade_command::unix_ms_now(),
+                );
+            }
+        }
+    } else {
+        sink.queue
+            .statistics()
+            .source_gap(super::npc_trade_command::unix_ms_now());
+    }
     if runtime.is_tibiadrome(target) {
         let _ = crate::combat::project_fixed_one_creature_death(
             &mut runtime.borrow_combat_death(),
@@ -1238,9 +1304,13 @@ pub fn record_creature_kill(
     // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
     // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
     if runtime.soulpit_variant(target).is_some() {
+        record_soulpit_kill(runtime, sink, target, lethal, now_ms, observed_at);
         return;
     }
     let snapshot = runtime.companion_snapshot_including_dead(target);
+    let wild = snapshot
+        .as_ref()
+        .is_ok_and(|view| view.state.master.is_none() && !view.state.policy.is_familiar);
     let personal_rewards = snapshot.as_ref().is_ok_and(|view| {
         view.state.master.is_none()
             && !view.state.policy.is_familiar
@@ -1343,6 +1413,61 @@ pub fn record_creature_kill(
             receipts.kill = true;
         }
     }
+    let world_change = if wild {
+        runtime.world_change_cycles().and_then(|(epoch, cycles)| {
+            let mut credits = world_change_credits(&creature, facts.corpse);
+            let cohort = runtime.world_spawn_cohort(target);
+            use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+            if let Some((key, _, home)) = cohort {
+                if let Some(wave) = key
+                    .strip_prefix("their_masters_voice.wave.")
+                    .and_then(|wave| wave.parse::<u8>().ok())
+                    && let Some(ordinal) =
+                        oteryn_gameplay_world::terrain_tools::voice_servant_ordinal((
+                            home.x, home.y, home.floor,
+                        ))
+                    && (1..=25).contains(&wave)
+                {
+                    credits.push((
+                        CounterKind::TheirMastersVoice,
+                        Credit::VoiceServant { wave, ordinal },
+                    ));
+                } else if key == "their_masters_voice.mage" {
+                    credits.push((CounterKind::TheirMastersVoice, Credit::VoiceMage));
+                }
+            }
+            if credits.is_empty() {
+                return None;
+            }
+            let mut generations = [0; 8];
+            for kind in crate::durability::world_event::changes::counters::CounterKind::ALL {
+                generations[kind.index()] = *cycles.get(kind.key())?;
+            }
+            if let Some((key, generation, _)) = cohort {
+                let kind = if key.starts_with("their_masters_voice.") {
+                    Some(CounterKind::TheirMastersVoice)
+                } else {
+                    CounterKind::from_key(key)
+                };
+                if let Some(kind) = kind {
+                    generations[kind.index()] = generation;
+                }
+            }
+            Some((
+                *epoch,
+                crate::durability::world_event::changes::counters::CreditEvent {
+                    source_kind: 1,
+                    occurrence: crate::durability::party_kill_xp::encode_death_key(facts.death),
+                    credits,
+                    counter_generations: generations,
+                    occurred_at_ms: facts.died_at_unix_ms,
+                    character: Some(principal.character),
+                },
+            ))
+        })
+    } else {
+        None
+    };
     let source = sink.rewards.encounter_facts(&creature);
     let prey_checkpoint = sink.prey.and_then(|states| {
         states.prey_kill_checkpoint(
@@ -1400,7 +1525,7 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() {
+                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
                     accept_kill(
                         runtime,
                         sink.queue,
@@ -1408,6 +1533,7 @@ pub fn record_creature_kill(
                             facts,
                             creature,
                             row: None,
+                            soulpit_experience: None,
                             bosstiary_only: None,
                             boss_slot_bonuses: Arc::new(OnceLock::new()),
                             ground,
@@ -1415,6 +1541,7 @@ pub fn record_creature_kill(
                             activity_observed_at: observed_at,
                             activity_at_death: None,
                             damage_shares,
+                            world_change,
                             prey_checkpoint,
                             forge: None,
                             echo,
@@ -1451,6 +1578,7 @@ pub fn record_creature_kill(
             let mut entry = entry;
             // Only the actual lethal producer supplies the retained Instance clock.
             entry.activity_death = activity_death;
+            entry.world_change = world_change;
             refuse(reason.as_str(), &creature);
             entry.prey_checkpoint = prey_checkpoint;
             accept_kill(runtime, sink.queue, entry);
@@ -1737,6 +1865,7 @@ pub fn record_creature_kill(
         None
     };
     let entry = PendingKillSettlement {
+        world_change,
         boss_reward,
         activity_death,
         forge,
@@ -1752,12 +1881,99 @@ pub fn record_creature_kill(
         facts,
         creature,
         row: Some(row),
+        soulpit_experience: None,
         bosstiary_only: None,
         boss_slot_bonuses: Arc::new(OnceLock::new()),
         ground,
         target,
         no_progression_logged: false,
     };
+    accept_kill(runtime, sink.queue, entry);
+}
+
+/// Crystal 201189f player.cpp:6584-6607,12932-12936: only the non-summon stack-40
+/// death grants XP and weapon points. No ordinary corpse Item or progression callback.
+fn record_soulpit_kill(
+    runtime: &mut ChannelRuntimeV1,
+    sink: KillSink<'_>,
+    target: ExactActorRef,
+    lethal: CapturedRewardPrincipal,
+    now_ms: u64,
+    observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+) {
+    let Some(tag) = runtime.soulpit_variant(target) else {
+        return;
+    };
+    if tag.stack != crate::domain::soulpit::SoulpitStack::Boss || tag.is_summon {
+        return;
+    }
+    let Ok(snapshot) = runtime.companion_snapshot_including_dead(target) else {
+        return;
+    };
+    let creature = snapshot.state.policy.definition_key.clone();
+    let Some(amount) = sink
+        .rewards
+        .encounter_facts(&creature)
+        .and_then(|facts| facts.experience)
+        .and_then(|base| tag.experience(base).ok())
+        .and_then(|amount| i64::try_from(amount).ok())
+    else {
+        return;
+    };
+    let pin = runtime.content_pin();
+    let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let ground = DeathGroundContext {
+        boss_spawn: None,
+        map_revision: format!("sha256:{}", hex(pin.map_revision_digest())),
+        content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
+        ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
+        sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+        native_room_placement_context: pin.frame_binding_digest().to_vec(),
+    };
+    let mut death = runtime.borrow_combat_death();
+    let Ok(top) = death.top_damage_contributor(target) else {
+        return;
+    };
+    let (principal, last_damage) = top.present().map_or((lethal, Some(now_ms)), |winner| {
+        (
+            CapturedRewardPrincipal {
+                character: winner.character,
+                lease_generation: winner.lease_generation,
+                session: winner.session,
+                actor: winner.actor,
+            },
+            winner.last_damage_at_ms,
+        )
+    });
+    if crate::combat::project_fixed_one_creature_death(&mut death, target).is_err() {
+        return;
+    }
+    let Ok(mut facts) =
+        capture_projected_death_facts(&mut death, target, principal, last_damage, now_ms)
+    else {
+        return;
+    };
+    facts.died_at_unix_ms = u64::try_from(super::npc_trade_command::unix_ms_now()).unwrap_or(0);
+    let Ok(shares) = death.reward_damage_shares(target) else {
+        return;
+    };
+    sink.queue
+        .freeze_proficiency(runtime, target, facts.occurrence, &shares, top.is_gone());
+    let mut entry = PendingKillSettlement::without_materialization(
+        facts,
+        creature,
+        None,
+        ground,
+        target,
+        Some(observed_at.unwrap_or_else(|| {
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                now_ms.saturating_mul(1000),
+            )
+        })),
+    );
+    entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
+    entry.activity_at_death = Some(sink.activity.to_vec());
+    entry.damage_shares = shares;
     accept_kill(runtime, sink.queue, entry);
 }
 
@@ -1770,7 +1986,9 @@ fn accept_kill(
     queue: &KillSettlementQueue,
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
-    super::grizzly_kills::capture(runtime, queue, &mut entry);
+    if entry.soulpit_experience.is_none() {
+        super::grizzly_kills::capture(runtime, queue, &mut entry);
+    }
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -2342,6 +2560,12 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         let report = super::grizzly_kills::settle(
             self.admission,
             entry,
@@ -2361,6 +2585,96 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     }
 }
 impl DurableKillSettle<'_, '_, '_, '_> {
+    async fn settle_soulpit(&self, entry: &PendingKillSettlement) -> SettleReport {
+        let admission = self.admission;
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
+        let mut no_progression = false;
+        let principal_gone = admission
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .state()
+            .proficiency_deaths
+            .iter()
+            .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
+        if !principal_gone
+            && admission
+                .progression_binding(entry.facts.principal.session)
+                .is_some()
+        {
+            let mut entry = entry.clone();
+            let masteries = match admission
+                .root
+                .read_animus_masteries(admission.character, self.fence.character_id)
+                .await
+            {
+                Ok(masteries) => masteries,
+                Err(_) => {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            };
+            let base = entry
+                .experience()
+                .and_then(|xp| u64::try_from(xp.get()).ok())
+                .unwrap_or(0);
+            let mastered = masteries.iter().any(|key| key == &entry.creature);
+            let amount = crate::combat::animus_mastery_experience(base, masteries.len(), mastered);
+            let amount = oteryn_gameplay_foundation::scheduled_events::scale_gain(
+                amount,
+                self.event_rates.experience,
+            );
+            let Ok(amount) = i64::try_from(amount) else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            entry.soulpit_experience = Some(oteryn_simulation_determinism::ExactI64::new(amount));
+            match admission.settle_party_experience(&permit, &entry).await {
+                Ok(party) => {
+                    if matches!(party.xp, Err(CombatDeathRewardXpError::Progression(_))) {
+                        return SettleReport {
+                            verdict: SettleVerdict::Retry,
+                            no_progression: false,
+                        };
+                    }
+                    admission.states.level_refresh.mark(party.leveled);
+                }
+                Err(_) => {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            }
+        } else if !principal_gone {
+            no_progression = true;
+        }
+        drop(permit);
+        admission
+            .credit_weapon_proficiency_points(entry, Some(1500))
+            .await;
+        release_settled_corpse(
+            &mut *admission.runtime.lock().await,
+            entry,
+            SettleVerdict::Final,
+        );
+        SettleReport {
+            verdict: SettleVerdict::Final,
+            no_progression,
+        }
+    }
+
     /// W22c: the corpse owner's live Wealth Duplex rolls the creature's base loot once more,
     /// without Gut (Crystal ff7ede59 `ondroploot_wealth_duplex.lua:61-63`, `gut = false`). The
     /// extra MINTs are reserved first; `false` waits for scope room. A roll that cannot fit even
@@ -2424,6 +2738,44 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        if let Some((epoch, event)) = &entry.world_change {
+            let current = {
+                let runtime = admission.runtime.lock().await;
+                let digest = runtime.content_pin().server_artifact_digest();
+                let revision = format!(
+                    "sha256:{}",
+                    digest
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                );
+                (runtime.owner_fence().is_ok() && revision == entry.ground.content_revision).then(
+                    || {
+                        (
+                            runtime.binding().runtime_scope(),
+                            runtime.binding().scope_generation(),
+                        )
+                    },
+                )
+            };
+            let Some((scope, generation)) = current else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            match admission.root.credit_world_change_event(admission.character, admission.holder, scope, generation, *epoch, event.clone()).await {
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Applied { .. } |
+                   crate::durability::world_event::changes::counters::CreditOutcome::AlreadyApplied) => {},
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::Refused) => {
+                    operator_event("world_change_credit_refused reason=stale_source_or_cycle");
+                },
+                Err(_) => return SettleReport { verdict: SettleVerdict::Retry, no_progression: false },
+            }
+        }
+        if entry.soulpit_experience.is_some() {
+            return self.settle_soulpit(entry).await;
+        }
         if !admission.credit_echo_warden_death(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
@@ -2960,6 +3312,17 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if outcome.is_ok() {
             admission.credit_weapon_proficiency_kill(&entry).await;
         }
+        // Crystal boss_lever_death.lua:21-32 keeps the physical corpse in the room.
+        // Refresh ordinary Ground views for both first commits and retained/replayed
+        // corpse receipts, including a resumed settle after commit cancellation.
+        if let Ok(outcome) = &outcome
+            && matches!(
+                outcome.rewards.loot,
+                Ok(_) | Err(CombatDeathRewardLootError::Mint(_, _))
+            )
+        {
+            admission.states.loop_ground.invalidate();
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =
@@ -3012,6 +3375,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn credit_weapon_proficiency_kill(&self, entry: &PendingKillSettlement) {
+        self.credit_weapon_proficiency_points(entry, proficiency_points(self, entry))
+            .await;
+    }
+
+    async fn credit_weapon_proficiency_points(
+        &self,
+        entry: &PendingKillSettlement,
+        points: Option<u32>,
+    ) {
         let contributors = self
             .states
             .attack
@@ -3024,7 +3396,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|death| death.occurrence == entry.facts.occurrence)
             .map(|death| death.contributors.clone())
             .unwrap_or_default();
-        let points = proficiency_points(self, entry);
         let mut checkpoints = Vec::new();
         {
             let runtime = self.runtime.lock().await;

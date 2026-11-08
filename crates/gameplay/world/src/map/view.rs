@@ -397,7 +397,7 @@ pub fn window(origin: TilePos) -> Vec<TilePos> {
 pub struct RoofFacts {
     /// The bottom entry is a Terrain entry of kind `ground`, `wall` or `roof`.
     pub limits_view: bool,
-    /// No entry is a `wall` and no entry's item definition has `blocks_projectile`.
+    /// No entry blocks projectiles under its exact source fact (legacy unknown Terrain uses wall fallback).
     pub look_through: bool,
 }
 
@@ -424,9 +424,7 @@ impl RoofFacts {
                 Some(TerrainKind::Ground | TerrainKind::Wall | TerrainKind::Roof)
             )
         });
-        let look_through = entries.iter().all(|entry| {
-            entry.facts.terrain_kind != Some(TerrainKind::Wall) && !entry.facts.blocks_projectile
-        });
+        let look_through = entries.iter().all(|entry| !entry.facts.blocks_projectile);
         Self {
             limits_view,
             look_through,
