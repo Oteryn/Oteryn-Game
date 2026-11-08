@@ -53,7 +53,9 @@ pub(super) fn source_bundle(
     candidate: &crate::content::bosses::activity_template::BossLeverCandidate,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project = source::project_regions(&root, &[(130, 125)])?;
+    let anchor = candidate.boss_position.ok_or("source boss position")?;
+    let region = (u16::try_from(anchor[0] / 256)?, u16::try_from(anchor[1] / 256)?);
+    let project = source::project_regions(&root, &[region])?;
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&source::read(
         &root.join("content/world/pins/oteryn.identity.json"),
@@ -99,6 +101,7 @@ pub(super) fn source_bundle(
     );
     let parity = compile::equivalence(&input, &registry, &compiled.bytes)?;
     assert!(parity.tiles > 0 && parity.entries > 0);
+    let start = candidate.lever_positions.first().ok_or("source staging start")?;
     let pins = crate::map::boot::BootPins {
         bundle: crate::map::BundlePins {
             digest: compiled.digest,
@@ -115,9 +118,9 @@ pub(super) fn source_bundle(
                 .collect::<String>(),
         ),
         start: crate::map::overlay::TilePos {
-            x: 33339,
-            y: 32221,
-            floor: -9,
+            x: u16::try_from(start[0])?,
+            y: u16::try_from(start[1])?,
+            floor: i8::try_from(-start[2])?,
         },
     };
     let index = native.item_index().ok_or("active native Item index")?;

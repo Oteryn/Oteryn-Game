@@ -921,6 +921,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             source_view.transfer_activity_session_state(&destination_view, old, next)?;
             attempt.ancillary_installed = true;
         }
+        // M18: rebuild the destination death consumer from its transferred quest
+        // copy. Repeating this projection after cancellation never replays a move.
+        destination_view
+            .refresh_grizzly_kill_snapshot(next.game_session_id)
+            .await;
         // The destination's existing death owner takes its own lane and revision
         // slot while it places, consumes and refills the transferred dead tuple.
         drop(_slot);

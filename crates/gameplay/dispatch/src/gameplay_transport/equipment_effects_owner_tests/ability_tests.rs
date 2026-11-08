@@ -327,7 +327,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // House cohort above. Source: seasonal-item-profiles.json (Santa, Ruprecht,
     // Cake and Halloween donor locators/hashes); all have qualified speed0.
     ("SEASON-W05D", 35),
-    ("M18-FIRST-DRAGON", 1),
+    ("M18-FIRST-DRAGON", 4),
 ];
 
 #[test]

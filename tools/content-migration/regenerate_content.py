@@ -87,6 +87,7 @@ AUTHORING_TOOLS = (
     "tools/content-schema/charm-authoring/charm_authoring.py",
     "tools/content-schema/proficiency-authoring/proficiency_authoring.py",
     "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py",
+    "tools/content-schema/quest-authoring/first_dragon_activity.py",
     "tools/content-schema/starter-kit-authoring/starter_kit_authoring.py",
 )
 
@@ -620,6 +621,7 @@ def main() -> int:
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
+        run(["python3", "tools/content-schema/quest-authoring/first_dragon_activity.py", "content"])
         run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
         run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
         if not args.skip_checks:

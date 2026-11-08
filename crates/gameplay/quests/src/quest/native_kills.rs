@@ -21,24 +21,49 @@ pub struct Counter {
 }
 
 impl Counter {
+    /// The selected First Dragon recipe requires both s4 exploration occurrences.
+    #[must_use]
+    pub fn gate_value(&self) -> i64 {
+        if self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected" {
+            2
+        } else {
+            1
+        }
+    }
+
+    /// Its selected access reward is the canonical quest completion, not an Item MINT.
+    #[must_use]
+    pub fn completion_track(&self) -> Option<&'static str> {
+        (self.transition == "oteryn:quest-transition/native-kills/first-dragon-selected")
+            .then_some("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6")
+    }
+
     pub(crate) fn transition(self) -> QuestTransition {
+        let mut effects = vec![
+            QuestEffect {
+                track: self.gate.into(),
+                from: QuestComparison::Eq(self.gate_value()),
+                effect: QuestEffectKind::Add(0),
+            },
+            QuestEffect {
+                track: self.track.into(),
+                from: QuestComparison::Between(0, self.maximum - 1),
+                effect: QuestEffectKind::Add(1),
+            },
+        ];
+        if let Some(track) = self.completion_track() {
+            effects.push(QuestEffect {
+                track: track.into(),
+                from: QuestComparison::Eq(0),
+                effect: QuestEffectKind::Set(1),
+            });
+        }
         QuestTransition {
             world_change: self.world_change.map(str::to_owned),
             key: self.transition.into(),
             quest: self.quest.into(),
-            effects: vec![
-                QuestEffect {
-                    track: self.gate.into(),
-                    from: QuestComparison::Eq(1),
-                    effect: QuestEffectKind::Add(0),
-                },
-                QuestEffect {
-                    track: self.track.into(),
-                    from: QuestComparison::Between(0, self.maximum - 1),
-                    effect: QuestEffectKind::Add(1),
-                },
-            ],
-            completes: false,
+            effects,
+            completes: self.completion_track().is_some(),
             experience: None,
         }
     }
@@ -84,6 +109,18 @@ pub const COUNTERS: &[Counter] = &[
         maximum: 10,
         world_change: None,
     },
+    // Chosen recipe quests-00200-00299.json record23 s4/s5/s6 deliberately omits
+    // the full source phases. Crystal201189f creaturescripts_death_first_dragon.lua:21-30
+    // establishes the authoritative death; selected access completion joins that receipt.
+    Counter {
+        transition: "oteryn:quest-transition/native-kills/first-dragon-selected",
+        creature: "oteryn:creature.the_first_dragon",
+        quest: "oteryn:quest.the_first_dragon_quest",
+        track: "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
+        gate: "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s4",
+        maximum: 1,
+        world_change: None,
+    },
 ];
 
 #[must_use]
@@ -100,7 +137,10 @@ pub fn tracks_creature(creature: &str) -> bool {
 pub fn active(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
     counters()
         .filter(|counter| {
-            tracks.get(counter.gate) == Some(&1)
+            tracks.get(counter.gate) == Some(&counter.gate_value())
+                && counter
+                    .completion_track()
+                    .is_none_or(|track| tracks.get(track).copied().unwrap_or(0) == 0)
                 && (0..counter.maximum).contains(&tracks.get(counter.track).copied().unwrap_or(0))
         })
         .map(|counter| counter.transition)
@@ -114,7 +154,38 @@ fn counters() -> impl Iterator<Item = &'static Counter> {
 }
 
 pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
-    let mut tracks: Vec<_> = catalogue.tracks.into_values().collect();
+    let mut tracks = catalogue.tracks;
+    let quest = "oteryn:quest.the_first_dragon_quest";
+    for (key, maximum) in [
+        (
+            "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s4",
+            2,
+        ),
+        (
+            "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5",
+            1,
+        ),
+        (
+            "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s6",
+            1,
+        ),
+    ] {
+        let expected = super::QuestTrack {
+            key: key.into(),
+            quest: quest.into(),
+            initial: 0,
+            min: 0,
+            max: maximum,
+        };
+        if let Some(current) = tracks.get(key) {
+            if current != &expected {
+                return Err(format!("selected First Dragon track conflict: {key}"));
+            }
+        } else {
+            tracks.insert(key.into(), expected);
+        }
+    }
+    let mut tracks: Vec<_> = tracks.into_values().collect();
     qworld::extend_tracks(&mut tracks)?;
     let mut transitions: Vec<_> = catalogue.transitions.into_values().collect();
     for counter in counters() {
@@ -141,6 +212,47 @@ mod tests {
         tracks.insert(counter.gate.into(), 2);
         assert!(active(&tracks).is_empty());
         assert!(!tracks_creature("oteryn:creature.rat"));
+    }
+    #[test]
+    fn m18_first_dragon_death_requires_both_trials_and_completes_selected_access_once()
+    -> Result<(), String> {
+        let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        let counter = counter("oteryn:quest-transition/native-kills/first-dragon-selected")
+            .ok_or("selected counter")?;
+        assert_eq!(
+            counter_for(catalogue, counter.transition)
+                .ok_or("runtime counter view")?
+                .gate_value,
+            2
+        );
+        let transition = catalogue
+            .transition(counter.transition)
+            .ok_or("selected transition")?;
+        assert!(transition.completes);
+        let mut stored = BTreeMap::new();
+        for value in [0, 1] {
+            stored.insert(counter.gate.into(), value);
+            assert!(!active(&stored).contains(&counter.transition));
+            assert!(catalogue.evaluate(transition, &stored, 0).is_err());
+        }
+        stored.insert(counter.gate.into(), 2);
+        assert!(active(&stored).contains(&counter.transition));
+        for change in catalogue
+            .evaluate(transition, &stored, 0)
+            .map_err(|error| format!("{error:?}"))?
+        {
+            stored.insert(change.track, change.after);
+        }
+        assert_eq!(stored.get(counter.track), Some(&1));
+        assert_eq!(
+            stored.get(counter.completion_track().ok_or("completion track")?),
+            Some(&1)
+        );
+        assert!(!active(&stored).contains(&counter.transition));
+        assert!(catalogue.evaluate(transition, &stored, 0).is_err());
+        Ok(())
     }
 }
 

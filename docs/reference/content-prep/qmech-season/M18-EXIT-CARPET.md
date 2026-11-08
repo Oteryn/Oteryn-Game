@@ -23,4 +23,17 @@ https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a
 `first_dragon_item_profiles.py` verifies the pinned source hashes, preserves
 accepted canonical facts, generates the capture and registers it through the
 ordinary Item provider. The equipment cohort receipt is generated from its exact
-one-identity source set. No migration, command, capability or ordinal is allocated.
+four-identity source set. No migration, command, capability or ordinal is allocated.
+
+## Native corpse closure
+
+The same normal Item producer admits the existing corpse identities 25065,
+25066 and 25067, Ground-only. Crystal201189f `data/items/items.xml:48202-48217`
+defines capacities20/10 and decay10s→500s→60s→removal. The importer resolves
+these exact decay references and preserves already accepted facts.
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L48202
+
+The boss source explicitly has `monster.loot = {}` at line74 and corpse25065
+at line19; the existing native reward owner already supports this null canonical
+loot binding by settling an empty corpse table. No synthetic loot is added.
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/monster/bosses/the_first_dragon.lua#L74

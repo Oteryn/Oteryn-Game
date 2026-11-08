@@ -55,15 +55,39 @@ def capture(crystal, root=ROOT):
     row.update(production_binding=copy.deepcopy(binding),production_binding_qualification=None,
                production_definition={'family':'Item','production_key':KEY,'revision_ref':'definition-r1'})
     row['attributes'].update(always_on_top=True,always_on_top_order=1)
-    return {'schema':'OTERYN_FIRST_DRAGON_ITEM_PROFILES/v1','source_revision':REVISION,
+    records = [row]
+    # Crystal201189f data/items/items.xml:48202-48217 supplies the exact
+    # First Dragon corpse chain; items.cpp owns the physical/temporal defaults.
+    corpse_ids = {25065, 25066, 25067}
+    corpse_physical = {r['server_item_id']:r for r in source.policies(blobs['appearances.dat'],blobs['items.xml'],corpse_ids)}
+    all_definitions = {r['definition']['identity']['key']:r['definition']
+                       for p in (root/'content/items/definitions').glob('items-*.json')
+                       for r in json.loads(p.read_bytes())['records']}
+    for item in sorted(corpse_ids):
+        binding = bindings[str(item)]
+        key = f'oteryn:item.tibia.i{item}'
+        if binding['target']['key'] != key:
+            raise ValueError('FIRST_DRAGON_CORPSE_IDENTITY')
+        corpse = source.profile(item,xml[item],objects[item],corpse_physical[item],bindings,None)
+        if corpse['admission']['legal_destinations'] != ['Ground']:
+            raise ValueError('FIRST_DRAGON_CORPSE_CUSTODY')
+        definition = all_definitions[key]
+        for group in ('physical','stack','container','temporal'):
+            if group in definition.get('semantics', {}) and known_conflict(definition['semantics'][group],corpse['semantics'][group]):
+                raise ValueError('FIRST_DRAGON_CORPSE_ACCEPTED_CONFLICT:'+group)
+        corpse['semantics'] = accepted_first(definition.get('semantics', {}),corpse['semantics'])
+        corpse.update(production_binding=copy.deepcopy(binding),production_binding_qualification=None,
+                      production_definition={'family':'Item','production_key':key,'revision_ref':binding['target']['revision']})
+        records.append(corpse)
+    return {'schema':'OTERYN_FIRST_DRAGON_ITEM_PROFILES/v1' ,'source_revision':REVISION,
             'sources': [{'path':'data/items/'+p,'sha256':SOURCE_HASHES[p]} for p in sorted(blobs)],
-            'item_ids':[17400], 'source_flags':objects[17400]['flags'],'records':[row]}
+            'item_ids':[17400,25065,25066,25067], 'source_flags':objects[17400]['flags'],'records':records}
 
 
 def load(root=ROOT):
     doc = json.loads((root/PATH).read_bytes())
     if (doc['schema']!='OTERYN_FIRST_DRAGON_ITEM_PROFILES/v1' or doc['source_revision']!=REVISION
-            or doc['item_ids'] != [17400] or len(doc['records'])!=1
+            or doc['item_ids'] != [17400,25065,25066,25067] or len(doc['records'])!=4
             or doc['records'][0]['production_definition']['production_key']!=KEY):
         raise ValueError('FIRST_DRAGON_ITEM_CAPTURE_SET')
     return doc
@@ -71,14 +95,15 @@ def load(root=ROOT):
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     document = json.loads(generated[profile_path])
-    row, = load(root)['records']
-    matches = [r for r in document['records'] if r['production_definition']['production_key']==KEY]
-    if matches:
-        current, = matches
-        if current != row:
-            raise ValueError('FIRST_DRAGON_EXISTING_NATIVE_ITEM_CONFLICT')
-    else:
-        document['records'].append(copy.deepcopy(row))
+    for row in load(root)['records']:
+        key = row['production_definition']['production_key']
+        matches = [r for r in document['records'] if r['production_definition']['production_key']==key]
+        if matches:
+            current, = matches
+            if current != row:
+                raise ValueError('FIRST_DRAGON_EXISTING_NATIVE_ITEM_CONFLICT:'+key)
+        else:
+            document['records'].append(copy.deepcopy(row))
     document['records'].sort(key=order)
     raw = canonical(document)
     generated[profile_path] = raw
@@ -89,14 +114,13 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
 
 def cohort_receipt(text, root=ROOT):
     doc = load(root)
-    if len(doc['records']) != 1: raise ValueError('FIRST_DRAGON_COHORT_SOURCE_SET')
-    entry = f'    ("{COHORT}", 1),\n'
+    if len(doc['records']) != 4: raise ValueError('FIRST_DRAGON_COHORT_SOURCE_SET')
+    entry = f'    ("{COHORT}", 4),\n'
     pattern = r'(const PROFILE_ADDITIONS: &\[\(&str, usize\)\] = &\[\n)(.*?)(^\];)'
     match = re.search(pattern,text,re.M|re.S)
     if not match: raise ValueError('FIRST_DRAGON_COHORT_LEDGER')
     if COHORT in match[2]:
-        if entry not in match[2]: raise ValueError('FIRST_DRAGON_COHORT_CONFLICT')
-        return text
+        return re.sub(r'    \("M18-FIRST-DRAGON", [0-9]+\),\n', lambda _: entry, text)
     return text[:match.start(3)] + entry + text[match.start(3):]
 
 

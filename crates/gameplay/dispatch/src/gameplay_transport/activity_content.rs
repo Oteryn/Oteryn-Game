@@ -36,6 +36,27 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
             return Err(ActivityRefusal::ContentUnavailable);
         };
+        // Selected recipe record23 s5/s6: do not instantiate the timed room
+        // without its actual once-only native death/completion consumer.
+        if template.source_path() == "content/encounters/bosses/selected-first-dragon.json" {
+            let key = "oteryn:quest-transition/native-kills/first-dragon-selected";
+            let counter = oteryn_gameplay_quests::quest::native_kills::counter(key)
+                .ok_or(ActivityRefusal::ContentUnavailable)?;
+            let catalogue = self
+                .quest_catalogue
+                .as_ref()
+                .ok_or(ActivityRefusal::ContentUnavailable)?;
+            if counter.creature != template.creature_key()
+                || counter.gate_value() != 2
+                || counter.maximum != 1
+                || counter.completion_track().is_none()
+                || catalogue
+                    .transition(key)
+                    .is_none_or(|transition| !transition.completes)
+            {
+                return Err(ActivityRefusal::ContentUnavailable);
+            }
+        }
         let cell = |p: crate::content::LogicalCell| {
             crate::durability::character_last_position::LastPositionCell {
                 x: p.x,

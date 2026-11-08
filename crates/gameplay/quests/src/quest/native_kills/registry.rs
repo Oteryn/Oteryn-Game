@@ -23,7 +23,7 @@ impl Counter {
             quest: self.quest,
             track: self.track,
             gate: self.gate,
-            gate_value: 1,
+            gate_value: self.gate_value(),
             minimum: 0,
             maximum: self.maximum,
         }

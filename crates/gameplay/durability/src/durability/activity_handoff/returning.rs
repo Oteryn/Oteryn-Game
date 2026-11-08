@@ -191,7 +191,7 @@ pub(super) async fn return_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
     let due = match r.reason {
         ActivityReturnReason::Exit | ActivityReturnReason::OwnerLost | ActivityReturnReason::Death { .. } => true,
         ActivityReturnReason::Abandoned { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \

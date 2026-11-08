@@ -15,5 +15,11 @@ class FirstDragonItemProfileTest(unittest.TestCase):
         self.assertEqual(row['admission']['legal_destinations'], ['Ground'])
         self.assertEqual(row['semantics']['physical']['value']['pickupable'], {'state':'KNOWN','value':False})
 
+    def test_source_corpse_decay_closure_is_native(self):
+        rows = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
+        keys = {r['production_definition']['production_key'] for r in rows}
+        for item in (25065, 25066, 25067):
+            self.assertIn(f'oteryn:item.tibia.i{item}', keys, 'First Dragon corpse decay is not native')
+
 if __name__ == '__main__':
     unittest.main()
