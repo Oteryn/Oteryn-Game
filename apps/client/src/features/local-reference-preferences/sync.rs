@@ -94,6 +94,8 @@ impl SettingsState {
     pub fn sync_local_preferences(&self, link: &crate::play::PlayLink) {
         if self.preferences.validate().is_err() { return; }
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.skill_progress.order.clone_from(&self.preferences.skill_order);
+        mailbox.condition_status.order.clone_from(&self.preferences.condition_order);
         if mailbox.local_preferences != self.preferences { mailbox.local_preferences.clone_from(&self.preferences); }
     }
 

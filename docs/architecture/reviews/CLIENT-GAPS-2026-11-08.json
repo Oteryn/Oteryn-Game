@@ -300,10 +300,10 @@
   "src": "TIBAUD-1",
   "area": "Options",
   "feature": "Interface / HUD: status bars/panel, style, skills/condition order",
-  "status": "PARTIAL",
+  "status": "DONE",
   "gap": "Dane statusu są; brak edytora stylu, pozycji i kolejności.",
   "lane": "cg_options",
-  "evidence": "apps/client/src/features/local-reference-preferences/layout_controls.rs:10 + compact_status_style_projects_confirmed_vitals_only; Skill and condition ordering remain."
+  "evidence": "apps/client/src/features/local-reference-preferences/layout_controls.rs:16 + status_order_settings_reach_confirmed_panels_and_survive_restart + compact_status_style_projects_confirmed_vitals_only; Status panel visibility, bounds and compact/full style are editable. Saved skill/condition order reaches the real server-result-backed panels and native gauges; reordered skill visibility retains its identity. Invalid permutations are rejected atomically."
  },
  {
   "id": "T054",

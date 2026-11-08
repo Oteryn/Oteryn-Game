@@ -78,7 +78,13 @@ impl super::Application {
                 play.link.movement_feedback().unwrap_or("")
             );
             if let Some(hud) = &self.hud {
-                hud.update(Some(&status), play.view.preferences().scaled_hud_bounds());
+                hud.update(
+                    play.view
+                        .preferences()
+                        .status_panel_visible
+                        .then_some(status.as_str()),
+                    play.view.preferences().scaled_hud_bounds(),
+                );
             }
             if status != play.status {
                 window.set_title(&format!(
