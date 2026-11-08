@@ -25,14 +25,14 @@
     "Encounter": 108,
     "Encounter.Raid": 239,
     "Formula": 6126,
-    "Item": 34111,
+    "Item": 34114,
     "Loot": 1290,
     "Mount": 252,
     "NPC": 1282,
     "Presentation": 3145,
     "Proficiency": 443,
     "Quest": 352,
-    "RewardClaim": 336,
+    "RewardClaim": 337,
     "Service.Bank": 2,
     "Service.Blessing": 10,
     "Service.Promotion": 7,
@@ -71,15 +71,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "ff249b7e5866a06ebdfcdf05b24c45446c991646f66726cf59566831fddc3e58"
+        "sha256": "5a628ce84ca4d31ecd485cc38583eef805e367fa1d20d25531f9eb326bafdf66"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "a9a9f7ea4be54f5bfaccb72799322fb509f6dc8ac03c2caafa2f7c4d927d8d96"
+        "sha256": "8b13aba1aea1981651e281e28ab5510aee3a867283e914ac6cac80b812f95f09"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "0719ce5030c6fe0fae69b329b3304a8c282824be9e475e01cbfccba77c96bb53"
+        "sha256": "89a22e75ce6c0e0c58cab7be071644abc79ee5f542d033942beca3e4a5b04fd5"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",
@@ -91,7 +91,7 @@
   "source_binding_counts": {
     "Creature": 1863,
     "Encounter": 108,
-    "Item": 476,
+    "Item": 479,
     "Mount": 252,
     "NPC": 2747
   },
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3844,
+          "record_count": 3846,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "6b903a6779a02a757736e80d04a368a1c3d117348ebac09ef3b929bae4a85140"
+          "sha256": "92776ad7edff7b16d9df52d64226ee4cce85ad04fd0cc97ba4c17afd8c71c66c"
         },
         {
           "creates_canonical_identities": false,

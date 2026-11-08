@@ -8,11 +8,11 @@ import questpc5_opticording_materials as materials
 ROOT = Path(__file__).resolve().parents[2]
 
 class OpticordingMaterials(unittest.TestCase):
-    def test_initial_broken_complete_are_three_exact_portable_instances(self):
+    def test_spheres_spectacles_and_cube_are_five_exact_portable_instances(self):
         rows = materials.capture(ROOT)
         self.assertEqual([r['production_definition']['production_key'] for r in rows],
-                         [f'oteryn:item.tibia.i{i}' for i in (19063,23572,23573)])
-        self.assertEqual([r['semantics']['physical']['value']['weight']['value'] for r in rows], [200,200,180])
+                         [f'oteryn:item.tibia.i{i}' for i in (19063,23572,23573,27522,33313)])
+        self.assertEqual([r['semantics']['physical']['value']['weight']['value'] for r in rows], [200,200,180,250,1000])
         for row in rows:
             self.assertEqual(row['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory','Ground']))
             identity = row['production_definition']
@@ -24,6 +24,18 @@ class OpticordingMaterials(unittest.TestCase):
             self.assertEqual(row['production_binding']['disposition'], 'EXACT')
             self.assertEqual(row['semantics']['charges'], {'state':'NOT_APPLICABLE'})
             self.assertEqual(row['semantics']['temporal'], {'state':'NOT_APPLICABLE'})
+            if number == '27522':
+                self.assertEqual(row['semantics']['equipment']['value']['patterns']['value'][0]['primary_slot'],
+                                 dict(state='KNOWN', value='HEAD'))
+
+    def test_blue_spectacles_cannot_hide_a_different_script_registration(self):
+        import xml.etree.ElementTree as xml
+        definition = {'semantics': {'equipment': {'state': 'KNOWN', 'value': {'patterns': {'state': 'KNOWN', 'value': [
+            {'primary_slot': {'state': 'KNOWN', 'value': 'HEAD'}}]}}}}}
+        for slot in ('feet', 'backpack'):
+            node = xml.fromstring(f'<item><attribute key="script" value="moveevent"><attribute key="slot" value="{slot}"/></attribute></item>')
+            with self.subTest(slot=slot), self.assertRaisesRegex(ValueError, 'OPTICORDING_EXACT_HEAD_REGISTRATION'):
+                materials.head.qualify(27522, node, {}, {}, {}, definition)
 
     def test_xml_pin_drift_is_not_a_named_item_match(self):
         original = Path.read_bytes

@@ -21,9 +21,28 @@
     "existing_native_profiles_delta": "0added/0removed/0changed versus premerge material checkpoint"
   },
   "pending": [
-    "Postmerge strictClippy",
-    "Own3OpticordingPGGREENandprevious8regressions",
-    "Changedcrateunits"
+    "Postmerge prior eight PG regressions",
+    "Unfinished crate unit tests",
+    "Two new Opticording tool PG RED/GREEN, not materialized yet"
   ],
-  "qualification": "No whole quest newly qualified;13of23 remains. Native material3PGRED is proven before registration. Do not describe premerge validations as postmerge."
+  "qualification": "No whole quest newly qualified;13of23 remains. Native material3PGRED is proven before registration. Do not describe premerge validations as postmerge.",
+  "postmerge_updates": {
+    "strict_clippy": "PASS content/dispatch/client-assets199s",
+    "opticording_physical_postgres": "3PASS PostgreSQL18.6;43.240674663/43.276256365/43.406213542s",
+    "historical_nine_library_run": {
+      "elapsed_seconds": 1298.039,
+      "passed": 1050,
+      "interrupted": 2,
+      "not_run": 2579,
+      "reason": "Stopped broad historical run for owner speed rule; pending tests not claimed green"
+    },
+    "registry_repair": {
+      "red": "validate_world_project_v2_to_tree.py: ValidationError LOCK_COUNTS",
+      "cause": "Merged central Item34111/RewardClaim336/Item bindings476; authoritative indexes34114/337/479",
+      "producer": "tools/content-migration/questpc5_tree_registry.py",
+      "source_tests": "3PASS0.007s",
+      "isolated_equivalence": "PASS34114Items/252Mounts/479Item bindings/337RewardClaims",
+      "imbuement": "Existing imbuement_content.py regenerated three stale ruleset_files hashes in lock; all payload bytes unchanged"
+    }
+  }
 }

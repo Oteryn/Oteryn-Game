@@ -2,9 +2,11 @@
 import hashlib
 import json
 import qengine_reward_item_profiles as shared
+import questpc5_opticording_head as head
 
 SPECS = {19063: ('opticording sphere', 200), 23572: ('complete opticording sphere', 200),
-         23573: ('broken opticording sphere', 180)}
+         23573: ('broken opticording sphere', 180), 27522: ('blue spectacles', 250),
+         33313: ('the supreme cube', 1000)}
 PROOF = 'tools/content-schema/native-gameplay/questpc5-opticording-materials.json'
 
 
@@ -30,7 +32,7 @@ def capture(root=shared.ROOT):
             raise ValueError('OPTICORDING_CLIENT_CUSTODY')
         if xml[number].get('name') != name or source.attrs(xml[number]).get('weight') != str(weight):
             raise ValueError('OPTICORDING_XML_IDENTITY')
-        rows.append(shared.accepted.qualify(number, xml[number], objects[number], physical[number],
+        rows.append(head.qualify(number, xml[number], objects[number], physical[number],
                     bindings, definitions[f'oteryn:item.tibia.i{number}']))
     return rows
 

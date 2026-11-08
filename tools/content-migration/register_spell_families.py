@@ -535,6 +535,8 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     lock = json.loads((root / "content/content.lock.json").read_bytes())
     lock["spell_import"] = registration
     generated["content/content.lock.json"] = encoded(lock, registry=True)
+    import questpc5_tree_registry
+    generated.update(questpc5_tree_registry.outputs(root, generated))
     return generated
 
 

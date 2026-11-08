@@ -1,6 +1,6 @@
 # questpc5 shared engine requests
 
-Quest ownership stays with questpc5. Implement only reusable capabilities in QENGINE2. Checked QENGINE2 `3babb30bd`: authored native admissions are available, but these lane requests are absent from its published ENGINE-QUEUE. No gameplay source changes are requested in other quest lanes.
+Quest ownership stays with questpc5. Implement only reusable capabilities in QENGINE2. Checked QENGINE2 `0aa80f984`: authored native admissions are available, but these lane requests are absent from its published ENGINE-QUEUE. No gameplay source changes are requested in other quest lanes.
 
 | Capability | Needed by | Existing reuse and exact missing boundary |
 | --- | --- | --- |
@@ -18,3 +18,15 @@ Quest ownership stays with questpc5. Implement only reusable capabilities in QEN
 | Read-only foreign quest prerequisite alongside a local transition | Opticording Sphere Quest | Existing Bigfoot rank track is owned by Bigfoot. `quest/mod.rs:415` rejects foreign transition effects; `preserve` lowers to `Add(0)` and therefore is not a foreign read. `world_callbacks.rs:490-501` only permits read_only storage on pure teleport callbacks. Need a fenced predicate for rank>=2 before mutating Opticording phase, without a foreign write or fabricated local rank. Exact track `oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank`, initial0/max2147483647. Reuse existing owned-base admission predicates where possible. |
 
 These are pending integration requests, not hard blockers or whole-quest qualification. Continue independent owned data/programme work and consume QENGINE2/main implementations when available. Historical finished work must not be repeated.
+
+ENGINE-REQUEST questpc5: literal readable NPC/World reward text | needed by: Nomads Land Quest | where: gameplay-quests ItemReward and reward_claim_mint
+ENGINE-REQUEST questpc5: fenced mutable Ground stack/order predicate | needed by: Nomads Land Quest | where: gameplay-quests world callbacks and World admission
+ENGINE-REQUEST questpc5: exact selected nested native leaf with source once ledger | needed by: Ornamented Shield Quest | where: native source reward claims UID6062
+ENGINE-REQUEST questpc5: temporary disguise restoration and matching portals | needed by: Last Creep Standing | where: appearance condition and portal owners
+ENGINE-REQUEST questpc5: exact live Creature relocation on fenced World USE | needed by: 20 Years a Cook Quest | where: World movement owner and quest callbacks
+ENGINE-REQUEST questpc5: quest-guarded object taming with atomic progress | needed by: Targuna Quest | where: object-target mount taming
+ENGINE-REQUEST questpc5: recipe-scoped nondecay butterfly specimen | needed by: The Explorer Society Quest | where: native Item duration admission
+ENGINE-REQUEST questpc5: quest-cycle-scoped repeatable World item MINT | needed by: Oramond Quest | where: reward_claim_mint quest give_world
+ENGINE-REQUEST questpc5: claimant-fenced actual corpse-loot pickup credit | needed by: Tutorial | where: quick_loot corpse settlement and quest admission
+ENGINE-REQUEST questpc5: claimant-attributed captured-wolf pickup credit | needed by: Overhunting World Change | where: existing World trap capture and personal quest admission
+ENGINE-REQUEST questpc5: read-only foreign quest prerequisite with local transition | needed by: Opticording Sphere Quest | where: gameplay-quests world callbacks and fenced dispatch admission

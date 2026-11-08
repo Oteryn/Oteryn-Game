@@ -1,0 +1,38 @@
+{
+  "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "merge": "7536ce259",
+  "conflicts": 0,
+  "reuse": "Five incoming Soulpit boot/NPC model/durability fixes retained as-is; no foreign quest authored",
+  "own_slice": "Exact physical Blue Spectacles27522 and SupremeCube33313 plus merged registry freshness repair",
+  "postgres_red": {
+    "server_version": "18.6",
+    "27522_seconds": 42.571715555,
+    "33313_seconds": 42.744960659,
+    "error": "DefinitionNotFound"
+  },
+  "source_tests": "4PASS9.939s postgeneration; registry3PASS0.007s",
+  "native_profiles": {
+    "added": [
+      27522,
+      33313
+    ],
+    "unchanged_existing": 3844,
+    "total": 3846,
+    "equipment_union": 3881
+  },
+  "pin_check": {
+    "world_digest": "fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
+    "inputs_digest": "c8c716fc5c62664f24115621f3a5c63362791389f536cbee9a07c180624db468",
+    "state": "PASS"
+  },
+  "pending": [
+    "StrictClippy active",
+    "Own5OpticordingPGGREEN queued",
+    "Unfinished crate unit tests from interrupted historical run"
+  ],
+  "qualification": "13of23 whole quests qualified; no whole quest newly qualified by physical custody",
+  "workspace_all_targets_seconds": 215,
+  "fmt": "PASS",
+  "native_freshness": "49filesPASS",
+  "item_mount_equivalence": "34114Items/252Mounts/479Itembindings/337RewardClaimsPASS"
+}

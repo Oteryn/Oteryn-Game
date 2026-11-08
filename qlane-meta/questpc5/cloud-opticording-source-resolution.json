@@ -1,10 +1,12 @@
 {
   "quest": "oteryn:quest.opticording_sphere_quest",
-  "state": "THREE_PHYSICAL_PROFILES_PG_GREEN_WHOLE_ROUTE_PENDING",
+  "state": "FIVE_PHYSICAL_PROFILES_REGISTERED_THREE_PRIOR_GREEN_TWO_NEW_GREEN_PENDING",
   "physical_selection": {
     "19063": "initial opticording sphere,200centioz",
     "23573": "broken opticording sphere,180centioz",
-    "23572": "complete opticording sphere,200centioz"
+    "23572": "complete opticording sphere,200centioz",
+    "27522": "Blue Spectacles,250centioz; preserve exact existing Known HEAD pattern",
+    "33313": "The Supreme Cube,1000centioz; exact occupied-description identity selected by recipe"
   },
   "not_selected": {
     "19064": "same-name complete-description alternative; do not join by name",
@@ -14,7 +16,7 @@
     {
       "path": "imports/canary/items-xml/items.xml",
       "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-      "lines": "38865-38874;46813-46822;38914-38922"
+      "lines": "38865-38874;46813-46822;38914-38922;52052-52060;62851-62855"
     },
     {
       "path": "content/world/placements/region-z08-x127-y123.b3",
@@ -53,7 +55,7 @@
   },
   "reuse": "Existing qengine Item source importer, grizzly canonical Known-fact reconciliation and exact binding validator; no new engine feature.",
   "tests": {
-    "source_cases": 3,
+    "source_cases": 4,
     "green_seconds": 9.58,
     "proof": "/tmp/questpc5-opticording-materials-green2.log",
     "native_profiles_registered": true,
@@ -83,20 +85,33 @@
     },
     "generated_native_files": 49,
     "unchanged_existing_profiles": 3841,
-    "source_green_seconds": 9.549,
-    "whole_quest_qualified": false
+    "source_green_seconds": 9.8,
+    "whole_quest_qualified": false,
+    "new_tools_postgres": {
+      "state": "RED2of2 before registration on PostgreSQL18.6",
+      "error": "DefinitionNotFound",
+      "duration_seconds": {
+        "27522": 42.571715555,
+        "33313": 42.744960659
+      },
+      "log": "/tmp/questpc5-opticording-tools-red-pg.log",
+      "green": "queued after workspace/fmt/strictClippy; registered only after actualRED"
+    }
   },
   "source_limits": "Both pinned public quest-directory lookups lack dedicated Opticording implementation; retained mysterious_ornate egg callback is explicitly unavailable placeholder. BR raw URL403 does not block finite selected implementation.",
   "generated_checks": {
-    "equipment_union": 3879,
-    "lane_raw_delta": 108,
-    "lane_new_union": 104,
+    "equipment_union": 3881,
+    "lane_raw_delta": 110,
+    "lane_new_union": 106,
     "immutable_equipment_baseline": "c77d436d8",
     "item_mount_equivalence": "34114Items/252MountsPASS",
     "world_metadata": "0of4changed",
     "world_digest": "fa64b0398214387aefd8acb8881a2286c56d411c6b5e74871b60167ac3dd9c1c",
-    "world_inputs_digest": "18f9256418e493b121594be05399463a0b8f2ab224c99253f00714529c4d055c",
+    "world_inputs_digest": "c8c716fc5c62664f24115621f3a5c63362791389f536cbee9a07c180624db468",
     "pin_refresh_check": "PASS",
-    "duplicate_migrations": "PASS stagedtree"
-  }
+    "duplicate_migrations": "PASS stagedtree",
+    "existing_native_profiles_unchanged": 3844,
+    "new_native_profiles": 2
+  },
+  "head_registration": "Only exact Blue Spectacles moveevent/slot=head metadata may be projected into physical custody; retain existing canonical HEAD pattern with Unknown restrictions. Different script/slot fails closed. No vision or custom USE activation."
 }
