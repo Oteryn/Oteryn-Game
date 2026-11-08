@@ -16,6 +16,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Item name search",
                 "Item category (empty = all)",
                 "House town key",
+                "Item definition reference",
             ],
             buttons: &[
                 "Character",
@@ -38,6 +39,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 "Refresh section",
                 "Previous creature",
                 "Next creature",
+                "Load item definition",
+                "Previous item category",
+                "Next item category",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.properties.cyclopedia_map;
@@ -49,6 +53,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.search.clone(),
                         mailbox.discovery.inspection.category.clone(),
                         mailbox.properties.house.fields[1].clone(),
+                        mailbox.discovery.inspection.catalogue_definition.clone(),
                     ],
                     section_text(mailbox),
                 )
@@ -63,6 +68,24 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         mailbox.discovery.inspection.category =
                             values.get(2).cloned().unwrap_or_default();
                     }
+                    return;
+                }
+                if (20..=22).contains(&action) {
+                    let panel = &mut mailbox.discovery.inspection;
+                    panel.search = values.get(1).cloned().unwrap_or_default();
+                    panel.category = values.get(2).cloned().unwrap_or_default();
+                    if action == 20 {
+                        if !panel.pending {
+                            panel.catalogue_definition = values.get(4).cloned().unwrap_or_default();
+                            actions::load_item_definition(mailbox, commands);
+                        }
+                    } else {
+                        panel.select_category(action == 21);
+                    }
+                    mailbox
+                        .properties
+                        .cyclopedia_map
+                        .navigate(oteryn_client_ui::cyclopedia_map::Section::Items);
                     return;
                 }
                 if action == 18 || action == 19 {

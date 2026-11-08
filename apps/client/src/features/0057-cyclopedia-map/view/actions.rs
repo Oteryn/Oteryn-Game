@@ -52,3 +52,30 @@ pub(super) fn refresh_section(mailbox: &mut Mailbox, commands: &UnboundedSender<
         Section::Analytics => {}
     }
 }
+
+/// Catalogue inspection uses the existing public-template request, never player inspection.
+pub(super) fn load_item_definition(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>) {
+    use oteryn_client_ui::inspection::{Request, request};
+    let panel = &mut mailbox.discovery.inspection;
+    if panel.pending {
+        return;
+    }
+    if !panel.selected {
+        panel.feedback = "Item catalogue unavailable in this session".into();
+        return;
+    }
+    let Some(command) = panel
+        .catalogue_definition
+        .trim()
+        .parse::<u32>()
+        .ok()
+        .and_then(|id| request(panel, Request::Catalogue(id)))
+    else {
+        panel.feedback = "Enter a valid item definition reference".into();
+        return;
+    };
+    if commands.send(PlayCommand::ServerMechanic(command)).is_err() {
+        panel.pending = false;
+        panel.feedback = "The session has ended".into();
+    }
+}
