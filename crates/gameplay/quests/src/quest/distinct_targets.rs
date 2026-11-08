@@ -59,6 +59,41 @@ pub fn record(
     })
 }
 
+/// Three stable target indices fit in one signed quest storage value. Zero
+/// denotes an empty slot; stored indices are sorted and encoded as index + 1.
+pub fn record_three(packed: i64, target: u16, targets: u16) -> Result<(i64, bool), QuestRefusal> {
+    if !(3..=MAX_TARGETS).contains(&targets) || packed < 0 || packed >> 48 != 0 {
+        return Err(QuestRefusal::OutOfRange);
+    }
+    let mut masks = vec![0; usize::from(targets).div_ceil(TARGETS_PER_MASK)];
+    let mut previous = 0;
+    let mut empty = false;
+    for slot in 0..3 {
+        let encoded = ((packed >> (slot * 16)) & 0xffff) as u16;
+        if encoded == 0 {
+            empty = true;
+            continue;
+        }
+        if empty || encoded <= previous || encoded > targets {
+            return Err(QuestRefusal::OutOfRange);
+        }
+        let index = usize::from(encoded - 1);
+        masks[index / TARGETS_PER_MASK] |= 1_i64 << (index % TARGETS_PER_MASK);
+        previous = encoded;
+    }
+    let progress = record(&masks, target, targets, 3)?;
+    let mut next = 0;
+    let mut slot = 0;
+    for index in 0..targets {
+        let offset = usize::from(index);
+        if progress.masks[offset / TARGETS_PER_MASK] & (1_i64 << (offset % TARGETS_PER_MASK)) != 0 {
+            next |= i64::from(index + 1) << (slot * 16);
+            slot += 1;
+        }
+    }
+    Ok((next, progress.complete))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,6 +130,25 @@ mod tests {
             record(&masks, 153, 155, 3),
             Err(QuestRefusal::StageMismatch)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn three_target_receipt_fits_one_track_without_aliasing_indices() -> Result<(), QuestRefusal> {
+        let mut packed = 0;
+        for (i, target) in [183, 2, 63].into_iter().enumerate() {
+            let (next, complete) = record_three(packed, target, 184)?;
+            assert_eq!(complete, i == 2);
+            assert_eq!(
+                record_three(next, target, 184),
+                Err(QuestRefusal::StageMismatch)
+            );
+            packed = next;
+        }
+        assert_eq!(packed, 3 | (64 << 16) | (184 << 32));
+        for corrupt in [-1, 1_i64 << 48, 2 << 16, 2 | (2 << 16), 3 | (2 << 16), 185] {
+            assert!(record_three(corrupt, 1, 184).is_err());
+        }
         Ok(())
     }
 
