@@ -1161,10 +1161,10 @@
   "src": "TIBAUD-1",
   "area": "Modal dialogs",
   "feature": "Server choices/buttons i show-image",
-  "status": "PARTIAL",
-  "gap": "Brak ogólnego modal UI sterowanego serwerem; zwykłe okna mechanik go nie zastępują.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/protocol-oteryn/src/server_modal.rs:17 + server_modal_wire_round_trip_validates_choices_buttons_and_image_bounds; bounded protocol codec implemented and tested; remaining capability/owner registration, native dialog/image presentation and response transport"
+  "evidence": "apps/client/src/features/0449-server-modal/view/native.rs:65 + server_modal_session_caller_delivers_inline_image_and_exact_answer_ack; capability 449 / commands 736–737; connection-fenced owner, native choices/buttons/inline RGBA and matching server acknowledgement"
  },
  {
   "id": "T160",
@@ -1401,10 +1401,10 @@
   "src": "OTCAUD1108",
   "area": "Modal dialogs",
   "feature": "Ogólne dialogi modalne serwera",
-  "status": "PARTIAL",
-  "gap": "Brakuje ogólnego handlera dialogu z identyfikatorem, listą wyborów i przyciskami oraz odpowiedzią wyboru do serwera.",
+  "status": "DONE",
+  "gap": "—",
   "lane": "cg_ui",
-  "evidence": "crates/client-ui/src/components/modal_dialogs.rs:284 + modal_handler_rejects_stale_unknown_and_duplicate_answers; PARTIAL: server response transport and native integration remain"
+  "evidence": "apps/client/src/features/0449-server-modal/protocol.rs:31 + server_modal_real_route_checks_capability_connection_ids_and_duplicate_answers; generic dialog IDs and server-defined choices/buttons; exact response transport and replay-safe connection owner"
  },
  {
   "id": "O041",

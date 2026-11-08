@@ -34,7 +34,7 @@ Bounds: title and labels 256 bytes, message 8192 bytes, 32 choices, 8 buttons.
 The id is nonzero, the button list is nonempty and ids are unique within each
 list. Text is nonempty and contains no NUL. A declared cancel id must name a
 button. Images carry u16 width / height and exactly width * height * 4 RGBA
-bytes; both edges are 1..128. The complete reply is at most 96 KiB. Inline pixels
+bytes; both edges are 1..96. The complete reply is at most the existing 64 KiB command-result budget. Inline pixels
 are data, never a URL or executable content.
 
 ## Validation

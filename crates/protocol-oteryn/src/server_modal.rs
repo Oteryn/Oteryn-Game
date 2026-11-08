@@ -2,10 +2,10 @@
 pub const CAPABILITY_SERVER_MODAL_V1: u32 = 449;
 pub const COMMAND_TYPE_SERVER_MODAL_QUERY: u32 = 736;
 pub const COMMAND_TYPE_SERVER_MODAL_ANSWER: u32 = 737;
-pub const MAX_REPLY_BYTES: usize = 96 * 1024;
+pub const MAX_REPLY_BYTES: usize = crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;
 pub const MAX_CHOICES: usize = 32;
 pub const MAX_BUTTONS: usize = 8;
-pub const MAX_IMAGE_EDGE: u16 = 128;
+pub const MAX_IMAGE_EDGE: u16 = 96;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Image {
@@ -134,6 +134,28 @@ mod tests {
                 rgba: vec![255, 0, 0, 255, 0, 0, 255, 255],
             }),
         }
+    }
+    #[test]
+    fn largest_server_modal_fits_the_existing_command_result_budget()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut value = dialog();
+        value.title = "t".repeat(256);
+        value.message = "m".repeat(8192);
+        value.choices = (0..MAX_CHOICES)
+            .map(|id| (id as u8, "c".repeat(256)))
+            .collect();
+        value.buttons = (0..MAX_BUTTONS)
+            .map(|id| (id as u8, "b".repeat(256)))
+            .collect();
+        value.image = Some(Image {
+            width: MAX_IMAGE_EDGE,
+            height: MAX_IMAGE_EDGE,
+            rgba: vec![255; usize::from(MAX_IMAGE_EDGE) * usize::from(MAX_IMAGE_EDGE) * 4],
+        });
+        let encoded = Reply::Dialog(value).encode()?;
+        assert!(encoded.len() <= crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES);
+        assert_eq!(Reply::decode(&encoded)?.encode()?, encoded);
+        Ok(())
     }
     #[test]
     fn server_modal_wire_round_trip_validates_choices_buttons_and_image_bounds()

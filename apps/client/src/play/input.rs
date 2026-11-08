@@ -20,7 +20,9 @@ impl PlayView {
     /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
     /// a target is one command) or the queue is full.
     pub(super) fn queue(&mut self, input: Input) {
-        if self.death.dead && !matches!(input, Input::Logout) {
+        if (self.death.dead || super::feature_0449_server_modal::view::active())
+            && !matches!(input, Input::Logout)
+        {
             return;
         }
         if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {

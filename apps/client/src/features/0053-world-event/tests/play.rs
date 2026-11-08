@@ -42,8 +42,8 @@ fn world_event_shell_query_crosses_the_session_loop()
                 ) -> Result<Option<oteryn_session::LogoutResult>, SessionError> {
                     Err(SessionError::SessionUnusable)
                 }
-                fn feature_selected(&self, _: u32) -> bool {
-                    true
+                fn feature_selected(&self, capability: u32) -> bool {
+                    capability != 449
                 }
                 // oteryn-choice: the all-capability fixture must provide the selected catalogue.
                 fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {

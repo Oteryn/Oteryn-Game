@@ -170,7 +170,7 @@ fn derived_gated_routes_match_previous_table() {
         (1, &[4, 5], &[4, 5]),
         (8, &[], &[13]),
         (9, &[14], &[]),
-        (10, &[], &[15]),
+        (10, &[734, 735], &[15]),
         // C12 enables the existing world-interaction and item-look command routes.
         (11, &[15, 31], &[]),
         (28, &[30], &[]),
@@ -207,6 +207,7 @@ fn derived_gated_routes_match_previous_table() {
         (383, &[], &[]),
         (384, &[669], &[]),
         (448, &[732], &[]),
+        (449, &[736, 737], &[]),
         (207, &[402], &[]),
         (445, &[730], &[]),
         (446, &[], &[]),

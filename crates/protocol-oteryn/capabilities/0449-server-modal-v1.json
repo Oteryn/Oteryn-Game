@@ -1,0 +1,20 @@
+{
+  "id": 449,
+  "name": "SERVER_MODAL_V1",
+  "constant": "server_modal::CAPABILITY_SERVER_MODAL_V1",
+  "requires": [
+    92
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    736,
+    737
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "mechanic": "0449-server-modal",
+  "kind": "handlers",
+  "id": "0449-server-modal-query",
+  "status": "supported",
+  "entry": "protocol.rs::query",
+  "direction": "client_to_server",
+  "capability": 449,
+  "commands": [
+    736
+  ],
+  "not_applicable": {
+    "settings": "Server dialog choices have no persistent preferences.",
+    "input": "The native session driver queries automatically and maps server-controlled buttons."
+  }
+}
