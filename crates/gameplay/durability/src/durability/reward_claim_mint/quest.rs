@@ -121,9 +121,9 @@ pub(crate) async fn apply(
     {
         return Ok(false);
     }
-    match (&callback.creature_target, admission.creature_use, admission.carried_use) {
-        (None, None, _) => {}
-        (Some(key), Some(proof), Some(carried)) if proof.permits(fence, request, key, carried) => {}
+    match (callback.creature_target.is_some() || callback.self_target.is_some(), admission.creature_use, admission.carried_use) {
+        (false, None, _) => {}
+        (true, Some(proof), Some(carried)) if proof.permits(fence, request, callback, carried) => {}
         _ => return Ok(false),
     }
     if admission.weights.generation_digest() != admission.native.source_digest() {

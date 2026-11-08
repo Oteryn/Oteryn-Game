@@ -137,6 +137,31 @@ pub enum ActorConditionRequirement {
 
 pub use super::map_marks::{MapMarkKind as QuestMapMarkIcon, QuestMapMark};
 
+/// Inclusive native bounds for an exact self-target carried quest action.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SelfTarget {
+    pub minimum: super::world_callbacks::Position,
+    pub maximum: super::world_callbacks::Position,
+}
+
+impl SelfTarget {
+    pub fn contains(&self, x: i32, y: i32, floor: i16) -> bool {
+        floor == -i16::from(self.minimum.floor)
+            && (i32::from(self.minimum.x)..=i32::from(self.maximum.x)).contains(&x)
+            && (i32::from(self.minimum.y)..=i32::from(self.maximum.y)).contains(&y)
+    }
+
+    fn valid(&self) -> bool {
+        self.minimum.floor == self.maximum.floor
+            && (-15..=0).contains(&self.minimum.floor)
+            && self.minimum.x <= self.maximum.x
+            && self.minimum.y <= self.maximum.y
+            && self.maximum.x - self.minimum.x <= 16
+            && self.maximum.y - self.minimum.y <= 16
+    }
+}
+
 /// One paid source occurrence advances the existing Character achievement owner.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -166,6 +191,9 @@ pub struct RewardCallback {
     /// Exact native live creature selected by a carried quest tool.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub creature_target: Option<String>,
+    /// Exact current self entity, inside the source-authored native area.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub self_target: Option<SelfTarget>,
     pub keywords: Vec<String>,
     pub topic: u16,
     pub next_topic: u16,
@@ -492,6 +520,14 @@ fn validate_document(document: Document) -> Result<Document, String> {
             .as_ref()
             .is_some_and(|mark| !mark.valid() || c.carried_item.is_some())
             || !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
+            || c.self_target.as_ref().is_some_and(|area| {
+                !area.valid()
+                    || c.carried_item.is_none()
+                    || c.carried_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.creature_target.is_some()
+                    || c.storage.iter().all(|s| s.preserve)
+            })
             || c.creature_target.as_ref().is_some_and(|key| {
                 c.carried_item.is_none()
                     || c.peer_requires.is_some()
@@ -657,6 +693,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.creature_target.is_none()
         && callback.map_mark.is_none()
         && callback.carried_target.is_none()
+        && callback.self_target.is_none()
     {
         return Ok(None);
     }

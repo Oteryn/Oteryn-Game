@@ -20,6 +20,14 @@ class NativeFactJoin(unittest.TestCase):
         self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 200)
         self.assertEqual(record['semantics']['stack']['value']['stack_max']['value'], 100)
 
+    def test_m56_wax_is_an_exact_portable_non_stackable_source(self):
+        records = q.capture()['records']
+        record = next((r for r in records if r['production_definition']['production_key'] == 'oteryn:item.tibia.i9106'), None)
+        self.assertIsNotNone(record, 'M56 requires the real selected Molten Wax instance')
+        self.assertEqual(record['production_binding']['external_id'], '9106')
+        self.assertEqual(record['admission'], dict(materializable=True, stack_class='NonStackable', legal_destinations=['CharacterInventory', 'Ground']))
+        self.assertEqual(record['semantics']['physical']['value']['weight']['value'], 50)
+
     def test_source_can_fill_unknown_without_changing_owner(self):
         old = self.record()
         new = copy.deepcopy(old)
