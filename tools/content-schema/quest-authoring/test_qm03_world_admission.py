@@ -16,8 +16,9 @@ class WorldAdmissionTests(unittest.TestCase):
 
     def test_entrances_require_the_chosen_live_facts(self):
         callbacks = self.callbacks()
-        self.assertEqual(len(callbacks), 2)
-        anniversary, pits = callbacks
+        self.assertEqual(len(callbacks), 10)
+        anniversary = next(c for c in callbacks if c['key'].endswith('/anniversary'))
+        pits = next(c for c in callbacks if c['key'].endswith('/pits'))
         self.assertEqual(anniversary['quest'], 'oteryn:quest.25_years_of_tibia_quest')
         self.assertEqual(anniversary['admission'], dict(regular_blessings=True, promotion=True, premium=True))
         self.assertEqual(anniversary['minimum_level'], 20)
@@ -33,11 +34,21 @@ class WorldAdmissionTests(unittest.TestCase):
             self.assertTrue(callback['storage'][0]['at_least'])
             self.assertEqual(callback['storage'][0]['set'], 1)
 
+    def test_every_source_time_machine_tile_has_the_same_live_guards(self):
+        rows = [c for c in self.callbacks() if c['quest'] == 'oteryn:quest.25_years_of_tibia_quest']
+        self.assertEqual(len(rows), 9)
+        self.assertEqual({(c['selector']['position']['x'], c['selector']['position']['y']) for c in rows},
+                         {(x, y) for x in range(32429, 32432) for y in range(32164, 32167)})
+        primary = next(c for c in rows if c['key'].endswith('/anniversary'))
+        for row in rows:
+            for field in ('admission', 'minimum_level', 'teleport', 'storage', 'requires_world_admission'):
+                self.assertEqual(row[field], primary[field])
+
     def test_selectors_exist_in_retained_native_map(self):
         sys.path.insert(0, str(ROOT / 'tools/content-schema/world-authoring'))
         import world_region_codec as codec
         callbacks = self.callbacks()
-        self.assertEqual(len(callbacks), 2)
+        self.assertEqual(len(callbacks), 10)
         palette = json.loads((ROOT / 'content/world/placements/index.json').read_text())['palette']
         for callback in callbacks:
             native = callback['selector']['native']

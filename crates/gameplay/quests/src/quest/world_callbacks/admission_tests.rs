@@ -27,6 +27,18 @@ fn world_admission_predicates_require_personal_fenced_player_callbacks() -> Resu
 #[test]
 fn qm03_entrances_bind_live_guards_to_native_objects_and_personal_progress() -> Result<(), String> {
     let callbacks = load()?;
+    let machine: Vec<_> = callbacks
+        .iter()
+        .filter(|c| c.key.starts_with("oteryn:quest-callback/qm03/anniversary"))
+        .collect();
+    assert_eq!(machine.len(), 9);
+    for part in &machine {
+        assert_eq!(part.admission, machine[0].admission);
+        assert_eq!(part.minimum_level, machine[0].minimum_level);
+        assert_eq!(part.teleport, machine[0].teleport);
+        assert_eq!(part.storage, machine[0].storage);
+        assert!(part.requires_world_admission);
+    }
     for (name, quest, trigger, level, promotion, blessings) in [
         (
             "anniversary",
