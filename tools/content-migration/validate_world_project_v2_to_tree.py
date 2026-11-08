@@ -769,6 +769,8 @@ def main() -> int:
     apply_enchanting_admissions(legacy_items)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(legacy_items, ROOT)
+    from engclaim_item_profiles import apply_admissions as apply_engclaim_items
+    apply_engclaim_items(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == 34111, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

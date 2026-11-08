@@ -48,6 +48,10 @@ pub(super) fn candidate(
         };
         if !admitted(&placement.item)
             || placement
+                .extra_items
+                .iter()
+                .any(|entry| !admitted(&entry.item))
+            || placement
                 .contents
                 .iter()
                 .any(|child| !admitted(&child.item))
@@ -71,6 +75,7 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
             "quest_transition",
             "reward",
             "achievement",
+            "reward_callback",
         ],
     ) {
         return Ok(None);
@@ -86,7 +91,36 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
         return Ok(None);
     };
     fields.remove("achievement");
-    ordinary["reward"] = serde_json::json!({"items": reward["items"]});
+    fields.remove("reward_callback");
+    let Some(items) = reward
+        .get("items")
+        .and_then(Value::as_array)
+        .filter(|items| !items.is_empty() && items.len() <= 20)
+    else {
+        return Ok(None);
+    };
+    let callback = match placement.get("reward_callback") {
+        None => None,
+        Some(value) => {
+            let Some(key) = value
+                .as_str()
+                .filter(|key| key.starts_with("oteryn:quest-reward/"))
+            else {
+                return Ok(None);
+            };
+            if ProductionKey::new(key).is_err()
+                || placement.get("quest_transition").is_some()
+                || placement.get("achievement").is_some()
+            {
+                return Ok(None);
+            }
+            Some(key.to_owned())
+        }
+    };
+    if items.len() > 1 && (callback.is_none() || reward.get("contents").is_some()) {
+        return Ok(None);
+    }
+    ordinary["reward"] = serde_json::json!({"items": [items[0]]});
     let binding = &placement["source_binding"];
     if !only(binding, &["project_position", "native_entry_ordinal"]) {
         return Ok(None);
@@ -103,6 +137,18 @@ fn placement_candidate(placement: &Value) -> Result<Option<CandidatePlacement>, 
         return Ok(None);
     };
     result.native_ordinal = Some(ordinal);
+    result.reward_callback = callback;
+    for item in &items[1..] {
+        let mut leaf = ordinary.clone();
+        leaf["reward"] = serde_json::json!({"items": [item]});
+        let Some(item) = candidate_placement(&leaf, false)? else {
+            return Ok(None);
+        };
+        result.extra_items.push(RewardClaimItem {
+            item: item.item,
+            count: item.count,
+        });
+    }
     result.achievement = match placement.get("achievement") {
         None => None,
         Some(value) => {

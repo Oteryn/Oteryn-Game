@@ -346,7 +346,11 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        let callback = if context.is_some() {
+        let native_claim = reward_callback.as_ref().is_some_and(|callback| callback.world_claim.is_some());
+        if native_claim && (context.is_none() || !matches!(request.cause, QuestCause::Use(_))) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        let callback = if context.is_some() && !native_claim {
             Some(
                 oteryn_gameplay_quests::quest::world_callbacks::load()
                     .map_err(|_| CharacterProgressionError::InvalidInput)?
@@ -361,7 +365,7 @@ impl DurabilityRoot {
             .as_ref()
             .and_then(|c| c.effects.item_reward.as_ref());
         if (reward_callback.is_some() || world_reward.is_some()) != reward_admission.is_some()
-            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)))
+            || (reward_callback.is_some() && !matches!(request.cause, QuestCause::Command(_)) && !native_claim)
             || (world_reward.is_some() && !matches!(request.cause, QuestCause::Use(_)))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -881,6 +885,13 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    if native_claim {
+                        let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
+                        if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if let (Some(callback),Some(admission),Some(tuple))=(&reward_callback,*reward_admission,reward_tuple)
                         && !super::super::reward_claim_mint::quest::apply(&mut tx,tuple,&node,fence,&request,callback,admission,reward_achievement.as_ref(),&catalogue,stored_state.is_none()).await?
                     { tx.rollback().await?;return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
@@ -895,7 +906,7 @@ impl DurabilityRoot {
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
-                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission).await?.is_none()
+                            || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,false,reward,admission,None).await?.is_none()
                         { tx.rollback().await?; return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     }
                     if let Some(world) = &callback

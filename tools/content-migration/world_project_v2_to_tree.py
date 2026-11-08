@@ -281,6 +281,8 @@ def main() -> int:
     apply_enchanting_admissions(item_records)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
+    from engclaim_item_profiles import apply_admissions as apply_engclaim_items
+    apply_engclaim_items(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

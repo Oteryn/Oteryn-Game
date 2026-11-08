@@ -49,7 +49,7 @@ fn registry() -> Result<&'static Registry, String> {
                 let protect = reward_callbacks::gated_binding(&callback)?.is_some();
                 add(
                     reward_callbacks::primary_transition(&callback)?,
-                    false,
+                    callback.world_claim.is_some(),
                     protect,
                 )?;
             }

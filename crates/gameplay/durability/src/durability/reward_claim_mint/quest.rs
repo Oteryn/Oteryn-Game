@@ -136,8 +136,10 @@ pub(crate) async fn apply(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     reserve_primary_state: bool,
 ) -> std::result::Result<bool, DurabilityError> {
-    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
-        return Ok(false);
+    let command = match request.cause {
+        super::super::quest_state::QuestCause::Command(command) if callback.world_claim.is_none() => command,
+        super::super::quest_state::QuestCause::Use(command) if callback.world_claim.is_some() => command,
+        _ => return Ok(false),
     };
     if callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
@@ -366,6 +368,7 @@ pub(crate) async fn apply(
             callback.is_paid_exchange(),
             reward,
             admission,
+            callback.world_claim.as_ref(),
         )
         .await?
         else {
@@ -423,6 +426,7 @@ pub(crate) async fn mint(
     repeatable: bool,
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::ItemReward,
     admission: QuestRewardAdmission<'_>,
+    native_claim: Option<&oteryn_gameplay_quests::quest::reward_callbacks::NativeClaimBinding>,
 ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
     if reward.premium {
         let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
@@ -471,7 +475,10 @@ pub(crate) async fn mint(
     // The MINT owner still permits each claim exactly once. A repeatable paid
     // exchange supplies its own stable per-command occurrence, not a bypass of
     // the claim ledger or its pending/reservation checks.
-    let claim_key = if repeatable {
+    if native_claim.is_some() && repeatable { return Err(DurabilityError::InvalidStoredState); }
+    let claim_key = if let Some(binding) = native_claim {
+        binding.key.clone()
+    } else if repeatable {
         let digest = Sha256::new()
             .chain_update(b"oteryn:quest-exchange:v1\0")
             .chain_update(fence.character_id.as_bytes())
@@ -495,7 +502,7 @@ pub(crate) async fn mint(
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
             production_key: claim_key,
-            revision_ref: content_revision.clone(),
+            revision_ref: native_claim.map_or_else(|| content_revision.clone(), |binding| binding.revision.clone()),
         },
         source_placement: callback_key.into(),
         item: resolve(&reward.item)?,

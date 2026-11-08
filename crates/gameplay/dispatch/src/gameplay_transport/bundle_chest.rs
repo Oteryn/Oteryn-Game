@@ -14,7 +14,7 @@ use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
-fn outcome(disposition: UseDisposition) -> UseOutcome {
+pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
         disposition,
         committed: None,
@@ -24,7 +24,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
     }
 }
 
-fn item_ref(item: &crate::content::TypedDefinitionRef) -> TypedDefinitionRef {
+pub(super) fn item_ref(item: &crate::content::TypedDefinitionRef) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
         production_key: item.key().as_str().into(),
@@ -102,9 +102,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(outcome(UseDisposition::Rejected));
         }
+        if bound.reward_callback.is_some() {
+            self.settle_native_claim_premium(claim, bound, command)
+                .await;
+        }
         Some(
             tokio::time::timeout(std::time::Duration::from_secs(10), async {
-                let Some(_permit) = self.spell_lane_permit().await else {
+                let Some(permit) = self.spell_lane_permit().await else {
                     return outcome(UseDisposition::Rejected);
                 };
                 {
@@ -141,6 +145,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         return outcome(UseDisposition::Exhausted);
                     }
+                }
+                if bound.reward_callback.is_some() {
+                    return self
+                        .use_native_claim_reward(actor, command, map, claim, bound, &permit)
+                        .await;
                 }
                 let (Some(fence), Ok(command_id), [reward]) = (
                     command.item_fence,

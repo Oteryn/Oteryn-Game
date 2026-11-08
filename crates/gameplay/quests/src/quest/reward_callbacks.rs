@@ -55,6 +55,8 @@ impl ItemReward {
 
 #[cfg(test)]
 mod literal_text_tests;
+#[cfg(test)]
+mod native_claim_tests;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -135,12 +137,24 @@ pub struct AchievementProgress {
     pub target: u32,
 }
 
+/// Immutable native RewardClaim authority. The shared map binder proves the
+/// semantic digest before the physical USE owner may call the reward writer.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct NativeClaimBinding {
+    pub key: String,
+    pub revision: String,
+    pub authority_sha256: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_claim: Option<NativeClaimBinding>,
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
@@ -416,7 +430,30 @@ fn validate_document(document: Document) -> Result<Document, String> {
         if !slug(&c.key, "oteryn:quest-reward/", b"_/-", 128)
             || !slug(&c.quest, "oteryn:", b"._/:-", 128)
             || !keys.insert(&c.key)
-            || !slug(&c.npc, "oteryn:npc.", b"_", 128)
+            || match &c.world_claim {
+                None => !slug(&c.npc, "oteryn:npc.", b"_", 128),
+                Some(binding) => {
+                    !c.npc.is_empty()
+                        || !c.keywords.is_empty()
+                        || c.topic != 0
+                        || c.next_topic != 0
+                        || c.carried_item.is_some()
+                        || c.fee.is_some()
+                        || c.storage.is_empty()
+                        || !slug(&binding.key, "oteryn:reward-claim.", b"._/-", 128)
+                        || binding.revision.is_empty()
+                        || binding.revision.len() > 128
+                        || !binding
+                            .revision
+                            .bytes()
+                            .all(|b| b.is_ascii_alphanumeric() || b"._/:-".contains(&b))
+                        || binding.authority_sha256.len() != 64
+                        || !binding
+                            .authority_sha256
+                            .bytes()
+                            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                }
+            }
             || c.carried_item.as_ref().is_some_and(|item| {
                 c.take
                     != [ItemAmount {
@@ -525,7 +562,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
                 != c.cosmetic_targets().count()
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
-            || c.keywords.is_empty()
+            || (c.keywords.is_empty() && c.world_claim.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.keywords.iter().any(|s| {
@@ -564,7 +601,7 @@ fn validate_document(document: Document) -> Result<Document, String> {
 // changes the owning unfinished quest pin; speech/citations are not reward terms.
 /// Optional binding of newly gated admission/value terms; absent legacy gates keep old hashes.
 pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, String> {
-    if callback.minimum_level.is_none() {
+    if callback.minimum_level.is_none() && callback.world_claim.is_none() {
         return Ok(None);
     }
     use sha2::{Digest, Sha256};

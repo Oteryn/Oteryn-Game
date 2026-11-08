@@ -42,9 +42,11 @@ pub(super) async fn consume_reward_inputs(
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
 ) -> Result<bool, DurabilityError> {
-    let super::quest_state::QuestCause::Command(_) = request.cause else {
-        return Ok(false);
-    };
+    match request.cause {
+        super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
+        super::quest_state::QuestCause::Use(_) if callback.world_claim.is_some() => {}
+        _ => return Ok(false),
+    }
     let keys: Vec<_> = callback
         .take
         .iter()
