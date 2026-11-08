@@ -91,6 +91,20 @@ impl Settings {
                 }
                 DrawMenuBar(self.parent);
             }
+            let hud_menu = CreatePopupMenu();
+            let menu = GetMenu(self.parent);
+            if !hud_menu.is_null() && !menu.is_null() {
+                for (index, panel) in oteryn_client::play::HudPanel::ALL.into_iter().enumerate() {
+                    AppendMenuW(
+                        hud_menu,
+                        MF_STRING,
+                        25440 + index,
+                        wide(panel.title()).as_ptr(),
+                    );
+                }
+                AppendMenuW(menu, MF_POPUP, hud_menu as usize, wide("HUD").as_ptr());
+                DrawMenuBar(self.parent);
+            }
             self.collapse = control(self.parent, "BUTTON", "▼ Game", 25200, [8, 64, 150, 26], 0);
             self.shortcuts = oteryn_client::play::WINDOW_ACTIONS
                 .iter()
@@ -112,6 +126,28 @@ impl Settings {
                 25001,
                 (&*self.shared as *const Arc<Mutex<Shared>>) as usize,
             );
+        }
+    }
+    pub(super) fn take_hud_toggle(&self) -> Option<oteryn_client::play::HudPanel> {
+        lock(&self.shared).take_hud_toggle()
+    }
+    pub(super) fn sync_hud_menu(&self, layout: &oteryn_client::play::HudLayout) {
+        unsafe {
+            let menu = GetSubMenu(GetMenu(self.parent), 2);
+            if !menu.is_null() {
+                for (index, panel) in oteryn_client::play::HudPanel::ALL.into_iter().enumerate() {
+                    CheckMenuItem(
+                        menu,
+                        (25440 + index) as u32,
+                        MF_BYCOMMAND
+                            | if layout.pane(panel).visible {
+                                MF_CHECKED
+                            } else {
+                                MF_UNCHECKED
+                            },
+                    );
+                }
+            }
         }
     }
     pub(super) fn take_magical_archive_request(&self) -> bool {
@@ -235,6 +271,13 @@ unsafe extern "system" fn menu_proc(
         if msg == WM_COMMAND && w & 0xffff == 25001 {
             let shared = &*(data as *const Arc<Mutex<Shared>>);
             open(Arc::clone(shared));
+            return 0;
+        }
+        if msg == WM_COMMAND && (25440..25444).contains(&(w & 0xffff)) {
+            let shared = &*(data as *const Arc<Mutex<Shared>>);
+            if let Some(panel) = oteryn_client::play::HudPanel::ALL.get((w & 0xffff) - 25440) {
+                lock(shared).request_hud_toggle(*panel);
+            }
             return 0;
         }
         if msg == WM_COMMAND && w & 0xffff == 25300 {

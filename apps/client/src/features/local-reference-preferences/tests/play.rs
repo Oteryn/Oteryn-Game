@@ -248,3 +248,5 @@ include!("overhead_icons.rs");
 include!("resource_hud.rs");
 
 include!("monk_hud.rs");
+
+include!("hud_layout.rs");

@@ -122,10 +122,12 @@ impl PlayView {
 }
 
 mod end;
+mod hud_layout;
 mod input;
 mod mailbox;
 mod refusal_details;
 mod resource_hud;
+pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
 #[cfg(windows)]

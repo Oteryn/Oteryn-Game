@@ -62,6 +62,7 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
 
 pub struct SettingsState {
     window_action: Option<&'static str>,
+    hud_toggle: Option<crate::play::HudPanel>,
     battle_edit: u64,
     magical_archive_requested: bool,
     store: Option<PreferenceStore>,
@@ -75,6 +76,13 @@ pub struct SettingsState {
 }
 
 impl SettingsState {
+    pub fn request_hud_toggle(&mut self, panel: crate::play::HudPanel) {
+        self.hud_toggle = Some(panel);
+    }
+    pub fn take_hud_toggle(&mut self) -> Option<crate::play::HudPanel> {
+        self.hud_toggle.take()
+    }
+
     pub fn take_window_selection(&mut self) -> Option<(&'static str, Vec<NormalizedInputEvent>)> {
         let id = self.window_action.take()?;
         let raw = super::bindings::window_events(&self.preferences, id);
@@ -154,6 +162,7 @@ impl SettingsState {
             .map_or_else(ReferencePreferences::default, |s| s.preferences().clone());
         Self {
             window_action: None,
+            hud_toggle: None,
             battle_edit: 0,
             magical_archive_requested: false,
             store,
@@ -272,9 +281,14 @@ impl SettingsState {
     }
 
     pub fn capture(&mut self, view: &mut PlayView) -> Result<(), PreferenceError> {
-        if view.preferences().audio != self.preferences.audio {
+        if view.preferences().audio != self.preferences.audio
+            || view.preferences().hud_layout != self.preferences.hud_layout
+            || view.preferences().hud_bounds != self.preferences.hud_bounds
+        {
             let mut preferences = self.preferences.clone();
             preferences.audio = view.preferences().audio;
+            preferences.hud_layout = view.preferences().hud_layout.clone();
+            preferences.hud_bounds = view.preferences().hud_bounds;
             self.apply(preferences);
         }
         // Merge any binding/zoom edit made while the shortcut was being handled.

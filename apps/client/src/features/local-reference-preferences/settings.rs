@@ -86,6 +86,8 @@ fn default_panels() -> Vec<String> {
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub hud_layout: crate::play::HudLayout,
+    #[serde(default)]
     pub resource_hud: crate::play::ResourceHudOptions,
     #[serde(default = "default_arc_distance")]
     pub arc_distance: u16,
@@ -146,6 +148,7 @@ impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
             resource_hud: Default::default(),
+            hud_layout: Default::default(),
             arc_distance: 8,
             arc_size: 3,
             hud_names: default_hud_names(),
@@ -176,8 +179,20 @@ impl Default for ReferencePreferences {
 }
 
 impl ReferencePreferences {
+    #[must_use]
+    pub fn effective_hud_layout(&self) -> crate::play::HudLayout {
+        let mut layout = self.hud_layout.clone();
+        if layout == crate::play::HudLayout::default() && self.hud_bounds != default_hud_bounds() {
+            layout.legacy(self.hud_bounds);
+        }
+        layout
+    }
+
     pub(super) fn validate(&self) -> Result<(), PreferenceError> {
         self.validate_bindings()?;
+        if !self.hud_layout.valid() {
+            return Err(PreferenceError);
+        }
         self.validate_profiles()?;
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {

@@ -40,9 +40,10 @@
   "src": "TIBAUD-1",
   "area": "Game window",
   "feature": "HUD i sidebar: dock/show/hide/order/layout",
-  "status": "PARTIAL",
-  "gap": "Osobne okna Win32 zamiast pełnego dokowania i zapisu rozmiarów/kolejności paneli.",
-  "lane": "cg_options"
+  "status": "DONE",
+  "gap": "Panele HUD w grze: przeciąganie, dokowanie, rozmiar, kolejność, menu show/hide i zapis po restarcie; dane przez rzeczywisty PlayView.",
+  "lane": "cg_options",
+  "evidence": "apps/client/src/features/local-spell-action-bar/native.rs:60 + t010_hud_sidebars_drag_dock_resize_hide_reorder_and_survive_restart"
  },
  {
   "id": "T011",

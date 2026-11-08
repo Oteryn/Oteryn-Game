@@ -1,90 +1,86 @@
-//! Child control on the shell thread; its parent window owns the native lifetime.
-// SAFETY: only this module calls Win32 for a child of winit's live window, on its thread.
-#![allow(unsafe_code)]
-
-use windows_sys::Win32::Foundation::HWND;
-use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DestroyWindow, ES_MULTILINE, ES_READONLY, MoveWindow, SW_HIDE, SW_SHOW,
-    SendMessageW, SetWindowTextW, ShowWindow, WS_CHILD, WS_VISIBLE, WS_VSCROLL,
+//! Docked HUD child windows are created and updated exclusively on the shell thread.
+#![allow(
+    unsafe_code,
+    reason = "Win32 HUD controls stay on their creating UI thread"
+)]
+#[path = "native/events.rs"]
+mod events;
+#[path = "native/panes.rs"]
+mod panes;
+use events::Actions;
+use oteryn_client::play::{HudAction, HudPanel};
+use windows_sys::Win32::{
+    Foundation::HWND,
+    UI::Controls::{ICC_PROGRESS_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx},
 };
-use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use winit::window::Window;
+use winit::{
+    raw_window_handle::{HasWindowHandle, RawWindowHandle},
+    window::Window,
+};
 
-use windows_sys::Win32::UI::Controls::{EM_GETFIRSTVISIBLELINE, EM_LINESCROLL};
 pub(super) struct Hud {
-    hwnd: HWND,
-    text: std::cell::RefCell<String>,
+    panes: Vec<panes::Pane>,
+    actions: Actions,
 }
-
 fn wide(text: &str) -> Vec<u16> {
-    text.encode_utf16().chain(Some(0)).collect()
+    text.replace('\0', "\u{fffd}")
+        .encode_utf16()
+        .chain(Some(0))
+        .collect()
 }
-
 impl Hud {
     pub(super) fn new(window: &Window) -> Option<Self> {
         let RawWindowHandle::Win32(handle) = window.window_handle().ok()?.as_raw() else {
             return None;
         };
-        // The read-only multiline HUD keeps long condition lists scrollable.
-        // Win32 copies both strings during creation.
-        let hwnd = unsafe {
-            CreateWindowExW(
-                0,
-                wide("EDIT").as_ptr(),
-                wide("").as_ptr(),
-                WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32,
-                8,
-                8,
-                900,
-                40,
-                handle.hwnd.get() as HWND,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                std::ptr::null(),
-            )
+        let common = INITCOMMONCONTROLSEX {
+            dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+            dwICC: ICC_PROGRESS_CLASS,
         };
-        (!hwnd.is_null()).then_some(Self {
-            hwnd,
-            text: Default::default(),
-        })
+        if unsafe { InitCommonControlsEx(&common) } == 0 {
+            return None;
+        }
+        let actions = Actions::default();
+        let panes = HudPanel::ALL
+            .into_iter()
+            .map(|id| panes::Pane::new(handle.hwnd.get() as HWND, id, actions.clone()))
+            .collect::<Option<Vec<_>>>()?;
+        Some(Self { panes, actions })
     }
-
-    pub(super) fn update(&self, text: Option<&str>, bounds: [u16; 4]) {
-        unsafe {
-            MoveWindow(
-                self.hwnd,
-                i32::from(bounds[0]),
-                i32::from(bounds[1]),
-                i32::from(bounds[2]),
-                i32::from(bounds[3]),
-                1,
-            );
-            let visible = text.is_some();
-            let text = text.unwrap_or("");
-            let mut last = self.text.borrow_mut();
-            if last.as_str() != text {
-                let first = SendMessageW(self.hwnd, EM_GETFIRSTVISIBLELINE, 0, 0);
-                SetWindowTextW(self.hwnd, wide(text).as_ptr());
-                SendMessageW(self.hwnd, EM_LINESCROLL, 0, first);
-                text.clone_into(&mut last);
-            }
-            ShowWindow(self.hwnd, if visible { SW_SHOW } else { SW_HIDE });
+    pub(super) fn take_actions(&self) -> Vec<HudAction> {
+        std::mem::take(&mut *self.actions.borrow_mut())
+    }
+    pub(super) fn hide(&self) {
+        for pane in &self.panes {
+            pane.hide();
         }
     }
 }
-
-impl Drop for Hud {
-    fn drop(&mut self) {
-        // DestroyWindow is also safe if the parent already destroyed its child.
-        unsafe {
-            DestroyWindow(self.hwnd);
-        }
-    }
-}
-
 impl super::Application {
     pub(super) fn update_hud(&mut self) {
-        if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
+        let menu = self.settings.take_hud_toggle();
+        if let (Some(play), Some(window), Some(hud)) = (&mut self.play, &self.window, &self.hud) {
+            let size = window.inner_size();
+            let root =
+                [size.width, size.height].map(|value| u16::try_from(value).unwrap_or(u16::MAX));
+            let mut actions = hud.take_actions();
+            if let Some(id) = menu {
+                actions.push(HudAction::Visible(
+                    id,
+                    !play
+                        .view
+                        .preferences()
+                        .effective_hud_layout()
+                        .pane(id)
+                        .visible,
+                ));
+            }
+            for action in actions {
+                match play.view.hud_action(action, root) {
+                    Ok(()) => self.settings.capture(&mut play.view),
+                    Err(error) => eprintln!("Could not apply HUD layout: {error}"),
+                }
+            }
             let audio = self.audio.status(&mut play.view);
             let movement = play.link.item_movement_status();
             let status = format!(
@@ -92,8 +88,25 @@ impl super::Application {
                 play.view.hud_status(),
                 play.link.movement_feedback().unwrap_or("")
             );
-            if let Some(hud) = &self.hud {
-                hud.update(Some(&status), play.view.preferences().scaled_hud_bounds());
+            let texts = [
+                status.clone(),
+                play.view.combat_status(),
+                play.view.hud_conditions_text(),
+                play.view.hud_monk_text(),
+            ];
+            let layout = play.view.preferences().effective_hud_layout();
+            self.settings.sync_hud_menu(&layout);
+            for (index, pane) in hud.panes.iter().enumerate() {
+                pane.update(
+                    &texts[index],
+                    layout.rect(
+                        HudPanel::ALL[index],
+                        root,
+                        play.view.preferences().interface_scale,
+                    ),
+                    play.view.actor_vitals(),
+                    play.view.preferences().hud_bars,
+                );
             }
             if status != play.status {
                 window.set_title(&format!(
@@ -101,11 +114,8 @@ impl super::Application {
                 ));
                 play.status = status;
             }
-        }
-        if self.play.is_none()
-            && let Some(hud) = &self.hud
-        {
-            hud.update(None, [8, 8, 900, 40]);
+        } else if let Some(hud) = &self.hud {
+            hud.hide();
         }
     }
 }

@@ -221,3 +221,45 @@ impl PlayView {
         parts.join("   ")
     }
 }
+
+impl PlayView {
+    #[must_use]
+    pub fn hud_conditions_text(&self) -> String {
+        let mut parts = Vec::new();
+        if self.preferences().resource_hud.conditions {
+            parts.push(self.resource_hud.conditions.as_ref().map_or_else(
+                || "Conditions: —".into(),
+                oteryn_client_ui::condition_status::status_text,
+            ));
+        }
+        if self.preferences().resource_hud.rest {
+            let panel = oteryn_client_ui::rest_status::RestStatusPanel {
+                selected: true,
+                snapshot: self.resource_hud.rest,
+                ..Default::default()
+            };
+            parts.push(oteryn_client_ui::rest_status::panel_text(&panel));
+        }
+        parts.join("\r\n")
+    }
+    #[must_use]
+    pub fn hud_monk_text(&self) -> String {
+        let Some(vitals) = &self.vitals else {
+            return "Monk resources: —".into();
+        };
+        let mut parts = Vec::new();
+        if self.preferences().show_harmony {
+            parts.push(format!("Harmony: {}/5", vitals.harmony));
+        }
+        if self.preferences().show_serene {
+            parts.push(format!(
+                "Serene: {}",
+                if vitals.serene { "active" } else { "inactive" }
+            ));
+        }
+        if self.preferences().resource_hud.combo {
+            parts.push(format!("Combo charges: {}/5", vitals.harmony));
+        }
+        parts.join("\r\n")
+    }
+}
