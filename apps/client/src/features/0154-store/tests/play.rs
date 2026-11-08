@@ -130,3 +130,27 @@ fn gap_store_confirmation_retry_keeps_transaction_and_quote()
     assert_ne!(first.payload, next.payload);
     Ok(())
 }
+
+#[test]
+fn store_native_preview_remains_visible_after_catalogue_feedback() {
+    use oteryn_client_runtime::cui3::store as wire;
+    use oteryn_client_ui::store::StorePanel;
+    let p = StorePanel {
+        selected: true,
+        feedback: Some("Catalogue received".into()),
+        catalogue: Some(wire::StoreCataloguePage {
+            catalog_revision: "r1".into(),
+            total_coins: 100,
+            transferable_coins: 0,
+            next_page_cursor: String::new(),
+            offers: vec![wire::StoreOffer {
+                offer_key: "mount".into(),
+                title: "Horse".into(),
+                price: 73,
+                currency: "coins".into(),
+            }],
+        }),
+        ..StorePanel::default()
+    };
+    assert!(native::panel_text(&p).contains("Preview: Horse — 73 coins"));
+}
